@@ -47567,7 +47567,193 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own (* <[T
     | & _9: Opaque.ptr = Any.any_l () ])
     [ return (result: tuple'0) -> {[@expl:as_ptr_own result type invariant] inv'8 result}
       {[@expl:as_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr result.f1'0)}
-      {[@expl:as_ptr_own ensures #1] Slice64.view self = Slice64.view (val' result.f1'0)}
+      {[@expl:as_ptr_own ensures #1] self = val' result.f1'0}
+      (! return {result}) ]
+end
+module M_creusot_contracts__std__slice__qyi314041225306698538__as_mut_ptr_own (* <[T] as std::slice::SliceExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv (_1: t_T)
+  
+  predicate invariant' (self: t_T) = inv self
+  
+  predicate inv'0 (_1: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_1: Seq.seq t_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  
+  predicate invariant''1 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
+  
+  predicate inv'2 (_1: Slice64.slice t_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+  
+  type t_PtrOwn
+  
+  type tuple = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn }
+  
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'3 (_1: MutBorrow.t (Slice64.slice t_T))
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'3 x]. inv'3 x = invariant''2 x
+  
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+  
+  predicate metadata_matches [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches
+  
+  function val' (self: t_PtrOwn) : Slice64.slice t_T
+  
+  function metadata_logic (_1: Opaque.ptr) : UInt64.t
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  function size_of_val_logic [@inline:trivial] (val''0: Slice64.slice t_T) : int = size_of_T
+    * Seq.length (Slice64.view val''0)
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: Slice64.slice t_T. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant''3 [@inline:trivial] (self: Slice64.slice t_T) = inv'2 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'4 (_1: Slice64.slice t_T)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
+  
+  predicate invariant''4 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'4 (val' self)
+  
+  predicate inv'5 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''4 x
+  
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'5 self.current /\ inv'5 self.final
+  
+  meta "rewrite_def" predicate invariant''5
+  
+  predicate inv'6 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'6 x]. inv'6 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'7 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'7 x]. inv'7 x = invariant''6 x
+  
+  predicate inv'8 (_1: tuple)
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: tuple [inv'8 x]. inv'8 x = (let {f0 = x0; f1 = x1} = x in inv'7 x1)
+  
+  let rec from_mut (r: MutBorrow.t (Slice64.slice t_T)) (return (x: tuple)) =
+    {[@expl:from_mut 'r' type invariant] inv'3 r}
+    any
+    [ return (result: tuple) -> {inv'8 result}
+      {ptr result.f1.current = result.f0}
+      {val' result.f1.current = r.current}
+      {val' result.f1.final = r.final}
+      (! return {result}) ]
+  
+  type tuple'0 = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_PtrOwn }
+  
+  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate inv'9 (_1: tuple'0)
+  
+  axiom inv_axiom'8 [@rewrite]: forall x: tuple'0 [inv'9 x]. inv'9 x = (let {f0'0 = x0; f1'0 = x1} = x in inv'7 x1)
+  
+  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
+  
+  meta "rewrite_def" function fin
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec as_mut_ptr_own (self: MutBorrow.t (Slice64.slice t_T)) (return (x: tuple'0)) =
+    {[@expl:as_mut_ptr_own 'self' type invariant] inv'3 self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv'2 self.current}
+        MutBorrow.borrow_final <Slice64.slice t_T> {self.current} {MutBorrow.get_id self}
+          (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_9 <- _ret ] -{inv'2 _ret.final}-
+            [ &self <- { self with current = _ret.final } ] s1)
+      | s1 = from_mut {_9} (fun (_ret: tuple) -> [ &_8 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0
+      [ s0 = [ &ptr'0 <- _8.f0 ] s1
+      | s1 = [ &own <- _8.f1 ] s2
+      | s2 = [ &_10 <- Opaque.thin ptr'0 ] s3
+      | s3 = [ &_0 <- { f0'0 = _10; f1'0 = own } ] s4
+      | s4 = {[@expl:type invariant] inv'3 self} s5
+      | s5 = -{resolve'0 self}- s6
+      | s6 = return {_0} ] ]
+    [ & _0: tuple'0 = Any.any_l ()
+    | & self: MutBorrow.t (Slice64.slice t_T) = self
+    | & ptr'0: Opaque.ptr = Any.any_l ()
+    | & own: MutBorrow.t t_PtrOwn = Any.any_l ()
+    | & _8: tuple = Any.any_l ()
+    | & _9: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+    | & _10: Opaque.ptr = Any.any_l () ])
+    [ return (result: tuple'0) -> {[@expl:as_mut_ptr_own result type invariant] inv'9 result}
+      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr result.f1'0.current)}
+      {[@expl:as_mut_ptr_own ensures #1] self.current = val' result.f1'0.current}
+      {[@expl:as_mut_ptr_own ensures #2] self.final = val' (fin result.f1'0)}
       (! return {result}) ]
 end
 module M_creusot_contracts__std__slice__qyi18390169926879820046__produces_refl (* <std::slice::Iter<'a, T> as std::iter::Iterator> *)
@@ -73189,6 +73375,307 @@ module M_creusot_contracts__std__ops__qyi396835551462182716__fn_hist_inv__refine
   goal refines: forall self: t_F. forall res_state: t_F. forall result: (). hist_inv self res_state = (self = res_state)
           -> hist_inv self res_state = (self = res_state)
 end
+module M_creusot_contracts__std__ptr__qyi4653477246949472063__sub_offset_logic__refines (* <*const T as std::ptr::SizedPointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
+  use mach.int.Int
+  
+  function sub_logic (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function offset_logic (self: Opaque.ptr) (offset: int) : Opaque.ptr
+  
+  axiom offset_logic_spec: forall self: Opaque.ptr, offset: int. UInt64.t'int (Ptr.addr_logic_u64 self)
+          + offset * size_of_T
+        < UInt64.t'int const_MAX
+      -> UInt64.t'int (Ptr.addr_logic_u64 (offset_logic self offset))
+      = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: Opaque.ptr. forall offset: int. forall result: (). sub_logic (offset_logic self offset) self = offset
+          -> sub_logic (offset_logic self offset) self = offset
+end
+module M_creusot_contracts__std__ptr__qyi4653477246949472063__offset_logic_zero__refines (* <*const T as std::ptr::SizedPointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
+  use mach.int.Int
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function offset_logic (self: Opaque.ptr) (offset: int) : Opaque.ptr
+  
+  axiom offset_logic_spec: forall self: Opaque.ptr, offset: int. UInt64.t'int (Ptr.addr_logic_u64 self)
+          + offset * size_of_T
+        < UInt64.t'int const_MAX
+      -> UInt64.t'int (Ptr.addr_logic_u64 (offset_logic self offset))
+      = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Opaque.ptr. forall result: (). offset_logic self 0 = self -> offset_logic self 0 = self
+end
+module M_creusot_contracts__std__ptr__qyi4653477246949472063__offset_logic__refines (* <*const T as std::ptr::SizedPointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
+  use mach.int.Int
+  use creusot.prelude.Opaque
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Opaque.ptr. forall offset: int. UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+          < UInt64.t'int const_MAX
+        -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T < UInt64.t'int const_MAX
+        /\ (forall result: Opaque.ptr. UInt64.t'int (Ptr.addr_logic_u64 result)
+            = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+          -> UInt64.t'int (Ptr.addr_logic_u64 result) = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T)
+end
+module M_creusot_contracts__std__ptr__qyi4653477246949472063__offset_logic_assoc__refines (* <*const T as std::ptr::SizedPointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
+  use mach.int.Int
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function offset_logic (self: Opaque.ptr) (offset: int) : Opaque.ptr
+  
+  axiom offset_logic_spec: forall self: Opaque.ptr, offset: int. UInt64.t'int (Ptr.addr_logic_u64 self)
+          + offset * size_of_T
+        < UInt64.t'int const_MAX
+      -> UInt64.t'int (Ptr.addr_logic_u64 (offset_logic self offset))
+      = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: Opaque.ptr. forall offset1: int. forall offset2: int. forall result: (). offset_logic (offset_logic self offset1) offset2
+              = offset_logic self (offset1 + offset2)
+            -> offset_logic (offset_logic self offset1) offset2 = offset_logic self (offset1 + offset2)
+end
+module M_creusot_contracts__std__ptr__qyi4653477246949472063__sub_logic_refl__refines (* <*const T as std::ptr::SizedPointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  
+  function sub_logic (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Opaque.ptr. forall result: (). sub_logic self self = 0 -> sub_logic self self = 0
+end
+module M_creusot_contracts__std__ptr__qyi16049136019895146802__slice_ptr_ext__refines (* <*const [T] as std::ptr::SlicePointerExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  
+  function thin [@inline:trivial] (self: Opaque.ptr) : Opaque.ptr = Opaque.thin self
+  
+  meta "rewrite_def" function thin
+  
+  function metadata_logic (_1: Opaque.ptr) : UInt64.t
+  
+  function len_logic [@inline:trivial] (self: Opaque.ptr) : UInt64.t = metadata_logic self
+  
+  meta "rewrite_def" function len_logic
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Opaque.ptr. forall other: Opaque.ptr. forall result: (). thin self = thin other
+              /\ len_logic self = len_logic other -> self = other
+          -> thin self = thin other /\ len_logic self = len_logic other -> self = other
+end
+module M_creusot_contracts__std__slice__qyi314041225306698538__as_mut_ptr_own__refines (* <[T] as std::slice::SliceExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.int.Int64
+  
+  type t_T
+  
+  predicate inv (_1: t_T)
+  
+  predicate invariant' (self: t_T) = inv self
+  
+  predicate inv'0 (_1: t_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'1 (_1: Seq.seq t_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  
+  predicate invariant''1 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
+  
+  predicate inv'2 (_1: Slice64.slice t_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+  
+  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'3 (_1: MutBorrow.t (Slice64.slice t_T))
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'3 x]. inv'3 x = invariant''2 x
+  
+  type t_PtrOwn
+  
+  function val' (self: t_PtrOwn) : Slice64.slice t_T
+  
+  function fin [@inline:trivial] (self: MutBorrow.t t_PtrOwn) : t_PtrOwn = self.final
+  
+  meta "rewrite_def" function fin
+  
+  type tuple = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn }
+  
+  function ptr (self: t_PtrOwn) : Opaque.ptr
+  
+  predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  predicate ptr_is_aligned_opaque (self: t_PtrOwn)
+  
+  predicate metadata_matches [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches
+  
+  function metadata_logic (_1: Opaque.ptr) : UInt64.t
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  function size_of_val_logic [@inline:trivial] (val''0: Slice64.slice t_T) : int = size_of_T
+    * Seq.length (Slice64.view val''0)
+  
+  meta "rewrite_def" function size_of_val_logic
+  
+  axiom size_of_val_logic_spec: forall val''0: Slice64.slice t_T. 0 <= size_of_val_logic val''0
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant''3 [@inline:trivial] (self: Slice64.slice t_T) = inv'2 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'4 (_1: Slice64.slice t_T)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: Slice64.slice t_T [inv'4 x]. inv'4 x = invariant''3 x
+  
+  predicate invariant''4 (self: t_PtrOwn) =
+    not is_null_logic (ptr self)
+    /\ ptr_is_aligned_opaque self
+    /\ metadata_matches (val' self) (metadata_logic (ptr self))
+    /\ size_of_val_logic (val' self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr self)) + size_of_val_logic (val' self) <= UInt64.t'int const_MAX'0
+    /\ inv'4 (val' self)
+  
+  predicate inv'5 (_1: t_PtrOwn)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''4 x
+  
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'5 self.current /\ inv'5 self.final
+  
+  meta "rewrite_def" predicate invariant''5
+  
+  predicate inv'6 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'6 x]. inv'6 x = invariant''5 x
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'7 (_1: MutBorrow.t t_PtrOwn)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'7 x]. inv'7 x = invariant''6 x
+  
+  predicate inv'8 (_1: tuple)
+  
+  axiom inv_axiom'7 [@rewrite]: forall x: tuple [inv'8 x]. inv'8 x = (let {f0 = x0; f1 = x1} = x in inv'7 x1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv'3 self
+      -> inv'3 self
+      /\ (forall result: tuple. self.final = val' (fin result.f1)
+          /\ self.current = val' result.f1.current /\ result.f0 = Opaque.thin (ptr result.f1.current) /\ inv'8 result
+        -> inv'8 result)
+end
 module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own__refines (* <[T] as std::slice::SliceExt<T>> *)
   type namespace_other
   
@@ -73307,6 +73794,6 @@ module M_creusot_contracts__std__slice__qyi314041225306698538__as_ptr_own__refin
   
   goal refines: forall self: Slice64.slice t_T. inv'3 self
       -> inv'3 self
-      /\ (forall result: tuple. Slice64.view self = Slice64.view (val' result.f1)
-          /\ result.f0 = Opaque.thin (ptr result.f1) /\ inv'7 result -> inv'7 result)
+      /\ (forall result: tuple. self = val' result.f1 /\ result.f0 = Opaque.thin (ptr result.f1) /\ inv'7 result
+        -> inv'7 result)
 end
