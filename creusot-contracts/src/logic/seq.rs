@@ -703,6 +703,34 @@ impl<T> ::std::ops::IndexMut<Int> for Seq<T> {
     }
 }
 
+impl<T> ::std::ops::Index<(Int, Int)> for Seq<T> {
+    type Output = (T, T);
+
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index.0 && index.0 < self.len() && 0 <= index.1 && index.1 < self.len())]
+    #[ensures(result.0 == self[index.0] && result.1 == self[index.1])]
+    #[allow(unused_variables)]
+    fn index(&self, index: (Int, Int)) -> &Self::Output {
+        panic!()
+    }
+}
+
+impl<T> ::std::ops::IndexMut<(Int, Int)> for Seq<T> {
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index.0 && index.0 < self.len() && 0 <= index.1 && index.1 < self.len())]
+    #[requires(index.0 != index.1)]
+    #[ensures((*result).0 == (*self)[index.0] && (*result).1 == (*self)[index.1]
+           && (^result).0 == (^self)[index.0] && (^result).1 == (^self)[index.1])]
+    #[ensures(forall<i> i != index.0 && i != index.1 ==> (*self).get(i) == (^self).get(i))]
+    #[ensures((*self).len() == (^self).len())]
+    #[allow(unused_variables)]
+    fn index_mut(&mut self, index: (Int, Int)) -> &mut Self::Output {
+        panic!()
+    }
+}
+
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<T: Clone + Copy> Clone for Seq<T> {
     #[trusted]
