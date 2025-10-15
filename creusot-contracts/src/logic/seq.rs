@@ -669,6 +669,17 @@ impl<T> Seq<T> {
     #[check(ghost)]
     #[ensures(^self == Self::empty())]
     pub fn clear_ghost(&mut self) {}
+
+    /// Split a sequence in two at the given index.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= mid && mid <= self.len())]
+    #[ensures((^self).len() == mid)]
+    #[ensures((^self).concat(result) == *self)]
+    pub fn split_off_ghost(&mut self, mid: Int) -> Self {
+        let _ = mid;
+        panic!("ghost code")
+    }
 }
 
 impl<T> ::std::ops::Index<Int> for Seq<T> {
