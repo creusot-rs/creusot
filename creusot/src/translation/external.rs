@@ -332,8 +332,9 @@ fn build_erased<'tcx>(
     def_id2: DefId,
     subst2: GenericArgsRef<'tcx>,
 ) -> Erasure<'tcx> {
-    let sig1 =
-        tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id1).instantiate_identity());
+    let sig1 = tcx.instantiate_bound_regions_with_erased(
+        tcx.normalize_erasing_regions(typing_env, tcx.fn_sig(def_id1).instantiate_identity()),
+    );
     let sig2 = tcx.instantiate_bound_regions_with_erased(
         tcx.instantiate_and_normalize_erasing_regions(subst2, typing_env, tcx.fn_sig(def_id2)),
     );
