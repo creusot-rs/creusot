@@ -236,6 +236,8 @@ extern_spec! {
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
+        #[check(terminates)]
+        #[ensures(self@.len() == result@.len())]
         #[ensures(forall<i> 0 <= i && i < self@.len() ==>
             T::clone.postcondition((&self@[i],), result@[i]))]
         fn clone(&self) -> Vec<T, A>;
