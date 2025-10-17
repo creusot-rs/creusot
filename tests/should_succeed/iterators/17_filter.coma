@@ -24,6 +24,8 @@ module M_17_filter__qyi6180221713105948918__produces_refl (* <Filter<I, F> as co
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -51,11 +53,13 @@ module M_17_filter__qyi6180221713105948918__produces_refl (* <Filter<I, F> as co
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
     invariant' self
@@ -104,6 +108,8 @@ module M_17_filter__qyi6180221713105948918__produces_trans (* <Filter<I, F> as c
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -131,11 +137,13 @@ module M_17_filter__qyi6180221713105948918__produces_trans (* <Filter<I, F> as c
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
     invariant' self
@@ -222,11 +230,15 @@ module M_17_filter__qyi6180221713105948918__next (* <Filter<I, F> as common::Ite
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate inv (_1: t_I)
   
@@ -490,10 +502,7 @@ module M_17_filter__filter
     forall f1: t_P, f2: t_P, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
   predicate invariant' (self: t_Filter) =
-    forall f: t_P, i: t_Item. precondition f i
-      /\ (forall f'0: t_P, g: t_P. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_P, f2: t_P, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate inv'1 (_1: t_Filter)
   
@@ -657,36 +666,37 @@ module M_17_filter__less_than
     forall f1: closure2, f2: closure2, i: UInt32.t. not (postcondition_mut f1 i f2 true
       /\ postcondition_mut f1 i f2 false)
   
-  predicate invariant' (self: t_Filter)
+  predicate inv [@inline:trivial] (_1: t_IntoIter) = true
   
-  predicate inv (_1: t_Filter)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
-  
-  predicate inv'0 [@inline:trivial] (_1: t_IntoIter) = true
-  
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv
   
   function iter (self: t_Filter) : t_IntoIter
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'0 (iter self)
+  predicate inv'0 [@inline:trivial] (_1: closure2) = true
   
-  predicate inv'1 [@inline:trivial] (_1: closure2) = true
-  
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv'0
   
   function func (self: t_Filter) : closure2
   
-  axiom func_spec: forall self: t_Filter. inv self -> inv'1 (func self)
+  predicate private_invariant (f: t_Filter)
+  
+  predicate invariant' [@inline:trivial] (self: t_Filter) =
+    inv (iter self) /\ inv'0 (func self) /\ private_invariant self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  axiom invariant_spec: forall self: t_Filter. invariant' self -> inv (iter self) /\ inv'0 (func self)
+  
+  predicate inv'1 (_1: t_Filter)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv'1 x]. inv'1 x = invariant' x
   
   let rec filter (self_: t_IntoIter) (f: closure2) (return (x: t_Filter)) = {[@expl:filter requires #0] immutable f}
     {[@expl:filter requires #1] no_precondition f}
     {[@expl:filter requires #2] precise f}
-    any [ return (result: t_Filter) -> {inv result} {iter result = self_ /\ func result = f} (! return {result}) ]
+    any [ return (result: t_Filter) -> {inv'1 result} {iter result = self_ /\ func result = f} (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Filter) = true
-  
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'1 (_1: t_Filter)
   
   predicate produces (self: t_IntoIter) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 rhs)
@@ -703,7 +713,7 @@ module M_17_filter__less_than
   axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq UInt32.t) self
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq UInt32.t) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq UInt32.t, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -739,7 +749,7 @@ module M_17_filter__less_than
   
   predicate from_iter_post (prod: Seq.seq UInt32.t) (res: t_Vec) = prod = view res
   
-  let rec collect (self_: t_Filter) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv self_}
+  let rec collect (self_: t_Filter) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv'1 self_}
     any
     [ return (result: t_Vec) -> {exists done': MutBorrow.t t_Filter, prod: Seq.seq UInt32.t. resolve'1 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
@@ -801,6 +811,8 @@ module M_17_filter__qyi6180221713105948918__next__refines (* <Filter<I, F> as co
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -828,11 +840,13 @@ module M_17_filter__qyi6180221713105948918__next__refines (* <Filter<I, F> as co
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate inv (_1: t_I)
   
@@ -926,6 +940,8 @@ module M_17_filter__qyi6180221713105948918__produces_refl__refines (* <Filter<I,
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -953,11 +969,13 @@ module M_17_filter__qyi6180221713105948918__produces_refl__refines (* <Filter<I,
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
     invariant' self
@@ -1003,6 +1021,8 @@ module M_17_filter__qyi6180221713105948918__produces_trans__refines (* <Filter<I
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -1030,11 +1050,13 @@ module M_17_filter__qyi6180221713105948918__produces_trans__refines (* <Filter<I
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
   predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+    no_precondition self.t_Filter__func /\ immutable self.t_Filter__func /\ precise self.t_Filter__func
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
     invariant' self

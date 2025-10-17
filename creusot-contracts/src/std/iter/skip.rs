@@ -7,21 +7,17 @@ pub trait SkipExt<I> {
     fn iter(self) -> I;
 
     #[logic]
-    fn n(self) -> Int;
+    fn n(self) -> usize;
 }
 
 impl<I> SkipExt<I> for Skip<I> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(result >= 0 && result <= usize::MAX@)]
-    fn n(self) -> Int {
+    fn n(self) -> usize {
         dead
     }
 }
@@ -39,13 +35,20 @@ impl<I> Resolve for Skip<I> {
     fn resolve_coherence(self) {}
 }
 
+impl<I: Iterator> Invariant for Skip<I> {
+    #[logic(prophetic, open, inline)]
+    fn invariant(self) -> bool {
+        inv(self.iter())
+    }
+}
+
 impl<I: Iterator> Iterator for Skip<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (^self).n() == 0 &&
+            (^self).n()@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
-                   s.len() <= (*self).n()
+                   s.len() <= (*self).n()@
                 && self.iter().produces(s, *i)
                 && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
@@ -57,9 +60,9 @@ impl<I: Iterator> Iterator for Skip<I> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
-            o.n() == 0 && visited.len() > 0 &&
+            o.n()@ == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
-                   s.len() == self.n()
+                   s.len() == self.n()@
                 && self.iter().produces(s.concat(visited), o.iter())
                 && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }

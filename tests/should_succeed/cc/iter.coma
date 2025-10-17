@@ -81,6 +81,8 @@ module M_iter__test_mut_ref
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'2 self_ = deep_model'2 rhs)} (! return {result}) ]
   
+  predicate resolve'0 (_1: t_Iter)
+  
   type t_AssertKind = C_Eq | C_Ne | C_Match
   
   meta "compute_max_steps" 1000000
@@ -150,15 +152,16 @@ module M_iter__test_mut_ref
       | s3 = bb10 ]
     | bb10 = s0
       [ s0 = -{resolve _58}- s1
-      | s1 = bb0'0
+      | s1 = -{resolve'0 a}- s2
+      | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
-        [ _const_ret (_const: t_Option) -> [ &_75 <- _const ] s2 ]
-      | s2 = [ &_54 <- { f0 = _56; f1 = _75 } ] s3
-      | s3 = [ &left_val'1 <- _54.f0 ] s4
-      | s4 = [ &right_val'1 <- _54.f1 ] s5
-      | s5 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_63 <- _ret ] s6)
-      | s6 = bb11 ]
+        [ _const_ret (_const: t_Option) -> [ &_75 <- _const ] s3 ]
+      | s3 = [ &_54 <- { f0 = _56; f1 = _75 } ] s4
+      | s4 = [ &left_val'1 <- _54.f0 ] s5
+      | s5 = [ &right_val'1 <- _54.f1 ] s6
+      | s6 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_63 <- _ret ] s7)
+      | s7 = bb11 ]
     | bb11 = any [ br0 -> {_63 = false} (! bb13) | br1 -> {_63} (! bb12) ]
     | bb12 = return {_0}
     | bb13 = s0
@@ -167,12 +170,17 @@ module M_iter__test_mut_ref
       | s2 = [ &_73 <- right_val'1 ] s3
       | s3 = {false} any ]
     | bb9 = s0
-      [ s0 = [ &kind'0 <- C_Eq ] s1
-      | s1 = [ &_49 <- left_val'0 ] s2
-      | s2 = [ &_51 <- right_val'0 ] s3
-      | s3 = {false} any ]
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = [ &kind'0 <- C_Eq ] s2
+      | s2 = [ &_49 <- left_val'0 ] s3
+      | s3 = [ &_51 <- right_val'0 ] s4
+      | s4 = {false} any ]
     | bb5 = s0
-      [ s0 = [ &kind <- C_Eq ] s1 | s1 = [ &_25 <- left_val ] s2 | s2 = [ &_27 <- right_val ] s3 | s3 = {false} any ] ]
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = [ &kind <- C_Eq ] s2
+      | s2 = [ &_25 <- left_val ] s3
+      | s3 = [ &_27 <- right_val ] s4
+      | s4 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_Iter = Any.any_l ()
     | & _6: tuple = Any.any_l ()
@@ -285,36 +293,39 @@ module M_iter__test_filter
   predicate precise (_1: ()) =
     forall f1: (), f2: (), i: bool. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
-  predicate invariant' (self: t_Filter)
+  predicate inv [@inline:trivial] (_1: t_Iter) = true
   
-  predicate inv (_1: t_Filter)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
-  
-  predicate inv'0 [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv
   
   function iter'0 (self: t_Filter) : t_Iter
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'0 (iter'0 self)
+  predicate inv'0 [@inline:trivial] (_1: ()) = true
   
-  predicate inv'1 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv'0
   
   function func (self: t_Filter) : ()
   
-  axiom func_spec: forall self: t_Filter. inv self -> inv'1 (func self)
+  predicate private_invariant (f: t_Filter)
+  
+  predicate invariant' [@inline:trivial] (self: t_Filter) =
+    inv (iter'0 self) /\ inv'0 (func self) /\ private_invariant self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  axiom invariant_spec: forall self: t_Filter. invariant' self -> inv (iter'0 self) /\ inv'0 (func self)
+  
+  predicate inv'1 (_1: t_Filter)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv'1 x]. inv'1 x = invariant' x
   
   let rec filter (self_: t_Iter) (f: ()) (return (x: t_Filter)) = {[@expl:filter requires #0] immutable f}
     {[@expl:filter requires #1] no_precondition f}
     {[@expl:filter requires #2] precise f}
-    any [ return (result: t_Filter) -> {inv result} {iter'0 result = self_ /\ func result = f} (! return {result}) ]
+    any [ return (result: t_Filter) -> {inv'1 result} {iter'0 result = self_ /\ func result = f} (! return {result}) ]
   
   type t_Option = C_None | C_Some bool
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Filter) = inv self.current /\ inv self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Filter) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''0
   
@@ -346,7 +357,7 @@ module M_iter__test_filter
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq bool) self
   
   predicate produces'0 (self: t_Filter) (visited: Seq.seq bool) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq bool, f: Map.map int int. produces (iter'0 self) s (iter'0 succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -418,6 +429,8 @@ module M_iter__test_filter
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'2 self_ = deep_model'2 rhs)} (! return {result}) ]
   
+  predicate resolve'3 (_1: t_Filter)
+  
   type t_AssertKind = C_Eq | C_Ne | C_Match
   
   meta "compute_max_steps" 1000000
@@ -441,13 +454,13 @@ module M_iter__test_filter
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &_6 <- () ] s1 | s1 = filter {_2} {_6} (fun (_ret: t_Filter) -> [ &a <- _ret ] s2) | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_Filter> {a}
-          (fun (_ret: MutBorrow.t t_Filter) -> [ &_12 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _12.current}
+          (fun (_ret: MutBorrow.t t_Filter) -> [ &_12 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _12.current}
         MutBorrow.borrow_final <t_Filter> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t t_Filter) ->
-            [ &_11 <- _ret ] -{inv _ret.final}-
+            [ &_11 <- _ret ] -{inv'1 _ret.final}-
             [ &_12 <- { _12 with current = _ret.final } ] s2)
       | s2 = next {_11} (fun (_ret: t_Option) -> [ &_10 <- _ret ] s3)
       | s3 = bb3 ]
@@ -465,13 +478,13 @@ module M_iter__test_filter
       | s7 = bb4 ]
     | bb4 = any [ br0 -> {_19 = false} (! bb6) | br1 -> {_19} (! bb5) ]
     | bb5 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_Filter> {a}
-          (fun (_ret: MutBorrow.t t_Filter) -> [ &_36 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _36.current}
+          (fun (_ret: MutBorrow.t t_Filter) -> [ &_36 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _36.current}
         MutBorrow.borrow_final <t_Filter> {_36.current} {MutBorrow.get_id _36}
           (fun (_ret: MutBorrow.t t_Filter) ->
-            [ &_35 <- _ret ] -{inv _ret.final}-
+            [ &_35 <- _ret ] -{inv'1 _ret.final}-
             [ &_36 <- { _36 with current = _ret.final } ] s2)
       | s2 = next {_35} (fun (_ret: t_Option) -> [ &_34 <- _ret ] s3)
       | s3 = bb7 ]
@@ -489,29 +502,30 @@ module M_iter__test_filter
       | s7 = bb8 ]
     | bb8 = any [ br0 -> {_43 = false} (! bb10) | br1 -> {_43} (! bb9) ]
     | bb9 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_Filter> {a}
-          (fun (_ret: MutBorrow.t t_Filter) -> [ &_60 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _60.current}
+          (fun (_ret: MutBorrow.t t_Filter) -> [ &_60 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _60.current}
         MutBorrow.borrow_final <t_Filter> {_60.current} {MutBorrow.get_id _60}
           (fun (_ret: MutBorrow.t t_Filter) ->
-            [ &_59 <- _ret ] -{inv _ret.final}-
+            [ &_59 <- _ret ] -{inv'1 _ret.final}-
             [ &_60 <- { _60 with current = _ret.final } ] s2)
       | s2 = next {_59} (fun (_ret: t_Option) -> [ &_58 <- _ret ] s3)
       | s3 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'2 _60} s1
       | s1 = -{resolve'2 _60}- s2
-      | s2 = {[@expl:type invariant] inv a} s3
-      | s3 = bb0'0
+      | s2 = {[@expl:type invariant] inv'1 a} s3
+      | s3 = -{resolve'3 a}- s4
+      | s4 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
-        [ _const_ret (_const: t_Option) -> [ &_77 <- _const ] s4 ]
-      | s4 = [ &_56 <- { f0 = _58; f1 = _77 } ] s5
-      | s5 = [ &left_val'1 <- _56.f0 ] s6
-      | s6 = [ &right_val'1 <- _56.f1 ] s7
-      | s7 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_65 <- _ret ] s8)
-      | s8 = bb12 ]
+        [ _const_ret (_const: t_Option) -> [ &_77 <- _const ] s5 ]
+      | s5 = [ &_56 <- { f0 = _58; f1 = _77 } ] s6
+      | s6 = [ &left_val'1 <- _56.f0 ] s7
+      | s7 = [ &right_val'1 <- _56.f1 ] s8
+      | s8 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_65 <- _ret ] s9)
+      | s9 = bb12 ]
     | bb12 = any [ br0 -> {_65 = false} (! bb14) | br1 -> {_65} (! bb13) ]
     | bb13 = return {_0}
     | bb14 = s0
@@ -520,17 +534,19 @@ module M_iter__test_filter
       | s2 = [ &_75 <- right_val'1 ] s3
       | s3 = {false} any ]
     | bb10 = s0
-      [ s0 = {[@expl:type invariant] inv a} s1
-      | s1 = [ &kind'0 <- C_Eq ] s2
-      | s2 = [ &_51 <- left_val'0 ] s3
-      | s3 = [ &_53 <- right_val'0 ] s4
-      | s4 = {false} any ]
+      [ s0 = {[@expl:type invariant] inv'1 a} s1
+      | s1 = -{resolve'3 a}- s2
+      | s2 = [ &kind'0 <- C_Eq ] s3
+      | s3 = [ &_51 <- left_val'0 ] s4
+      | s4 = [ &_53 <- right_val'0 ] s5
+      | s5 = {false} any ]
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv a} s1
-      | s1 = [ &kind <- C_Eq ] s2
-      | s2 = [ &_27 <- left_val ] s3
-      | s3 = [ &_29 <- right_val ] s4
-      | s4 = {false} any ] ]
+      [ s0 = {[@expl:type invariant] inv'1 a} s1
+      | s1 = -{resolve'3 a}- s2
+      | s2 = [ &kind <- C_Eq ] s3
+      | s3 = [ &_27 <- left_val ] s4
+      | s4 = [ &_29 <- right_val ] s5
+      | s5 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_Filter = Any.any_l ()
     | & _2: t_Iter = Any.any_l ()
@@ -652,34 +668,36 @@ module M_iter__test_filter_map
     forall f2: (), i: bool. not ((exists b: bool. postcondition_mut f1 i f2 (C_Some b))
       /\ postcondition_mut f1 i f2 (C_None))
   
-  predicate invariant' (self: t_FilterMap)
+  predicate inv [@inline:trivial] (_1: t_Iter) = true
   
-  predicate inv (_1: t_FilterMap)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv x]. inv x = invariant' x
-  
-  predicate inv'0 [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv
   
   function iter'0 (self: t_FilterMap) : t_Iter
   
-  axiom iter_spec: forall self: t_FilterMap. inv self -> inv'0 (iter'0 self)
+  predicate inv'0 [@inline:trivial] (_1: ()) = true
   
-  predicate inv'1 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv'0
   
   function func (self: t_FilterMap) : ()
   
-  axiom func_spec: forall self: t_FilterMap. inv self -> inv'1 (func self)
+  predicate private_invariant (f: t_FilterMap)
+  
+  predicate invariant' [@inline:trivial] (self: t_FilterMap) =
+    inv (iter'0 self) /\ inv'0 (func self) /\ private_invariant self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 (_1: t_FilterMap)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv'1 x]. inv'1 x = invariant' x
   
   let rec filter_map (self_: t_Iter) (f: ()) (return (x: t_FilterMap)) = {[@expl:filter_map requires #0] immutable f}
     {[@expl:filter_map requires #1] no_precondition f}
     {[@expl:filter_map requires #2] precise f}
-    any [ return (result: t_FilterMap) -> {inv result} {iter'0 result = self_ /\ func result = f} (! return {result}) ]
+    any
+    [ return (result: t_FilterMap) -> {inv'1 result} {iter'0 result = self_ /\ func result = f} (! return {result}) ]
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_FilterMap) = inv self.current /\ inv self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_FilterMap) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''0
   
@@ -711,7 +729,7 @@ module M_iter__test_filter_map
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq bool) self
   
   predicate produces'0 (self: t_FilterMap) (visited: Seq.seq bool) (succ: t_FilterMap) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq bool, f: Map.map int int. produces (iter'0 self) s (iter'0 succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -779,6 +797,8 @@ module M_iter__test_filter_map
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
+  predicate resolve'3 (_1: t_FilterMap)
+  
   type t_AssertKind = C_Eq | C_Ne | C_Match
   
   meta "compute_max_steps" 1000000
@@ -803,13 +823,13 @@ module M_iter__test_filter_map
     | bb1 = s0
       [ s0 = [ &_6 <- () ] s1 | s1 = filter_map {_2} {_6} (fun (_ret: t_FilterMap) -> [ &a <- _ret ] s2) | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_FilterMap> {a}
-          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_12 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _12.current}
+          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_12 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _12.current}
         MutBorrow.borrow_final <t_FilterMap> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t t_FilterMap) ->
-            [ &_11 <- _ret ] -{inv _ret.final}-
+            [ &_11 <- _ret ] -{inv'1 _ret.final}-
             [ &_12 <- { _12 with current = _ret.final } ] s2)
       | s2 = next {_11} (fun (_ret: t_Option) -> [ &_10 <- _ret ] s3)
       | s3 = bb3 ]
@@ -828,13 +848,13 @@ module M_iter__test_filter_map
       | s7 = bb4 ]
     | bb4 = any [ br0 -> {_17 = false} (! bb6) | br1 -> {_17} (! bb5) ]
     | bb5 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_FilterMap> {a}
-          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_34 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _34.current}
+          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_34 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _34.current}
         MutBorrow.borrow_final <t_FilterMap> {_34.current} {MutBorrow.get_id _34}
           (fun (_ret: MutBorrow.t t_FilterMap) ->
-            [ &_33 <- _ret ] -{inv _ret.final}-
+            [ &_33 <- _ret ] -{inv'1 _ret.final}-
             [ &_34 <- { _34 with current = _ret.final } ] s2)
       | s2 = next {_33} (fun (_ret: t_Option) -> [ &_32 <- _ret ] s3)
       | s3 = bb7 ]
@@ -853,29 +873,30 @@ module M_iter__test_filter_map
       | s7 = bb8 ]
     | bb8 = any [ br0 -> {_39 = false} (! bb10) | br1 -> {_39} (! bb9) ]
     | bb9 = s0
-      [ s0 = {inv a}
+      [ s0 = {inv'1 a}
         MutBorrow.borrow_mut <t_FilterMap> {a}
-          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_56 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
-      | s1 = {inv _56.current}
+          (fun (_ret: MutBorrow.t t_FilterMap) -> [ &_56 <- _ret ] -{inv'1 _ret.final}- [ &a <- _ret.final ] s1)
+      | s1 = {inv'1 _56.current}
         MutBorrow.borrow_final <t_FilterMap> {_56.current} {MutBorrow.get_id _56}
           (fun (_ret: MutBorrow.t t_FilterMap) ->
-            [ &_55 <- _ret ] -{inv _ret.final}-
+            [ &_55 <- _ret ] -{inv'1 _ret.final}-
             [ &_56 <- { _56 with current = _ret.final } ] s2)
       | s2 = next {_55} (fun (_ret: t_Option) -> [ &_54 <- _ret ] s3)
       | s3 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'2 _56} s1
       | s1 = -{resolve'2 _56}- s2
-      | s2 = {[@expl:type invariant] inv a} s3
-      | s3 = bb0'0
+      | s2 = {[@expl:type invariant] inv'1 a} s3
+      | s3 = -{resolve'3 a}- s4
+      | s4 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
-        [ _const_ret (_const: t_Option) -> [ &_73 <- _const ] s4 ]
-      | s4 = [ &_52 <- { f0 = _54; f1 = _73 } ] s5
-      | s5 = [ &left_val'1 <- _52.f0 ] s6
-      | s6 = [ &right_val'1 <- _52.f1 ] s7
-      | s7 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_61 <- _ret ] s8)
-      | s8 = bb12 ]
+        [ _const_ret (_const: t_Option) -> [ &_73 <- _const ] s5 ]
+      | s5 = [ &_52 <- { f0 = _54; f1 = _73 } ] s6
+      | s6 = [ &left_val'1 <- _52.f0 ] s7
+      | s7 = [ &right_val'1 <- _52.f1 ] s8
+      | s8 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_61 <- _ret ] s9)
+      | s9 = bb12 ]
     | bb12 = any [ br0 -> {_61 = false} (! bb14) | br1 -> {_61} (! bb13) ]
     | bb13 = return {_0}
     | bb14 = s0
@@ -884,17 +905,19 @@ module M_iter__test_filter_map
       | s2 = [ &_71 <- right_val'1 ] s3
       | s3 = {false} any ]
     | bb10 = s0
-      [ s0 = {[@expl:type invariant] inv a} s1
-      | s1 = [ &kind'0 <- C_Eq ] s2
-      | s2 = [ &_47 <- left_val'0 ] s3
-      | s3 = [ &_49 <- right_val'0 ] s4
-      | s4 = {false} any ]
+      [ s0 = {[@expl:type invariant] inv'1 a} s1
+      | s1 = -{resolve'3 a}- s2
+      | s2 = [ &kind'0 <- C_Eq ] s3
+      | s3 = [ &_47 <- left_val'0 ] s4
+      | s4 = [ &_49 <- right_val'0 ] s5
+      | s5 = {false} any ]
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv a} s1
-      | s1 = [ &kind <- C_Eq ] s2
-      | s2 = [ &_25 <- left_val ] s3
-      | s3 = [ &_27 <- right_val ] s4
-      | s4 = {false} any ] ]
+      [ s0 = {[@expl:type invariant] inv'1 a} s1
+      | s1 = -{resolve'3 a}- s2
+      | s2 = [ &kind <- C_Eq ] s3
+      | s3 = [ &_25 <- left_val ] s4
+      | s4 = [ &_27 <- right_val ] s5
+      | s5 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_FilterMap = Any.any_l ()
     | & _2: t_Iter = Any.any_l ()

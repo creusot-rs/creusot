@@ -172,6 +172,16 @@ module M_alloc_max_size__g
     any
     [ return (result: tuple) -> {inv'4 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
   
+  predicate resolve (_1: t_PtrOwn)
+  
+  predicate resolve'0 [@inline:trivial] (_1: t_PtrOwn) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve'0 _1.f1
+  
+  meta "rewrite_def" predicate resolve'1
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -182,7 +192,7 @@ module M_alloc_max_size__g
           (fun (_res: Slice64.array UInt64.t) -> [ &x <- _res ] s1)
       | s1 = new {x} (fun (_ret: tuple) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'4 _3} s1 | s1 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'4 _3} s1 | s1 = -{resolve'1 _3}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: Slice64.array UInt64.t = Any.any_l () | & _3: tuple = Any.any_l () ])
     [ return (result: ()) -> {[@expl:g ensures] false} (! return {result}) ]
 end

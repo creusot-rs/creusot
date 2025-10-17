@@ -8,11 +8,16 @@ pub trait ClonedExt<I> {
 }
 
 impl<I> ClonedExt<I> for Cloned<I> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
+    }
+}
+
+impl<I> Invariant for Cloned<I> {
+    #[logic(prophetic, open, inline)]
+    fn invariant(self) -> bool {
+        inv(self.iter())
     }
 }
 

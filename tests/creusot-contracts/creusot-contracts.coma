@@ -2846,6 +2846,8 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__split_of
   
   meta "rewrite_def" predicate resolve
   
+  predicate resolve'0 (_1: t_Resource)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -2867,7 +2869,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__split_of
           (fun (_ret: MutBorrow.t t_Resource) -> [ &_18 <- _ret ] [ &self <- { self with current = _ret.final } ] s3)
       | s3 = replace {_18} {this'0} (fun (_ret: t_Resource) -> [ &_17 <- _ret ] s4)
       | s4 = bb4 ]
-    | bb4 = s0 [ s0 = -{resolve self}- s1 | s1 = [ &_0 <- r'0 ] s2 | s2 = return {_0} ] ]
+    | bb4 = s0 [ s0 = -{resolve self}- s1 | s1 = -{resolve'0 _17}- s2 | s2 = [ &_0 <- r'0 ] s3 | s3 = return {_0} ] ]
     [ & _0: t_Resource = Any.any_l ()
     | & self: MutBorrow.t t_Resource = self
     | & r: t_R = r
@@ -2960,6 +2962,8 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__join_in 
   
   meta "rewrite_def" predicate resolve
   
+  predicate resolve'0 (_1: t_Resource)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -2979,7 +2983,7 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__join_in 
           (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &self <- { self with current = _ret.final } ] s1)
       | s1 = replace {_13} {this'0} (fun (_ret: t_Resource) -> [ &_12 <- _ret ] s2)
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = -{resolve self}- s1 | s1 = return {_0} ] ]
+    | bb4 = s0 [ s0 = -{resolve self}- s1 | s1 = -{resolve'0 _12}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Resource = self
     | & other: t_Resource = other
@@ -3080,9 +3084,11 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (
       {view result = r}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Resource) = _1.final = _1.current
+  predicate resolve (_1: t_Resource)
   
-  meta "rewrite_def" predicate resolve
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Resource) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -3096,8 +3102,9 @@ module M_creusot_contracts__ghost__resource__m__qyi7338446641796430796__weaken (
       [ s0 = MutBorrow.borrow_final <t_Resource> {self.current} {MutBorrow.get_id self}
           (fun (_ret: MutBorrow.t t_Resource) -> [ &_9 <- _ret ] [ &self <- { self with current = _ret.final } ] s1)
       | s1 = split_off {_9} {f} {target} (fun (_ret: t_Resource) -> [ &_8 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve self}- s1 | s1 = return {_0} ] ]
+      | s2 = -{resolve _8}- s3
+      | s3 = bb2 ]
+    | bb2 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Resource = self
     | & target: t_R = target
@@ -36162,22 +36169,14 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Cloned) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Cloned) : t_I
   
-  axiom iter_spec: forall self: t_Cloned. inv self -> inv'0 (iter self)
-  
-  predicate inv'1 (_1: t_T)
+  predicate inv (_1: t_T)
   
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   predicate resolve [@inline:trivial] (_1: ()) = true
   
@@ -36187,7 +36186,7 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom postcondition_fndef'0:
     forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -36219,7 +36218,7 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   predicate postcondition (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -36271,22 +36270,14 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Cloned) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Cloned) : t_I
   
-  axiom iter_spec: forall self: t_Cloned. inv self -> inv'0 (iter self)
-  
-  predicate inv'1 (_1: t_T)
+  predicate inv (_1: t_T)
   
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   predicate resolve [@inline:trivial] (_1: ()) = true
   
@@ -36296,7 +36287,7 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom postcondition_fndef'0:
     forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -36328,7 +36319,7 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   predicate postcondition (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -36389,15 +36380,7 @@ module M_creusot_contracts__std__iter__copied__qyi13437018464510937253__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Copied) : t_I
-  
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
   
   predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
     exists s: Seq.seq t_T. produces (iter self) s (iter o)
@@ -36439,15 +36422,7 @@ module M_creusot_contracts__std__iter__copied__qyi13437018464510937253__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Copied) : t_I
-  
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
   
   predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
     exists s: Seq.seq t_T. produces (iter self) s (iter o)
@@ -36530,6 +36505,63 @@ module M_creusot_contracts__std__iter__empty__qyi10224556657375706108__produces_
   goal vc_produces_trans: produces a ab b
     -> produces b bc c -> ([@expl:produces_trans ensures] produces a (Seq.(++) ab bc) c)
 end
+module M_creusot_contracts__std__iter__enumerate__qyi3278642960586057751__invariant (* <std::iter::Enumerate<I> as invariant::Invariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.prelude.MutBorrow
+  
+  type t_Enumerate
+  
+  type t_I
+  
+  predicate inv (_1: t_I)
+  
+  function iter (self: t_Enumerate) : t_I
+  
+  type t_Item
+  
+  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  
+  function produces_refl (self: t_I) : ()
+  
+  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  
+  function n (self: t_Enumerate) : UInt64.t
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate completed (self: MutBorrow.t t_I)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Enumerate
+  
+  predicate invariant' (self: t_Enumerate)
+  
+  goal vc_invariant: if inv (iter self) then
+      if forall s: Seq.seq t_Item, i: t_I [produces (iter self) s i]. produces (iter self) s i
+        -> UInt64.t'int (n self) + Seq.length s < UInt64.t'int const_MAX then
+        [@expl:invariant ensures] (forall i: MutBorrow.t t_I. completed i
+            -> produces i.current (Seq.empty: Seq.seq t_Item) i.final) -> inv (iter self)
+      else
+        [@expl:invariant ensures] false -> inv (iter self)
+    
+    else
+      [@expl:invariant ensures] false -> inv (iter self)
+
+end
 module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produces_refl (* <std::iter::Enumerate<I> as std::iter::Iterator> *)
   type namespace_other
   
@@ -36538,7 +36570,6 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   
   type t_Enumerate
   
@@ -36546,7 +36577,7 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
-  function n (self: t_Enumerate) : int
+  function n (self: t_Enumerate) : UInt64.t
   
   type t_I
   
@@ -36561,31 +36592,14 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate completed (self: MutBorrow.t t_I)
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Enumerate)
-  
   function iter (self: t_Enumerate) : t_I
   
-  axiom iter_spec: forall self: t_Enumerate. inv'0 self -> inv (iter self)
-  
-  predicate invariant' (self: t_Enumerate) =
-    (forall s: Seq.seq t_Item, i: t_I [produces (iter self) s i]. produces (iter self) s i
-        -> n self + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed i -> produces i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = invariant' x
-  
   predicate produces'0 (self: t_Enumerate) (visited: Seq.seq tuple) (o: t_Enumerate) =
-    Seq.length visited = n o - n self
+    Seq.length visited = UInt64.t'int (n o) - UInt64.t'int (n self)
     /\ (exists s: Seq.seq t_Item. produces (iter self) s (iter o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = n self + i /\ (Seq.get visited i).f1 = Seq.get s i))
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int (n self) + i /\ (Seq.get visited i).f1 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
@@ -36605,7 +36619,6 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   
   type t_Enumerate
   
@@ -36613,7 +36626,7 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
-  function n (self: t_Enumerate) : int
+  function n (self: t_Enumerate) : UInt64.t
   
   type t_I
   
@@ -36628,31 +36641,14 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate completed (self: MutBorrow.t t_I)
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Enumerate)
-  
   function iter (self: t_Enumerate) : t_I
   
-  axiom iter_spec: forall self: t_Enumerate. inv'0 self -> inv (iter self)
-  
-  predicate invariant' (self: t_Enumerate) =
-    (forall s: Seq.seq t_Item, i: t_I [produces (iter self) s i]. produces (iter self) s i
-        -> n self + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed i -> produces i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = invariant' x
-  
   predicate produces'0 (self: t_Enumerate) (visited: Seq.seq tuple) (o: t_Enumerate) =
-    Seq.length visited = n o - n self
+    Seq.length visited = UInt64.t'int (n o) - UInt64.t'int (n self)
     /\ (exists s: Seq.seq t_Item. produces (iter self) s (iter o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = n self + i /\ (Seq.get visited i).f1 = Seq.get s i))
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int (n self) + i /\ (Seq.get visited i).f1 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
@@ -36673,22 +36669,30 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   goal vc_produces_trans: produces'0 a ab b
     -> produces'0 b bc c -> ([@expl:produces_trans ensures] produces'0 a (Seq.(++) ab bc) c)
 end
-module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_refl (* <std::iter::Filter<I, F> as std::iter::Iterator> *)
+module M_creusot_contracts__std__iter__filter__qyi14352509440997797406__invariant (* <std::iter::Filter<I, F> as invariant::Invariant> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  use seq.Seq
-  use mach.int.Int
-  use map.Map
-  
   type t_Filter
   
-  type t_Item
+  type t_I
+  
+  predicate inv (_1: t_I)
+  
+  function iter (self: t_Filter) : t_I
   
   type t_F
   
+  predicate inv'0 (_1: t_F)
+  
+  function func (self: t_Filter) : t_F
+  
+  type t_Item
+  
   predicate precondition (self: t_F) (args: t_Item)
+  
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
   
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
@@ -36717,21 +36721,85 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_r
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
   
-  predicate inv (_1: t_Filter)
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
+  predicate private_invariant (f: t_Filter) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
-  predicate inv'0 (_1: t_F)
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Filter
+  
+  predicate invariant' (self: t_Filter)
+  
+  goal vc_invariant: if inv (iter self) then
+      if inv'0 (func self) then
+        [@expl:invariant ensures] private_invariant self -> inv (iter self) /\ inv'0 (func self)
+      else
+        [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+    
+    else
+      [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+
+end
+module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_refl (* <std::iter::Filter<I, F> as std::iter::Iterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use mach.int.Int
+  use map.Map
+  
+  type t_Filter
+  
+  type t_Item
+  
+  type t_F
+  
+  predicate precondition (self: t_F) (args: t_Item)
+  
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
   
   function func (self: t_Filter) : t_F
   
-  axiom func_spec: forall self: t_Filter. inv self -> inv'0 (func self)
+  predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
+  
+  predicate resolve (_1: t_F)
+  
+  predicate postcondition_mut (self: t_F) (args: t_Item) (result_state: t_F) (result: bool)
+  
+  function fn_mut_once (self: t_F) (args: t_Item) (res: bool) : ()
+  
+  axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: bool. postcondition_once self args res
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  
+  function hist_inv_refl (self: t_F) : ()
+  
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
+      -> hist_inv self res_state
+  
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
+  
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
+  
+  predicate private_invariant (f: t_Filter) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -36746,14 +36814,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Filter) : t_I
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -36790,6 +36854,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
+  function func (self: t_Filter) : t_F
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -36817,21 +36885,12 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
   
-  predicate inv (_1: t_Filter)
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
-  
-  predicate inv'0 (_1: t_F)
-  
-  function func (self: t_Filter) : t_F
-  
-  axiom func_spec: forall self: t_Filter. inv self -> inv'0 (func self)
+  predicate private_invariant (f: t_Filter) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -36846,14 +36905,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Filter) : t_I
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -36903,7 +36958,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   predicate no_precondition (f: t_F) = forall i: t_Item. precondition f i
   
-  predicate inv (_1: t_F)
+  function func (self: t_FilterMap) : t_F
   
   type t_Option = C_None | C_Some t_B
   
@@ -36940,15 +36995,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
     forall f2: t_F, i: t_Item. not ((exists b: t_B. postcondition_mut f1 i f2 (C_Some b))
       /\ postcondition_mut f1 i f2 (C_None))
   
-  predicate inv'0 (_1: t_FilterMap)
-  
-  function func (self: t_FilterMap) : t_F
-  
-  axiom func_spec: forall self: t_FilterMap. inv'0 self -> inv (func self)
-  
-  predicate invariant' (self: t_FilterMap) = no_precondition (func self) /\ immutable (func self) /\ precise (func self)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv'0 x]. inv'0 x = invariant' x
+  predicate private_invariant (f: t_FilterMap) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -36963,14 +37010,10 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_FilterMap) : t_I
   
-  axiom iter_spec: forall self: t_FilterMap. inv'0 self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_FilterMap) (visited: Seq.seq t_B) (succ: t_FilterMap) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -37012,7 +37055,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   predicate no_precondition (f: t_F) = forall i: t_Item. precondition f i
   
-  predicate inv (_1: t_F)
+  function func (self: t_FilterMap) : t_F
   
   type t_Option = C_None | C_Some t_B
   
@@ -37049,15 +37092,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
     forall f2: t_F, i: t_Item. not ((exists b: t_B. postcondition_mut f1 i f2 (C_Some b))
       /\ postcondition_mut f1 i f2 (C_None))
   
-  predicate inv'0 (_1: t_FilterMap)
-  
-  function func (self: t_FilterMap) : t_F
-  
-  axiom func_spec: forall self: t_FilterMap. inv'0 self -> inv (func self)
-  
-  predicate invariant' (self: t_FilterMap) = no_precondition (func self) /\ immutable (func self) /\ precise (func self)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv'0 x]. inv'0 x = invariant' x
+  predicate private_invariant (f: t_FilterMap) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -37072,14 +37107,10 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_FilterMap) : t_I
   
-  axiom iter_spec: forall self: t_FilterMap. inv'0 self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_FilterMap) (visited: Seq.seq t_B) (succ: t_FilterMap) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -37124,25 +37155,7 @@ module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_re
   
   type t_Option = C_None | C_Some t_I
   
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
   function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -37189,25 +37202,7 @@ module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_tr
   
   type t_Option = C_None | C_Some t_I
   
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
   function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -37264,25 +37259,7 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused (
   
   type t_Option = C_None | C_Some t_I
   
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
   function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -37334,8 +37311,114 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused (
   function is_fused (self: MutBorrow.t t_Fuse) (steps: Seq.seq t_Item) (next: t_Fuse) : ()
   
   goal vc_is_fused: completed'0 self
-    -> produces'0 self.final steps next
-    -> ([@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item) /\ self.final = next)
+    -> produces'0 self.final steps next -> ([@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
+end
+module M_creusot_contracts__std__iter__map__qyi7764956636839637908__invariant (* <std::iter::Map<I, F> as invariant::Invariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  
+  type t_Map
+  
+  type t_I
+  
+  predicate inv (_1: t_I)
+  
+  function iter (self: t_Map) : t_I
+  
+  type t_F
+  
+  predicate inv'0 (_1: t_F)
+  
+  function func (self: t_Map) : t_F
+  
+  type t_Item
+  
+  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  
+  function produces_refl (self: t_I) : ()
+  
+  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate completed (self: MutBorrow.t t_I)
+  
+  predicate precondition (self: t_F) (args: t_Item)
+  
+  predicate next_precondition (iter'0: t_I) (func'0: t_F) =
+    forall e: t_Item, i: t_I [produces iter'0 (Seq.singleton e) i]. produces iter'0 (Seq.singleton e) i
+      -> precondition func'0 e
+  
+  type t_B
+  
+  predicate postcondition_once (self: t_F) (args: t_Item) (result: t_B)
+  
+  predicate resolve (_1: t_F)
+  
+  predicate postcondition_mut (self: t_F) (args: t_Item) (result_state: t_F) (result: t_B)
+  
+  function fn_mut_once (self: t_F) (args: t_Item) (res: t_B) : ()
+  
+  axiom fn_mut_once_spec: forall self: t_F, args: t_Item, res: t_B. postcondition_once self args res
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  
+  function hist_inv_refl (self: t_F) : ()
+  
+  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
+  
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut self args res_state res
+      -> hist_inv self res_state
+  
+  predicate preservation (iter'0: t_I) (func'0: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current e1 f.final b]. hist_inv func'0 f.current
+      -> produces iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition f.current e1 -> postcondition_mut f.current e1 f.final b -> precondition f.final e2
+  
+  predicate reinitialize =
+    forall iter'0: MutBorrow.t t_I, func'0: t_F. completed iter'0
+      -> next_precondition iter'0.final func'0 /\ preservation iter'0.final func'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Map
+  
+  predicate invariant' (self: t_Map)
+  
+  goal vc_invariant: if inv (iter self) then
+      if inv'0 (func self) then
+        if reinitialize then
+          if preservation (iter self) (func self) then
+            [@expl:invariant ensures] next_precondition (iter self) (func self) -> inv (iter self) /\ inv'0 (func self)
+          else
+            [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+        
+        else
+          [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+      
+      else
+        [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+    
+    else
+      [@expl:invariant ensures] false -> inv (iter self) /\ inv'0 (func self)
+
 end
 module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl (* <std::iter::Map<I, F> as std::iter::Iterator> *)
   type namespace_other
@@ -37381,15 +37464,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate inv [@inline:trivial] (_1: t_Map) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_F)
-  
   function func (self: t_Map) : t_F
-  
-  axiom func_spec: forall self: t_Map. inv self -> inv'0 (func self)
   
   type t_I
   
@@ -37404,11 +37479,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Map) : t_I
-  
-  axiom iter_spec: forall self: t_Map. inv self -> inv'1 (iter self)
   
   predicate precondition (self: t_F) (args: t_Item)
   
@@ -37484,15 +37555,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_tran
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate inv [@inline:trivial] (_1: t_Map) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_F)
-  
   function func (self: t_Map) : t_F
-  
-  axiom func_spec: forall self: t_Map. inv self -> inv'0 (func self)
   
   type t_I
   
@@ -37507,11 +37570,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_tran
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Map) : t_I
-  
-  axiom iter_spec: forall self: t_Map. inv self -> inv'1 (iter self)
   
   predicate precondition (self: t_F) (args: t_Item)
   
@@ -39054,15 +39113,7 @@ module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_ref
   
   axiom produces_back_refl_spec: forall self: t_I. produces_back self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Rev) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Rev) : t_I
-  
-  axiom iter_spec: forall self: t_Rev. inv self -> inv'0 (iter self)
   
   predicate produces (self: t_Rev) (visited: Seq.seq t_Item) (o: t_Rev) = produces_back (iter self) visited (iter o)
   
@@ -39101,15 +39152,7 @@ module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_tra
   
   axiom produces_back_refl_spec: forall self: t_I. produces_back self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Rev) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Rev) : t_I
-  
-  axiom iter_spec: forall self: t_Rev. inv self -> inv'0 (iter self)
   
   predicate produces (self: t_Rev) (visited: Seq.seq t_Item) (o: t_Rev) = produces_back (iter self) visited (iter o)
   
@@ -39138,18 +39181,14 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_r
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Skip
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Skip) : int
-  
-  axiom n_spec: forall self: t_Skip. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Skip) : UInt64.t
   
   type t_I
   
@@ -39164,23 +39203,15 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Skip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Skip) : t_I
-  
-  axiom iter_spec: forall self: t_Skip. inv self -> inv'0 (iter self)
   
   predicate resolve (_1: t_Item)
   
   predicate produces'0 (self: t_Skip) (visited: Seq.seq t_Item) (o: t_Skip) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
-    \/ n o = 0
+    \/ UInt64.t'int (n o) = 0
     /\ Seq.length visited > 0
-    /\ (exists s: Seq.seq t_Item. Seq.length s = n self
+    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n self)
       /\ produces (iter self) (Seq.(++) s visited) (iter o)
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve (Seq.get s i)))
   
@@ -39200,18 +39231,14 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_t
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Skip
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Skip) : int
-  
-  axiom n_spec: forall self: t_Skip. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Skip) : UInt64.t
   
   type t_I
   
@@ -39226,23 +39253,15 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Skip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Skip) : t_I
-  
-  axiom iter_spec: forall self: t_Skip. inv self -> inv'0 (iter self)
   
   predicate resolve (_1: t_Item)
   
   predicate produces'0 (self: t_Skip) (visited: Seq.seq t_Item) (o: t_Skip) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
-    \/ n o = 0
+    \/ UInt64.t'int (n o) = 0
     /\ Seq.length visited > 0
-    /\ (exists s: Seq.seq t_Item. Seq.length s = n self
+    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n self)
       /\ produces (iter self) (Seq.(++) s visited) (iter o)
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve (Seq.get s i)))
   
@@ -39271,18 +39290,14 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_r
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Take
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Take) : int
-  
-  axiom n_spec: forall self: t_Take. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Take) : UInt64.t
   
   type t_I
   
@@ -39297,18 +39312,10 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Take) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Take) : t_I
   
-  axiom iter_spec: forall self: t_Take. inv self -> inv'0 (iter self)
-  
   predicate produces'0 (self: t_Take) (visited: Seq.seq t_Item) (o: t_Take) =
-    n self = n o + Seq.length visited /\ produces (iter self) visited (iter o)
+    UInt64.t'int (n self) = UInt64.t'int (n o) + Seq.length visited /\ produces (iter self) visited (iter o)
   
   meta "compute_max_steps" 1000000
   
@@ -39326,18 +39333,14 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_t
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Take
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Take) : int
-  
-  axiom n_spec: forall self: t_Take. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Take) : UInt64.t
   
   type t_I
   
@@ -39352,18 +39355,10 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Take) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Take) : t_I
   
-  axiom iter_spec: forall self: t_Take. inv self -> inv'0 (iter self)
-  
   predicate produces'0 (self: t_Take) (visited: Seq.seq t_Item) (o: t_Take) =
-    n self = n o + Seq.length visited /\ produces (iter self) visited (iter o)
+    UInt64.t'int (n self) = UInt64.t'int (n o) + Seq.length visited /\ produces (iter self) visited (iter o)
   
   meta "compute_max_steps" 1000000
   
@@ -39413,15 +39408,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_ref
   
   axiom produces_refl_spec: forall self: t_A. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Zip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_A)
-  
   function itera (self: t_Zip) : t_A
-  
-  axiom itera_spec: forall self: t_Zip. inv self -> inv'0 (itera self)
   
   type t_B
   
@@ -39437,11 +39424,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_ref
   
   axiom produces_refl_spec'0: forall self: t_B. produces'0 self (Seq.empty: Seq.seq t_Item'0) self
   
-  predicate inv'1 (_1: t_B)
-  
   function iterb (self: t_Zip) : t_B
-  
-  axiom iterb_spec: forall self: t_Zip. inv self -> inv'1 (iterb self)
   
   predicate produces'1 (self: t_Zip) (visited: Seq.seq tuple) (o: t_Zip) =
     exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
@@ -39489,15 +39472,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_tra
   
   axiom produces_refl_spec: forall self: t_A. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Zip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_A)
-  
   function itera (self: t_Zip) : t_A
-  
-  axiom itera_spec: forall self: t_Zip. inv self -> inv'0 (itera self)
   
   type t_B
   
@@ -39513,11 +39488,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_tra
   
   axiom produces_refl_spec'0: forall self: t_B. produces'0 self (Seq.empty: Seq.seq t_Item'0) self
   
-  predicate inv'1 (_1: t_B)
-  
   function iterb (self: t_Zip) : t_B
-  
-  axiom iterb_spec: forall self: t_Zip. inv self -> inv'1 (iterb self)
   
   predicate produces'1 (self: t_Zip) (visited: Seq.seq tuple) (o: t_Zip) =
     exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
@@ -47563,19 +47534,21 @@ module M_creusot_contracts__std__iter__cloned__qyi7712864753404203214__resolve_c
   
   predicate structural_resolve (_1: t_Cloned)
   
-  predicate inv [@inline:trivial] (_1: t_Cloned) = true
-  
-  meta "rewrite_def" predicate inv
-  
   type t_I
   
-  predicate resolve (_1: t_I)
-  
-  predicate inv'0 (_1: t_I)
+  predicate inv (_1: t_I)
   
   function iter (self: t_Cloned) : t_I
   
-  axiom iter_spec: forall self: t_Cloned. inv self -> inv'0 (iter self)
+  predicate invariant' [@inline:trivial] (self: t_Cloned) = inv (iter self)
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_Cloned)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Cloned [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate resolve (_1: t_I)
   
   predicate resolve'0 [@inline:trivial] (self: t_Cloned) = resolve (iter self)
   
@@ -47585,7 +47558,7 @@ module M_creusot_contracts__std__iter__cloned__qyi7712864753404203214__resolve_c
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Cloned. structural_resolve self /\ inv self
+  goal refines: forall self: t_Cloned. structural_resolve self /\ inv'0 self
       -> structural_resolve self /\ (forall result: (). resolve'0 self -> resolve'0 self)
 end
 module M_creusot_contracts__std__iter__copied__qyi10817769304312191898__resolve_coherence__refines (* <std::iter::Copied<I> as resolve::Resolve> *)
@@ -47597,19 +47570,21 @@ module M_creusot_contracts__std__iter__copied__qyi10817769304312191898__resolve_
   
   predicate structural_resolve (_1: t_Copied)
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
-  
-  meta "rewrite_def" predicate inv
-  
   type t_I
   
-  predicate resolve (_1: t_I)
-  
-  predicate inv'0 (_1: t_I)
+  predicate inv (_1: t_I)
   
   function iter (self: t_Copied) : t_I
   
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
+  predicate invariant' [@inline:trivial] (self: t_Copied) = inv (iter self)
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_Copied)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x = invariant' x
+  
+  predicate resolve (_1: t_I)
   
   predicate resolve'0 [@inline:trivial] (self: t_Copied) = resolve (iter self)
   
@@ -47619,7 +47594,7 @@ module M_creusot_contracts__std__iter__copied__qyi10817769304312191898__resolve_
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Copied. structural_resolve self /\ inv self
+  goal refines: forall self: t_Copied. structural_resolve self /\ inv'0 self
       -> structural_resolve self /\ (forall result: (). resolve'0 self -> resolve'0 self)
 end
 module M_creusot_contracts__std__iter__enumerate__qyi7229971731912667430__resolve_coherence__refines (* <std::iter::Enumerate<I> as resolve::Resolve> *)
@@ -47637,11 +47612,7 @@ module M_creusot_contracts__std__iter__enumerate__qyi7229971731912667430__resolv
   
   predicate resolve (_1: t_I)
   
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Enumerate) : t_I
-  
-  axiom iter_spec: forall self: t_Enumerate. inv self -> inv'0 (iter self)
   
   predicate resolve'0 [@inline:trivial] (self: t_Enumerate) = resolve (iter self)
   
@@ -47663,29 +47634,19 @@ module M_creusot_contracts__std__iter__map__qyi7619436869179474426__resolve_cohe
   
   predicate structural_resolve (_1: t_Map)
   
-  predicate inv [@inline:trivial] (_1: t_Map) = true
-  
-  meta "rewrite_def" predicate inv
+  predicate inv (_1: t_Map)
   
   type t_I
   
   predicate resolve (_1: t_I)
   
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Map) : t_I
-  
-  axiom iter_spec: forall self: t_Map. inv self -> inv'0 (iter self)
   
   type t_F
   
   predicate resolve'0 (_1: t_F)
   
-  predicate inv'1 (_1: t_F)
-  
   function func (self: t_Map) : t_F
-  
-  axiom func_spec: forall self: t_Map. inv self -> inv'1 (func self)
   
   predicate resolve'1 [@inline:trivial] (self: t_Map) = resolve (iter self) /\ resolve'0 (func self)
   
@@ -47707,19 +47668,13 @@ module M_creusot_contracts__std__iter__skip__qyi1800235112549046777__resolve_coh
   
   predicate structural_resolve (_1: t_Skip)
   
-  predicate inv [@inline:trivial] (_1: t_Skip) = true
-  
-  meta "rewrite_def" predicate inv
+  predicate inv (_1: t_Skip)
   
   type t_I
   
   predicate resolve (_1: t_I)
   
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Skip) : t_I
-  
-  axiom iter_spec: forall self: t_Skip. inv self -> inv'0 (iter self)
   
   predicate resolve'0 [@inline:trivial] (self: t_Skip) = resolve (iter self)
   
@@ -47741,19 +47696,13 @@ module M_creusot_contracts__std__iter__take__qyi7846602308660485643__resolve_coh
   
   predicate structural_resolve (_1: t_Take)
   
-  predicate inv [@inline:trivial] (_1: t_Take) = true
-  
-  meta "rewrite_def" predicate inv
+  predicate inv (_1: t_Take)
   
   type t_I
   
   predicate resolve (_1: t_I)
   
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Take) : t_I
-  
-  axiom iter_spec: forall self: t_Take. inv self -> inv'0 (iter self)
   
   predicate resolve'0 [@inline:trivial] (self: t_Take) = resolve (iter self)
   
@@ -50823,7 +50772,7 @@ module M_creusot_contracts__std__deque__qyi7285194934641240501__produces_trans__
               -> produces b bc c
               /\ produces a ab b /\ (forall result: (). produces a (Seq.(++) ab bc) c -> produces a (Seq.(++) ab bc) c)
 end
-module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces_trans__refines (* <std::iter::Cloned<I> as std::iter::Iterator> *)
+module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces_refl__refines (* <std::iter::Cloned<I> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -50848,22 +50797,14 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Cloned) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Cloned) : t_I
   
-  axiom iter_spec: forall self: t_Cloned. inv self -> inv'0 (iter self)
-  
-  predicate inv'1 (_1: t_T)
+  predicate inv (_1: t_T)
   
   predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   predicate resolve [@inline:trivial] (_1: ()) = true
   
@@ -50873,7 +50814,7 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   
   axiom postcondition_fndef'0:
     forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
   
   function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -50905,7 +50846,105 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
   predicate postcondition (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
-      -> (let self_ = args in inv'1 res)
+      -> (let self_ = args in inv res)
+  
+  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
+      = (postcondition self args res /\ resolve self)
+  
+  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut self args res_state res
+      = (postcondition self args res /\ self = res_state)
+  
+  predicate produces'0 (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
+    exists s: Seq.seq t_T. produces (iter self) s (iter o)
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition () (Seq.get s i) (Seq.get visited i))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Cloned. forall result: (). produces'0 self (Seq.empty: Seq.seq t_T) self
+        -> produces'0 self (Seq.empty: Seq.seq t_T) self
+end
+module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces_trans__refines (* <std::iter::Cloned<I> as std::iter::Iterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use mach.int.Int
+  
+  type t_Cloned
+  
+  type t_T
+  
+  type t_I
+  
+  predicate produces (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  
+  function produces_refl (self: t_I) : ()
+  
+  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
+  
+  function iter (self: t_Cloned) : t_I
+  
+  predicate inv (_1: t_T)
+  
+  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
+      -> (let self_ = args in inv res)
+  
+  predicate resolve [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
+      -> (let self_ = args in inv res)
+  
+  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut self args res_state res
+      -> hist_inv self res_state
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
+      -> (let self_ = args in inv res)
   
   function fn_once (self: ()) (args: t_T) (res: t_T) : ()
   
@@ -50933,112 +50972,6 @@ module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces
               /\ produces'0 a ab b
               /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
 end
-module M_creusot_contracts__std__iter__cloned__qyi12959622540969022492__produces_refl__refines (* <std::iter::Cloned<I> as std::iter::Iterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use mach.int.Int
-  
-  type t_Cloned
-  
-  type t_T
-  
-  type t_I
-  
-  predicate produces (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
-  
-  function produces_refl (self: t_I) : ()
-  
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
-  
-  predicate inv [@inline:trivial] (_1: t_Cloned) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  function iter (self: t_Cloned) : t_I
-  
-  axiom iter_spec: forall self: t_Cloned. inv self -> inv'0 (iter self)
-  
-  predicate inv'1 (_1: t_T)
-  
-  predicate postcondition_once (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_once () args res]. postcondition_once () args res
-      -> (let self_ = args in inv'1 res)
-  
-  predicate resolve [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve
-  
-  predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_T, res: t_T [postcondition_mut () args () res]. postcondition_mut () args () res
-      -> (let self_ = args in inv'1 res)
-  
-  function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
-  
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv
-  
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
-  
-  function hist_inv_refl (self: ()) : ()
-  
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
-  
-  function postcondition_mut_hist_inv (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut self args res_state res
-      -> hist_inv self res_state
-  
-  function fn_hist_inv (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
-  
-  predicate postcondition (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef'1: forall args: t_T, res: t_T [postcondition () args res]. postcondition () args res
-      -> (let self_ = args in inv'1 res)
-  
-  function fn_once (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
-      = (postcondition self args res /\ resolve self)
-  
-  function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom fn_mut_spec: forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
-  
-  predicate produces'0 (self: t_Cloned) (visited: Seq.seq t_T) (o: t_Cloned) =
-    exists s: Seq.seq t_T. produces (iter self) s (iter o)
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition () (Seq.get s i) (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Cloned. forall result: (). produces'0 self (Seq.empty: Seq.seq t_T) self
-        -> produces'0 self (Seq.empty: Seq.seq t_T) self
-end
 module M_creusot_contracts__std__iter__copied__qyi13437018464510937253__produces_refl__refines (* <std::iter::Copied<I> as std::iter::Iterator> *)
   type namespace_other
   
@@ -51064,15 +50997,7 @@ module M_creusot_contracts__std__iter__copied__qyi13437018464510937253__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Copied) : t_I
-  
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
   
   predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
     exists s: Seq.seq t_T. produces (iter self) s (iter o)
@@ -51111,15 +51036,7 @@ module M_creusot_contracts__std__iter__copied__qyi13437018464510937253__produces
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_T) self
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Copied) : t_I
-  
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
   
   predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
     exists s: Seq.seq t_T. produces (iter self) s (iter o)
@@ -51190,7 +51107,6 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   
   type t_Enumerate
   
@@ -51198,7 +51114,7 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
-  function n (self: t_Enumerate) : int
+  function n (self: t_Enumerate) : UInt64.t
   
   type t_I
   
@@ -51213,31 +51129,14 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate completed (self: MutBorrow.t t_I)
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Enumerate)
-  
   function iter (self: t_Enumerate) : t_I
   
-  axiom iter_spec: forall self: t_Enumerate. inv'0 self -> inv (iter self)
-  
-  predicate invariant' (self: t_Enumerate) =
-    (forall s: Seq.seq t_Item, i: t_I [produces (iter self) s i]. produces (iter self) s i
-        -> n self + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed i -> produces i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = invariant' x
-  
   predicate produces'0 (self: t_Enumerate) (visited: Seq.seq tuple) (o: t_Enumerate) =
-    Seq.length visited = n o - n self
+    Seq.length visited = UInt64.t'int (n o) - UInt64.t'int (n self)
     /\ (exists s: Seq.seq t_Item. produces (iter self) s (iter o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = n self + i /\ (Seq.get visited i).f1 = Seq.get s i))
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int (n self) + i /\ (Seq.get visited i).f1 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
@@ -51258,7 +51157,6 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   
   type t_Enumerate
   
@@ -51266,7 +51164,7 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
-  function n (self: t_Enumerate) : int
+  function n (self: t_Enumerate) : UInt64.t
   
   type t_I
   
@@ -51281,31 +51179,14 @@ module M_creusot_contracts__std__iter__enumerate__qyi17760969447503171583__produ
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate completed (self: MutBorrow.t t_I)
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Enumerate)
-  
   function iter (self: t_Enumerate) : t_I
   
-  axiom iter_spec: forall self: t_Enumerate. inv'0 self -> inv (iter self)
-  
-  predicate invariant' (self: t_Enumerate) =
-    (forall s: Seq.seq t_Item, i: t_I [produces (iter self) s i]. produces (iter self) s i
-        -> n self + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed i -> produces i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = invariant' x
-  
   predicate produces'0 (self: t_Enumerate) (visited: Seq.seq tuple) (o: t_Enumerate) =
-    Seq.length visited = n o - n self
+    Seq.length visited = UInt64.t'int (n o) - UInt64.t'int (n self)
     /\ (exists s: Seq.seq t_Item. produces (iter self) s (iter o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = n self + i /\ (Seq.get visited i).f1 = Seq.get s i))
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int (n self) + i /\ (Seq.get visited i).f1 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
@@ -51330,6 +51211,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_r
   type t_F
   
   predicate precondition (self: t_F) (args: t_Item)
+  
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
+  function func (self: t_Filter) : t_F
   
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
@@ -51358,21 +51243,12 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_r
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
   
-  predicate inv (_1: t_Filter)
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
-  
-  predicate inv'0 (_1: t_F)
-  
-  function func (self: t_Filter) : t_F
-  
-  axiom func_spec: forall self: t_Filter. inv self -> inv'0 (func self)
+  predicate private_invariant (f: t_Filter) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -51387,14 +51263,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Filter) : t_I
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -51428,6 +51300,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
   
   predicate precondition (self: t_F) (args: t_Item)
   
+  predicate no_precondition (_1: t_F) = forall f: t_F, i: t_Item. precondition f i
+  
+  function func (self: t_Filter) : t_F
+  
   predicate postcondition_once (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve (_1: t_F)
@@ -51455,21 +51331,12 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
     forall self: t_F, args: t_Item, res_state: t_F, res: bool. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate invariant' (self: t_Filter) =
-    forall f: t_F, i: t_Item. precondition f i
-      /\ (forall f'0: t_F, g: t_F. hist_inv f'0 g -> f'0 = g)
-      /\ (forall f1: t_F, f2: t_F, i'0: t_Item. not (postcondition_mut f1 i'0 f2 true
-        /\ postcondition_mut f1 i'0 f2 false))
+  predicate immutable (_1: t_F) = forall f: t_F, g: t_F. hist_inv f g -> f = g
   
-  predicate inv (_1: t_Filter)
+  predicate precise (_1: t_F) =
+    forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut f1 i f2 true /\ postcondition_mut f1 i f2 false)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
-  
-  predicate inv'0 (_1: t_F)
-  
-  function func (self: t_Filter) : t_F
-  
-  axiom func_spec: forall self: t_Filter. inv self -> inv'0 (func self)
+  predicate private_invariant (f: t_Filter) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -51484,14 +51351,10 @@ module M_creusot_contracts__std__iter__filter__qyi990465010469908032__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Filter) : t_I
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_Filter) (visited: Seq.seq t_Item) (succ: t_Filter) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -51533,7 +51396,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   predicate no_precondition (f: t_F) = forall i: t_Item. precondition f i
   
-  predicate inv (_1: t_F)
+  function func (self: t_FilterMap) : t_F
   
   type t_Option = C_None | C_Some t_B
   
@@ -51570,15 +51433,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
     forall f2: t_F, i: t_Item. not ((exists b: t_B. postcondition_mut f1 i f2 (C_Some b))
       /\ postcondition_mut f1 i f2 (C_None))
   
-  predicate inv'0 (_1: t_FilterMap)
-  
-  function func (self: t_FilterMap) : t_F
-  
-  axiom func_spec: forall self: t_FilterMap. inv'0 self -> inv (func self)
-  
-  predicate invariant' (self: t_FilterMap) = no_precondition (func self) /\ immutable (func self) /\ precise (func self)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv'0 x]. inv'0 x = invariant' x
+  predicate private_invariant (f: t_FilterMap) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -51593,14 +51448,10 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_FilterMap) : t_I
   
-  axiom iter_spec: forall self: t_FilterMap. inv'0 self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_FilterMap) (visited: Seq.seq t_B) (succ: t_FilterMap) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -51639,7 +51490,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   predicate no_precondition (f: t_F) = forall i: t_Item. precondition f i
   
-  predicate inv (_1: t_F)
+  function func (self: t_FilterMap) : t_F
   
   type t_Option = C_None | C_Some t_B
   
@@ -51676,15 +51527,7 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
     forall f2: t_F, i: t_Item. not ((exists b: t_B. postcondition_mut f1 i f2 (C_Some b))
       /\ postcondition_mut f1 i f2 (C_None))
   
-  predicate inv'0 (_1: t_FilterMap)
-  
-  function func (self: t_FilterMap) : t_F
-  
-  axiom func_spec: forall self: t_FilterMap. inv'0 self -> inv (func self)
-  
-  predicate invariant' (self: t_FilterMap) = no_precondition (func self) /\ immutable (func self) /\ precise (func self)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv'0 x]. inv'0 x = invariant' x
+  predicate private_invariant (f: t_FilterMap) = no_precondition (func f) /\ immutable (func f) /\ precise (func f)
   
   type t_I
   
@@ -51699,14 +51542,10 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_FilterMap) : t_I
   
-  axiom iter_spec: forall self: t_FilterMap. inv'0 self -> inv'1 (iter self)
-  
   predicate produces'0 (self: t_FilterMap) (visited: Seq.seq t_B) (succ: t_FilterMap) =
-    invariant' self
+    private_invariant self
     -> hist_inv (func self) (func succ)
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces (iter self) s (iter succ)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
@@ -51728,6 +51567,50 @@ module M_creusot_contracts__std__iter__filter_map__qyi11148334412739605610__prod
               /\ produces'0 a ab b
               /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
 end
+module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_refl__refines (* <std::iter::Fuse<I> as std::iter::Iterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  
+  type t_Fuse
+  
+  type t_Item
+  
+  type t_I
+  
+  type t_Option = C_None | C_Some t_I
+  
+  function view (self: t_Fuse) : t_Option
+  
+  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  
+  function produces_refl (self: t_I) : ()
+  
+  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
+    match view self with
+      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ view other = view self
+      | C_Some i -> match view other with
+        | C_Some i2 -> produces i prod i2
+        | C_None -> false
+        end
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Fuse. forall result: (). produces'0 self (Seq.empty: Seq.seq t_Item) self
+        -> produces'0 self (Seq.empty: Seq.seq t_Item) self
+end
 module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_trans__refines (* <std::iter::Fuse<I> as std::iter::Iterator> *)
   type namespace_other
   
@@ -51743,25 +51626,7 @@ module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_tr
   
   type t_Option = C_None | C_Some t_I
   
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
   function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -51793,68 +51658,6 @@ module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_tr
               -> produces'0 b bc c
               /\ produces'0 a ab b
               /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
-end
-module M_creusot_contracts__std__iter__fuse__qyi3534357438560453877__produces_refl__refines (* <std::iter::Fuse<I> as std::iter::Iterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_Fuse
-  
-  type t_Item
-  
-  type t_I
-  
-  type t_Option = C_None | C_Some t_I
-  
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
-  function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
-  
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
-  
-  function produces_refl (self: t_I) : ()
-  
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match view self with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ view other = view self
-      | C_Some i -> match view other with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
-        end
-      end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Fuse. forall result: (). produces'0 self (Seq.empty: Seq.seq t_Item) self
-        -> produces'0 self (Seq.empty: Seq.seq t_Item) self
 end
 module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl__refines (* <std::iter::Map<I, F> as std::iter::Iterator> *)
   type namespace_other
@@ -51900,15 +51703,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate inv [@inline:trivial] (_1: t_Map) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_F)
-  
   function func (self: t_Map) : t_F
-  
-  axiom func_spec: forall self: t_Map. inv self -> inv'0 (func self)
   
   type t_I
   
@@ -51923,11 +51718,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_refl
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Map) : t_I
-  
-  axiom iter_spec: forall self: t_Map. inv self -> inv'1 (iter self)
   
   predicate precondition (self: t_F) (args: t_Item)
   
@@ -52000,15 +51791,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_tran
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut self args res_state res
       -> hist_inv self res_state
   
-  predicate inv [@inline:trivial] (_1: t_Map) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_F)
-  
   function func (self: t_Map) : t_F
-  
-  axiom func_spec: forall self: t_Map. inv self -> inv'0 (func self)
   
   type t_I
   
@@ -52023,11 +51806,7 @@ module M_creusot_contracts__std__iter__map__qyi306403796899090344__produces_tran
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv'1 (_1: t_I)
-  
   function iter (self: t_Map) : t_I
-  
-  axiom iter_spec: forall self: t_Map. inv self -> inv'1 (iter self)
   
   predicate precondition (self: t_F) (args: t_Item)
   
@@ -52622,50 +52401,6 @@ module M_creusot_contracts__std__iter__repeat__qyi13156433517158091792__produces
               -> produces b bc c
               /\ produces a ab b /\ (forall result: (). produces a (Seq.(++) ab bc) c -> produces a (Seq.(++) ab bc) c)
 end
-module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_refl__refines (* <std::iter::Rev<I> as std::iter::Iterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_Rev
-  
-  type t_Item
-  
-  type t_I
-  
-  predicate produces_back (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_back_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_back_trans_spec:
-    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_back a ab b
-      -> produces_back b bc c -> produces_back a (Seq.(++) ab bc) c
-  
-  function produces_back_refl (self: t_I) : ()
-  
-  axiom produces_back_refl_spec: forall self: t_I. produces_back self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate inv [@inline:trivial] (_1: t_Rev) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  function iter (self: t_Rev) : t_I
-  
-  axiom iter_spec: forall self: t_Rev. inv self -> inv'0 (iter self)
-  
-  predicate produces (self: t_Rev) (visited: Seq.seq t_Item) (o: t_Rev) = produces_back (iter self) visited (iter o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Rev. forall result: (). produces self (Seq.empty: Seq.seq t_Item) self
-        -> produces self (Seq.empty: Seq.seq t_Item) self
-end
 module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_trans__refines (* <std::iter::Rev<I> as std::iter::Iterator> *)
   type namespace_other
   
@@ -52691,15 +52426,7 @@ module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_tra
   
   axiom produces_back_refl_spec: forall self: t_I. produces_back self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Rev) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Rev) : t_I
-  
-  axiom iter_spec: forall self: t_Rev. inv self -> inv'0 (iter self)
   
   predicate produces (self: t_Rev) (visited: Seq.seq t_Item) (o: t_Rev) = produces_back (iter self) visited (iter o)
   
@@ -52713,24 +52440,56 @@ module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_tra
               -> produces b bc c
               /\ produces a ab b /\ (forall result: (). produces a (Seq.(++) ab bc) c -> produces a (Seq.(++) ab bc) c)
 end
+module M_creusot_contracts__std__iter__rev__qyi8570485907461319344__produces_refl__refines (* <std::iter::Rev<I> as std::iter::Iterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  
+  type t_Rev
+  
+  type t_Item
+  
+  type t_I
+  
+  predicate produces_back (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_back_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_back_trans_spec:
+    forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_back a ab b
+      -> produces_back b bc c -> produces_back a (Seq.(++) ab bc) c
+  
+  function produces_back_refl (self: t_I) : ()
+  
+  axiom produces_back_refl_spec: forall self: t_I. produces_back self (Seq.empty: Seq.seq t_Item) self
+  
+  function iter (self: t_Rev) : t_I
+  
+  predicate produces (self: t_Rev) (visited: Seq.seq t_Item) (o: t_Rev) = produces_back (iter self) visited (iter o)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Rev. forall result: (). produces self (Seq.empty: Seq.seq t_Item) self
+        -> produces self (Seq.empty: Seq.seq t_Item) self
+end
 module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_trans__refines (* <std::iter::Skip<I> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Skip
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Skip) : int
-  
-  axiom n_spec: forall self: t_Skip. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Skip) : UInt64.t
   
   type t_I
   
@@ -52745,23 +52504,15 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Skip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Skip) : t_I
-  
-  axiom iter_spec: forall self: t_Skip. inv self -> inv'0 (iter self)
   
   predicate resolve (_1: t_Item)
   
   predicate produces'0 (self: t_Skip) (visited: Seq.seq t_Item) (o: t_Skip) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
-    \/ n o = 0
+    \/ UInt64.t'int (n o) = 0
     /\ Seq.length visited > 0
-    /\ (exists s: Seq.seq t_Item. Seq.length s = n self
+    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n self)
       /\ produces (iter self) (Seq.(++) s visited) (iter o)
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve (Seq.get s i)))
   
@@ -52782,18 +52533,14 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_r
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Skip
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Skip) : int
-  
-  axiom n_spec: forall self: t_Skip. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Skip) : UInt64.t
   
   type t_I
   
@@ -52808,23 +52555,15 @@ module M_creusot_contracts__std__iter__skip__qyi13252230069947492373__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Skip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Skip) : t_I
-  
-  axiom iter_spec: forall self: t_Skip. inv self -> inv'0 (iter self)
   
   predicate resolve (_1: t_Item)
   
   predicate produces'0 (self: t_Skip) (visited: Seq.seq t_Item) (o: t_Skip) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
-    \/ n o = 0
+    \/ UInt64.t'int (n o) = 0
     /\ Seq.length visited > 0
-    /\ (exists s: Seq.seq t_Item. Seq.length s = n self
+    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n self)
       /\ produces (iter self) (Seq.(++) s visited) (iter o)
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve (Seq.get s i)))
   
@@ -52841,18 +52580,14 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_r
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Take
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Take) : int
-  
-  axiom n_spec: forall self: t_Take. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Take) : UInt64.t
   
   type t_I
   
@@ -52867,18 +52602,10 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_r
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Take) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Take) : t_I
   
-  axiom iter_spec: forall self: t_Take. inv self -> inv'0 (iter self)
-  
   predicate produces'0 (self: t_Take) (visited: Seq.seq t_Item) (o: t_Take) =
-    n self = n o + Seq.length visited /\ produces (iter self) visited (iter o)
+    UInt64.t'int (n self) = UInt64.t'int (n o) + Seq.length visited /\ produces (iter self) visited (iter o)
   
   meta "compute_max_steps" 1000000
   
@@ -52893,18 +52620,14 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_t
   type t_Namespace = Other namespace_other
   
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use mach.int.Int
   
   type t_Take
   
   type t_Item
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function n (self: t_Take) : int
-  
-  axiom n_spec: forall self: t_Take. n self >= 0 /\ n self <= UInt64.t'int const_MAX
+  function n (self: t_Take) : UInt64.t
   
   type t_I
   
@@ -52919,18 +52642,10 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_t
   
   axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Take) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
   function iter (self: t_Take) : t_I
   
-  axiom iter_spec: forall self: t_Take. inv self -> inv'0 (iter self)
-  
   predicate produces'0 (self: t_Take) (visited: Seq.seq t_Item) (o: t_Take) =
-    n self = n o + Seq.length visited /\ produces (iter self) visited (iter o)
+    UInt64.t'int (n self) = UInt64.t'int (n o) + Seq.length visited /\ produces (iter self) visited (iter o)
   
   meta "compute_max_steps" 1000000
   
@@ -52942,83 +52657,6 @@ module M_creusot_contracts__std__iter__take__qyi10011901481142542325__produces_t
               -> produces'0 b bc c
               /\ produces'0 a ab b
               /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
-end
-module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_trans__refines (* <std::iter::Zip<A, B> as std::iter::Iterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use mach.int.Int
-  
-  type t_Zip
-  
-  type t_Item
-  
-  type t_Item'0
-  
-  type tuple = { f0: t_Item; f1: t_Item'0 }
-  
-  type t_A
-  
-  predicate produces (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
-  
-  function produces_trans (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
-  
-  axiom produces_trans_spec: forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
-  
-  function produces_refl (self: t_A) : ()
-  
-  axiom produces_refl_spec: forall self: t_A. produces self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate inv [@inline:trivial] (_1: t_Zip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_A)
-  
-  function itera (self: t_Zip) : t_A
-  
-  axiom itera_spec: forall self: t_Zip. inv self -> inv'0 (itera self)
-  
-  type t_B
-  
-  predicate produces'0 (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
-  
-  function produces_trans'0 (a: t_B) (ab: Seq.seq t_Item'0) (b: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
-  
-  axiom produces_trans_spec'0:
-    forall a: t_B, ab: Seq.seq t_Item'0, b: t_B, bc: Seq.seq t_Item'0, c: t_B. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
-  
-  function produces_refl'0 (self: t_B) : ()
-  
-  axiom produces_refl_spec'0: forall self: t_B. produces'0 self (Seq.empty: Seq.seq t_Item'0) self
-  
-  predicate inv'1 (_1: t_B)
-  
-  function iterb (self: t_Zip) : t_B
-  
-  axiom iterb_spec: forall self: t_Zip. inv self -> inv'1 (iterb self)
-  
-  predicate produces'1 (self: t_Zip) (visited: Seq.seq tuple) (o: t_Zip) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
-      /\ produces (itera self) p1 (itera o) /\ produces'0 (iterb self) p2 (iterb o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Zip. forall ab: Seq.seq tuple. forall b: t_Zip. forall bc: Seq.seq tuple. forall c: t_Zip. produces'1 b bc c
-                /\ produces'1 a ab b
-              -> produces'1 b bc c
-              /\ produces'1 a ab b
-              /\ (forall result: (). produces'1 a (Seq.(++) ab bc) c -> produces'1 a (Seq.(++) ab bc) c)
 end
 module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_refl__refines (* <std::iter::Zip<A, B> as std::iter::Iterator> *)
   type namespace_other
@@ -53049,15 +52687,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_ref
   
   axiom produces_refl_spec: forall self: t_A. produces self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv [@inline:trivial] (_1: t_Zip) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_A)
-  
   function itera (self: t_Zip) : t_A
-  
-  axiom itera_spec: forall self: t_Zip. inv self -> inv'0 (itera self)
   
   type t_B
   
@@ -53073,11 +52703,7 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_ref
   
   axiom produces_refl_spec'0: forall self: t_B. produces'0 self (Seq.empty: Seq.seq t_Item'0) self
   
-  predicate inv'1 (_1: t_B)
-  
   function iterb (self: t_Zip) : t_B
-  
-  axiom iterb_spec: forall self: t_Zip. inv self -> inv'1 (iterb self)
   
   predicate produces'1 (self: t_Zip) (visited: Seq.seq tuple) (o: t_Zip) =
     exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
@@ -53092,6 +52718,71 @@ module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_ref
   
   goal refines: forall self: t_Zip. forall result: (). produces'1 self (Seq.empty: Seq.seq tuple) self
         -> produces'1 self (Seq.empty: Seq.seq tuple) self
+end
+module M_creusot_contracts__std__iter__zip__qyi9055347977946847871__produces_trans__refines (* <std::iter::Zip<A, B> as std::iter::Iterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use mach.int.Int
+  
+  type t_Zip
+  
+  type t_Item
+  
+  type t_Item'0
+  
+  type tuple = { f0: t_Item; f1: t_Item'0 }
+  
+  type t_A
+  
+  predicate produces (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+  
+  function produces_trans (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+  
+  axiom produces_trans_spec: forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces a ab b
+      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  
+  function produces_refl (self: t_A) : ()
+  
+  axiom produces_refl_spec: forall self: t_A. produces self (Seq.empty: Seq.seq t_Item) self
+  
+  function itera (self: t_Zip) : t_A
+  
+  type t_B
+  
+  predicate produces'0 (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
+  
+  function produces_trans'0 (a: t_B) (ab: Seq.seq t_Item'0) (b: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
+  
+  axiom produces_trans_spec'0:
+    forall a: t_B, ab: Seq.seq t_Item'0, b: t_B, bc: Seq.seq t_Item'0, c: t_B. produces'0 a ab b
+      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  
+  function produces_refl'0 (self: t_B) : ()
+  
+  axiom produces_refl_spec'0: forall self: t_B. produces'0 self (Seq.empty: Seq.seq t_Item'0) self
+  
+  function iterb (self: t_Zip) : t_B
+  
+  predicate produces'1 (self: t_Zip) (visited: Seq.seq tuple) (o: t_Zip) =
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
+      /\ Seq.length p2 = Seq.length visited
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
+      /\ produces (itera self) p1 (itera o) /\ produces'0 (iterb self) p2 (iterb o)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: t_Zip. forall ab: Seq.seq tuple. forall b: t_Zip. forall bc: Seq.seq tuple. forall c: t_Zip. produces'1 b bc c
+                /\ produces'1 a ab b
+              -> produces'1 b bc c
+              /\ produces'1 a ab b
+              /\ (forall result: (). produces'1 a (Seq.(++) ab bc) c -> produces'1 a (Seq.(++) ab bc) c)
 end
 module M_creusot_contracts__std__iter__qyi15776886527438550973__produces_refl__refines (* <&mut I as std::iter::Iterator> *)
   type namespace_other
@@ -70827,25 +70518,7 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused__
   
   type t_Option = C_None | C_Some t_I
   
-  predicate inv [@inline:trivial] (_1: t_Fuse) = true
-  
-  meta "rewrite_def" predicate inv
-  
-  predicate inv'0 (_1: t_I)
-  
-  predicate inv'1 (_1: t_Option)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'0 a_0
-        end
-  
   function view (self: t_Fuse) : t_Option
-  
-  axiom view_spec: forall self: t_Fuse. inv self -> inv'1 (view self)
-  
-  axiom view_spec'0: forall self: t_Fuse. forall other: t_Fuse. view self = view other -> self = other
   
   predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -70893,8 +70566,7 @@ module M_creusot_contracts__std__iter__fuse__qyi12953744680688287360__is_fused__
             /\ completed'0 self
           -> produces'0 self.final steps next
           /\ completed'0 self
-          /\ (forall result: (). steps = (Seq.empty: Seq.seq t_Item) /\ self.final = next
-            -> steps = (Seq.empty: Seq.seq t_Item) /\ self.final = next)
+          /\ (forall result: (). steps = (Seq.empty: Seq.seq t_Item) -> steps = (Seq.empty: Seq.seq t_Item))
 end
 module M_creusot_contracts__std__iter__range__qyi9685214752154132849__produces_back_refl__refines (* <std::ops::Range<Idx> as std::iter::DoubleEndedIterator> *)
   type namespace_other

@@ -10,33 +10,32 @@ pub trait FilterMapExt<I, F> {
 }
 
 impl<I, F> FilterMapExt<I, F> for FilterMap<I, F> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
         dead
     }
 }
 
 impl<B, I: Iterator, F: FnMut(I::Item) -> Option<B>> Invariant for FilterMap<I, F> {
-    #[logic(prophetic)]
+    #[logic(prophetic, open, inline)]
     fn invariant(self) -> bool {
-        pearlite! {
-            // trivial precondition: simplification for sake of proof complexity
-            no_precondition(self.func()) &&
-            // immutable state: simplification for sake of proof complexity
-            immutable(self.func()) &&
-            // precision of postcondition
-            precise(self.func())
-        }
+        inv(self.iter()) && inv(self.func()) && private_invariant(self)
     }
+}
+
+#[logic(prophetic)]
+pub fn private_invariant<B, I: Iterator, F: FnMut(I::Item) -> Option<B>>(f: FilterMap<I, F>) -> bool {
+    // trivial precondition: simplification for sake of proof complexity
+    no_precondition(f.func()) &&
+    // immutable state: simplification for sake of proof complexity
+    immutable(f.func()) &&
+    // precision of postcondition
+    precise(f.func())
 }
 
 /// Asserts that `f` has no precondition: any closure state can be called with any input value
@@ -76,7 +75,7 @@ where
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            self.invariant() ==>
+            private_invariant(self) ==>
             self.func().hist_inv(succ.func()) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values

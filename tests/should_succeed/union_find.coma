@@ -1138,13 +1138,23 @@ module M_union_find__implementation__make
       {result = get self.current key}
       (! return {result}) ]
   
+  predicate resolve'0 (_1: t_PtrOwn)
+  
+  predicate resolve'1 (_1: t_Option)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
+  
   function insert'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element = Fset.add e self
   
   meta "rewrite_def" function insert'0
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_UnionFind) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_UnionFind) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'1 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -1219,7 +1229,8 @@ module M_union_find__implementation__make
             s1)
       | s1 = insert_ghost {_44} {elt} {perm'0} (fun (_ret: t_Option) -> [ &_43 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'16 _43} s3
-      | s3 = bb17 ]
+      | s3 = -{resolve'1 _43}- s4
+      | s4 = bb17 ]
     | bb17 = s0 [ s0 = [ &_47 <- insert'0 uf'0.current.t_UnionFind__0.t_UFInner__domain elt ] s1 | s1 = bb18 ]
     | bb18 = s0
       [ s0 =
@@ -1246,7 +1257,7 @@ module M_union_find__implementation__make
         [ &uf'0 <- { uf'0 with current = { t_UnionFind__0 = { uf'0.current.t_UnionFind__0 with t_UFInner__roots = _53 } } } ]
         s1
       | s1 = {[@expl:type invariant] inv'9 uf'0} s2
-      | s2 = -{resolve'0 uf'0}- s3
+      | s2 = -{resolve'2 uf'0}- s3
       | s3 = new'1 {_19} (fun (_ret: ()) -> [ &_18 <- _ret ] s4)
       | s4 = bb22 ]
     | bb22 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb23 ]
@@ -4526,6 +4537,12 @@ module M_union_find__example
     {[@expl:find requires] in_domain uf.current elem}
     any [ return (result: t_Element) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
   
+  predicate resolve (_1: t_UnionFind)
+  
+  predicate resolve'0 [@inline:trivial] (_1: t_UnionFind) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -4601,18 +4618,19 @@ module M_union_find__example
     | bb33 = s0 [ s0 = [ &_56 <- _58 = _63 ] s1 | s1 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
     | bb34 = s0
       [ s0 = {[@expl:type invariant] inv'0 uf} s1
-      | s1 = borrow {uf} (fun (_ret: t_UnionFind) -> [ &_72 <- _ret ] s2)
-      | s2 = bb36 ]
+      | s1 = -{resolve'0 uf}- s2
+      | s2 = borrow {uf} (fun (_ret: t_UnionFind) -> [ &_72 <- _ret ] s3)
+      | s3 = bb36 ]
     | bb36 = s0 [ s0 = get {_72} {z} (fun (_ret: Int32.t) -> [ &_71 <- _ret ] s1) | s1 = bb37 ]
     | bb37 = s0
       [ s0 = [ &_69 <- _71 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
     | bb38 = return {_0}
     | bb39 = {false} any
-    | bb35 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ] ]
+    | bb35 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & uf: t_UnionFind = Any.any_l ()
     | & x: t_Element = Any.any_l ()

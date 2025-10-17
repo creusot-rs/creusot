@@ -19,9 +19,7 @@ module M_collections__roundtrip_hashmap_into_iter
   let rec into_iter (self_: t_HashMap) (return (x: t_IntoIter)) = any
     [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: t_IntoIter) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_IntoIter)
   
   type t_K
   
@@ -182,9 +180,7 @@ module M_collections__roundtrip_hashmap_iter
   
   type t_HashMap'0
   
-  predicate resolve [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_Iter)
   
   type t_K
   
@@ -413,9 +409,7 @@ module M_collections__roundtrip_hashmap_iter_mut
   
   type t_HashMap'0
   
-  predicate resolve [@inline:trivial] (_1: t_IterMut) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_IterMut)
   
   type t_K
   
@@ -553,9 +547,7 @@ module M_collections__roundtrip_hashset_into_iter
   let rec into_iter (self_: t_HashSet) (return (x: t_IntoIter)) = any
     [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: t_IntoIter) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_IntoIter)
   
   type t_T
   
@@ -648,9 +640,7 @@ module M_collections__roundtrip_hashset_iter
   
   type t_HashSet'0
   
-  predicate resolve [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_Iter)
   
   type t_T
   
@@ -749,24 +739,24 @@ module M_collections__hashset_intersection
   
   type t_Copied
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
+  predicate inv [@inline:trivial] (_1: t_Intersection) = true
   
   meta "rewrite_def" predicate inv
   
-  predicate inv'0 [@inline:trivial] (_1: t_Intersection) = true
-  
-  meta "rewrite_def" predicate inv'0
-  
   function iter (self: t_Copied) : t_Intersection
   
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
+  predicate invariant' [@inline:trivial] (self: t_Copied) = inv (iter self)
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_Copied)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x = invariant' x
   
   let rec copied (self_: t_Intersection) (return (x: t_Copied)) = any
-    [ return (result: t_Copied) -> {iter result = self_} (! return {result}) ]
+    [ return (result: t_Copied) -> {inv'0 result} {iter result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: t_Intersection) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_Intersection)
   
   predicate resolve'0 [@inline:trivial] (self: t_Copied) = resolve (iter self)
   
@@ -859,7 +849,8 @@ module M_collections__hashset_intersection
   predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet) =
     forall x: t_DeepModelTy. contains (view'0 res) x = (exists x1: t_T. deep_model x1 = x /\ contains'1 prod x1)
   
-  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = any
+  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: t_HashSet) -> {exists done': MutBorrow.t t_Copied, prod: Seq.seq t_T. resolve'1 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
       (! return {result}) ]
@@ -904,24 +895,24 @@ module M_collections__hashset_difference
   
   type t_Copied
   
-  predicate inv [@inline:trivial] (_1: t_Copied) = true
+  predicate inv [@inline:trivial] (_1: t_Difference) = true
   
   meta "rewrite_def" predicate inv
   
-  predicate inv'0 [@inline:trivial] (_1: t_Difference) = true
-  
-  meta "rewrite_def" predicate inv'0
-  
   function iter (self: t_Copied) : t_Difference
   
-  axiom iter_spec: forall self: t_Copied. inv self -> inv'0 (iter self)
+  predicate invariant' [@inline:trivial] (self: t_Copied) = inv (iter self)
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_Copied)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x = invariant' x
   
   let rec copied (self_: t_Difference) (return (x: t_Copied)) = any
-    [ return (result: t_Copied) -> {iter result = self_} (! return {result}) ]
+    [ return (result: t_Copied) -> {inv'0 result} {iter result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: t_Difference) = true
-  
-  meta "rewrite_def" predicate resolve
+  predicate resolve (_1: t_Difference)
   
   predicate resolve'0 [@inline:trivial] (self: t_Copied) = resolve (iter self)
   
@@ -1014,7 +1005,8 @@ module M_collections__hashset_difference
   predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet) =
     forall x: t_DeepModelTy. contains (view'0 res) x = (exists x1: t_T. deep_model x1 = x /\ contains'1 prod x1)
   
-  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = any
+  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: t_HashSet) -> {exists done': MutBorrow.t t_Copied, prod: Seq.seq t_T. resolve'1 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
       (! return {result}) ]

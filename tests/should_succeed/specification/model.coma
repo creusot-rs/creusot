@@ -4,6 +4,8 @@ module M_model__test_arc
   
   type t_Arc
   
+  predicate resolve (_1: t_Arc)
+  
   function view [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function view
@@ -16,13 +18,16 @@ module M_model__test_arc
   
   let rec test_arc (a: t_Arc) (return (x: ())) = {[@expl:test_arc requires] view (view'0 a) = 0}
     (! bb0
-    [ bb0 = bb1 | bb1 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = -{resolve a}- s1 | s1 = bb1 ] | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & a: t_Arc = a ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_model__test_rc
   use creusot.prelude.Any
   use creusot.int.UInt64
   
   type t_Rc
+  
+  predicate resolve (_1: t_Rc)
   
   function view [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -36,5 +41,6 @@ module M_model__test_rc
   
   let rec test_rc (v: t_Rc) (return (x: ())) = {[@expl:test_rc requires] view (view'0 v) = 0}
     (! bb0
-    [ bb0 = bb1 | bb1 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = -{resolve v}- s1 | s1 = bb1 ] | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Rc = v ])
+    [ return (result: ()) -> (! return {result}) ]
 end

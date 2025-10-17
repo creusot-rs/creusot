@@ -9,6 +9,8 @@ module M_string__test_string_len
   
   type t_String
   
+  predicate resolve (_1: t_String)
+  
   function tail (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
   function flat_map (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
@@ -39,8 +41,8 @@ module M_string__test_string_len
     = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_string_len requires #1] to_utf8 (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 = len {s} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]
-    [ & _0: UInt64.t = Any.any_l () | & s: t_String = s ])
+    [ bb0 = s0 [ s0 = -{resolve s}- s1 | s1 = len {s} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s2) | s2 = bb2 ]
+    | bb2 = return {_0} ] [ & _0: UInt64.t = Any.any_l () | & s: t_String = s ])
     [ return (result: UInt64.t) -> {[@expl:test_string_len ensures] UInt64.t'int result = 2} (! return {result}) ]
 end
 module M_string__test_str_len

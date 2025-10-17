@@ -65,7 +65,7 @@ pub trait FusedIterator: Iterator {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::empty() && ^self == next)]
+    #[ensures(steps == Seq::empty())]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
@@ -73,6 +73,6 @@ impl<I: Iterator> FusedIterator for Fuse<I> {
     #[logic(open, law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::empty() && ^self == next)]
+    #[ensures(steps == Seq::empty())]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
 }

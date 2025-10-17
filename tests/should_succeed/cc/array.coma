@@ -82,6 +82,8 @@ module M_array__test_array
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'2 self_ = deep_model'2 rhs)} (! return {result}) ]
   
+  predicate resolve'0 (_1: t_Iter)
+  
   type t_IntoIter
   
   predicate inv [@inline:trivial] (_1: Seq.seq Int32.t) = true
@@ -117,12 +119,12 @@ module M_array__test_array
   
   axiom produces_refl_spec'0: forall self: t_IntoIter. produces'0 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'1
   
   predicate completed'0 (self: MutBorrow.t t_IntoIter) =
-    resolve'0 self /\ view'0 self.current = (Seq.empty: Seq.seq Int32.t)
+    resolve'1 self /\ view'0 self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'1)) = any
     [ return (result: t_Option'1) -> {match result with
@@ -146,6 +148,8 @@ module M_array__test_array
   
   let rec eq'0 (self_: t_Option'1) (rhs: t_Option'1) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'4 self_ = deep_model'4 rhs)} (! return {result}) ]
+  
+  predicate resolve'2 (_1: t_IntoIter)
   
   type t_AssertKind = C_Eq | C_Ne | C_Match
   
@@ -207,15 +211,16 @@ module M_array__test_array
       | s1 = next {_55} (fun (_ret: t_Option) -> [ &_54 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = s0
-      [ s0 = bb0'0
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
-        [ _const_ret (_const: t_Option) -> [ &_118 <- _const ] s1 ]
-      | s1 = [ &_52 <- { f0 = _54; f1 = _118 } ] s2
-      | s2 = [ &left_val'1 <- _52.f0 ] s3
-      | s3 = [ &right_val'1 <- _52.f1 ] s4
-      | s4 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_60 <- _ret ] s5)
-      | s5 = bb11 ]
+        [ _const_ret (_const: t_Option) -> [ &_118 <- _const ] s2 ]
+      | s2 = [ &_52 <- { f0 = _54; f1 = _118 } ] s3
+      | s3 = [ &left_val'1 <- _52.f0 ] s4
+      | s4 = [ &right_val'1 <- _52.f1 ] s5
+      | s5 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_60 <- _ret ] s6)
+      | s6 = bb11 ]
     | bb11 = any [ br0 -> {_60 = false} (! bb13) | br1 -> {_60} (! bb12) ]
     | bb12 = s0
       [ s0 = any
@@ -247,15 +252,16 @@ module M_array__test_array
       | s1 = next'0 {_99} (fun (_ret: t_Option'1) -> [ &_98 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = s0
-      [ s0 = bb0'0
+      [ s0 = -{resolve'2 b}- s1
+      | s1 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None'1 ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option'1 = Any.any_l () | & _1: t_Option'1 = Any.any_l () ]
-        [ _const_ret (_const: t_Option'1) -> [ &_116 <- _const ] s1 ]
-      | s1 = [ &_96 <- { f0'0 = _98; f1'0 = _116 } ] s2
-      | s2 = [ &left_val'3 <- _96.f0'0 ] s3
-      | s3 = [ &right_val'3 <- _96.f1'0 ] s4
-      | s4 = eq'0 {left_val'3} {right_val'3} (fun (_ret: bool) -> [ &_104 <- _ret ] s5)
-      | s5 = bb20 ]
+        [ _const_ret (_const: t_Option'1) -> [ &_116 <- _const ] s2 ]
+      | s2 = [ &_96 <- { f0'0 = _98; f1'0 = _116 } ] s3
+      | s3 = [ &left_val'3 <- _96.f0'0 ] s4
+      | s4 = [ &right_val'3 <- _96.f1'0 ] s5
+      | s5 = eq'0 {left_val'3} {right_val'3} (fun (_ret: bool) -> [ &_104 <- _ret ] s6)
+      | s6 = bb20 ]
     | bb20 = any [ br0 -> {_104 = false} (! bb22) | br1 -> {_104} (! bb23) ]
     | bb23 = return {_0}
     | bb22 = s0
@@ -264,22 +270,28 @@ module M_array__test_array
       | s2 = [ &_114 <- right_val'3 ] s3
       | s3 = {false} any ]
     | bb18 = s0
-      [ s0 = [ &kind'2 <- C_Eq ] s1
-      | s1 = [ &_91 <- left_val'2 ] s2
-      | s2 = [ &_93 <- right_val'2 ] s3
-      | s3 = {false} any ]
+      [ s0 = -{resolve'2 b}- s1
+      | s1 = [ &kind'2 <- C_Eq ] s2
+      | s2 = [ &_91 <- left_val'2 ] s3
+      | s3 = [ &_93 <- right_val'2 ] s4
+      | s4 = {false} any ]
     | bb13 = s0
       [ s0 = [ &kind'1 <- C_Eq ] s1
       | s1 = [ &_68 <- left_val'1 ] s2
       | s2 = [ &_70 <- right_val'1 ] s3
       | s3 = {false} any ]
     | bb9 = s0
-      [ s0 = [ &kind'0 <- C_Eq ] s1
-      | s1 = [ &_47 <- left_val'0 ] s2
-      | s2 = [ &_49 <- right_val'0 ] s3
-      | s3 = {false} any ]
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = [ &kind'0 <- C_Eq ] s2
+      | s2 = [ &_47 <- left_val'0 ] s3
+      | s3 = [ &_49 <- right_val'0 ] s4
+      | s4 = {false} any ]
     | bb5 = s0
-      [ s0 = [ &kind <- C_Eq ] s1 | s1 = [ &_24 <- left_val ] s2 | s2 = [ &_26 <- right_val ] s3 | s3 = {false} any ] ]
+      [ s0 = -{resolve'0 a}- s1
+      | s1 = [ &kind <- C_Eq ] s2
+      | s2 = [ &_24 <- left_val ] s3
+      | s3 = [ &_26 <- right_val ] s4
+      | s4 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_Iter = Any.any_l ()
     | & _6: tuple = Any.any_l ()

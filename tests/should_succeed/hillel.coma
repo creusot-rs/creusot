@@ -495,7 +495,9 @@ module M_hillel__insert_unique
     {[@expl:eq 'rhs' type invariant] inv'11 rhs}
     any [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
   
-  predicate resolve'0 (_1: t_T)
+  predicate resolve'0 (_1: t_Iter)
+  
+  predicate resolve'1 (_1: t_T)
   
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
@@ -505,9 +507,9 @@ module M_hillel__insert_unique
   
   meta "rewrite_def" predicate inv'12
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'2
   
   predicate is_unique (s: Seq.seq t_DeepModelTy) =
     forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
@@ -566,23 +568,25 @@ module M_hillel__insert_unique
           | s4 = bb16 ]
         | bb16 = any [ br0 -> {_40 = false} (! bb8) | br1 -> {_40} (! bb17) ] ] ]
     | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv elem} s1
-      | s1 = -{resolve'0 elem}- s2
-      | s2 = {[@expl:type invariant] inv'12 vec} s3
-      | s3 = -{resolve'1 vec}- s4
-      | s4 = {[@expl:assertion] contains (deep_model'1 vec) (deep_model elem)} s5
-      | s5 = bb20 ]
+      [ s0 = -{resolve'0 iter'0}- s1
+      | s1 = {[@expl:type invariant] inv elem} s2
+      | s2 = -{resolve'1 elem}- s3
+      | s3 = {[@expl:type invariant] inv'12 vec} s4
+      | s4 = -{resolve'2 vec}- s5
+      | s5 = {[@expl:assertion] contains (deep_model'1 vec) (deep_model elem)} s6
+      | s6 = bb20 ]
     | bb13 = s0
-      [ s0 = {[@expl:assertion] vec.final = ghost_vec.final} s1
-      | s1 = {[@expl:assertion] is_unique (Seq.snoc (deep_model'1 vec) (deep_model elem))} s2
-      | s2 = {inv'2 vec.current}
+      [ s0 = -{resolve'0 iter'0}- s1
+      | s1 = {[@expl:assertion] vec.final = ghost_vec.final} s2
+      | s2 = {[@expl:assertion] is_unique (Seq.snoc (deep_model'1 vec) (deep_model elem))} s3
+      | s3 = {inv'2 vec.current}
         MutBorrow.borrow_final <t_Vec> {vec.current} {MutBorrow.get_id vec}
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_53 <- _ret ] -{inv'2 _ret.final}-
-            [ &vec <- { vec with current = _ret.final } ] s3)
-      | s3 = push {_53} {elem} (fun (_ret: ()) -> [ &_52 <- _ret ] s4)
-      | s4 = bb19 ]
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'12 vec} s1 | s1 = -{resolve'1 vec}- s2 | s2 = bb20 ]
+            [ &vec <- { vec with current = _ret.final } ] s4)
+      | s4 = push {_53} {elem} (fun (_ret: ()) -> [ &_52 <- _ret ] s5)
+      | s5 = bb19 ]
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'12 vec} s1 | s1 = -{resolve'2 vec}- s2 | s2 = bb20 ]
     | bb20 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & vec: MutBorrow.t t_Vec = vec
@@ -1101,6 +1105,8 @@ module M_hillel__fulcrum
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
+  predicate resolve'0 (_1: t_Iter)
+  
   let rec len (self_: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
@@ -1162,12 +1168,12 @@ module M_hillel__fulcrum
   
   type t_Option'0 = C_None'0 | C_Some'0 UInt64.t
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'1
   
   predicate completed'0 (self: MutBorrow.t t_Range) =
-    resolve'0 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
+    resolve'1 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   let rec next'0 (self_: MutBorrow.t t_Range) (return (x: t_Option'0)) = any
     [ return (result: t_Option'0) -> {match result with
@@ -1226,12 +1232,13 @@ module M_hillel__fulcrum
           | s2 = UInt32.add {total} {x} (fun (_ret: UInt32.t) -> [ &total <- _ret ] s3)
           | s3 = bb4 ] ] ]
     | bb9 = s0
-      [ s0 = {[@expl:assertion] UInt32.t'int total = sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))} s1
-      | s1 = [ &min_i <- (0: UInt64.t) ] s2
-      | s2 = [ &min_dist <- total ] s3
-      | s3 = [ &sum <- (0: UInt32.t) ] s4
-      | s4 = len {s} (fun (_ret: UInt64.t) -> [ &_39 <- _ret ] s5)
-      | s5 = bb12 ]
+      [ s0 = -{resolve'0 iter}- s1
+      | s1 = {[@expl:assertion] UInt32.t'int total = sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))} s2
+      | s2 = [ &min_i <- (0: UInt64.t) ] s3
+      | s3 = [ &min_dist <- total ] s4
+      | s4 = [ &sum <- (0: UInt32.t) ] s5
+      | s5 = len {s} (fun (_ret: UInt64.t) -> [ &_39 <- _ret ] s6)
+      | s6 = bb12 ]
     | bb12 = s0
       [ s0 = [ &_38 <- { t_Range__start = (0: UInt64.t); t_Range__end = _39 } ] s1
       | s1 = into_iter'0 {_38} (fun (_ret: t_Range) -> [ &iter'0 <- _ret ] s2)
@@ -1259,7 +1266,7 @@ module M_hillel__fulcrum
           | s2 = next'0 {_55} (fun (_ret: t_Option'0) -> [ &_54 <- _ret ] s3)
           | s3 = bb18 ]
         | bb18 = s0
-          [ s0 = -{resolve'0 _56}- s1
+          [ s0 = -{resolve'1 _56}- s1
           | s1 = any [ br0 -> {_54 = C_None'0} (! bb21) | br1 (x0: UInt64.t) -> {_54 = C_Some'0 x0} (! bb22) ] ]
         | bb22 = s0
           [ s0 = v_Some'0 {_54} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)

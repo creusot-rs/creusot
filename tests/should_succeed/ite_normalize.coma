@@ -324,11 +324,13 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper (* Expr *)
   
   type t_Expr = C_IfThenElse t_Expr t_Expr t_Expr | C_Var UInt64.t | C_True | C_False
   
+  type t_BTreeMap
+  
+  predicate resolve (_1: t_BTreeMap)
+  
   let rec v_Var (input: t_Expr) (ret (v: UInt64.t)) = any
     [ good (v: UInt64.t) -> {C_Var v = input} (! ret {v})
     | bad -> {forall v: UInt64.t [C_Var v: t_Expr]. C_Var v <> input} (! {false} any) ]
-  
-  type t_BTreeMap
   
   type t_Option = C_None | C_Some bool
   
@@ -409,12 +411,13 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper (* Expr *)
       | br1 (x0: UInt64.t) -> {self = C_Var x0} (! bb4)
       | br2 -> {self = C_True} (! bb1)
       | br3 -> {self = C_False} (! bb1) ]
-    | bb1 = s0 [ s0 = [ &c'1 <- self ] s1 | s1 = [ &_0 <- c'1 ] s2 | s2 = bb51 ]
+    | bb1 = s0 [ s0 = -{resolve state}- s1 | s1 = [ &c'1 <- self ] s2 | s2 = [ &_0 <- c'1 ] s3 | s3 = bb51 ]
     | bb4 = s0
       [ s0 = v_Var {self} (fun (rv: UInt64.t) -> [ &v'0 <- rv ] s1)
-      | s1 = [ &_51 <- v'0 ] s2
-      | s2 = get {state} {_51} (fun (_ret: t_Option) -> [ &_48 <- _ret ] s3)
-      | s3 = bb40 ]
+      | s1 = -{resolve state}- s2
+      | s2 = [ &_51 <- v'0 ] s3
+      | s3 = get {state} {_51} (fun (_ret: t_Option) -> [ &_48 <- _ret ] s4)
+      | s4 = bb40 ]
     | bb40 = any [ br0 -> {_48 = C_None} (! bb46) | br1 (x0: bool) -> {_48 = C_Some x0} (! bb42) ]
     | bb46 = s0 [ s0 = [ &_0 <- C_Var v'0 ] s1 | s1 = bb51 ]
     | bb42 = s0
@@ -448,7 +451,10 @@ module M_ite_normalize__qyi17570407315987535457__simplify_helper (* Expr *)
       | s1 = insert {_26} {v} {true} (fun (_ret: t_Option'0) -> [ &_25 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = s0 [ s0 = simplify_helper {t} {state_t} (fun (_ret: t_Expr) -> [ &tp <- _ret ] s1) | s1 = bb20 ]
-    | bb20 = s0 [ s0 = clone' {state} (fun (_ret: t_BTreeMap) -> [ &state_e <- _ret ] s1) | s1 = bb21 ]
+    | bb20 = s0
+      [ s0 = -{resolve state}- s1
+      | s1 = clone' {state} (fun (_ret: t_BTreeMap) -> [ &state_e <- _ret ] s2)
+      | s2 = bb21 ]
     | bb21 = s0
       [ s0 = MutBorrow.borrow_mut <t_BTreeMap> {state_e}
           (fun (_ret: MutBorrow.t t_BTreeMap) -> [ &_34 <- _ret ] [ &state_e <- _ret.final ] s1)

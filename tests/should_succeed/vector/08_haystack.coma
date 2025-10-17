@@ -156,6 +156,8 @@ module M_08_haystack__search
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: UInt8.t)) = {[@expl:index requires] in_bounds ix (view self_)}
     any [ return (result: UInt8.t) -> {has_value ix (view self_) result} (! return {result}) ]
   
+  predicate resolve'1 (_1: t_RangeInclusive)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -239,8 +241,9 @@ module M_08_haystack__search
             | bb28 = s0
               [ s0 = [ &_57 <- _59 <> _63 ] s1
               | s1 = any [ br0 -> {_57 = false} (! bb19) | br1 -> {_57} (! bb7) ] ] ] ] ] ]
-    | bb24 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = bb32 ]
-    | bb12 = s0 [ s0 = len {haystack} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb32 ]
+    | bb24 = s0 [ s0 = -{resolve'1 iter}- s1 | s1 = [ &_0 <- i ] s2 | s2 = bb32 ]
+    | bb12 = s0
+      [ s0 = -{resolve'1 iter}- s1 | s1 = len {haystack} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s2) | s2 = bb32 ]
     | bb32 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
     | & needle: t_Vec = needle

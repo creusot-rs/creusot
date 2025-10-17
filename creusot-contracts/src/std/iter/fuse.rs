@@ -3,12 +3,16 @@ use crate::{std::iter::Fuse, *};
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
-    #[ensures(forall<other: Fuse<I>> result == other.view() ==> self == other)]
     fn view(self) -> Option<I> {
         dead
+    }
+}
+
+impl<I: Iterator> Invariant for Fuse<I> {
+    #[logic(prophetic, open, inline)]
+    fn invariant(self) -> bool {
+        inv(self.view())
     }
 }
 
@@ -49,7 +53,7 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::empty() && ^self == next)]
+    #[ensures(steps == Seq::empty())]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
@@ -57,6 +61,6 @@ impl<I: Iterator> FusedIterator for Fuse<I> {
     #[logic(open, law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
-    #[ensures(steps == Seq::empty() && ^self == next)]
+    #[ensures(steps == Seq::empty())]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
 }
