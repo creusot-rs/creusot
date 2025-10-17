@@ -55,8 +55,10 @@ impl<T, A: Allocator> IndexLogic<usize> for VecDeque<T, A> {
     }
 }
 
-impl<T> Resolve for VecDeque<T> {
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> Resolve for VecDeque<T, A> {
     #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -66,6 +68,15 @@ impl<T> Resolve for VecDeque<T> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> Invariant for VecDeque<T, A> {
+    #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { invariant::inv(self@) }
+    }
 }
 
 extern_spec! {
@@ -156,7 +167,7 @@ impl<'a, T> View for Iter<'a, T> {
 impl<'a, T> Iterator for Iter<'a, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
+        pearlite! { resolve(self) && (*self@)@ == Seq::empty() }
     }
 
     #[logic(open)]
@@ -181,6 +192,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
 #[cfg(not(feature = "nightly"))]
 mod impls {
     use super::*;
+    impl<T> Resolve for VecDeque<T> {}
+    impl<T> Invariant for VecDeque<T> {}
     impl<T> View for VecDeque<T> {
         type ViewTy = Seq<T>;
     }

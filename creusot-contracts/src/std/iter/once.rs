@@ -12,7 +12,7 @@ impl<T> View for Once<T> {
 impl<T> Iterator for Once<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { (*self)@ == None && self.resolve() }
+        pearlite! { (*self)@ == None && resolve(self) }
     }
 
     #[logic(open, prophetic)]

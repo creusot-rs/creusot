@@ -20,13 +20,9 @@ module M_split_borrow__f
   
   let rec z (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t tuple) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -49,7 +45,7 @@ module M_split_borrow__f
       [ s0 = [ &_8 <- { t_MyInt__0 = (10: UInt64.t) } ] s1
       | s1 = [ &y <- { y with current = { y.current with f0 = _8 } } ] s2
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = -{resolve'0 y}- s1 | s1 = return {_0} ] ]
+    | bb4 = s0 [ s0 = -{resolve y}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: tuple = Any.any_l ()
     | & _2: t_MyInt = Any.any_l ()
@@ -68,21 +64,13 @@ module M_split_borrow__g
   
   type tuple = { f0: t_MyInt; f1: t_MyInt }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_MyInt) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_MyInt) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t tuple) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t tuple) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -97,10 +85,10 @@ module M_split_borrow__g
       | s4 = MutBorrow.borrow_final <t_MyInt> {x.current.f1} {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
           (fun (_ret: MutBorrow.t t_MyInt) ->
             [ &_z <- _ret ] [ &x <- { x with current = { x.current with f1 = _ret.final } } ] s5)
-      | s5 = -{resolve'0 _z}- s6
+      | s5 = -{resolve _z}- s6
       | s6 = [ &_6 <- { t_MyInt__0 = (3: UInt64.t) } ] s7
       | s7 = [ &x <- { x with current = { x.current with f0 = _6 } } ] s8
-      | s8 = -{resolve'2 x}- s9
+      | s8 = -{resolve'0 x}- s9
       | s9 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: tuple = Any.any_l ()

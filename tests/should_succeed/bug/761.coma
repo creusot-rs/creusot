@@ -19,13 +19,13 @@ module M_761__try_option
         | C_Some a_0 -> inv a_0
         end
   
-  predicate inv'1 (_1: ())
+  predicate inv'1 [@inline:trivial] (_1: ()) = false
   
-  axiom inv_axiom'0 [@rewrite]: forall x: () [inv'1 x]. inv'1 x = false
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_Option'0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'2 x]. inv'2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'2 x]. inv'2 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'1 a_0
@@ -33,7 +33,7 @@ module M_761__try_option
   
   predicate inv'3 (_1: t_ControlFlow)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_ControlFlow [inv'3 x]. inv'3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_ControlFlow [inv'3 x]. inv'3 x
       = match x with
         | C_Continue a_0 -> inv a_0
         | C_Break a_0 -> inv'2 a_0
@@ -109,13 +109,13 @@ module M_761__try_result
         | C_Err a_0 -> inv'0 a_0
         end
   
-  predicate inv'2 (_1: ())
+  predicate inv'2 [@inline:trivial] (_1: ()) = false
   
-  axiom inv_axiom'0 [@rewrite]: forall x: () [inv'2 x]. inv'2 x = false
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Result'0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Result'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Result'0 [inv'3 x]. inv'3 x
       = match x with
         | C_Ok'0 a_0 -> inv'2 a_0
         | C_Err'0 a_0 -> inv'0 a_0
@@ -123,7 +123,7 @@ module M_761__try_result
   
   predicate inv'4 (_1: t_ControlFlow)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_ControlFlow [inv'4 x]. inv'4 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_ControlFlow [inv'4 x]. inv'4 x
       = match x with
         | C_Continue a_0 -> inv a_0
         | C_Break a_0 -> inv'3 a_0
@@ -242,9 +242,9 @@ module M_761__try_result
       (! return {result}) ]
 end
 module M_761__elim_empty
-  predicate inv (_1: ())
+  predicate inv [@inline:trivial] (_1: ()) = false
   
-  axiom inv_axiom [@rewrite]: forall x: () [inv x]. inv x = false
+  meta "rewrite_def" predicate inv
   
   meta "compute_max_steps" 1000000
   
@@ -252,5 +252,6 @@ module M_761__elim_empty
   
   let rec elim_empty (x: ()) (return (x'0: ())) = {[@expl:elim_empty 'x' type invariant] inv x}
     (! bb0
-    [ bb0 = {false} any ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv x} s1 | s1 = {false} any ] ] [ & x: () = x ])
+    [ return (result: ()) -> (! return {result}) ]
 end

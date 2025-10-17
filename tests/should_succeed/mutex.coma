@@ -79,13 +79,9 @@ module M_mutex__concurrent
   let rec leak (b: t_Mutex) (return (x: MutBorrow.t t_Mutex)) = any
     [ return (result: MutBorrow.t t_Mutex) -> {result.current = b} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Mutex) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Mutex) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Mutex) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_AddsTwo = { t_AddsTwo__mutex: t_Mutex }
   
@@ -122,7 +118,7 @@ module M_mutex__concurrent
       [ s0 = [ &_5 <- () ] s1 | s1 = new {(0: UInt32.t)} {_5} (fun (_ret: t_Mutex) -> [ &_4 <- _ret ] s2) | s2 = bb2 ]
     | bb2 = s0 [ s0 = leak {_4} (fun (_ret: MutBorrow.t t_Mutex) -> [ &_2 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = -{resolve'0 _2}- s1
+      [ s0 = -{resolve _2}- s1
       | s1 = [ &m <- _2.current ] s2
       | s2 = [ &_8 <- m ] s3
       | s3 = [ &t1 <- { t_AddsTwo__mutex = _8 } ] s4

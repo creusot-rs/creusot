@@ -35,9 +35,9 @@ module M_222__uses_invariant
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'1 (_1: MutBorrow.t t_Option)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Option [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
     any
@@ -45,40 +45,29 @@ module M_222__uses_invariant
   
   predicate resolve (_1: t_T)
   
-  predicate resolve'0 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve x
-      | C_None -> true
-      end
+  predicate resolve'0 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve x0
+        end
   
   predicate inv'2 (_1: t_Once)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x
-      = match x with
-        | {t_Once__0 = a_0} -> inv'0 a_0
-        end
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x = inv'0 x.t_Once__0
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Once) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'3 (_1: MutBorrow.t t_Once)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Once) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Once [inv'3 x]. inv'3 x = invariant''0 x
+  meta "rewrite_def" predicate inv'3
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Once) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Once) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Once) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''1 (self: t_Once) = true
   
@@ -98,9 +87,9 @@ module M_222__uses_invariant
             [ &x <- { x with current = { t_Once__0 = _ret.final } } ] s1)
       | s1 = take {_5} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'0 _4} s3
-      | s3 = -{resolve'1 _4}- s4
+      | s3 = -{resolve'0 _4}- s4
       | s4 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 x} s1 | s1 = -{resolve'3 x}- s2 | s2 = bb2 ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 x} s1 | s1 = -{resolve'1 x}- s2 | s2 = bb2 ]
     | bb2 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & x: MutBorrow.t t_Once = x

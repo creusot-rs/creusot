@@ -25,7 +25,6 @@ use crate::std::ops::{Deref, DerefMut};
 /// let x: Snapshot<Int> = snapshot!(1);
 /// let m: Snapshot<Mapping<Int, Int>> = snapshot!(|x| x + 1);
 /// ```
-#[builtin("")]
 #[intrinsic("snapshot")]
 pub struct Snapshot<T: ?Sized>(std::marker::PhantomData<T>);
 

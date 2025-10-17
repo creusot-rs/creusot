@@ -75,9 +75,9 @@ pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
     })
 }
 
-pub(crate) fn projections_to_expr<'tcx, 'a, N: Namer<'tcx>>(
+pub(crate) fn projections_to_expr<'tcx, 'a>(
     ctx: &'a Why3Generator<'tcx>,
-    names: &'a N,
+    names: &'a impl Namer<'tcx>,
     istmts: &mut Vec<IntermediateStmt>,
     place_ty: &mut PlaceTy<'tcx>,
     // The term holding the currently 'focused' portion of the place
@@ -256,9 +256,9 @@ pub(crate) fn projection_ty<'tcx, V: Debug>(
 }
 
 /// Generate the ID for a final reborrow of `original_borrow`.
-pub(crate) fn borrow_generated_id<'tcx, V: Debug, N: Namer<'tcx>>(
+pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     original_borrow: Exp,
     span: Span,
     projections: &[ProjectionElem<V, Ty<'tcx>>],

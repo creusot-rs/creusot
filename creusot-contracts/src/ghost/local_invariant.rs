@@ -74,7 +74,6 @@ pub use base_macros::declare_namespace;
 ///
 /// Can be declared with the [`declare_namespace`] macro, and then attached to a local
 /// invariant when creating it with [`LocalInvariant::new`].
-#[opaque] // This type has a very special translation.
 #[intrinsic("namespace")]
 pub struct Namespace(());
 

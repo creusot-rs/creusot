@@ -49,39 +49,27 @@ module M_seq__f
     <> C_None}
     any [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {C_Some result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t UInt64.t)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt64.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt64.t)) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve'1 (_1: t_Option'0)
   
-  meta "rewrite_def" predicate resolve'1
+  axiom resolve_axiom [@rewrite]: forall x: t_Option'0 [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 x0 -> resolve'0 x0
+        end
   
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve'1 _1
+  predicate resolve'2 (self: Seq.seq (MutBorrow.t UInt64.t)) = forall i: int. resolve'1 (get self i)
   
-  meta "rewrite_def" predicate resolve'2
+  predicate resolve'3 (_1: Seq.seq (MutBorrow.t UInt64.t))
   
-  predicate resolve'3 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve'2 x
-      | C_None'0 -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: t_Option'0) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 (self: Seq.seq (MutBorrow.t UInt64.t)) = forall i: int. resolve'4 (get self i)
-  
-  predicate resolve'6 [@inline:trivial] (_1: Seq.seq (MutBorrow.t UInt64.t)) = resolve'5 _1
-  
-  meta "rewrite_def" predicate resolve'6
+  axiom resolve_axiom'0: forall x: Seq.seq (MutBorrow.t UInt64.t) [resolve'3 x]. resolve'3 x -> resolve'2 x
   
   let rec new'1 (x: UInt64.t) (return (x'0: UInt64.t)) = any
     [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
@@ -113,8 +101,8 @@ module M_seq__f
     | bb6 = s0 [ s0 = unwrap {_10} (fun (_ret: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _ret ] s1) | s1 = bb7 ]
     | bb7 = s0
       [ s0 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s1
-      | s1 = -{resolve'0 _9}- s2
-      | s2 = -{resolve'6 s}- s3
+      | s1 = -{resolve _9}- s2
+      | s2 = -{resolve'3 s}- s3
       | s3 = new'1 {x} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
       | s4 = bb8 ]
     | bb8 = return {_0} ]

@@ -10,9 +10,9 @@ module M_766__Trait__goo
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_Self)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Self) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_Self [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: MutBorrow.t t_Self)
   
@@ -36,13 +36,9 @@ module M_766__Trait__goo
   let rec f (self: MutBorrow.t t_Self) (return (x: ())) = {[@expl:f requires] precondition () self}
     any [ return (result: ()) -> {postcondition_once () self result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Self) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Self) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Self) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate precondition'0 (self: ()) (args: MutBorrow.t t_Self)
   
@@ -69,7 +65,7 @@ module M_766__Trait__goo
             [ &self <- { self with current = _ret.final } ] s1)
       | s1 = f {_2} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & self: MutBorrow.t t_Self = self | & _2: MutBorrow.t t_Self = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

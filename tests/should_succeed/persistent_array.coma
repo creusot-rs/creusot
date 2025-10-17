@@ -3,25 +3,14 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone (* <im
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
   use seq.Seq
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Rc
   
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Fragment
   
-  type t_Resource
-  
-  type t_Id
-  
-  type t_T
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
+  type t_Rc'0
   
   type t_PersistentArray = {
     t_PersistentArray__permcell: t_Rc;
@@ -35,38 +24,38 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone (* <im
   
   predicate inv (_1: t_Fragment)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Fragment [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom: forall x: t_Fragment [inv x]. inv x -> invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_Fragment) = inv self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: t_Fragment)
+  predicate inv'0 [@inline:trivial] (_1: t_Fragment) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Fragment [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''1 [@inline:trivial] (self: t_Fragment) = inv'0 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'1 (_1: t_Fragment)
+  predicate inv'1 [@inline:trivial] (_1: t_Fragment) = invariant''1 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Fragment [inv'1 x]. inv'1 x = invariant''1 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''2 [@inline:trivial] (self: t_Fragment) = inv self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'2 (_1: t_Fragment)
+  predicate inv'2 [@inline:trivial] (_1: t_Fragment) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Fragment [inv'2 x]. inv'2 x = invariant''2 x
+  meta "rewrite_def" predicate inv'2
   
   let rec deref (self: t_Fragment) (return (x: t_Fragment)) = {[@expl:deref 'self' type invariant] inv'1 self}
     any [ return (result: t_Fragment) -> {inv'2 result} {result = self} (! return {result}) ]
+  
+  type t_Id
+  
+  type t_T
   
   type tuple = { f0: t_Id; f1: Seq.seq t_T }
   
@@ -110,19 +99,16 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone (* <im
   
   predicate inv'3 (_1: t_PersistentArray)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PersistentArray [inv'3 x]. inv'3 x
-      = (invariant''3 x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'4} -> inv'0 frag
-        end)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PersistentArray [inv'3 x]. inv'3 x
+      = (invariant''3 x /\ inv'0 x.t_PersistentArray__frag)
   
   predicate invariant''4 [@inline:trivial] (self: t_PersistentArray) = inv'3 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'4 (_1: t_PersistentArray)
+  predicate inv'4 [@inline:trivial] (_1: t_PersistentArray) = invariant''4 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PersistentArray [inv'4 x]. inv'4 x = invariant''4 x
+  meta "rewrite_def" predicate inv'4
   
   function view'2 [@inline:trivial] (self: t_PersistentArray) : Seq.seq t_T = (view self.t_PersistentArray__frag).f1
   
@@ -165,26 +151,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use map.Map
   use map.Const
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_T
   
@@ -194,9 +169,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc = { t_Rc__ptr: t_NonNull'0; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Rc
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
   
@@ -210,28 +183,28 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''1 (self: t_Vec) = inv'1 (view self)
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate inv'3 (_1: t_Inner)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Inner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'3 x]. inv'3 x
       = match x with
         | C_Direct a_0 -> inv'2 a_0
         | C_Link index value next -> inv value
@@ -241,9 +214,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_Inner)
+  predicate inv'4 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -253,19 +226,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'5 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
   
   predicate invariant''4 [@inline:trivial] (self: t_PermCellOwn) = inv'5 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'6 (_1: t_PermCellOwn)
+  predicate inv'6 [@inline:trivial] (_1: t_PermCellOwn) = invariant''4 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''4 x
+  meta "rewrite_def" predicate inv'6
   
-  predicate inv'7 (_1: tuple)
+  predicate inv'7 [@inline:trivial] (_1: tuple) = inv'6 _1.f1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: tuple [inv'7 x]. inv'7 x = (let {f0 = x0; f1 = x1} = x in inv'6 x1)
+  meta "rewrite_def" predicate inv'7
   
   type t_Id
   
@@ -284,27 +257,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
       {view'0 result.f1 = value}
       (! return {result}) ]
   
-  type t_Resource
-  
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
   
   predicate invariant''5 (self: t_Authority)
   
   predicate inv'8 (_1: t_Authority)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Authority [inv'8 x]. inv'8 x
-      = (invariant''5 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'2: forall x: t_Authority [inv'8 x]. inv'8 x -> invariant''5 x
   
   predicate invariant''6 [@inline:trivial] (self: t_Authority) = inv'8 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'9 (_1: t_Authority)
+  predicate inv'9 [@inline:trivial] (_1: t_Authority) = invariant''6 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Authority [inv'9 x]. inv'9 x = invariant''6 x
+  meta "rewrite_def" predicate inv'9
   
   type t_FMap
   
@@ -331,23 +298,23 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'10 (_1: MutBorrow.t t_Authority)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Authority) = invariant''7 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_Authority [inv'10 x]. inv'10 x = invariant''7 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_Authority) = inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'11 (_1: MutBorrow.t t_Authority)
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_Authority) = invariant''8 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_Authority [inv'11 x]. inv'11 x = invariant''8 x
+  meta "rewrite_def" predicate inv'11
   
   let rec deref_mut (self: MutBorrow.t t_Authority) (return (x: MutBorrow.t t_Authority)) =
     {[@expl:deref_mut 'self' type invariant] inv'10 self}
     any [ return (result: MutBorrow.t t_Authority) -> {inv'11 result} {result = self} (! return {result}) ]
   
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
+  type t_Fragment
   
   function get [@inline:trivial] (self: t_FMap) (k: t_Id) : t_Option = Map.get (view'2 self) k
   
@@ -361,11 +328,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'12 (_1: t_Fragment)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Fragment [inv'12 x]. inv'12 x
-      = (invariant''9 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Fragment [inv'12 x]. inv'12 x -> invariant''9 x
   
   function insert (self: t_FMap) (k: t_Id) (v: Seq.seq t_T) : t_FMap
   
@@ -394,21 +357,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
       {id'2 result = id'1 self.current}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Authority) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Authority) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Authority) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''10 [@inline:trivial] (self: t_Fragment) = inv'12 self
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'13 (_1: t_Fragment)
+  predicate inv'13 [@inline:trivial] (_1: t_Fragment) = invariant''10 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: t_Fragment [inv'13 x]. inv'13 x = invariant''10 x
+  meta "rewrite_def" predicate inv'13
   
   let rec new'1 (x: t_Fragment) (return (x'0: t_Fragment)) = {[@expl:new 'x' type invariant] inv'12 x}
     any [ return (result: t_Fragment) -> {inv'13 result} {result = x} (! return {result}) ]
@@ -427,9 +386,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   meta "rewrite_def" predicate contains'0
   
-  predicate inv'14 (_1: t_Id)
+  predicate inv'14 [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom'13 [@rewrite]: forall x: t_Id [inv'14 x]. inv'14 x = true
+  meta "rewrite_def" predicate inv'14
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -460,15 +419,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'15 (_1: t_FMap'0)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_FMap'0 [inv'15 x]. inv'15 x = invariant''11 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_FMap'0 [inv'15 x]. inv'15 x = invariant''11 x
   
   predicate invariant''12 [@inline:trivial] (self: t_FMap'0) = inv'15 self
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'16 (_1: t_FMap'0)
+  predicate inv'16 [@inline:trivial] (_1: t_FMap'0) = invariant''12 _1
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_FMap'0 [inv'16 x]. inv'16 x = invariant''12 x
+  meta "rewrite_def" predicate inv'16
   
   predicate ext_eq (self: t_FMap'0) (other: t_FMap'0) = forall k: t_Id. get'0 self k = get'0 other k
   
@@ -493,17 +452,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'17 (_1: MutBorrow.t t_FMap'0)
+  predicate inv'17 [@inline:trivial] (_1: MutBorrow.t t_FMap'0) = invariant''13 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t t_FMap'0 [inv'17 x]. inv'17 x = invariant''13 x
+  meta "rewrite_def" predicate inv'17
   
   predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_FMap'0) = inv'15 self.current /\ inv'15 self.final
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'18 (_1: MutBorrow.t t_FMap'0)
+  predicate inv'18 [@inline:trivial] (_1: MutBorrow.t t_FMap'0) = invariant''14 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_FMap'0 [inv'18 x]. inv'18 x = invariant''14 x
+  meta "rewrite_def" predicate inv'18
   
   let rec deref_mut'0 (self: MutBorrow.t t_FMap'0) (return (x: MutBorrow.t t_FMap'0)) =
     {[@expl:deref_mut 'self' type invariant] inv'17 self}
@@ -513,17 +472,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'19 (_1: t_PermCellOwn)
+  predicate inv'19 [@inline:trivial] (_1: t_PermCellOwn) = invariant''15 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: t_PermCellOwn [inv'19 x]. inv'19 x = invariant''15 x
+  meta "rewrite_def" predicate inv'19
   
   predicate invariant''16 [@inline:trivial] (self: t_PermCellOwn) = inv'5 self
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'20 (_1: t_PermCellOwn)
+  predicate inv'20 [@inline:trivial] (_1: t_PermCellOwn) = invariant''16 _1
   
-  axiom inv_axiom'19 [@rewrite]: forall x: t_PermCellOwn [inv'20 x]. inv'20 x = invariant''16 x
+  meta "rewrite_def" predicate inv'20
   
   let rec deref (self: t_PermCellOwn) (return (x: t_PermCellOwn)) = {[@expl:deref 'self' type invariant] inv'19 self}
     any [ return (result: t_PermCellOwn) -> {inv'20 result} {result = self} (! return {result}) ]
@@ -539,7 +498,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'21 (_1: t_Option'0)
   
-  axiom inv_axiom'20 [@rewrite]: forall x: t_Option'0 [inv'21 x]. inv'21 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'21 x]. inv'21 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'5 a_0
@@ -562,37 +521,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
       {result = get'0 self.current key}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Inner) = true
+  predicate resolve'0 [@inline:trivial] (_1: t_Inner) = true
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: t_PermCellOwn) = resolve'0 (val' self)
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (self: t_PermCellOwn) = resolve'1 (val' self)
+  predicate resolve'2 (_1: t_PermCellOwn)
   
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom: forall x: t_PermCellOwn [resolve'2 x]. resolve'2 x -> resolve'1 x
   
-  predicate resolve'3 [@inline:trivial] (_1: t_PermCellOwn) = resolve'2 _1
+  predicate resolve'3 (_1: t_Option'0)
   
-  meta "rewrite_def" predicate resolve'3
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option'0 [resolve'3 x]. resolve'3 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 x0 -> resolve'2 x0
+        end
   
-  predicate resolve'4 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve'3 x
-      | C_None'0 -> true
-      end
+  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_FMap'0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: t_Option'0) = resolve'4 _1
-  
-  meta "rewrite_def" predicate resolve'5
-  
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_FMap'0) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_FMap'0) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
   
   let rec into_inner'0 (self: t_FMap'0) (return (x: t_FMap'0)) = {[@expl:into_inner 'self' type invariant] inv'16 self}
     any [ return (result: t_FMap'0) -> {inv'15 result} {result = self} (! return {result}) ]
@@ -605,18 +556,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'22 (_1: t_PA)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: t_PA [inv'22 x]. inv'22 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'15 perms /\ inv'8 auth
-        end
+  axiom inv_axiom'6 [@rewrite]: forall x: t_PA [inv'22 x]. inv'22 x = (inv'15 x.t_PA__perms /\ inv'8 x.t_PA__auth)
   
   predicate invariant''17 [@inline:trivial] (self: t_PA) = inv'22 self
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'23 (_1: t_PA)
+  predicate inv'23 [@inline:trivial] (_1: t_PA) = invariant''17 _1
   
-  axiom inv_axiom'22 [@rewrite]: forall x: t_PA [inv'23 x]. inv'23 x = invariant''17 x
+  meta "rewrite_def" predicate inv'23
   
   let rec new'3 (x: t_PA) (return (x'0: t_PA)) = {[@expl:new 'x' type invariant] inv'22 x}
     any [ return (result: t_PA) -> {inv'23 result} {result = x} (! return {result}) ]
@@ -687,9 +635,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   let rec into_inner'2 (self: t_LocalInvariant) (return (x: t_LocalInvariant)) = any
     [ return (result: t_LocalInvariant) -> {result = self} (! return {result}) ]
   
-  type t_NonNull'1 = { t_NonNull__pointer'1: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'1; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
+  type t_Rc'0
   
   function view'6 (self: t_Rc'0) : t_LocalInvariant
   
@@ -713,11 +659,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
   
   predicate inv'24 (_1: t_PersistentArray)
   
-  axiom inv_axiom'23 [@rewrite]: forall x: t_PersistentArray [inv'24 x]. inv'24 x
-      = (invariant''18 x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'25} -> inv'13 frag
-        end)
+  axiom inv_axiom'7 [@rewrite]: forall x: t_PersistentArray [inv'24 x]. inv'24 x
+      = (invariant''18 x /\ inv'13 x.t_PersistentArray__frag)
   
   function view'7 [@inline:trivial] (self: t_PersistentArray) : Seq.seq t_T = (view'3 self.t_PersistentArray__frag).f1'0
   
@@ -751,7 +694,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
       | s2 = bb8 ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'11 _14} s1
-      | s1 = -{resolve'0 _14}- s2
+      | s1 = -{resolve _14}- s2
       | s2 = new'1 {_12} (fun (_ret: t_Fragment) -> [ &frag <- _ret ] s3)
       | s3 = bb9 ]
     | bb9 = s0 [ s0 = new'2 (fun (_ret: t_FMap'0) -> [ &perms <- _ret ] s1) | s1 = bb10 ]
@@ -773,11 +716,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__new (* implem
             [ &_24 <- { _24 with current = _ret.final } ] s1)
       | s1 = insert_ghost {_23} {_27} {_33} (fun (_ret: t_Option'0) -> [ &_22 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'21 _22} s3
-      | s3 = -{resolve'5 _22}- s4
+      | s3 = -{resolve'3 _22}- s4
       | s4 = bb16 ]
     | bb16 = s0
       [ s0 = {[@expl:type invariant] inv'18 _24} s1
-      | s1 = -{resolve'7 _24}- s2
+      | s1 = -{resolve'4 _24}- s2
       | s2 = into_inner'0 {perms} (fun (_ret: t_FMap'0) -> [ &_38 <- _ret ] s3)
       | s3 = bb17 ]
     | bb17 = s0 [ s0 = into_inner'1 {auth} (fun (_ret: t_Authority) -> [ &_40 <- _ret ] s1) | s1 = bb18 ]
@@ -844,7 +787,6 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
   use seq.Seq
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -852,26 +794,20 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   use creusot.prelude.Any
   use set.Set
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Rc
   
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Fragment
   
-  type t_Resource
-  
-  type t_Id
-  
-  type t_T
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
+  type t_Rc'0
   
   type t_PersistentArray = {
     t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
+  
+  type t_T
+  
+  type t_Id
   
   type tuple = { f0: t_Id; f1: Seq.seq t_T }
   
@@ -884,17 +820,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   let rec clone' (self_: t_Rc) (return (x: t_Rc)) = any
     [ return (result: t_Rc) -> {result = self_} (! return {result}) ]
   
-  type t_NonNull'1 = { t_NonNull__pointer'1: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull'1; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
   
@@ -908,18 +834,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -931,11 +857,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate inv'3 (_1: t_Inner)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Inner [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'3 x]. inv'3 x
       = match x with
         | C_Direct a_0 -> inv'2 a_0
         | C_Link index value next -> inv value
@@ -945,9 +871,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_Inner)
+  predicate inv'4 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -957,19 +883,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'5 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'5 x]. inv'5 x = invariant''3 x
   
   predicate invariant''4 [@inline:trivial] (self: t_PermCellOwn) = inv'5 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'6 (_1: t_PermCellOwn)
+  predicate inv'6 [@inline:trivial] (_1: t_PermCellOwn) = invariant''4 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''4 x
+  meta "rewrite_def" predicate inv'6
   
-  predicate inv'7 (_1: tuple'0)
+  predicate inv'7 [@inline:trivial] (_1: tuple'0) = inv'6 _1.f1'0
   
-  axiom inv_axiom'6 [@rewrite]: forall x: tuple'0 [inv'7 x]. inv'7 x = (let {f0'0 = x0; f1'0 = x1} = x in inv'6 x1)
+  meta "rewrite_def" predicate inv'7
   
   function id (self: t_PermCell) : t_Id
   
@@ -988,7 +914,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   type t_FMap
   
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
@@ -1004,9 +930,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate contains
   
-  predicate inv'8 (_1: t_Id)
+  predicate inv'8 [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Id [inv'8 x]. inv'8 x = true
+  meta "rewrite_def" predicate inv'8
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -1037,56 +963,49 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'9 (_1: t_FMap)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''5 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'9 x]. inv'9 x = invariant''5 x
   
   predicate invariant''6 (self: t_Authority)
   
   predicate inv'10 (_1: t_Authority)
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_Authority [inv'10 x]. inv'10 x
-      = (invariant''6 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Authority [inv'10 x]. inv'10 x -> invariant''6 x
   
   predicate inv'11 (_1: t_PA)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_PA [inv'11 x]. inv'11 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'9 perms /\ inv'10 auth
-        end
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PA [inv'11 x]. inv'11 x = (inv'9 x.t_PA__perms /\ inv'10 x.t_PA__auth)
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'12 (_1: MutBorrow.t t_PA)
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''7 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_PA [inv'12 x]. inv'12 x = invariant''7 x
+  meta "rewrite_def" predicate inv'12
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'12 self
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'13 (_1: MutBorrow.t t_PA)
+  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''8 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t t_PA [inv'13 x]. inv'13 x = invariant''8 x
+  meta "rewrite_def" predicate inv'13
   
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'13 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'14 (_1: MutBorrow.t t_PA)
+  predicate inv'14 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''9 _1
   
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_PA [inv'14 x]. inv'14 x = invariant''9 x
+  meta "rewrite_def" predicate inv'14
   
   predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'12 self
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'15 (_1: MutBorrow.t t_PA)
+  predicate inv'15 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''10 _1
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_PA [inv'15 x]. inv'15 x = invariant''10 x
+  meta "rewrite_def" predicate inv'15
   
   let rec deref (self: MutBorrow.t t_PA) (return (x: MutBorrow.t t_PA)) =
     {[@expl:deref 'self' type invariant] inv'14 self}
@@ -1098,35 +1017,31 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'16 (_1: t_Fragment)
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_Fragment [inv'16 x]. inv'16 x
-      = (invariant''11 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom'5: forall x: t_Fragment [inv'16 x]. inv'16 x -> invariant''11 x
   
   predicate invariant''12 [@inline:trivial] (self: t_Fragment) = inv'16 self
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'17 (_1: t_Fragment)
+  predicate inv'17 [@inline:trivial] (_1: t_Fragment) = invariant''12 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_Fragment [inv'17 x]. inv'17 x = invariant''12 x
+  meta "rewrite_def" predicate inv'17
   
   predicate invariant''13 [@inline:trivial] (self: t_Fragment) = inv'17 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'18 (_1: t_Fragment)
+  predicate inv'18 [@inline:trivial] (_1: t_Fragment) = invariant''13 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: t_Fragment [inv'18 x]. inv'18 x = invariant''13 x
+  meta "rewrite_def" predicate inv'18
   
   predicate invariant''14 [@inline:trivial] (self: t_Fragment) = inv'16 self
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'19 (_1: t_Fragment)
+  predicate inv'19 [@inline:trivial] (_1: t_Fragment) = invariant''14 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: t_Fragment [inv'19 x]. inv'19 x = invariant''14 x
+  meta "rewrite_def" predicate inv'19
   
   let rec deref'0 (self: t_Fragment) (return (x: t_Fragment)) = {[@expl:deref 'self' type invariant] inv'18 self}
     any [ return (result: t_Fragment) -> {inv'19 result} {result = self} (! return {result}) ]
@@ -1135,9 +1050,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'20 (_1: t_Authority)
+  predicate inv'20 [@inline:trivial] (_1: t_Authority) = invariant''15 _1
   
-  axiom inv_axiom'19 [@rewrite]: forall x: t_Authority [inv'20 x]. inv'20 x = invariant''15 x
+  meta "rewrite_def" predicate inv'20
   
   function id'1 (self: t_Authority) : t_Id
   
@@ -1172,18 +1087,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'21 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'21 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''16 _1
   
-  axiom inv_axiom'20 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'21 x]. inv'21 x = invariant''16 x
+  meta "rewrite_def" predicate inv'21
   
   predicate invariant''17 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) =
     inv'12 self.current /\ inv'12 self.final
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'22 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'22 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''17 _1
   
-  axiom inv_axiom'21 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'22 x]. inv'22 x = invariant''17 x
+  meta "rewrite_def" predicate inv'22
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_PA)) (return (x: MutBorrow.t (MutBorrow.t t_PA))) =
     {[@expl:deref_mut 'self' type invariant] inv'21 self}
@@ -1195,21 +1110,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''18
   
-  predicate inv'23 (_1: MutBorrow.t t_FMap)
+  predicate inv'23 [@inline:trivial] (_1: MutBorrow.t t_FMap) = invariant''18 _1
   
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'23 x]. inv'23 x = invariant''18 x
+  meta "rewrite_def" predicate inv'23
   
   predicate invariant''19 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''19
   
-  predicate inv'24 (_1: MutBorrow.t t_PermCellOwn)
+  predicate inv'24 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''19 _1
   
-  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'24 x]. inv'24 x = invariant''19 x
+  meta "rewrite_def" predicate inv'24
   
   predicate inv'25 (_1: t_Option'1)
   
-  axiom inv_axiom'24 [@rewrite]: forall x: t_Option'1 [inv'25 x]. inv'25 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'1 [inv'25 x]. inv'25 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'24 a_0
@@ -1236,21 +1151,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       {len self.current = len self.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   let rec v_Some (input: t_Option'1) (ret (field_0: MutBorrow.t t_PermCellOwn)) = any
     [ good (field_0: MutBorrow.t t_PermCellOwn) -> {C_Some'1 field_0 = input} (! ret {field_0})
@@ -1262,17 +1169,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''20
   
-  predicate inv'26 (_1: t_PermCellOwn)
+  predicate inv'26 [@inline:trivial] (_1: t_PermCellOwn) = invariant''20 _1
   
-  axiom inv_axiom'25 [@rewrite]: forall x: t_PermCellOwn [inv'26 x]. inv'26 x = invariant''20 x
+  meta "rewrite_def" predicate inv'26
   
   predicate invariant''21 [@inline:trivial] (self: t_PermCellOwn) = inv'5 self
   
   meta "rewrite_def" predicate invariant''21
   
-  predicate inv'27 (_1: t_PermCellOwn)
+  predicate inv'27 [@inline:trivial] (_1: t_PermCellOwn) = invariant''21 _1
   
-  axiom inv_axiom'26 [@rewrite]: forall x: t_PermCellOwn [inv'27 x]. inv'27 x = invariant''21 x
+  meta "rewrite_def" predicate inv'27
   
   let rec deref'1 (self: t_PermCellOwn) (return (x: t_PermCellOwn)) = {[@expl:deref 'self' type invariant] inv'26 self}
     any [ return (result: t_PermCellOwn) -> {inv'27 result} {result = self} (! return {result}) ]
@@ -1288,7 +1195,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'28 (_1: t_Option)
   
-  axiom inv_axiom'27 [@rewrite]: forall x: t_Option [inv'28 x]. inv'28 x
+  axiom inv_axiom'7 [@rewrite]: forall x: t_Option [inv'28 x]. inv'28 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'5 a_0
@@ -1311,29 +1218,25 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Inner) = true
+  predicate resolve'1 [@inline:trivial] (_1: t_Inner) = true
   
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'4 [@inline:trivial] (self: t_PermCellOwn) = resolve'3 (val' self)
+  predicate resolve'2 [@inline:trivial] (self: t_PermCellOwn) = resolve'1 (val' self)
   
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'5 [@inline:trivial] (_1: t_PermCellOwn) = resolve'4 _1
+  predicate resolve'3 (_1: t_PermCellOwn)
   
-  meta "rewrite_def" predicate resolve'5
+  axiom resolve_axiom: forall x: t_PermCellOwn [resolve'3 x]. resolve'3 x -> resolve'2 x
   
-  predicate resolve'6 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'5 x
-      | C_None -> true
-      end
+  predicate resolve'4 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: t_Option) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'4 x]. resolve'4 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'3 x0
+        end
   
   function index_logic'1 [@inline:trivial] (self: Map.map t_Id int) (a: t_Id) : int = Map.get self a
   
@@ -1345,9 +1248,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate invariant''22
   
-  predicate inv'29 (_1: MutBorrow.t t_Authority)
+  predicate inv'29 [@inline:trivial] (_1: MutBorrow.t t_Authority) = invariant''22 _1
   
-  axiom inv_axiom'28 [@rewrite]: forall x: MutBorrow.t t_Authority [inv'29 x]. inv'29 x = invariant''22 x
+  meta "rewrite_def" predicate inv'29
   
   predicate contains'1 [@inline:trivial] (self: t_FMap'0) (k: t_Id) = get'0 self k <> C_None'0
   
@@ -1376,21 +1279,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       {id'2 result = id'1 self.current}
       (! return {result}) ]
   
-  predicate resolve'8 [@inline:trivial] (self: MutBorrow.t t_PA) = self.final = self.current
+  predicate resolve'5 [@inline:trivial] (_1: MutBorrow.t t_PA) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'8
+  meta "rewrite_def" predicate resolve'5
   
-  predicate resolve'9 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'8 _1
+  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'5 _1
   
-  meta "rewrite_def" predicate resolve'9
-  
-  predicate resolve'10 [@inline:trivial] (self: MutBorrow.t t_PA) = resolve'9 self
-  
-  meta "rewrite_def" predicate resolve'10
-  
-  predicate resolve'11 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'10 _1
-  
-  meta "rewrite_def" predicate resolve'11
+  meta "rewrite_def" predicate resolve'6
   
   let rec new'0 (x: t_Fragment) (return (x'0: t_Fragment)) = {[@expl:new 'x' type invariant] inv'16 x}
     any [ return (result: t_Fragment) -> {inv'17 result} {result = x} (! return {result}) ]
@@ -1410,32 +1305,29 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   predicate inv'30 (_1: t_PersistentArray)
   
-  axiom inv_axiom'29 [@rewrite]: forall x: t_PersistentArray [inv'30 x]. inv'30 x
-      = (invariant''23 x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'31} -> inv'17 frag
-        end)
+  axiom inv_axiom'8 [@rewrite]: forall x: t_PersistentArray [inv'30 x]. inv'30 x
+      = (invariant''23 x /\ inv'17 x.t_PersistentArray__frag)
   
   predicate invariant''24 [@inline:trivial] (self: t_PersistentArray) = inv'30 self
   
   meta "rewrite_def" predicate invariant''24
   
-  predicate inv'31 (_1: t_PersistentArray)
+  predicate inv'31 [@inline:trivial] (_1: t_PersistentArray) = invariant''24 _1
   
-  axiom inv_axiom'30 [@rewrite]: forall x: t_PersistentArray [inv'31 x]. inv'31 x = invariant''24 x
+  meta "rewrite_def" predicate inv'31
   
   predicate invariant''25 [@inline:trivial] (self: t_PersistentArray) = inv'31 self
   
   meta "rewrite_def" predicate invariant''25
   
-  predicate inv'32 (_1: t_PersistentArray)
+  predicate inv'32 [@inline:trivial] (_1: t_PersistentArray) = invariant''25 _1
   
-  axiom inv_axiom'31 [@rewrite]: forall x: t_PersistentArray [inv'32 x]. inv'32 x = invariant''25 x
+  meta "rewrite_def" predicate inv'32
   
-  predicate inv'33 (_1: closure0)
+  predicate inv'33 [@inline:trivial] (_1: closure0) =
+    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv'32 x0 /\ inv'6 x2
   
-  axiom inv_axiom'32 [@rewrite]: forall x: closure0 [inv'33 x]. inv'33 x
-      = (let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = x in inv'32 x0 /\ inv'6 x2)
+  meta "rewrite_def" predicate inv'33
   
   let rec closure0 [@coma:extspec] (self: closure0) (pa: MutBorrow.t t_PA) (return (x: t_Fragment)) = bb0
     [ bb0 = s0 [ s0 = deref {pa} (fun (_ret: MutBorrow.t t_PA) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
@@ -1473,12 +1365,12 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
           end}
         s1
       | s1 = -{match _16 with
-          | C_Some'1 x -> resolve'0 x
+          | C_Some'1 x -> resolve x
           | _ -> true
           end}-
         s2
       | s2 = {[@expl:type invariant] inv'22 _18} s3
-      | s3 = -{resolve'2 _18}- s4
+      | s3 = -{resolve'0 _18}- s4
       | s4 = bb13 ]
     | bb9 = s0
       [ s0 = v_Some {_16} (fun (r0: MutBorrow.t t_PermCellOwn) -> [ &other <- r0 ] s1)
@@ -1495,9 +1387,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       | s2 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'24 other} s1
-      | s1 = -{resolve'0 other}- s2
+      | s1 = -{resolve other}- s2
       | s2 = {[@expl:type invariant] inv'22 _18} s3
-      | s3 = -{resolve'2 _18}- s4
+      | s3 = -{resolve'0 _18}- s4
       | s4 = bb13 ]
     | bb13 = s0
       [ s0 = {inv'13 pa}
@@ -1517,11 +1409,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
             s1)
       | s1 = insert_ghost {_31} {cell_id} {_35} (fun (_ret: t_Option) -> [ &_30 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'28 _30} s3
-      | s3 = -{resolve'7 _30}- s4
+      | s3 = -{resolve'4 _30}- s4
       | s4 = bb16 ]
     | bb16 = s0
       [ s0 = {[@expl:type invariant] inv'22 _32} s1
-      | s1 = -{resolve'2 _32}- s2
+      | s1 = -{resolve'0 _32}- s2
       | s2 =
         [ &_37 <- Map.set pa.current.t_PA__depth cell_id (index_logic'1 pa.current.t_PA__depth (id (view'6 self.c0.t_PersistentArray__permcell))
         + 1) ] s3
@@ -1539,7 +1431,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
         [ &_39 <- { _39 with current = { _39.current with current = { _39.current.current with t_PA__depth = _37 } } } ]
         s1
       | s1 = {[@expl:type invariant] inv'22 _39} s2
-      | s2 = -{resolve'2 _39}- s3
+      | s2 = -{resolve'0 _39}- s3
       | s3 = {inv'13 pa}
         MutBorrow.borrow_mut <MutBorrow.t t_PA> {pa}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) ->
@@ -1559,9 +1451,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       | s2 = bb21 ]
     | bb21 = s0
       [ s0 = {[@expl:type invariant] inv'22 _42} s1
-      | s1 = -{resolve'2 _42}- s2
+      | s1 = -{resolve'0 _42}- s2
       | s2 = {[@expl:type invariant] inv'13 pa} s3
-      | s3 = -{resolve'11 pa}- s4
+      | s3 = -{resolve'6 pa}- s4
       | s4 = new'0 {_3} (fun (_ret: t_Fragment) -> [ &_0 <- _ret ] s5)
       | s5 = bb22 ]
     | bb22 = return {_0} ]
@@ -1611,9 +1503,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'12 [@inline:trivial] (_1: ()) = true
+  predicate resolve'7 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'12
+  meta "rewrite_def" predicate resolve'7
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: t_Rc'0) (result_state: ()) (result: t_LocalInvariant) =
     let self_ = args in result = view'7 self_
@@ -1623,7 +1515,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_mut_once (self: ()) (args: t_Rc'0) (res: t_LocalInvariant) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: t_Rc'0, res: t_LocalInvariant. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'12 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'7 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -1655,7 +1547,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_once (self: ()) (args: t_Rc'0) (res: t_LocalInvariant) : ()
   
   axiom fn_once_spec: forall self: (), args: t_Rc'0, res: t_LocalInvariant. postcondition_once self args res
-      = (postcondition self args res /\ resolve'12 self)
+      = (postcondition self args res /\ resolve'7 self)
   
   function fn_mut (self: ()) (args: t_Rc'0) (res_state: ()) (res: t_LocalInvariant) : ()
   
@@ -1774,9 +1666,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  predicate resolve'13 [@inline:trivial] (_1: ()) = true
+  predicate resolve'8 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'13
+  meta "rewrite_def" predicate resolve'8
   
   predicate postcondition_mut'0 [@inline:trivial] (self: ()) (args: tuple'2) (result_state: ()) (result: t_Fragment) =
     let {f0'2 = self'0; f1'2 = tokens; f2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
@@ -1788,7 +1680,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_mut_once'0 (self: ()) (args: tuple'2) (res: t_Fragment) : ()
   
   axiom fn_mut_once_spec'0: forall self: (), args: tuple'2, res: t_Fragment. postcondition_once'1 self args res
-      = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'13 res_state)
+      = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'8 res_state)
   
   predicate hist_inv'0 [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -1822,7 +1714,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_once'0 (self: ()) (args: tuple'2) (res: t_Fragment) : ()
   
   axiom fn_once_spec'0: forall self: (), args: tuple'2, res: t_Fragment. postcondition_once'1 self args res
-      = (postcondition'0 self args res /\ resolve'13 self)
+      = (postcondition'0 self args res /\ resolve'8 self)
   
   function fn_mut'0 (self: ()) (args: tuple'2) (res_state: ()) (res: t_Fragment) : ()
   
@@ -1852,9 +1744,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate postcondition_once'2
   
-  predicate resolve'14 [@inline:trivial] (_1: ()) = true
+  predicate resolve'9 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'14
+  meta "rewrite_def" predicate resolve'9
   
   predicate postcondition_mut'1 [@inline:trivial] (self: ()) (args: tuple'1) (result_state: ()) (result: t_Fragment) =
     let {f0'1 = self'0; f1'1 = tokens; f2 = f} = args in (exists this: t_LocalInvariant. postcondition () self'0 this
@@ -1866,7 +1758,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_mut_once'1 (self: ()) (args: tuple'1) (res: t_Fragment) : ()
   
   axiom fn_mut_once_spec'1: forall self: (), args: tuple'1, res: t_Fragment. postcondition_once'2 self args res
-      = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'14 res_state)
+      = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'9 res_state)
   
   predicate hist_inv'1 [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -1900,7 +1792,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   function fn_once'1 (self: ()) (args: tuple'1) (res: t_Fragment) : ()
   
   axiom fn_once_spec'1: forall self: (), args: tuple'1, res: t_Fragment. postcondition_once'2 self args res
-      = (postcondition'1 self args res /\ resolve'14 self)
+      = (postcondition'1 self args res /\ resolve'9 self)
   
   function fn_mut'1 (self: ()) (args: tuple'1) (res_state: ()) (res: t_Fragment) : ()
   
@@ -1982,29 +1874,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
-  use seq.Seq
   use map.Map
   use set.Set
   use creusot.int.UInt64
+  use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Rc
   
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Rc'0
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
-  
-  type t_Resource
-  
-  type t_Id
-  
-  type t_T
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
+  type t_Fragment
   
   type t_PersistentArray = {
     t_PersistentArray__permcell: t_Rc'0;
@@ -2027,7 +1908,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   type t_FMap
   
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
+  
+  type t_Id
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
@@ -2055,21 +1938,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate contains'1
   
-  predicate inv (_1: t_Id)
+  predicate inv [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Id [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  type t_NonNull'1 = { t_NonNull__pointer'1: Opaque.ptr }
+  type t_Vec
   
-  type t_Unique = { t_Unique__pointer: t_NonNull'1; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_T
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc'0
   
@@ -2077,18 +1952,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate invariant' (self: t_T) = inv'0 self
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_T)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -2100,11 +1975,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate inv'3 (_1: t_Vec)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: t_Inner)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
       = match x with
         | C_Direct a_0 -> inv'3 a_0
         | C_Link index value next -> inv'0 value
@@ -2114,9 +1989,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_Inner)
+  predicate inv'5 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
+  meta "rewrite_def" predicate inv'5
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -2126,7 +2001,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate inv'6 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -2157,32 +2032,25 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate inv'7 (_1: t_FMap)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 (self: t_Authority)
   
   predicate inv'8 (_1: t_Authority)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Authority [inv'8 x]. inv'8 x
-      = (invariant''5 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Authority [inv'8 x]. inv'8 x -> invariant''5 x
   
   predicate inv'9 (_1: t_PA)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'7 perms /\ inv'8 auth
-        end
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x = (inv'7 x.t_PA__perms /\ inv'8 x.t_PA__auth)
   
   predicate invariant''6 [@inline:trivial] (self: t_PA) = inv'9 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: t_PA)
+  predicate inv'10 [@inline:trivial] (_1: t_PA) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_PA [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   function id (self: t_Authority) : t_Id
   
@@ -2267,9 +2135,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: t_PA)
+  predicate inv'11 [@inline:trivial] (_1: t_PA) = invariant''7 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_PA [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
   let rec new (x: t_PA) (return (x'0: t_PA)) = {[@expl:new 'x' type invariant] inv'10 x}
     any [ return (result: t_PA) -> {inv'11 result} {result = x} (! return {result}) ]
@@ -2278,17 +2146,17 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'12 (_1: t_PA)
+  predicate inv'12 [@inline:trivial] (_1: t_PA) = invariant''8 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PA [inv'12 x]. inv'12 x = invariant''8 x
+  meta "rewrite_def" predicate inv'12
   
   predicate invariant''9 [@inline:trivial] (self: t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'13 (_1: t_PA)
+  predicate inv'13 [@inline:trivial] (_1: t_PA) = invariant''9 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: t_PA [inv'13 x]. inv'13 x = invariant''9 x
+  meta "rewrite_def" predicate inv'13
   
   let rec deref'2 (self: t_PA) (return (x: t_PA)) = {[@expl:deref 'self' type invariant] inv'12 self}
     any [ return (result: t_PA) -> {inv'13 result} {result = self} (! return {result}) ]
@@ -2297,35 +2165,31 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate inv'14 (_1: t_Fragment)
   
-  axiom inv_axiom'13 [@rewrite]: forall x: t_Fragment [inv'14 x]. inv'14 x
-      = (invariant''10 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom'5: forall x: t_Fragment [inv'14 x]. inv'14 x -> invariant''10 x
   
   predicate invariant''11 [@inline:trivial] (self: t_Fragment) = inv'14 self
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_1: t_Fragment)
+  predicate inv'15 [@inline:trivial] (_1: t_Fragment) = invariant''11 _1
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Fragment [inv'15 x]. inv'15 x = invariant''11 x
+  meta "rewrite_def" predicate inv'15
   
   predicate invariant''12 [@inline:trivial] (self: t_Fragment) = inv'15 self
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'16 (_1: t_Fragment)
+  predicate inv'16 [@inline:trivial] (_1: t_Fragment) = invariant''12 _1
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_Fragment [inv'16 x]. inv'16 x = invariant''12 x
+  meta "rewrite_def" predicate inv'16
   
   predicate invariant''13 [@inline:trivial] (self: t_Fragment) = inv'14 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'17 (_1: t_Fragment)
+  predicate inv'17 [@inline:trivial] (_1: t_Fragment) = invariant''13 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_Fragment [inv'17 x]. inv'17 x = invariant''13 x
+  meta "rewrite_def" predicate inv'17
   
   let rec deref'3 (self: t_Fragment) (return (x: t_Fragment)) = {[@expl:deref 'self' type invariant] inv'16 self}
     any [ return (result: t_Fragment) -> {inv'17 result} {result = self} (! return {result}) ]
@@ -2334,9 +2198,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'18 (_1: t_Authority)
+  predicate inv'18 [@inline:trivial] (_1: t_Authority) = invariant''14 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: t_Authority [inv'18 x]. inv'18 x = invariant''14 x
+  meta "rewrite_def" predicate inv'18
   
   function id'2 (self: t_Fragment) : t_Id
   
@@ -2357,9 +2221,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'19 (_1: t_T)
+  predicate inv'19 [@inline:trivial] (_1: t_T) = invariant''15 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: t_T [inv'19 x]. inv'19 x = invariant''15 x
+  meta "rewrite_def" predicate inv'19
   
   let rec get_inner_immut (inner: t_Rc'0) (i: UInt64.t) (pa: t_PA) (return (x: t_T)) =
     {[@expl:get_inner_immut 'pa' type invariant] inv'11 pa}
@@ -2379,19 +2243,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_immut (* 
   
   predicate inv'20 (_1: t_PersistentArray)
   
-  axiom inv_axiom'19 [@rewrite]: forall x: t_PersistentArray [inv'20 x]. inv'20 x
-      = (invariant''16 x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'21} -> inv'15 frag
-        end)
+  axiom inv_axiom'6 [@rewrite]: forall x: t_PersistentArray [inv'20 x]. inv'20 x
+      = (invariant''16 x /\ inv'15 x.t_PersistentArray__frag)
   
   predicate invariant''17 [@inline:trivial] (self: t_PersistentArray) = inv'20 self
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'21 (_1: t_PersistentArray)
+  predicate inv'21 [@inline:trivial] (_1: t_PersistentArray) = invariant''17 _1
   
-  axiom inv_axiom'20 [@rewrite]: forall x: t_PersistentArray [inv'21 x]. inv'21 x = invariant''17 x
+  meta "rewrite_def" predicate inv'21
   
   function view'6 [@inline:trivial] (self: t_PersistentArray) : Seq.seq t_T = (view'5 self.t_PersistentArray__frag).f1
   
@@ -2448,16 +2309,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
   use map.Map
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Rc
   
   type t_PermCell
   
@@ -2468,9 +2326,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   type t_FMap
   
-  type t_Resource
-  
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
   
   type t_Id
   
@@ -2490,21 +2346,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate contains
   
-  predicate inv (_1: t_Id)
+  predicate inv [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Id [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull'0; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_T
   
@@ -2514,18 +2360,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   predicate invariant' (self: t_T) = inv'0 self
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_T)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -2537,11 +2383,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   predicate inv'3 (_1: t_Vec)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: t_Inner)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
       = match x with
         | C_Direct a_0 -> inv'3 a_0
         | C_Link index value next -> inv'0 value
@@ -2551,9 +2397,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_Inner)
+  predicate inv'5 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
+  meta "rewrite_def" predicate inv'5
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -2563,7 +2409,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   predicate inv'6 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -2594,56 +2440,49 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   predicate inv'7 (_1: t_FMap)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 (self: t_Authority)
   
   predicate inv'8 (_1: t_Authority)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Authority [inv'8 x]. inv'8 x
-      = (invariant''5 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Authority [inv'8 x]. inv'8 x -> invariant''5 x
   
   predicate inv'9 (_1: t_PA)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'7 perms /\ inv'8 auth
-        end
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x = (inv'7 x.t_PA__perms /\ inv'8 x.t_PA__auth)
   
   predicate invariant''6 [@inline:trivial] (self: t_PA) = inv'9 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: t_PA)
+  predicate inv'10 [@inline:trivial] (_1: t_PA) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_PA [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''7 [@inline:trivial] (self: t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: t_PA)
+  predicate inv'11 [@inline:trivial] (_1: t_PA) = invariant''7 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_PA [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
   predicate invariant''8 [@inline:trivial] (self: t_PA) = inv'11 self
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'12 (_1: t_PA)
+  predicate inv'12 [@inline:trivial] (_1: t_PA) = invariant''8 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_PA [inv'12 x]. inv'12 x = invariant''8 x
+  meta "rewrite_def" predicate inv'12
   
   predicate invariant''9 [@inline:trivial] (self: t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'13 (_1: t_PA)
+  predicate inv'13 [@inline:trivial] (_1: t_PA) = invariant''9 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: t_PA [inv'13 x]. inv'13 x = invariant''9 x
+  meta "rewrite_def" predicate inv'13
   
   let rec deref'0 (self: t_PA) (return (x: t_PA)) = {[@expl:deref 'self' type invariant] inv'12 self}
     any [ return (result: t_PA) -> {inv'13 result} {result = self} (! return {result}) ]
@@ -2661,21 +2500,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'14 (_1: t_FMap)
+  predicate inv'14 [@inline:trivial] (_1: t_FMap) = invariant''10 _1
   
-  axiom inv_axiom'13 [@rewrite]: forall x: t_FMap [inv'14 x]. inv'14 x = invariant''10 x
+  meta "rewrite_def" predicate inv'14
   
   predicate invariant''11 [@inline:trivial] (self: t_PermCellOwn) = inv'6 self
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_1: t_PermCellOwn)
+  predicate inv'15 [@inline:trivial] (_1: t_PermCellOwn) = invariant''11 _1
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_PermCellOwn [inv'15 x]. inv'15 x = invariant''11 x
+  meta "rewrite_def" predicate inv'15
   
   predicate inv'16 (_1: t_Option'0)
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_Option'0 [inv'16 x]. inv'16 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'16 x]. inv'16 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'15 a_0
@@ -2701,9 +2540,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'17 (_1: t_PermCellOwn)
+  predicate inv'17 [@inline:trivial] (_1: t_PermCellOwn) = invariant''12 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_PermCellOwn [inv'17 x]. inv'17 x = invariant''12 x
+  meta "rewrite_def" predicate inv'17
   
   let rec new (x: t_PermCellOwn) (return (x'0: t_PermCellOwn)) = {[@expl:new 'x' type invariant] inv'15 x}
     any [ return (result: t_PermCellOwn) -> {inv'17 result} {result = x} (! return {result}) ]
@@ -2735,9 +2574,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'18 (_1: t_Vec)
+  predicate inv'18 [@inline:trivial] (_1: t_Vec) = invariant''13 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: t_Vec [inv'18 x]. inv'18 x = invariant''13 x
+  meta "rewrite_def" predicate inv'18
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -2747,9 +2586,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'19 (_1: t_T)
+  predicate inv'19 [@inline:trivial] (_1: t_T) = invariant''14 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: t_T [inv'19 x]. inv'19 x = invariant''14 x
+  meta "rewrite_def" predicate inv'19
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -2905,11 +2744,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
-  use seq.Seq
   use creusot.prelude.MutBorrow
   use map.Map
   use creusot.int.UInt64
+  use seq.Seq
   use mach.int.Int
   use creusot.slice.Slice64
   use creusot.prelude.Any
@@ -2921,21 +2759,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   function public (self: t_LocalInvariant) : t_Id
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Rc
   
   function view (self: t_Rc) : t_LocalInvariant
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
+  type t_Rc'0
   
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
-  
-  type t_Resource
-  
-  type t_T
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
+  type t_Fragment
   
   type t_PersistentArray = {
     t_PersistentArray__permcell: t_Rc'0;
@@ -2944,7 +2774,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   type t_FMap
   
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
   
   type t_PA = { t_PA__perms: t_FMap; t_PA__auth: t_Authority; t_PA__depth: Map.map t_Id int }
   
@@ -2962,21 +2792,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate contains
   
-  predicate inv (_1: t_Id)
+  predicate inv [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Id [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  type t_NonNull'1 = { t_NonNull__pointer'1: Opaque.ptr }
+  type t_Vec
   
-  type t_Unique = { t_Unique__pointer: t_NonNull'1; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_T
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc'0
   
@@ -2984,18 +2806,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate invariant' (self: t_T) = inv'0 self
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_T)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -3007,11 +2829,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate inv'3 (_1: t_Vec)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: t_Inner)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
       = match x with
         | C_Direct a_0 -> inv'3 a_0
         | C_Link index value next -> inv'0 value
@@ -3021,9 +2843,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_Inner)
+  predicate inv'5 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
+  meta "rewrite_def" predicate inv'5
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -3033,7 +2855,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate inv'6 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -3064,56 +2886,49 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate inv'7 (_1: t_FMap)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 (self: t_Authority)
   
   predicate inv'8 (_1: t_Authority)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Authority [inv'8 x]. inv'8 x
-      = (invariant''5 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Authority [inv'8 x]. inv'8 x -> invariant''5 x
   
   predicate inv'9 (_1: t_PA)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'7 perms /\ inv'8 auth
-        end
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x = (inv'7 x.t_PA__perms /\ inv'8 x.t_PA__auth)
   
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'9 self.current /\ inv'9 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: MutBorrow.t t_PA)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_PA [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: MutBorrow.t t_PA)
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''7 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_PA [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'11 self
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'12 (_1: MutBorrow.t t_PA)
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''8 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_PA [inv'12 x]. inv'12 x = invariant''8 x
+  meta "rewrite_def" predicate inv'12
   
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'13 (_1: MutBorrow.t t_PA)
+  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''9 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t t_PA [inv'13 x]. inv'13 x = invariant''9 x
+  meta "rewrite_def" predicate inv'13
   
   let rec deref (self: MutBorrow.t t_PA) (return (x: MutBorrow.t t_PA)) =
     {[@expl:deref 'self' type invariant] inv'12 self}
@@ -3125,35 +2940,31 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate inv'14 (_1: t_Fragment)
   
-  axiom inv_axiom'13 [@rewrite]: forall x: t_Fragment [inv'14 x]. inv'14 x
-      = (invariant''10 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom'5: forall x: t_Fragment [inv'14 x]. inv'14 x -> invariant''10 x
   
   predicate invariant''11 [@inline:trivial] (self: t_Fragment) = inv'14 self
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'15 (_1: t_Fragment)
+  predicate inv'15 [@inline:trivial] (_1: t_Fragment) = invariant''11 _1
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Fragment [inv'15 x]. inv'15 x = invariant''11 x
+  meta "rewrite_def" predicate inv'15
   
   predicate invariant''12 [@inline:trivial] (self: t_Fragment) = inv'15 self
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'16 (_1: t_Fragment)
+  predicate inv'16 [@inline:trivial] (_1: t_Fragment) = invariant''12 _1
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_Fragment [inv'16 x]. inv'16 x = invariant''12 x
+  meta "rewrite_def" predicate inv'16
   
   predicate invariant''13 [@inline:trivial] (self: t_Fragment) = inv'14 self
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'17 (_1: t_Fragment)
+  predicate inv'17 [@inline:trivial] (_1: t_Fragment) = invariant''13 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_Fragment [inv'17 x]. inv'17 x = invariant''13 x
+  meta "rewrite_def" predicate inv'17
   
   let rec deref'0 (self: t_Fragment) (return (x: t_Fragment)) = {[@expl:deref 'self' type invariant] inv'16 self}
     any [ return (result: t_Fragment) -> {inv'17 result} {result = self} (! return {result}) ]
@@ -3162,9 +2973,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'18 (_1: t_Authority)
+  predicate inv'18 [@inline:trivial] (_1: t_Authority) = invariant''14 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: t_Authority [inv'18 x]. inv'18 x = invariant''14 x
+  meta "rewrite_def" predicate inv'18
   
   function id (self: t_Authority) : t_Id
   
@@ -3200,41 +3011,33 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'19 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'19 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''15 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'19 x]. inv'19 x = invariant''15 x
+  meta "rewrite_def" predicate inv'19
   
   predicate invariant''16 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) =
     inv'10 self.current /\ inv'10 self.final
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'20 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'20 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''16 _1
   
-  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'20 x]. inv'20 x = invariant''16 x
+  meta "rewrite_def" predicate inv'20
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_PA)) (return (x: MutBorrow.t (MutBorrow.t t_PA))) =
     {[@expl:deref_mut 'self' type invariant] inv'19 self}
     any [ return (result: MutBorrow.t (MutBorrow.t t_PA)) -> {inv'20 result} {result = self} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec new'0 (x: MutBorrow.t t_PA) (return (x'0: MutBorrow.t t_PA)) = {[@expl:new 'x' type invariant] inv'10 x}
     any [ return (result: MutBorrow.t t_PA) -> {inv'11 result} {result = x} (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PA) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_PA) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   predicate contains'1 [@inline:trivial] (self: t_FMap'0) (k: t_Id) = get'0 self k <> C_None'0
   
@@ -3332,21 +3135,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'21 (_1: t_FMap)
+  predicate inv'21 [@inline:trivial] (_1: t_FMap) = invariant''17 _1
   
-  axiom inv_axiom'20 [@rewrite]: forall x: t_FMap [inv'21 x]. inv'21 x = invariant''17 x
+  meta "rewrite_def" predicate inv'21
   
   predicate invariant''18 [@inline:trivial] (self: t_PermCellOwn) = inv'6 self
   
   meta "rewrite_def" predicate invariant''18
   
-  predicate inv'22 (_1: t_PermCellOwn)
+  predicate inv'22 [@inline:trivial] (_1: t_PermCellOwn) = invariant''18 _1
   
-  axiom inv_axiom'21 [@rewrite]: forall x: t_PermCellOwn [inv'22 x]. inv'22 x = invariant''18 x
+  meta "rewrite_def" predicate inv'22
   
   predicate inv'23 (_1: t_Option'1)
   
-  axiom inv_axiom'22 [@rewrite]: forall x: t_Option'1 [inv'23 x]. inv'23 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'1 [inv'23 x]. inv'23 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'22 a_0
@@ -3372,9 +3175,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''19
   
-  predicate inv'24 (_1: t_PermCellOwn)
+  predicate inv'24 [@inline:trivial] (_1: t_PermCellOwn) = invariant''19 _1
   
-  axiom inv_axiom'23 [@rewrite]: forall x: t_PermCellOwn [inv'24 x]. inv'24 x = invariant''19 x
+  meta "rewrite_def" predicate inv'24
   
   let rec new'1 (x: t_PermCellOwn) (return (x'0: t_PermCellOwn)) = {[@expl:new 'x' type invariant] inv'22 x}
     any [ return (result: t_PermCellOwn) -> {inv'24 result} {result = x} (! return {result}) ]
@@ -3396,23 +3199,23 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''20
   
-  predicate inv'25 (_1: t_Vec)
+  predicate inv'25 [@inline:trivial] (_1: t_Vec) = invariant''20 _1
   
-  axiom inv_axiom'24 [@rewrite]: forall x: t_Vec [inv'25 x]. inv'25 x = invariant''20 x
+  meta "rewrite_def" predicate inv'25
   
   predicate invariant''21 (self: Slice64.slice t_T) = inv'2 (Slice64.view self)
   
-  predicate inv'26 (_1: Slice64.slice t_T)
+  predicate inv'26 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''21 _1
   
-  axiom inv_axiom'25 [@rewrite]: forall x: Slice64.slice t_T [inv'26 x]. inv'26 x = invariant''21 x
+  meta "rewrite_def" predicate inv'26
   
   predicate invariant''22 [@inline:trivial] (self: Slice64.slice t_T) = inv'26 self
   
   meta "rewrite_def" predicate invariant''22
   
-  predicate inv'27 (_1: Slice64.slice t_T)
+  predicate inv'27 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''22 _1
   
-  axiom inv_axiom'26 [@rewrite]: forall x: Slice64.slice t_T [inv'27 x]. inv'27 x = invariant''22 x
+  meta "rewrite_def" predicate inv'27
   
   let rec deref'3 (self_: t_Vec) (return (x: Slice64.slice t_T)) = {[@expl:deref 'self_' type invariant] inv'25 self_}
     any
@@ -3426,9 +3229,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate invariant''23
   
-  predicate inv'28 (_1: t_T)
+  predicate inv'28 [@inline:trivial] (_1: t_T) = invariant''23 _1
   
-  axiom inv_axiom'27 [@rewrite]: forall x: t_T [inv'28 x]. inv'28 x = invariant''23 x
+  meta "rewrite_def" predicate inv'28
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -3449,32 +3252,28 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   predicate inv'29 (_1: t_PersistentArray)
   
-  axiom inv_axiom'28 [@rewrite]: forall x: t_PersistentArray [inv'29 x]. inv'29 x
-      = (invariant''24 x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'30} -> inv'15 frag
-        end)
+  axiom inv_axiom'7 [@rewrite]: forall x: t_PersistentArray [inv'29 x]. inv'29 x
+      = (invariant''24 x /\ inv'15 x.t_PersistentArray__frag)
   
   predicate invariant''25 [@inline:trivial] (self: t_PersistentArray) = inv'29 self
   
   meta "rewrite_def" predicate invariant''25
   
-  predicate inv'30 (_1: t_PersistentArray)
+  predicate inv'30 [@inline:trivial] (_1: t_PersistentArray) = invariant''25 _1
   
-  axiom inv_axiom'29 [@rewrite]: forall x: t_PersistentArray [inv'30 x]. inv'30 x = invariant''25 x
+  meta "rewrite_def" predicate inv'30
   
   predicate invariant''26 [@inline:trivial] (self: t_PersistentArray) = inv'30 self
   
   meta "rewrite_def" predicate invariant''26
   
-  predicate inv'31 (_1: t_PersistentArray)
+  predicate inv'31 [@inline:trivial] (_1: t_PersistentArray) = invariant''26 _1
   
-  axiom inv_axiom'30 [@rewrite]: forall x: t_PersistentArray [inv'31 x]. inv'31 x = invariant''26 x
+  meta "rewrite_def" predicate inv'31
   
-  predicate inv'32 (_1: closure0)
+  predicate inv'32 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv'31 x0
   
-  axiom inv_axiom'31 [@rewrite]: forall x: closure0 [inv'32 x]. inv'32 x
-      = (let {c0 = x0; c1 = x1; c2 = x2} = x in inv'31 x0)
+  meta "rewrite_def" predicate inv'32
   
   let rec closure0 [@coma:extspec] (self: closure0) (pa: MutBorrow.t t_PA) (return (x: t_T)) = bb0
     [ bb0 = s0 [ s0 = deref {pa} (fun (_ret: MutBorrow.t t_PA) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
@@ -3505,9 +3304,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
             [ &_18 <- _ret ] -{inv'9 _ret.final}-
             [ &_19 <- { _19 with current = { _19.current with current = _ret.final } } ] s2)
       | s2 = {[@expl:type invariant] inv'20 _20} s3
-      | s3 = -{resolve'0 _20}- s4
+      | s3 = -{resolve _20}- s4
       | s4 = {[@expl:type invariant] inv'20 _19} s5
-      | s5 = -{resolve'0 _19}- s6
+      | s5 = -{resolve _19}- s6
       | s6 = {inv'9 _18.current}
         MutBorrow.borrow_final <t_PA> {_18.current} {MutBorrow.get_id _18}
           (fun (_ret: MutBorrow.t t_PA) ->
@@ -3517,13 +3316,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
       | s8 = bb6 ]
     | bb6 = s0
       [ s0 = {[@expl:type invariant] inv'10 _18} s1
-      | s1 = -{resolve'2 _18}- s2
+      | s1 = -{resolve'0 _18}- s2
       | s2 = reroot {_14} {self.c1} {_16} (fun (_ret: ()) -> [ &_12 <- _ret ] s3)
       | s3 = bb7 ]
     | bb7 = s0 [ s0 = into_inner {pa} (fun (_ret: MutBorrow.t t_PA) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'10 _26} s1
-      | s1 = -{resolve'2 _26}- s2
+      | s1 = -{resolve'0 _26}- s2
       | s2 = deref'1 {self.c0.t_PersistentArray__permcell} (fun (_ret: t_PermCell) -> [ &_34 <- _ret ] s3)
       | s3 = bb9 ]
     | bb9 = s0 [ s0 = id_ghost {_34} (fun (_ret: t_Id) -> [ &_32 <- _ret ] s1) | s1 = bb10 ]
@@ -3587,9 +3386,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'3 [@inline:trivial] (_1: ()) = true
+  predicate resolve'1 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: t_Rc) (result_state: ()) (result: t_LocalInvariant) =
     let self_ = args in result = view self_
@@ -3599,7 +3398,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_mut_once (self: ()) (args: t_Rc) (res: t_LocalInvariant) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: t_Rc, res: t_LocalInvariant. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -3631,7 +3430,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_once (self: ()) (args: t_Rc) (res: t_LocalInvariant) : ()
   
   axiom fn_once_spec: forall self: (), args: t_Rc, res: t_LocalInvariant. postcondition_once self args res
-      = (postcondition self args res /\ resolve'3 self)
+      = (postcondition self args res /\ resolve'1 self)
   
   function fn_mut (self: ()) (args: t_Rc) (res_state: ()) (res: t_LocalInvariant) : ()
   
@@ -3708,9 +3507,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  predicate resolve'4 [@inline:trivial] (_1: ()) = true
+  predicate resolve'2 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'2
   
   predicate postcondition_mut'0 [@inline:trivial] (self: ()) (args: tuple'1) (result_state: ()) (result: t_T) =
     let {f0'1 = self'0; f1'1 = tokens; f2'0 = f} = args in (exists t: MutBorrow.t t_PA. protocol t.current (public self'0)
@@ -3722,7 +3521,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_mut_once'0 (self: ()) (args: tuple'1) (res: t_T) : ()
   
   axiom fn_mut_once_spec'0: forall self: (), args: tuple'1, res: t_T. postcondition_once'1 self args res
-      = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'4 res_state)
+      = (exists res_state: (). postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
   
   predicate hist_inv'0 [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -3756,7 +3555,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_once'0 (self: ()) (args: tuple'1) (res: t_T) : ()
   
   axiom fn_once_spec'0: forall self: (), args: tuple'1, res: t_T. postcondition_once'1 self args res
-      = (postcondition'0 self args res /\ resolve'4 self)
+      = (postcondition'0 self args res /\ resolve'2 self)
   
   function fn_mut'0 (self: ()) (args: tuple'1) (res_state: ()) (res: t_T) : ()
   
@@ -3786,9 +3585,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate postcondition_once'2
   
-  predicate resolve'5 [@inline:trivial] (_1: ()) = true
+  predicate resolve'3 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'3
   
   predicate postcondition_mut'1 [@inline:trivial] (self: ()) (args: tuple'0) (result_state: ()) (result: t_T) =
     let {f0'0 = self'0; f1'0 = tokens; f2 = f} = args in (exists this: t_LocalInvariant. postcondition () self'0 this
@@ -3800,7 +3599,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_mut_once'1 (self: ()) (args: tuple'0) (res: t_T) : ()
   
   axiom fn_mut_once_spec'1: forall self: (), args: tuple'0, res: t_T. postcondition_once'2 self args res
-      = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'5 res_state)
+      = (exists res_state: (). postcondition_mut'1 self args res_state res /\ resolve'3 res_state)
   
   predicate hist_inv'1 [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -3834,7 +3633,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   function fn_once'1 (self: ()) (args: tuple'0) (res: t_T) : ()
   
   axiom fn_once_spec'1: forall self: (), args: tuple'0, res: t_T. postcondition_once'2 self args res
-      = (postcondition'1 self args res /\ resolve'5 self)
+      = (postcondition'1 self args res /\ resolve'3 self)
   
   function fn_mut'1 (self: ()) (args: tuple'0) (res_state: ()) (res: t_T) : ()
   
@@ -3887,7 +3686,6 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   use creusot.prelude.MutBorrow
   use map.Map
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
@@ -3896,9 +3694,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   type t_FMap
   
-  type t_Resource
-  
-  type t_Authority = { t_Authority__0: t_Resource }
+  type t_Authority
   
   type t_Id
   
@@ -3918,27 +3714,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate contains
   
-  predicate inv (_1: t_Id)
+  predicate inv [@inline:trivial] (_1: t_Id) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Id [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_T
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc = { t_Rc__ptr: t_NonNull'0; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Rc
   
   type t_Inner = C_Direct t_Vec | C_Link UInt64.t t_T t_Rc
   
@@ -3946,18 +3730,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   predicate invariant' (self: t_T) = inv'0 self
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_T)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -3969,11 +3753,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   predicate inv'3 (_1: t_Vec)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate inv'4 (_1: t_Inner)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Inner [inv'4 x]. inv'4 x
       = match x with
         | C_Direct a_0 -> inv'3 a_0
         | C_Link index value next -> inv'0 value
@@ -3983,9 +3767,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: t_Inner)
+  predicate inv'5 [@inline:trivial] (_1: t_Inner) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Inner [inv'5 x]. inv'5 x = invariant''2 x
+  meta "rewrite_def" predicate inv'5
   
   function val' (self: t_PermCellOwn) : t_Inner
   
@@ -3995,7 +3779,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   predicate inv'6 (_1: t_PermCellOwn)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellOwn [inv'6 x]. inv'6 x = invariant''3 x
   
   predicate index_logic [@inline:trivial] (self: Map.map t_PermCellOwn bool) (a: t_PermCellOwn) = Map.get self a
   
@@ -4026,58 +3810,51 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   predicate inv'7 (_1: t_FMap)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_FMap [inv'7 x]. inv'7 x = invariant''4 x
   
   predicate invariant''5 (self: t_Authority)
   
   predicate inv'8 (_1: t_Authority)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Authority [inv'8 x]. inv'8 x
-      = (invariant''5 x
-      /\ match x with
-        | {t_Authority__0 = a_0} -> true
-        end)
+  axiom inv_axiom'3: forall x: t_Authority [inv'8 x]. inv'8 x -> invariant''5 x
   
   predicate inv'9 (_1: t_PA)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x
-      = match x with
-        | {t_PA__perms = perms; t_PA__auth = auth; t_PA__depth = depth} -> inv'7 perms /\ inv'8 auth
-        end
+  axiom inv_axiom'4 [@rewrite]: forall x: t_PA [inv'9 x]. inv'9 x = (inv'7 x.t_PA__perms /\ inv'8 x.t_PA__auth)
   
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'9 self.current /\ inv'9 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: MutBorrow.t t_PA)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_PA [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PA) = inv'10 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: MutBorrow.t t_PA)
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_PA) = invariant''7 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_PA [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) =
     inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'12 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''8 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'12 x]. inv'12 x = invariant''8 x
+  meta "rewrite_def" predicate inv'12
   
   predicate invariant''9 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) =
     inv'10 self.current /\ inv'10 self.final
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'13 (_1: MutBorrow.t (MutBorrow.t t_PA))
+  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = invariant''9 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t (MutBorrow.t t_PA) [inv'13 x]. inv'13 x = invariant''9 x
+  meta "rewrite_def" predicate inv'13
   
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t t_PA)) (return (x: MutBorrow.t (MutBorrow.t t_PA))) =
     {[@expl:deref_mut 'self' type invariant] inv'12 self}
@@ -4101,13 +3878,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'14 (_1: MutBorrow.t t_FMap)
+  predicate inv'14 [@inline:trivial] (_1: MutBorrow.t t_FMap) = invariant''10 _1
   
-  axiom inv_axiom'13 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'14 x]. inv'14 x = invariant''10 x
+  meta "rewrite_def" predicate inv'14
   
   predicate inv'15 (_1: t_Option)
   
-  axiom inv_axiom'14 [@rewrite]: forall x: t_Option [inv'15 x]. inv'15 x
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Option [inv'15 x]. inv'15 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'6 a_0
@@ -4132,13 +3909,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_PA)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA)) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec unwrap (self_: t_Option) (return (x: t_PermCellOwn)) = {[@expl:unwrap 'self_' type invariant] inv'15 self_}
     {[@expl:unwrap requires] self_ <> C_None}
@@ -4148,9 +3921,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''11
   
-  predicate inv'16 (_1: t_PermCellOwn)
+  predicate inv'16 [@inline:trivial] (_1: t_PermCellOwn) = invariant''11 _1
   
-  axiom inv_axiom'15 [@rewrite]: forall x: t_PermCellOwn [inv'16 x]. inv'16 x = invariant''11 x
+  meta "rewrite_def" predicate inv'16
   
   let rec new (x: t_PermCellOwn) (return (x'0: t_PermCellOwn)) = {[@expl:new 'x' type invariant] inv'6 x}
     any [ return (result: t_PermCellOwn) -> {inv'16 result} {result = x} (! return {result}) ]
@@ -4159,45 +3932,37 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''12
   
-  predicate inv'17 (_1: MutBorrow.t t_PermCellOwn)
+  predicate inv'17 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''12 _1
   
-  axiom inv_axiom'16 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'17 x]. inv'17 x = invariant''12 x
+  meta "rewrite_def" predicate inv'17
   
   predicate invariant''13 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''13
   
-  predicate inv'18 (_1: MutBorrow.t t_PermCellOwn)
+  predicate inv'18 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''13 _1
   
-  axiom inv_axiom'17 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'18 x]. inv'18 x = invariant''13 x
+  meta "rewrite_def" predicate inv'18
   
   let rec deref_mut'0 (self: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_PermCellOwn)) =
     {[@expl:deref_mut 'self' type invariant] inv'17 self}
     any [ return (result: MutBorrow.t t_PermCellOwn) -> {inv'18 result} {result = self} (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
   
   predicate invariant''14 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'18 self
   
   meta "rewrite_def" predicate invariant''14
   
-  predicate inv'19 (_1: MutBorrow.t t_PermCellOwn)
+  predicate inv'19 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''14 _1
   
-  axiom inv_axiom'18 [@rewrite]: forall x: MutBorrow.t t_PermCellOwn [inv'19 x]. inv'19 x = invariant''14 x
+  meta "rewrite_def" predicate inv'19
   
   let rec new'0 (x: MutBorrow.t t_PermCellOwn) (return (x'0: MutBorrow.t t_PermCellOwn)) =
     {[@expl:new 'x' type invariant] inv'18 x}
@@ -4209,9 +3974,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''15
   
-  predicate inv'20 (_1: MutBorrow.t t_Inner)
+  predicate inv'20 [@inline:trivial] (_1: MutBorrow.t t_Inner) = invariant''15 _1
   
-  axiom inv_axiom'19 [@rewrite]: forall x: MutBorrow.t t_Inner [inv'20 x]. inv'20 x = invariant''15 x
+  meta "rewrite_def" predicate inv'20
   
   function fin [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) : t_PermCellOwn = self.final
   
@@ -4231,13 +3996,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       {result.final = view'2 (fin perm)}
       (! return {result}) ]
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_Inner) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Inner) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'5
-  
-  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t t_Inner) = resolve'5 _1
-  
-  meta "rewrite_def" predicate resolve'6
+  meta "rewrite_def" predicate resolve'2
   
   let rec into_inner (self: t_PermCellOwn) (return (x: t_PermCellOwn)) =
     {[@expl:into_inner 'self' type invariant] inv'16 self}
@@ -4260,64 +4021,48 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve'7 [@inline:trivial] (self: MutBorrow.t t_PA) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_PA) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'8 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'7 _1
+  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'3 _1
   
-  meta "rewrite_def" predicate resolve'8
-  
-  predicate resolve'9 [@inline:trivial] (self: MutBorrow.t t_PA) = resolve'8 self
-  
-  meta "rewrite_def" predicate resolve'9
-  
-  predicate resolve'10 [@inline:trivial] (_1: MutBorrow.t t_PA) = resolve'9 _1
-  
-  meta "rewrite_def" predicate resolve'10
+  meta "rewrite_def" predicate resolve'4
   
   predicate invariant''16 [@inline:trivial] (self: t_Option) = inv'15 self
   
   meta "rewrite_def" predicate invariant''16
   
-  predicate inv'21 (_1: t_Option)
+  predicate inv'21 [@inline:trivial] (_1: t_Option) = invariant''16 _1
   
-  axiom inv_axiom'20 [@rewrite]: forall x: t_Option [inv'21 x]. inv'21 x = invariant''16 x
+  meta "rewrite_def" predicate inv'21
   
   let rec new'1 (x: t_Option) (return (x'0: t_Option)) = {[@expl:new 'x' type invariant] inv'15 x}
     any [ return (result: t_Option) -> {inv'21 result} {result = x} (! return {result}) ]
   
-  predicate resolve'11 [@inline:trivial] (_1: t_Inner) = true
+  predicate resolve'5 [@inline:trivial] (_1: t_Inner) = true
   
-  meta "rewrite_def" predicate resolve'11
+  meta "rewrite_def" predicate resolve'5
   
-  predicate resolve'12 [@inline:trivial] (self: t_PermCellOwn) = resolve'11 (val' self)
+  predicate resolve'6 [@inline:trivial] (self: t_PermCellOwn) = resolve'5 (val' self)
   
-  meta "rewrite_def" predicate resolve'12
+  meta "rewrite_def" predicate resolve'6
   
-  predicate resolve'13 [@inline:trivial] (_1: t_PermCellOwn) = resolve'12 _1
+  predicate resolve'7 (_1: t_PermCellOwn)
   
-  meta "rewrite_def" predicate resolve'13
+  axiom resolve_axiom: forall x: t_PermCellOwn [resolve'7 x]. resolve'7 x -> resolve'6 x
   
-  predicate resolve'14 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'13 x
-      | C_None -> true
-      end
+  predicate resolve'8 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'14
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'8 x]. resolve'8 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'7 x0
+        end
   
-  predicate resolve'15 [@inline:trivial] (_1: t_Option) = resolve'14 _1
+  predicate resolve'9 [@inline:trivial] (_1: t_Option) = resolve'8 _1
   
-  meta "rewrite_def" predicate resolve'15
-  
-  predicate resolve'16 [@inline:trivial] (self: t_Option) = resolve'15 self
-  
-  meta "rewrite_def" predicate resolve'16
-  
-  predicate resolve'17 [@inline:trivial] (_1: t_Option) = resolve'16 _1
-  
-  meta "rewrite_def" predicate resolve'17
+  meta "rewrite_def" predicate resolve'9
   
   let rec v_Link (input: t_Inner) (ret (index: UInt64.t) (value: t_T) (next: t_Rc)) = any
     [ good (index: UInt64.t) (value: t_T) (next: t_Rc) -> {C_Link index value next = input}
@@ -4336,19 +4081,15 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   let rec replace (dest: MutBorrow.t t_Rc) (src: t_Rc) (return (x: t_Rc)) = any
     [ return (result: t_Rc) -> {dest.final = src} {result = dest.current} (! return {result}) ]
   
-  predicate resolve'18 [@inline:trivial] (self: MutBorrow.t t_Rc) = self.final = self.current
+  predicate resolve'10 [@inline:trivial] (_1: MutBorrow.t t_Rc) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'18
-  
-  predicate resolve'19 [@inline:trivial] (_1: MutBorrow.t t_Rc) = resolve'18 _1
-  
-  meta "rewrite_def" predicate resolve'19
+  meta "rewrite_def" predicate resolve'10
   
   type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_PermCellOwn)
   
   predicate inv'22 (_1: t_Option'0)
   
-  axiom inv_axiom'21 [@rewrite]: forall x: t_Option'0 [inv'22 x]. inv'22 x
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'0 [inv'22 x]. inv'22 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'18 a_0
@@ -4376,29 +4117,21 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
     {[@expl:unwrap requires] self_ <> C_None'0}
     any [ return (result: MutBorrow.t t_PermCellOwn) -> {inv'18 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve'20 [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve'11 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'20
-  
-  predicate resolve'21 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve'20 _1
-  
-  meta "rewrite_def" predicate resolve'21
+  meta "rewrite_def" predicate resolve'11
   
   predicate invariant''17 [@inline:trivial] (self: MutBorrow.t t_T) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''17
   
-  predicate inv'23 (_1: MutBorrow.t t_T)
+  predicate inv'23 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant''17 _1
   
-  axiom inv_axiom'22 [@rewrite]: forall x: MutBorrow.t t_T [inv'23 x]. inv'23 x = invariant''17 x
+  meta "rewrite_def" predicate inv'23
   
-  predicate resolve'22 [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'22
-  
-  predicate resolve'23 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve'22 _1
-  
-  meta "rewrite_def" predicate resolve'23
+  meta "rewrite_def" predicate resolve'12
   
   let rec v_Direct (input: t_Inner) (ret (field_0: t_Vec)) = any
     [ good (field_0: t_Vec) -> {C_Direct field_0 = input} (! ret {field_0})
@@ -4408,9 +4141,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
   
   meta "rewrite_def" predicate invariant''18
   
-  predicate inv'24 (_1: MutBorrow.t t_Vec)
+  predicate inv'24 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''18 _1
   
-  axiom inv_axiom'23 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'24 x]. inv'24 x = invariant''18 x
+  meta "rewrite_def" predicate inv'24
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -4441,13 +4174,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
     {[@expl:swap 'y' type invariant] inv'23 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'24 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
+  predicate resolve'13 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'24
-  
-  predicate resolve'25 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'24 _1
-  
-  meta "rewrite_def" predicate resolve'25
+  meta "rewrite_def" predicate resolve'13
   
   let rec swap'0 (x: MutBorrow.t t_Inner) (y: MutBorrow.t t_Inner) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'20 x}
@@ -4553,7 +4282,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s2 = bb5 ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'13 _16} s1
-      | s1 = -{resolve'0 _16}- s2
+      | s1 = -{resolve _16}- s2
       | s2 = unwrap {_14} (fun (_ret: t_PermCellOwn) -> [ &_13 <- _ret ] s3)
       | s3 = bb6 ]
     | bb6 = s0 [ s0 = new {_13} (fun (_ret: t_PermCellOwn) -> [ &perm_cur <- _ret ] s1) | s1 = bb7 ]
@@ -4578,9 +4307,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
             [ &_33 <- _ret ] -{inv'6 _ret.final}-
             [ &_34 <- { _34 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'17 _36} s2
-      | s2 = -{resolve'2 _36}- s3
+      | s2 = -{resolve'0 _36}- s3
       | s3 = {[@expl:type invariant] inv'18 _34} s4
-      | s4 = -{resolve'4 _34}- s5
+      | s4 = -{resolve'1 _34}- s5
       | s5 = {inv'6 _33.current}
         MutBorrow.borrow_final <t_PermCellOwn> {_33.current} {MutBorrow.get_id _33}
           (fun (_ret: MutBorrow.t t_PermCellOwn) ->
@@ -4590,7 +4319,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s7 = bb10 ]
     | bb10 = s0
       [ s0 = {[@expl:type invariant] inv'18 _33} s1
-      | s1 = -{resolve'4 _33}- s2
+      | s1 = -{resolve'1 _33}- s2
       | s2 = borrow_mut {_29} {_31} (fun (_ret: MutBorrow.t t_Inner) -> [ &_27 <- _ret ] s3)
       | s3 = bb11 ]
     | bb11 = s0
@@ -4600,13 +4329,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
             [ &bor_cur <- _ret ] -{inv'4 _ret.final}-
             [ &_27 <- { _27 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'20 _27} s2
-      | s2 = -{resolve'6 _27}- s3
+      | s2 = -{resolve'2 _27}- s3
       | s3 = any
         [ br0 (x0: t_Vec) -> {bor_cur.current = C_Direct x0} (! bb12)
         | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc) -> {bor_cur.current = C_Link x0 x1 x2} (! bb21) ] ]
     | bb12 = s0
       [ s0 = {[@expl:type invariant] inv'20 bor_cur} s1
-      | s1 = -{resolve'6 bor_cur}- s2
+      | s1 = -{resolve'2 bor_cur}- s2
       | s2 = {inv'11 pa}
         MutBorrow.borrow_mut <MutBorrow.t t_PA> {pa}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) ->
@@ -4629,12 +4358,12 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s2 = bb18 ]
     | bb18 = s0
       [ s0 = {[@expl:type invariant] inv'13 _41} s1
-      | s1 = -{resolve'0 _41}- s2
+      | s1 = -{resolve _41}- s2
       | s2 = {[@expl:type invariant] inv'11 pa} s3
-      | s3 = -{resolve'10 pa}- s4
+      | s3 = -{resolve'4 pa}- s4
       | s4 = new'1 {_39} (fun (_ret: t_Option) -> [ &_38 <- _ret ] s5)
       | s5 = {[@expl:type invariant] inv'21 _38} s6
-      | s6 = -{resolve'17 _38}- s7
+      | s6 = -{resolve'9 _38}- s7
       | s7 = bb53 ]
     | bb21 = s0
       [ s0 = v_Link {bor_cur.current}
@@ -4674,9 +4403,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
             [ &_62 <- _ret ] -{inv'9 _ret.final}-
             [ &_63 <- { _63 with current = { _63.current with current = _ret.final } } ] s2)
       | s2 = {[@expl:type invariant] inv'13 _64} s3
-      | s3 = -{resolve'0 _64}- s4
+      | s3 = -{resolve _64}- s4
       | s4 = {[@expl:type invariant] inv'13 _63} s5
-      | s5 = -{resolve'0 _63}- s6
+      | s5 = -{resolve _63}- s6
       | s6 = {inv'9 _62.current}
         MutBorrow.borrow_final <t_PA> {_62.current} {MutBorrow.get_id _62}
           (fun (_ret: MutBorrow.t t_PA) ->
@@ -4686,7 +4415,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s8 = bb23 ]
     | bb23 = s0
       [ s0 = {[@expl:type invariant] inv'10 _62} s1
-      | s1 = -{resolve'8 _62}- s2
+      | s1 = -{resolve'3 _62}- s2
       | s2 = reroot {_58.current} {auth_id} {_60} (fun (_ret: ()) -> [ &_56 <- _ret ] s3)
       | s3 = bb24 ]
     | bb24 = s0 [ s0 = clone' {cur} (fun (_ret: t_Rc) -> [ &_68 <- _ret ] s1) | s1 = bb25 ]
@@ -4696,7 +4425,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s1 = replace {_67} {_68} (fun (_ret: t_Rc) -> [ &next'0 <- _ret ] s2)
       | s2 = bb26 ]
     | bb26 = s0
-      [ s0 = -{resolve'19 next}- s1
+      [ s0 = -{resolve'10 next}- s1
       | s1 = {inv'11 pa}
         MutBorrow.borrow_mut <MutBorrow.t t_PA> {pa}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) ->
@@ -4720,7 +4449,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
     | bb31 = s0 [ s0 = unwrap'0 {_73} (fun (_ret: MutBorrow.t t_PermCellOwn) -> [ &_72 <- _ret ] s1) | s1 = bb32 ]
     | bb32 = s0
       [ s0 = {[@expl:type invariant] inv'13 _75} s1
-      | s1 = -{resolve'0 _75}- s2
+      | s1 = -{resolve _75}- s2
       | s2 = {inv'6 _72.current}
         MutBorrow.borrow_final <t_PermCellOwn> {_72.current} {MutBorrow.get_id _72}
           (fun (_ret: MutBorrow.t t_PermCellOwn) ->
@@ -4730,7 +4459,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s4 = bb33 ]
     | bb33 = s0
       [ s0 = {[@expl:type invariant] inv'18 _72} s1
-      | s1 = -{resolve'4 _72}- s2
+      | s1 = -{resolve'1 _72}- s2
       | s2 = deref {next'0} (fun (_ret: t_PermCell) -> [ &_88 <- _ret ] s3)
       | s3 = bb34 ]
     | bb34 = s0
@@ -4742,16 +4471,16 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
             [ &bor_next <- _ret ] -{inv'4 _ret.final}-
             [ &_86 <- { _86 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'20 _86} s2
-      | s2 = -{resolve'6 _86}- s3
+      | s2 = -{resolve'2 _86}- s3
       | s3 = any
         [ br0 (x0: t_Vec) -> {bor_next.current = C_Direct x0} (! bb38)
         | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc) -> {bor_next.current = C_Link x0 x1 x2} (! bb36) ] ]
     | bb36 = s0
       [ s0 = {[@expl:type invariant] inv'20 bor_next} s1
-      | s1 = -{resolve'6 bor_next}- s2
-      | s2 = -{resolve'21 index}- s3
+      | s1 = -{resolve'2 bor_next}- s2
+      | s2 = -{resolve'11 index}- s3
       | s3 = {[@expl:type invariant] inv'23 value} s4
-      | s4 = -{resolve'23 value}- s5
+      | s4 = -{resolve'12 value}- s5
       | s5 = {false} any ]
     | bb38 = s0
       [ s0 = v_Direct {bor_next.current}
@@ -4766,7 +4495,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
           (fun (_ret: MutBorrow.t t_Vec) ->
             [ &_98 <- _ret ] -{inv'3 _ret.final}-
             [ &arr <- { arr with current = _ret.final } ] s2)
-      | s2 = -{resolve'21 index}- s3
+      | s2 = -{resolve'11 index}- s3
       | s3 = index_mut {_98} {index.current} (fun (_ret: MutBorrow.t t_T) -> [ &_97 <- _ret ] s4)
       | s4 = bb39 ]
     | bb39 = s0
@@ -4789,13 +4518,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s4 = bb40 ]
     | bb40 = s0
       [ s0 = {[@expl:type invariant] inv'23 _97} s1
-      | s1 = -{resolve'23 _97}- s2
+      | s1 = -{resolve'12 _97}- s2
       | s2 = {[@expl:type invariant] inv'23 _96} s3
-      | s3 = -{resolve'23 _96}- s4
+      | s3 = -{resolve'12 _96}- s4
       | s4 = {[@expl:type invariant] inv'24 arr} s5
-      | s5 = -{resolve'25 arr}- s6
+      | s5 = -{resolve'13 arr}- s6
       | s6 = {[@expl:type invariant] inv'23 value} s7
-      | s7 = -{resolve'23 value}- s8
+      | s7 = -{resolve'12 value}- s8
       | s8 = {inv'4 bor_next.current}
         MutBorrow.borrow_final <t_Inner> {bor_next.current} {MutBorrow.get_id bor_next}
           (fun (_ret: MutBorrow.t t_Inner) ->
@@ -4810,9 +4539,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
       | s11 = bb41 ]
     | bb41 = s0
       [ s0 = {[@expl:type invariant] inv'20 bor_next} s1
-      | s1 = -{resolve'6 bor_next}- s2
+      | s1 = -{resolve'2 bor_next}- s2
       | s2 = {[@expl:type invariant] inv'20 bor_cur} s3
-      | s3 = -{resolve'6 bor_cur}- s4
+      | s3 = -{resolve'2 bor_cur}- s4
       | s4 = {inv'11 pa}
         MutBorrow.borrow_mut <MutBorrow.t t_PA> {pa}
           (fun (_ret: MutBorrow.t (MutBorrow.t t_PA)) ->
@@ -4833,11 +4562,11 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
             s1)
       | s1 = insert_ghost {_107} {_111} {_117} (fun (_ret: t_Option) -> [ &_106 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'15 _106} s3
-      | s3 = -{resolve'15 _106}- s4
+      | s3 = -{resolve'8 _106}- s4
       | s4 = bb47 ]
     | bb47 = s0
       [ s0 = {[@expl:type invariant] inv'13 _108} s1
-      | s1 = -{resolve'0 _108}- s2
+      | s1 = -{resolve _108}- s2
       | s2 =
         [ &new_d <- MinMax.min (Map.get pa.current.t_PA__depth (id (view'1 cur))) (Map.get pa.current.t_PA__depth (id (view'1 next'0))
         - 1) ] s3
@@ -4856,9 +4585,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__reroot (* imp
         [ &_123 <- { _123 with current = { _123.current with current = { _123.current.current with t_PA__depth = _121 } } } ]
         s1
       | s1 = {[@expl:type invariant] inv'13 _123} s2
-      | s2 = -{resolve'0 _123}- s3
+      | s2 = -{resolve _123}- s3
       | s3 = {[@expl:type invariant] inv'11 pa} s4
-      | s4 = -{resolve'10 pa}- s5
+      | s4 = -{resolve'4 pa}- s5
       | s5 = new'3 {_105} (fun (_ret: ()) -> [ &_104 <- _ret ] s6)
       | s6 = bb53 ]
     | bb53 = return {_0} ]
@@ -4967,25 +4696,14 @@ module M_persistent_array__testing
   
   use creusot.slice.Slice64
   use creusot.int.Int32
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use set.Set
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -5000,57 +4718,18 @@ module M_persistent_array__testing
   let rec into_vec (self_: Slice64.slice Int32.t) (return (x: t_Vec)) = any
     [ return (result: t_Vec) -> {view result = view'0 self_} (! return {result}) ]
   
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc = { t_Rc__ptr: t_NonNull'0; t_Rc__phantom: (); t_Rc__alloc: () }
-  
-  type t_Resource
-  
-  type t_Id
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq Int32.t }
-  
-  type t_NonNull'1 = { t_NonNull__pointer'1: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'1; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
-  
-  type t_PersistentArray = {
-    t_PersistentArray__permcell: t_Rc;
-    t_PersistentArray__frag: t_Fragment;
-    t_PersistentArray__inv: t_Rc'0 }
+  type t_PersistentArray
   
   predicate invariant' (self: t_PersistentArray)
   
-  predicate invariant''0 (self: t_Fragment)
+  predicate inv (_1: t_PersistentArray)
   
-  predicate inv (_1: t_Fragment)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Fragment [inv x]. inv x
-      = (invariant''0 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
-  
-  predicate invariant''1 [@inline:trivial] (self: t_Fragment) = inv self
-  
-  meta "rewrite_def" predicate invariant''1
-  
-  predicate inv'0 (_1: t_Fragment)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Fragment [inv'0 x]. inv'0 x = invariant''1 x
-  
-  predicate inv'1 (_1: t_PersistentArray)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PersistentArray [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_PersistentArray [inv x]. inv x = invariant' x
   
   function view'1 (self: t_PersistentArray) : Seq.seq Int32.t
   
   let rec new (v: t_Vec) (return (x: t_PersistentArray)) = any
-    [ return (result: t_PersistentArray) -> {inv'1 result} {view'1 result = view v} (! return {result}) ]
+    [ return (result: t_PersistentArray) -> {inv result} {view'1 result = view v} (! return {result}) ]
   
   type t_Tokens
   
@@ -5060,24 +4739,20 @@ module M_persistent_array__testing
   let rec reborrow (self: MutBorrow.t t_Tokens) (return (x: t_Tokens)) = any
     [ return (result: t_Tokens) -> {result = self.current /\ self.final = self.current} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Tokens) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Tokens) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec new'0 (x: t_Tokens) (return (x'0: t_Tokens)) = any
     [ return (result: t_Tokens) -> {result = x} (! return {result}) ]
   
-  predicate invariant''2 [@inline:trivial] (self: t_PersistentArray) = inv'1 self
+  predicate invariant''0 [@inline:trivial] (self: t_PersistentArray) = inv self
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_PersistentArray)
+  predicate inv'0 [@inline:trivial] (_1: t_PersistentArray) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PersistentArray [inv'2 x]. inv'2 x = invariant''2 x
+  meta "rewrite_def" predicate inv'0
   
   predicate contains [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
   
@@ -5088,29 +4763,17 @@ module M_persistent_array__testing
   predicate contains'0 (self: t_Tokens) (namespace: t_Namespace) = contains (namespaces self) namespace
   
   let rec set (self: t_PersistentArray) (index: UInt64.t) (value: Int32.t) (tokens: t_Tokens)
-    (return (x: t_PersistentArray)) = {[@expl:set 'self' type invariant] inv'2 self}
+    (return (x: t_PersistentArray)) = {[@expl:set 'self' type invariant] inv'0 self}
     {[@expl:set requires #0] UInt64.t'int index < Seq.length (view'1 self)}
     {[@expl:set requires #1] contains'0 tokens (Namespace_PARRAY 0)}
     any
-    [ return (result: t_PersistentArray) -> {inv'1 result}
+    [ return (result: t_PersistentArray) -> {inv result}
       {view'1 result = Seq.set (view'1 self) (UInt64.t'int index) value}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Tokens) = true
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (self: t_Tokens) = resolve'1 self
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: t_Tokens) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
-  
   let rec clone' (self: t_PersistentArray) (return (x: t_PersistentArray)) =
-    {[@expl:clone 'self' type invariant] inv'2 self}
-    any [ return (result: t_PersistentArray) -> {inv'1 result} {view'1 result = view'1 self} (! return {result}) ]
+    {[@expl:clone 'self' type invariant] inv'0 self}
+    any [ return (result: t_PersistentArray) -> {inv result} {view'1 result = view'1 self} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -5139,31 +4802,34 @@ module M_persistent_array__testing
           (fun (_ret: MutBorrow.t t_Tokens) -> [ &_12 <- _ret ] [ &_13 <- { _13 with current = _ret.final } ] s1)
       | s1 = reborrow {_12} (fun (_ret: t_Tokens) -> [ &_11 <- _ret ] s2)
       | s2 = bb6 ]
-    | bb6 = s0 [ s0 = -{resolve'0 _13}- s1 | s1 = new'0 {_11} (fun (_ret: t_Tokens) -> [ &_10 <- _ret ] s2) | s2 = bb7 ]
+    | bb6 = s0 [ s0 = -{resolve _13}- s1 | s1 = new'0 {_11} (fun (_ret: t_Tokens) -> [ &_10 <- _ret ] s2) | s2 = bb7 ]
     | bb7 = s0
       [ s0 = set {a} {(1: UInt64.t)} {(42: Int32.t)} {_10} (fun (_ret: t_PersistentArray) -> [ &a2 <- _ret ] s1)
       | s1 = bb8 ]
     | bb8 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_ret: MutBorrow.t t_Tokens) -> [ &_21 <- _ret ] [ &tokens <- _ret.final ] s1)
-      | s1 = deref_mut {_21} (fun (_ret: MutBorrow.t t_Tokens) -> [ &_20 <- _ret ] s2)
-      | s2 = bb9 ]
+      [ s0 = {[@expl:type invariant] inv a2} s1
+      | s1 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+          (fun (_ret: MutBorrow.t t_Tokens) -> [ &_21 <- _ret ] [ &tokens <- _ret.final ] s2)
+      | s2 = deref_mut {_21} (fun (_ret: MutBorrow.t t_Tokens) -> [ &_20 <- _ret ] s3)
+      | s3 = bb9 ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_final <t_Tokens> {_20.current} {MutBorrow.get_id _20}
           (fun (_ret: MutBorrow.t t_Tokens) -> [ &_19 <- _ret ] [ &_20 <- { _20 with current = _ret.final } ] s1)
       | s1 = reborrow {_19} (fun (_ret: t_Tokens) -> [ &_18 <- _ret ] s2)
       | s2 = bb10 ]
-    | bb10 = s0
-      [ s0 = -{resolve'0 _20}- s1 | s1 = new'0 {_18} (fun (_ret: t_Tokens) -> [ &_17 <- _ret ] s2) | s2 = bb11 ]
+    | bb10 = s0 [ s0 = -{resolve _20}- s1 | s1 = new'0 {_18} (fun (_ret: t_Tokens) -> [ &_17 <- _ret ] s2) | s2 = bb11 ]
     | bb11 = s0
       [ s0 = set {a} {(0: UInt64.t)} {(50: Int32.t)} {_17} (fun (_ret: t_PersistentArray) -> [ &a3 <- _ret ] s1)
       | s1 = bb12 ]
     | bb12 = s0
-      [ s0 = -{resolve'3 tokens}- s1
-      | s1 = clone' {a} (fun (_ret: t_PersistentArray) -> [ &a4 <- _ret ] s2)
-      | s2 = bb13 ]
+      [ s0 = {[@expl:type invariant] inv a3} s1
+      | s1 = {[@expl:type invariant] inv a} s2
+      | s2 = clone' {a} (fun (_ret: t_PersistentArray) -> [ &a4 <- _ret ] s3)
+      | s3 = bb13 ]
     | bb13 = s0
-      [ s0 = [ &a_model <- Seq.create 4 [|(1: Int32.t);(2: Int32.t);(3: Int32.t);(4: Int32.t)|] ] s1 | s1 = bb14 ]
+      [ s0 = {[@expl:type invariant] inv a4} s1
+      | s1 = [ &a_model <- Seq.create 4 [|(1: Int32.t);(2: Int32.t);(3: Int32.t);(4: Int32.t)|] ] s2
+      | s2 = bb14 ]
     | bb14 = s0
       [ s0 = [ &a2_model <- Seq.create 4 [|(1: Int32.t);(42: Int32.t);(3: Int32.t);(4: Int32.t)|] ] s1 | s1 = bb15 ]
     | bb15 = s0
@@ -5202,29 +4868,22 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
   
-  use creusot.prelude.Opaque
   use seq.Seq
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Rc
   
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  type t_Fragment
   
-  type t_Resource
-  
-  type t_Id
-  
-  type t_T
-  
-  type t_Fragment = { t_Fragment__0: t_Resource; t_Fragment__1: t_Id; t_Fragment__2: Seq.seq t_T }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_Rc'0 = { t_Rc__ptr'0: t_NonNull'0; t_Rc__phantom'0: (); t_Rc__alloc'0: () }
+  type t_Rc'0
   
   type t_PersistentArray = {
     t_PersistentArray__permcell: t_Rc;
     t_PersistentArray__frag: t_Fragment;
     t_PersistentArray__inv: t_Rc'0 }
+  
+  type t_Id
+  
+  type t_T
   
   type tuple = { f0: t_Id; f1: Seq.seq t_T }
   
@@ -5255,35 +4914,28 @@ module M_persistent_array__implementation__qyi15164097500274694161__clone__refin
   
   predicate inv (_1: t_Fragment)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Fragment [inv x]. inv x
-      = (invariant''0 x
-      /\ match x with
-        | {t_Fragment__0 = a_0; t_Fragment__1 = a_1; t_Fragment__2 = a_2} -> true
-        end)
+  axiom inv_axiom: forall x: t_Fragment [inv x]. inv x -> invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: t_Fragment) = inv self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'0 (_1: t_Fragment)
+  predicate inv'0 [@inline:trivial] (_1: t_Fragment) = invariant''1 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Fragment [inv'0 x]. inv'0 x = invariant''1 x
+  meta "rewrite_def" predicate inv'0
   
   predicate inv'1 (_1: t_PersistentArray)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PersistentArray [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_PersistentArray__permcell = permcell; t_PersistentArray__frag = frag; t_PersistentArray__inv = inv'2} -> inv'0 frag
-        end)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PersistentArray [inv'1 x]. inv'1 x
+      = (invariant' x /\ inv'0 x.t_PersistentArray__frag)
   
   predicate invariant''2 [@inline:trivial] (self: t_PersistentArray) = inv'1 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'2 (_1: t_PersistentArray)
+  predicate inv'2 [@inline:trivial] (_1: t_PersistentArray) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PersistentArray [inv'2 x]. inv'2 x = invariant''2 x
+  meta "rewrite_def" predicate inv'2
   
   function view'2 [@inline:trivial] (self: t_PersistentArray) : Seq.seq t_T = (view self.t_PersistentArray__frag).f1
   

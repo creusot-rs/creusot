@@ -86,6 +86,7 @@ impl Intrinsic {
         matches!(
             self,
             Intrinsic::Resolve
+                | Intrinsic::Inv
                 | Intrinsic::StructuralResolve
                 | Intrinsic::SizeOfLogic
                 | Intrinsic::SizeOfValLogic

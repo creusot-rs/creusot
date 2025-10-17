@@ -82,17 +82,17 @@ module M_sum_of_odds__compute_sum_of_odd
   
   axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate inv (_1: t_Range)
+  predicate inv [@inline:trivial] (_1: t_Range) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Range [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  predicate inv'0 (_1: Seq.seq UInt32.t)
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt32.t [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some UInt32.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -105,10 +105,6 @@ module M_sum_of_odds__compute_sum_of_odd
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Range) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -152,7 +148,7 @@ module M_sum_of_odds__compute_sum_of_odd
           | s2 = next {_21} (fun (_ret: t_Option) -> [ &_20 <- _ret ] s3)
           | s3 = bb6 ]
         | bb6 = s0
-          [ s0 = -{resolve'0 _22}- s1
+          [ s0 = -{resolve _22}- s1
           | s1 = any [ br0 -> {_20 = C_None} (! bb9) | br1 (x0: UInt32.t) -> {_20 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
           [ s0 = v_Some {_20} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

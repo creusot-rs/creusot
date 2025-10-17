@@ -549,7 +549,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
 impl<K: ?Sized, V> Invariant for FMap<K, V> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self[k]) }
     }
@@ -719,6 +719,7 @@ impl<'a, K, V> crate::Iterator for FMapIterRef<'a, K, V> {
 
 impl<K: ?Sized, V> Resolve for FMap<K, V> {
     #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<k: K, v: V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
     }
@@ -732,6 +733,7 @@ impl<K: ?Sized, V> Resolve for FMap<K, V> {
 
 impl<K, V> Resolve for FMapIter<K, V> {
     #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { resolve(self@) }
     }

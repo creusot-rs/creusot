@@ -1,5 +1,3 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::Invariant, *};
 
 pub struct MapInv<I, B, F> {
@@ -45,18 +43,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator
                  && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
     }
-}
-
-impl<I, B, F> Resolve for MapInv<I, B, F> {
-    #[logic(open, prophetic, inline)]
-    fn resolve(self) -> bool {
-        resolve(self.iter) && resolve(self.func)
-    }
-
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant

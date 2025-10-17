@@ -33,7 +33,7 @@ impl<'tcx> LateLintPass<'tcx> for Experimental {
         }
 
         if is_dyn_ty(cx, e) {
-            cx.emit_span_lint(EXPERIMENTAL, e.span, Diagnostics::Experimental);
+            cx.emit_span_lint(EXPERIMENTAL, e.span, Diagnostics::DynExperimental);
         }
     }
 }

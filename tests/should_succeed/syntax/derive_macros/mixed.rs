@@ -44,14 +44,13 @@ impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
 
 // Resolve derive macro
 
-#[derive(Resolve)]
 pub struct Product2<'a, A> {
     pub a: &'a mut A,
     pub b: bool,
     pub c: Vec<u32>,
 }
 
-#[derive(Resolve, Clone)]
+#[derive(Clone)]
 pub enum Sum2<A, B> {
     X(A),
     Y { a: bool, x: B },

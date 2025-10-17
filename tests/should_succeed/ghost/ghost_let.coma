@@ -9,27 +9,23 @@ module M_ghost_let__foo
   
   predicate inv (_1: t_WithInv)
   
-  axiom inv_axiom [@rewrite]: forall x: t_WithInv [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_WithInv__0 = a_0} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_WithInv [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_WithInv) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_WithInv)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_WithInv) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_WithInv [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_WithInv) = inv'0 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'1 (_1: MutBorrow.t t_WithInv)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_WithInv) = invariant''1 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_WithInv [inv'1 x]. inv'1 x = invariant''1 x
+  meta "rewrite_def" predicate inv'1
   
   let rec into_inner (self: MutBorrow.t t_WithInv) (return (x: MutBorrow.t t_WithInv)) =
     {[@expl:into_inner 'self' type invariant] inv'1 self}
@@ -41,13 +37,9 @@ module M_ghost_let__foo
   let rec bar (g2: MutBorrow.t Int32.t) (return (x: ())) = any
     [ return (result: ()) -> {g2.final = (1: Int32.t)} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_WithInv) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_WithInv) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_WithInv) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -64,7 +56,7 @@ module M_ghost_let__foo
       | s1 = new {__temp} (fun (_ret: MutBorrow.t Int32.t) -> [ &g2 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0 [ s0 = bar {g2} (fun (_ret: ()) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'0 _4} s1 | s1 = -{resolve'0 _4}- s2 | s2 = return {_0} ] ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'0 _4} s1 | s1 = -{resolve _4}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & g: MutBorrow.t t_WithInv = g
     | & __temp: MutBorrow.t Int32.t = Any.any_l ()
@@ -80,29 +72,17 @@ module M_ghost_let__bar
   let rec deref_mut (self: MutBorrow.t (MutBorrow.t Int32.t)) (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
     [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {result = self} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (MutBorrow.t Int32.t)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t Int32.t) = resolve'2 self
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
   
   let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -118,8 +98,8 @@ module M_ghost_let__bar
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_5 <- { _5 with current = { _5.current with current = (1: Int32.t) } } ] s1
-      | s1 = -{resolve'0 _5}- s2
-      | s2 = -{resolve'4 g2}- s3
+      | s1 = -{resolve _5}- s2
+      | s2 = -{resolve'1 g2}- s3
       | s3 = new {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s4)
       | s4 = bb2 ]
     | bb2 = return {_0} ]

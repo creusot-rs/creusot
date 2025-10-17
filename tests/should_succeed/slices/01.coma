@@ -35,13 +35,9 @@ module M_01__index_mut_slice
   use creusot.prelude.Any
   use seq.Seq
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
@@ -66,7 +62,7 @@ module M_01__index_mut_slice
     | bb1 = s0
       [ s0 = Slice64.set <UInt32.t> {a.current} {_4} {(3: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s1)
-      | s1 = -{resolve'0 a}- s2
+      | s1 = -{resolve a}- s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a
@@ -90,32 +86,32 @@ module M_01__slice_first
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''1 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
-  predicate inv'2 (_1: Slice64.slice t_T)
+  predicate inv'2 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''1 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.slice t_T [inv'2 x]. inv'2 x = invariant''1 x
+  meta "rewrite_def" predicate inv'2
   
   predicate invariant''2 [@inline:trivial] (self: Slice64.slice t_T) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: Slice64.slice t_T)
+  predicate inv'3 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.slice t_T [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
   let rec len (self_: Slice64.slice t_T) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
     any [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
@@ -126,13 +122,13 @@ module M_01__slice_first
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'4 (_1: t_T)
+  predicate inv'4 [@inline:trivial] (_1: t_T) = invariant''3 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_T [inv'4 x]. inv'4 x = invariant''3 x
+  meta "rewrite_def" predicate inv'4
   
   predicate inv'5 (_1: t_Option)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0

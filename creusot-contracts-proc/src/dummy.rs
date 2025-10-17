@@ -116,10 +116,6 @@ pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }
 
-pub fn derive_resolve(_: TS1) -> TS1 {
-    TS1::new()
-}
-
 /// Visitor to delete all `#[invariant]` and `#[creusot_contracts::invariant]`
 /// attributes on loops.
 struct DeleteInvariants;

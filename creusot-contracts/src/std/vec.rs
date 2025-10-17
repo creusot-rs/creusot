@@ -73,6 +73,7 @@ impl<T> IndexLogic<usize> for Vec<T> {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Resolve for Vec<T, A> {
     #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
     }
@@ -87,8 +88,7 @@ impl<T, A: Allocator> Resolve for Vec<T, A> {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[logic(open, prophetic)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { invariant::inv(self@) }
     }
@@ -272,7 +272,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@ == Seq::empty() }
+        pearlite! { resolve(self) && self@ == Seq::empty() }
     }
 
     #[logic(open)]

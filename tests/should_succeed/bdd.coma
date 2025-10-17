@@ -15,9 +15,9 @@ module M_bdd__hashmap__qyi1953663170559623169__hash (* <(U, V) as hashmap::Hash>
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_U)
+  predicate inv'0 [@inline:trivial] (_1: t_U) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_U [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: t_U)
   
@@ -49,9 +49,9 @@ module M_bdd__hashmap__qyi1953663170559623169__hash (* <(U, V) as hashmap::Hash>
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_V)
+  predicate inv'2 [@inline:trivial] (_1: t_V) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_V [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate precondition'0 (self: ()) (args: t_V)
   
@@ -83,17 +83,17 @@ module M_bdd__hashmap__qyi1953663170559623169__hash (* <(U, V) as hashmap::Hash>
   let rec wrapping_add (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {result = UInt64.add self_ rhs} (! return {result}) ]
   
-  predicate inv'3 (_1: tuple)
+  predicate inv'3 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'1 _1.f1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'3 x]. inv'3 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'1 x1)
+  meta "rewrite_def" predicate inv'3
   
   predicate invariant''1 [@inline:trivial] (self: tuple) = inv'3 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: tuple)
+  predicate inv'4 [@inline:trivial] (_1: tuple) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
   type tuple'0 = { f0'0: t_DeepModelTy; f1'0: t_DeepModelTy'0 }
   
@@ -605,6 +605,8 @@ module M_bdd__qyi11078426090797403070__grows_is_valid_bdd (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -617,7 +619,7 @@ module M_bdd__qyi11078426090797403070__grows_is_valid_bdd (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -717,6 +719,8 @@ module M_bdd__qyi11078426090797403070__grows_trans (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -729,7 +733,7 @@ module M_bdd__qyi11078426090797403070__grows_trans (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -820,6 +824,8 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var (* Context<'arena> *)
   use map.Map
   use mach.int.Int
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -832,7 +838,7 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -971,11 +977,7 @@ module M_bdd__qyi11078426090797403070__set_irrelevent_var (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   meta "compute_max_steps" 1000000
   
@@ -1016,6 +1018,8 @@ module M_bdd__qyi11078426090797403070__discr_valuation (* Context<'arena> *)
   use mach.int.Int
   use map.Const
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -1028,7 +1032,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -1175,11 +1179,7 @@ module M_bdd__qyi11078426090797403070__discr_valuation (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   function set_irrelevent_var (self: t_Context) (a: t_Bdd) (x: UInt64.t) (v: Map.map UInt64.t bool) (b: bool) : () =
     match a with
@@ -1295,6 +1295,8 @@ module M_bdd__qyi11078426090797403070__bdd_canonical (* Context<'arena> *)
   use mach.int.Int
   use map.Const
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -1307,7 +1309,7 @@ module M_bdd__qyi11078426090797403070__bdd_canonical (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -1446,11 +1448,7 @@ module M_bdd__qyi11078426090797403070__bdd_canonical (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   function size (self: t_Bdd) : int = match self with
       | {t_Bdd__0 = C_True; t_Bdd__1 = _} -> 0
@@ -1564,8 +1562,10 @@ module M_bdd__qyi11078426090797403070__new (* Context<'arena> *)
   let rec new'2 (return (x: t_PeanoInt)) = any
     [ return (result: t_PeanoInt) -> {result.t_PeanoInt__0 = (0: UInt64.t)} (! return {result}) ]
   
+  type t_Bump
+  
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -1692,17 +1692,13 @@ module M_bdd__qyi11078426090797403070__new (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec new'3 (alloc: ()) (return (x: t_Context)) = (! bb0
+  let rec new'3 (alloc: t_Bump) (return (x: t_Context)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -1725,7 +1721,7 @@ module M_bdd__qyi11078426090797403070__new (* Context<'arena> *)
                         t_Context__cnt = _10 } ] s1
       | s1 = return {_0} ] ]
     [ & _0: t_Context = Any.any_l ()
-    | & alloc: () = alloc
+    | & alloc: t_Bump = alloc
     | & t: t_Node = Any.any_l ()
     | & _5: t_MyHashMap = Any.any_l ()
     | & _6: Map.map UInt64.t t_Node = Any.any_l ()
@@ -1747,6 +1743,8 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
   with t_Node = C_False | C_True | C_If UInt64.t t_Bdd t_Bdd
   
+  type t_Bump
+  
   type t_MyHashMap'0
   
   type t_MyHashMap'1
@@ -1754,7 +1752,7 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -1786,16 +1784,12 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
         end}
       (! return {result}) ]
   
-  let rec alloc (self: ()) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
+  let rec alloc (self: t_Bump) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
     [ return (result: MutBorrow.t t_Node) -> {result.current = val'} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec add (self: MutBorrow.t t_MyHashMap) (key: t_Node) (val': t_Bdd) (return (x: ())) = any
     [ return (result: ()) -> {forall i: t_NodeLog. Map.get (view self.final) i
@@ -1926,27 +1920,19 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc'0; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Bdd)) = any
     [ good (field_0: t_Bdd) -> {C_Some field_0 = input} (! ret {field_0})
@@ -1976,7 +1962,7 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
       [ s0 = alloc {self.current.t_Context__alloc} {n} (fun (_ret: MutBorrow.t t_Node) -> [ &_19 <- _ret ] s1)
       | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = -{resolve'0 _19}- s1
+      [ s0 = -{resolve _19}- s1
       | s1 = [ &r'0 <- { t_Bdd__0 = _19.current; t_Bdd__1 = self.current.t_Context__cnt.t_PeanoInt__0 } ] s2
       | s2 = MutBorrow.borrow_final <t_MyHashMap> {self.current.t_Context__hashcons}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
@@ -1994,10 +1980,10 @@ module M_bdd__qyi11078426090797403070__hashcons (* Context<'arena> *)
     | bb8 = s0
       [ s0 = [ &self <- { self with current = { self.current with t_Context__cnt = _29 } } ] s1
       | s1 = {[@expl:type invariant] inv'0 self} s2
-      | s2 = -{resolve'2 self}- s3
+      | s2 = -{resolve'0 self}- s3
       | s3 = [ &_0 <- r'0 ] s4
       | s4 = bb9 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb3 ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb3 ]
     | bb3 = s0
       [ s0 = v_Some {_8} (fun (r0: t_Bdd) -> [ &r <- r0 ] s1)
       | s1 = {[@expl:assertion] view'0 r.t_Bdd__0 = view'0 n} s2
@@ -2042,6 +2028,8 @@ module M_bdd__qyi11078426090797403070__node (* Context<'arena> *)
   let rec eq (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
     [ return (result: bool) -> {result = (view self = view o)} (! return {result}) ]
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_MyHashMap'0
@@ -2051,7 +2039,7 @@ module M_bdd__qyi11078426090797403070__node (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -2190,27 +2178,19 @@ module M_bdd__qyi11078426090797403070__node (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view'2 self.current.t_Context__cnt) (view'2 self.final.t_Context__cnt)
@@ -2241,10 +2221,7 @@ module M_bdd__qyi11078426090797403070__node (* Context<'arena> *)
     [ bb0 = s0 [ s0 = eq {childt} {childf} (fun (_ret: bool) -> [ &_13 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_13 = false} (! bb3) | br1 -> {_13} (! bb2) ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1
-      | s1 = -{resolve'0 self}- s2
-      | s2 = [ &_0 <- childt ] s3
-      | s3 = bb5 ]
+      [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = [ &_0 <- childt ] s3 | s3 = bb5 ]
     | bb3 = s0
       [ s0 = [ &_18 <- C_If x childt childf ] s1
       | s1 = {inv self.current}
@@ -2254,7 +2231,7 @@ module M_bdd__qyi11078426090797403070__node (* Context<'arena> *)
             [ &self <- { self with current = _ret.final } ] s2)
       | s2 = hashcons {_17} {_18} (fun (_ret: t_Bdd) -> [ &_0 <- _ret ] s3)
       | s3 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb5 ]
+    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = bb5 ]
     | bb5 = return {_0} ]
     [ & _0: t_Bdd = Any.any_l ()
     | & self: MutBorrow.t t_Context = self
@@ -2281,6 +2258,8 @@ module M_bdd__qyi11078426090797403070__trueqy95z (* Context<'arena> *)
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
   with t_Node = C_False | C_True | C_If UInt64.t t_Bdd t_Bdd
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_MyHashMap'0
@@ -2290,7 +2269,7 @@ module M_bdd__qyi11078426090797403070__trueqy95z (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -2429,19 +2408,15 @@ module M_bdd__qyi11078426090797403070__trueqy95z (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view'1 self.current.t_Context__cnt) (view'1 self.final.t_Context__cnt)
@@ -2459,13 +2434,9 @@ module M_bdd__qyi11078426090797403070__trueqy95z (* Context<'arena> *)
       {is_valid_bdd self.final result}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -2482,7 +2453,7 @@ module M_bdd__qyi11078426090797403070__trueqy95z (* Context<'arena> *)
             [ &self <- { self with current = _ret.final } ] s2)
       | s2 = hashcons {_6} {_7} (fun (_ret: t_Bdd) -> [ &_0 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
     [ & _0: t_Bdd = Any.any_l ()
     | & self: MutBorrow.t t_Context = self
     | & _6: MutBorrow.t t_Context = Any.any_l ()
@@ -2503,6 +2474,8 @@ module M_bdd__qyi11078426090797403070__falseqy95z (* Context<'arena> *)
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
   with t_Node = C_False | C_True | C_If UInt64.t t_Bdd t_Bdd
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_MyHashMap'0
@@ -2512,7 +2485,7 @@ module M_bdd__qyi11078426090797403070__falseqy95z (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -2651,19 +2624,15 @@ module M_bdd__qyi11078426090797403070__falseqy95z (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view'1 self.current.t_Context__cnt) (view'1 self.final.t_Context__cnt)
@@ -2681,13 +2650,9 @@ module M_bdd__qyi11078426090797403070__falseqy95z (* Context<'arena> *)
       {is_valid_bdd self.final result}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -2705,7 +2670,7 @@ module M_bdd__qyi11078426090797403070__falseqy95z (* Context<'arena> *)
             [ &self <- { self with current = _ret.final } ] s2)
       | s2 = hashcons {_6} {_7} (fun (_ret: t_Bdd) -> [ &_0 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
     [ & _0: t_Bdd = Any.any_l ()
     | & self: MutBorrow.t t_Context = self
     | & _6: MutBorrow.t t_Context = Any.any_l ()
@@ -2723,6 +2688,8 @@ module M_bdd__qyi11078426090797403070__v (* Context<'arena> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
+  type t_Bump
+  
   type t_MyHashMap
   
   type t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
@@ -2735,7 +2702,7 @@ module M_bdd__qyi11078426090797403070__v (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'0;
@@ -2874,19 +2841,15 @@ module M_bdd__qyi11078426090797403070__v (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view'1 self.current.t_Context__cnt) (view'1 self.final.t_Context__cnt)
@@ -2924,13 +2887,9 @@ module M_bdd__qyi11078426090797403070__v (* Context<'arena> *)
       {UInt64.t'int x <= leastvar result}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -2963,7 +2922,7 @@ module M_bdd__qyi11078426090797403070__v (* Context<'arena> *)
             [ &self <- { self with current = _ret.final } ] s1)
       | s1 = node {_10} {x} {t} {f} (fun (_ret: t_Bdd) -> [ &_0 <- _ret ] s2)
       | s2 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = return {_0} ] ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
     [ & _0: t_Bdd = Any.any_l ()
     | & self: MutBorrow.t t_Context = self
     | & x: UInt64.t = x
@@ -2989,6 +2948,8 @@ module M_bdd__qyi11078426090797403070__not (* Context<'arena> *)
   type t_Node = C_False | C_True | C_If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { t_Bdd__0: t_Node; t_Bdd__1: UInt64.t }
   
+  type t_Bump
+  
   type t_MyHashMap'0
   
   type t_MyHashMap'1
@@ -2996,7 +2957,7 @@ module M_bdd__qyi11078426090797403070__not (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap'0;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap;
@@ -3159,19 +3120,15 @@ module M_bdd__qyi11078426090797403070__not (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view'2 self.current.t_Context__cnt) (view'2 self.final.t_Context__cnt)
@@ -3214,13 +3171,9 @@ module M_bdd__qyi11078426090797403070__not (* Context<'arena> *)
         = (if i = deep_model key then C_Some'0 val' else Map.get (view self.current) i)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Bdd)) = any
     [ good (field_0: t_Bdd) -> {C_Some field_0 = input} (! ret {field_0})
@@ -3307,8 +3260,8 @@ module M_bdd__qyi11078426090797403070__not (* Context<'arena> *)
       | s1 = add {_35} {x} {r'0} (fun (_ret: ()) -> [ &_34 <- _ret ] s2)
       | s2 = bb17 ]
     | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = [ &_0 <- r'0 ] s3 | s3 = bb18 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb3 ]
+      [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = [ &_0 <- r'0 ] s3 | s3 = bb18 ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = bb3 ]
     | bb3 = s0 [ s0 = v_Some {_10} (fun (r0: t_Bdd) -> [ &r <- r0 ] s1) | s1 = [ &_0 <- r ] s2 | s2 = bb18 ]
     | bb18 = return {_0} ]
     [ & _0: t_Bdd = Any.any_l ()
@@ -3353,6 +3306,8 @@ module M_bdd__qyi11078426090797403070__and (* Context<'arena> *)
   
   type t_MyHashMap
   
+  type t_Bump
+  
   type t_MyHashMap'0
   
   type t_MyHashMap'1
@@ -3360,7 +3315,7 @@ module M_bdd__qyi11078426090797403070__and (* Context<'arena> *)
   type t_PeanoInt = { t_PeanoInt__0: UInt64.t }
   
   type t_Context = {
-    t_Context__alloc: ();
+    t_Context__alloc: t_Bump;
     t_Context__hashcons: t_MyHashMap'0;
     t_Context__hashcons_ghost: Map.map UInt64.t t_Node;
     t_Context__not_memo: t_MyHashMap'1;
@@ -3523,27 +3478,19 @@ module M_bdd__qyi11078426090797403070__and (* Context<'arena> *)
   
   predicate inv (_1: t_Context)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Context__alloc = alloc; t_Context__hashcons = hashcons; t_Context__hashcons_ghost = hashcons_ghost; t_Context__not_memo = not_memo; t_Context__and_memo = and_memo; t_Context__cnt = cnt} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Context) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Context)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Context [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Context) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Context) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_If (input: t_Node) (ret (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ good (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {C_If v childt childf = input} (! ret {v} {childt} {childf})
@@ -3688,7 +3635,7 @@ module M_bdd__qyi11078426090797403070__and (* Context<'arena> *)
       [ br0 -> {_23.f0'1 = C_False} (! bb10)
       | br1 -> {_23.f0'1 = C_True} (! bb10)
       | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_23.f0'1 = C_If x0 x1 x2} (! bb12) ]
-    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = {false} any ]
+    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = {false} any ]
     | bb12 = s0
       [ s0 = v_If {_23.f0'1} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &va <- rv ] s1)
       | s1 = v_If {_23.f0'1} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childta <- rchildt ] s2)
@@ -3786,8 +3733,8 @@ module M_bdd__qyi11078426090797403070__and (* Context<'arena> *)
       | s2 = add {_79} {_80} {r'0} (fun (_ret: ()) -> [ &_78 <- _ret ] s3)
       | s3 = bb34 ]
     | bb34 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = [ &_0 <- r'0 ] s3 | s3 = bb35 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb3 ]
+      [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = [ &_0 <- r'0 ] s3 | s3 = bb35 ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'0 self} s1 | s1 = -{resolve self}- s2 | s2 = bb3 ]
     | bb3 = s0 [ s0 = v_Some {_12} (fun (r0: t_Bdd) -> [ &r <- r0 ] s1) | s1 = [ &_0 <- r ] s2 | s2 = bb35 ]
     | bb35 = return {_0} ]
     [ & _0: t_Bdd = Any.any_l ()
@@ -3851,17 +3798,17 @@ module M_bdd__hashmap__qyi1953663170559623169__hash__refines (* <(U, V) as hashm
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant' [@inline:trivial] (self: tuple) = inv'1 self
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_1: tuple)
+  predicate inv'2 [@inline:trivial] (_1: tuple) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   type t_DeepModelTy
   

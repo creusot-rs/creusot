@@ -186,7 +186,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (self@).is_empty() }
+        pearlite! { resolve(self) && (self@).is_empty() }
     }
 
     #[logic(open, law)]
@@ -210,7 +210,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (self@).is_empty() }
+        pearlite! { resolve(self) && (self@).is_empty() }
     }
 
     #[logic(open, law)]

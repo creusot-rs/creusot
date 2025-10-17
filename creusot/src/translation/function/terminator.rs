@@ -168,7 +168,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(cond) },
                     };
                 }
-                let msg = self.get_explanation(msg);
+                let msg = Some(self.get_explanation(msg));
                 self.emit_statement(Statement {
                     kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
                     span,
@@ -197,9 +197,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let fresh = self.fresh_block_id();
                         retarget.insert(*target, fresh);
                         let mut stmts = Vec::new();
-                        resolves
-                            .into_iter()
-                            .for_each(|place| self.emit_resolve_into(place, span, &mut stmts));
+                        for place in resolves {
+                            self.emit_resolve_into(place, span, &mut stmts)
+                        }
                         let block = fmir::Block {
                             invariants: vec![],
                             variant: None,

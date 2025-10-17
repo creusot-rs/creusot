@@ -5,10 +5,7 @@ module M_sum__sum_first_n
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_RangeInclusive = {
-    t_RangeInclusive__start: UInt32.t;
-    t_RangeInclusive__end: UInt32.t;
-    t_RangeInclusive__exhausted: bool }
+  type t_RangeInclusive
   
   function start_log (self: t_RangeInclusive) : UInt32.t
   
@@ -58,13 +55,13 @@ module M_sum__sum_first_n
   
   axiom produces_refl_spec: forall self: t_RangeInclusive. produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate inv (_1: t_RangeInclusive)
+  predicate inv [@inline:trivial] (_1: t_RangeInclusive) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_RangeInclusive [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  predicate inv'0 (_1: Seq.seq UInt32.t)
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt32.t [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some UInt32.t
   
@@ -77,13 +74,9 @@ module M_sum__sum_first_n
         end}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_RangeInclusive) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -118,7 +111,7 @@ module M_sum__sum_first_n
           | s2 = next {_20} (fun (_ret: t_Option) -> [ &_19 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve'0 _21}- s1
+          [ s0 = -{resolve _21}- s1
           | s1 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: UInt32.t) -> {_19 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_19} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

@@ -73,19 +73,9 @@ pub trait Invariant {
     fn invariant(self) -> bool;
 }
 
-#[cfg(feature = "nightly")]
-impl Invariant for ! {
-    #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
-    fn invariant(self) -> bool {
-        false
-    }
-}
-
 impl<T: ?Sized> Invariant for &T {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         inv(*self)
     }
@@ -93,8 +83,7 @@ impl<T: ?Sized> Invariant for &T {
 
 impl<T: ?Sized> Invariant for &mut T {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { inv(*self) && inv(^self) }
     }
@@ -104,7 +93,7 @@ impl<T: ?Sized> Invariant for &mut T {
 ///
 /// This function is functionnaly equivalent to [`Invariant::invariant`], except that it
 /// can be called on any type (even if it does not implement [`Invariant`]).
-#[logic(prophetic, opaque)]
+#[logic(prophetic, inline, open)]
 #[intrinsic("inv")]
 pub fn inv<T: ?Sized>(_: T) -> bool {
     dead

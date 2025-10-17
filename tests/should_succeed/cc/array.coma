@@ -2,15 +2,12 @@ module M_array__test_array
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.int.UInt64
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter
   
   function view (self: t_Iter) : Slice64.slice Int32.t
   
@@ -45,7 +42,7 @@ module M_array__test_array
   
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Iter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -85,69 +82,26 @@ module M_array__test_array
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'2 self_ = deep_model'2 rhs)} (! return {result}) ]
   
-  type t_IndexRange = { t_IndexRange__start: UInt64.t; t_IndexRange__end: UInt64.t }
+  type t_IntoIter
   
-  type t_ManuallyDrop = { t_ManuallyDrop__value: Int32.t }
+  predicate inv [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
-  type t_MaybeUninit = { t_MaybeUninit__uninit: (); t_MaybeUninit__value: t_ManuallyDrop }
-  
-  type t_PolymorphicIter = {
-    t_PolymorphicIter__alive: t_IndexRange;
-    t_PolymorphicIter__data: Slice64.array t_MaybeUninit }
-  
-  type t_IntoIter = { t_IntoIter__inner: t_PolymorphicIter }
-  
-  predicate inv (_1: Seq.seq Int32.t)
-  
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq Int32.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: Slice64.array Int32.t) =
     inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
   
-  predicate inv'0 (_1: Slice64.array Int32.t)
+  predicate inv'0 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array Int32.t [inv'0 x]. inv'0 x = invariant' x
-  
-  predicate inv'1 (_1: Seq.seq t_MaybeUninit)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_MaybeUninit [inv'1 x]. inv'1 x = true
-  
-  predicate invariant''0 (self: Slice64.array t_MaybeUninit) =
-    inv'1 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
-  
-  predicate inv'2 (_1: Slice64.array t_MaybeUninit)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.array t_MaybeUninit [inv'2 x]. inv'2 x = invariant''0 x
-  
-  predicate inv'3 (_1: t_PolymorphicIter)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PolymorphicIter [inv'3 x]. inv'3 x
-      = match x with
-        | {t_PolymorphicIter__alive = alive; t_PolymorphicIter__data = data} -> inv'2 data
-        end
-  
-  predicate inv'4 (_1: t_IntoIter)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_IntoIter [inv'4 x]. inv'4 x
-      = match x with
-        | {t_IntoIter__inner = inner} -> inv'3 inner
-        end
+  meta "rewrite_def" predicate inv'0
   
   function view'0 (self: t_IntoIter) : Seq.seq Int32.t
   
   let rec into_iter (self_: Slice64.array Int32.t) (return (x: t_IntoIter)) =
     {[@expl:into_iter 'self_' type invariant] inv'0 self_}
-    any [ return (result: t_IntoIter) -> {inv'4 result} {Slice64.view self_ = view'0 result} (! return {result}) ]
+    any [ return (result: t_IntoIter) -> {Slice64.view self_ = view'0 result} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
-  
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv'4 self.current /\ inv'4 self.final
-  
-  meta "rewrite_def" predicate invariant''1
-  
-  predicate inv'5 (_1: MutBorrow.t t_IntoIter)
-  
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate produces'0 (self: t_IntoIter) (visited: Seq.seq Int32.t) (o: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 o)
@@ -163,16 +117,14 @@ module M_array__test_array
   
   axiom produces_refl_spec'0: forall self: t_IntoIter. produces'0 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
   predicate completed'0 (self: MutBorrow.t t_IntoIter) =
     resolve'0 self /\ view'0 self.current = (Seq.empty: Seq.seq Int32.t)
   
-  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'1)) =
-    {[@expl:next 'self_' type invariant] inv'5 self_}
-    any
+  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'1)) = any
     [ return (result: t_Option'1) -> {match result with
         | C_None'1 -> completed'0 self_
         | C_Some'1 v -> produces'0 self_.current (Seq.singleton v) self_.final
@@ -273,9 +225,8 @@ module M_array__test_array
       | s1 = into_iter {_73} (fun (_ret: t_IntoIter) -> [ &b <- _ret ] s2)
       | s2 = bb14 ]
     | bb14 = s0
-      [ s0 = {inv'4 b}
-        MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] -{inv'4 _ret.final}- [ &b <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_IntoIter> {b}
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] [ &b <- _ret.final ] s1)
       | s1 = next'0 {_78} (fun (_ret: t_Option'1) -> [ &_77 <- _ret ] s2)
       | s2 = bb15 ]
     | bb15 = s0
@@ -291,9 +242,8 @@ module M_array__test_array
       | s5 = bb16 ]
     | bb16 = any [ br0 -> {_83 = false} (! bb18) | br1 -> {_83} (! bb17) ]
     | bb17 = s0
-      [ s0 = {inv'4 b}
-        MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] -{inv'4 _ret.final}- [ &b <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_IntoIter> {b}
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] [ &b <- _ret.final ] s1)
       | s1 = next'0 {_99} (fun (_ret: t_Option'1) -> [ &_98 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = s0

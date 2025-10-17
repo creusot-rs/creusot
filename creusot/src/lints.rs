@@ -32,8 +32,8 @@ pub(crate) enum Diagnostics {
         #[label]
         span: Span,
     },
-    #[diag(creusot_experimental)]
-    Experimental,
+    #[diag(creusot_dyn_experimental)]
+    DynExperimental,
 }
 
 pub fn register_lints(_sess: &Session, store: &mut LintStore) {

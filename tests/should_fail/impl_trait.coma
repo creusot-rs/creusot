@@ -28,13 +28,15 @@ module M_impl_trait__main
   
   let rec returns_iterator (return (x: opaque0)) = any [ return (result: opaque0) -> {inv result} (! return {result}) ]
   
+  predicate resolve (_1: opaque0)
+  
   predicate invariant' [@inline:trivial] (self: opaque0) = inv self
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: opaque0)
+  predicate inv'0 [@inline:trivial] (_1: opaque0) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: opaque0 [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: opaque0)
   
@@ -56,7 +58,11 @@ module M_impl_trait__main
   
   let rec main (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = returns_iterator (fun (_ret: opaque0) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = a {_4} (fun (_ret: bool) -> [ &x <- _ret ] s1) | s1 = bb3 ]
+    | bb1 = s0
+      [ s0 = {[@expl:type invariant] inv _4} s1
+      | s1 = -{resolve _4}- s2
+      | s2 = a {_4} (fun (_ret: bool) -> [ &x <- _ret ] s3)
+      | s3 = bb3 ]
     | bb3 = s0 [ s0 = {[@expl:assertion] x} s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque0 = Any.any_l () ])
     [ return (result: ()) -> {[@expl:main ensures] true} (! return {result}) ]

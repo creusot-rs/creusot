@@ -102,16 +102,11 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
                 }
                 self.visit_rvalue(r)
             }
-            StatementKind::Resolve { pl, .. } => {
-                self.read_place(pl);
-                self.read_place(pl)
-            }
-            StatementKind::Assertion { cond, msg: _, trusted: _ } => {
+            StatementKind::Assertion { cond, .. } => {
                 // Make assertions stop propagation because it would require Expr -> Term translation
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            StatementKind::AssertTyInv { pl, .. } => self.read_place(pl),
             StatementKind::Call(dest, _, _, args) => {
                 self.write_place(dest);
                 args.iter().for_each(|a| self.visit_operand(a));
@@ -122,7 +117,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         match r {
             RValue::Snapshot(t) => self.visit_term(t),
-            RValue::Borrow(_, p, _) | RValue::Ptr(p) => {
+            RValue::Borrow(_, p) | RValue::Ptr(p) => {
                 self.read_place(p);
                 self.read_place(p)
             }
@@ -279,12 +274,6 @@ impl<'tcx> SimplePropagator<'tcx> {
                 StatementKind::Assignment(ref l, ref r) if self.should_erase(l.local) && r.is_pure() => {
                      self.dead.insert(l.local);
                  }
-                StatementKind::Resolve{ pl: ref p, .. } => {
-                   if let Some(l) = p.as_symbol() && self.dead.contains(&l) {
-                   } else {
-                     out_stmts.push(s)
-                   }
-                 }
                  _ => out_stmts.push(s),
              }
         }
@@ -301,23 +290,17 @@ impl<'tcx> SimplePropagator<'tcx> {
     fn visit_statement(&mut self, s: &mut Statement<'tcx>) {
         match &mut s.kind {
             StatementKind::Assignment(_, r) => self.visit_rvalue(r),
-            StatementKind::Resolve { pl, .. } => {
-                if let Some(l) = pl.as_symbol()
-                    && self.dead.contains(&l)
-                {}
-            }
-            StatementKind::Assertion { cond, msg: _, trusted: _ } => self.visit_term(cond),
+            StatementKind::Assertion { cond, .. } => self.visit_term(cond),
             StatementKind::Call(_, _, _, args) => {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
-            StatementKind::AssertTyInv { .. } => {}
         }
     }
 
     fn visit_rvalue(&mut self, r: &mut RValue<'tcx>) {
         match r {
             RValue::Snapshot(t) => self.visit_term(t),
-            RValue::Ptr(p) | RValue::Borrow(_, p, _) => {
+            RValue::Ptr(p) | RValue::Borrow(_, p) => {
                 assert!(!self.prop.contains_key(&p.local), "Trying to propagate borrowed variable")
             }
             RValue::Operand(op) => self.visit_operand(op),

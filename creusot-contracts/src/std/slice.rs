@@ -15,11 +15,24 @@ pub use ::std::slice::*;
 
 impl<T> Invariant for [T] {
     #[logic(open, prophetic)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { inv(self@) }
     }
+}
+
+impl<T> Resolve for [T] {
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self[i]) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T> View for [T] {
@@ -464,7 +477,7 @@ impl<'a, T> View for Iter<'a, T> {
 impl<'a, T> Iterator for Iter<'a, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
+        pearlite! { resolve(self) && (*self@)@ == Seq::empty() }
     }
 
     #[logic(open)]
@@ -512,7 +525,7 @@ impl<'a, T> Resolve for IterMut<'a, T> {
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && (*self@)@ == Seq::empty() }
+        pearlite! { resolve(self) && (*self@)@ == Seq::empty() }
     }
 
     #[logic(open)]

@@ -44,14 +44,14 @@ impl<T, const SIZE: usize> View for Sparse<T, SIZE> {
 }
 
 impl<T, const SIZE: usize> Resolve for Sparse<T, SIZE> {
-    #[logic(open(self), prophetic)]
+    #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! {
             forall<i> 0 <= i && i < SIZE@ ==> resolve(self@[i])
         }
     }
 
-    #[logic(open(self), prophetic)]
+    #[logic(open, prophetic)]
     #[requires(inv(self))]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]

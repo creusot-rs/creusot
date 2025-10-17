@@ -56,32 +56,26 @@ module M_fmap__resolves
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve _1
+  predicate resolve'0 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'0
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve x0
+        end
   
-  predicate resolve'1 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'0 x
-      | C_None -> true
-      end
+  type t_FMapIter
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: t_Option) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  type t_FMapIter = { t_FMapIter__inner: t_FMap }
+  predicate inv (_1: t_FMapIter)
   
   function view'0 (self: t_FMapIter) : t_FMap
   
   let rec into_iter (self: t_FMap) (return (x: t_FMapIter)) = any
-    [ return (result: t_FMapIter) -> {view'0 result = self} (! return {result}) ]
+    [ return (result: t_FMapIter) -> {inv result} {view'0 result = self} (! return {result}) ]
   
   type tuple = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
   
@@ -120,17 +114,22 @@ module M_fmap__resolves
   
   axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple) self
   
-  predicate inv (_1: t_FMapIter)
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq tuple) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_FMapIter [inv x]. inv x = true
+  meta "rewrite_def" predicate inv'0
   
-  predicate inv'0 (_1: Seq.seq tuple)
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_FMapIter) = inv self.current /\ inv self.final
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq tuple [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'1
   
   predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
   
-  let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = any
+  let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'1 self}
+    any
     [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed self
         | C_Some'0 {f0 = k; f1 = v} -> produces self.current (Seq.singleton { f0 = k; f1 = v }) self.final
@@ -138,30 +137,26 @@ module M_fmap__resolves
         end}
       (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_FMapIter) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   let rec v_Some (input: t_Option'0) (ret (field_0: tuple)) = any
     [ good (field_0: tuple) -> {C_Some'0 field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: tuple [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
   
-  predicate resolve'5 (self: t_FMap) =
-    forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. get self k = C_Some v -> resolve'0 k /\ resolve'0 v
+  predicate resolve'2 (self: t_FMap) =
+    forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. get self k = C_Some v -> resolve k /\ resolve v
   
-  predicate resolve'6 [@inline:trivial] (_1: t_FMap) = resolve'5 _1
+  predicate resolve'3 (_1: t_FMap)
   
-  meta "rewrite_def" predicate resolve'6
+  axiom resolve_axiom'0: forall x: t_FMap [resolve'3 x]. resolve'3 x -> resolve'2 x
   
-  predicate resolve'7 (self: t_FMapIter) = resolve'6 (view'0 self)
+  predicate resolve'4 (self: t_FMapIter) = resolve'3 (view'0 self)
   
-  predicate resolve'8 [@inline:trivial] (_1: t_FMapIter) = resolve'7 _1
+  predicate resolve'5 (_1: t_FMapIter)
   
-  meta "rewrite_def" predicate resolve'8
+  axiom resolve_axiom'1: forall x: t_FMapIter [resolve'5 x]. resolve'5 x -> resolve'4 x
   
   let rec new'0 (x: UInt64.t) (return (x'0: UInt64.t)) = any
     [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
@@ -189,7 +184,7 @@ module M_fmap__resolves
       [ s0 = MutBorrow.borrow_mut <t_FMap> {s}
           (fun (_ret: MutBorrow.t t_FMap) -> [ &_14 <- _ret ] [ &s <- _ret.final ] s1)
       | s1 = insert_ghost {_14} {bor_k} {bor_v} (fun (_ret: t_Option) -> [ &_13 <- _ret ] s2)
-      | s2 = -{resolve'2 _13}- s3
+      | s2 = -{resolve'0 _13}- s3
       | s3 = bb5 ]
     | bb5 = s0 [ s0 = into_iter {s} (fun (_ret: t_FMapIter) -> [ &iter <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb7 ]
@@ -204,15 +199,20 @@ module M_fmap__resolves
         (! [ &variant_old_bb9 <- 1 - Seq.length produced ] s0)
         [ s0 = bb10 ]
         [ bb10 = s0
-          [ s0 = MutBorrow.borrow_mut <t_FMapIter> {iter}
-              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_34 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_FMapIter> {_34.current} {MutBorrow.get_id _34}
-              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_33 <- _ret ] [ &_34 <- { _34 with current = _ret.final } ] s2)
+          [ s0 = {inv iter}
+            MutBorrow.borrow_mut <t_FMapIter> {iter}
+              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_34 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
+          | s1 = {inv _34.current}
+            MutBorrow.borrow_final <t_FMapIter> {_34.current} {MutBorrow.get_id _34}
+              (fun (_ret: MutBorrow.t t_FMapIter) ->
+                [ &_33 <- _ret ] -{inv _ret.final}-
+                [ &_34 <- { _34 with current = _ret.final } ] s2)
           | s2 = next {_33} (fun (_ret: t_Option'0) -> [ &_32 <- _ret ] s3)
           | s3 = bb11 ]
         | bb11 = s0
-          [ s0 = -{resolve'4 _34}- s1
-          | s1 = any [ br0 -> {_32 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_32 = C_Some'0 x0} (! bb15) ] ]
+          [ s0 = {[@expl:type invariant] inv'1 _34} s1
+          | s1 = -{resolve'1 _34}- s2
+          | s2 = any [ br0 -> {_32 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_32 = C_Some'0 x0} (! bb15) ] ]
         | bb15 = s0
           [ s0 = v_Some {_32} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_37 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -222,15 +222,16 @@ module M_fmap__resolves
           | s1 = [ &k2 <- __creusot_proc_iter_elem.f0 ] s2
           | s2 = [ &v2 <- __creusot_proc_iter_elem.f1 ] s3
           | s3 = [ &k2 <- { k2 with current = (1: UInt64.t) } ] s4
-          | s4 = -{resolve'0 k2}- s5
+          | s4 = -{resolve k2}- s5
           | s5 = [ &v2 <- { v2 with current = (1: UInt64.t) } ] s6
-          | s6 = -{resolve'0 v2}- s7
+          | s6 = -{resolve v2}- s7
           | s7 = bb9 ] ] ]
     | bb14 = s0
-      [ s0 = -{resolve'8 iter}- s1
-      | s1 = UInt64.add {k} {v} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s2)
-      | s2 = new'0 {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb17 ]
+      [ s0 = {[@expl:type invariant] inv iter} s1
+      | s1 = -{resolve'5 iter}- s2
+      | s2 = UInt64.add {k} {v} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s3)
+      | s3 = new'0 {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
+      | s4 = bb17 ]
     | bb17 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()

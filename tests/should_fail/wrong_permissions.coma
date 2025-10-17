@@ -127,9 +127,9 @@ module M_wrong_permissions__unknown_ptr_own_permission
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv (_1: Int32.t)
+  predicate inv [@inline:trivial] (_1: Int32.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Int32.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: t_PtrOwn) =
     not is_null_logic (ptr self)
@@ -141,23 +141,23 @@ module M_wrong_permissions__unknown_ptr_own_permission
   
   predicate inv'0 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'1 [@inline:trivial] (_1: t_PtrOwn) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''1 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'2 (_1: t_PtrOwn)
+  predicate inv'2 [@inline:trivial] (_1: t_PtrOwn) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  meta "rewrite_def" predicate inv'2
   
   let rec as_ref (ptr'0: Opaque.ptr) (own: t_PtrOwn) (return (x: Int32.t)) =
     {[@expl:as_ref 'own' type invariant] inv'2 own}
@@ -219,9 +219,9 @@ module M_wrong_permissions__wrong_ptr_own_permission
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv (_1: Int32.t)
+  predicate inv [@inline:trivial] (_1: Int32.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Int32.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: t_PtrOwn) =
     not is_null_logic (ptr self)
@@ -233,19 +233,19 @@ module M_wrong_permissions__wrong_ptr_own_permission
   
   predicate inv'0 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'1 [@inline:trivial] (_1: t_PtrOwn) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
-  predicate inv'2 (_1: tuple)
+  predicate inv'2 [@inline:trivial] (_1: tuple) = inv'1 _1.f1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = (let {f0 = x0; f1 = x1} = x in inv'1 x1)
+  meta "rewrite_def" predicate inv'2
   
   let rec new (v: Int32.t) (return (x: tuple)) = any
     [ return (result: tuple) -> {inv'2 result} {ptr result.f1 = result.f0 /\ val' result.f1 = v} (! return {result}) ]
@@ -254,25 +254,25 @@ module M_wrong_permissions__wrong_ptr_own_permission
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'3 (_1: t_PtrOwn)
+  predicate inv'3 [@inline:trivial] (_1: t_PtrOwn) = invariant''1 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''1 x
+  meta "rewrite_def" predicate inv'3
   
   predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_PtrOwn)
+  predicate inv'4 [@inline:trivial] (_1: t_PtrOwn) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'4 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_1: t_PtrOwn)
+  predicate inv'5 [@inline:trivial] (_1: t_PtrOwn) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+  meta "rewrite_def" predicate inv'5
   
   let rec borrow (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:borrow 'self' type invariant] inv'3 self}
     any [ return (result: t_PtrOwn) -> {inv'5 result} {result = self} (! return {result}) ]
@@ -289,9 +289,15 @@ module M_wrong_permissions__wrong_ptr_own_permission
   let rec wrong_ptr_own_permission (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &ptr'0 <- _2.f0 ] s1 | s1 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s2) | s2 = bb2 ]
+      [ s0 = {[@expl:type invariant] inv'2 _2} s1
+      | s1 = [ &ptr'0 <- _2.f0 ] s2
+      | s2 = new {(1: Int32.t)} (fun (_ret: tuple) -> [ &_4 <- _ret ] s3)
+      | s3 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &perm <- _4.f1 ] s1 | s1 = borrow {perm} (fun (_ret: t_PtrOwn) -> [ &_8 <- _ret ] s2) | s2 = bb3 ]
+      [ s0 = [ &perm <- _4.f1 ] s1
+      | s1 = {[@expl:type invariant] inv'1 perm} s2
+      | s2 = borrow {perm} (fun (_ret: t_PtrOwn) -> [ &_8 <- _ret ] s3)
+      | s3 = bb3 ]
     | bb3 = s0 [ s0 = as_ref {ptr'0} {_8} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb4 ]
     | bb4 = return {_0} ]
     [ & _0: () = Any.any_l ()

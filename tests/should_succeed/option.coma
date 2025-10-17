@@ -929,25 +929,17 @@ module M_option__as_mut
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
+  predicate resolve'0 (_1: t_Option'0)
   
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve'0 x
-      | C_None'0 -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: t_Option'0) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_Option'0 [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 x0 -> resolve x0
+        end
   
   let rec is_none (self_: t_Option'0) (return (x: bool)) = any
     [ return (result: bool) -> {result = (self_ = C_None'0)} (! return {result}) ]
@@ -970,7 +962,7 @@ module M_option__as_mut
           (fun (_ret: MutBorrow.t t_Option) -> [ &_7 <- _ret ] [ &none <- _ret.final ] s3)
       | s3 = as_mut {_7} (fun (_ret: t_Option'0) -> [ &_6 <- _ret ] s4)
       | s4 = bb1 ]
-    | bb1 = s0 [ s0 = -{resolve'2 _6}- s1 | s1 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s2) | s2 = bb2 ]
+    | bb1 = s0 [ s0 = -{resolve'0 _6}- s1 | s1 = is_none {_6} (fun (_ret: bool) -> [ &_4 <- _ret ] s2) | s2 = bb2 ]
     | bb2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ]
     | bb3 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option> {some}
@@ -980,7 +972,7 @@ module M_option__as_mut
     | bb5 = s0 [ s0 = unwrap {_10} (fun (_ret: MutBorrow.t Int32.t) -> [ &_9 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0
       [ s0 = [ &_9 <- { _9 with current = (2: Int32.t) } ] s1
-      | s1 = -{resolve'0 _9}- s2
+      | s1 = -{resolve _9}- s2
       | s2 = unwrap'0 {some} (fun (_ret: Int32.t) -> [ &_14 <- _ret ] s3)
       | s3 = bb7 ]
     | bb7 = s0
@@ -993,7 +985,7 @@ module M_option__as_mut
     | bb10 = s0 [ s0 = unwrap {_18} (fun (_ret: MutBorrow.t Int32.t) -> [ &_17 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
       [ s0 = [ &_17 <- { _17 with current = (1: Int32.t) } ] s1
-      | s1 = -{resolve'0 _17}- s2
+      | s1 = -{resolve _17}- s2
       | s2 = unwrap'0 {some} (fun (_ret: Int32.t) -> [ &_22 <- _ret ] s3)
       | s3 = bb12 ]
     | bb12 = s0
@@ -1155,21 +1147,13 @@ module M_option__and_or_xor
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (_1: Int32.t) = true
+  predicate resolve [@inline:trivial] (_1: t_Option) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve x
-      | C_None -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'0
-  
   let rec and (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {self_ = C_None -> result = C_None /\ resolve'0 optb}
-      {self_ = C_None \/ result = optb /\ resolve'0 self_}
+    [ return (result: t_Option) -> {self_ = C_None -> result = C_None /\ resolve optb}
+      {self_ = C_None \/ result = optb /\ resolve self_}
       (! return {result}) ]
   
   type t_Option'0 = C_None'0 | C_Some'0 int
@@ -1194,15 +1178,19 @@ module M_option__and_or_xor
   
   let rec or (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {self_ = C_None -> result = optb}
-      {self_ = C_None \/ result = self_ /\ resolve'0 optb}
+      {self_ = C_None \/ result = self_ /\ resolve optb}
       (! return {result}) ]
   
   type tuple = { f0: t_Option; f1: t_Option }
   
+  predicate resolve'0 [@inline:trivial] (_1: Int32.t) = true
+  
+  meta "rewrite_def" predicate resolve'0
+  
   let rec xor (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {match { f0 = self_; f1 = optb } with
         | {f0 = C_None; f1 = C_None} -> result = C_None
-        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
+        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
         | {f0 = C_Some t; f1 = C_None} -> result = C_Some t
         | {f0 = C_None; f1 = C_Some t} -> result = C_Some t
         end}
@@ -2046,13 +2034,9 @@ module M_option__insert
       {result.current = value /\ self_.final = C_Some (result.final)}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -2090,7 +2074,7 @@ module M_option__insert
       [ s0 = [ &_6 <- i1.current = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &i1 <- { i1 with current = (3: Int32.t) } ] s1
-      | s1 = -{resolve'1 i1}- s2
+      | s1 = -{resolve'0 i1}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (3: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2109,7 +2093,7 @@ module M_option__insert
       | s1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb8) ] ]
     | bb8 = s0
       [ s0 = [ &i2 <- { i2 with current = (5: Int32.t) } ] s1
-      | s1 = -{resolve'1 i2}- s2
+      | s1 = -{resolve'0 i2}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (5: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2120,9 +2104,9 @@ module M_option__insert
     | bb10 = any [ br0 -> {_22 = false} (! bb12) | br1 -> {_22} (! bb11) ]
     | bb11 = return {_0}
     | bb12 = {false} any
-    | bb9 = s0 [ s0 = -{resolve'1 i2}- s1 | s1 = {false} any ]
+    | bb9 = s0 [ s0 = -{resolve'0 i2}- s1 | s1 = {false} any ]
     | bb6 = {false} any
-    | bb3 = s0 [ s0 = -{resolve'1 i1}- s1 | s1 = {false} any ] ]
+    | bb3 = s0 [ s0 = -{resolve'0 i1}- s1 | s1 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & none: t_Option = Any.any_l ()
     | & some: t_Option = Any.any_l ()
@@ -2155,13 +2139,9 @@ module M_option__get_or_insert
         end}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -2248,7 +2228,7 @@ module M_option__get_or_insert
       [ s0 = [ &_6 <- i1.current = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &i1 <- { i1 with current = (3: Int32.t) } ] s1
-      | s1 = -{resolve'1 i1}- s2
+      | s1 = -{resolve'0 i1}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (3: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2267,7 +2247,7 @@ module M_option__get_or_insert
       | s1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb8) ] ]
     | bb8 = s0
       [ s0 = [ &i2 <- { i2 with current = (5: Int32.t) } ] s1
-      | s1 = -{resolve'1 i2}- s2
+      | s1 = -{resolve'0 i2}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (5: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2291,7 +2271,7 @@ module M_option__get_or_insert
       | s1 = any [ br0 -> {_33 = false} (! bb15) | br1 -> {_33} (! bb14) ] ]
     | bb14 = s0
       [ s0 = [ &i1'0 <- { i1'0 with current = (3: Int32.t) } ] s1
-      | s1 = -{resolve'1 i1'0}- s2
+      | s1 = -{resolve'0 i1'0}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (3: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2311,7 +2291,7 @@ module M_option__get_or_insert
       | s1 = any [ br0 -> {_46 = false} (! bb21) | br1 -> {_46} (! bb20) ] ]
     | bb20 = s0
       [ s0 = [ &i2'0 <- { i2'0 with current = (5: Int32.t) } ] s1
-      | s1 = -{resolve'1 i2'0}- s2
+      | s1 = -{resolve'0 i2'0}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (5: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -2322,13 +2302,13 @@ module M_option__get_or_insert
     | bb22 = any [ br0 -> {_50 = false} (! bb24) | br1 -> {_50} (! bb23) ]
     | bb23 = return {_0}
     | bb24 = {false} any
-    | bb21 = s0 [ s0 = -{resolve'1 i2'0}- s1 | s1 = {false} any ]
+    | bb21 = s0 [ s0 = -{resolve'0 i2'0}- s1 | s1 = {false} any ]
     | bb18 = {false} any
-    | bb15 = s0 [ s0 = -{resolve'1 i1'0}- s1 | s1 = {false} any ]
+    | bb15 = s0 [ s0 = -{resolve'0 i1'0}- s1 | s1 = {false} any ]
     | bb12 = {false} any
-    | bb9 = s0 [ s0 = -{resolve'1 i2}- s1 | s1 = {false} any ]
+    | bb9 = s0 [ s0 = -{resolve'0 i2}- s1 | s1 = {false} any ]
     | bb6 = {false} any
-    | bb3 = s0 [ s0 = -{resolve'1 i1}- s1 | s1 = {false} any ] ]
+    | bb3 = s0 [ s0 = -{resolve'0 i1}- s1 | s1 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & none: t_Option = Any.any_l ()
     | & some: t_Option = Any.any_l ()
@@ -2424,24 +2404,20 @@ module M_option__take_if
   
   type t_Option = C_None | C_Some Int32.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
-  
   let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 _0}- s1 | s1 = {false} any ] ] [ & _0: MutBorrow.t Int32.t = _0 ]
+    [ bb0 = s0 [ s0 = -{resolve _0}- s1 | s1 = {false} any ] ] [ & _0: MutBorrow.t Int32.t = _0 ]
   
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate inv (_1: MutBorrow.t Int32.t)
+  predicate inv [@inline:trivial] (_1: MutBorrow.t Int32.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t Int32.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate precondition [@inline:trivial] (self: ()) (args: MutBorrow.t Int32.t) =
     let _0 = args in closure0'pre self _0
@@ -2493,7 +2469,7 @@ module M_option__take_if
     [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return (x'0: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = [ &_0 <- x.current = (2: Int32.t) ] s2 | s2 = return {_0} ] ]
+    [ bb0 = s0 [ s0 = -{resolve x}- s1 | s1 = [ &_0 <- x.current = (2: Int32.t) ] s2 | s2 = return {_0} ] ]
     [ & _0: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x ]
   
   meta "rewrite_def" predicate closure1'pre
@@ -2533,7 +2509,7 @@ module M_option__take_if
     [ bb0 = s0
       [ s0 = [ &res <- x.current = (1: Int32.t) ] s1
       | s1 = [ &x <- { x with current = (3: Int32.t) } ] s2
-      | s2 = -{resolve'0 x}- s3
+      | s2 = -{resolve x}- s3
       | s3 = [ &_0 <- res ] s4
       | s4 = return {_0} ] ] [ & _0: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x | & res: bool = Any.any_l () ]
   
@@ -2909,34 +2885,18 @@ module M_option__zip_unzip
   
   type tuple'0 = { f0'0: t_Option; f1'0: t_Option'0 }
   
-  predicate resolve [@inline:trivial] (_1: bool) = true
+  predicate resolve [@inline:trivial] (_1: t_Option'0) = true
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve x
-      | C_None'0 -> true
-      end
+  predicate resolve'0 [@inline:trivial] (_1: t_Option) = true
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_1: Int32.t) = true
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'1 x
-      | C_None -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'2
-  
   let rec zip (self_: t_Option) (other: t_Option'0) (return (x: t_Option'1)) = any
     [ return (result: t_Option'1) -> {match { f0'0 = self_; f1'0 = other } with
-        | {f0'0 = C_None} -> result = C_None'1 /\ resolve'0 other
-        | {f1'0 = C_None'0} -> result = C_None'1 /\ resolve'2 self_
+        | {f0'0 = C_None} -> result = C_None'1 /\ resolve other
+        | {f1'0 = C_None'0} -> result = C_None'1 /\ resolve'0 self_
         | {f0'0 = C_Some t; f1'0 = C_Some'0 u} -> result = C_Some'1 { f0 = t; f1 = u }
         end}
       (! return {result}) ]
@@ -3315,16 +3275,12 @@ module M_option__resolve
   
   type t_Option = C_None | C_Some (MutBorrow.t Int32.t)
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
-  
   let rec closure1 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 _0}- s1 | s1 = [ &_0'0 <- true ] s2 | s2 = return {_0'0} ] ]
+    [ bb0 = s0 [ s0 = -{resolve _0}- s1 | s1 = [ &_0'0 <- true ] s2 | s2 = return {_0'0} ] ]
     [ & _0'0: bool = Any.any_l () | & _0: MutBorrow.t Int32.t = _0 ]
   
   meta "rewrite_def" predicate closure1'pre
@@ -3354,39 +3310,27 @@ module M_option__resolve
   
   type t_Option'0 = C_None'0 | C_Some'0 Int32.t
   
-  predicate resolve'1 [@inline:trivial] (_1: Int32.t) = true
+  predicate resolve'0 [@inline:trivial] (_1: t_Option'0) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve'1 x
-      | C_None'0 -> true
-      end
+  predicate resolve'1 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'0 x
-      | C_None -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'3
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve x0
+        end
   
   let rec and (self_: t_Option) (optb: t_Option'0) (return (x: t_Option'0)) = any
-    [ return (result: t_Option'0) -> {self_ = C_None -> result = C_None'0 /\ resolve'2 optb}
-      {self_ = C_None \/ result = optb /\ resolve'3 self_}
+    [ return (result: t_Option'0) -> {self_ = C_None -> result = C_None'0 /\ resolve'0 optb}
+      {self_ = C_None \/ result = optb /\ resolve'1 self_}
       (! return {result}) ]
   
   let rec or (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {self_ = C_None -> result = optb}
-      {self_ = C_None \/ result = self_ /\ resolve'3 optb}
+      {self_ = C_None \/ result = self_ /\ resolve'1 optb}
       (! return {result}) ]
-  
-  predicate resolve'4 [@inline:trivial] (_1: t_Option) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
   
   let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_0'0 <- false ] s1 | s1 = return {_0'0} ] ] [ & _0'0: bool = Any.any_l () ]
@@ -3413,7 +3357,7 @@ module M_option__resolve
     [ return (result: t_Option) -> {match self_ with
         | C_None -> result = C_None
         | C_Some t -> match result with
-          | C_None -> postcondition_once'0 predicate' t false /\ resolve'0 t
+          | C_None -> postcondition_once'0 predicate' t false /\ resolve t
           | C_Some r -> postcondition_once'0 predicate' t true /\ r = t
           end
         end}
@@ -3424,7 +3368,7 @@ module M_option__resolve
   let rec xor (self_: t_Option) (optb: t_Option) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {match { f0 = self_; f1 = optb } with
         | {f0 = C_None; f1 = C_None} -> result = C_None
-        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve'0 t1 /\ resolve'0 t2
+        | {f0 = C_Some t1; f1 = C_Some t2} -> result = C_None /\ resolve t1 /\ resolve t2
         | {f0 = C_Some t; f1 = C_None} -> result = C_Some t
         | {f0 = C_None; f1 = C_Some t} -> result = C_Some t
         end}
@@ -3433,25 +3377,21 @@ module M_option__resolve
   let rec insert (self_: MutBorrow.t t_Option) (value: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
     [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
-        | C_Some t -> resolve'0 t
+        | C_Some t -> resolve t
         | C_None -> true
         end}
       {result.current = value /\ self_.final = C_Some (result.final)}
       (! return {result}) ]
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t Int32.t)) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'5
-  
-  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = resolve'5 _1
-  
-  meta "rewrite_def" predicate resolve'6
+  meta "rewrite_def" predicate resolve'2
   
   let rec get_or_insert (self_: MutBorrow.t t_Option) (value: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
     [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
         | C_None -> result.current = value /\ self_.final = C_Some (result.final)
-        | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final) /\ resolve'0 value
+        | C_Some _ -> self_.current = C_Some (result.current) /\ self_.final = C_Some (result.final) /\ resolve value
         end}
       (! return {result}) ]
   
@@ -3463,31 +3403,23 @@ module M_option__resolve
   
   let rec zip (self_: t_Option) (other: t_Option'0) (return (x: t_Option'1)) = any
     [ return (result: t_Option'1) -> {match { f0'1 = self_; f1'1 = other } with
-        | {f0'1 = C_None} -> result = C_None'1 /\ resolve'2 other
-        | {f1'1 = C_None'0} -> result = C_None'1 /\ resolve'3 self_
+        | {f0'1 = C_None} -> result = C_None'1 /\ resolve'0 other
+        | {f1'1 = C_None'0} -> result = C_None'1 /\ resolve'1 self_
         | {f0'1 = C_Some t; f1'1 = C_Some'0 u} -> result = C_Some'1 { f0'0 = t; f1'0 = u }
         end}
       (! return {result}) ]
   
-  predicate resolve'7 [@inline:trivial] (self: tuple'0) = resolve'0 self.f0'0 /\ resolve'1 self.f1'0
+  predicate resolve'3 [@inline:trivial] (_1: tuple'0) = resolve _1.f0'0
   
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'8 [@inline:trivial] (_1: tuple'0) = resolve'7 _1
+  predicate resolve'4 (_1: t_Option'1)
   
-  meta "rewrite_def" predicate resolve'8
-  
-  predicate resolve'9 [@inline:trivial] (self: t_Option'1) =
-    match self with
-      | C_Some'1 x -> resolve'8 x
-      | C_None'1 -> true
-      end
-  
-  meta "rewrite_def" predicate resolve'9
-  
-  predicate resolve'10 [@inline:trivial] (_1: t_Option'1) = resolve'9 _1
-  
-  meta "rewrite_def" predicate resolve'10
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option'1 [resolve'4 x]. resolve'4 x
+      = match x with
+        | C_None'1 -> true
+        | C_Some'1 x0 -> resolve'3 x0
+        end
   
   let rec copied (self_: t_Option) (return (x: t_Option'0)) = any
     [ return (result: t_Option'0) -> {match self_ with
@@ -3501,9 +3433,9 @@ module M_option__resolve
   
   meta "rewrite_def" predicate postcondition_once'1
   
-  predicate resolve'11 [@inline:trivial] (_1: ()) = true
+  predicate resolve'5 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'11
+  meta "rewrite_def" predicate resolve'5
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     let self_ = args in result = self_
@@ -3513,7 +3445,7 @@ module M_option__resolve
   function fn_mut_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once'1 self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'11 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'5 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -3545,7 +3477,7 @@ module M_option__resolve
   function fn_once (self: ()) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once'1 self args res
-      = (postcondition self args res /\ resolve'11 self)
+      = (postcondition self args res /\ resolve'5 self)
   
   function fn_mut (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
   
@@ -3568,7 +3500,7 @@ module M_option__resolve
   
   meta "select_lsinst" "all"
   
-  let rec resolve'12 (return (x: ())) = (! bb0
+  let rec resolve'6 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -3602,7 +3534,7 @@ module M_option__resolve
       | s6 = or {_28} {opt'1} (fun (_ret: t_Option) -> [ &_27 <- _ret ] s7)
       | s7 = bb9 ]
     | bb9 = s0
-      [ s0 = -{resolve'4 _27}- s1
+      [ s0 = -{resolve'1 _27}- s1
       | s1 = [ &_32 <- x'1 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_32 = false} (! bb14) | br1 -> {_32} (! bb10) ] ]
     | bb10 = s0
@@ -3616,7 +3548,7 @@ module M_option__resolve
       | s4 = filter {opt'2} {_42} (fun (_ret: t_Option) -> [ &_40 <- _ret ] s5)
       | s5 = bb15 ]
     | bb15 = s0
-      [ s0 = -{resolve'4 _40}- s1
+      [ s0 = -{resolve'1 _40}- s1
       | s1 = [ &_44 <- x'2 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_44 = false} (! bb17) | br1 -> {_44} (! bb16) ] ]
     | bb16 = s0
@@ -3631,7 +3563,7 @@ module M_option__resolve
       | s6 = xor {optx} {opty} (fun (_ret: t_Option) -> [ &_53 <- _ret ] s7)
       | s7 = bb18 ]
     | bb18 = s0
-      [ s0 = -{resolve'4 _53}- s1
+      [ s0 = -{resolve'1 _53}- s1
       | s1 = [ &_57 <- x'3 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_57 = false} (! bb23) | br1 -> {_57} (! bb19) ] ]
     | bb19 = s0
@@ -3651,10 +3583,10 @@ module M_option__resolve
       | s7 = insert {_67} {_68} (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &bor <- _ret ] s8)
       | s8 = bb24 ]
     | bb24 = s0
-      [ s0 = -{resolve'0 _69}- s1
+      [ s0 = -{resolve _69}- s1
       | s1 = [ &bor <- { bor with current = { bor.current with current = (3: Int32.t) } } ] s2
-      | s2 = -{resolve'6 bor}- s3
-      | s3 = -{resolve'4 opt'3}- s4
+      | s2 = -{resolve'2 bor}- s3
+      | s3 = -{resolve'1 opt'3}- s4
       | s4 = [ &_71 <- x'4 = (1: Int32.t) ] s5
       | s5 = any [ br0 -> {_71 = false} (! bb29) | br1 -> {_71} (! bb25) ] ]
     | bb25 = s0
@@ -3674,10 +3606,10 @@ module M_option__resolve
       | s7 = get_or_insert {_81} {_82} (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &bor'0 <- _ret ] s8)
       | s8 = bb30 ]
     | bb30 = s0
-      [ s0 = -{resolve'0 _83}- s1
+      [ s0 = -{resolve _83}- s1
       | s1 = [ &bor'0 <- { bor'0 with current = { bor'0.current with current = (3: Int32.t) } } ] s2
-      | s2 = -{resolve'6 bor'0}- s3
-      | s3 = -{resolve'4 opt'4}- s4
+      | s2 = -{resolve'2 bor'0}- s3
+      | s3 = -{resolve'1 opt'4}- s4
       | s4 = [ &_85 <- x'5 = (3: Int32.t) ] s5
       | s5 = any [ br0 -> {_85 = false} (! bb35) | br1 -> {_85} (! bb31) ] ]
     | bb31 = s0
@@ -3691,7 +3623,7 @@ module M_option__resolve
       | s4 = zip {opt'5} {_95} (fun (_ret: t_Option'1) -> [ &_93 <- _ret ] s5)
       | s5 = bb36 ]
     | bb36 = s0
-      [ s0 = -{resolve'10 _93}- s1
+      [ s0 = -{resolve'4 _93}- s1
       | s1 = [ &_97 <- x'6 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_97 = false} (! bb38) | br1 -> {_97} (! bb37) ] ]
     | bb37 = s0

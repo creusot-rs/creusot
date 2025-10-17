@@ -39,6 +39,7 @@ impl<T> View for PermCellOwn<T> {
 
 impl<T: ?Sized> Resolve for PermCellOwn<T> {
     #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         resolve(self.val())
     }
@@ -53,7 +54,7 @@ impl<T: ?Sized> Resolve for PermCellOwn<T> {
 
 impl<T: Sized> Invariant for PermCellOwn<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { invariant::inv(self.val()) }
     }

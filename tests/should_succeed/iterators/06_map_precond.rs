@@ -6,7 +6,6 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Map<I: Iterator, F> {
     pub iter: I,
     pub func: F,

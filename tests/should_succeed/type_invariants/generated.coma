@@ -18,39 +18,58 @@ module M_generated__use_foo
   
   predicate inv (_1: t_Sum10)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Sum10 [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Sum10__0 = a_0; t_Sum10__1 = a_1} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Sum10 [inv x]. inv x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Sum10) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: MutBorrow.t t_Sum10)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_Sum10) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Sum10 [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   predicate inv'1 (_1: t_Foo)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Foo [inv'1 x]. inv'1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Foo [inv'1 x]. inv'1 x
       = match x with
         | C_A f1'0 f2 -> inv'0 f1'0
         | C_B a_0 -> true
         end
   
-  predicate inv'2 (_1: tuple)
+  predicate inv'2 [@inline:trivial] (_1: tuple) = inv'1 _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x
-      = (let {f0 = x0; f1 = x1} = x in inv'1 x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Foo'0)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Foo'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Foo'0 [inv'3 x]. inv'3 x
       = match x with
         | C_A'0 f1'0 f2 -> inv'0 f1'0
         | C_B'0 a_0 -> inv'2 a_0
+        end
+  
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Sum10) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 (_1: t_Foo)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Foo [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_A x0 x1 -> resolve x0
+        | C_B x0 -> true
+        end
+  
+  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve'0 _1.f0 /\ resolve _1.f1
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 (_1: t_Foo'0)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Foo'0 [resolve'2 x]. resolve'2 x
+      = match x with
+        | C_A'0 x0 x1 -> resolve x0
+        | C_B'0 x0 -> resolve'1 x0
         end
   
   meta "compute_max_steps" 1000000
@@ -59,6 +78,10 @@ module M_generated__use_foo
   
   let rec use_foo (x: t_Foo'0) (return (x'0: ())) = {[@expl:use_foo 'x' type invariant] inv'3 x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'3 x} s1 | s1 = {[@expl:assertion] inv'3 x} s2 | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & x: t_Foo'0 = x ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv'3 x} s1
+      | s1 = -{resolve'2 x}- s2
+      | s2 = {[@expl:assertion] inv'3 x} s3
+      | s3 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: t_Foo'0 = x ])
+    [ return (result: ()) -> (! return {result}) ]
 end

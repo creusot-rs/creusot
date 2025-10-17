@@ -4,7 +4,6 @@ use creusot_contracts::{invariant::Invariant, *};
 mod common;
 pub use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Enumerate<I: Iterator> {
     pub iter: I,
     pub count: usize,
@@ -18,7 +17,7 @@ where
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.iter.completed() && (&mut self.count).resolve() }
+        pearlite! { self.iter.completed() && resolve(&mut self.count) }
     }
 
     #[logic(open, prophetic)]

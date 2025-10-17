@@ -4,7 +4,6 @@ use creusot_contracts::*;
 mod common;
 pub use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Repeat<A> {
     pub element: A,
 }

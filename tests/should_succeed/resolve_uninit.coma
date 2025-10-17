@@ -39,13 +39,9 @@ module M_resolve_uninit__init_join
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -59,26 +55,26 @@ module M_resolve_uninit__init_join
       | s1 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s2)
       | s2 = [ &z <- _7 ] s3
-      | s3 = -{resolve'0 _8}- s4
+      | s3 = -{resolve _8}- s4
       | s4 = MutBorrow.borrow_final <Int32.t> {z.current} {MutBorrow.get_id z}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_10 <- _ret ] [ &z <- { z with current = _ret.final } ] s5)
       | s5 = MutBorrow.borrow_final <Int32.t> {_10.current} {MutBorrow.get_id _10}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_9 <- _ret ] [ &_10 <- { _10 with current = _ret.final } ] s6)
       | s6 = [ &y <- _9 ] s7
-      | s7 = -{resolve'0 _10}- s8
+      | s7 = -{resolve _10}- s8
       | s8 = bb7 ]
-    | bb7 = s0 [ s0 = -{resolve'0 z}- s1 | s1 = bb3 ]
+    | bb7 = s0 [ s0 = -{resolve z}- s1 | s1 = bb3 ]
     | bb2 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_12 <- _ret ] [ &x <- _ret.final ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_11 <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s2)
       | s2 = [ &y <- _11 ] s3
-      | s3 = -{resolve'0 _12}- s4
+      | s3 = -{resolve _12}- s4
       | s4 = bb3 ]
     | bb3 = s0
       [ s0 = [ &y <- { y with current = (5: Int32.t) } ] s1
-      | s1 = -{resolve'0 y}- s2
+      | s1 = -{resolve y}- s2
       | s2 = [ &_14 <- x = (5: Int32.t) ] s3
       | s3 = any [ br0 -> {_14 = false} (! bb5) | br1 -> {_14} (! bb4) ] ]
     | bb4 = return {_0}

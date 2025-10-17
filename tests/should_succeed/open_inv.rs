@@ -1,8 +1,9 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{Clone, invariant::Invariant, *};
 
-pub struct IsZero(i32);
+#[derive(Copy, Clone)]
+pub struct IsZero(pub i32);
 
 impl Invariant for IsZero {
     #[logic(open(self), prophetic)]

@@ -77,7 +77,7 @@ pub(super) fn wp<'tcx>(
     t: Term<'tcx>,
     dest: Ident,
     post: Exp,
-) -> Result<Exp, VCError<'tcx>> {
+) -> Exp {
     let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
     let vcgen = VCGen {
         typing_env: ctx.typing_env(self_id),
@@ -88,7 +88,7 @@ pub(super) fn wp<'tcx>(
         args_names,
         variant,
     };
-    vcgen.build_wp(&t, &|exp| Ok(Exp::let_(dest, exp, post.clone())))
+    vcgen.build_wp(&t, &|exp| Exp::let_(dest, exp, post.clone()))
 }
 
 /// Verifies whether a given term is structurally recursive: that is, each
@@ -205,30 +205,9 @@ fn is_structurally_recursive<'tcx>(
     s.valid()
 }
 
-#[derive(Debug)]
-pub enum VCError<'tcx> {
-    /// `old` doesn't currently make sense inside of a lemma function
-    OldInLemma(Span),
-    /// Inferred pre- / postconditions should not appear in these terms
-    PrePostInLemma(Span),
-    /// Variants are currently restricted to `Int`
-    #[allow(dead_code)] // this lint is too agressive
-    UnsupportedVariant(Ty<'tcx>, Span),
-}
-
-impl VCError<'_> {
-    pub fn span(&self) -> Span {
-        match self {
-            VCError::OldInLemma(s)
-            | VCError::UnsupportedVariant(_, s)
-            | VCError::PrePostInLemma(s) => *s,
-        }
-    }
-}
-
 // We use Fn because some continuations may be called several times (in the case
 // the post condition appears several times).
-type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> Result<R, VCError<'tcx>>;
+type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> R;
 
 impl<'tcx> VCGen<'_, 'tcx> {
     fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
@@ -239,7 +218,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         lower_pure(self.ctx, self.names, lit)
     }
 
-    fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Result<Exp, VCError<'tcx>> {
+    fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Exp {
         use BinOp::*;
         match &t.kind {
             // VC(v, Q) = Q(v)
@@ -326,16 +305,18 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k(Exp::Var(item_name))
                 }
             }
-            TermKind::Const(c) => {
-                self.build_wp(
-                    &tyconst_to_term_final(*c, t.ty, self.names.source_id(), self.ctx, self.typing_env, t.span),
-                    k,
-                )
-            },
+            TermKind::Const(c) => self.build_wp(
+                &tyconst_to_term_final(
+                    *c,
+                    t.ty,
+                    self.names.source_id(),
+                    self.ctx,
+                    self.typing_env,
+                    t.span),
+                k,
+            ),
             // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
-            TermKind::Assert { cond } => {
-                self.build_wp(cond, &|exp| Ok(exp.lazy_and(k(Exp::unit())?)))
-            }
+            TermKind::Assert { cond } => self.build_wp(cond, &|exp| exp.lazy_and(k(Exp::unit()))),
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
@@ -367,7 +348,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                     let variant = pre_sig.contract.variant.clone();
                     if let Some(variant) = variant {
-                        self.build_variant(&args, variant)?
+                        self.build_variant(&args, variant)
                     } else if self.structurally_recursive {
                         Exp::mk_true()
                     } else {
@@ -394,24 +375,18 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
                 contract.subst(&call_subst);
 
-                let post = contract
+                contract
                     .requires_conj_labelled()
                     .log_and(variant)
-                    .log_and(contract.ensures_conj().implies(k(call)?));
-
-                Ok(post)
+                    .log_and(contract.ensures_conj().implies(k(call)))
             }),
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
             TermKind::Binary { op, lhs, rhs } => match op {
-                And => self.build_wp(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_false())?))
-                }),
-                Or => self.build_wp(lhs, &|lhs| {
-                    Ok(Exp::if_(lhs, k(Exp::mk_true())?, self.build_wp(rhs, k)?))
-                }),
+                And => self.build_wp(lhs, &|lhs| Exp::if_(lhs, self.build_wp(rhs, k), k(Exp::mk_false()))),
+                Or => self.build_wp(lhs, &|lhs| Exp::if_(lhs, k(Exp::mk_true()), self.build_wp(rhs, k))),
                 _ if let Some(fun) = binop_function(self.names, *op, t.ty.kind()) => {
                     let rhs_ty = rhs.ty.kind();
                     self.build_wp(lhs, &|lhs| {
@@ -443,10 +418,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(forall<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(forall<x>P(x))
             // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
             TermKind::Quant { binder, body, .. } => {
-                let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-                let body_wp =
-                    Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body);
-                Ok(body_wp.log_and(k(self.lower_pure(t))?))
+                let body = self.build_wp(body, &|_| Exp::mk_true());
+                Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
+                    .log_and(k(self.lower_pure(t)))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
@@ -485,7 +459,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
-                Ok(Exp::if_(lhs, self.build_wp(rhs, k)?, k(Exp::mk_true())?))
+                Exp::if_(lhs, self.build_wp(rhs, k), k(Exp::mk_true()))
             }),
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms }
@@ -496,22 +470,19 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 self.build_wp(scrutinee, &|scrut| {
                     let mut arms: Vec<_> = arms
                         .iter()
-                        .map(|arm| Ok((arm.0.get_bool().unwrap(), self.build_wp(&arm.1, k)?)))
-                        .collect::<Result<_, _>>()?;
+                        .map(|arm| (arm.0.get_bool().unwrap(), self.build_wp(&arm.1, k)))
+                        .collect();
                     arms.sort_by(|a, b| b.0.cmp(&a.0));
 
-                    Ok(Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1))
+                    Exp::if_(scrut, arms.remove(0).1, arms.remove(0).1)
                 })
             }
             // VC(match A {P -> E}, Q) = VC(A, |a| match a {P -> VC(E, Q)})
             TermKind::Match { scrutinee, arms } => self.build_wp(scrutinee, &|scrut| {
                 let arms = arms
                     .iter()
-                    .map(|arm| {
-                        self.build_pattern(&arm.0, &|pat| Ok((pat, self.build_wp(&arm.1, k)?)))
-                    })
-                    .collect::<Result<Box<[_]>, _>>()?;
-                Ok(scrut.match_(arms))
+                    .map(|arm| self.build_pattern(&arm.0, &|pat| (pat, self.build_wp(&arm.1, k))));
+                scrut.match_(arms)
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
@@ -519,8 +490,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     if pattern.is_wildcard() && arg.is_unit() {
                         self.build_wp(body, k)
                     } else {
-                        let body = self.build_wp(body, k)?.boxed();
-                        Ok(Exp::Let { pattern, arg: arg.clone().boxed(), body })
+                        let body = self.build_wp(body, k).boxed();
+                        Exp::Let { pattern, arg: arg.clone().boxed(), body }
                     }
                 })
             }),
@@ -529,7 +500,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
-                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *idx),
+                    TyKind::Adt(def, subst) => self.names.field(def.did(), subst, *idx),
                     TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
                     TyKind::Tuple(tys) => self.names.tuple_field(tys, *idx),
                     k => unreachable!("Projection from {k:?}"),
@@ -577,24 +548,22 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
             TermKind::Closure { bound, body } => {
-                let body = self.build_wp(body, &|_| Ok(Exp::mk_true()))?;
-                let wp_pre =
-                    Exp::forall(bound.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body);
-                Ok(wp_pre.log_and(k(self.lower_pure(t))?))
+                let body = self.build_wp(body, &|_| Exp::mk_true());
+                Exp::forall(bound.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
+                    .log_and(k(self.lower_pure(t)))
             }
-            TermKind::Old { .. } => Err(VCError::OldInLemma(t.span)),
+            TermKind::Old { .. } => self.ctx.crash_and_error(t.span, "`old` is not allowed here"),
             TermKind::Precondition { .. } | TermKind::Postcondition { .. } => {
-                Err(VCError::PrePostInLemma(t.span))
+                self.ctx.span_bug(t.span, "inferred pre/post should not appear here.")
             }
-            TermKind::Capture(_) => unreachable!("Capture left in VCGen")
+            TermKind::Capture(_) => self.ctx.span_bug(t.span, "capture should not appear here."),
+            TermKind::PrivateInv { .. } | TermKind::PrivateResolve { .. } => {
+                self.ctx.span_bug(t.span, "private_inv and private_resolve should not appear here.")
+            }
         }
     }
 
-    fn build_pattern<A>(
-        &self,
-        pat: &Pattern<'tcx>,
-        k: PostCont<'_, 'tcx, WPattern, A>,
-    ) -> Result<A, VCError<'tcx>> {
+    fn build_pattern<A>(&self, pat: &Pattern<'tcx>, k: PostCont<'_, 'tcx, WPattern, A>) -> A {
         let pat = self.build_pattern_inner(pat);
         k(pat)
     }
@@ -671,11 +640,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         }
     }
 
-    fn build_wp_slice(
-        &self,
-        t: &[Term<'tcx>],
-        k: PostCont<'_, 'tcx, Box<[Exp]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
+    fn build_wp_slice(&self, t: &[Term<'tcx>], k: PostCont<'_, 'tcx, Box<[Exp]>>) -> Exp {
         self.build_wp_slice_inner(0, t, k)
     }
 
@@ -684,7 +649,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         i: usize,
         t: &[Term<'tcx>],
         k: PostCont<'_, 'tcx, Box<[Exp]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
+    ) -> Exp {
         if t.is_empty() {
             k(repeat_n(/* Dummy */ Exp::mk_true(), i).collect())
         } else {
@@ -701,7 +666,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         &self,
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
         k: PostCont<'_, 'tcx, Box<[ProjectionElem<(Exp, Ty<'tcx>), Ty<'tcx>>]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
+    ) -> Exp {
         self.build_wp_projections_inner(0, projs, k)
     }
 
@@ -710,7 +675,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         i: usize,
         projs: &[ProjectionElem<Term<'tcx>, Ty<'tcx>>],
         k: PostCont<'_, 'tcx, Box<[ProjectionElem<(Exp, Ty<'tcx>), Ty<'tcx>>]>>,
-    ) -> Result<Exp, VCError<'tcx>> {
+    ) -> Exp {
         if projs.is_empty() {
             k(repeat_n(/* Dummy */ ProjectionElem::Deref, i).collect())
         } else {
@@ -757,11 +722,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
     ///
     /// Note that this only generates a variant for a simply recursive,
     /// non-polymorphic call.
-    fn build_variant(
-        &self,
-        call_args: &[Exp],
-        variant_after: Term<'tcx>,
-    ) -> Result<Exp, VCError<'tcx>> {
+    fn build_variant(&self, call_args: &[Exp], variant_after: Term<'tcx>) -> Exp {
         let wf_relation = Intrinsic::WellFoundedRelation.get(self.ctx);
         let variant_subst = self.ctx.tcx.mk_args(&[variant_after.ty.into()]);
         let (wf_relation, variant_subst) =
@@ -773,9 +734,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();
         let mut variant_after = self.lower_pure(&variant_after);
         variant_after.subst(&subst);
-        let variant_before = self.variant.clone().unwrap();
-        let variant_decreases = wf_relation.app([variant_before, variant_after]);
-        Ok(variant_decreases)
+        wf_relation.app([self.variant.clone().unwrap(), variant_after])
     }
 }
 

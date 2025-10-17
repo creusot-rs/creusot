@@ -1,33 +1,3 @@
-module M_15_enumerate__qyi11773969228543277856__resolve_coherence (* <Enumerate<I> as creusot_contracts::Resolve> *)
-  use creusot.int.UInt64
-  
-  type t_I
-  
-  type t_Enumerate = { t_Enumerate__iter: t_I; t_Enumerate__count: UInt64.t }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate structural_resolve (_1: t_Enumerate) =
-    match _1 with
-      | {t_Enumerate__iter = x0; t_Enumerate__count = x1} -> resolve x0
-      end
-  
-  predicate resolve'0 [@inline:trivial] (_1: UInt64.t) = true
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 (self: t_Enumerate) = resolve self.t_Enumerate__iter /\ resolve'0 self.t_Enumerate__count
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Enumerate
-  
-  function resolve_coherence (self: t_Enumerate) : ()
-  
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
-end
 module M_15_enumerate__qyi3289565171142109185__produces_refl (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
@@ -153,9 +123,9 @@ module M_15_enumerate__qyi3289565171142109185__next (* <Enumerate<I> as common::
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_I)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -168,7 +138,7 @@ module M_15_enumerate__qyi3289565171142109185__next (* <Enumerate<I> as common::
   
   predicate inv'2 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'1 a_0
@@ -200,51 +170,43 @@ module M_15_enumerate__qyi3289565171142109185__next (* <Enumerate<I> as common::
   
   predicate inv'3 (_1: t_Enumerate)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Enumerate [inv'3 x]. inv'3 x
-      = (invariant''0 x
-      /\ match x with
-        | {t_Enumerate__iter = iter; t_Enumerate__count = count} -> inv iter
-        end)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Enumerate [inv'3 x]. inv'3 x = (invariant''0 x /\ inv x.t_Enumerate__iter)
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Enumerate) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: MutBorrow.t t_Enumerate)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Enumerate) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Enumerate [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Enumerate) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Enumerate) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Enumerate) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
   type t_Option'0 = C_None'0 | C_Some'0 tuple
   
-  predicate inv'5 (_1: tuple)
+  predicate inv'5 [@inline:trivial] (_1: tuple) = inv'1 _1.f1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'5 x]. inv'5 x = (let {f0 = x0; f1 = x1} = x in inv'1 x1)
+  meta "rewrite_def" predicate inv'5
   
   predicate inv'6 (_1: t_Option'0)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'5 a_0
         end
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate completed'0 (self: MutBorrow.t t_Enumerate) =
     completed (MutBorrow.borrow_logic self.current.t_Enumerate__iter self.final.t_Enumerate__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
-    /\ resolve'1 (MutBorrow.borrow_logic self.current.t_Enumerate__count self.final.t_Enumerate__count (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
+    /\ resolve'0 (MutBorrow.borrow_logic self.current.t_Enumerate__count self.final.t_Enumerate__count (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
   
   predicate produces'0 (self: t_Enumerate) (visited: Seq.seq tuple) (o: t_Enumerate) =
     Seq.length visited = UInt64.t'int o.t_Enumerate__count - UInt64.t'int self.t_Enumerate__count
@@ -277,11 +239,11 @@ module M_15_enumerate__qyi3289565171142109185__next (* <Enumerate<I> as common::
           (fun (_ret: UInt64.t) ->
             [ &self <- { self with current = { self.current with t_Enumerate__count = _ret } } ] s3)
       | s3 = {[@expl:type invariant] inv'4 self} s4
-      | s4 = -{resolve'0 self}- s5
+      | s4 = -{resolve self}- s5
       | s5 = [ &_8 <- { f0 = n; f1 = x } ] s6
       | s6 = bb6 ]
     | bb6 = s0 [ s0 = [ &_0 <- C_Some'0 _8 ] s1 | s1 = bb10 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'4 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb5 ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'4 self} s1 | s1 = -{resolve self}- s2 | s2 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = bb10 ]
     | bb10 = return {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
@@ -335,11 +297,7 @@ module M_15_enumerate__enumerate
   
   predicate inv'0 (_1: t_Enumerate)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x
-      = (invariant' x
-      /\ match x with
-        | {t_Enumerate__iter = iter; t_Enumerate__count = count} -> inv iter
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Enumerate__iter)
   
   meta "compute_max_steps" 1000000
   
@@ -356,68 +314,6 @@ module M_15_enumerate__enumerate
     [ return (result: t_Enumerate) -> {[@expl:enumerate result type invariant] inv'0 result}
       {[@expl:enumerate ensures] result.t_Enumerate__iter = iter /\ UInt64.t'int result.t_Enumerate__count = 0}
       (! return {result}) ]
-end
-module M_15_enumerate__qyi11773969228543277856__resolve_coherence__refines (* <Enumerate<I> as creusot_contracts::Resolve> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use mach.int.Int
-  use creusot.prelude.MutBorrow
-  
-  type t_I
-  
-  type t_Enumerate = { t_Enumerate__iter: t_I; t_Enumerate__count: UInt64.t }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate structural_resolve (_1: t_Enumerate) =
-    match _1 with
-      | {t_Enumerate__iter = x0; t_Enumerate__count = x1} -> resolve x0
-      end
-  
-  type t_Item
-  
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
-  
-  function produces_refl (self: t_I) : ()
-  
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate completed (self: MutBorrow.t t_I)
-  
-  predicate invariant' (self: t_Enumerate) =
-    (forall s: Seq.seq t_Item, i: t_I [produces self.t_Enumerate__iter s i]. produces self.t_Enumerate__iter s i
-        -> UInt64.t'int self.t_Enumerate__count + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed i -> produces i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Enumerate)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x
-      = (invariant' x
-      /\ match x with
-        | {t_Enumerate__iter = iter; t_Enumerate__count = count} -> inv iter
-        end)
-  
-  predicate resolve'0 [@inline:trivial] (_1: UInt64.t) = true
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 (self: t_Enumerate) = resolve self.t_Enumerate__iter /\ resolve'0 self.t_Enumerate__count
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Enumerate. structural_resolve self /\ inv'0 self
-      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
 module M_15_enumerate__qyi3289565171142109185__next__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
@@ -455,25 +351,21 @@ module M_15_enumerate__qyi3289565171142109185__next__refines (* <Enumerate<I> as
   
   predicate inv'0 (_1: t_Enumerate)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x
-      = (invariant' x
-      /\ match x with
-        | {t_Enumerate__iter = iter; t_Enumerate__count = count} -> inv iter
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Enumerate__iter)
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Enumerate) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: MutBorrow.t t_Enumerate)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Enumerate) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Enumerate [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   type tuple = { f0: UInt64.t; f1: t_Item }
   
   type t_Option = C_None | C_Some tuple
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -491,13 +383,13 @@ module M_15_enumerate__qyi3289565171142109185__next__refines (* <Enumerate<I> as
   
   predicate inv'2 (_1: t_Item)
   
-  predicate inv'3 (_1: tuple)
+  predicate inv'3 [@inline:trivial] (_1: tuple) = inv'2 _1.f1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'3 x]. inv'3 x = (let {f0 = x0; f1 = x1} = x in inv'2 x1)
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0

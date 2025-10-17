@@ -94,12 +94,6 @@ pub fn derive_deep_model(tokens: TS1) -> TS1 {
     c::derive_deep_model(tokens)
 }
 
-#[proc_macro_derive(Resolve)]
-pub fn derive_resolve(tokens: TS1) -> TS1 {
-    allow_unused!(creusot::derive_resolve);
-    c::derive_resolve(tokens)
-}
-
 #[cfg(feature = "creusot")]
 #[proc_macro_derive(Clone)]
 pub fn derive_clone(tokens: TS1) -> TS1 {

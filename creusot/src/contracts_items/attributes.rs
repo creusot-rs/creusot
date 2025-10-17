@@ -47,35 +47,34 @@ macro_rules! attribute_functions {
 }
 
 attribute_functions! {
-    [creusot::no_translate]                  => is_no_translate
-    [creusot::spec]                          => is_spec
-    [creusot::spec::erasure]                 => is_erasure
-    [creusot::spec::invariant]               => is_invariant
-    [creusot::spec::variant]                 => is_variant
-    [creusot::spec::variant::loop_]          => is_loop_variant
-    [creusot::before_loop]                   => is_before_loop
-    [creusot::spec::assert]                  => is_assertion
-    [creusot::spec::snapshot]                => is_snapshot_closure
-    [creusot::logic_closure]                 => is_logic_closure // marks `forall`, `exists`, and mappings
-    [creusot::decl::logic]                   => is_logic
-    [creusot::decl::logic::prophetic]        => is_prophetic
-    [creusot::decl::logic::sealed]           => is_sealed
-    [creusot::decl::logic::law]              => is_law
-    [creusot::decl::logic::inline]           => is_inline
-    [creusot::decl::opaque]                  => is_opaque
-    [creusot::decl::trusted]                 => is_trusted
-    [creusot::decl::new_namespace]           => is_new_namespace
-    not [creusot::decl::no_trigger]          => should_replace_trigger
-    [creusot::decl::open_inv_result]         => is_open_inv_result
-    [creusot::extern_spec]                   => is_extern_spec
-    [creusot::trusted_ignore_structural_inv] => is_ignore_structural_inv
-    [creusot::trusted_is_tyinv_trivial_if_param_trivial] => is_tyinv_trivial_if_param_trivial
-    [creusot::clause::variant]               => has_variant_clause
-    [creusot::clause::check_terminates]      => is_check_terminates
-    [creusot::clause::check_ghost]           => is_check_ghost
-    [creusot::clause::check_ghost::trusted]  => is_check_ghost_trusted
-    [creusot::bitwise]                       => is_bitwise
-    [creusot::builtin_ascription]           => is_builtin_ascription
+    [creusot::no_translate]                     => is_no_translate
+    [creusot::spec]                             => is_spec
+    [creusot::spec::erasure]                    => is_erasure
+    [creusot::spec::invariant]                  => is_invariant
+    [creusot::spec::variant]                    => is_variant
+    [creusot::spec::variant::loop_]             => is_loop_variant
+    [creusot::before_loop]                      => is_before_loop
+    [creusot::spec::assert]                     => is_assertion
+    [creusot::spec::snapshot]                   => is_snapshot_closure
+    [creusot::logic_closure]                    => is_logic_closure // marks `forall`, `exists`, and mappings
+    [creusot::decl::logic]                      => is_logic
+    [creusot::decl::logic::prophetic]           => is_prophetic
+    [creusot::decl::logic::sealed]              => is_sealed
+    [creusot::decl::logic::law]                 => is_law
+    [creusot::decl::logic::inline]              => is_inline
+    [creusot::decl::opaque]                     => is_opaque
+    [creusot::decl::trusted]                    => is_trusted
+    [creusot::decl::new_namespace]              => is_new_namespace
+    not [creusot::decl::no_trigger]             => should_replace_trigger
+    [creusot::decl::open_inv_result]            => is_open_inv_result
+    [creusot::extern_spec]                      => is_extern_spec
+    [creusot::trusted_trivial_if_param_trivial] => is_trivial_if_param_trivial
+    [creusot::clause::variant]                  => has_variant_clause
+    [creusot::clause::check_terminates]         => is_check_terminates
+    [creusot::clause::check_ghost]              => is_check_ghost
+    [creusot::clause::check_ghost::trusted]     => is_check_ghost_trusted
+    [creusot::bitwise]                          => is_bitwise
+    [creusot::builtin_ascription]               => is_builtin_ascription
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {

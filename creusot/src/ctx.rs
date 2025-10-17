@@ -1,4 +1,5 @@
 use crate::{
+    backend::resolve::is_resolve_trivial,
     callbacks,
     contracts_items::{
         Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
@@ -13,9 +14,9 @@ use crate::{
             extract_extern_specs_from_item,
         },
         fmir,
-        pearlite::{self, ScopedTerm},
+        pearlite::{self, ScopedTerm, Term},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
-        traits::{Refinement, TraitResolved},
+        traits::Refinement,
     },
     util::{erased_identity_for_item, parent_module},
     validate::AnfBlock,
@@ -356,24 +357,17 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn resolve(
         &self,
+        scope: DefId,
         typing_env: TypingEnv<'tcx>,
-        ty: Ty<'tcx>,
-    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-        let trait_meth_id = Intrinsic::ResolveMethod.get(self);
-        let substs = self.mk_args(&[GenericArg::from(ty)]);
-
-        // Optimization: if we know there is no Resolve instance for this type, then we do not emit
-        // a resolve
-        if !ty.is_closure()
-            && matches!(
-                TraitResolved::resolve_item(self.tcx, typing_env, trait_meth_id, substs),
-                TraitResolved::NoInstance
-            )
-        {
-            return None;
+        term: Term<'tcx>,
+    ) -> Term<'tcx> {
+        // Optimization: if we know resolve is trivial, then we do not emit a resolve
+        if is_resolve_trivial(self, scope, typing_env, term.ty, term.span) {
+            return Term::true_(self.tcx);
         }
 
-        Some((Intrinsic::Resolve.get(self), substs))
+        let subst = self.mk_args(&[GenericArg::from(term.ty)]);
+        Term::call_no_normalize(self.tcx, Intrinsic::Resolve.get(self), subst, [term])
     }
 
     queryish!(laws, DefId, [DefId], laws_inner);

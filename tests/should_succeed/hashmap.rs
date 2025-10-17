@@ -45,9 +45,8 @@ impl<K: DeepModel, V> List<(K, V)> {
 }
 
 impl<K: DeepModel, V> Resolve for List<(K, V)> {
-    #[logic(prophetic)]
+    #[logic(prophetic, open)]
     fn resolve(self) -> bool {
-        // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {
             forall<k: K::DeepModelTy> resolve(self.get(k))
         }
@@ -94,7 +93,7 @@ impl<K: Hash, V> View for MyHashMap<K, V> {
 }
 
 impl<K: Hash, V> Resolve for MyHashMap<K, V> {
-    #[logic(prophetic)]
+    #[logic(prophetic, open)]
     fn resolve(self) -> bool {
         // FIXME: we don't resolve keys because we only have access to their deep model.
         pearlite! {

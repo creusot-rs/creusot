@@ -16,13 +16,14 @@ use crate::{
         dependency::Dependency,
         is_trusted_item,
         optimization::optimizations,
-        projections::{Focus, borrow_generated_id, projections_term, projections_to_expr},
+        projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
         term::{lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
         },
+        ty_inv::{is_tyinv_trivial, sig_add_type_invariant_spec},
         wto::{Component, weak_topological_order},
     },
     contracts_items::Intrinsic,
@@ -32,9 +33,9 @@ use crate::{
     translation::{
         fmir::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
-            StatementKind, Terminator, TrivialInv,
+            StatementKind, Terminator,
         },
-        pearlite::{self, Term},
+        pearlite::Term,
         traits::TraitResolved,
     },
 };
@@ -128,9 +129,9 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
 }
 
 /// Translate a program function body to why3.
-pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
+pub(crate) fn to_why<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     name: Ident,
     body_id: LocalDefId,
 ) -> Defn {
@@ -152,7 +153,13 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
         let typing_env = names.typing_env();
         let mut pre_sig = sig.clone().normalize(ctx, typing_env);
         let variant = pre_sig.contract.variant.clone();
-        pre_sig.add_type_invariant_spec(ctx, def_id, typing_env);
+        sig_add_type_invariant_spec(
+            ctx,
+            names.typing_env(),
+            names.source_id(),
+            &mut pre_sig,
+            def_id,
+        );
         (lower_program_sig(ctx, names, name, pre_sig, def_id, name::return_()), variant)
     };
 
@@ -179,12 +186,12 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
                 TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
                     .to_opt(wf_relation, subst)
                     .expect("The `WellFounded` trait should be implemented in this context");
-            let variant_decreases = pearlite::Term::call(
+            let variant_decreases = Term::call(
                 ctx.tcx,
                 typing_env,
                 wf_relation,
                 subst,
-                [pearlite::Term::var(variant_name, variant_expr.ty), variant_expr],
+                [Term::var(variant_name, variant_expr.ty), variant_expr],
             );
             lower_pure(ctx, names, &variant_decreases)
                 .with_attr(Attribute::Attr("expl:function variant".to_string()))
@@ -271,9 +278,9 @@ pub(crate) fn to_why<'tcx, N: Namer<'tcx>>(
 /// # Parameters
 ///
 /// - `recursive_calls`: collects the calls matching [`TranslationCtx::should_check_variant_decreases`].
-pub fn why_body<'tcx, N: Namer<'tcx>>(
+pub fn why_body<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     body_id: BodyId,
     subst: Option<GenericArgsRef<'tcx>>,
     params: &[Ident],
@@ -351,11 +358,11 @@ pub fn why_body<'tcx, N: Namer<'tcx>>(
 ///
 /// Such groups of blocks will typically be loops, that need to be separated
 /// into their own group of handlers.
-fn component_to_defn<'tcx, N: Namer<'tcx>>(
+fn component_to_defn<'tcx>(
     body: &mut Body<'tcx>,
     recursive_calls: &mut RecursiveCalls,
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
     return_ident: Ident,
@@ -382,11 +389,11 @@ fn component_to_defn<'tcx, N: Namer<'tcx>>(
             TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
                 .to_opt(wf_relation, subst)
                 .expect("The `WellFounded` trait should be implemented in this context");
-        let variant_decreases = pearlite::Term::call_no_normalize(
+        let variant_decreases = Term::call_no_normalize(
             ctx.tcx,
             wf_relation,
             subst,
-            [pearlite::Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
+            [Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
         );
 
         lower_pure(ctx, lower.names, &variant_decreases)
@@ -506,9 +513,9 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
 }
 
 impl<'tcx> Operand<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
@@ -537,10 +544,10 @@ impl<'tcx> Operand<'tcx> {
 
 impl<'tcx> RValue<'tcx> {
     /// Translate a `RValue` from FMIR to Why3.
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
         span: Span,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         ty: Ty<'tcx>,
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
@@ -853,7 +860,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _, _) => unreachable!(), // Handled in StatementKind::to_why
+            RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -896,9 +903,9 @@ impl<'tcx> RValue<'tcx> {
 }
 
 impl<'tcx> Terminator<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     ) -> (Vec<IntermediateStmt>, Expr) {
         let mut istmts = vec![];
         let exp = match self {
@@ -925,9 +932,9 @@ impl<'tcx> Terminator<'tcx> {
 }
 
 impl<'tcx> Branches<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         discr: Exp,
         discr_ty: &Ty<'tcx>,
     ) -> Expr {
@@ -1006,8 +1013,8 @@ fn mk_goto(block_idents: &IndexMap<BasicBlock, Ident>, bb: BasicBlock) -> Expr {
     Expr::var(*block_idents.get(&bb).unwrap())
 }
 
-fn mk_adt_switch<'tcx, N: Namer<'tcx>>(
-    lower: &LoweringState<'_, 'tcx, N>,
+fn mk_adt_switch<'tcx>(
+    lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     adt: AdtDef<'tcx>,
     subst: GenericArgsRef<'tcx>,
     discr: Exp,
@@ -1068,9 +1075,9 @@ fn mk_switch_branches(
 
 impl<'tcx> Block<'tcx> {
     /// Translate a FMIR block to coma.
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         recursive_calls: &mut RecursiveCalls,
         id: BasicBlock,
     ) -> Defn {
@@ -1176,14 +1183,14 @@ impl IntermediateStmt {
 }
 
 impl<'tcx> Statement<'tcx> {
-    fn into_why<N: Namer<'tcx>>(
+    fn into_why(
         self,
-        lower: &LoweringState<'_, 'tcx, N>,
+        lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         recursive_calls: &mut RecursiveCalls,
     ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
-            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv)) => {
+            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs)) => {
                 let bor_id_arg;
                 let rhs_rplace;
                 let rhs_constr;
@@ -1244,7 +1251,13 @@ impl<'tcx> Statement<'tcx> {
                 let reassign = Exp::var(ret_ident).field(Name::Global(name::final_()));
 
                 let inv_assume;
-                if triv_inv == TrivialInv::NonTrivial {
+                if !is_tyinv_trivial(
+                    lower.ctx,
+                    lower.names.source_id(),
+                    lower.names.typing_env(),
+                    rhs_ty,
+                    self.span,
+                ) {
                     let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
@@ -1300,53 +1313,24 @@ impl<'tcx> Statement<'tcx> {
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
-            StatementKind::Resolve { did, subst, pl } => {
-                let t = projections_term(
-                    lower.ctx,
-                    lower.names.typing_env(),
-                    Term::var(pl.local, lower.locals[&pl.local].ty),
-                    &pl.projections,
-                    |e| Term::call(lower.ctx.tcx, lower.names.typing_env(), did, subst, [e]),
-                    Some(Term::true_(lower.ctx.tcx)),
-                    |id| Term::var(*id, lower.ctx.types.usize),
-                    self.span,
-                );
-                istmts.push(IntermediateStmt::Assume(lower_pure(lower.ctx, lower.names, &t)))
-            }
             StatementKind::Assertion { cond, msg, trusted } => {
-                let e = lower_pure(lower.ctx, lower.names, &cond).with_attr(Attribute::Attr(msg));
+                let mut e = lower_pure(lower.ctx, lower.names, &cond);
+                if let Some(msg) = msg {
+                    e = e.with_attr(Attribute::Attr(msg))
+                }
                 if trusted {
                     istmts.push(IntermediateStmt::Assume(e))
                 } else {
                     istmts.push(IntermediateStmt::Assert(e))
                 }
             }
-            StatementKind::AssertTyInv { pl } => {
-                let t = projections_term(
-                    lower.ctx,
-                    lower.names.typing_env(),
-                    Term::var(pl.local, lower.locals[&pl.local].ty),
-                    &*pl.projections,
-                    |e| {
-                        let inv_did = Intrinsic::Inv.get(lower.ctx);
-                        let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(e.ty)]);
-                        Term::call(lower.ctx.tcx, lower.names.typing_env(), inv_did, subst, [e])
-                    },
-                    Some(Term::true_(lower.ctx.tcx)),
-                    |id| Term::var(*id, lower.ctx.types.usize),
-                    self.span,
-                );
-                let exp = lower_pure(lower.ctx, lower.names, &t)
-                    .with_attr(Attribute::Attr("expl:type invariant".to_string()));
-                istmts.push(IntermediateStmt::Assert(exp));
-            }
         }
         istmts
     }
 }
 
-fn func_call_to_why3<'tcx, N: Namer<'tcx>>(
-    lower: &LoweringState<'_, 'tcx, N>,
+fn func_call_to_why3<'tcx>(
+    lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Box<[Operand<'tcx>]>,

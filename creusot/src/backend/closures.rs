@@ -12,14 +12,11 @@ use crate::{
 };
 use itertools::Itertools;
 use rustc_abi::FieldIdx;
-use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_hir::def_id::LocalDefId;
 use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Mutability,
-    ty::{
-        BorrowKind, CapturedPlace, ClosureKind, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind,
-        TypingEnv, UpvarCapture,
-    },
+    ty::{BorrowKind, CapturedPlace, ClosureKind, GenericArg, Ty, TyCtxt, TyKind, UpvarCapture},
 };
 use std::{assert_matches::assert_matches, iter::once};
 
@@ -285,13 +282,9 @@ pub(crate) fn closure_post<'tcx>(
     let typing_env = ctx.typing_env(def_id.into());
 
     // Make sure fn_once and fn_mut_once are satisfied
-    post = to_resolve.iter().fold(post, |p, r| {
-        if let Some((id, subst)) = ctx.resolve(typing_env, r.ty) {
-            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r.clone()]))
-        } else {
-            p
-        }
-    });
+    post = to_resolve
+        .iter()
+        .fold(post, |p, r| p.conj(ctx.resolve(def_id.into(), typing_env, r.clone())));
     if closure_kind == ClosureKind::FnMut {
         post = to_resolve.iter().rfold(post, |p, r| {
             let TermKind::Var(sym) = r.kind else { unreachable!() };
@@ -308,26 +301,6 @@ pub(crate) fn closure_post<'tcx>(
     }
 
     normalize(ctx, typing_env, post)
-}
-
-pub(crate) fn closure_resolve<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
-) -> Term<'tcx> {
-    assert! {bound.len() == 1};
-    let mut resolve = Term::true_(ctx.tcx);
-    let self_ = Term::var(bound[0], ctx.type_of(def_id).instantiate_identity());
-    let csubst = subst.as_closure();
-    let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
-    for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
-        if let Some((id, subst)) = ctx.resolve(typing_env, ty) {
-            let proj = self_.clone().proj(ix.into(), ty);
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
-        }
-    }
-    resolve
 }
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.

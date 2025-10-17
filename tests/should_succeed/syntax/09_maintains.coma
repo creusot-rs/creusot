@@ -18,13 +18,9 @@ module M_09_maintains__test_2
   use creusot.prelude.Any
   use creusot.int.UInt64
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant' (self: ()) (b: bool) (c: UInt64.t) = true
   
@@ -35,7 +31,7 @@ module M_09_maintains__test_2
   let rec test_2 (a: MutBorrow.t ()) (b: bool) (c: UInt64.t) (return (x: ())) =
     {[@expl:test_2 requires] invariant' a.current b c}
     (! bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 a}- s1 | s1 = return {_0} ] ] [ & _0: () = Any.any_l () | & a: MutBorrow.t () = a ])
+    [ bb0 = s0 [ s0 = -{resolve a}- s1 | s1 = return {_0} ] ] [ & _0: () = Any.any_l () | & a: MutBorrow.t () = a ])
     [ return (result: ()) -> {[@expl:test_2 ensures] invariant' a.final b c} (! return {result}) ]
 end
 module M_09_maintains__test_3
@@ -43,21 +39,13 @@ module M_09_maintains__test_3
   use creusot.prelude.Any
   use creusot.int.UInt64
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t bool) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t bool) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t ()) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   predicate invariant' (self: ()) (b: bool) (c: UInt64.t) = true
   
@@ -68,7 +56,7 @@ module M_09_maintains__test_3
   let rec test_3 (a: MutBorrow.t ()) (b: MutBorrow.t bool) (c: UInt64.t) (return (x: ())) =
     {[@expl:test_3 requires] invariant' a.current b.current c}
     (! bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = -{resolve'2 a}- s2 | s2 = return {_0} ] ]
+    [ bb0 = s0 [ s0 = -{resolve b}- s1 | s1 = -{resolve'0 a}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & a: MutBorrow.t () = a | & b: MutBorrow.t bool = b ])
     [ return (result: ()) -> {[@expl:test_3 ensures] invariant' a.final b.final c} (! return {result}) ]
 end

@@ -62,6 +62,8 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Assert { cond } => visitor.visit_term(cond),
         TermKind::Precondition { params, .. } => params.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Postcondition { params, .. } => params.iter().for_each(|a| visitor.visit_term(a)),
+        TermKind::PrivateInv { term } => visitor.visit_term(term),
+        TermKind::PrivateResolve { term } => visitor.visit_term(term),
     }
 }
 
@@ -90,59 +92,57 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     match &mut term.kind {
         TermKind::Var(_) | TermKind::Lit(_) | TermKind::Capture(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
-        TermKind::Cast { arg } => visitor.visit_mut_term(&mut *arg),
+        TermKind::Cast { arg } => visitor.visit_mut_term(arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
         TermKind::Item(..) | TermKind::Const(_) => {}
         TermKind::Binary { lhs, rhs, .. } => {
-            visitor.visit_mut_term(&mut *lhs);
-            visitor.visit_mut_term(&mut *rhs);
+            visitor.visit_mut_term(lhs);
+            visitor.visit_mut_term(rhs);
         }
-        TermKind::Unary { arg, .. } => visitor.visit_mut_term(&mut *arg),
+        TermKind::Unary { arg, .. } => visitor.visit_mut_term(arg),
         TermKind::Quant { body, trigger, .. } => {
             trigger.iter_mut().flat_map(|x| &mut x.0).for_each(|x| visitor.visit_mut_term(x));
-            visitor.visit_mut_term(&mut *body)
+            visitor.visit_mut_term(body)
         }
-        TermKind::Call { args, .. } => {
-            args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
-        }
+        TermKind::Call { args, .. } => args.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Constructor { fields, .. } => {
-            fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
+            fields.iter_mut().for_each(|a| visitor.visit_mut_term(a))
         }
-        TermKind::Tuple { fields } => {
-            fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
-        }
-        TermKind::Cur { term } => visitor.visit_mut_term(&mut *term),
-        TermKind::Fin { term } => visitor.visit_mut_term(&mut *term),
+        TermKind::Tuple { fields } => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
+        TermKind::Cur { term } => visitor.visit_mut_term(term),
+        TermKind::Fin { term } => visitor.visit_mut_term(term),
         TermKind::Impl { lhs, rhs } => {
-            visitor.visit_mut_term(&mut *lhs);
-            visitor.visit_mut_term(&mut *rhs)
+            visitor.visit_mut_term(lhs);
+            visitor.visit_mut_term(rhs)
         }
         TermKind::Match { scrutinee, arms } => {
-            visitor.visit_mut_term(&mut *scrutinee);
+            visitor.visit_mut_term(scrutinee);
             arms.iter_mut().for_each(|(_pattern, arm)| {
                 // visitor.visit_mut_pattern(pattern); // Issue #1672
-                visitor.visit_mut_term(&mut *arm)
+                visitor.visit_mut_term(arm)
             })
         }
         TermKind::Let { pattern: _, arg, body } => {
             // visitor.visit_mut_pattern(pattern); // Issue #1672
-            visitor.visit_mut_term(&mut *arg);
-            visitor.visit_mut_term(&mut *body)
+            visitor.visit_mut_term(arg);
+            visitor.visit_mut_term(body)
         }
-        TermKind::Projection { lhs, idx: _ } => visitor.visit_mut_term(&mut *lhs),
-        TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
-        TermKind::Closure { body, .. } => visitor.visit_mut_term(&mut *body),
+        TermKind::Projection { lhs, idx: _ } => visitor.visit_mut_term(lhs),
+        TermKind::Old { term } => visitor.visit_mut_term(term),
+        TermKind::Closure { body, .. } => visitor.visit_mut_term(body),
         TermKind::Reborrow { inner, projections } => {
-            visitor.visit_mut_term(&mut *inner);
+            visitor.visit_mut_term(inner);
             visit_projections_mut(projections, |term| visitor.visit_mut_term(term))
         }
-        TermKind::Assert { cond } => visitor.visit_mut_term(&mut *cond),
+        TermKind::Assert { cond } => visitor.visit_mut_term(cond),
         TermKind::Precondition { params, .. } => {
             params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
         }
         TermKind::Postcondition { params, .. } => {
             params.iter_mut().for_each(|a| visitor.visit_mut_term(a))
         }
+        TermKind::PrivateInv { term } => visitor.visit_mut_term(term),
+        TermKind::PrivateResolve { term } => visitor.visit_mut_term(term),
     }
 }
 

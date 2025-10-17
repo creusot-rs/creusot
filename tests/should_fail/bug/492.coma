@@ -13,21 +13,17 @@ module M_492__reborrow_tuple
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_T)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv'0 _1.f0
   
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate inv'1 (_1: tuple)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv'0 x0)
+  meta "rewrite_def" predicate inv'1
   
   meta "compute_max_steps" 1000000
   
@@ -44,7 +40,7 @@ module M_492__reborrow_tuple
             [ &x <- { x with current = _ret.final } ] s1)
       | s1 = [ &_0 <- { f0 = _3; f1 = (32: UInt32.t) } ] s2
       | s2 = {[@expl:type invariant] inv'0 x} s3
-      | s3 = -{resolve'0 x}- s4
+      | s3 = -{resolve x}- s4
       | s4 = return {_0} ] ]
     [ & _0: tuple = Any.any_l () | & x: MutBorrow.t t_T = x | & _3: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: tuple) -> {[@expl:reborrow_tuple result type invariant] inv'1 result}
@@ -62,13 +58,9 @@ module M_492__test
   let rec reborrow_tuple (x: MutBorrow.t Int32.t) (return (x'0: tuple)) = any
     [ return (result: tuple) -> {result.f0.current = x.current} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -85,10 +77,10 @@ module M_492__test
       | s4 = bb1 ]
     | bb1 = s0
       [ s0 = [ &res <- _4.f0 ] s1
-      | s1 = -{resolve'0 _6}- s2
+      | s1 = -{resolve _6}- s2
       | s2 = {[@expl:assertion] res.final = (5: Int32.t)} s3
       | s3 = [ &res <- { res with current = (10: Int32.t) } ] s4
-      | s4 = -{resolve'0 res}- s5
+      | s4 = -{resolve res}- s5
       | s5 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()

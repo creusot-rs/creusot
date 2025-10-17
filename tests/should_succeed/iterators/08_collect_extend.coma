@@ -1,6 +1,5 @@
 module M_08_collect_extend__extend
   use seq.Seq
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -15,17 +14,7 @@ module M_08_collect_extend__extend
   
   type t_T
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -37,32 +26,32 @@ module M_08_collect_extend__extend
   
   predicate invariant' (self: t_T) = inv'0 self
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_T)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate invariant''1 (self: t_Vec) = inv'2 (view self)
   
   predicate inv'3 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: MutBorrow.t t_Vec)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   predicate produces (self: t_I) (visited: Seq.seq t_T) (o: t_I)
   
@@ -81,9 +70,9 @@ module M_08_collect_extend__extend
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_1: MutBorrow.t t_I)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant''3 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_I [inv'5 x]. inv'5 x = invariant''3 x
+  meta "rewrite_def" predicate inv'5
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -94,7 +83,7 @@ module M_08_collect_extend__extend
   
   predicate inv'6 (_1: t_Option)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option [inv'6 x]. inv'6 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'6 x]. inv'6 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'0 a_0
@@ -113,13 +102,9 @@ module M_08_collect_extend__extend
   let rec next (self_: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self_}
     any [ return (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_I) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Some field_0 = input} (! ret {field_0})
@@ -129,15 +114,11 @@ module M_08_collect_extend__extend
     {[@expl:push 'v' type invariant] inv'0 v}
     any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
-  predicate resolve'1 (_1: t_I)
+  predicate resolve'0 (_1: t_I)
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   meta "compute_max_steps" 1000000
   
@@ -173,7 +154,7 @@ module M_08_collect_extend__extend
           | s3 = bb7 ]
         | bb7 = s0
           [ s0 = {[@expl:type invariant] inv'5 _21} s1
-          | s1 = -{resolve'0 _21}- s2
+          | s1 = -{resolve _21}- s2
           | s2 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: t_T) -> {_19 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_19} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -191,9 +172,9 @@ module M_08_collect_extend__extend
           | s4 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = {[@expl:type invariant] inv iter'0} s1
-      | s1 = -{resolve'1 iter'0}- s2
+      | s1 = -{resolve'0 iter'0}- s2
       | s2 = {[@expl:type invariant] inv'4 vec} s3
-      | s3 = -{resolve'3 vec}- s4
+      | s3 = -{resolve'1 vec}- s4
       | s4 = bb19 ]
     | bb19 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -217,24 +198,13 @@ module M_08_collect_extend__extend
       (! return {result}) ]
 end
 module M_08_collect_extend__collect
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
+  use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_Item
   
@@ -242,18 +212,18 @@ module M_08_collect_extend__collect
   
   predicate invariant' (self: t_Item) = inv self
   
-  predicate inv'0 (_1: t_Item)
+  predicate inv'0 [@inline:trivial] (_1: t_Item) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_Item [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_Item) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_Item)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_Item) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_Item [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -265,7 +235,7 @@ module M_08_collect_extend__collect
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   let rec new (return (x: t_Vec)) = any
     [ return (result: t_Vec) -> {inv'2 result} {Seq.length (view result) = 0} (! return {result}) ]
@@ -294,9 +264,9 @@ module M_08_collect_extend__collect
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: MutBorrow.t t_I)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_I [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -307,7 +277,7 @@ module M_08_collect_extend__collect
   
   predicate inv'5 (_1: t_Option)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv a_0
@@ -326,13 +296,9 @@ module M_08_collect_extend__collect
   let rec next (self_: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self_}
     any [ return (result: t_Option) -> {postcondition_once () self_ result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_I) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_I) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Item)) = any
     [ good (field_0: t_Item) -> {C_Some field_0 = input} (! ret {field_0})
@@ -342,16 +308,16 @@ module M_08_collect_extend__collect
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: MutBorrow.t t_Vec)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''3 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'6 x]. inv'6 x = invariant''3 x
+  meta "rewrite_def" predicate inv'6
   
   let rec push (self_: MutBorrow.t t_Vec) (v: t_Item) (return (x: ())) =
     {[@expl:push 'self_' type invariant] inv'6 self_}
     {[@expl:push 'v' type invariant] inv v}
     any [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
   
-  predicate resolve'1 (_1: t_I)
+  predicate resolve'0 (_1: t_I)
   
   meta "compute_max_steps" 1000000
   
@@ -384,7 +350,7 @@ module M_08_collect_extend__collect
           | s3 = bb7 ]
         | bb7 = s0
           [ s0 = {[@expl:type invariant] inv'4 _20} s1
-          | s1 = -{resolve'0 _20}- s2
+          | s1 = -{resolve _20}- s2
           | s2 = any [ br0 -> {_18 = C_None} (! bb10) | br1 (x0: t_Item) -> {_18 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_18} (fun (r0: t_Item) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -398,7 +364,7 @@ module M_08_collect_extend__collect
               (fun (_ret: MutBorrow.t t_Vec) -> [ &_27 <- _ret ] -{inv'2 _ret.final}- [ &res <- _ret.final ] s3)
           | s3 = push {_27} {x} (fun (_ret: ()) -> [ &_26 <- _ret ] s4)
           | s4 = bb5 ] ] ]
-    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'3 iter'0} s1 | s1 = -{resolve'1 iter'0}- s2 | s2 = bb18 ]
+    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'3 iter'0} s1 | s1 = -{resolve'0 iter'0}- s2 | s2 = bb18 ]
     | bb18 = s0 [ s0 = [ &_0 <- res ] s1 | s1 = bb20 ]
     | bb20 = return {_0} ]
     [ & _0: t_Vec = Any.any_l ()
@@ -416,42 +382,21 @@ module M_08_collect_extend__collect
     | & _26: () = Any.any_l ()
     | & _27: MutBorrow.t t_Vec = Any.any_l () ])
     [ return (result: t_Vec) -> {[@expl:collect result type invariant] inv'2 result}
-      {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve'1 done'.final
+      {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve'0 done'.final
         /\ completed done' /\ produces iter prod done'.current /\ view result = prod}
       (! return {result}) ]
 end
 module M_08_collect_extend__extend_index
   use creusot.prelude.MutBorrow
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Vec
   
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_ManuallyDrop = { t_ManuallyDrop__value: () }
-  
-  type t_IntoIter = {
-    t_IntoIter__buf: t_NonNull'0;
-    t_IntoIter__phantom: ();
-    t_IntoIter__cap: UInt64.t;
-    t_IntoIter__alloc: t_ManuallyDrop;
-    t_IntoIter__ptr: t_NonNull'0;
-    t_IntoIter__end: Opaque.ptr }
+  type t_IntoIter
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -478,7 +423,7 @@ module M_08_collect_extend__extend_index
   
   axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_IntoIter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -490,13 +435,9 @@ module M_08_collect_extend__extend_index
         /\ produces iter prod done'.current /\ view vec.final = Seq.(++) (view vec.current) prod}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   meta "compute_max_steps" 1000000
   
@@ -516,7 +457,7 @@ module M_08_collect_extend__extend_index
       | s1 = extend {_8} {_10} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = s0
-      [ s0 = -{resolve'1 _9}- s1
+      [ s0 = -{resolve'0 _9}- s1
       | s1 = {[@expl:assertion] Seq.(==) (view v1) (Seq.(++) (view oldv1) (view oldv2))} s2
       | s2 = bb6 ]
     | bb6 = return {_0} ]
@@ -531,27 +472,16 @@ module M_08_collect_extend__extend_index
     | & _10: t_IntoIter = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_08_collect_extend__collect_example
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
   type t_I
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   predicate inv (_1: t_I)
   

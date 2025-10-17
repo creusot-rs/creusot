@@ -84,21 +84,12 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum StatementKind<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
-    Resolve {
-        did: DefId,
-        subst: GenericArgsRef<'tcx>,
-        pl: Place<'tcx>,
-    },
     Assertion {
         cond: Term<'tcx>,
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
-        msg: String,
+        msg: Option<String>,
         trusted: bool,
-    },
-    // Todo: fold into `Assertion`
-    AssertTyInv {
-        pl: Place<'tcx>,
     },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
 }
@@ -122,16 +113,10 @@ pub enum BorrowKind {
     Final(usize),
 }
 
-#[derive(Clone, Copy, Debug, TypeFoldable, TypeVisitable, PartialEq, Eq)]
-pub enum TrivialInv {
-    Trivial,
-    NonTrivial,
-}
-
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
     Snapshot(Term<'tcx>),
-    Borrow(BorrowKind, Place<'tcx>, TrivialInv),
+    Borrow(BorrowKind, Place<'tcx>),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -190,7 +175,7 @@ impl RValue<'_> {
             RValue::Array(_) => true,
             RValue::Repeat(_, _) => true,
             RValue::Snapshot(_) => true,
-            RValue::Borrow(_, _, _) => true,
+            RValue::Borrow(_, _) => true,
             RValue::Ptr(_) => true,
         }
     }
@@ -581,14 +566,8 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        StatementKind::Resolve { pl, .. } => {
-            visitor.visit_place(pl);
-        }
         StatementKind::Assertion { cond, .. } => {
             visitor.visit_term(cond);
-        }
-        StatementKind::AssertTyInv { pl, .. } => {
-            visitor.visit_place(pl);
         }
         StatementKind::Call(place, _, _, operands) => {
             visitor.visit_place(place);
@@ -632,7 +611,7 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
         RValue::Snapshot(term) => {
             visitor.visit_term(term);
         }
-        RValue::Borrow(_, place, _) => {
+        RValue::Borrow(_, place) => {
             visitor.visit_place(place);
         }
         RValue::Operand(op) => {

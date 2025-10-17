@@ -34,9 +34,9 @@ use why3::{
     ty::Type,
 };
 
-fn lower_pure_raw<'tcx, N: Namer<'tcx>>(
+fn lower_pure_raw<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     term: &Term<'tcx>,
     weakdep: bool,
 ) -> Exp {
@@ -46,25 +46,25 @@ fn lower_pure_raw<'tcx, N: Namer<'tcx>>(
     if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
 }
 
-pub(crate) fn lower_pure<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_pure<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     term: &Term<'tcx>,
 ) -> Exp {
     lower_pure_raw(ctx, names, term, false)
 }
 
-pub(crate) fn lower_pure_weakdep<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_pure_weakdep<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     term: &Term<'tcx>,
 ) -> Exp {
     lower_pure_raw(ctx, names, term, true)
 }
 
-pub(crate) fn lower_condition<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_condition<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     cond: Condition<'tcx>,
 ) -> WCondition {
     WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
@@ -87,6 +87,7 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     names: &'a N,
     weakdep: bool,
 }
+
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
@@ -305,8 +306,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     TyKind::Closure(did, substs) => {
                         lhs_low.field(Name::local(self.names.field(*did, substs, *idx)))
                     }
-                    TyKind::Adt(def, substs) => {
-                        lhs_low.field(Name::local(self.names.field(def.did(), substs, *idx)))
+                    TyKind::Adt(def, subst) => {
+                        lhs_low.field(Name::local(self.names.field(def.did(), subst, *idx)))
                     }
                     TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
                     TyKind::Tuple(tys) => {
@@ -353,7 +354,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
                     .app([cur, fin, borrow_id])
             }
-            TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
+            TermKind::Assert { .. } => Exp::unit(),
             TermKind::Precondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let ident: Ident = self.names.item(*item, subst).to_ident();
@@ -367,6 +368,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Var(name).app(params)
             }
             TermKind::Capture(_) => unreachable!("Capture left in lowering"),
+            tk @ (TermKind::PrivateInv { term } | TermKind::PrivateResolve { term }) => {
+                let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
+                let arg = self
+                    .lower_term(term)
+                    .field(Name::local(self.names.private_fields(adt.did(), subst)));
+                let f = if let TermKind::PrivateInv { .. } = tk {
+                    self.names.private_ty_inv(adt.did(), subst)
+                } else {
+                    self.names.private_resolve(adt.did(), subst)
+                };
+                Exp::var(f).app([arg])
+            }
         }
     }
 
@@ -457,9 +470,9 @@ impl<'a, 'tcx, N: Namer<'tcx>> HasTyCtxt<'tcx> for Lower<'a, 'tcx, N> {
     }
 }
 
-pub(crate) fn lower_literal<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_literal<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     lit: &Literal<'tcx>,
 ) -> Exp {
     match *lit {
@@ -522,8 +535,8 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
 }
 
 /// Return the Why3 function name of a `BinOp`, if it exists.
-pub(crate) fn binop_function<'tcx, N: Namer<'tcx>>(
-    namer: &N,
+pub(crate) fn binop_function<'tcx>(
+    namer: &impl Namer<'tcx>,
     op: BinOp,
     ty: &TyKind,
 ) -> Option<why3::QName> {

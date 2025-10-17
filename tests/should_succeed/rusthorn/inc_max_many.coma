@@ -3,13 +3,9 @@ module M_inc_max_many__take_max
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -65,15 +61,15 @@ module M_inc_max_many__take_max
       [ s0 = [ &_6 <- UInt32.ge ma.current mb.current ] s1
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = -{resolve'0 mb}- s1
+      [ s0 = -{resolve mb}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {ma.current} {MutBorrow.get_id ma}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &ma <- { ma with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &_9 <- { _9 with current = _ret.final } ] s3)
-      | s3 = -{resolve'0 _9}- s4
+      | s3 = -{resolve _9}- s4
       | s4 = bb3 ]
     | bb2 = s0
-      [ s0 = -{resolve'0 ma}- s1
+      [ s0 = -{resolve ma}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {mb.current} {MutBorrow.get_id mb}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &mb <- { mb with current = _ret.final } ] s2)
       | s2 = bb3 ]
@@ -82,10 +78,10 @@ module M_inc_max_many__take_max
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_3 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s1)
       | s1 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_3 <- { _3 with current = _ret.final } ] s2)
-      | s2 = -{resolve'0 _5}- s3
-      | s3 = -{resolve'0 _3}- s4
-      | s4 = -{resolve'0 mb}- s5
-      | s5 = -{resolve'0 ma}- s6
+      | s2 = -{resolve _5}- s3
+      | s3 = -{resolve _3}- s4
+      | s4 = -{resolve mb}- s5
+      | s5 = -{resolve ma}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
     | & ma: MutBorrow.t UInt32.t = ma
@@ -159,13 +155,9 @@ module M_inc_max_many__inc_max_many
       }
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -187,10 +179,10 @@ module M_inc_max_many__inc_max_many
       | s4 = take_max {_6} {_8} (fun (_ret: MutBorrow.t UInt32.t) -> [ &mc <- _ret ] s5)
       | s5 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve'0 _9}- s1
-      | s1 = -{resolve'0 _7}- s2
+      [ s0 = -{resolve _9}- s1
+      | s1 = -{resolve _7}- s2
       | s2 = UInt32.add {mc.current} {k} (fun (_ret: UInt32.t) -> [ &mc <- { mc with current = _ret } ] s3)
-      | s3 = -{resolve'0 mc}- s4
+      | s3 = -{resolve mc}- s4
       | s4 = UInt32.add {b} {k} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s5)
       | s5 = [ &_12 <- UInt32.ge a _14 ] s6
       | s6 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb6) ] ]

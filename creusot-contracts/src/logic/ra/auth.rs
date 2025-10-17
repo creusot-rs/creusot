@@ -67,8 +67,9 @@ impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
         AuthViewRel::rel(Some(auth), frag)
     })]
     fn update(self, from: Auth<R>, _: ()) -> Auth<R> {
-        let (auth, frag) = self.0.update(from.auth().unwrap_logic(), from.frag());
-        let _ = U::frame_preserving;
+        let from_auth = from.auth().unwrap_logic();
+        let (auth, frag) = self.0.update(from_auth, from.frag());
+        self.0.frame_preserving(from_auth, from.frag(), from_auth.factor(from.frag()));
         Auth::new(Some(auth), frag)
     }
 

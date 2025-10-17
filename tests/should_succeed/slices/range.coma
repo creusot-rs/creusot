@@ -8,10 +8,7 @@ module M_range__slice_range_inclusive
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
-  type t_RangeInclusive = {
-    t_RangeInclusive__start: UInt64.t;
-    t_RangeInclusive__end: UInt64.t;
-    t_RangeInclusive__exhausted: bool }
+  type t_RangeInclusive
   
   function start_log (self: t_RangeInclusive) : UInt64.t
   
@@ -64,13 +61,9 @@ module M_range__slice_range_inclusive
       {Seq.length (Slice64.view self_.final) = Seq.length (Slice64.view self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t (Slice64.slice UInt32.t)) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -112,9 +105,9 @@ module M_range__slice_range_inclusive
     | bb4 = s0
       [ s0 = Slice64.set <UInt32.t> {s.current} {_12} {(1: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &s <- { s with current = r } ] s1)
-      | s1 = -{resolve'0 s}- s2
-      | s2 = -{resolve'0 _5}- s3
-      | s3 = -{resolve'0 a}- s4
+      | s1 = -{resolve s}- s2
+      | s2 = -{resolve _5}- s3
+      | s3 = -{resolve a}- s4
       | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a

@@ -747,7 +747,7 @@ impl<T: Plain> Plain for Seq<T> {}
 
 impl<T> Invariant for Seq<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
     }
@@ -924,6 +924,7 @@ pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
 
 impl<T> Resolve for Seq<T> {
     #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> resolve(self.get(i)) }
     }
@@ -936,13 +937,13 @@ impl<T> Resolve for Seq<T> {
 }
 
 impl<T> Resolve for SeqIter<T> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { resolve(self@) }
     }
 
-    #[trusted]
-    #[logic(open(self), prophetic)]
+    #[logic(open, prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}

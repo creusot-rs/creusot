@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{invariant::*, *};
 #[cfg(feature = "nightly")]
 use ::std::alloc::Allocator;
@@ -22,10 +24,24 @@ impl<T: View + ?Sized, A: Allocator> View for Box<T, A> {
 }
 
 #[cfg(feature = "nightly")]
+impl<T: ?Sized, A: Allocator> Resolve for Box<T, A> {
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        true
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+#[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     #[logic(open, prophetic)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         inv(*self)
     }
@@ -84,3 +100,6 @@ impl<T: DeepModel + ?Sized> DeepModel for Box<T> {
 
 #[cfg(not(feature = "nightly"))]
 impl<T: ?Sized> Invariant for Box<T> {}
+
+#[cfg(not(feature = "nightly"))]
+impl<T: ?Sized> Resolve for Box<T> {}

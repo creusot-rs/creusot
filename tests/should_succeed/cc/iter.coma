@@ -2,14 +2,11 @@ module M_iter__test_mut_ref
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter
   
   function view (self: t_Iter) : Slice64.slice Int32.t
   
@@ -44,7 +41,7 @@ module M_iter__test_mut_ref
   
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Iter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -57,10 +54,6 @@ module M_iter__test_mut_ref
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Iter) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: t_Option; f1: t_Option }
   
@@ -116,7 +109,7 @@ module M_iter__test_mut_ref
       | s2 = next {_9} (fun (_ret: t_Option) -> [ &_8 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0
-      [ s0 = -{resolve'0 _10}- s1
+      [ s0 = -{resolve _10}- s1
       | s1 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (1: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -136,7 +129,7 @@ module M_iter__test_mut_ref
       | s2 = next {_33} (fun (_ret: t_Option) -> [ &_32 <- _ret ] s3)
       | s3 = bb6 ]
     | bb6 = s0
-      [ s0 = -{resolve'0 _34}- s1
+      [ s0 = -{resolve _34}- s1
       | s1 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some (2: Int32.t) ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -156,7 +149,7 @@ module M_iter__test_mut_ref
       | s2 = next {_57} (fun (_ret: t_Option) -> [ &_56 <- _ret ] s3)
       | s3 = bb10 ]
     | bb10 = s0
-      [ s0 = -{resolve'0 _58}- s1
+      [ s0 = -{resolve _58}- s1
       | s1 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
@@ -220,36 +213,29 @@ end
 module M_iter__test_filter
   use creusot.slice.Slice64
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use map.Map
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter
   
   function view (self: t_Iter) : Slice64.slice bool
   
   let rec iter (self_: Slice64.slice bool) (return (x: t_Iter)) = any
     [ return (result: t_Iter) -> {view result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: bool) (result: bool) = let b = args in result = b
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  predicate resolve'0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -263,7 +249,7 @@ module M_iter__test_filter
   function fn_mut_once (self: ()) (args: bool) (res: bool) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: bool, res: bool. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -280,13 +266,13 @@ module M_iter__test_filter
       -> hist_inv self res_state
   
   let rec closure0 (self: MutBorrow.t ()) (b: bool) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = [ &res <- b ] s2 | s2 = [ &_0 <- res ] s3 | s3 = return {_0} ] ]
+    [ bb0 = s0 [ s0 = -{resolve self}- s1 | s1 = [ &res <- b ] s2 | s2 = [ &_0 <- res ] s3 | s3 = return {_0} ] ]
     [ & _0: bool = Any.any_l () | & self: MutBorrow.t () = self | & b: bool = b | & res: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:closure ensures] result = b}
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return {result}) ]
   
-  type t_Filter = { t_Filter__iter: t_Iter; t_Filter__predicate: () }
+  type t_Filter
   
   predicate immutable (_1: ()) = forall f: (), g: (). hist_inv f g -> f = g
   
@@ -303,23 +289,19 @@ module M_iter__test_filter
   
   predicate inv (_1: t_Filter)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Filter__iter = iter'0; t_Filter__predicate = predicate'} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x = invariant' x
   
-  predicate inv'0 (_1: t_Iter)
+  predicate inv'0 [@inline:trivial] (_1: t_Iter) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   function iter'0 (self: t_Filter) : t_Iter
   
   axiom iter_spec: forall self: t_Filter. inv self -> inv'0 (iter'0 self)
   
-  predicate inv'1 (_1: ())
+  predicate inv'1 [@inline:trivial] (_1: ()) = true
   
-  axiom inv_axiom'1 [@rewrite]: forall x: () [inv'1 x]. inv'1 x = true
+  meta "rewrite_def" predicate inv'1
   
   function func (self: t_Filter) : ()
   
@@ -336,9 +318,9 @@ module M_iter__test_filter
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: MutBorrow.t t_Filter)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Filter) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Filter [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate index_logic [@inline:trivial] (self: Slice64.slice bool) (ix: int) = Seq.get (Slice64.view self) ix
   
@@ -384,12 +366,12 @@ module M_iter__test_filter
   
   axiom produces_refl_spec'0: forall self: t_Filter. produces'0 self (Seq.empty: Seq.seq bool) self
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Iter) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'1
   
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve'2 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
+    resolve'1 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
   
   predicate completed'0 (self: MutBorrow.t t_Filter) =
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter. produces (iter'0 self.current) s e.current
@@ -406,13 +388,9 @@ module M_iter__test_filter
         end}
       (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Filter) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Filter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Filter) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'2
   
   type tuple = { f0: t_Option; f1: t_Option }
   
@@ -475,7 +453,7 @@ module M_iter__test_filter
       | s3 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'2 _12} s1
-      | s1 = -{resolve'4 _12}- s2
+      | s1 = -{resolve'2 _12}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_Some true ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
@@ -499,7 +477,7 @@ module M_iter__test_filter
       | s3 = bb7 ]
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'2 _36} s1
-      | s1 = -{resolve'4 _36}- s2
+      | s1 = -{resolve'2 _36}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_Some true ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
@@ -523,7 +501,7 @@ module M_iter__test_filter
       | s3 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'2 _60} s1
-      | s1 = -{resolve'4 _60}- s2
+      | s1 = -{resolve'2 _60}- s2
       | s2 = {[@expl:type invariant] inv a} s3
       | s3 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -595,28 +573,21 @@ end
 module M_iter__test_filter_map
   use creusot.slice.Slice64
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use map.Map
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  type t_Iter
   
   function view (self: t_Iter) : Slice64.slice bool
   
   let rec iter (self_: Slice64.slice bool) (return (x: t_Iter)) = any
     [ return (result: t_Iter) -> {view result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Option = C_None | C_Some bool
   
@@ -625,9 +596,9 @@ module M_iter__test_filter_map
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  predicate resolve'0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -641,7 +612,7 @@ module M_iter__test_filter_map
   function fn_mut_once (self: ()) (args: bool) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: bool, res: t_Option. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
   
@@ -658,7 +629,7 @@ module M_iter__test_filter_map
       -> hist_inv self res_state
   
   let rec closure0 (self: MutBorrow.t ()) (b: bool) (return (x: t_Option)) = (! bb0
-    [ bb0 = s0 [ s0 = -{resolve'0 self}- s1 | s1 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] ]
+    [ bb0 = s0 [ s0 = -{resolve self}- s1 | s1 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] ]
     | bb1 = s0 [ s0 = [ &res <- C_Some false ] s1 | s1 = bb3 ]
     | bb2 = s0 [ s0 = [ &res <- C_None ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &_0 <- res ] s1 | s1 = return {_0} ] ]
@@ -667,7 +638,7 @@ module M_iter__test_filter_map
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return {result}) ]
   
-  type t_FilterMap = { t_FilterMap__iter: t_Iter; t_FilterMap__f: () }
+  type t_FilterMap
   
   predicate immutable (f: ()) = forall g: (). hist_inv f g -> f = g
   
@@ -685,23 +656,19 @@ module M_iter__test_filter_map
   
   predicate inv (_1: t_FilterMap)
   
-  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_FilterMap__iter = iter'0; t_FilterMap__f = f} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_FilterMap [inv x]. inv x = invariant' x
   
-  predicate inv'0 (_1: t_Iter)
+  predicate inv'0 [@inline:trivial] (_1: t_Iter) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   function iter'0 (self: t_FilterMap) : t_Iter
   
   axiom iter_spec: forall self: t_FilterMap. inv self -> inv'0 (iter'0 self)
   
-  predicate inv'1 (_1: ())
+  predicate inv'1 [@inline:trivial] (_1: ()) = true
   
-  axiom inv_axiom'1 [@rewrite]: forall x: () [inv'1 x]. inv'1 x = true
+  meta "rewrite_def" predicate inv'1
   
   function func (self: t_FilterMap) : ()
   
@@ -716,9 +683,9 @@ module M_iter__test_filter_map
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: MutBorrow.t t_FilterMap)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_FilterMap) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_FilterMap [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate index_logic [@inline:trivial] (self: Slice64.slice bool) (ix: int) = Seq.get (Slice64.view self) ix
   
@@ -765,12 +732,12 @@ module M_iter__test_filter_map
   
   axiom produces_refl_spec'0: forall self: t_FilterMap. produces'0 self (Seq.empty: Seq.seq bool) self
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Iter) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'1
   
   predicate completed (self: MutBorrow.t t_Iter) =
-    resolve'2 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
+    resolve'1 self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq bool)
   
   predicate completed'0 (self: MutBorrow.t t_FilterMap) =
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter. produces (iter'0 self.current) s e.current
@@ -788,13 +755,9 @@ module M_iter__test_filter_map
         end}
       (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_FilterMap) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_FilterMap) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_FilterMap) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'2
   
   type tuple = { f0: t_Option; f1: t_Option }
   
@@ -852,7 +815,7 @@ module M_iter__test_filter_map
       | s3 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'2 _12} s1
-      | s1 = -{resolve'4 _12}- s2
+      | s1 = -{resolve'2 _12}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some false ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -877,7 +840,7 @@ module M_iter__test_filter_map
       | s3 = bb7 ]
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'2 _34} s1
-      | s1 = -{resolve'4 _34}- s2
+      | s1 = -{resolve'2 _34}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- C_Some false ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
@@ -902,7 +865,7 @@ module M_iter__test_filter_map
       | s3 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'2 _56} s1
-      | s1 = -{resolve'4 _56}- s2
+      | s1 = -{resolve'2 _56}- s2
       | s2 = {[@expl:type invariant] inv a} s3
       | s3 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]

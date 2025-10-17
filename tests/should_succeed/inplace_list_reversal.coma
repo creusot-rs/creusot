@@ -9,36 +9,36 @@ module M_inplace_list_reversal__rev
   
   predicate inv (_1: t_T)
   
-  predicate inv'0 (_1: tuple)
+  predicate inv'0 (_1: t_List)
   
-  predicate inv'1 (_1: t_List)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'0 x]. inv'0 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'1 x1)
+  meta "rewrite_def" predicate inv'1
   
-  predicate invariant' (self: tuple) = inv'0 self
+  predicate invariant' (self: tuple) = inv'1 self
   
-  predicate inv'2 (_1: tuple)
+  predicate inv'2 [@inline:trivial] (_1: tuple) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'1 x]. inv'1 x
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'0 x]. inv'0 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 -> inv'2 a_0
         end
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_List) = inv'1 self.current /\ inv'1 self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_List) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'3 (_1: MutBorrow.t t_List)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_List) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_List [inv'3 x]. inv'3 x = invariant''0 x
+  meta "rewrite_def" predicate inv'3
   
   let rec replace (dest: MutBorrow.t t_List) (src: t_List) (return (x: t_List)) =
     {[@expl:replace 'dest' type invariant] inv'3 dest}
-    {[@expl:replace 'src' type invariant] inv'1 src}
-    any [ return (result: t_List) -> {inv'1 result} {dest.final = src} {result = dest.current} (! return {result}) ]
+    {[@expl:replace 'src' type invariant] inv'0 src}
+    any [ return (result: t_List) -> {inv'0 result} {dest.final = src} {result = dest.current} (! return {result}) ]
   
   function rev_append (n: t_List) (o: t_List) : t_List = match n with
       | C_Nil -> o
@@ -51,11 +51,9 @@ module M_inplace_list_reversal__rev
   
   predicate resolve (_1: t_T)
   
-  predicate resolve'0 [@inline:trivial] (_1: t_List) = true
+  predicate resolve'0 (_1: t_List)
   
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve self.f0 /\ resolve'0 self.f1
+  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve _1.f0 /\ resolve'0 _1.f1
   
   meta "rewrite_def" predicate resolve'1
   
@@ -63,21 +61,15 @@ module M_inplace_list_reversal__rev
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (self: tuple) = resolve'2 self
+  axiom resolve_axiom [@rewrite]: forall x: t_List [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_Nil -> true
+        | C_Cons x0 -> resolve'2 x0
+        end
+  
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: tuple) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'5
-  
-  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t t_List) = resolve'5 _1
-  
-  meta "rewrite_def" predicate resolve'6
   
   meta "compute_max_steps" 1000000
   
@@ -89,16 +81,16 @@ module M_inplace_list_reversal__rev
     | bb1 = s0
       [ s0 = [ &prev <- C_Nil ] s1
       | s1 = [ &_8 <- C_Nil ] s2
-      | s2 = {inv'1 l.current}
+      | s2 = {inv'0 l.current}
         MutBorrow.borrow_mut <t_List> {l.current}
           (fun (_ret: MutBorrow.t t_List) ->
-            [ &_7 <- _ret ] -{inv'1 _ret.final}-
+            [ &_7 <- _ret ] -{inv'0 _ret.final}-
             [ &l <- { l with current = _ret.final } ] s3)
       | s3 = replace {_7} {_8} (fun (_ret: t_List) -> [ &head <- _ret ] s4)
       | s4 = bb3 ]
     | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant #0] inv'1 prev}
-        {[@expl:loop invariant #1] inv'1 head}
+      [ bb3 = {[@expl:loop invariant #0] inv'0 prev}
+        {[@expl:loop invariant #1] inv'0 head}
         {[@expl:loop invariant #2] rev_append head prev = rev_append old_l.current (C_Nil)}
         (! s0)
         [ s0 = bb4 ]
@@ -116,17 +108,18 @@ module M_inplace_list_reversal__rev
           end}
         s1
       | s1 = -{match head with
-          | C_Cons x -> resolve'4 x
+          | C_Cons x -> resolve'2 x
           | _ -> true
           end}-
         s2
       | s2 = bb20 ]
     | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv'1 l.current} s1
-      | s1 = [ &l <- { l with current = prev } ] s2
-      | s2 = {[@expl:type invariant] inv'3 l} s3
-      | s3 = -{resolve'6 l}- s4
-      | s4 = bb24 ]
+      [ s0 = {[@expl:type invariant] inv'0 l.current} s1
+      | s1 = -{resolve'0 l.current}- s2
+      | s2 = [ &l <- { l with current = prev } ] s3
+      | s3 = {[@expl:type invariant] inv'3 l} s4
+      | s4 = -{resolve'3 l}- s5
+      | s5 = bb24 ]
     | bb24 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & l: MutBorrow.t t_List = l

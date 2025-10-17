@@ -1,22 +1,11 @@
 module M_07_read_write__read_write
   use creusot.prelude.MutBorrow
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
+  use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_T
   
@@ -24,18 +13,18 @@ module M_07_read_write__read_write
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -47,15 +36,15 @@ module M_07_read_write__read_write
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: MutBorrow.t t_Vec)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -65,9 +54,9 @@ module M_07_read_write__read_write
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'4 (_1: MutBorrow.t t_T)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant''3 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_T [inv'4 x]. inv'4 x = invariant''3 x
+  meta "rewrite_def" predicate inv'4
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -90,37 +79,29 @@ module M_07_read_write__read_write
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   predicate invariant''4 [@inline:trivial] (self: t_Vec) = inv'2 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'5 (_1: t_Vec)
+  predicate inv'5 [@inline:trivial] (_1: t_Vec) = invariant''4 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''4 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''5 [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'6 (_1: t_T)
+  predicate inv'6 [@inline:trivial] (_1: t_T) = invariant''5 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_T [inv'6 x]. inv'6 x = invariant''5 x
+  meta "rewrite_def" predicate inv'6
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'5 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
@@ -170,9 +151,9 @@ module M_07_read_write__read_write
     | bb1 = s0
       [ s0 = [ &_6 <- { _6 with current = x } ] s1
       | s1 = {[@expl:type invariant] inv'4 _6} s2
-      | s2 = -{resolve'0 _6}- s3
+      | s2 = -{resolve _6}- s3
       | s3 = {[@expl:type invariant] inv'3 a} s4
-      | s4 = -{resolve'2 a}- s5
+      | s4 = -{resolve'0 a}- s5
       | s5 = index {a.current} {i} (fun (_ret: t_T) -> [ &_12 <- _ret ] s6)
       | s6 = bb2 ]
     | bb2 = s0 [ s0 = eq {_12} {x} (fun (_ret: bool) -> [ &_10 <- _ret ] s1) | s1 = bb3 ]

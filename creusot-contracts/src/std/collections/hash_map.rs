@@ -83,7 +83,7 @@ impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@.is_empty() }
+        pearlite! { resolve(self) && self@.is_empty() }
     }
 
     #[logic(open, law)]
@@ -129,7 +129,7 @@ impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@.is_empty() }
+        pearlite! { resolve(self) && self@.is_empty() }
     }
 
     #[logic(open, law)]
@@ -175,7 +175,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@.is_empty() }
+        pearlite! { resolve(self) && self@.is_empty() }
     }
 
     #[logic(open, law)]

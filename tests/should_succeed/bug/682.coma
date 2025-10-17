@@ -4,13 +4,9 @@ module M_682__add_some
   use creusot.prelude.Any
   use mach.int.Int
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -68,7 +64,7 @@ module M_682__add_some
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {a.current} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &a <- { a with current = _ret } ] s1)
-      | s1 = -{resolve'0 a}- s2
+      | s1 = -{resolve a}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & a: MutBorrow.t UInt64.t = a ])
     [ return (result: ()) -> {[@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
 end
@@ -129,13 +125,9 @@ module M_682__foo
     <= Int.div (UInt64.t'int const_MAX) 2}
     any [ return (result: ()) -> {UInt64.gt a.final a.current} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -149,7 +141,7 @@ module M_682__foo
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &_7 <- _ret ] [ &a <- { a with current = _ret.final } ] s1)
       | s1 = add_some {_7} (fun (_ret: ()) -> [ &_6 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve'0 a}- s1 | s1 = {[@expl:assertion] UInt64.gt a.current a_p} s2 | s2 = return {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve a}- s1 | s1 = {[@expl:assertion] UInt64.gt a.current a_p} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: MutBorrow.t UInt64.t = a
     | & a_p: UInt64.t = Any.any_l ()

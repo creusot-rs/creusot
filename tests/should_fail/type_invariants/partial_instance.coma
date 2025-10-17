@@ -14,11 +14,6 @@ module M_partial_instance__mk_s
   
   predicate inv (_1: t_S)
   
-  axiom inv_axiom: forall x: t_S [inv x]. inv x
-      -> match x with
-        | {t_S__0 = a_0; t_S__1 = a_1} -> true
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -42,11 +37,7 @@ module M_partial_instance__evil
   
   predicate inv (_1: t_S)
   
-  axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_S__0 = a_0; t_S__1 = a_1} -> true
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x = invariant' x
   
   let rec mk_s (t: Int32.t) (return (x: t_S)) = any
     [ return (result: t_S) -> {inv result} {result.t_S__0 = t} (! return {result}) ]
@@ -57,6 +48,6 @@ module M_partial_instance__evil
   
   let rec evil (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = mk_s {(1: Int32.t)} (fun (_ret: t_S) -> [ &_s <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv _s} s1 | s1 = {[@expl:assertion] false} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & _s: t_S = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

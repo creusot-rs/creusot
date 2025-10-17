@@ -52,7 +52,9 @@ module M_12_borrow_instances__test1
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'0 (_1: t_F)
+  predicate resolve'0 [@inline:trivial] (_1: t_F) = true
+  
+  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_mut'0 [@inline:trivial] (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool) =
     postcondition self args result /\ self = result_state
@@ -157,13 +159,9 @@ module M_12_borrow_instances__test2
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_F) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_F) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_mut'0 [@inline:trivial] (self: MutBorrow.t t_F) (args: UInt32.t) (result_state: MutBorrow.t t_F) (result: bool) =
     postcondition_mut self.current args result_state.current result /\ self.final = result_state.final
@@ -173,7 +171,7 @@ module M_12_borrow_instances__test2
   function fn_mut_once'0 (self: MutBorrow.t t_F) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_mut_once_spec'0: forall self: MutBorrow.t t_F, args: UInt32.t, res: bool. postcondition_once'0 self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut'0 self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: MutBorrow.t t_F. postcondition_mut'0 self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv'0 [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
     hist_inv self.current result_state.current /\ self.final = result_state.final

@@ -31,9 +31,9 @@ pub(crate) struct ProgramSignature {
 /// Translates a Rust (program) function signature to a coma signature.
 ///
 /// Note that `pre_sig` should be normalized!
-pub(crate) fn lower_program_sig<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_program_sig<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     name: Ident,
     mut pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
@@ -80,9 +80,9 @@ pub(crate) struct LogicSignature {
 /// Translates a Pearlite (logical) function signature to a whyml signature.
 ///
 /// Note that `pre_sig` should be normalized!
-pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_logic_sig<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     name: Ident,
     mut pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
@@ -125,9 +125,9 @@ pub(crate) fn lower_logic_sig<'tcx, N: Namer<'tcx>>(
     LogicSignature { why_sig: sig, variant }
 }
 
-pub(crate) fn lower_contract<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_contract<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     contract: PreContract<'tcx>,
 ) -> Contract {
     let requires =

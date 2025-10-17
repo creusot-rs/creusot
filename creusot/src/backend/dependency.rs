@@ -8,10 +8,7 @@ use rustc_type_ir::AliasTyKind;
 use crate::{
     contracts_items::Intrinsic,
     ctx::{PreMod, TranslationCtx},
-    naming::{
-        item_symb, lowercase_prefix, to_alphanumeric, translate_accessor_name, translate_name,
-        type_name, value_name,
-    },
+    naming::{item_symb, lowercase_prefix, to_alphanumeric, translate_name, type_name, value_name},
 };
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
@@ -23,11 +20,15 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
+    ResolveAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
     PreMod(PreMod),
     Eliminator(DefId, GenericArgsRef<'tcx>),
     DynCast(Ty<'tcx>, Ty<'tcx>),
+    PrivateFields(DefId, GenericArgsRef<'tcx>),
+    PrivateResolve(DefId, GenericArgsRef<'tcx>),
+    PrivateTyInv(DefId, GenericArgsRef<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -54,7 +55,8 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn base_ident(self, ctx: &TranslationCtx<'tcx>) -> Option<Symbol> {
         match self {
             Dependency::Type(ty) => match ty.kind() {
-                TyKind::Adt(def, _) if !def.is_box() => {
+                TyKind::Adt(def, _) => {
+                    assert!(!def.is_box());
                     Some(item_symb(ctx.tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
                 TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(
@@ -79,6 +81,11 @@ impl<'tcx> Dependency<'tcx> {
                 }
                 _ => None,
             },
+            Dependency::PrivateFields(did, _) => {
+                assert_eq!(ctx.def_kind(did), DefKind::Struct);
+                let symty = item_symb(ctx.tcx, did, rustc_hir::def::Namespace::TypeNS);
+                Some(Symbol::intern(&format!("{symty}__private")))
+            }
             Dependency::Item(did, subst) => match ctx.def_kind(did) {
                 DefKind::Impl { .. } => Some(ctx.item_name(ctx.trait_id_of_impl(did).unwrap())),
                 DefKind::Closure => Some(Symbol::intern(&format!(
@@ -86,12 +93,13 @@ impl<'tcx> Dependency<'tcx> {
                     ctx.def_path(did).data.last().unwrap().disambiguator
                 ))),
                 DefKind::Field => {
-                    let variant = ctx.parent(did);
-                    let name = translate_accessor_name(
-                        ctx.item_name(variant).as_str(),
-                        ctx.item_name(did).as_str(),
-                    );
-                    Some(Symbol::intern(&name))
+                    let variant = ctx.item_name(ctx.parent(did));
+                    let field = ctx.item_name(did);
+                    Some(Symbol::intern(&format!(
+                        "{}__{}",
+                        type_name(&translate_name(variant.as_str())),
+                        translate_name(field.as_str())
+                    )))
                 }
                 DefKind::Variant => {
                     Some(item_symb(ctx.tcx, did, rustc_hir::def::Namespace::ValueNS))
@@ -111,6 +119,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("c{ix}"))),
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("f{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
+            Dependency::ResolveAxiom(..) => Some(Symbol::intern("resolve_axiom")),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(ctx.item_name(did).as_str()))))
             }
@@ -120,6 +129,8 @@ impl<'tcx> Dependency<'tcx> {
                 source,
             ))),
             Dependency::PreMod(_) => None,
+            Dependency::PrivateResolve(..) => Some(Symbol::intern("resolve__private")),
+            Dependency::PrivateTyInv(..) => Some(Symbol::intern("inv__private")),
         }
     }
 }

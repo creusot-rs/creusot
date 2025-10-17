@@ -1,0 +1,85 @@
+module M_partially_opaque__f
+  use creusot.prelude.Any
+  
+  type t_S__private
+  
+  predicate inv__private (x: t_S__private)
+  
+  predicate resolve__private (x: t_S__private)
+  
+  type t_A
+  
+  type t_S = { t_S__a: t_A; t_S__private: t_S__private }
+  
+  predicate inv (_1: t_A)
+  
+  predicate inv'0 (_1: t_S)
+  
+  axiom inv_axiom: forall x: t_S [inv'0 x]. inv'0 x -> inv x.t_S__a /\ inv__private x.t_S__private
+  
+  predicate resolve (_1: t_A)
+  
+  predicate resolve'0 (_1: t_S)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_S [resolve'0 x]. resolve'0 x
+      = (resolve x.t_S__a /\ resolve__private x.t_S__private)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec f (x: t_S) (return (x'0: t_A)) = {[@expl:f 'x' type invariant] inv'0 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv__private x.t_S__private} s1
+      | s1 = -{resolve__private x.t_S__private}- s2
+      | s2 = [ &_0 <- x.t_S__a ] s3
+      | s3 = bb1 ]
+    | bb1 = return {_0} ] [ & _0: t_A = Any.any_l () | & x: t_S = x ])
+    [ return (result: t_A) -> {[@expl:f result type invariant] inv result}
+      {[@expl:f ensures] resolve x.t_S__a -> resolve'0 x}
+      (! return {result}) ]
+end
+module M_partially_opaque__g
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type t_S__private
+  
+  type t_S = { t_S__a: Int32.t; t_S__private: t_S__private }
+  
+  predicate invariant' (self: t_S) = Int.mod (Int32.to_int self.t_S__a) 2 = 0
+  
+  predicate inv__private (x: t_S__private)
+  
+  predicate inv (_1: t_S)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x = (invariant' x /\ inv__private x.t_S__private)
+  
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_S) = inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_S) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'0
+  
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_S) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec g (x: MutBorrow.t t_S) (return (x'0: ())) = {[@expl:g 'x' type invariant] inv'0 x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- { x with current = { x.current with t_S__a = (34: Int32.t) } } ] s1
+      | s1 = {[@expl:type invariant] inv'0 x} s2
+      | s2 = -{resolve x}- s3
+      | s3 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: MutBorrow.t t_S = x ])
+    [ return (result: ()) -> (! return {result}) ]
+end

@@ -4,7 +4,6 @@ extern crate creusot_contracts;
 pub mod nested {
     use creusot_contracts::*;
 
-    #[derive(Resolve)]
     enum Nested {
         Test,
     }
