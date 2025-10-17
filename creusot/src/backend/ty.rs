@@ -7,7 +7,7 @@ use crate::{
     naming::{name, variable_name},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv};
+use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
@@ -18,17 +18,18 @@ use why3::{
     ty::Type as MlT,
 };
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum AdtKind<'tcx> {
-    Opaque { always: bool },  // An opaque type for the current context
-    Transparent,              // A transparent ADT
-    PartiallyOpaque,          // A struct with some opaque fields and some transparent fields
-    Unit,                     // Adt with only one element
-    Empty,                    // Empty Adt
-    Snapshot(Ty<'tcx>),       // Snapshot<T>
-    Ghost(Ty<'tcx>),          // Ghost<T>
-    Namespace,                // Namespace
-    Box(Ty<'tcx>),            // Box<T>
-    Builtin(Box<[Ty<'tcx>]>), // A type directly defined in Why3
+    Opaque { always: bool },           // An opaque type for the current context
+    Enum,                              // A transparent enum
+    Struct { partially_opaque: bool }, // A struct, with potentially some opaque fields
+    Unit,                              // Adt with only one element
+    Empty,                             // Empty Adt
+    Snapshot(Ty<'tcx>),                // Snapshot<T>
+    Ghost(Ty<'tcx>),                   // Ghost<T>
+    Namespace,                         // Namespace
+    Box(Ty<'tcx>),                     // Box<T>
+    Builtin(Box<[Ty<'tcx>]>),          // A type directly defined in Why3
 }
 
 pub(crate) fn classify_adt<'tcx>(
@@ -56,7 +57,7 @@ pub(crate) fn classify_adt<'tcx>(
     } else if def.is_struct() && def.non_enum_variant().fields.is_empty() {
         AdtKind::Unit
     } else if def.is_enum() {
-        AdtKind::Transparent
+        AdtKind::Enum
     } else if def
         .non_enum_variant()
         .fields
@@ -64,11 +65,14 @@ pub(crate) fn classify_adt<'tcx>(
         .all(|f| !f.vis.is_accessible_from(scope, ctx.tcx))
     {
         AdtKind::Opaque { always: false }
-    } else if def.non_enum_variant().fields.iter().all(|f| f.vis.is_accessible_from(scope, ctx.tcx))
-    {
-        AdtKind::Transparent
     } else {
-        AdtKind::PartiallyOpaque
+        AdtKind::Struct {
+            partially_opaque: !def
+                .non_enum_variant()
+                .fields
+                .iter()
+                .all(|f| f.vis.is_accessible_from(scope, ctx.tcx)),
+        }
     }
 }
 
@@ -89,8 +93,8 @@ pub(crate) fn translate_ty<'tcx>(
         Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
         Adt(def, s) => match classify_adt(ctx, names.source_id(), *def, s) {
             AdtKind::Opaque { .. }
-            | AdtKind::Transparent
-            | AdtKind::PartiallyOpaque
+            | AdtKind::Enum
+            | AdtKind::Struct { .. }
             | AdtKind::Namespace => MlT::TConstructor(names.ty(ty)),
             AdtKind::Unit | AdtKind::Empty => MlT::unit(),
             AdtKind::Ghost(ty) | AdtKind::Box(ty) => translate_ty(ctx, names, span, ty),
@@ -205,15 +209,13 @@ pub(crate) fn translate_adtdecl<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     ty: Ty<'tcx>,
-    typing_env: TypingEnv<'tcx>,
 ) -> Vec<Decl> {
     let TyKind::Adt(def, subst) = ty.kind() else { unreachable!() };
-    let kind = classify_adt(ctx, names.source_id(), *def, subst);
-    match kind {
+    match classify_adt(ctx, names.source_id(), *def, subst) {
         AdtKind::Namespace => {
             // Special treatment for the `Namespace` type: we must generate it after collecting all the possible variants.
             ctx.used_namespaces.set(true);
-            return Vec::new();
+            vec![]
         }
         AdtKind::Builtin(tys) => {
             for ty in tys {
@@ -222,70 +224,79 @@ pub(crate) fn translate_adtdecl<'tcx>(
             if let Kind::UsedBuiltin(qname) = names.dependency(Dependency::Type(ty))
                 && !qname.module.is_empty()
             {
-                return vec![Decl::UseDecls(Box::new([Use {
-                    name: qname.module.clone(),
-                    export: false,
-                }]))];
+                vec![Decl::UseDecls(Box::new([Use { name: qname.module.clone(), export: false }]))]
             } else {
-                return vec![];
+                vec![]
             }
         }
         AdtKind::Snapshot(ty) => {
-            translate_ty(ctx, names, DUMMY_SP, ty); // Make sure we introduce a dependency, to create a cycle if we are recursing through Snapshot
-            return vec![];
+            // Make sure we introduce a dependency, to create a cycle if we are recursing through Snapshot
+            translate_ty(ctx, names, DUMMY_SP, ty);
+            vec![]
         }
-        AdtKind::Opaque { .. } | AdtKind::Transparent | AdtKind::PartiallyOpaque => (),
+        AdtKind::Opaque { .. } => {
+            let ty_name = names.def_ty(def.did(), subst).to_ident();
+            vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
+        }
+        AdtKind::Enum => {
+            let ty_name = names.def_ty(def.did(), subst).to_ident();
+            let sumrecord = SumRecord::Sum(
+                def.variants()
+                    .iter()
+                    .map(|var_def| ConstructorDecl {
+                        name: names.item_ident(var_def.def_id, subst),
+                        fields: var_def
+                            .fields
+                            .iter()
+                            .map(|f| {
+                                let ty = ctx.normalize_erasing_regions(
+                                    names.typing_env(),
+                                    f.ty(ctx.tcx, subst),
+                                );
+                                translate_ty(ctx, names, ctx.def_span(f.did), ty)
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            );
+            vec![Decl::TyDecl(TyDecl::Adt {
+                tys: Box::new([AdtDecl { ty_name, ty_params: Box::new([]), sumrecord }]),
+            })]
+        }
+        AdtKind::Struct { partially_opaque } => {
+            let ty_name = names.def_ty(def.did(), subst).to_ident();
+
+            let fields: Box<[_]> = def
+                .non_enum_variant()
+                .fields
+                .iter_enumerated()
+                .filter(|f| f.1.vis.is_accessible_from(names.source_id(), ctx.tcx))
+                .map(|(ix, f)| {
+                    let ty =
+                        ctx.normalize_erasing_regions(names.typing_env(), f.ty(ctx.tcx, subst));
+                    FieldDecl {
+                        name: names.field(def.did(), subst, ix),
+                        ty: translate_ty(ctx, names, ctx.def_span(f.did), ty),
+                    }
+                })
+                .chain(partially_opaque.then(|| {
+                    let name = names.private_fields(def.did(), subst);
+                    FieldDecl { name, ty: MlT::TConstructor(Name::local(name)) }
+                }))
+                .collect();
+            assert!(!fields.is_empty());
+            vec![Decl::TyDecl(TyDecl::Adt {
+                tys: Box::new([AdtDecl {
+                    ty_name,
+                    ty_params: Box::new([]),
+                    sumrecord: SumRecord::Record(fields),
+                }]),
+            })]
+        }
         AdtKind::Unit | AdtKind::Empty | AdtKind::Box(_) | AdtKind::Ghost(_) => {
             unreachable!("{ty:?}")
         }
     }
-
-    let ty_name = names.def_ty(def.did(), subst).to_ident();
-
-    if let AdtKind::Opaque { .. } = kind {
-        return vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })];
-    }
-
-    let (AdtKind::Transparent | AdtKind::PartiallyOpaque) = kind else { unreachable!() };
-
-    let sumrecord = if def.is_enum() {
-        SumRecord::Sum(
-            def.variants()
-                .iter()
-                .map(|var_def| ConstructorDecl {
-                    name: names.item_ident(var_def.def_id, subst),
-                    fields: var_def
-                        .fields
-                        .iter()
-                        .map(|f| {
-                            let ty =
-                                ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst));
-                            translate_ty(ctx, names, ctx.def_span(f.did), ty)
-                        })
-                        .collect(),
-                })
-                .collect(),
-        )
-    } else {
-        assert!(def.is_struct());
-        let fields: Box<[_]> = def
-            .non_enum_variant()
-            .fields
-            .iter_enumerated()
-            .map(|(ix, f)| {
-                let ty = ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst));
-                FieldDecl {
-                    name: names.field(def.did(), subst, ix),
-                    ty: translate_ty(ctx, names, ctx.def_span(f.did), ty),
-                }
-            })
-            .collect();
-        assert!(!fields.is_empty());
-        SumRecord::Record(fields)
-    };
-    vec![Decl::TyDecl(TyDecl::Adt {
-        tys: Box::new([AdtDecl { ty_name, ty_params: Box::new([]), sumrecord }]),
-    })]
 }
 
 pub(crate) fn eliminator<'tcx>(

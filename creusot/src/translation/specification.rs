@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates},
     ctx::*,
     naming::{name, variable_name},
-    translation::pearlite::{Ident, Literal, PIdent, Term, TermKind, normalize},
+    translation::pearlite::{Ident, PIdent, Term, normalize},
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
@@ -58,7 +58,7 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
-        self.requires.iter().any(|req| matches!(req.term.kind, TermKind::Lit(Literal::Bool(false))))
+        self.requires.iter().any(|req| req.term.is_false())
     }
 
     pub(crate) fn is_empty(&self) -> bool {

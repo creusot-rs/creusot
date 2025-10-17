@@ -121,7 +121,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                     self.emit_statement(fmir::Statement {
                                         kind: fmir::StatementKind::Assertion {
                                             cond,
-                                            msg,
+                                            msg: Some(msg),
                                             trusted: false,
                                         },
                                         span,
@@ -137,7 +137,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             self.emit_statement(fmir::Statement {
                                 kind: fmir::StatementKind::Assertion {
                                     cond: assertion,
-                                    msg: "expl:assertion".to_owned(),
+                                    msg: Some("expl:assertion".to_owned()),
                                     trusted: false,
                                 },
                                 span,

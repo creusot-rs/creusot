@@ -2,13 +2,16 @@ mod statement;
 mod terminator;
 
 use crate::{
-    analysis::{self, BodyLocals, BodySpecs, BorrowData},
-    backend::ty_inv::is_tyinv_trivial,
+    analysis::{self, BodyLocals, BodySpecs, BorrowData, ResolvedPlace},
+    backend::{
+        projections::projections_term,
+        ty_inv::{inv_call, is_tyinv_trivial},
+    },
     ctx::*,
     translation::{
         constant::mirconst_to_operand,
-        fmir::{self, LocalDecls, RValue, TrivialInv, Variant},
-        pearlite::{Ident, PIdent, Term},
+        fmir::{self, LocalDecls, RValue, Variant},
+        pearlite::{Ident, PIdent, Term, TermKind},
     },
 };
 use indexmap::IndexMap;
@@ -18,8 +21,8 @@ use rustc_middle::{
     mir::{self, BasicBlock, Body, Local, Location, Operand, Place, traversal::reverse_postorder},
     ty::{Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
 };
-use rustc_span::Span;
-use std::{collections::HashMap, ops::FnOnce};
+use rustc_span::{DUMMY_SP, Span};
+use std::{assert_matches::assert_matches, collections::HashMap, ops::FnOnce};
 
 pub(crate) use self::terminator::discriminator_for_switch;
 
@@ -263,10 +266,15 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_resolve_into(
         &self,
-        pl: Place<'tcx>,
+        rpl: ResolvedPlace<'tcx>,
         span: Span,
         dest: &mut Vec<fmir::Statement<'tcx>>,
     ) {
+        let pl = match rpl {
+            ResolvedPlace::All(pl) => pl,
+            ResolvedPlace::PrivateFields(pl) => pl,
+        };
+
         let place_ty = pl.ty(self.body, self.tcx());
 
         if self.skip_resolve_type(place_ty.ty) {
@@ -280,28 +288,73 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 .iter()
                 .all(|f| self.skip_resolve_type(f.ty(self.tcx(), subst)))
         {
+            assert_matches!(rpl, ResolvedPlace::All(_));
             return;
         }
 
         let pl = self.translate_place(pl, span);
-
-        // TODO: this is currently the span of statement before which the resolve is happening,
-        // would it be better to use the span where the borrow came from?
         if !is_tyinv_trivial(self.ctx, self.body_id.def_id, self.typing_env(), place_ty.ty, span) {
+            let cond = projections_term(
+                self.ctx,
+                self.typing_env(),
+                Term::var(pl.local, self.vars[&pl.local].ty),
+                &pl.projections,
+                |e| match rpl {
+                    ResolvedPlace::All(_) => {
+                        inv_call(self.ctx, self.typing_env(), self.body_id.def_id, e).unwrap()
+                    }
+                    ResolvedPlace::PrivateFields(_) => Term {
+                        kind: TermKind::PrivateInv { term: Box::new(e) },
+                        ty: self.ctx.types.bool,
+                        span: DUMMY_SP,
+                    },
+                },
+                Some(Term::true_(self.tcx())),
+                |id| Term::var(*id, self.ctx.types.usize),
+                span,
+            );
             dest.push(fmir::Statement {
-                kind: fmir::StatementKind::AssertTyInv { pl: pl.clone() },
+                kind: fmir::StatementKind::Assertion {
+                    cond,
+                    msg: Some("expl:type invariant".to_string()),
+                    trusted: false,
+                },
                 span,
             })
         }
-        if let Some((did, subst)) = self.ctx.resolve(self.typing_env(), place_ty.ty) {
+
+        let mut res_triv = true;
+
+        let cond = projections_term(
+            self.ctx,
+            self.typing_env(),
+            Term::var(pl.local, self.vars[&pl.local].ty),
+            &pl.projections,
+            |e| {
+                let r = match rpl {
+                    ResolvedPlace::All(_) => self.ctx.resolve(self.typing_env(), e),
+                    ResolvedPlace::PrivateFields(_) => Term {
+                        kind: TermKind::PrivateResolve { term: Box::new(e) },
+                        ty: self.ctx.types.bool,
+                        span: DUMMY_SP,
+                    },
+                };
+                res_triv = res_triv && r.is_true();
+                r
+            },
+            Some(Term::true_(self.tcx())),
+            |id| Term::var(*id, self.ctx.types.usize),
+            span,
+        );
+        if !res_triv {
             dest.push(fmir::Statement {
-                kind: fmir::StatementKind::Resolve { did, subst, pl },
+                kind: fmir::StatementKind::Assertion { cond, msg: None, trusted: true },
                 span,
             })
         }
     }
 
-    fn emit_resolve(&mut self, pl: Place<'tcx>, span: Span) {
+    fn emit_resolve(&mut self, pl: ResolvedPlace<'tcx>, span: Span) {
         let mut dest = std::mem::take(&mut self.current_block.0);
         self.emit_resolve_into(pl, span, &mut dest);
         self.current_block.0 = dest;
@@ -325,16 +378,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         let p = self.translate_place(rhs, span);
 
-        let rhs_ty = rhs.ty(self.body, self.tcx()).ty;
         let span = self.tcx().def_span(self.body_id.def_id);
-        let triv_inv =
-            if is_tyinv_trivial(self.ctx, self.body_id.def_id, self.typing_env(), rhs_ty, span) {
-                TrivialInv::Trivial
-            } else {
-                TrivialInv::NonTrivial
-            };
 
-        self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p, triv_inv), span);
+        self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p), span);
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {

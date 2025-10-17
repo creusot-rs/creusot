@@ -111,47 +111,40 @@ module M_sparse_array__qyi8756171091343028329__resolve_coherence (* <Sparse<T, S
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
-  predicate resolve [@inline:trivial] (_1: UInt64.t) = true
+  predicate resolve (_1: t_T)
   
-  meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (self: Slice64.array UInt64.t) =
+  predicate resolve'0 [@inline:trivial] (self: Slice64.array t_T) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve (Seq.get (Slice64.view self) i)
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_1: Slice64.array UInt64.t) = resolve'0 _1
+  predicate resolve'1 [@inline:trivial] (_1: Slice64.array t_T) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 (_1: t_T)
+  predicate resolve'2 [@inline:trivial] (_1: UInt64.t) = true
   
-  predicate resolve'3 [@inline:trivial] (self: Slice64.array t_T) =
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (self: Slice64.array UInt64.t) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve'2 (Seq.get (Slice64.view self) i)
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'4 [@inline:trivial] (_1: Slice64.array t_T) = resolve'3 _1
+  predicate resolve'4 [@inline:trivial] (_1: Slice64.array UInt64.t) = resolve'3 _1
   
   meta "rewrite_def" predicate resolve'4
   
   predicate structural_resolve (_1: t_Sparse) =
-    match _1 with
-      | {t_Sparse__n = x0; t_Sparse__values = x1; t_Sparse__idx = x2; t_Sparse__back = x3} -> resolve'1 x3
-      /\ resolve'1 x2 /\ resolve'4 x1
-      end
+    resolve'1 _1.t_Sparse__values /\ resolve'4 _1.t_Sparse__idx /\ resolve'4 _1.t_Sparse__back
   
   type t_Option = C_None | C_Some t_T
   
   predicate resolve'5 [@inline:trivial] (self: t_Option) =
     match self with
-      | C_Some x -> resolve'2 x
+      | C_Some x -> resolve x
       | C_None -> true
       end
   
@@ -260,11 +253,7 @@ module M_sparse_array__qyi963773560051086010__get (* Sparse<T, SIZE> *)
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   predicate invariant''4 [@inline:trivial] (self: t_Sparse) = inv'5 self
   
@@ -435,11 +424,7 @@ module M_sparse_array__qyi963773560051086010__lemma_permutation (* Sparse<T, SIZ
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   predicate is_elt (self: t_Sparse) (i: int) =
     UInt64.t'int (index_logic self.t_Sparse__idx i) < UInt64.t'int self.t_Sparse__n
@@ -598,11 +583,7 @@ module M_sparse_array__qyi963773560051086010__lemma_permutation_aux (* Sparse<T,
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   predicate contains [@inline:trivial] (self: Fset.fset int) (e: int) = Fset.mem e self
   
@@ -795,11 +776,7 @@ module M_sparse_array__qyi963773560051086010__set (* Sparse<T, SIZE> *)
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Sparse) = inv'5 self.current /\ inv'5 self.final
   
@@ -1057,11 +1034,7 @@ module M_sparse_array__create
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   type t_Option = C_None | C_Some t_T
   
@@ -1159,11 +1132,7 @@ module M_sparse_array__f
   predicate inv'3 (_1: t_Sparse)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Sparse [inv'3 x]. inv'3 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'0 values
-        /\ inv'2 idx /\ inv'2 back
-        end)
+      = (invariant' x /\ inv'0 x.t_Sparse__values /\ inv'2 x.t_Sparse__idx /\ inv'2 x.t_Sparse__back)
   
   type t_Option = C_None | C_Some Int32.t
   
@@ -1225,11 +1194,7 @@ module M_sparse_array__f
   predicate inv'6 (_1: t_Sparse'0)
   
   axiom inv_axiom'6 [@rewrite]: forall x: t_Sparse'0 [inv'6 x]. inv'6 x
-      = (invariant''2 x
-      /\ match x with
-        | {t_Sparse__n'0 = n; t_Sparse__values'0 = values; t_Sparse__idx'0 = idx; t_Sparse__back'0 = back} -> inv'4 values
-        /\ inv'5 idx /\ inv'5 back
-        end)
+      = (invariant''2 x /\ inv'4 x.t_Sparse__values'0 /\ inv'5 x.t_Sparse__idx'0 /\ inv'5 x.t_Sparse__back'0)
   
   predicate is_elt'0 (self: t_Sparse'0) (i: int) =
     UInt64.t'int (index_logic'1 self.t_Sparse__idx'0 i) < UInt64.t'int self.t_Sparse__n'0
@@ -1436,35 +1401,32 @@ module M_sparse_array__qyi8756171091343028329__resolve_coherence__refines (* <Sp
   
   constant const_SIZE : UInt64.t
   
-  predicate resolve [@inline:trivial] (_1: UInt64.t) = true
+  predicate resolve (_1: t_T)
   
-  meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (self: Slice64.array UInt64.t) =
+  predicate resolve'0 [@inline:trivial] (self: Slice64.array t_T) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve (Seq.get (Slice64.view self) i)
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_1: Slice64.array UInt64.t) = resolve'0 _1
+  predicate resolve'1 [@inline:trivial] (_1: Slice64.array t_T) = resolve'0 _1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 (_1: t_T)
+  predicate resolve'2 [@inline:trivial] (_1: UInt64.t) = true
   
-  predicate resolve'3 [@inline:trivial] (self: Slice64.array t_T) =
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (self: Slice64.array UInt64.t) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve'2 (Seq.get (Slice64.view self) i)
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'4 [@inline:trivial] (_1: Slice64.array t_T) = resolve'3 _1
+  predicate resolve'4 [@inline:trivial] (_1: Slice64.array UInt64.t) = resolve'3 _1
   
   meta "rewrite_def" predicate resolve'4
   
   predicate structural_resolve (_1: t_Sparse) =
-    match _1 with
-      | {t_Sparse__n = x0; t_Sparse__values = x1; t_Sparse__idx = x2; t_Sparse__back = x3} -> resolve'1 x3
-      /\ resolve'1 x2 /\ resolve'4 x1
-      end
+    resolve'1 _1.t_Sparse__values /\ resolve'4 _1.t_Sparse__idx /\ resolve'4 _1.t_Sparse__back
   
   function index_logic [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
     Seq.get (Slice64.view self) ix
@@ -1516,17 +1478,13 @@ module M_sparse_array__qyi8756171091343028329__resolve_coherence__refines (* <Sp
   predicate inv'5 (_1: t_Sparse)
   
   axiom inv_axiom'4 [@rewrite]: forall x: t_Sparse [inv'5 x]. inv'5 x
-      = (invariant' x
-      /\ match x with
-        | {t_Sparse__n = n; t_Sparse__values = values; t_Sparse__idx = idx; t_Sparse__back = back} -> inv'2 values
-        /\ inv'4 idx /\ inv'4 back
-        end)
+      = (invariant' x /\ inv'2 x.t_Sparse__values /\ inv'4 x.t_Sparse__idx /\ inv'4 x.t_Sparse__back)
   
   type t_Option = C_None | C_Some t_T
   
   predicate resolve'5 [@inline:trivial] (self: t_Option) =
     match self with
-      | C_Some x -> resolve'2 x
+      | C_Some x -> resolve x
       | C_None -> true
       end
   

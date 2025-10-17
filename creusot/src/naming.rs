@@ -46,10 +46,6 @@ pub fn type_name(name: &str) -> String {
     lowercase_prefix("t_", name)
 }
 
-pub fn translate_accessor_name(variant: &str, field: &str) -> String {
-    format!("{}__{}", type_name(&translate_name(variant)), translate_name(field))
-}
-
 // The result should be a valid Why3 identifier.
 pub(crate) fn item_symb(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Symbol {
     use rustc_hir::def::DefKind::*;

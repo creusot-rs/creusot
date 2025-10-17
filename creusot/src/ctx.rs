@@ -13,7 +13,7 @@ use crate::{
             extract_extern_specs_from_item,
         },
         fmir,
-        pearlite::{self, ScopedTerm},
+        pearlite::{self, ScopedTerm, Term},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
         traits::{Refinement, TraitResolved},
     },
@@ -354,26 +354,22 @@ impl<'tcx> TranslationCtx<'tcx> {
         callbacks::get_body(self.tcx, def_id)
     }
 
-    pub(crate) fn resolve(
-        &self,
-        typing_env: TypingEnv<'tcx>,
-        ty: Ty<'tcx>,
-    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    pub(crate) fn resolve(&self, typing_env: TypingEnv<'tcx>, term: Term<'tcx>) -> Term<'tcx> {
         let trait_meth_id = Intrinsic::ResolveMethod.get(self);
-        let substs = self.mk_args(&[GenericArg::from(ty)]);
+        let subst = self.mk_args(&[GenericArg::from(term.ty)]);
 
         // Optimization: if we know there is no Resolve instance for this type, then we do not emit
         // a resolve
-        if !ty.is_closure()
+        if !term.ty.is_closure()
             && matches!(
-                TraitResolved::resolve_item(self.tcx, typing_env, trait_meth_id, substs),
+                TraitResolved::resolve_item(self.tcx, typing_env, trait_meth_id, subst),
                 TraitResolved::NoInstance
             )
         {
-            return None;
+            return Term::true_(self.tcx);
         }
 
-        Some((Intrinsic::Resolve.get(self), substs))
+        Term::call_no_normalize(self.tcx, Intrinsic::Resolve.get(self), subst, [term])
     }
 
     queryish!(laws, DefId, [DefId], laws_inner);

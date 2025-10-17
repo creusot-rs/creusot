@@ -3,25 +3,19 @@ module M_assoc_type__uses3
   
   type t_A
   
-  type t_Assoc = { t_Assoc__item: t_A }
-  
-  type t_Nested = { t_Nested__item: t_Assoc }
-  
   predicate inv (_1: t_A)
+  
+  type t_Assoc = { t_Assoc__item: t_A }
   
   predicate inv'0 (_1: t_Assoc)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Assoc [inv'0 x]. inv'0 x
-      = match x with
-        | {t_Assoc__item = item} -> inv item
-        end
+  axiom inv_axiom [@rewrite]: forall x: t_Assoc [inv'0 x]. inv'0 x = inv x.t_Assoc__item
+  
+  type t_Nested = { t_Nested__item: t_Assoc }
   
   predicate inv'1 (_1: t_Nested)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Nested [inv'1 x]. inv'1 x
-      = match x with
-        | {t_Nested__item = item} -> inv'0 item
-        end
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Nested [inv'1 x]. inv'1 x = inv'0 x.t_Nested__item
   
   meta "compute_max_steps" 1000000
   

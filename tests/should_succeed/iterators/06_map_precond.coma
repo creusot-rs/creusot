@@ -20,21 +20,18 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence (* <Map<I, F>
   
   type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
   
-  predicate resolve (_1: t_F)
+  predicate resolve (_1: t_I)
   
-  predicate resolve'0 (_1: t_I)
+  predicate resolve'0 (_1: t_F)
   
-  predicate structural_resolve (_1: t_Map) =
-    match _1 with
-      | {t_Map__iter = x0; t_Map__func = x1; t_Map__produced = x2} -> resolve x1 /\ resolve'0 x0
-      end
+  predicate structural_resolve (_1: t_Map) = resolve _1.t_Map__iter /\ resolve'0 _1.t_Map__func
   
   predicate resolve'1 [@inline:trivial] (_1: Seq.seq t_Item) = true
   
   meta "rewrite_def" predicate resolve'1
   
   predicate resolve'2 (self: t_Map) =
-    resolve'0 self.t_Map__iter /\ resolve self.t_Map__func /\ resolve'1 self.t_Map__produced
+    resolve self.t_Map__iter /\ resolve'0 self.t_Map__func /\ resolve'1 self.t_Map__produced
   
   meta "compute_max_steps" 1000000
   
@@ -394,10 +391,7 @@ module M_06_map_precond__qyi13778860181180212516__next (* <Map<I, F> as common::
   predicate inv'7 (_1: t_Map)
   
   axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
-      = (invariant''1 x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter /\ inv'3 func
-        end)
+      = (invariant''1 x /\ inv x.t_Map__iter /\ inv'3 x.t_Map__func)
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'7 self.current /\ inv'7 self.final
   
@@ -946,10 +940,7 @@ module M_06_map_precond__map
   predicate inv'1 (_1: t_Map)
   
   axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter /\ inv'0 func
-        end)
+      = (invariant' x /\ inv x.t_Map__iter /\ inv'0 x.t_Map__func)
   
   meta "compute_max_steps" 1000000
   
@@ -1097,11 +1088,7 @@ module M_06_map_precond__identity
   
   predicate inv'1 (_1: t_Map)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv'0 iter
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x = (invariant' x /\ inv'0 x.t_Map__iter)
   
   let rec map (iter: t_I) (func: ()) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv'0 iter}
     {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces iter (Seq.singleton e) i2
@@ -1268,11 +1255,7 @@ module M_06_map_precond__increment
   
   predicate inv'0 (_1: t_Map)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x
-      = (invariant' x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Map__iter)
   
   let rec map (iter: t_U) (func: ()) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv iter}
     {[@expl:map requires #0] forall e: UInt32.t, i2: t_U. produces iter (Seq.singleton e) i2
@@ -1543,11 +1526,7 @@ module M_06_map_precond__counter
   
   predicate inv'0 (_1: t_Map)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x
-      = (invariant' x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter
-        end)
+  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Map__iter)
   
   let rec map (iter: t_I) (func: closure0) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv iter}
     {[@expl:map requires #0] forall e: UInt32.t, i2: t_I. produces iter (Seq.singleton e) i2
@@ -1624,14 +1603,11 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence__refines (* <
   
   type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
   
-  predicate resolve (_1: t_F)
+  predicate resolve (_1: t_I)
   
-  predicate resolve'0 (_1: t_I)
+  predicate resolve'0 (_1: t_F)
   
-  predicate structural_resolve (_1: t_Map) =
-    match _1 with
-      | {t_Map__iter = x0; t_Map__func = x1; t_Map__produced = x2} -> resolve x1 /\ resolve'0 x0
-      end
+  predicate structural_resolve (_1: t_Map) = resolve _1.t_Map__iter /\ resolve'0 _1.t_Map__func
   
   predicate inv (_1: t_I)
   
@@ -1639,17 +1615,14 @@ module M_06_map_precond__qyi6490470836283789663__resolve_coherence__refines (* <
   
   predicate inv'1 (_1: t_Map)
   
-  axiom inv_axiom: forall x: t_Map [inv'1 x]. inv'1 x
-      -> match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter /\ inv'0 func
-        end
+  axiom inv_axiom: forall x: t_Map [inv'1 x]. inv'1 x -> inv x.t_Map__iter /\ inv'0 x.t_Map__func
   
   predicate resolve'1 [@inline:trivial] (_1: Seq.seq t_Item) = true
   
   meta "rewrite_def" predicate resolve'1
   
   predicate resolve'2 (self: t_Map) =
-    resolve'0 self.t_Map__iter /\ resolve self.t_Map__func /\ resolve'1 self.t_Map__produced
+    resolve self.t_Map__iter /\ resolve'0 self.t_Map__func /\ resolve'1 self.t_Map__produced
   
   meta "compute_max_steps" 1000000
   
@@ -1755,10 +1728,7 @@ module M_06_map_precond__qyi13778860181180212516__next__refines (* <Map<I, F> as
   predicate inv'1 (_1: t_Map)
   
   axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-      = (invariant' x
-      /\ match x with
-        | {t_Map__iter = iter; t_Map__func = func; t_Map__produced = produced} -> inv iter /\ inv'0 func
-        end)
+      = (invariant' x /\ inv x.t_Map__iter /\ inv'0 x.t_Map__func)
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'1 self.current /\ inv'1 self.final
   

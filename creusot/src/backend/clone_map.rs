@@ -118,6 +118,18 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::DynCast(source, target)).ident()
     }
 
+    fn private_fields(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::PrivateFields(struct_id, subst)).ident()
+    }
+
+    fn private_ty_inv(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::PrivateTyInv(struct_id, subst)).ident()
+    }
+
+    fn private_resolve(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+        self.dependency(Dependency::PrivateResolve(struct_id, subst)).ident()
+    }
+
     // TODO: get rid of this. It feels like it should be unnecessary
     fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ty: T) -> T {
         self.tcx().normalize_erasing_regions(self.typing_env(), ty)

@@ -51,7 +51,13 @@ use crate::{
     util::Orphan,
 };
 
-type Resolves<'tcx> = Vec<Place<'tcx>>;
+#[derive(TyEncodable, TyDecodable, Clone, Debug)]
+pub enum ResolvedPlace<'tcx> {
+    All(Place<'tcx>),
+    PrivateFields(Place<'tcx>),
+}
+
+type Resolves<'tcx> = Vec<ResolvedPlace<'tcx>>;
 type BorrowId = usize;
 
 /// Information computed by this analysis.
@@ -92,7 +98,7 @@ impl<'tcx> BorrowData<'tcx> {
         self.resolved_between_blocks.remove(&bb)
     }
 
-    pub(crate) fn remove_resolved_places_at(&mut self, loc: Location) -> Vec<Place<'tcx>> {
+    pub(crate) fn remove_resolved_places_at(&mut self, loc: Location) -> Resolves<'tcx> {
         self.resolved_at.remove(&Orphan(loc)).unwrap_or(vec![])
     }
 
@@ -247,7 +253,7 @@ pub struct Analysis<'a, 'tcx> {
     resolver: Resolver<'a, 'tcx>,
     typing_env: TypingEnv<'tcx>,
     /// Places to resolve before and after the current statement
-    current_resolved: Vec<Place<'tcx>>,
+    current_resolved: Resolves<'tcx>,
     not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
     /// `&mut` because we also rename assertions here
     body_specs: &'a mut BodySpecs<'tcx>,
@@ -384,7 +390,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
-        self.current_resolved.push(pl);
+        self.current_resolved.push(ResolvedPlace::All(pl));
     }
 
     /// We try to coalesce resolutions for places, if possible
@@ -395,6 +401,9 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         to_resolve: MixedBitSet<MovePathIndex>,
         resolved: &MixedBitSet<MovePathIndex>,
     ) {
+        use ResolvedPlace::*;
+        // Set of places that we resolvee because they are in to_resolve, and all their children
+        // are either in to_resolve or in resolved
         let mut to_resolve_full = to_resolve.clone();
         for mp in to_resolve.iter() {
             let mut all_children = true;
@@ -414,8 +423,11 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             }
         }
 
+        // to_resolve_partial contains places that we want to resolve paritally. I.e., some of their
+        // children should not be resolved.
+        // For these places, we resolve all the fields which are not registered as move paths
         let mut to_resolve_partial = to_resolve;
-        let mut v = vec![];
+        let mut res = vec![];
         for mp in to_resolve_full.iter() {
             on_all_children_bits(self.move_data(), mp, |imp| {
                 to_resolve_partial.remove(imp);
@@ -423,71 +435,76 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 
             let pl = self.move_data().move_paths[mp].place;
             if !self.body_specs.erased_locals.contains(pl.local) {
-                v.push(pl);
+                res.push(All(pl));
             }
         }
 
+        let mut res_partial = vec![];
         for mp in to_resolve_partial.iter() {
             let pl = self.move_data().move_paths[mp].place;
             if self.body_specs.erased_locals.contains(pl.local) {
                 continue;
             }
-            let local_decls = &self.body().local_decls;
-            let ty = pl.ty(local_decls, self.tcx());
+            let ty = pl.ty(&self.body().local_decls, self.tcx());
             let ty = self.tcx().normalize_erasing_regions(self.typing_env, ty);
-            let mut insert = |pl: Place<'tcx>| {
-                if !matches!(self.move_data().rev_lookup.find(pl.as_ref()), LookupResult::Exact(_))
-                {
-                    v.push(pl)
-                }
-            };
             use TyKind::*;
             match ty.ty.kind() {
                 Adt(adt_def, subst) => {
                     if adt_def.is_box() {
-                        insert(self.tcx().mk_place_deref(pl));
+                        res_partial.push(All(self.tcx().mk_place_deref(pl)));
                     } else if adt_def.is_enum() {
                         if let Some(vid) = ty.variant_index {
                             let var = adt_def.variant(vid);
-                            // TODO: honor access rights for these fields.
-                            // I.e., we should not resolve private fields.
-                            // Problem: it's unclear what to do if we need to resolve a private
-                            // field, but not the whole struct/enum
                             for (fi, fd) in var.fields.iter_enumerated() {
-                                insert(self.tcx().mk_place_field(pl, fi, fd.ty(self.tcx(), subst)));
+                                res_partial.push(All(self.tcx().mk_place_field(
+                                    pl,
+                                    fi,
+                                    fd.ty(self.tcx(), subst),
+                                )));
                             }
                         } else {
                             for (i, _var) in adt_def.variants().iter().enumerate() {
-                                insert(self.tcx().mk_place_downcast(
+                                res_partial.push(All(self.tcx().mk_place_downcast(
                                     pl,
                                     *adt_def,
                                     VariantIdx::new(i),
-                                ))
+                                )))
                             }
                         }
                     } else {
-                        // TODO: idem
+                        let mut has_priv = false;
                         for (fi, fd) in adt_def.non_enum_variant().fields.iter_enumerated() {
-                            insert(self.tcx().mk_place_field(pl, fi, fd.ty(self.tcx(), subst)));
+                            if fd.vis.is_accessible_from(self.body().source.def_id(), self.tcx()) {
+                                res_partial.push(All(self.tcx().mk_place_field(
+                                    pl,
+                                    fi,
+                                    fd.ty(self.tcx(), subst),
+                                )));
+                            } else {
+                                has_priv = true;
+                            }
+                        }
+                        if has_priv {
+                            res_partial.push(PrivateFields(pl));
                         }
                     }
                 }
 
                 Tuple(tys) => {
                     for (i, ty) in tys.iter().enumerate() {
-                        insert(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty));
+                        res_partial.push(All(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty)));
                     }
                 }
 
                 Closure(_did, substs) => {
                     for (i, ty) in substs.as_closure().upvar_tys().iter().enumerate() {
-                        insert(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty));
+                        res_partial.push(All(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty)));
                     }
                 }
 
                 Array(_, _) | Slice(_) | Pat(_, _) => {
                     self.span_bug(
-                        local_decls[pl.local].source_info.span,
+                        self.body().local_decls[pl.local].source_info.span,
                         format!("Unsupported type during resolution: {}", ty.ty),
                     );
                 }
@@ -518,11 +535,23 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             }
         }
 
+        res.extend(res_partial.into_iter().filter(|pl| {
+            if let All(pl) = pl {
+                !matches!(
+                    self.resolver.move_data().rev_lookup.find(pl.as_ref()),
+                    LookupResult::Exact(_)
+                )
+            } else {
+                true
+            }
+        }));
+
         // TODO determine resolution order based on outlives relation?
-        v.sort_by_key(|pl| pl.local);
-        for pl in v.into_iter().rev() {
-            self.emit_resolve(pl);
-        }
+        res.sort_by_key(|pl| match pl {
+            All(p) => p.local,
+            PrivateFields(p) => p.local,
+        });
+        self.current_resolved.extend(res.into_iter().rev());
     }
 
     fn resolve_places_between_blocks(&mut self, bb: BasicBlock) {

@@ -44,6 +44,7 @@ use why3::{
         Attribute, Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl,
         Use,
     },
+    ty::Type,
 };
 
 /// Weak dependencies are allowed to form cycles in the graph, but strong ones cannot,
@@ -443,7 +444,6 @@ fn expand_type<'tcx>(
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let dep = Dependency::Type(ty);
-    let typing_env = elab.typing_env;
     let names = elab.namer(dep);
     match ty.kind() {
         TyKind::Param(_) => vec![Decl::TyDecl(TyDecl::Opaque {
@@ -458,7 +458,7 @@ fn expand_type<'tcx>(
             })]
         }
         TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
-        TyKind::Adt(_, _) => translate_adtdecl(ctx, &names, ty, typing_env),
+        TyKind::Adt(_, _) => translate_adtdecl(ctx, &names, ty),
         TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
         TyKind::Dynamic(traits, _) => {
             if is_logically_dyn_compatible(ctx.tcx(), traits.iter()) {
@@ -584,6 +584,10 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let decls = match dep {
             Dependency::Type(ty) => expand_type(self, ctx, ty),
+            Dependency::PrivateFields(_, _) => {
+                let ty_name = self.namer.dependency(dep).ident();
+                vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
+            }
             Dependency::Item(def_id, subst) => match ctx.item_type(def_id) {
                 ItemType::Logic { .. } => expand_logic(self, ctx, def_id, subst),
                 ItemType::Constant => expand_constant(self, ctx, def_id, subst),
@@ -610,6 +614,21 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
             Dependency::DynCast(source, target) => expand_dyn_cast(self, ctx, source, target),
+            Dependency::PrivateResolve(def_id, subst) | Dependency::PrivateTyInv(def_id, subst) => {
+                let namer = self.namer(dep);
+                let sig = Signature {
+                    name: namer.dependency(dep).ident(),
+                    trigger: None,
+                    attrs: vec![],
+                    retty: None,
+                    args: Box::new([(
+                        Ident::fresh_local("x"),
+                        Type::TConstructor(Name::local(namer.private_fields(def_id, subst))),
+                    )]),
+                    contract: Default::default(),
+                };
+                vec![Decl::predicate(sig, None)]
+            }
         };
 
         self.dep_bodies.insert(dep, decls);

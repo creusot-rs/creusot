@@ -56,10 +56,7 @@ module M_mixed__qyi2592445413368279263__clone (* <Product<A, B> as creusot_contr
   
   predicate inv'3 (_1: t_Product)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x
-      = match x with
-        | {t_Product__a = a; t_Product__b = b} -> inv a /\ inv'1 b
-        end
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x = (inv x.t_Product__a /\ inv'1 x.t_Product__b)
   
   predicate invariant''1 [@inline:trivial] (self: t_Product) = inv'3 self
   
@@ -277,10 +274,7 @@ module M_mixed__qyi15378480724732772077__eq (* <Product<A, B> as creusot_contrac
   
   predicate inv'3 (_1: t_Product)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x
-      = match x with
-        | {t_Product__a = a; t_Product__b = b} -> inv a /\ inv'1 b
-        end
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Product [inv'3 x]. inv'3 x = (inv x.t_Product__a /\ inv'1 x.t_Product__b)
   
   predicate invariant''1 [@inline:trivial] (self: t_Product) = inv'3 self
   
@@ -711,48 +705,45 @@ module M_mixed__qyi8044263102292640215__resolve_coherence (* <Product2<'a, A> as
   
   type t_Product2 = { t_Product2__a: MutBorrow.t t_A; t_Product2__b: bool; t_Product2__c: t_Vec }
   
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_A) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_A) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view (self: t_Vec) : Seq.seq UInt32.t
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate resolve [@inline:trivial] (_1: UInt32.t) = true
+  predicate resolve'1 [@inline:trivial] (_1: UInt32.t) = true
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve'1
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
-  predicate resolve'0 [@inline:trivial] (self: t_Vec) =
-    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve (index_logic self i)
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: t_Vec) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_A) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'1 (index_logic self i)
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_A) = resolve'2 _1
+  predicate resolve'3 [@inline:trivial] (_1: t_Vec) = resolve'2 _1
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate structural_resolve (_1: t_Product2) =
-    match _1 with
-      | {t_Product2__a = x0; t_Product2__b = x1; t_Product2__c = x2} -> resolve'1 x2 /\ resolve'3 x0
-      end
+  predicate structural_resolve (_1: t_Product2) = resolve'0 _1.t_Product2__a /\ resolve'3 _1.t_Product2__c
   
   predicate resolve'4 [@inline:trivial] (_1: bool) = true
   
   meta "rewrite_def" predicate resolve'4
   
   predicate resolve'5 (self: t_Product2) =
-    resolve'3 self.t_Product2__a /\ resolve'4 self.t_Product2__b /\ resolve'1 self.t_Product2__c
+    resolve'0 self.t_Product2__a /\ resolve'4 self.t_Product2__b /\ resolve'3 self.t_Product2__c
   
   meta "compute_max_steps" 1000000
   
@@ -1101,10 +1092,7 @@ module M_mixed__qyi2592445413368279263__clone__refines (* <Product<A, B> as creu
   
   predicate inv'1 (_1: t_Product)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x
-      = match x with
-        | {t_Product__a = a; t_Product__b = b} -> inv a /\ inv'0 b
-        end
+  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x = (inv x.t_Product__a /\ inv'0 x.t_Product__b)
   
   predicate invariant' [@inline:trivial] (self: t_Product) = inv'1 self
   
@@ -1721,10 +1709,7 @@ module M_mixed__qyi15378480724732772077__eq__refines (* <Product<A, B> as creuso
   
   predicate inv'1 (_1: t_Product)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x
-      = match x with
-        | {t_Product__a = a; t_Product__b = b} -> inv a /\ inv'0 b
-        end
+  axiom inv_axiom [@rewrite]: forall x: t_Product [inv'1 x]. inv'1 x = (inv x.t_Product__a /\ inv'0 x.t_Product__b)
   
   predicate invariant' [@inline:trivial] (self: t_Product) = inv'1 self
   
@@ -1830,41 +1815,38 @@ module M_mixed__qyi8044263102292640215__resolve_coherence__refines (* <Product2<
   
   type t_Product2 = { t_Product2__a: MutBorrow.t t_A; t_Product2__b: bool; t_Product2__c: t_Vec }
   
+  predicate resolve [@inline:trivial] (self: MutBorrow.t t_A) = self.final = self.current
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_A) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view (self: t_Vec) : Seq.seq UInt32.t
   
   axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
   
-  predicate resolve [@inline:trivial] (_1: UInt32.t) = true
+  predicate resolve'1 [@inline:trivial] (_1: UInt32.t) = true
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve'1
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
-  predicate resolve'0 [@inline:trivial] (self: t_Vec) =
-    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve (index_logic self i)
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: t_Vec) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_A) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'1 (index_logic self i)
   
   meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_A) = resolve'2 _1
+  predicate resolve'3 [@inline:trivial] (_1: t_Vec) = resolve'2 _1
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate structural_resolve (_1: t_Product2) =
-    match _1 with
-      | {t_Product2__a = x0; t_Product2__b = x1; t_Product2__c = x2} -> resolve'1 x2 /\ resolve'3 x0
-      end
+  predicate structural_resolve (_1: t_Product2) = resolve'0 _1.t_Product2__a /\ resolve'3 _1.t_Product2__c
   
   predicate inv (_1: t_A)
   
@@ -1878,17 +1860,14 @@ module M_mixed__qyi8044263102292640215__resolve_coherence__refines (* <Product2<
   
   predicate inv'1 (_1: t_Product2)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Product2 [inv'1 x]. inv'1 x
-      = match x with
-        | {t_Product2__a = a; t_Product2__b = b; t_Product2__c = c} -> inv'0 a
-        end
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Product2 [inv'1 x]. inv'1 x = inv'0 x.t_Product2__a
   
   predicate resolve'4 [@inline:trivial] (_1: bool) = true
   
   meta "rewrite_def" predicate resolve'4
   
   predicate resolve'5 (self: t_Product2) =
-    resolve'3 self.t_Product2__a /\ resolve'4 self.t_Product2__b /\ resolve'1 self.t_Product2__c
+    resolve'0 self.t_Product2__a /\ resolve'4 self.t_Product2__b /\ resolve'3 self.t_Product2__c
   
   meta "compute_max_steps" 1000000
   

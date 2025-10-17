@@ -172,6 +172,12 @@ pub enum TermKind<'tcx> {
         subst: GenericArgsRef<'tcx>,
         args: Box<[Term<'tcx>]>,
     },
+    PrivateInv {
+        term: Box<Term<'tcx>>,
+    },
+    PrivateResolve {
+        term: Box<Term<'tcx>>,
+    },
     Constructor {
         variant: VariantIdx,
         fields: Box<[Term<'tcx>]>,
@@ -406,6 +412,14 @@ impl<'tcx> Pattern<'tcx> {
 }
 
 impl<'tcx> Term<'tcx> {
+    pub(crate) fn is_true(&self) -> bool {
+        matches!(self.kind, TermKind::Lit(Literal::Bool(true)))
+    }
+
+    pub(crate) fn is_false(&self) -> bool {
+        matches!(self.kind, TermKind::Lit(Literal::Bool(false)))
+    }
+
     pub(crate) fn let_(pattern: Pattern<'tcx>, arg: Term<'tcx>, body: Term<'tcx>) -> Self {
         Term {
             span: pattern.span.until(body.span),
@@ -514,26 +528,16 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn conj(self, rhs: Self) -> Self {
-        match self.kind {
-            // ⟘ ∧ A = ⟘
-            TermKind::Lit(Literal::Bool(false)) => self,
-            // ⟙ ∧ A = A
-            TermKind::Lit(Literal::Bool(true)) => rhs,
-            _ => match rhs.kind {
-                // A ∧ ⟘ = ⟘
-                TermKind::Lit(Literal::Bool(false)) => rhs,
-                // A ∧ ⟙ = A
-                TermKind::Lit(Literal::Bool(true)) => self,
-                _ => Term {
-                    ty: self.ty,
-                    span: self.span.until(rhs.span),
-                    kind: TermKind::Binary {
-                        op: BinOp::And,
-                        lhs: Box::new(self),
-                        rhs: Box::new(rhs),
-                    },
-                },
-            },
+        if self.is_false() || rhs.is_true() {
+            self
+        } else if rhs.is_false() || self.is_true() {
+            rhs
+        } else {
+            Term {
+                ty: self.ty,
+                span: self.span.until(rhs.span),
+                kind: TermKind::Binary { op: BinOp::And, lhs: Box::new(self), rhs: Box::new(rhs) },
+            }
         }
     }
 
@@ -550,23 +554,16 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn implies(self, rhs: Self) -> Self {
-        // A → ⟙ = ⟙
-        if let TermKind::Lit(Literal::Bool(true)) = rhs.kind {
-            return rhs;
-        }
-
-        match self.kind {
-            // ⟙ → A = A
-            TermKind::Lit(Literal::Bool(true)) => rhs,
-            // (⟘ → A) = ⟙
-            TermKind::Lit(Literal::Bool(false)) => {
-                Term { ty: self.ty, kind: TermKind::Lit(Literal::Bool(true)), span: self.span }
-            }
-            _ => Term {
+        if rhs.is_true() || self.is_true() {
+            rhs
+        } else if self.is_false() {
+            Term { kind: TermKind::Lit(Literal::Bool(true)), ..self }
+        } else {
+            Term {
                 ty: self.ty,
                 span: self.span.until(rhs.span),
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
-            },
+            }
         }
     }
 
@@ -593,17 +590,14 @@ impl<'tcx> Term<'tcx> {
         trigger: Box<[Trigger<'tcx>]>,
     ) -> Self {
         assert!(self.ty.is_bool());
-
-        match (&self.kind, quant_kind) {
-            // ∀ x . ⟙ = ⟙
-            (TermKind::Lit(Literal::Bool(true)), QuantKind::Forall) => self,
-            // ∃ x . ⟘ = ⟘
-            (TermKind::Lit(Literal::Bool(false)), QuantKind::Exists) => self,
-            _ => Term {
+        if self.is_true() || self.is_false() {
+            self
+        } else {
+            Term {
                 ty: self.ty,
                 span: self.span,
                 kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
-            },
+            }
         }
     }
 
@@ -734,6 +728,8 @@ impl<'tcx> Term<'tcx> {
             TermKind::Postcondition { params, .. } => {
                 params.iter_mut().for_each(|p| p.subst_(bound, subst))
             }
+            TermKind::PrivateInv { term } => term.subst_(bound, subst),
+            TermKind::PrivateResolve { term } => term.subst_(bound, subst),
         }
     }
 
@@ -823,6 +819,8 @@ impl<'tcx> Term<'tcx> {
             TermKind::Postcondition { params, .. } => {
                 params.iter().for_each(|p| p.free_vars_inner(bound, free))
             }
+            TermKind::PrivateInv { term } => term.free_vars_inner(bound, free),
+            TermKind::PrivateResolve { term } => term.free_vars_inner(bound, free),
         }
     }
 }

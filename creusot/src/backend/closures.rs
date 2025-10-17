@@ -285,13 +285,7 @@ pub(crate) fn closure_post<'tcx>(
     let typing_env = ctx.typing_env(def_id.into());
 
     // Make sure fn_once and fn_mut_once are satisfied
-    post = to_resolve.iter().fold(post, |p, r| {
-        if let Some((id, subst)) = ctx.resolve(typing_env, r.ty) {
-            p.conj(Term::call_no_normalize(ctx.tcx, id, subst, [r.clone()]))
-        } else {
-            p
-        }
-    });
+    post = to_resolve.iter().fold(post, |p, r| p.conj(ctx.resolve(typing_env, r.clone())));
     if closure_kind == ClosureKind::FnMut {
         post = to_resolve.iter().rfold(post, |p, r| {
             let TermKind::Var(sym) = r.kind else { unreachable!() };
@@ -322,10 +316,7 @@ pub(crate) fn closure_resolve<'tcx>(
     let csubst = subst.as_closure();
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, def_id);
     for (ix, ty) in csubst.upvar_tys().iter().enumerate() {
-        if let Some((id, subst)) = ctx.resolve(typing_env, ty) {
-            let proj = self_.clone().proj(ix.into(), ty);
-            resolve = Term::call(ctx.tcx, typing_env, id, subst, [proj]).conj(resolve);
-        }
+        resolve = ctx.resolve(typing_env, self_.clone().proj(ix.into(), ty)).conj(resolve)
     }
     resolve
 }

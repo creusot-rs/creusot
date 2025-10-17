@@ -354,7 +354,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::qvar(self.names.in_pre(PreMod::MutBor, "borrow_logic"))
                     .app([cur, fin, borrow_id])
             }
-            TermKind::Assert { .. } => Exp::unit(), // Discard cond, use unit
+            TermKind::Assert { .. } => Exp::unit(),
             TermKind::Precondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
                 let ident: Ident = self.names.item(*item, subst).to_ident();
@@ -368,6 +368,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::Var(name).app(params)
             }
             TermKind::Capture(_) => unreachable!("Capture left in lowering"),
+            tk @ (TermKind::PrivateInv { term } | TermKind::PrivateResolve { term }) => {
+                let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
+                let arg = self
+                    .lower_term(term)
+                    .field(Name::local(self.names.private_fields(adt.did(), subst)));
+                let f = if let TermKind::PrivateInv { .. } = tk {
+                    self.names.private_ty_inv(adt.did(), subst)
+                } else {
+                    self.names.private_resolve(adt.did(), subst)
+                };
+                Exp::var(f).app([arg])
+            }
         }
     }
 

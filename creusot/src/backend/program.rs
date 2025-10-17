@@ -16,14 +16,14 @@ use crate::{
         dependency::Dependency,
         is_trusted_item,
         optimization::optimizations,
-        projections::{Focus, borrow_generated_id, projections_term, projections_to_expr},
+        projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::lower_program_sig,
         term::{lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int, ity_to_prelude, translate_ty, ty_to_prelude,
             uty_to_prelude,
         },
-        ty_inv::sig_add_type_invariant_spec,
+        ty_inv::{is_tyinv_trivial, sig_add_type_invariant_spec},
         wto::{Component, weak_topological_order},
     },
     contracts_items::Intrinsic,
@@ -33,9 +33,9 @@ use crate::{
     translation::{
         fmir::{
             Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
-            StatementKind, Terminator, TrivialInv,
+            StatementKind, Terminator,
         },
-        pearlite::{self, Term},
+        pearlite::Term,
         traits::TraitResolved,
     },
 };
@@ -186,12 +186,12 @@ pub(crate) fn to_why<'tcx>(
                 TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
                     .to_opt(wf_relation, subst)
                     .expect("The `WellFounded` trait should be implemented in this context");
-            let variant_decreases = pearlite::Term::call(
+            let variant_decreases = Term::call(
                 ctx.tcx,
                 typing_env,
                 wf_relation,
                 subst,
-                [pearlite::Term::var(variant_name, variant_expr.ty), variant_expr],
+                [Term::var(variant_name, variant_expr.ty), variant_expr],
             );
             lower_pure(ctx, names, &variant_decreases)
                 .with_attr(Attribute::Attr("expl:function variant".to_string()))
@@ -389,11 +389,11 @@ fn component_to_defn<'tcx>(
             TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
                 .to_opt(wf_relation, subst)
                 .expect("The `WellFounded` trait should be implemented in this context");
-        let variant_decreases = pearlite::Term::call_no_normalize(
+        let variant_decreases = Term::call_no_normalize(
             ctx.tcx,
             wf_relation,
             subst,
-            [pearlite::Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
+            [Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
         );
 
         lower_pure(ctx, lower.names, &variant_decreases)
@@ -860,7 +860,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
-            RValue::Borrow(_, _, _) => unreachable!(), // Handled in StatementKind::to_why
+            RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -1190,7 +1190,7 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
-            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs, triv_inv)) => {
+            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs)) => {
                 let bor_id_arg;
                 let rhs_rplace;
                 let rhs_constr;
@@ -1251,7 +1251,13 @@ impl<'tcx> Statement<'tcx> {
                 let reassign = Exp::var(ret_ident).field(Name::Global(name::final_()));
 
                 let inv_assume;
-                if triv_inv == TrivialInv::NonTrivial {
+                if !is_tyinv_trivial(
+                    lower.ctx,
+                    lower.names.source_id(),
+                    lower.names.typing_env(),
+                    rhs_ty,
+                    self.span,
+                ) {
                     let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
@@ -1307,45 +1313,16 @@ impl<'tcx> Statement<'tcx> {
                 istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
-            StatementKind::Resolve { did, subst, pl } => {
-                let t = projections_term(
-                    lower.ctx,
-                    lower.names.typing_env(),
-                    Term::var(pl.local, lower.locals[&pl.local].ty),
-                    &pl.projections,
-                    |e| Term::call(lower.ctx.tcx, lower.names.typing_env(), did, subst, [e]),
-                    Some(Term::true_(lower.ctx.tcx)),
-                    |id| Term::var(*id, lower.ctx.types.usize),
-                    self.span,
-                );
-                istmts.push(IntermediateStmt::Assume(lower_pure(lower.ctx, lower.names, &t)))
-            }
             StatementKind::Assertion { cond, msg, trusted } => {
-                let e = lower_pure(lower.ctx, lower.names, &cond).with_attr(Attribute::Attr(msg));
+                let mut e = lower_pure(lower.ctx, lower.names, &cond);
+                if let Some(msg) = msg {
+                    e = e.with_attr(Attribute::Attr(msg))
+                }
                 if trusted {
                     istmts.push(IntermediateStmt::Assume(e))
                 } else {
                     istmts.push(IntermediateStmt::Assert(e))
                 }
-            }
-            StatementKind::AssertTyInv { pl } => {
-                let t = projections_term(
-                    lower.ctx,
-                    lower.names.typing_env(),
-                    Term::var(pl.local, lower.locals[&pl.local].ty),
-                    &*pl.projections,
-                    |e| {
-                        let inv_did = Intrinsic::Inv.get(lower.ctx);
-                        let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(e.ty)]);
-                        Term::call(lower.ctx.tcx, lower.names.typing_env(), inv_did, subst, [e])
-                    },
-                    Some(Term::true_(lower.ctx.tcx)),
-                    |id| Term::var(*id, lower.ctx.types.usize),
-                    self.span,
-                );
-                let exp = lower_pure(lower.ctx, lower.names, &t)
-                    .with_attr(Attribute::Attr("expl:type invariant".to_string()));
-                istmts.push(IntermediateStmt::Assert(exp));
             }
         }
         istmts
