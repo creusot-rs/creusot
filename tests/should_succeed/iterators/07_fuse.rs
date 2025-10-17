@@ -5,7 +5,6 @@ use creusot_contracts::{logic::Seq, *};
 mod common;
 use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Fuse<I: Iterator> {
     pub iter: Option<I>,
 }

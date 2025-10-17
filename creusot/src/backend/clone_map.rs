@@ -422,8 +422,13 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         let source_item = self.source_item();
         let span = tcx.def_span(source_id);
 
-        let graph =
-            Expander::new(&mut self.names, typing_env, self.dep_set.into_inner().into_iter(), span);
+        let graph = Expander::new(
+            ctx,
+            &mut self.names,
+            typing_env,
+            self.dep_set.into_inner().into_iter(),
+            span,
+        );
 
         // Update the clone graph with any new entries.
         let (graph, mut bodies) = graph.update_graph(ctx);

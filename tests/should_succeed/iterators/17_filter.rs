@@ -11,7 +11,6 @@ use creusot_contracts::{
 mod common;
 use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Filter<I: Iterator, F: FnMut(&I::Item) -> bool> {
     pub iter: I,
     pub func: F,

@@ -1,6 +1,6 @@
-use crate::{logic::Mapping, *};
 #[cfg(creusot)]
-use crate::{logic::such_that, resolve::structural_resolve};
+use crate::logic::such_that;
+use crate::{logic::Mapping, *};
 use ::std::cmp::Ordering;
 #[cfg(creusot)]
 use ::std::marker::Destruct;
@@ -301,8 +301,8 @@ extern_spec! {
                 }
 
                 #[check(ghost)]
-                #[ensures(self == None ==> result == None && optb.resolve())]
-                #[ensures(self == None || (result == optb && self.resolve()))]
+                #[ensures(self == None ==> result == None && resolve(optb))]
+                #[ensures(self == None || (result == optb && resolve(self)))]
                 fn and<U>(self, optb: Option<U>) -> Option<U> {
                     match self {
                         None => None,
@@ -349,7 +349,7 @@ extern_spec! {
 
                 #[check(ghost)]
                 #[ensures(self == None ==> result == optb)]
-                #[ensures(self == None || (result == self && optb.resolve()))]
+                #[ensures(self == None || (result == self && resolve(optb)))]
                 fn or(self, optb: Option<T>) -> Option<T> {
                     match self {
                         None => optb,
@@ -466,8 +466,8 @@ extern_spec! {
 
                 #[check(ghost)]
                 #[ensures(match (self, other) {
-                    (None, _)          => result == None && other.resolve(),
-                    (_, None)          => result == None && self.resolve(),
+                    (None, _)          => result == None && resolve(other),
+                    (_, None)          => result == None && resolve(self),
                     (Some(t), Some(u)) => result == Some((t, u)),
                 })]
                 fn zip<U>(self, other: Option<U>) -> Option<(T, U)> {
@@ -634,7 +634,7 @@ impl<T> View for IntoIter<T> {
 impl<T> Iterator for IntoIter<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { (*self)@ == None && self.resolve() }
+        pearlite! { (*self)@ == None && resolve(self) }
     }
 
     #[logic(open)]
@@ -668,7 +668,7 @@ impl<'a, T> View for Iter<'a, T> {
 impl<T> Iterator for Iter<'_, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { (*self)@ == None && self.resolve() }
+        pearlite! { (*self)@ == None && resolve(self) }
     }
 
     #[logic(open)]
@@ -702,7 +702,7 @@ impl<'a, T> View for IterMut<'a, T> {
 impl<T> Iterator for IterMut<'_, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { (*self)@ == None && self.resolve() }
+        pearlite! { (*self)@ == None && resolve(self) }
     }
 
     #[logic(open)]
@@ -764,19 +764,4 @@ impl<T> OptionExt<T> for Option<T> {
             Some(x) => Some(f.get(x)),
         }
     }
-}
-
-impl<T> Resolve for Option<T> {
-    #[logic(open, prophetic, inline)]
-    fn resolve(self) -> bool {
-        match self {
-            Some(x) => resolve(x),
-            None => true,
-        }
-    }
-
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
 }

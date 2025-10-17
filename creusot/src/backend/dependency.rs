@@ -20,6 +20,7 @@ pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
     Item(DefId, GenericArgsRef<'tcx>),
     TyInvAxiom(Ty<'tcx>),
+    ResolveAxiom(Ty<'tcx>),
     ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
     PreMod(PreMod),
@@ -118,6 +119,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("c{ix}"))),
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("f{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
+            Dependency::ResolveAxiom(..) => Some(Symbol::intern("resolve_axiom")),
             Dependency::Eliminator(did, _) => {
                 Some(Symbol::intern(&value_name(&translate_name(ctx.item_name(did).as_str()))))
             }

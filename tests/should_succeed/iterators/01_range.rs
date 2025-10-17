@@ -15,7 +15,7 @@ impl Iterator for Range {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.resolve() && self.start >= self.end
+            resolve(self) && self.start >= self.end
         }
     }
 

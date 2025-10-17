@@ -49,17 +49,17 @@ module M_100doors__f
   
   axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv (_1: t_Range)
+  predicate inv [@inline:trivial] (_1: t_Range) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Range [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  predicate inv'0 (_1: Seq.seq UInt64.t)
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt64.t [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -72,10 +72,6 @@ module M_100doors__f
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Range) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -107,13 +103,9 @@ module M_100doors__f
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t bool) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t bool) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -142,7 +134,7 @@ module M_100doors__f
           | s2 = next {_15} (fun (_ret: t_Option) -> [ &_14 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve'0 _16}- s1
+          [ s0 = -{resolve _16}- s1
           | s1 = any [ br0 -> {_14 = C_None} (! bb19) | br1 (x0: UInt64.t) -> {_14 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_14} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -173,7 +165,7 @@ module M_100doors__f
               | s3 = bb17 ]
             | bb17 = s0
               [ s0 = [ &_33 <- { _33 with current = not _29 } ] s1
-              | s1 = -{resolve'2 _33}- s2
+              | s1 = -{resolve'0 _33}- s2
               | s2 = UInt64.add {door} {pass} (fun (_ret: UInt64.t) -> [ &door <- _ret ] s3)
               | s3 = bb13 ] ] ] ] ]
     | bb19 = return {_0} ]

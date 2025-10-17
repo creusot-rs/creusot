@@ -7,9 +7,9 @@ module M_swap_borrows__swap
   
   predicate inv (_1: t_T)
   
-  predicate inv'0 (_1: tuple)
+  predicate inv'0 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'0 x]. inv'0 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv x1)
+  meta "rewrite_def" predicate inv'0
   
   meta "compute_max_steps" 1000000
   
@@ -35,13 +35,9 @@ module M_swap_borrows__f
   let rec swap (x: tuple'0) (return (x'0: tuple'0)) = any
     [ return (result: tuple'0) -> {result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -62,10 +58,10 @@ module M_swap_borrows__f
       | s7 = swap {_5} (fun (_ret: tuple'0) -> [ &p <- _ret ] s8)
       | s8 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve'0 p.f1'0}- s1
-      | s1 = -{resolve'0 _8}- s2
+      [ s0 = -{resolve p.f1'0}- s1
+      | s1 = -{resolve _8}- s2
       | s2 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s3
-      | s3 = -{resolve'0 p.f0'0}- s4
+      | s3 = -{resolve p.f0'0}- s4
       | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
       | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
       | s6 = return {_0} ] ]

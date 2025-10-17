@@ -107,18 +107,18 @@ module M_knapsack__knapsack01_dyn
   
   predicate invariant' (self: t_Item) = inv'0 self
   
-  predicate inv'1 (_1: t_Item)
+  predicate inv'1 [@inline:trivial] (_1: t_Item) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Item [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_Item) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: Seq.seq t_Item)
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_Item) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_Item [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   function view'0 (self: t_Vec'0) : Seq.seq t_Item
   
@@ -128,15 +128,15 @@ module M_knapsack__knapsack01_dyn
   
   predicate inv'3 (_1: t_Vec'0)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec'0 [inv'3 x]. inv'3 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec'0 [inv'3 x]. inv'3 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec'0) = inv'3 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_Vec'0)
+  predicate inv'4 [@inline:trivial] (_1: t_Vec'0) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec'0 [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   let rec len (self_: t_Vec'0) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
     any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return {result}) ]
@@ -183,9 +183,9 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_1: t_Item)
+  predicate inv'5 [@inline:trivial] (_1: t_Item) = invariant''3 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Item [inv'5 x]. inv'5 x = invariant''3 x
+  meta "rewrite_def" predicate inv'5
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item) (out: t_Item) =
     Seq.get seq (UInt64.t'int self) = out
@@ -256,38 +256,30 @@ module M_knapsack__knapsack01_dyn
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   type t_Vec'2
   
   predicate invariant''4 (self: t_Item) = inv'5 self
   
-  predicate inv'6 (_1: t_Item)
+  predicate inv'6 [@inline:trivial] (_1: t_Item) = invariant''4 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Item [inv'6 x]. inv'6 x = invariant''4 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''5 [@inline:trivial] (self: Seq.seq t_Item) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'6 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'7 (_1: Seq.seq t_Item)
+  predicate inv'7 [@inline:trivial] (_1: Seq.seq t_Item) = invariant''5 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: Seq.seq t_Item [inv'7 x]. inv'7 x = invariant''5 x
+  meta "rewrite_def" predicate inv'7
   
   function view'2 (self: t_Vec'2) : Seq.seq t_Item
   
@@ -297,7 +289,7 @@ module M_knapsack__knapsack01_dyn
   
   predicate inv'8 (_1: t_Vec'2)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Vec'2 [inv'8 x]. inv'8 x = invariant''6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec'2 [inv'8 x]. inv'8 x = invariant''6 x
   
   let rec with_capacity (capacity: UInt64.t) (return (x: t_Vec'2)) = any
     [ return (result: t_Vec'2) -> {inv'8 result} {Seq.length (view'2 result) = 0} (! return {result}) ]
@@ -306,9 +298,9 @@ module M_knapsack__knapsack01_dyn
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'9 (_1: MutBorrow.t t_Vec'2)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Vec'2) = invariant''7 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Vec'2 [inv'9 x]. inv'9 x = invariant''7 x
+  meta "rewrite_def" predicate inv'9
   
   let rec push (self_: MutBorrow.t t_Vec'2) (v: t_Item) (return (x: ())) =
     {[@expl:push 'self_' type invariant] inv'9 self_}
@@ -405,8 +397,8 @@ module M_knapsack__knapsack01_dyn
               | s2 = bb23 ]
             | bb23 = s0
               [ s0 = [ &_68 <- { _68 with current = _40 } ] s1
-              | s1 = -{resolve'0 _68}- s2
-              | s2 = -{resolve'2 _70}- s3
+              | s1 = -{resolve _68}- s2
+              | s2 = -{resolve'0 _70}- s3
               | s3 = UInt64.add {w} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &w <- _ret ] s4)
               | s4 = bb9 ] ] ]
         | bb24 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb4 ] ] ]

@@ -18,9 +18,9 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_I)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -31,7 +31,7 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   predicate inv'2 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'1 a_0
@@ -54,23 +54,19 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   predicate inv'4 (_1: t_Map)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Map [inv'4 x]. inv'4 x = (inv x.t_Map__iter /\ inv'3 x.t_Map__func)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Map [inv'4 x]. inv'4 x = (inv x.t_Map__iter /\ inv'3 x.t_Map__func)
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Map)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Map [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_B
   
@@ -78,13 +74,13 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: t_F)
+  predicate inv'6 [@inline:trivial] (_1: t_F) = invariant''1 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_F [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
-  predicate inv'7 (_1: t_A)
+  predicate inv'7 [@inline:trivial] (_1: t_A) = inv'1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_A [inv'7 x]. inv'7 x = (let x0 = x in inv'1 x0)
+  meta "rewrite_def" predicate inv'7
   
   predicate precondition'0 (self: t_F) (args: t_A)
   
@@ -92,14 +88,14 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   predicate postcondition_once'0 (self: t_F) (args: t_A) (result: t_B)
   
-  predicate resolve'1 (_1: t_F)
+  predicate resolve'0 (_1: t_F)
   
   predicate postcondition_mut (self: t_F) (args: t_A) (result_state: t_F) (result: t_B)
   
   function fn_mut_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_mut_once_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once'0 self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv (self: t_F) (result_state: t_F)
   
@@ -126,7 +122,7 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   function fn_once (self: t_F) (args: t_A) (res: t_B) : ()
   
   axiom fn_once_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once'0 self args res
-      = (postcondition self args res /\ resolve'1 self)
+      = (postcondition self args res /\ resolve'0 self)
   
   function fn_mut (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
@@ -142,7 +138,7 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
   
   predicate inv'9 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'8 a_0
@@ -166,12 +162,12 @@ module M_05_map__qyi10775967587165326061__next (* <Map<I, F> as FakeIterator> *)
     | bb4 = s0
       [ s0 = v_Some {_2} (fun (r0: t_A) -> [ &e <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'5 self} s2
-      | s2 = -{resolve'0 self}- s3
+      | s2 = -{resolve self}- s3
       | s3 = [ &_8 <- e ] s4
       | s4 = call {self.current.t_Map__func} {_8} (fun (_ret: t_B) -> [ &_6 <- _ret ] s5)
       | s5 = bb7 ]
     | bb7 = s0 [ s0 = [ &_0 <- C_Some'0 _6 ] s1 | s1 = bb11 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb5 ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve self}- s2 | s2 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = bb11 ]
     | bb11 = return {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
@@ -204,9 +200,9 @@ module M_05_map__qyi10775967587165326061__next__refines (* <Map<I, F> as FakeIte
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_1: MutBorrow.t t_Map)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Map [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   type t_B
   
@@ -216,7 +212,7 @@ module M_05_map__qyi10775967587165326061__next__refines (* <Map<I, F> as FakeIte
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0

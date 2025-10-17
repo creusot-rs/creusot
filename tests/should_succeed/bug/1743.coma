@@ -42,9 +42,9 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate inv (_1: Int32.t)
+  predicate inv [@inline:trivial] (_1: Int32.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Int32.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: t_PtrOwn) =
     not is_null_logic (ptr self)
@@ -56,51 +56,47 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
   
   predicate inv'0 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: t_PtrOwn)
+  predicate inv'1 [@inline:trivial] (_1: t_PtrOwn) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_S)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_S [inv'2 x]. inv'2 x = inv'1 x.t_S__perm
+  axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv'2 x]. inv'2 x = inv'1 x.t_S__perm
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_S) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'3 (_1: MutBorrow.t t_S)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_S) = invariant''1 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_S [inv'3 x]. inv'3 x = invariant''1 x
+  meta "rewrite_def" predicate inv'3
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_S) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_S) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_S) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_PtrOwn)
+  predicate inv'4 [@inline:trivial] (_1: t_PtrOwn) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'0 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_1: t_PtrOwn)
+  predicate inv'5 [@inline:trivial] (_1: t_PtrOwn) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+  meta "rewrite_def" predicate inv'5
   
   let rec deref (self: t_PtrOwn) (return (x: t_PtrOwn)) = {[@expl:deref 'self' type invariant] inv'4 self}
     any [ return (result: t_PtrOwn) -> {inv'5 result} {result = self} (! return {result}) ]
@@ -109,9 +105,9 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'6 (_1: t_PtrOwn)
+  predicate inv'6 [@inline:trivial] (_1: t_PtrOwn) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_PtrOwn [inv'6 x]. inv'6 x = invariant''4 x
+  meta "rewrite_def" predicate inv'6
   
   let rec new (x: t_PtrOwn) (return (x'0: t_PtrOwn)) = {[@expl:new 'x' type invariant] inv'5 x}
     any [ return (result: t_PtrOwn) -> {inv'6 result} {result = x} (! return {result}) ]
@@ -131,7 +127,7 @@ module M_1743__qyi7570507176118332595__minimize (* S *)
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv'3 self} s1
-      | s1 = -{resolve'0 self}- s2
+      | s1 = -{resolve self}- s2
       | s2 = deref {self.current.t_S__perm} (fun (_ret: t_PtrOwn) -> [ &_9 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = [ &_8 <- _9 ] s1 | s1 = new {_8} (fun (_ret: t_PtrOwn) -> [ &_6 <- _ret ] s2) | s2 = bb2 ]

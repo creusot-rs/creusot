@@ -18,7 +18,7 @@ mod m {
 }
 use m::*;
 
-#[ensures(resolve(x.a) ==> resolve::structural_resolve(x))]
+#[ensures(resolve(x.a) ==> resolve::resolve(x))]
 pub fn f<A, B>(x : S<A, B>) -> A {
     x.a
 }

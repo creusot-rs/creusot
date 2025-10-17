@@ -1,28 +1,3 @@
-module M_05_map__qyi11082488819865755034__resolve_coherence (* <Map<I, F> as creusot_contracts::Resolve> *)
-  type t_I
-  
-  type t_F
-  
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate resolve'0 (_1: t_F)
-  
-  predicate structural_resolve (_1: t_Map) = resolve _1.t_Map__iter /\ resolve'0 _1.t_Map__func
-  
-  predicate resolve'1 (self: t_Map) = resolve self.t_Map__iter /\ resolve'0 self.t_Map__func
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Map
-  
-  function resolve_coherence (self: t_Map) : ()
-  
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
-end
 module M_05_map__qyi14378821460689001001__produces_refl (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
@@ -231,9 +206,9 @@ module M_05_map__qyi14378821460689001001__next (* <Map<I, F> as common::Iterator
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_I)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -246,7 +221,7 @@ module M_05_map__qyi14378821460689001001__next (* <Map<I, F> as common::Iterator
   
   predicate inv'2 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'1 a_0
@@ -335,13 +310,13 @@ module M_05_map__qyi14378821460689001001__next (* <Map<I, F> as common::Iterator
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: MutBorrow.t t_F)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_F) = invariant''1 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_F [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
-  predicate inv'5 (_1: t_Item)
+  predicate inv'5 [@inline:trivial] (_1: t_Item) = inv'1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Item [inv'5 x]. inv'5 x = (let x0 = x in inv'1 x0)
+  meta "rewrite_def" predicate inv'5
   
   predicate inv'6 (_1: t_B)
   
@@ -356,30 +331,26 @@ module M_05_map__qyi14378821460689001001__next (* <Map<I, F> as common::Iterator
   
   predicate inv'7 (_1: t_Map)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
       = (invariant''0 x /\ inv x.t_Map__iter /\ inv'3 x.t_Map__func)
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'7 self.current /\ inv'7 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'8 (_1: MutBorrow.t t_Map)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Map [inv'8 x]. inv'8 x = invariant''2 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   type t_Option'0 = C_None'0 | C_Some'0 t_B
   
   predicate inv'9 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'6 a_0
@@ -445,11 +416,11 @@ module M_05_map__qyi14378821460689001001__next (* <Map<I, F> as common::Iterator
       | s1 = [ &_13 <- v ] s2
       | s2 = call_mut {_12} {_13} (fun (_ret: t_B) -> [ &_11 <- _ret ] s3)
       | s3 = bb7 ]
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 self} s1 | s1 = -{resolve'1 self}- s2 | s2 = bb8 ]
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'8 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb8 ]
     | bb8 = s0 [ s0 = [ &_0 <- C_Some'0 _11 ] s1 | s1 = bb12 ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'8 self} s1
-      | s1 = -{resolve'1 self}- s2
+      | s1 = -{resolve'0 self}- s2
       | s2 = [ &_0 <- C_None'0 ] s3
       | s3 = bb12 ]
     | bb12 = return {_0} ]
@@ -769,36 +740,6 @@ module M_05_map__map
       {[@expl:map ensures] result = { t_Map__iter = iter; t_Map__func = func }}
       (! return {result}) ]
 end
-module M_05_map__qyi11082488819865755034__resolve_coherence__refines (* <Map<I, F> as creusot_contracts::Resolve> *)
-  type t_I
-  
-  type t_F
-  
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate resolve'0 (_1: t_F)
-  
-  predicate structural_resolve (_1: t_Map) = resolve _1.t_Map__iter /\ resolve'0 _1.t_Map__func
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_F)
-  
-  predicate inv'1 (_1: t_Map)
-  
-  axiom inv_axiom: forall x: t_Map [inv'1 x]. inv'1 x -> inv x.t_Map__iter /\ inv'0 x.t_Map__func
-  
-  predicate resolve'1 (self: t_Map) = resolve self.t_Map__iter /\ resolve'0 self.t_Map__func
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Map. structural_resolve self /\ inv'1 self
-      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
-end
 module M_05_map__qyi14378821460689001001__next__refines (* <Map<I, F> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -886,9 +827,9 @@ module M_05_map__qyi14378821460689001001__next__refines (* <Map<I, F> as common:
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: MutBorrow.t t_Map)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Map [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   type t_Option = C_None | C_Some t_B
   
@@ -927,7 +868,7 @@ module M_05_map__qyi14378821460689001001__next__refines (* <Map<I, F> as common:
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0

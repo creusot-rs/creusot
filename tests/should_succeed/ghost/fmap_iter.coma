@@ -62,9 +62,9 @@ module M_fmap_iter__complicated_identity
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'2 [@inline:trivial] (_1: t_FMap) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate ext_eq (self: t_FMap) (other: t_FMap) = forall k: t_K. get self k = get other k
   
@@ -130,36 +130,36 @@ module M_fmap_iter__complicated_identity
   
   axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple) self
   
-  predicate inv'4 (_1: tuple)
+  predicate inv'4 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''1 (self: tuple) = inv'4 self
   
-  predicate inv'5 (_1: tuple)
+  predicate inv'5 [@inline:trivial] (_1: tuple) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: tuple [inv'5 x]. inv'5 x = invariant''1 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''2 [@inline:trivial] (self: Seq.seq tuple) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'6 (_1: Seq.seq tuple)
+  predicate inv'6 [@inline:trivial] (_1: Seq.seq tuple) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq tuple [inv'6 x]. inv'6 x = invariant''2 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_FMapIter) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_1: MutBorrow.t t_FMapIter)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = invariant''3 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_FMapIter [inv'7 x]. inv'7 x = invariant''3 x
+  meta "rewrite_def" predicate inv'7
   
   predicate inv'8 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'4 a_0
@@ -184,13 +184,9 @@ module M_fmap_iter__complicated_identity
         end}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_FMapIter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option'0) (ret (field_0: tuple)) = any
     [ good (field_0: tuple) -> {C_Some'0 field_0 = input} (! ret {field_0})
@@ -200,13 +196,13 @@ module M_fmap_iter__complicated_identity
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_FMap)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_FMap) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
   predicate inv'10 (_1: t_Option)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'0 a_0
@@ -222,33 +218,29 @@ module M_fmap_iter__complicated_identity
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve'1 (_1: t_V)
+  predicate resolve'0 (_1: t_V)
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'1 x
-      | C_None -> true
-      end
+  predicate resolve'1 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Option) = resolve'2 _1
+  predicate resolve'2 (_1: t_K)
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'3 (self: t_FMap) = forall k: t_K, v: t_V. get self k = C_Some v -> resolve'2 k /\ resolve'0 v
   
-  predicate resolve'4 (_1: t_K)
+  predicate resolve'4 (_1: t_FMap)
   
-  predicate resolve'5 (self: t_FMap) = forall k: t_K, v: t_V. get self k = C_Some v -> resolve'4 k /\ resolve'1 v
+  axiom resolve_axiom'0: forall x: t_FMap [resolve'4 x]. resolve'4 x -> resolve'3 x
   
-  predicate resolve'6 [@inline:trivial] (_1: t_FMap) = resolve'5 _1
+  predicate resolve'5 (self: t_FMapIter) = resolve'4 (view'0 self)
   
-  meta "rewrite_def" predicate resolve'6
+  predicate resolve'6 (_1: t_FMapIter)
   
-  predicate resolve'7 (self: t_FMapIter) = resolve'6 (view'0 self)
-  
-  predicate resolve'8 [@inline:trivial] (_1: t_FMapIter) = resolve'7 _1
-  
-  meta "rewrite_def" predicate resolve'8
+  axiom resolve_axiom'1: forall x: t_FMapIter [resolve'6 x]. resolve'6 x -> resolve'5 x
   
   let rec new'0 (x: t_FMap) (return (x'0: t_FMap)) = {[@expl:new 'x' type invariant] inv'1 x}
     any [ return (result: t_FMap) -> {inv'2 result} {result = x} (! return {result}) ]
@@ -290,7 +282,7 @@ module M_fmap_iter__complicated_identity
           | s3 = bb11 ]
         | bb11 = s0
           [ s0 = {[@expl:type invariant] inv'7 _27} s1
-          | s1 = -{resolve'0 _27}- s2
+          | s1 = -{resolve _27}- s2
           | s2 = any [ br0 -> {_25 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_25 = C_Some'0 x0} (! bb15) ] ]
         | bb15 = s0
           [ s0 = v_Some {_25} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -305,9 +297,9 @@ module M_fmap_iter__complicated_identity
               (fun (_ret: MutBorrow.t t_FMap) -> [ &_35 <- _ret ] -{inv'1 _ret.final}- [ &result <- _ret.final ] s4)
           | s4 = insert_ghost {_35} {k} {v} (fun (_ret: t_Option) -> [ &_34 <- _ret ] s5)
           | s5 = {[@expl:type invariant] inv'10 _34} s6
-          | s6 = -{resolve'3 _34}- s7
+          | s6 = -{resolve'1 _34}- s7
           | s7 = bb9 ] ] ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'3 iter} s1 | s1 = -{resolve'8 iter}- s2 | s2 = bb23 ]
+    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'3 iter} s1 | s1 = -{resolve'6 iter}- s2 | s2 = bb23 ]
     | bb23 = s0
       [ s0 = {[@expl:assertion] ext_eq result m_snap} s1
       | s1 = new'0 {result} (fun (_ret: t_FMap) -> [ &_0 <- _ret ] s2)
@@ -419,9 +411,9 @@ module M_fmap_iter__merge_fmaps
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_FMap)
+  predicate inv'2 [@inline:trivial] (_1: t_FMap) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_FMap [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   let rec into_inner (self: t_FMap) (return (x: t_FMap)) = {[@expl:into_inner 'self' type invariant] inv'2 self}
     any [ return (result: t_FMap) -> {inv'1 result} {result = self} (! return {result}) ]
@@ -476,37 +468,36 @@ module M_fmap_iter__merge_fmaps
   
   axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple'1) self
   
-  predicate inv'4 (_1: tuple'1)
+  predicate inv'4 [@inline:trivial] (_1: tuple'1) = inv _1.f0'1 /\ inv'0 _1.f1'1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: tuple'1 [inv'4 x]. inv'4 x
-      = (let {f0'1 = x0; f1'1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''1 (self: tuple'1) = inv'4 self
   
-  predicate inv'5 (_1: tuple'1)
+  predicate inv'5 [@inline:trivial] (_1: tuple'1) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: tuple'1 [inv'5 x]. inv'5 x = invariant''1 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''2 [@inline:trivial] (self: Seq.seq tuple'1) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'5 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'6 (_1: Seq.seq tuple'1)
+  predicate inv'6 [@inline:trivial] (_1: Seq.seq tuple'1) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq tuple'1 [inv'6 x]. inv'6 x = invariant''2 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_FMapIter) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_1: MutBorrow.t t_FMapIter)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = invariant''3 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_FMapIter [inv'7 x]. inv'7 x = invariant''3 x
+  meta "rewrite_def" predicate inv'7
   
   predicate inv'8 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'4 a_0
@@ -539,13 +530,9 @@ module M_fmap_iter__merge_fmaps
         end}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_FMapIter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option'0) (ret (field_0: tuple'1)) = any
     [ good (field_0: tuple'1) -> {C_Some'0 field_0 = input} (! ret {field_0})
@@ -555,13 +542,13 @@ module M_fmap_iter__merge_fmaps
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_FMap)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_FMap) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_FMap [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
   predicate inv'10 (_1: t_Option)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'0 a_0
@@ -577,33 +564,29 @@ module M_fmap_iter__merge_fmaps
       {result = get self.current key}
       (! return {result}) ]
   
-  predicate resolve'1 (_1: t_V)
+  predicate resolve'0 (_1: t_V)
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'1 x
-      | C_None -> true
-      end
+  predicate resolve'1 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Option) = resolve'2 _1
+  predicate resolve'2 (_1: t_K)
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'3 (self: t_FMap) = forall k: t_K, v: t_V. get self k = C_Some v -> resolve'2 k /\ resolve'0 v
   
-  predicate resolve'4 (_1: t_K)
+  predicate resolve'4 (_1: t_FMap)
   
-  predicate resolve'5 (self: t_FMap) = forall k: t_K, v: t_V. get self k = C_Some v -> resolve'4 k /\ resolve'1 v
+  axiom resolve_axiom'0: forall x: t_FMap [resolve'4 x]. resolve'4 x -> resolve'3 x
   
-  predicate resolve'6 [@inline:trivial] (_1: t_FMap) = resolve'5 _1
+  predicate resolve'5 (self: t_FMapIter) = resolve'4 (view'0 self)
   
-  meta "rewrite_def" predicate resolve'6
+  predicate resolve'6 (_1: t_FMapIter)
   
-  predicate resolve'7 (self: t_FMapIter) = resolve'6 (view'0 self)
-  
-  predicate resolve'8 [@inline:trivial] (_1: t_FMapIter) = resolve'7 _1
-  
-  meta "rewrite_def" predicate resolve'8
+  axiom resolve_axiom'1: forall x: t_FMapIter [resolve'6 x]. resolve'6 x -> resolve'5 x
   
   let rec new (x: t_FMap) (return (x'0: t_FMap)) = {[@expl:new 'x' type invariant] inv'1 x}
     any [ return (result: t_FMap) -> {inv'2 result} {result = x} (! return {result}) ]
@@ -645,7 +628,7 @@ module M_fmap_iter__merge_fmaps
           | s3 = bb10 ]
         | bb10 = s0
           [ s0 = {[@expl:type invariant] inv'7 _29} s1
-          | s1 = -{resolve'0 _29}- s2
+          | s1 = -{resolve _29}- s2
           | s2 = any [ br0 -> {_27 = C_None'0} (! bb13) | br1 (x0: tuple'1) -> {_27 = C_Some'0 x0} (! bb14) ] ]
         | bb14 = s0
           [ s0 = v_Some {_27} (fun (r0: tuple'1) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -660,9 +643,9 @@ module M_fmap_iter__merge_fmaps
               (fun (_ret: MutBorrow.t t_FMap) -> [ &_37 <- _ret ] -{inv'1 _ret.final}- [ &result <- _ret.final ] s4)
           | s4 = insert_ghost {_37} {k} {v} (fun (_ret: t_Option) -> [ &_36 <- _ret ] s5)
           | s5 = {[@expl:type invariant] inv'10 _36} s6
-          | s6 = -{resolve'3 _36}- s7
+          | s6 = -{resolve'1 _36}- s7
           | s7 = bb8 ] ] ]
-    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'3 iter} s1 | s1 = -{resolve'8 iter}- s2 | s2 = bb22 ]
+    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'3 iter} s1 | s1 = -{resolve'6 iter}- s2 | s2 = bb22 ]
     | bb22 = s0
       [ s0 = {[@expl:assertion] ext_eq result merge'0} s1
       | s1 = new {result} (fun (_ret: t_FMap) -> [ &_0 <- _ret ] s2)

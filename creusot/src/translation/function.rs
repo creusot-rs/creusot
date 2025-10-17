@@ -19,7 +19,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{self, BasicBlock, Body, Local, Location, Operand, Place, traversal::reverse_postorder},
-    ty::{Ty, TyCtxt, TyKind, TypeVisitableExt, TypingEnv},
+    ty::{Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
 use std::{assert_matches::assert_matches, collections::HashMap, ops::FnOnce};
@@ -261,7 +261,10 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.ctx.normalize_erasing_regions(self.typing_env(), ty);
         self.tcx().type_is_copy_modulo_regions(self.typing_env(), ty)
-            || !(ty.has_erased_regions() || ty.still_further_specializable())
+        // The following is unsound because it does not take into account aliases.
+        // It can be made technically sound, but anyway seems much less predictable than "we resolve
+        // everything which is not Copy".
+        // || !(ty.has_erased_regions() || ty.still_further_specializable())
     }
 
     fn emit_resolve_into(
@@ -332,7 +335,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             &pl.projections,
             |e| {
                 let r = match rpl {
-                    ResolvedPlace::All(_) => self.ctx.resolve(self.typing_env(), e),
+                    ResolvedPlace::All(_) => {
+                        self.ctx.resolve(self.body_id.def_id, self.typing_env(), e)
+                    }
                     ResolvedPlace::PrivateFields(_) => Term {
                         kind: TermKind::PrivateResolve { term: Box::new(e) },
                         ty: self.ctx.types.bool,

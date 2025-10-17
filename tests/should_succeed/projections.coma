@@ -21,13 +21,9 @@ module M_projections__copy_out_of_sum
     [ good (field_0: MutBorrow.t UInt32.t) -> {C_Err field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: MutBorrow.t UInt32.t [C_Err field_0: t_Result]. C_Err field_0 <> input} (! {false} any) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Ok (input: t_Result) (ret (field_0: MutBorrow.t UInt32.t)) = any
     [ good (field_0: MutBorrow.t UInt32.t) -> {C_Ok field_0 = input} (! ret {field_0})
@@ -43,12 +39,12 @@ module M_projections__copy_out_of_sum
       | br1 (x0: MutBorrow.t UInt32.t) -> {x = C_Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = v_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s1)
-      | s1 = -{resolve'0 y}- s2
+      | s1 = -{resolve y}- s2
       | s2 = [ &_0 <- y.current ] s3
       | s3 = bb5 ]
     | bb4 = s0
       [ s0 = v_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s1)
-      | s1 = -{resolve'0 x'0}- s2
+      | s1 = -{resolve x'0}- s2
       | s2 = [ &_0 <- x'0.current ] s3
       | s3 = bb5 ]
     | bb5 = return {_0} ]
@@ -68,21 +64,13 @@ module M_projections__write_into_sum
     [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -96,10 +84,10 @@ module M_projections__write_into_sum
             MutBorrow.borrow_final <UInt32.t> {r0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
               (fun (_ret: MutBorrow.t UInt32.t) -> [ &y <- _ret ] [ &x <- { x with current = C_Some _ret.final } ] s1))
       | s1 = [ &y <- { y with current = (10: UInt32.t) } ] s2
-      | s2 = -{resolve'0 y}- s3
-      | s3 = -{resolve'2 x}- s4
+      | s2 = -{resolve y}- s3
+      | s3 = -{resolve'0 x}- s4
       | s4 = bb5 ]
-    | bb3 = s0 [ s0 = -{resolve'2 x}- s1 | s1 = bb5 ]
+    | bb3 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb5 ]
     | bb5 = return {_0} ]
     [ & _0: () = Any.any_l () | & x: MutBorrow.t t_Option = x | & y: MutBorrow.t UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

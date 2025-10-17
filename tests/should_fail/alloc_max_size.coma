@@ -5,24 +5,24 @@ module M_alloc_max_size__main
   use mach.int.Int
   use creusot.prelude.Any
   
-  predicate inv (_1: Seq.seq UInt64.t)
+  predicate inv [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq UInt64.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: Slice64.array UInt64.t) =
     inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (18446744073709551615: UInt64.t)
   
-  predicate inv'0 (_1: Slice64.array UInt64.t)
+  predicate inv'0 [@inline:trivial] (_1: Slice64.array UInt64.t) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array UInt64.t [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Slice64.array UInt64.t) = inv'0 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Slice64.array UInt64.t)
+  predicate inv'1 [@inline:trivial] (_1: Slice64.array UInt64.t) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array UInt64.t [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant size_of_usize: int = 8
   
@@ -86,16 +86,16 @@ module M_alloc_max_size__g
   
   type tuple = { f0: Opaque.ptr; f1: t_PtrOwn }
   
-  predicate inv (_1: Seq.seq UInt64.t)
+  predicate inv [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq UInt64.t [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: Slice64.array UInt64.t) =
     inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (18446744073709551615: UInt64.t)
   
-  predicate inv'0 (_1: Slice64.array UInt64.t)
+  predicate inv'0 [@inline:trivial] (_1: Slice64.array UInt64.t) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array UInt64.t [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate is_null_logic (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -140,9 +140,9 @@ module M_alloc_max_size__g
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Slice64.array UInt64.t)
+  predicate inv'1 [@inline:trivial] (_1: Slice64.array UInt64.t) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array UInt64.t [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''1 (self: t_PtrOwn) =
     not is_null_logic (ptr self)
@@ -154,19 +154,19 @@ module M_alloc_max_size__g
   
   predicate inv'2 (_1: t_PtrOwn)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_PtrOwn) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: t_PtrOwn)
+  predicate inv'3 [@inline:trivial] (_1: t_PtrOwn) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PtrOwn [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
-  predicate inv'4 (_1: tuple)
+  predicate inv'4 [@inline:trivial] (_1: tuple) = inv'3 _1.f1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: tuple [inv'4 x]. inv'4 x = (let {f0 = x0; f1 = x1} = x in inv'3 x1)
+  meta "rewrite_def" predicate inv'4
   
   let rec new (v: Slice64.array UInt64.t) (return (x: tuple)) = {[@expl:new 'v' type invariant] inv'0 v}
     any
@@ -182,7 +182,7 @@ module M_alloc_max_size__g
           (fun (_res: Slice64.array UInt64.t) -> [ &x <- _res ] s1)
       | s1 = new {x} (fun (_ret: tuple) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = return {_0} ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'4 _3} s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: Slice64.array UInt64.t = Any.any_l () | & _3: tuple = Any.any_l () ])
     [ return (result: ()) -> {[@expl:g ensures] false} (! return {result}) ]
 end

@@ -5,7 +5,6 @@ use ::std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
     #[logic(open, prophetic)]
-    #[creusot::trusted_ignore_structural_inv]
     fn invariant(self) -> bool {
         pearlite! { inv(self@) && self@.len() == N@ }
     }
@@ -37,6 +36,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
 
 impl<T, const N: usize> Resolve for [T; N] {
     #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<i: Int> 0 <= i && i < N@ ==> resolve(self@[i]) }
     }
@@ -83,7 +83,7 @@ impl<T, const N: usize> Iterator for IntoIter<T, N> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && self@ == Seq::empty() }
+        pearlite! { resolve(self) && self@ == Seq::empty() }
     }
 
     #[logic(open, law)]

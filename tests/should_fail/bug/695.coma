@@ -11,9 +11,9 @@ module M_695__inversed_if
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_C)
+  predicate inv'0 [@inline:trivial] (_1: t_C) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_C [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: t_C) (args: ())
   
@@ -163,30 +163,22 @@ module M_695__valid
   
   type closure2 = { c0'0: MutBorrow.t UInt32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t closure2) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure2) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once [@inline:trivial] (self: closure2) (args: bool) (result: ()) =
     let b = args in b /\ self.c0'0.final = (2: UInt32.t) \/ not b /\ self.c0'0.final = (1: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_1: closure2) = resolve'0 _1.c0'0
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: closure2) = resolve'2 _1.c0'0
-  
-  meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure2) (result_state: closure2) =
     result_state.c0'0.final = self.c0'0.final
@@ -203,7 +195,7 @@ module M_695__valid
   function fn_mut_once (self: closure2) (args: bool) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure2, args: bool, res: (). postcondition_once self args res
-      = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: closure2. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure2) (b: closure2) (c: closure2) : ()
   
@@ -226,7 +218,7 @@ module M_695__valid
     | bb2 = s0 [ s0 = [ &_4 <- (1: UInt32.t) ] s1 | s1 = bb3 ]
     | bb3 = s0
       [ s0 = [ &self <- { self with current = { c0'0 = { self.current.c0'0 with current = _4 } } } ] s1
-      | s1 = -{resolve'0 self}- s2
+      | s1 = -{resolve self}- s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:closure ensures] b /\ self.final.c0'0.current = (2: UInt32.t)
@@ -247,9 +239,9 @@ module M_695__valid
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'4 [@inline:trivial] (_1: closure1) = true
+  predicate resolve'2 [@inline:trivial] (_1: closure1) = true
   
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'2
   
   predicate hist_inv'0 [@inline:trivial] (self: closure1) (result_state: closure1) = self = result_state
   
@@ -263,7 +255,7 @@ module M_695__valid
   function fn_mut_once'0 (self: closure1) (args: ()) (res: bool) : ()
   
   axiom fn_mut_once_spec'0: forall self: closure1, args: (), res: bool. postcondition_once'0 self args res
-      = (exists res_state: closure1. postcondition_mut'0 self args res_state res /\ resolve'4 res_state)
+      = (exists res_state: closure1. postcondition_mut'0 self args res_state res /\ resolve'2 res_state)
   
   function hist_inv_trans'0 (self: closure1) (b: closure1) (c: closure1) : ()
   
@@ -292,7 +284,7 @@ module M_695__valid
   function fn_once (self: closure1) (args: ()) (res: bool) : ()
   
   axiom fn_once_spec: forall self: closure1, args: (), res: bool. postcondition_once'0 self args res
-      = (postcondition self args res /\ resolve'4 self)
+      = (postcondition self args res /\ resolve'2 self)
   
   function fn_mut (self: closure1) (args: ()) (res_state: closure1) (res: bool) : ()
   

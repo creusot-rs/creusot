@@ -130,13 +130,9 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   type closure3 = { c0: UInt64.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t closure3) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t closure3) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure3) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Vec
   
@@ -162,9 +158,9 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'1 [@inline:trivial] (_1: closure3) = true
+  predicate resolve'0 [@inline:trivial] (_1: closure3) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate hist_inv [@inline:trivial] (self: closure3) (result_state: closure3) = result_state.c0 = self.c0
   
@@ -179,7 +175,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   function fn_mut_once (self: closure3) (args: tuple) (res: t_Vec) : ()
   
   axiom fn_mut_once_spec: forall self: closure3, args: tuple, res: t_Vec. postcondition_once self args res
-      = (exists res_state: closure3. postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: closure3. postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   function hist_inv_trans (self: closure3) (b: closure3) (c: closure3) : ()
   
@@ -198,7 +194,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   let rec closure3 (self: MutBorrow.t closure3) (_0: UInt64.t) (_1: Seq.seq UInt64.t) (return (x: t_Vec)) = (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve'0 self}- s1
+      [ s0 = -{resolve self}- s1
       | s1 = from_elem {(0: UInt64.t)} {self.current.c0} (fun (_ret: t_Vec) -> [ &res <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0 [ s0 = [ &_0'0 <- res ] s1 | s1 = bb3 ]
@@ -246,12 +242,12 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   meta "rewrite_def" predicate precondition
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'1
   
   predicate completed (self: MutBorrow.t t_Range) =
-    resolve'2 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
+    resolve'1 self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
   
   predicate next_precondition (iter: t_Range) (func: closure3) (produced: Seq.seq UInt64.t) =
     forall e: UInt64.t, i: t_Range. produces iter (Seq.singleton e) i -> precondition func { f0 = e; f1 = produced }
@@ -293,18 +289,9 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   type t_Vec'0
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Range) = true
+  predicate resolve'2 [@inline:trivial] (_1: t_MapInv) = true
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (self: t_MapInv) =
-    resolve'3 self.t_MapInv__iter /\ resolve'1 self.t_MapInv__func
-  
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: t_MapInv) = resolve'4 _1
-  
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   predicate produces'0 [@inline:trivial] (self: t_MapInv) (visited: Seq.seq t_Vec) (succ: t_MapInv) =
     hist_inv self.t_MapInv__func succ.t_MapInv__func
@@ -351,7 +338,7 @@ module M_06_knights_tour__qyi4580598960913230815__new (* Board *)
   
   let rec collect (self_: t_MapInv) (return (x: t_Vec'0)) = {[@expl:collect 'self_' type invariant] inv self_}
     any
-    [ return (result: t_Vec'0) -> {exists done': MutBorrow.t t_MapInv, prod: Seq.seq t_Vec. resolve'5 done'.final
+    [ return (result: t_Vec'0) -> {exists done': MutBorrow.t t_MapInv, prod: Seq.seq t_Vec. resolve'2 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
       (! return {result}) ]
   
@@ -534,12 +521,10 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   
   type t_IntoIter
   
-  predicate inv (_1: t_IntoIter)
-  
   function view'0 (self: t_IntoIter) : Seq.seq tuple
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
   
   predicate produces (self: t_IntoIter) (visited: Seq.seq tuple) (rhs: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 rhs)
@@ -555,38 +540,28 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   
   axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq tuple) self
   
-  predicate inv'0 (_1: Seq.seq tuple)
+  predicate inv [@inline:trivial] (_1: t_IntoIter) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq tuple [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv
+  
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq tuple) = true
+  
+  meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some tuple
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv self.current /\ inv self.final
-  
-  meta "rewrite_def" predicate invariant'
-  
-  predicate inv'1 (_1: MutBorrow.t t_IntoIter)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'1 x]. inv'1 x = invariant' x
-  
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_IntoIter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_IntoIter) = resolve self /\ view'0 self.current = (Seq.empty: Seq.seq tuple)
   
-  let rec next (self_: MutBorrow.t t_IntoIter) (return (x: t_Option)) =
-    {[@expl:next 'self_' type invariant] inv'1 self_}
-    any
+  let rec next (self_: MutBorrow.t t_IntoIter) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: tuple)) = any
     [ good (field_0: tuple) -> {C_Some field_0 = input} (! ret {field_0})
@@ -637,6 +612,19 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
   let rec available (self: t_Board) (p: t_Point) (return (x: bool)) = {[@expl:available requires] wf self}
     any [ return (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
   
+  predicate resolve'0 [@inline:trivial] (_1: tuple) = true
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (self: t_IntoIter) =
+    forall i: int. 0 <= i /\ i < Seq.length (view'0 self) -> resolve'0 (Seq.get (view'0 self) i)
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 (_1: t_IntoIter)
+  
+  axiom resolve_axiom: forall x: t_IntoIter [resolve'2 x]. resolve'2 x -> resolve'1 x
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -656,20 +644,15 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
         (! s0)
         [ s0 = bb6 ]
         [ bb6 = s0
-          [ s0 = {inv iter}
-            MutBorrow.borrow_mut <t_IntoIter> {iter}
-              (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_21 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
-          | s1 = {inv _21.current}
-            MutBorrow.borrow_final <t_IntoIter> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret: MutBorrow.t t_IntoIter) ->
-                [ &_20 <- _ret ] -{inv _ret.final}-
-                [ &_21 <- { _21 with current = _ret.final } ] s2)
+          [ s0 = MutBorrow.borrow_mut <t_IntoIter> {iter}
+              (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_21 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_IntoIter> {_21.current} {MutBorrow.get_id _21}
+              (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_20 <- _ret ] [ &_21 <- { _21 with current = _ret.final } ] s2)
           | s2 = next {_20} (fun (_ret: t_Option) -> [ &_19 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = {[@expl:type invariant] inv'1 _21} s1
-          | s1 = -{resolve'0 _21}- s2
-          | s2 = any [ br0 -> {_19 = C_None} (! bb18) | br1 (x0: tuple) -> {_19 = C_Some x0} (! bb11) ] ]
+          [ s0 = -{resolve _21}- s1
+          | s1 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: tuple) -> {_19 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_19} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_24 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -684,6 +667,7 @@ module M_06_knights_tour__qyi4580598960913230815__count_degree (* Board *)
         | bb14 = any [ br0 -> {_31 = false} (! bb5) | br1 -> {_31} (! bb15) ]
         | bb15 = s0
           [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s1) | s1 = bb5 ] ] ]
+    | bb10 = s0 [ s0 = -{resolve'2 iter}- s1 | s1 = bb18 ]
     | bb18 = s0 [ s0 = [ &_0 <- count ] s1 | s1 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
     | & self: t_Board = self
@@ -775,29 +759,17 @@ module M_06_knights_tour__qyi4580598960913230815__set (* Board *)
       {Seq.length (view'0 self_.final) = Seq.length (view'0 self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt64.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec'0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Vec'0) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Board) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Vec'0) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Board) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Board) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_Vec'0 = Seq.get (view self) ix
   
@@ -838,9 +810,9 @@ module M_06_knights_tour__qyi4580598960913230815__set (* Board *)
       | s3 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_9 <- { _9 with current = v } ] s1
-      | s1 = -{resolve'0 _9}- s2
-      | s2 = -{resolve'2 _11}- s3
-      | s3 = -{resolve'4 self}- s4
+      | s1 = -{resolve _9}- s2
+      | s2 = -{resolve'0 _11}- s3
+      | s3 = -{resolve'1 self}- s4
       | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Board = self
@@ -875,8 +847,6 @@ module M_06_knights_tour__min
   
   type t_Iter
   
-  predicate inv (_1: t_Iter)
-  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view (self: t_Vec) : Seq.seq tuple
@@ -886,7 +856,7 @@ module M_06_knights_tour__min
   function view'0 (self: t_Iter) : Slice64.slice tuple
   
   let rec into_iter (self_: t_Vec) (return (x: t_Iter)) = any
-    [ return (result: t_Iter) -> {inv result} {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
+    [ return (result: t_Iter) -> {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : tuple = Seq.get (view self) ix
   
@@ -917,36 +887,27 @@ module M_06_knights_tour__min
   
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq tuple) self
   
-  predicate inv'0 (_1: Seq.seq tuple)
+  predicate inv [@inline:trivial] (_1: t_Iter) = true
   
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq tuple [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Iter) = inv self.current /\ inv self.final
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq tuple) = true
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate inv'0
   
-  predicate inv'1 (_1: MutBorrow.t t_Iter)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Iter [inv'1 x]. inv'1 x = invariant' x
-  
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Iter) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
   predicate completed (self: MutBorrow.t t_Iter) =
     resolve self /\ Slice64.view (view'0 self.current) = (Seq.empty: Seq.seq tuple)
   
-  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = {[@expl:next 'self_' type invariant] inv'1 self_}
-    any
+  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
     [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Iter) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: tuple)) = any
     [ good (field_0: tuple) -> {C_Some field_0 = input} (! ret {field_0})
@@ -970,20 +931,15 @@ module M_06_knights_tour__min
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
-          [ s0 = {inv iter}
-            MutBorrow.borrow_mut <t_Iter> {iter}
-              (fun (_ret: MutBorrow.t t_Iter) -> [ &_19 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
-          | s1 = {inv _19.current}
-            MutBorrow.borrow_final <t_Iter> {_19.current} {MutBorrow.get_id _19}
-              (fun (_ret: MutBorrow.t t_Iter) ->
-                [ &_18 <- _ret ] -{inv _ret.final}-
-                [ &_19 <- { _19 with current = _ret.final } ] s2)
+          [ s0 = MutBorrow.borrow_mut <t_Iter> {iter}
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_19 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Iter> {_19.current} {MutBorrow.get_id _19}
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_18 <- _ret ] [ &_19 <- { _19 with current = _ret.final } ] s2)
           | s2 = next {_18} (fun (_ret: t_Option) -> [ &_17 <- _ret ] s3)
           | s3 = bb6 ]
         | bb6 = s0
-          [ s0 = {[@expl:type invariant] inv'1 _19} s1
-          | s1 = -{resolve'0 _19}- s2
-          | s2 = any [ br0 -> {_17 = C_None} (! bb9) | br1 (x0: tuple) -> {_17 = C_Some x0} (! bb10) ] ]
+          [ s0 = -{resolve _19}- s1
+          | s1 = any [ br0 -> {_17 = C_None} (! bb9) | br1 (x0: tuple) -> {_17 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
           [ s0 = v_Some {_17} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_22 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -998,7 +954,7 @@ module M_06_knights_tour__min
           | s2 = any [ br0 -> {_30 = false} (! bb4) | br1 -> {_30} (! bb16) ] ]
         | bb16 = s0 [ s0 = [ &_33 <- C_Some x ] s1 | s1 = [ &min'0 <- _33 ] s2 | s2 = bb4 ]
         | bb15 = s0 [ s0 = [ &_27 <- C_Some x ] s1 | s1 = [ &min'0 <- _27 ] s2 | s2 = bb4 ] ] ]
-    | bb9 = s0 [ s0 = {[@expl:type invariant] inv iter} s1 | s1 = [ &_0 <- min'0 ] s2 | s2 = return {_0} ] ]
+    | bb9 = s0 [ s0 = [ &_0 <- min'0 ] s1 | s1 = return {_0} ] ]
     [ & _0: t_Option = Any.any_l ()
     | & v: t_Vec = v
     | & min'0: t_Option = Any.any_l ()
@@ -1118,17 +1074,17 @@ module M_06_knights_tour__knights_tour
   
   axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv (_1: t_Range)
+  predicate inv [@inline:trivial] (_1: t_Range) = true
   
-  axiom inv_axiom [@rewrite]: forall x: t_Range [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
-  predicate inv'0 (_1: Seq.seq UInt64.t)
+  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq UInt64.t [inv'0 x]. inv'0 x = true
+  meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -1141,10 +1097,6 @@ module M_06_knights_tour__knights_tour
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Range) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
@@ -1183,12 +1135,10 @@ module M_06_knights_tour__knights_tour
   
   type t_IntoIter
   
-  predicate inv'1 (_1: t_IntoIter)
-  
   function view'3 (self: t_IntoIter) : Seq.seq tuple'0
   
   let rec into_iter'0 (self_: t_Vec'2) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {inv'1 result} {view'2 self_ = view'3 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view'2 self_ = view'3 result} (! return {result}) ]
   
   function index_logic'1 [@inline:trivial] (self: t_Vec'1) (ix: int) : tuple = Seq.get (view'1 self) ix
   
@@ -1208,39 +1158,29 @@ module M_06_knights_tour__knights_tour
   
   axiom produces_refl_spec'0: forall self: t_IntoIter. produces'0 self (Seq.empty: Seq.seq tuple'0) self
   
-  predicate inv'2 (_1: Seq.seq tuple'0)
+  predicate inv'1 [@inline:trivial] (_1: t_IntoIter) = true
   
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq tuple'0 [inv'2 x]. inv'2 x = true
+  meta "rewrite_def" predicate inv'1
+  
+  predicate inv'2 [@inline:trivial] (_1: Seq.seq tuple'0) = true
+  
+  meta "rewrite_def" predicate inv'2
   
   type t_Option'0 = C_None'0 | C_Some'0 tuple'0
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv'1 self.current /\ inv'1 self.final
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
-  meta "rewrite_def" predicate invariant'
-  
-  predicate inv'3 (_1: MutBorrow.t t_IntoIter)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'3 x]. inv'3 x = invariant' x
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate completed'0 (self: MutBorrow.t t_IntoIter) =
-    resolve'1 self /\ view'3 self.current = (Seq.empty: Seq.seq tuple'0)
+    resolve'0 self /\ view'3 self.current = (Seq.empty: Seq.seq tuple'0)
   
-  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'0)) =
-    {[@expl:next 'self_' type invariant] inv'3 self_}
-    any
+  let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'0)) = any
     [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed'0 self_
         | C_Some'0 v -> produces'0 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   let rec v_Some'0 (input: t_Option'0) (ret (field_0: tuple'0)) = any
     [ good (field_0: tuple'0) -> {C_Some'0 field_0 = input} (! ret {field_0})
@@ -1266,6 +1206,19 @@ module M_06_knights_tour__knights_tour
   
   let rec push (self_: MutBorrow.t t_Vec'1) (v: tuple) (return (x: ())) = any
     [ return (result: ()) -> {view'1 self_.final = Seq.snoc (view'1 self_.current) v} (! return {result}) ]
+  
+  predicate resolve'1 [@inline:trivial] (_1: tuple'0) = true
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate resolve'2 [@inline:trivial] (self: t_IntoIter) =
+    forall i: int. 0 <= i /\ i < Seq.length (view'3 self) -> resolve'1 (Seq.get (view'3 self) i)
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 (_1: t_IntoIter)
+  
+  axiom resolve_axiom: forall x: t_IntoIter [resolve'3 x]. resolve'3 x -> resolve'2 x
   
   type t_Option'1 = C_None'1 | C_Some'1 tuple
   
@@ -1368,7 +1321,7 @@ module M_06_knights_tour__knights_tour
           | s2 = next {_38} (fun (_ret: t_Option) -> [ &_37 <- _ret ] s3)
           | s3 = bb9 ]
         | bb9 = s0
-          [ s0 = -{resolve'0 _39}- s1
+          [ s0 = -{resolve _39}- s1
           | s1 = any [ br0 -> {_37 = C_None} (! bb12) | br1 (x0: UInt64.t) -> {_37 = C_Some x0} (! bb13) ] ]
         | bb13 = s0
           [ s0 = v_Some {_37} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -1392,22 +1345,16 @@ module M_06_knights_tour__knights_tour
             (! s0)
             [ s0 = bb21 ]
             [ bb21 = s0
-              [ s0 = {inv'1 iter'0}
-                MutBorrow.borrow_mut <t_IntoIter> {iter'0}
+              [ s0 = MutBorrow.borrow_mut <t_IntoIter> {iter'0}
+                  (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_60 <- _ret ] [ &iter'0 <- _ret.final ] s1)
+              | s1 = MutBorrow.borrow_final <t_IntoIter> {_60.current} {MutBorrow.get_id _60}
                   (fun (_ret: MutBorrow.t t_IntoIter) ->
-                    [ &_60 <- _ret ] -{inv'1 _ret.final}-
-                    [ &iter'0 <- _ret.final ] s1)
-              | s1 = {inv'1 _60.current}
-                MutBorrow.borrow_final <t_IntoIter> {_60.current} {MutBorrow.get_id _60}
-                  (fun (_ret: MutBorrow.t t_IntoIter) ->
-                    [ &_59 <- _ret ] -{inv'1 _ret.final}-
-                    [ &_60 <- { _60 with current = _ret.final } ] s2)
+                    [ &_59 <- _ret ] [ &_60 <- { _60 with current = _ret.final } ] s2)
               | s2 = next'0 {_59} (fun (_ret: t_Option'0) -> [ &_58 <- _ret ] s3)
               | s3 = bb22 ]
             | bb22 = s0
-              [ s0 = {[@expl:type invariant] inv'3 _60} s1
-              | s1 = -{resolve'2 _60}- s2
-              | s2 = any [ br0 -> {_58 = C_None'0} (! bb35) | br1 (x0: tuple'0) -> {_58 = C_Some'0 x0} (! bb26) ] ]
+              [ s0 = -{resolve'0 _60}- s1
+              | s1 = any [ br0 -> {_58 = C_None'0} (! bb25) | br1 (x0: tuple'0) -> {_58 = C_Some'0 x0} (! bb26) ] ]
             | bb26 = s0
               [ s0 = v_Some'0 {_58} (fun (r0: tuple'0) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
               | s1 = [ &_63 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
@@ -1430,6 +1377,7 @@ module M_06_knights_tour__knights_tour
                   (fun (_ret: MutBorrow.t t_Vec'1) -> [ &_79 <- _ret ] [ &candidates <- _ret.final ] s2)
               | s2 = push {_79} {_80} (fun (_ret: ()) -> [ &_78 <- _ret ] s3)
               | s3 = bb20 ] ] ]
+        | bb25 = s0 [ s0 = -{resolve'3 iter'0}- s1 | s1 = bb35 ]
         | bb35 = s0
           [ s0 = [ &_87 <- candidates ] s1
           | s1 = min {_87} (fun (_ret: t_Option'1) -> [ &_85 <- _ret ] s2)

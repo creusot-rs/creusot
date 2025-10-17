@@ -15,18 +15,18 @@ module M_16_impl_cloning__test
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -38,27 +38,23 @@ module M_16_impl_cloning__test
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate inv'3 (_1: t_Vec'0)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec'0 [inv'3 x]. inv'3 x = inv'2 x.t_Vec__0
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec'0 [inv'3 x]. inv'3 x = inv'2 x.t_Vec__0
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec'0) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: MutBorrow.t t_Vec'0)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Vec'0) = invariant''2 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Vec'0 [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec'0) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Vec'0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec'0) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   function view'0 (self: t_Vec'0) : Seq.seq t_T
   
@@ -68,7 +64,7 @@ module M_16_impl_cloning__test
   
   let rec test (x: MutBorrow.t t_Vec'0) (return (x'0: ())) = {[@expl:test 'x' type invariant] inv'4 x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'4 x} s1 | s1 = -{resolve'0 x}- s2 | s2 = return {_0} ] ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'4 x} s1 | s1 = -{resolve x}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: MutBorrow.t t_Vec'0 = x ])
     [ return (result: ()) -> {[@expl:test ensures] view'0 x.current = view'0 x.current} (! return {result}) ]
 end

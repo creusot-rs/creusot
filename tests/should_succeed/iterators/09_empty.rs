@@ -12,7 +12,7 @@ impl<T> Iterator for Empty<T> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() }
+        pearlite! { resolve(self) }
     }
 
     #[logic(open)]

@@ -3,21 +3,13 @@ module M_box_borrow_resolve__borrow_in_box
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
   predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = resolve'0 self
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -31,9 +23,9 @@ module M_box_borrow_resolve__borrow_in_box
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = -{resolve'0 _4}- s4
-      | s4 = -{resolve'0 _2}- s5
-      | s5 = -{resolve'2 x}- s6
+      | s3 = -{resolve _4}- s4
+      | s4 = -{resolve _2}- s5
+      | s5 = -{resolve'0 x}- s6
       | s6 = bb1 ]
     | bb1 = return {_0} ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()

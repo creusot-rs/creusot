@@ -28,27 +28,25 @@ module M_874__can_extend
   
   type t_IntoIter
   
-  predicate inv (_1: t_IntoIter)
-  
   function view'1 (self: t_IntoIter) : Seq.seq Int32.t
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'1 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {view self_ = view'1 result} (! return {result}) ]
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv self.current /\ inv self.final
+  predicate inv [@inline:trivial] (_1: t_IntoIter) = true
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate inv
   
-  predicate inv'0 (_1: MutBorrow.t t_IntoIter)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = true
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate inv'1 (_1: Seq.seq Int32.t)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq Int32.t [inv'1 x]. inv'1 x = true
+  meta "rewrite_def" predicate inv'1
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: t_Vec) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+    let self_ = args in view self_ = view'1 result
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -57,7 +55,7 @@ module M_874__can_extend
   meta "rewrite_def" predicate resolve
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: t_Vec) (result_state: ()) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+    let self_ = args in view self_ = view'1 result
   
   meta "rewrite_def" predicate postcondition_mut
   
@@ -89,7 +87,7 @@ module M_874__can_extend
   axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
   
   predicate postcondition [@inline:trivial] (self: ()) (args: t_Vec) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+    let self_ = args in view self_ = view'1 result
   
   meta "rewrite_def" predicate postcondition
   
@@ -118,7 +116,7 @@ module M_874__can_extend
   
   axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   

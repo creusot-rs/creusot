@@ -1,36 +1,3 @@
-module M_own__qyi1891129895124532698__resolve_coherence (* <OwnResult<T, E> as creusot_contracts::Resolve> *)
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult = C_Ok t_T | C_Err t_E
-  
-  predicate resolve (_1: t_T)
-  
-  predicate resolve'0 (_1: t_E)
-  
-  predicate structural_resolve (_1: t_OwnResult) =
-    match _1 with
-      | C_Ok x0 -> resolve x0
-      | C_Err x0 -> resolve'0 x0
-      end
-  
-  predicate resolve'1 (self: t_OwnResult) =
-    match self with
-      | C_Ok t -> resolve t
-      | C_Err e -> resolve'0 e
-      end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_OwnResult
-  
-  function resolve_coherence (self: t_OwnResult) : ()
-  
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
-end
 module M_own__qyi9370700355788413623__is_ok (* OwnResult<T, E> *)
   use creusot.prelude.Any
   
@@ -56,9 +23,9 @@ module M_own__qyi9370700355788413623__is_ok (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_1: t_OwnResult)
+  predicate inv'2 [@inline:trivial] (_1: t_OwnResult) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   meta "compute_max_steps" 1000000
   
@@ -97,9 +64,9 @@ module M_own__qyi9370700355788413623__is_err (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_1: t_OwnResult)
+  predicate inv'2 [@inline:trivial] (_1: t_OwnResult) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   let rec is_ok (self: t_OwnResult) (return (x: bool)) = {[@expl:is_ok 'self' type invariant] inv'2 self}
     any [ return (result: bool) -> {result = (exists t: t_T. self = C_Ok t)} (! return {result}) ]
@@ -280,29 +247,29 @@ module M_own__qyi9370700355788413623__as_ref (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'2 (_1: t_OwnResult)
+  predicate inv'2 [@inline:trivial] (_1: t_OwnResult) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   predicate invariant''0 [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'3 (_1: t_T)
+  predicate inv'3 [@inline:trivial] (_1: t_T) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_T [inv'3 x]. inv'3 x = invariant''0 x
+  meta "rewrite_def" predicate inv'3
   
   predicate invariant''1 [@inline:trivial] (self: t_E) = inv'0 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: t_E)
+  predicate inv'4 [@inline:trivial] (_1: t_E) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_E [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
   predicate inv'5 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_OwnResult'0 [inv'5 x]. inv'5 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'5 x]. inv'5 x
       = match x with
         | C_Ok'0 a_0 -> inv'3 a_0
         | C_Err'0 a_0 -> inv'4 a_0
@@ -349,17 +316,13 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_E)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_E) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_E [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_E) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_E) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_E) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Ok (input: t_OwnResult) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Ok field_0 = input} (! ret {field_0})
@@ -371,21 +334,17 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: MutBorrow.t t_T)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   predicate inv'3 (_1: t_OwnResult)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'3 x]. inv'3 x
       = match x with
         | C_Ok a_0 -> inv'1 a_0
         | C_Err a_0 -> inv a_0
@@ -395,21 +354,17 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: MutBorrow.t t_OwnResult)
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_OwnResult) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_OwnResult [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_OwnResult) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_OwnResult) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_OwnResult) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate inv'5 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_OwnResult'0 [inv'5 x]. inv'5 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'5 x]. inv'5 x
       = match x with
         | C_Ok'0 a_0 -> inv'2 a_0
         | C_Err'0 a_0 -> inv'0 a_0
@@ -439,7 +394,7 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
             [ &x'0 <- { x'0 with current = _ret.final } ] s2)
       | s2 = [ &_0 <- C_Err'0 _7 ] s3
       | s3 = {[@expl:type invariant] inv'0 x'0} s4
-      | s4 = -{resolve'0 x'0}- s5
+      | s4 = -{resolve x'0}- s5
       | s5 = bb5 ]
     | bb4 = s0
       [ s0 = v_Ok {self.current}
@@ -456,9 +411,9 @@ module M_own__qyi9370700355788413623__as_mut (* OwnResult<T, E> *)
             [ &x <- { x with current = _ret.final } ] s2)
       | s2 = [ &_0 <- C_Ok'0 _5 ] s3
       | s3 = {[@expl:type invariant] inv'2 x} s4
-      | s4 = -{resolve'2 x}- s5
+      | s4 = -{resolve'0 x}- s5
       | s5 = bb5 ]
-    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 self} s1 | s1 = -{resolve'4 self}- s2 | s2 = return {_0} ] ]
+    | bb5 = s0 [ s0 = {[@expl:type invariant] inv'4 self} s1 | s1 = -{resolve'1 self}- s2 | s2 = return {_0} ] ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
     | & self: MutBorrow.t t_OwnResult = self
     | & x: MutBorrow.t t_T = Any.any_l ()
@@ -711,15 +666,13 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   
   predicate resolve'0 (_1: t_E)
   
-  predicate resolve'1 (self: t_OwnResult) =
-    match self with
-      | C_Ok t -> resolve t
-      | C_Err e -> resolve'0 e
-      end
+  predicate resolve'1 (_1: t_OwnResult)
   
-  predicate resolve'2 [@inline:trivial] (_1: t_OwnResult) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_Ok x0 -> resolve x0
+        | C_Err x0 -> resolve'0 x0
+        end
   
   predicate precondition (self: ()) (args: ())
   
@@ -737,9 +690,9 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
     [ good (field_0: t_T) -> {C_Ok field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: t_T [C_Ok field_0: t_OwnResult]. C_Ok field_0 <> input} (! {false} any) ]
   
-  predicate resolve'3 [@inline:trivial] (_1: ()) = true
+  predicate resolve'2 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'2
   
   predicate postcondition_mut (self: ()) (args: ()) (result_state: ()) (result: t_T)
   
@@ -750,7 +703,7 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_T) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_T. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -782,7 +735,7 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
   function fn_once (self: ()) (args: ()) (res: t_T) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_T. postcondition_once self args res
-      = (postcondition self args res /\ resolve'3 self)
+      = (postcondition self args res /\ resolve'2 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
   
@@ -799,7 +752,7 @@ module M_own__qyi9370700355788413623__unwrap_or_default (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'1 self} s1
-      | s1 = -{resolve'2 self}- s2
+      | s1 = -{resolve'1 self}- s2
       | s2 = default (fun (_ret: t_T) -> [ &_0 <- _ret ] s3)
       | s3 = bb7 ]
     | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- x ] s2 | s2 = bb7 ]
@@ -838,15 +791,13 @@ module M_own__qyi9370700355788413623__and (* OwnResult<T, E> *)
   
   predicate resolve'0 (_1: t_E)
   
-  predicate resolve'1 (self: t_OwnResult'0) =
-    match self with
-      | C_Ok'0 t -> resolve t
-      | C_Err'0 e -> resolve'0 e
-      end
+  predicate resolve'1 (_1: t_OwnResult'0)
   
-  predicate resolve'2 [@inline:trivial] (_1: t_OwnResult'0) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult'0 [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_Ok'0 x0 -> resolve x0
+        | C_Err'0 x0 -> resolve'0 x0
+        end
   
   let rec v_Err (input: t_OwnResult) (ret (field_0: t_E)) = any
     [ good (field_0: t_E) -> {C_Err field_0 = input} (! ret {field_0})
@@ -858,7 +809,7 @@ module M_own__qyi9370700355788413623__and (* OwnResult<T, E> *)
   
   predicate inv'2 (_1: t_T)
   
-  predicate resolve'3 (_1: t_T)
+  predicate resolve'2 (_1: t_T)
   
   predicate inv'3 (_1: t_OwnResult)
   
@@ -879,14 +830,14 @@ module M_own__qyi9370700355788413623__and (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = C_Ok x0} (! bb4) | br1 (x0: t_E) -> {self = C_Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'1 res} s1
-      | s1 = -{resolve'2 res}- s2
+      | s1 = -{resolve'1 res}- s2
       | s2 = v_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s3)
       | s3 = [ &_0 <- C_Err'0 e ] s4
       | s4 = bb10 ]
     | bb4 = s0
       [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'2 x} s2
-      | s2 = -{resolve'3 x}- s3
+      | s2 = -{resolve'2 x}- s3
       | s3 = [ &_0 <- res ] s4
       | s4 = bb10 ]
     | bb10 = return {_0} ]
@@ -937,15 +888,13 @@ module M_own__qyi9370700355788413623__or (* OwnResult<T, E> *)
   
   predicate resolve'1 (_1: t_F)
   
-  predicate resolve'2 (self: t_OwnResult'0) =
-    match self with
-      | C_Ok'0 t -> resolve'0 t
-      | C_Err'0 e -> resolve'1 e
-      end
+  predicate resolve'2 (_1: t_OwnResult'0)
   
-  predicate resolve'3 [@inline:trivial] (_1: t_OwnResult'0) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult'0 [resolve'2 x]. resolve'2 x
+      = match x with
+        | C_Ok'0 x0 -> resolve'0 x0
+        | C_Err'0 x0 -> resolve'1 x0
+        end
   
   let rec v_Ok (input: t_OwnResult) (ret (field_0: t_T)) = any
     [ good (field_0: t_T) -> {C_Ok field_0 = input} (! ret {field_0})
@@ -974,7 +923,7 @@ module M_own__qyi9370700355788413623__or (* OwnResult<T, E> *)
       | s2 = -{resolve e}- s3
       | s3 = [ &_0 <- res ] s4
       | s4 = bb10 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'2 res} s1 | s1 = -{resolve'3 res}- s2 | s2 = bb4 ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'2 res} s1 | s1 = -{resolve'2 res}- s2 | s2 = bb4 ]
     | bb4 = s0 [ s0 = v_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- C_Ok'0 v ] s2 | s2 = bb10 ]
     | bb10 = return {_0} ]
     [ & _0: t_OwnResult'0 = Any.any_l ()
@@ -1012,15 +961,15 @@ module M_own__qyi1738359920797260731__copied (* OwnResult<&T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate inv'1 (_1: t_E)
   
   predicate inv'2 (_1: t_OwnResult)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
       = match x with
         | C_Ok a_0 -> inv'0 a_0
         | C_Err a_0 -> inv'1 a_0
@@ -1028,7 +977,7 @@ module M_own__qyi1738359920797260731__copied (* OwnResult<&T, E> *)
   
   predicate inv'3 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
       = match x with
         | C_Ok'0 a_0 -> inv a_0
         | C_Err'0 a_0 -> inv'1 a_0
@@ -1078,9 +1027,9 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: t_T)
   
@@ -1099,7 +1048,7 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   
   predicate inv'2 (_1: t_OwnResult)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
       = match x with
         | C_Ok a_0 -> inv'0 a_0
         | C_Err a_0 -> inv'1 a_0
@@ -1107,7 +1056,7 @@ module M_own__qyi1738359920797260731__cloned (* OwnResult<&T, E> *)
   
   predicate inv'3 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
       = match x with
         | C_Ok'0 a_0 -> inv a_0
         | C_Err'0 a_0 -> inv'1 a_0
@@ -1220,23 +1169,19 @@ module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_T)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate inv'1 (_1: t_E)
   
   predicate inv'2 (_1: t_OwnResult)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'2 x]. inv'2 x
       = match x with
         | C_Ok a_0 -> inv'0 a_0
         | C_Err a_0 -> inv'1 a_0
@@ -1244,7 +1189,7 @@ module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
   
   predicate inv'3 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'3 x]. inv'3 x
       = match x with
         | C_Ok'0 a_0 -> inv a_0
         | C_Err'0 a_0 -> inv'1 a_0
@@ -1261,7 +1206,7 @@ module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
     | bb4 = s0
       [ s0 = v_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'0 t} s2
-      | s2 = -{resolve'0 t}- s3
+      | s2 = -{resolve t}- s3
       | s3 = [ &_0 <- C_Ok'0 (t.current) ] s4
       | s4 = bb8 ]
     | bb8 = return {_0} ]
@@ -1270,7 +1215,7 @@ module M_own__qyi10690551671874530681__copied (* OwnResult<&mut T, E> *)
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
     [ return (result: t_OwnResult'0) -> {[@expl:copied result type invariant] inv'3 result}
-      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = C_Ok t -> result = C_Ok'0 (t.current) /\ resolve'0 t}
+      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = C_Ok t -> result = C_Ok'0 (t.current) /\ resolve t}
       {[@expl:copied ensures #1] forall e: t_E. self = C_Err e -> result = C_Err'0 e}
       (! return {result}) ]
 end
@@ -1300,25 +1245,21 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_T)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''0 [@inline:trivial] (self: t_T) = inv self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: t_T)
+  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate precondition (self: ()) (args: t_T)
   
@@ -1337,7 +1278,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   
   predicate inv'3 (_1: t_OwnResult)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_OwnResult [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'3 x]. inv'3 x
       = match x with
         | C_Ok a_0 -> inv'0 a_0
         | C_Err a_0 -> inv'2 a_0
@@ -1345,7 +1286,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   
   predicate inv'4 (_1: t_OwnResult'0)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_OwnResult'0 [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult'0 [inv'4 x]. inv'4 x
       = match x with
         | C_Ok'0 a_0 -> inv a_0
         | C_Err'0 a_0 -> inv'2 a_0
@@ -1353,9 +1294,9 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   
   type tuple = { f0: t_OwnResult; f1: t_OwnResult'0 }
   
-  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  predicate resolve'0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_mut (self: ()) (args: t_T) (result_state: ()) (result: t_T)
   
@@ -1366,7 +1307,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   function fn_mut_once (self: ()) (args: t_T) (res: t_T) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -1398,7 +1339,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
   function fn_once (self: ()) (args: t_T) (res: t_T) : ()
   
   axiom fn_once_spec: forall self: (), args: t_T, res: t_T. postcondition_once self args res
-      = (postcondition self args res /\ resolve'1 self)
+      = (postcondition self args res /\ resolve'0 self)
   
   function fn_mut (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
@@ -1416,7 +1357,7 @@ module M_own__qyi10690551671874530681__cloned (* OwnResult<&mut T, E> *)
     | bb4 = s0
       [ s0 = v_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
       | s1 = {[@expl:type invariant] inv'0 t} s2
-      | s2 = -{resolve'0 t}- s3
+      | s2 = -{resolve t}- s3
       | s3 = clone' {t.current} (fun (_ret: t_T) -> [ &_5 <- _ret ] s4)
       | s4 = bb5 ]
     | bb5 = s0 [ s0 = [ &_0 <- C_Ok'0 _5 ] s1 | s1 = bb10 ]
@@ -1526,46 +1467,4 @@ module M_own__qyi11106003418932042655__transpose (* OwnResult<std::option::Optio
       {[@expl:transpose ensures #1] forall t: t_T. self = C_Ok (C_Some t) -> result = C_Some'0 (C_Ok'0 t)}
       {[@expl:transpose ensures #2] forall e: t_E. self = C_Err e -> result = C_Some'0 (C_Err'0 e)}
       (! return {result}) ]
-end
-module M_own__qyi1891129895124532698__resolve_coherence__refines (* <OwnResult<T, E> as creusot_contracts::Resolve> *)
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult = C_Ok t_T | C_Err t_E
-  
-  predicate resolve (_1: t_T)
-  
-  predicate resolve'0 (_1: t_E)
-  
-  predicate structural_resolve (_1: t_OwnResult) =
-    match _1 with
-      | C_Ok x0 -> resolve x0
-      | C_Err x0 -> resolve'0 x0
-      end
-  
-  predicate inv (_1: t_T)
-  
-  predicate inv'0 (_1: t_E)
-  
-  predicate inv'1 (_1: t_OwnResult)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult [inv'1 x]. inv'1 x
-      = match x with
-        | C_Ok a_0 -> inv a_0
-        | C_Err a_0 -> inv'0 a_0
-        end
-  
-  predicate resolve'1 (self: t_OwnResult) =
-    match self with
-      | C_Ok t -> resolve t
-      | C_Err e -> resolve'0 e
-      end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_OwnResult. structural_resolve self /\ inv'1 self
-      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end

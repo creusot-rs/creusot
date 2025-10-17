@@ -14,6 +14,12 @@ module M_10_tyinv__f
   
   axiom inv_axiom [@rewrite]: forall x: t_Zero [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Zero__1)
   
+  predicate resolve (_1: t_T)
+  
+  predicate resolve'0 (_1: t_Zero)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Zero [resolve'0 x]. resolve'0 x = resolve x.t_Zero__1
+  
   type closure0 = { c0: t_Zero; c1: t_Zero }
   
   type closure1 = { c0'0: t_Zero }
@@ -22,21 +28,21 @@ module M_10_tyinv__f
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: t_Zero)
+  predicate inv'1 [@inline:trivial] (_1: t_Zero) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Zero [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
-  predicate inv'2 (_1: closure1)
+  predicate inv'2 [@inline:trivial] (_1: closure1) = let {c0'0 = x0} = _1 in inv'1 x0
   
-  axiom inv_axiom'1 [@rewrite]: forall x: closure1 [inv'2 x]. inv'2 x = (let {c0'0 = x0} = x in inv'1 x0)
+  meta "rewrite_def" predicate inv'2
   
   predicate invariant''1 [@inline:trivial] (self: closure1) = inv'2 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'3 (_1: closure1)
+  predicate inv'3 [@inline:trivial] (_1: closure1) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: closure1 [inv'3 x]. inv'3 x = invariant''1 x
+  meta "rewrite_def" predicate inv'3
   
   let rec closure1 (self: closure1) (return (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'3 self}
     (! bb0
@@ -52,18 +58,17 @@ module M_10_tyinv__f
     | & _5: t_Zero = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
-  predicate inv'4 (_1: closure0)
+  predicate inv'4 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1} = _1 in inv'1 x0 /\ inv'1 x1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: closure0 [inv'4 x]. inv'4 x
-      = (let {c0 = x0; c1 = x1} = x in inv'1 x0 /\ inv'1 x1)
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''2 [@inline:trivial] (self: closure0) = inv'4 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'5 (_1: closure0)
+  predicate inv'5 [@inline:trivial] (_1: closure0) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: closure0 [inv'5 x]. inv'5 x = invariant''2 x
+  meta "rewrite_def" predicate inv'5
   
   let rec closure0 (self: closure0) (return (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'5 self}
     (! bb0
@@ -92,10 +97,12 @@ module M_10_tyinv__f
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv'0 x} s1
-      | s1 = {[@expl:type invariant] inv'0 y} s2
-      | s2 = [ &clos <- { c0 = x; c1 = y } ] s3
-      | s3 = closure0 {clos} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s4)
-      | s4 = bb3 ]
+      | s1 = -{resolve'0 x}- s2
+      | s2 = {[@expl:type invariant] inv'0 y} s3
+      | s3 = -{resolve'0 y}- s4
+      | s4 = [ &clos <- { c0 = x; c1 = y } ] s5
+      | s5 = closure0 {clos} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s6)
+      | s6 = bb3 ]
     | bb3 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & x: t_Zero = x

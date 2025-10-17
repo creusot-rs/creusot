@@ -5,13 +5,9 @@ module M_one_side_update__f
   
   type t_MyInt = { t_MyInt__0: UInt64.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_MyInt) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_MyInt) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -23,11 +19,11 @@ module M_one_side_update__f
       | s1 = MutBorrow.borrow_mut <t_MyInt> {a}
           (fun (_ret: MutBorrow.t t_MyInt) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
       | s2 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ] ]
-    | bb1 = s0 [ s0 = -{resolve'0 b}- s1 | s1 = bb3 ]
+    | bb1 = s0 [ s0 = -{resolve b}- s1 | s1 = bb3 ]
     | bb2 = s0
       [ s0 = [ &_6 <- { t_MyInt__0 = (5: UInt64.t) } ] s1
       | s1 = [ &b <- { b with current = _6 } ] s2
-      | s2 = -{resolve'0 b}- s3
+      | s2 = -{resolve b}- s3
       | s3 = bb3 ]
     | bb3 = return {_0} ]
     [ & _0: () = Any.any_l ()

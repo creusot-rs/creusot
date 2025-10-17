@@ -9,16 +9,6 @@ module M_string__test_string_len
   
   type t_String
   
-  predicate inv (_1: t_String)
-  
-  predicate invariant' [@inline:trivial] (self: t_String) = inv self
-  
-  meta "rewrite_def" predicate invariant'
-  
-  predicate inv'0 (_1: t_String)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_String [inv'0 x]. inv'0 x = invariant' x
-  
   function tail (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
   function flat_map (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
@@ -38,15 +28,15 @@ module M_string__test_string_len
   
   function view (self: t_String) : Seq.seq Char.t
   
-  let rec len (self_: t_String) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'0 self_}
-    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view self_))} (! return {result}) ]
+  let rec len (self_: t_String) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view self_))} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_string_len (s: t_String) (return (x: UInt64.t)) = {[@expl:test_string_len 's' type invariant] inv s}
-    {[@expl:test_string_len requires #0] view s = Seq.create 1 [|Char.of_int 195|]}
+  let rec test_string_len (s: t_String) (return (x: UInt64.t)) = {[@expl:test_string_len requires #0] view s
+    = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_string_len requires #1] to_utf8 (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
     [ bb0 = s0 [ s0 = len {s} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]

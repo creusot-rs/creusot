@@ -2,26 +2,10 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
-use resolve::structural_resolve;
 
 pub enum OwnResult<T, E> {
     Ok(T),
     Err(E),
-}
-
-impl<T, E> Resolve for OwnResult<T, E> {
-    #[logic(open, prophetic)]
-    fn resolve(self) -> bool {
-        match self {
-            OwnResult::Ok(t) => resolve(t),
-            OwnResult::Err(e) => resolve(e),
-        }
-    }
-
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
 }
 
 impl<T, E> OwnResult<T, E> {

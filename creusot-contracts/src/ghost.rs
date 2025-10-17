@@ -17,8 +17,6 @@
 
 use ::std::marker::PhantomData;
 
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{
     logic::ops::Fin,
     std::ops::{Deref, DerefMut},
@@ -103,23 +101,10 @@ impl<T: ?Sized + Fin> Fin for Ghost<T> {
 
 impl<T: ?Sized> Invariant for Ghost<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_ignore_structural_inv]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         inv(*self)
     }
-}
-
-impl<T: ?Sized> Resolve for Ghost<T> {
-    #[logic(open, prophetic, inline)]
-    fn resolve(self) -> bool {
-        resolve(*self)
-    }
-
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
 }
 
 impl<T: ?Sized> Ghost<T> {

@@ -5,7 +5,6 @@ use creusot_contracts::*;
 mod common;
 pub use common::Iterator;
 
-#[derive(Resolve)]
 pub struct Once<T>(pub Option<T>);
 
 impl<T> Iterator for Once<T> {
@@ -13,7 +12,7 @@ impl<T> Iterator for Once<T> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { *self == Once(None) && self.resolve() }
+        pearlite! { *self == Once(None) && resolve(self) }
     }
 
     #[logic(open, prophetic)]

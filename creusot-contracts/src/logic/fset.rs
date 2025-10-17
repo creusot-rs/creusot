@@ -444,7 +444,7 @@ impl<T: Clone + Copy> Copy for FSet<T> {}
 
 impl<T> Invariant for FSet<T> {
     #[logic(open, prophetic, inline)]
-    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<x: T> self.contains(x) ==> inv(x) }
     }
@@ -526,6 +526,7 @@ pub fn concat_replicate_up_to<T>(n: Int, m: Int, s: FSet<T>) {
 
 impl<T: ?Sized> Resolve for FSet<T> {
     #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<x: T> self.contains(x) ==> resolve(x) }
     }

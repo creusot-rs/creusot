@@ -13,7 +13,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.resolve() && self.start.deep_model() >= self.end.deep_model()
+            resolve(self) && self.start.deep_model() >= self.end.deep_model()
         }
     }
 

@@ -5,18 +5,13 @@ module M_instant__test_instant
   
   type t_Instant
   
-  predicate inv (_1: t_Instant)
-  
   function view (self: t_Instant) : int
   
   axiom view_spec: forall self: t_Instant. view self >= 0
   
-  let rec now (return (x: t_Instant)) = any
-    [ return (result: t_Instant) -> {inv result} {view result >= 0} (! return {result}) ]
+  let rec now (return (x: t_Instant)) = any [ return (result: t_Instant) -> {view result >= 0} (! return {result}) ]
   
   type t_Duration
-  
-  predicate inv'0 (_1: t_Duration)
   
   function secs_to_nanos (secs: int) : int = secs * 1000000000
   
@@ -28,28 +23,10 @@ module M_instant__test_instant
       /\ view'0 self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
   let rec from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {inv'0 result}
-      {view'0 result = secs_to_nanos (UInt64.t'int secs)}
-      (! return {result}) ]
+    [ return (result: t_Duration) -> {view'0 result = secs_to_nanos (UInt64.t'int secs)} (! return {result}) ]
   
-  predicate invariant' [@inline:trivial] (self: t_Instant) = inv self
-  
-  meta "rewrite_def" predicate invariant'
-  
-  predicate inv'1 (_1: t_Instant)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Instant [inv'1 x]. inv'1 x = invariant' x
-  
-  let rec elapsed (self_: t_Instant) (return (x: t_Duration)) = {[@expl:elapsed 'self_' type invariant] inv'1 self_}
-    any [ return (result: t_Duration) -> {inv'0 result} {view'0 result >= 0} (! return {result}) ]
-  
-  predicate invariant''0 [@inline:trivial] (self: t_Duration) = inv'0 self
-  
-  meta "rewrite_def" predicate invariant''0
-  
-  predicate inv'2 (_1: t_Duration)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Duration [inv'2 x]. inv'2 x = invariant''0 x
+  let rec elapsed (self_: t_Instant) (return (x: t_Duration)) = any
+    [ return (result: t_Duration) -> {view'0 result >= 0} (! return {result}) ]
   
   function deep_model [@inline:trivial] (self: t_Duration) : int = view'0 self
   
@@ -59,20 +36,10 @@ module M_instant__test_instant
   
   meta "rewrite_def" function deep_model'0
   
-  let rec ge (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
-    {[@expl:ge 'self_' type invariant] inv'2 self_}
-    {[@expl:ge 'other' type invariant] inv'2 other}
-    any [ return (result: bool) -> {result = (deep_model'0 self_ >= deep_model'0 other)} (! return {result}) ]
+  let rec ge (self_: t_Duration) (other: t_Duration) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'0 self_ >= deep_model'0 other)} (! return {result}) ]
   
   type t_Option = C_None | C_Some t_Instant
-  
-  predicate inv'3 (_1: t_Option)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
-        end
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -185,121 +152,67 @@ module M_instant__test_instant
   
   axiom cmp_le_log_spec'0: forall x: t_Option'0, y: t_Option'0. le_log x y = (cmp_log'0 x y <> C_Greater)
   
-  let rec checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option)) =
-    {[@expl:checked_add 'self_' type invariant] inv'1 self_}
-    {[@expl:checked_add 'duration' type invariant] inv'0 duration}
-    any
-    [ return (result: t_Option) -> {inv'3 result}
-      {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
+  let rec checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
       {view'0 duration > 0 /\ result <> C_None -> lt_log (C_Some'0 (view self_)) (deep_model'2 result)}
       (! return {result}) ]
   
-  let rec unwrap (self_: t_Option) (return (x: t_Instant)) = {[@expl:unwrap 'self_' type invariant] inv'3 self_}
-    {[@expl:unwrap requires] self_ <> C_None}
-    any [ return (result: t_Instant) -> {inv result} {C_Some result = self_} (! return {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: t_Instant)) = {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: t_Instant) -> {C_Some result = self_} (! return {result}) ]
   
   function deep_model'3 [@inline:trivial] (self: t_Instant) : int = deep_model'1 self
   
   meta "rewrite_def" function deep_model'3
   
-  let rec eq (self_: t_Instant) (rhs: t_Instant) (return (x: bool)) = {[@expl:eq 'self_' type invariant] inv'1 self_}
-    {[@expl:eq 'rhs' type invariant] inv'1 rhs}
-    any [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
+  let rec eq (self_: t_Instant) (rhs: t_Instant) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'3 self_ = deep_model'3 rhs)} (! return {result}) ]
   
-  let rec add (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
-    {[@expl:add 'self_' type invariant] inv self_}
-    {[@expl:add 'rhs' type invariant] inv'0 rhs}
-    any
-    [ return (result: t_Instant) -> {inv result}
-      {view'0 rhs = 0 -> view self_ = view result}
+  let rec add (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) = any
+    [ return (result: t_Instant) -> {view'0 rhs = 0 -> view self_ = view result}
       {view'0 rhs > 0 -> view self_ < view result}
       (! return {result}) ]
   
-  let rec checked_sub (self_: t_Instant) (duration: t_Duration) (return (x: t_Option)) =
-    {[@expl:checked_sub 'self_' type invariant] inv'1 self_}
-    {[@expl:checked_sub 'duration' type invariant] inv'0 duration}
-    any
-    [ return (result: t_Option) -> {inv'3 result}
-      {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
+  let rec checked_sub (self_: t_Instant) (duration: t_Duration) (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {view'0 duration = 0 -> deep_model'2 result = C_Some'0 (view self_)}
       {view'0 duration > 0 /\ result <> C_None -> gt_log (C_Some'0 (view self_)) (deep_model'2 result)}
       (! return {result}) ]
   
-  let rec sub (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
-    {[@expl:sub 'self_' type invariant] inv self_}
-    {[@expl:sub 'rhs' type invariant] inv'0 rhs}
-    any
-    [ return (result: t_Instant) -> {inv result}
-      {view'0 rhs = 0 -> view self_ = view result}
+  let rec sub (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) = any
+    [ return (result: t_Instant) -> {view'0 rhs = 0 -> view self_ = view result}
       {view'0 rhs > 0 -> view self_ > view result}
       (! return {result}) ]
   
-  let rec sub'0 (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) =
-    {[@expl:sub 'self_' type invariant] inv self_}
-    {[@expl:sub 'other' type invariant] inv other}
-    any
-    [ return (result: t_Duration) -> {inv'0 result}
-      {view self_ > view other -> view'0 result > 0}
+  let rec sub'0 (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) = any
+    [ return (result: t_Duration) -> {view self_ > view other -> view'0 result > 0}
       {view self_ <= view other -> view'0 result = 0}
       (! return {result}) ]
   
-  let rec eq'0 (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) =
-    {[@expl:eq 'self_' type invariant] inv'2 self_}
-    {[@expl:eq 'rhs' type invariant] inv'2 rhs}
-    any [ return (result: bool) -> {result = (deep_model'0 self_ = deep_model'0 rhs)} (! return {result}) ]
+  let rec eq'0 (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'0 self_ = deep_model'0 rhs)} (! return {result}) ]
   
-  let rec gt (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
-    {[@expl:gt 'self_' type invariant] inv'2 self_}
-    {[@expl:gt 'other' type invariant] inv'2 other}
-    any [ return (result: bool) -> {result = (deep_model'0 self_ > deep_model'0 other)} (! return {result}) ]
+  let rec gt (self_: t_Duration) (other: t_Duration) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (deep_model'0 self_ > deep_model'0 other)} (! return {result}) ]
   
-  let rec duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
-    {[@expl:duration_since 'self_' type invariant] inv'1 self_}
-    {[@expl:duration_since 'earlier' type invariant] inv earlier}
-    any
-    [ return (result: t_Duration) -> {inv'0 result}
-      {view self_ > view earlier -> view'0 result > 0}
+  let rec duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) = any
+    [ return (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
       {view self_ <= view earlier -> view'0 result = 0}
       (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 t_Duration
   
-  predicate inv'4 (_1: t_Option'1)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'1 [inv'4 x]. inv'4 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'0 a_0
-        end
-  
-  let rec checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option'1)) =
-    {[@expl:checked_duration_since 'self_' type invariant] inv'1 self_}
-    {[@expl:checked_duration_since 'earlier' type invariant] inv earlier}
-    any
-    [ return (result: t_Option'1) -> {inv'4 result}
-      {view self_ >= view earlier -> result <> C_None'1}
+  let rec checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option'1)) = any
+    [ return (result: t_Option'1) -> {view self_ >= view earlier -> result <> C_None'1}
       {view self_ < view earlier -> result = C_None'1}
       (! return {result}) ]
   
-  predicate invariant''1 [@inline:trivial] (self: t_Option'1) = inv'4 self
+  let rec is_some (self_: t_Option'1) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ <> C_None'1)} (! return {result}) ]
   
-  meta "rewrite_def" predicate invariant''1
+  let rec is_none (self_: t_Option'1) (return (x: bool)) = any
+    [ return (result: bool) -> {result = (self_ = C_None'1)} (! return {result}) ]
   
-  predicate inv'5 (_1: t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'5 x]. inv'5 x = invariant''1 x
-  
-  let rec is_some (self_: t_Option'1) (return (x: bool)) = {[@expl:is_some 'self_' type invariant] inv'5 self_}
-    any [ return (result: bool) -> {result = (self_ <> C_None'1)} (! return {result}) ]
-  
-  let rec is_none (self_: t_Option'1) (return (x: bool)) = {[@expl:is_none 'self_' type invariant] inv'5 self_}
-    any [ return (result: bool) -> {result = (self_ = C_None'1)} (! return {result}) ]
-  
-  let rec saturating_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
-    {[@expl:saturating_duration_since 'self_' type invariant] inv'1 self_}
-    {[@expl:saturating_duration_since 'earlier' type invariant] inv earlier}
-    any
-    [ return (result: t_Duration) -> {inv'0 result}
-      {view self_ > view earlier -> view'0 result > 0}
+  let rec saturating_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) = any
+    [ return (result: t_Duration) -> {view self_ > view earlier -> view'0 result > 0}
       {view self_ <= view earlier -> view'0 result = 0}
       (! return {result}) ]
   

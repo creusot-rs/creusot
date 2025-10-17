@@ -63,25 +63,17 @@ module M_01_basic__move_closure
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: closure0) = resolve'0 _1.c0
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
-  
-  meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = true
   
@@ -92,7 +84,7 @@ module M_01_basic__move_closure
       [ s0 = Int32.add {self.current.c0.current} {(1: Int32.t)}
           (fun (_ret: Int32.t) ->
             [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 self}- s2
+      | s1 = -{resolve self}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
@@ -102,7 +94,7 @@ module M_01_basic__move_closure
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
     exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return bor_self result /\ hist_inv self e)
-      /\ resolve'3 e
+      /\ resolve'1 e
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -115,7 +107,7 @@ module M_01_basic__move_closure
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: (), res: (). postcondition_once self args res
-      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -151,7 +143,7 @@ module M_01_basic__move_closure
           (fun (_ret: MutBorrow.t closure0) -> [ &_8 <- _ret ] [ &x <- _ret.final ] s1)
       | s1 = closure0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve'3 x}- s1 | s1 = return {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve'1 x}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: MutBorrow.t Int32.t = Any.any_l ()
     | & _2: Int32.t = Any.any_l ()
@@ -173,25 +165,17 @@ module M_01_basic__move_mut
   
   type closure0 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: closure0) = resolve _1.c0
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'0 _1.c0
-  
-  meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = true
   
@@ -203,13 +187,13 @@ module M_01_basic__move_mut
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_2 <- _ret ] [ &_3 <- { _3 with current = _ret.final } ] s1)
       | s1 = -{match self with
-          | {current = {c0 = x}} -> resolve'0 x
+          | {current = {c0 = x}} -> resolve x
           | _ -> true
           end}-
         s2
       | s2 = [ &self <- { self with current = { c0 = _2 } } ] s3
-      | s3 = -{resolve'2 self}- s4
-      | s4 = -{resolve'0 _3}- s5
+      | s3 = -{resolve'0 self}- s4
+      | s4 = -{resolve _3}- s5
       | s5 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t closure0 = self
@@ -223,7 +207,7 @@ module M_01_basic__move_mut
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
     exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return bor_self result /\ hist_inv self e)
-      /\ resolve'3 e
+      /\ resolve'1 e
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -236,7 +220,7 @@ module M_01_basic__move_mut
   function fn_mut_once (self: closure0) (args: ()) (res: ()) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: (), res: (). postcondition_once self args res
-      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -272,7 +256,7 @@ module M_01_basic__move_mut
           (fun (_ret: MutBorrow.t closure0) -> [ &_8 <- _ret ] [ &a <- _ret.final ] s1)
       | s1 = closure0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve'3 a}- s1 | s1 = return {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve'1 a}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: MutBorrow.t UInt32.t = Any.any_l ()
     | & _2: UInt32.t = Any.any_l ()

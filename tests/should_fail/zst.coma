@@ -79,9 +79,9 @@ module M_zst__zst_pointers_may_be_equal
   
   constant const_MAX'0: Int64.t = (9223372036854775807: Int64.t)
   
-  predicate inv (_1: ())
+  predicate inv [@inline:trivial] (_1: ()) = true
   
-  axiom inv_axiom [@rewrite]: forall x: () [inv x]. inv x = true
+  meta "rewrite_def" predicate inv
   
   predicate invariant' (self: t_PtrOwn) =
     not is_null_logic (ptr self)
@@ -93,27 +93,27 @@ module M_zst__zst_pointers_may_be_equal
   
   predicate inv'0 (_1: t_PtrOwn)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn [inv'0 x]. inv'0 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = inv'1 self
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'2 (_1: MutBorrow.t t_PtrOwn)
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_PtrOwn [inv'2 x]. inv'2 x = invariant''1 x
+  meta "rewrite_def" predicate inv'2
   
-  predicate inv'3 (_1: tuple)
+  predicate inv'3 [@inline:trivial] (_1: tuple) = inv'2 _1.f1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: tuple [inv'3 x]. inv'3 x = (let {f0 = x0; f1 = x1} = x in inv'2 x1)
+  meta "rewrite_def" predicate inv'3
   
   let rec from_mut (r: MutBorrow.t ()) (return (x: tuple)) = any
     [ return (result: tuple) -> {inv'3 result}
@@ -122,13 +122,9 @@ module M_zst__zst_pointers_may_be_equal
       {val' result.f1.final = r.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: ())) = {[@expl:index requires] in_bounds ix (view self_)}
     any [ return (result: ()) -> {has_value ix (view self_) result} (! return {result}) ]
@@ -139,21 +135,21 @@ module M_zst__zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'4 (_1: t_PtrOwn)
+  predicate inv'4 [@inline:trivial] (_1: t_PtrOwn) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_PtrOwn [inv'4 x]. inv'4 x = invariant''2 x
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'4 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'5 (_1: t_PtrOwn)
+  predicate inv'5 [@inline:trivial] (_1: t_PtrOwn) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_PtrOwn [inv'5 x]. inv'5 x = invariant''3 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate inv'6 (_1: tuple'0)
+  predicate inv'6 [@inline:trivial] (_1: tuple'0) = inv'5 _1.f1'0
   
-  axiom inv_axiom'6 [@rewrite]: forall x: tuple'0 [inv'6 x]. inv'6 x = (let {f0'0 = x0; f1'0 = x1} = x in inv'5 x1)
+  meta "rewrite_def" predicate inv'6
   
   let rec from_ref (r: ()) (return (x: tuple'0)) = any
     [ return (result: tuple'0) -> {inv'6 result}
@@ -177,13 +173,9 @@ module M_zst__zst_pointers_may_be_equal
       {own1.current = own1.final}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_PtrOwn) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -221,8 +213,8 @@ module M_zst__zst_pointers_may_be_equal
     | bb8 = s0
       [ s0 = [ &p1 <- _13.f0 ] s1
       | s1 = [ &own1 <- _13.f1 ] s2
-      | s2 = -{resolve'0 _16}- s3
-      | s3 = -{resolve'0 _15}- s4
+      | s2 = -{resolve _16}- s3
+      | s3 = -{resolve _15}- s4
       | s4 = index {v1} {(0: UInt64.t)} (fun (_ret: ()) -> [ &_23 <- _ret ] s5)
       | s5 = bb9 ]
     | bb9 = s0
@@ -243,7 +235,7 @@ module M_zst__zst_pointers_may_be_equal
       | s2 = bb13 ]
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'1 _28} s1
-      | s1 = -{resolve'2 _28}- s2
+      | s1 = -{resolve'0 _28}- s2
       | s2 = new {_26} (fun (_ret: ()) -> [ &_25 <- _ret ] s3)
       | s3 = bb14 ]
     | bb14 = s0 [ s0 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s1 | s1 = bb16 ]

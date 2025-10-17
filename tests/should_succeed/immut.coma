@@ -3,13 +3,9 @@ module M_immut__f
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t UInt32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -20,7 +16,7 @@ module M_immut__f
       [ s0 = [ &a <- (10: UInt32.t) ] s1
       | s1 = MutBorrow.borrow_mut <UInt32.t> {a}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
-      | s2 = -{resolve'0 b}- s3
+      | s2 = -{resolve b}- s3
       | s3 = [ &_c <- b.current ] s4
       | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()

@@ -12,9 +12,9 @@ module M_inference__call_with_one
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_F)
+  predicate inv'0 [@inline:trivial] (_1: t_F) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: t_F) (args: Int32.t)
   
@@ -94,9 +94,9 @@ module M_inference__call_with_one_mut
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_F)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_F) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: t_F) (args: Int32.t)
   
@@ -132,13 +132,9 @@ module M_inference__call_with_one_mut
     {[@expl:call_mut requires] precondition self_.current arg}
     any [ return (result: Int32.t) -> {postcondition_mut self_.current arg self_.final result} (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_F) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_F) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   meta "compute_max_steps" 1000000
   
@@ -157,7 +153,7 @@ module M_inference__call_with_one_mut
       | s1 = [ &_5 <- (1: Int32.t) ] s2
       | s2 = call_mut {_4} {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 f} s1 | s1 = -{resolve'1 f}- s2 | s2 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'0 f} s1 | s1 = -{resolve'0 f}- s2 | s2 = return {_0} ] ]
     [ & _0: Int32.t = Any.any_l ()
     | & f: MutBorrow.t t_F = f
     | & _4: MutBorrow.t t_F = Any.any_l ()
@@ -215,14 +211,14 @@ module M_inference__closure_fn
   
   meta "rewrite_def" predicate precondition
   
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let x = args in closure0'post'return self x result
+  
+  meta "rewrite_def" predicate postcondition_once
+  
   predicate resolve [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve
-  
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure0'post'return self x result /\ resolve self
-  
-  meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     let x = args in closure0'post'return self x result /\ self = result_state
@@ -279,13 +275,9 @@ module M_inference__closure_fn
     {[@expl:call_with_one_mut requires] precondition f.current (1: Int32.t)}
     any [ return (result: Int32.t) -> {postcondition_mut f.current (1: Int32.t) f.final result} (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t ()) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t ()) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   let rec call_with_one_once (f: ()) (return (x: Int32.t)) =
     {[@expl:call_with_one_once requires] precondition f (1: Int32.t)}
@@ -305,7 +297,7 @@ module M_inference__closure_fn
       | s2 = call_with_one_mut {_10} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = s0
-      [ s0 = -{resolve'1 _11}- s1
+      [ s0 = -{resolve'0 _11}- s1
       | s1 = [ &_8 <- _9 = (2: Int32.t) ] s2
       | s2 = any [ br0 -> {_8 = false} (! bb6) | br1 -> {_8} (! bb5) ] ]
     | bb5 = s0 [ s0 = call_with_one_once {f} (fun (_ret: Int32.t) -> [ &_15 <- _ret ] s1) | s1 = bb7 ]
@@ -333,25 +325,17 @@ module M_inference__closure_fn_mut
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t closure0) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure0) = resolve _1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: closure0) = resolve'0 _1.c0
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: closure0) = resolve'2 _1.c0
-  
-  meta "rewrite_def" predicate resolve'3
   
   predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
@@ -362,7 +346,7 @@ module M_inference__closure_fn_mut
       [ s0 = Int32.add {self.current.c0.current} {x}
           (fun (_ret: Int32.t) ->
             [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve'0 self}- s2
+      | s1 = -{resolve self}- s2
       | s2 = [ &_0 <- self.current.c0.current ] s3
       | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self | & x: Int32.t = x ]
   
@@ -373,7 +357,7 @@ module M_inference__closure_fn_mut
   predicate postcondition_once [@inline:trivial] (self: closure0) (args: Int32.t) (result: Int32.t) =
     let x = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return bor_self x result /\ hist_inv self e)
-      /\ resolve'3 e
+      /\ resolve'1 e
   
   meta "rewrite_def" predicate postcondition_once
   
@@ -386,7 +370,7 @@ module M_inference__closure_fn_mut
   function fn_mut_once (self: closure0) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: closure0, args: Int32.t, res: Int32.t. postcondition_once self args res
-      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
   
@@ -433,7 +417,7 @@ module M_inference__closure_fn_mut
       | s5 = call_with_one_mut {_7} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s6)
       | s6 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve'0 _8}- s1
+      [ s0 = -{resolve _8}- s1
       | s1 = [ &_5 <- _6 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0 [ s0 = call_with_one_once {f} (fun (_ret: Int32.t) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
@@ -444,7 +428,7 @@ module M_inference__closure_fn_mut
     | bb7 = return {_0}
     | bb8 = {false} any
     | bb6 = {false} any
-    | bb3 = s0 [ s0 = -{resolve'3 f}- s1 | s1 = {false} any ] ]
+    | bb3 = s0 [ s0 = -{resolve'1 f}- s1 | s1 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & y: Int32.t = Any.any_l ()
     | & f: closure0 = Any.any_l ()

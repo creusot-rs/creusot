@@ -602,33 +602,34 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence (* <Tree<K, V
   
   predicate resolve'0 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Node) = resolve'0 _1
+  predicate resolve'1 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'2 (_1: t_K)
   
-  predicate resolve'2 [@inline:trivial] (self: t_Node) = resolve'1 self
+  predicate resolve'3 (_1: t_Tree)
   
-  meta "rewrite_def" predicate resolve'2
+  predicate resolve'4 (_1: t_Option)
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Node) = resolve'2 _1
+  axiom resolve_axiom [@rewrite]: forall x: t_Tree [resolve'3 x]. resolve'3 x
+      = (resolve'1 x /\ resolve'4 x.t_Tree__node)
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'5 (_1: t_Node)
   
-  predicate resolve'4 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'3 x
-      | C_None -> true
-      end
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node [resolve'5 x]. resolve'5 x
+      = (resolve'0 x
+      /\ resolve'3 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'3 x.t_Node__right)
   
-  meta "rewrite_def" predicate resolve'4
+  predicate resolve'6 [@inline:trivial] (_1: t_Node) = resolve'5 _1
   
-  predicate resolve'5 [@inline:trivial] (_1: t_Option) = resolve'4 _1
+  meta "rewrite_def" predicate resolve'6
   
-  meta "rewrite_def" predicate resolve'5
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Option [resolve'4 x]. resolve'4 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'6 x0
+        end
   
-  predicate structural_resolve (_1: t_Tree) = resolve'5 _1.t_Tree__node
-  
-  predicate resolve'6 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
+  predicate structural_resolve (_1: t_Tree) = resolve'4 _1.t_Tree__node
   
   meta "compute_max_steps" 1000000
   
@@ -638,7 +639,7 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence (* <Tree<K, V
   
   function resolve_coherence (self: t_Tree) : ()
   
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'6 self)
+  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
 end
 module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, V> as creusot_contracts::Resolve> *)
   type t_Color = C_Red | C_Black
@@ -671,15 +672,6 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, 
   
   predicate resolve'0 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Tree) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 (_1: t_K)
-  
-  predicate structural_resolve (_1: t_Node) =
-    resolve'1 _1.t_Node__left /\ resolve'2 _1.t_Node__key /\ resolve _1.t_Node__val /\ resolve'1 _1.t_Node__right
-  
   predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
     has_mapping self.t_Node__left k v
     \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
@@ -687,7 +679,35 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, 
   axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
         -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
   
-  predicate resolve'3 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
+  predicate resolve'1 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
+  
+  predicate resolve'2 (_1: t_K)
+  
+  predicate resolve'3 (_1: t_Node)
+  
+  predicate resolve'4 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'3 x]. resolve'3 x
+      = (resolve'1 x
+      /\ resolve'4 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'4 x.t_Node__right)
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_Node) = resolve'3 _1
+  
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'6 x]. resolve'6 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'5 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'4 x]. resolve'4 x
+      = (resolve'0 x /\ resolve'6 x.t_Tree__node)
+  
+  predicate structural_resolve (_1: t_Node) =
+    resolve'4 _1.t_Node__left /\ resolve'2 _1.t_Node__key /\ resolve _1.t_Node__val /\ resolve'4 _1.t_Node__right
   
   meta "compute_max_steps" 1000000
   
@@ -697,7 +717,7 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, 
   
   function resolve_coherence (self: t_Node) : ()
   
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'3 self)
+  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
 end
 module M_red_black_tree__qyi3529752165842986389__height (* Tree<K, V> *)
   use mach.int.Int
@@ -813,27 +833,27 @@ module M_red_black_tree__qyi3529752165842986389__is_red (* Tree<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate invariant''0 [@inline:trivial] (self: t_Tree) = inv'2 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: t_Tree)
+  predicate inv'5 [@inline:trivial] (_1: t_Tree) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Tree [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   function color (self: t_Tree) : t_Color = match self.t_Tree__node with
       | C_Some {t_Node__color = color'0} -> color'0
@@ -893,11 +913,11 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -907,9 +927,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -977,13 +997,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   let rec unwrap (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
@@ -993,30 +1009,26 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Tree)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   let rec swap (x: MutBorrow.t t_Tree) (y: MutBorrow.t t_Tree) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'6 x}
     {[@expl:swap 'y' type invariant] inv'6 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   let rec swap'0 (x: MutBorrow.t t_Node) (y: MutBorrow.t t_Node) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'7 x}
@@ -1027,28 +1039,20 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'4 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'4 _1
-  
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   let rec swap'1 (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
     [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_Color) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_Color) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
   type t_DeepModelTy
   
@@ -1061,19 +1065,45 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       \/ has_mapping right k v \/ k = deep_model key /\ v = val'
       end
   
-  predicate resolve'8 (_1: t_V)
+  predicate resolve'4 (_1: t_V)
   
-  predicate resolve'9 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'8 v
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
   
-  predicate resolve'10 [@inline:trivial] (_1: t_Tree) = resolve'9 _1
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
+  
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
+  
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'10
   
-  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'11 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'11
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
   
-  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'11 _1
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
+  
+  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'12
   
@@ -1169,13 +1199,6 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | _ -> C_Black
       end
   
-  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping self.t_Node__left k v
-    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
-  
-  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
-        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
-  
   predicate same_mappings (self: t_Node) (o: t_Node) =
     forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v = has_mapping'0 o k v
   
@@ -1214,7 +1237,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | s3 = bb2 ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv'5 _16} s1
-      | s1 = -{resolve'1 _16}- s2
+      | s1 = -{resolve'0 _16}- s2
       | s2 = unwrap {_14} (fun (_ret: t_Node) -> [ &x <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
@@ -1242,9 +1265,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | s5 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'6 _21} s1
-      | s1 = -{resolve'3 _21}- s2
+      | s1 = -{resolve'1 _21}- s2
       | s2 = {[@expl:type invariant] inv'6 _19} s3
-      | s3 = -{resolve'3 _19}- s4
+      | s3 = -{resolve'1 _19}- s4
       | s4 = {inv'4 x}
         MutBorrow.borrow_mut <t_Node> {x}
           (fun (_ret: MutBorrow.t t_Node) -> [ &_25 <- _ret ] -{inv'4 _ret.final}- [ &x <- _ret.final ] s5)
@@ -1262,7 +1285,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | s8 = bb5 ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
-      | s1 = -{resolve'5 _25}- s2
+      | s1 = -{resolve'2 _25}- s2
       | s2 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
@@ -1276,8 +1299,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
       | s6 = swap'1 {_27} {_29} (fun (_ret: ()) -> [ &_26 <- _ret ] s7)
       | s7 = bb6 ]
     | bb6 = s0
-      [ s0 = -{resolve'7 _30}- s1
-      | s1 = -{resolve'7 _28}- s2
+      [ s0 = -{resolve'3 _30}- s1
+      | s1 = -{resolve'3 _28}- s2
       | s2 =
         {[@expl:assertion] has_mapping old_self.current.t_Node__left (deep_model self.current.t_Node__key) self.current.t_Node__val}
         s3
@@ -1286,7 +1309,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
     | bb7 = s0 [ s0 = [ &_33 <- { t_Tree__node = _34 } ] s1 | s1 = bb9 ]
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'1 self.current.t_Node__right} s1
-      | s1 = -{resolve'10 self.current.t_Node__right}- s2
+      | s1 = -{resolve'9 self.current.t_Node__right}- s2
       | s2 = [ &self <- { self with current = { self.current with t_Node__right = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
       | s4 = -{resolve'12 self}- s5
@@ -1365,11 +1388,11 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -1379,9 +1402,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -1449,13 +1472,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
   
   let rec unwrap (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
@@ -1465,30 +1484,26 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Tree)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   let rec swap (x: MutBorrow.t t_Tree) (y: MutBorrow.t t_Tree) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'6 x}
     {[@expl:swap 'y' type invariant] inv'6 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'2 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   let rec swap'0 (x: MutBorrow.t t_Node) (y: MutBorrow.t t_Node) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'7 x}
@@ -1499,28 +1514,20 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'4 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'4 _1
-  
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   let rec swap'1 (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
     [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_Color) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_Color) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
   type t_DeepModelTy
   
@@ -1533,19 +1540,45 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       \/ has_mapping right k v \/ k = deep_model key /\ v = val'
       end
   
-  predicate resolve'8 (_1: t_V)
+  predicate resolve'4 (_1: t_V)
   
-  predicate resolve'9 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'8 v
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
   
-  predicate resolve'10 [@inline:trivial] (_1: t_Tree) = resolve'9 _1
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
+  
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
+  
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'10
   
-  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'11 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'11
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
   
-  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'11 _1
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
+  
+  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'12
   
@@ -1641,13 +1674,6 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | _ -> C_Black
       end
   
-  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping self.t_Node__left k v
-    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
-  
-  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
-        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
-  
   predicate same_mappings (self: t_Node) (o: t_Node) =
     forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v = has_mapping'0 o k v
   
@@ -1686,7 +1712,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | s3 = bb2 ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv'5 _16} s1
-      | s1 = -{resolve'1 _16}- s2
+      | s1 = -{resolve'0 _16}- s2
       | s2 = unwrap {_14} (fun (_ret: t_Node) -> [ &x <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
@@ -1714,9 +1740,9 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | s5 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'6 _21} s1
-      | s1 = -{resolve'3 _21}- s2
+      | s1 = -{resolve'1 _21}- s2
       | s2 = {[@expl:type invariant] inv'6 _19} s3
-      | s3 = -{resolve'3 _19}- s4
+      | s3 = -{resolve'1 _19}- s4
       | s4 = {inv'4 x}
         MutBorrow.borrow_mut <t_Node> {x}
           (fun (_ret: MutBorrow.t t_Node) -> [ &_25 <- _ret ] -{inv'4 _ret.final}- [ &x <- _ret.final ] s5)
@@ -1734,7 +1760,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | s8 = bb5 ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'8 _25} s1
-      | s1 = -{resolve'5 _25}- s2
+      | s1 = -{resolve'2 _25}- s2
       | s2 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
@@ -1748,8 +1774,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
       | s6 = swap'1 {_27} {_29} (fun (_ret: ()) -> [ &_26 <- _ret ] s7)
       | s7 = bb6 ]
     | bb6 = s0
-      [ s0 = -{resolve'7 _30}- s1
-      | s1 = -{resolve'7 _28}- s2
+      [ s0 = -{resolve'3 _30}- s1
+      | s1 = -{resolve'3 _28}- s2
       | s2 =
         {[@expl:assertion] has_mapping old_self.current.t_Node__right (deep_model self.current.t_Node__key) self.current.t_Node__val}
         s3
@@ -1758,7 +1784,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
     | bb7 = s0 [ s0 = [ &_33 <- { t_Tree__node = _34 } ] s1 | s1 = bb9 ]
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'1 self.current.t_Node__left} s1
-      | s1 = -{resolve'10 self.current.t_Node__left}- s2
+      | s1 = -{resolve'9 self.current.t_Node__left}- s2
       | s2 = [ &self <- { self with current = { self.current with t_Node__left = _33 } } ] s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
       | s4 = -{resolve'12 self}- s5
@@ -1837,11 +1863,11 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -1853,21 +1879,21 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Node)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Node [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate inv'7 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'6 a_0
@@ -1888,40 +1914,28 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
     {[@expl:unwrap requires] self_ <> C_None'0}
     any [ return (result: MutBorrow.t t_Node) -> {inv'6 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec swap (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
     [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Color) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Color) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''2 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   type t_DeepModelTy
   
@@ -2068,7 +2082,7 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
     | bb2 = s0
       [ s0 = [ &_13 <- { _13 with current = { _13.current with t_Node__color = self.current.t_Node__color } } ] s1
       | s1 = {[@expl:type invariant] inv'6 _13} s2
-      | s2 = -{resolve'0 _13}- s3
+      | s2 = -{resolve _13}- s3
       | s3 = MutBorrow.borrow_final <t_Color> {self.current.t_Node__color}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_Color) ->
@@ -2095,11 +2109,11 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
       | s4 = bb5 ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'6 _21} s1
-      | s1 = -{resolve'0 _21}- s2
-      | s2 = -{resolve'2 _20}- s3
-      | s3 = -{resolve'2 _18}- s4
+      | s1 = -{resolve _21}- s2
+      | s2 = -{resolve'0 _20}- s3
+      | s3 = -{resolve'0 _18}- s4
       | s4 = {[@expl:type invariant] inv'8 self} s5
-      | s5 = -{resolve'4 self}- s6
+      | s5 = -{resolve'1 self}- s6
       | s6 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Node = self
@@ -2166,27 +2180,27 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate invariant''0 [@inline:trivial] (self: t_Tree) = inv'2 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: t_Tree)
+  predicate inv'5 [@inline:trivial] (_1: t_Tree) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Tree [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   function color (self: t_Tree) : t_Color = match self.t_Tree__node with
       | C_Some {t_Node__color = color'0} -> color'0
@@ -2200,9 +2214,9 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Node)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Node [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   type t_DeepModelTy
   
@@ -2346,21 +2360,21 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: t_Option)
+  predicate inv'7 [@inline:trivial] (_1: t_Option) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   predicate invariant''3 [@inline:trivial] (self: t_Node) = inv'3 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: t_Node)
+  predicate inv'8 [@inline:trivial] (_1: t_Node) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Node [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
   predicate inv'9 (_1: t_Option'0)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'8 a_0
@@ -2421,13 +2435,9 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
         /\ self.final.t_Node__color = r1.t_Node__color /\ r1.t_Node__key = r2.t_Node__key}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate color_invariant_here (self: t_Node) =
     color self.t_Node__right = C_Black /\ (self.t_Node__color = C_Black \/ color self.t_Node__left = C_Black)
@@ -2512,9 +2522,9 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
             [ &self <- { self with current = _ret.final } ] s1)
       | s1 = flip_colors {_36} (fun (_ret: ()) -> [ &_35 <- _ret ] s2)
       | s2 = bb25 ]
-    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb29 ]
-    | bb26 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb29 ]
-    | bb27 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb29 ]
+    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve self}- s2 | s2 = bb29 ]
+    | bb26 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve self}- s2 | s2 = bb29 ]
+    | bb27 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve self}- s2 | s2 = bb29 ]
     | bb29 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Node = self
@@ -2575,13 +2585,13 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'2 (_1: t_Node)
+  predicate inv'2 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'2 a_0
@@ -2589,18 +2599,18 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   
   predicate inv'4 (_1: t_Tree)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = (inv'4 x.t_Node__left /\ inv x.t_Node__key /\ inv'0 x.t_Node__val /\ inv'4 x.t_Node__right)
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Node)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Node [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   type t_DeepModelTy
   
@@ -2755,21 +2765,21 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Option)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Option [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   predicate inv'8 (_1: t_Option'0)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'7 a_0
@@ -2790,21 +2800,17 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
     {[@expl:unwrap requires] self_ <> C_None'0}
     any [ return (result: MutBorrow.t t_Node) -> {inv'7 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'4 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'9 (_1: t_Tree)
+  predicate inv'9 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Tree [inv'9 x]. inv'9 x = invariant''3 x
+  meta "rewrite_def" predicate inv'9
   
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'9 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
@@ -2847,13 +2853,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
         /\ l.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -2914,7 +2916,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
     | bb2 = s0 [ s0 = unwrap {_21} (fun (_ret: MutBorrow.t t_Node) -> [ &_20 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'7 _20} s1
-      | s1 = -{resolve'0 _20}- s2
+      | s1 = -{resolve _20}- s2
       | s2 = is_red {_20.current.t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_18 = false} (! bb13) | br1 -> {_18} (! bb5) ]
@@ -2937,7 +2939,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
       | s2 = bb8 ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'7 _26} s1
-      | s1 = -{resolve'0 _26}- s2
+      | s1 = -{resolve _26}- s2
       | s2 = {inv'1 self.current}
         MutBorrow.borrow_mut <t_Node> {self.current}
           (fun (_ret: MutBorrow.t t_Node) ->
@@ -2970,9 +2972,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
             [ &_0 <- _ret ] -{inv'1 _ret.final}-
             [ &_33 <- { _33 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'7 _33} s2
-      | s2 = -{resolve'0 _33}- s3
+      | s2 = -{resolve _33}- s3
       | s3 = bb16 ]
-    | bb16 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb14 ]
+    | bb16 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb14 ]
     | bb13 = s0 [ s0 = [ &_0 <- self ] s1 | s1 = bb14 ]
     | bb14 = return {_0} ]
     [ & _0: MutBorrow.t t_Node = Any.any_l ()
@@ -3045,13 +3047,13 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'2 (_1: t_Node)
+  predicate inv'2 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'2 a_0
@@ -3059,18 +3061,18 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   
   predicate inv'4 (_1: t_Tree)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = (inv'4 x.t_Node__left /\ inv x.t_Node__key /\ inv'0 x.t_Node__val /\ inv'4 x.t_Node__right)
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Node)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Node [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   type t_DeepModelTy
   
@@ -3225,21 +3227,21 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Option)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Option [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   predicate inv'8 (_1: t_Option'0)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'7 a_0
@@ -3260,21 +3262,17 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
     {[@expl:unwrap requires] self_ <> C_None'0}
     any [ return (result: MutBorrow.t t_Node) -> {inv'7 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'4 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'9 (_1: t_Tree)
+  predicate inv'9 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Tree [inv'9 x]. inv'9 x = invariant''3 x
+  meta "rewrite_def" predicate inv'9
   
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'9 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
@@ -3299,13 +3297,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
         /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -3366,7 +3360,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
     | bb2 = s0 [ s0 = unwrap {_21} (fun (_ret: MutBorrow.t t_Node) -> [ &_20 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'7 _20} s1
-      | s1 = -{resolve'0 _20}- s2
+      | s1 = -{resolve _20}- s2
       | s2 = is_red {_20.current.t_Node__left} (fun (_ret: bool) -> [ &_18 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb5) ]
@@ -3403,9 +3397,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
             [ &_0 <- _ret ] -{inv'1 _ret.final}-
             [ &_28 <- { _28 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'7 _28} s2
-      | s2 = -{resolve'0 _28}- s3
+      | s2 = -{resolve _28}- s3
       | s3 = bb13 ]
-    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb11 ]
+    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'5 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb11 ]
     | bb10 = s0 [ s0 = [ &_0 <- self ] s1 | s1 = bb11 ]
     | bb11 = return {_0} ]
     [ & _0: MutBorrow.t t_Node = Any.any_l ()
@@ -3482,11 +3476,11 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -3496,17 +3490,13 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_DeepModelTy
   
@@ -3526,49 +3516,48 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
         -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
   
-  predicate resolve'1 (_1: t_V)
+  predicate resolve'0 (_1: t_V)
   
-  predicate resolve'2 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'1 v
+  predicate resolve'1 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'0 v
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Node) = resolve'2 _1
+  predicate resolve'2 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'0 v
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'3 (_1: t_K)
   
-  predicate resolve'4 [@inline:trivial] (self: t_Node) = resolve'3 self
+  predicate resolve'4 (_1: t_Tree)
   
-  meta "rewrite_def" predicate resolve'4
+  predicate resolve'5 (_1: t_Option)
   
-  predicate resolve'5 [@inline:trivial] (_1: t_Node) = resolve'4 _1
+  axiom resolve_axiom [@rewrite]: forall x: t_Tree [resolve'4 x]. resolve'4 x
+      = (resolve'2 x /\ resolve'5 x.t_Tree__node)
   
-  meta "rewrite_def" predicate resolve'5
+  predicate resolve'6 (_1: t_Node)
   
-  predicate resolve'6 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'5 x
-      | C_None -> true
-      end
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node [resolve'6 x]. resolve'6 x
+      = (resolve'1 x
+      /\ resolve'4 x.t_Node__left /\ resolve'3 x.t_Node__key /\ resolve'0 x.t_Node__val /\ resolve'4 x.t_Node__right)
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: t_Option) = resolve'6 _1
+  predicate resolve'7 [@inline:trivial] (_1: t_Node) = resolve'6 _1
   
   meta "rewrite_def" predicate resolve'7
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Option [resolve'5 x]. resolve'5 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'7 x0
+        end
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Tree)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
-  predicate resolve'8 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'8 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'8
-  
-  predicate resolve'9 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'8 _1
-  
-  meta "rewrite_def" predicate resolve'9
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
     [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
@@ -3582,9 +3571,9 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: t_K)
+  predicate inv'7 [@inline:trivial] (_1: t_K) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_K [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   predicate precondition (self: ()) (args: tuple)
   
@@ -3648,31 +3637,25 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
                                                                                                          f1 = rhs }}
     any [ return (result: t_Ordering) -> {postcondition_once () { f0 = self_; f1 = rhs } result} (! return {result}) ]
   
-  predicate resolve'10 (_1: t_K)
-  
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'11
-  
-  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'11 _1
-  
-  meta "rewrite_def" predicate resolve'12
+  meta "rewrite_def" predicate resolve'9
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_Node)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_Node [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
   predicate bst_invariant_here (self: t_Node) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping self.t_Node__left k v -> lt_log k (deep_model self.t_Node__key))
@@ -3803,7 +3786,7 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | s1 = any [ br0 -> {_11.current = C_None} (! bb17) | br1 (x0: t_Node) -> {_11.current = C_Some x0} (! bb2) ] ]
     | bb17 = s0
       [ s0 = {[@expl:type invariant] inv'5 _11} s1
-      | s1 = -{resolve'0 _11}- s2
+      | s1 = -{resolve _11}- s2
       | s2 = [ &_35 <- C_None ] s3
       | s3 = [ &_34 <- { t_Tree__node = _35 } ] s4
       | s4 = bb18 ]
@@ -3822,10 +3805,10 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
     | bb24 = s0 [ s0 = [ &_31 <- C_Some _33 ] s1 | s1 = bb26 ]
     | bb26 = s0
       [ s0 = {[@expl:type invariant] inv'2 self.current.t_Tree__node} s1
-      | s1 = -{resolve'7 self.current.t_Tree__node}- s2
+      | s1 = -{resolve'5 self.current.t_Tree__node}- s2
       | s2 = [ &self <- { self with current = { t_Tree__node = _31 } } ] s3
       | s3 = {[@expl:type invariant] inv'6 self} s4
-      | s4 = -{resolve'9 self}- s5
+      | s4 = -{resolve'8 self}- s5
       | s5 = bb32 ]
     | bb2 = s0
       [ s0 = v_Some {_11.current}
@@ -3847,17 +3830,17 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
       | s1 = insert_rec {_25} {key} {val'} (fun (_ret: ()) -> [ &_14 <- _ret ] s2)
       | s2 = bb15 ]
-    | bb6 = s0 [ s0 = {[@expl:type invariant] inv key} s1 | s1 = -{resolve'10 key}- s2 | s2 = bb11 ]
+    | bb6 = s0 [ s0 = {[@expl:type invariant] inv key} s1 | s1 = -{resolve'3 key}- s2 | s2 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'0 node.current.t_Node__val} s1
-      | s1 = -{resolve'1 node.current.t_Node__val}- s2
+      | s1 = -{resolve'0 node.current.t_Node__val}- s2
       | s2 = [ &node <- { node with current = { node.current with t_Node__val = val' } } ] s3
       | s3 = {[@expl:type invariant] inv'8 node} s4
-      | s4 = -{resolve'12 node}- s5
+      | s4 = -{resolve'9 node}- s5
       | s5 = {[@expl:type invariant] inv'5 _11} s6
-      | s6 = -{resolve'0 _11}- s7
+      | s6 = -{resolve _11}- s7
       | s7 = {[@expl:type invariant] inv'6 self} s8
-      | s8 = -{resolve'9 self}- s9
+      | s8 = -{resolve'8 self}- s9
       | s9 = bb32 ]
     | bb9 = s0
       [ s0 = {inv'1 node.current.t_Node__left}
@@ -3877,11 +3860,11 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | s2 = bb16 ]
     | bb16 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'12 node}- s2
+      | s1 = -{resolve'9 node}- s2
       | s2 = {[@expl:type invariant] inv'5 _11} s3
-      | s3 = -{resolve'0 _11}- s4
+      | s3 = -{resolve _11}- s4
       | s4 = {[@expl:type invariant] inv'6 self} s5
-      | s5 = -{resolve'9 self}- s6
+      | s5 = -{resolve'8 self}- s6
       | s6 = bb32 ]
     | bb32 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -3951,11 +3934,11 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -3967,21 +3950,21 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Node)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Node [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate inv'7 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'6 a_0
@@ -4006,9 +3989,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''2 x
+  meta "rewrite_def" predicate inv'8
   
   let rec as_mut'0 (self_: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:as_mut 'self_' type invariant] inv'6 self_}
@@ -4018,21 +4001,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       {self_.final = result.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'1 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'9 (_1: t_Tree)
+  predicate inv'9 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Tree [inv'9 x]. inv'9 x = invariant''3 x
+  meta "rewrite_def" predicate inv'9
   
   function color (self: t_Tree) : t_Color = match self.t_Tree__node with
       | C_Some {t_Node__color = color'0} -> color'0
@@ -4184,21 +4163,21 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'10 (_1: t_Option)
+  predicate inv'10 [@inline:trivial] (_1: t_Option) = invariant''4 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x = invariant''4 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''5 [@inline:trivial] (self: t_Node) = inv'4 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'11 (_1: t_Node)
+  predicate inv'11 [@inline:trivial] (_1: t_Node) = invariant''5 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_Node [inv'11 x]. inv'11 x = invariant''5 x
+  meta "rewrite_def" predicate inv'11
   
   predicate inv'12 (_1: t_Option'1)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'11 a_0
@@ -4271,13 +4250,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple'0 = { f0'0: t_K; f1'0: t_V }
   
@@ -4308,26 +4283,22 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'13 (_1: MutBorrow.t t_Tree)
+  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'13 x]. inv'13 x = invariant''6 x
+  meta "rewrite_def" predicate inv'13
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'5 [@inline:trivial] (_1: ()) = true
+  predicate resolve'2 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -4337,7 +4308,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'5 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -4369,7 +4340,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   function fn_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (postcondition self args res /\ resolve'5 self)
+      = (postcondition self args res /\ resolve'2 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
   
@@ -4386,32 +4357,50 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
   let rec unwrap'1 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
     any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
   
-  predicate resolve'8 (_1: t_V)
+  predicate resolve'4 (_1: t_V)
   
-  predicate resolve'9 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'8 v
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
   
-  predicate resolve'10 [@inline:trivial] (_1: t_Tree) = resolve'9 _1
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'10
   
+  predicate resolve'11 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
+  
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'14 (_1: tuple'0)
+  predicate inv'14 [@inline:trivial] (_1: tuple'0) = inv _1.f0'0 /\ inv'0 _1.f1'0
   
-  axiom inv_axiom'12 [@rewrite]: forall x: tuple'0 [inv'14 x]. inv'14 x
-      = (let {f0'0 = x0; f1'0 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'14
   
   meta "compute_max_steps" 1000000
   
@@ -4442,7 +4431,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s2 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _13} s1
-      | s1 = -{resolve'0 _13}- s2
+      | s1 = -{resolve _13}- s2
       | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = any [ br0 -> {_17 = false} (! bb8) | br1 -> {_17} (! bb5) ]
@@ -4480,10 +4469,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
             [ &_37 <- _ret ] -{inv'3 _ret.final}-
             [ &_38 <- { _38 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'2 node}- s3
+      | s2 = -{resolve'0 node}- s3
       | s3 = [ &node <- _37 ] s4
       | s4 = {[@expl:type invariant] inv'8 _38} s5
-      | s5 = -{resolve'2 _38}- s6
+      | s5 = -{resolve'0 _38}- s6
       | s6 = bb26 ]
     | bb26 = s0
       [ s0 = {inv'1 node.current.t_Node__right}
@@ -4503,12 +4492,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s2 = bb28 ]
     | bb28 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'2 node}- s2
+      | s1 = -{resolve'0 node}- s2
       | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'4 self}- s4
+      | s3 = -{resolve'1 self}- s4
       | s4 = [ &_0 <- r ] s5
       | s5 = bb31 ]
-    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'2 node}- s2 | s2 = bb10 ]
+    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb10 ]
     | bb10 = s0
       [ s0 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -4524,16 +4513,16 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       | s3 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:type invariant] inv'5 _26} s1
-      | s1 = -{resolve'7 _26}- s2
+      | s1 = -{resolve'3 _26}- s2
       | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'4 self}- s4
+      | s3 = -{resolve'1 self}- s4
       | s4 = unwrap'1 {_24} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
       | s5 = bb12 ]
     | bb12 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
-      | s1 = -{resolve'10 node'0.t_Node__right}- s2
+      | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
-      | s3 = -{resolve'10 node'0.t_Node__left}- s4
+      | s3 = -{resolve'9 node'0.t_Node__left}- s4
       | s4 = [ &_0 <- { f0'0 = node'0.t_Node__key; f1'0 = node'0.t_Node__val } ] s5
       | s5 = bb31 ]
     | bb31 = return {_0} ]
@@ -4611,11 +4600,11 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -4627,21 +4616,21 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Node)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Node [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate inv'7 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'6 a_0
@@ -4666,9 +4655,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''2 x
+  meta "rewrite_def" predicate inv'8
   
   let rec as_mut'0 (self_: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:as_mut 'self_' type invariant] inv'6 self_}
@@ -4678,21 +4667,17 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       {self_.final = result.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'1 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'9 (_1: t_Tree)
+  predicate inv'9 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Tree [inv'9 x]. inv'9 x = invariant''3 x
+  meta "rewrite_def" predicate inv'9
   
   function color (self: t_Tree) : t_Color = match self.t_Tree__node with
       | C_Some {t_Node__color = color'0} -> color'0
@@ -4708,21 +4693,21 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'10 (_1: t_Option)
+  predicate inv'10 [@inline:trivial] (_1: t_Option) = invariant''4 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Option [inv'10 x]. inv'10 x = invariant''4 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''5 [@inline:trivial] (self: t_Node) = inv'4 self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'11 (_1: t_Node)
+  predicate inv'11 [@inline:trivial] (_1: t_Node) = invariant''5 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_Node [inv'11 x]. inv'11 x = invariant''5 x
+  meta "rewrite_def" predicate inv'11
   
   predicate inv'12 (_1: t_Option'1)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'11 a_0
@@ -4908,13 +4893,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: t_K; f1: t_V }
   
@@ -4948,26 +4929,22 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'13 (_1: MutBorrow.t t_Tree)
+  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'13 x]. inv'13 x = invariant''6 x
+  meta "rewrite_def" predicate inv'13
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'5 [@inline:trivial] (_1: ()) = true
+  predicate resolve'2 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -4977,7 +4954,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'5 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -5009,7 +4986,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   function fn_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (postcondition self args res /\ resolve'5 self)
+      = (postcondition self args res /\ resolve'2 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
   
@@ -5026,32 +5003,50 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
   let rec unwrap'1 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
     any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
   
-  predicate resolve'8 (_1: t_V)
+  predicate resolve'4 (_1: t_V)
   
-  predicate resolve'9 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'8 v
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
   
-  predicate resolve'10 [@inline:trivial] (_1: t_Tree) = resolve'9 _1
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'10
   
+  predicate resolve'11 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
+  
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'14 (_1: tuple)
+  predicate inv'14 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: tuple [inv'14 x]. inv'14 x
-      = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'14
   
   meta "compute_max_steps" 1000000
   
@@ -5082,7 +5077,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | s2 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _13} s1
-      | s1 = -{resolve'0 _13}- s2
+      | s1 = -{resolve _13}- s2
       | s2 = any
         [ br0 -> {node.current.t_Node__left.t_Tree__node = C_None} (! bb4)
         | br1 (x0: t_Node) -> {node.current.t_Node__left.t_Tree__node = C_Some x0} (! bb10) ] ]
@@ -5109,10 +5104,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
             [ &_33 <- _ret ] -{inv'3 _ret.final}-
             [ &_34 <- { _34 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'2 node}- s3
+      | s2 = -{resolve'0 node}- s3
       | s3 = [ &node <- _33 ] s4
       | s4 = {[@expl:type invariant] inv'8 _34} s5
-      | s5 = -{resolve'2 _34}- s6
+      | s5 = -{resolve'0 _34}- s6
       | s6 = bb21 ]
     | bb21 = s0
       [ s0 = {inv'1 node.current.t_Node__left}
@@ -5132,12 +5127,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | s2 = bb23 ]
     | bb23 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'2 node}- s2
+      | s1 = -{resolve'0 node}- s2
       | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'4 self}- s4
+      | s3 = -{resolve'1 self}- s4
       | s4 = [ &_0 <- r ] s5
       | s5 = bb26 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'2 node}- s2 | s2 = bb5 ]
+    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb5 ]
     | bb5 = s0
       [ s0 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -5153,16 +5148,16 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | s3 = bb6 ]
     | bb6 = s0
       [ s0 = {[@expl:type invariant] inv'5 _22} s1
-      | s1 = -{resolve'7 _22}- s2
+      | s1 = -{resolve'3 _22}- s2
       | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'4 self}- s4
+      | s3 = -{resolve'1 self}- s4
       | s4 = unwrap'1 {_20} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
       | s5 = bb7 ]
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
-      | s1 = -{resolve'10 node'0.t_Node__right}- s2
+      | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
-      | s3 = -{resolve'10 node'0.t_Node__left}- s4
+      | s3 = -{resolve'9 node'0.t_Node__left}- s4
       | s4 = [ &_0 <- { f0 = node'0.t_Node__key; f1 = node'0.t_Node__val } ] s5
       | s5 = bb26 ]
     | bb26 = return {_0} ]
@@ -5239,11 +5234,11 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -5255,21 +5250,21 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Node)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Node [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate inv'7 (_1: t_Option'0)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'6 a_0
@@ -5294,9 +5289,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'8 (_1: MutBorrow.t t_Node)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Node [inv'8 x]. inv'8 x = invariant''2 x
+  meta "rewrite_def" predicate inv'8
   
   let rec as_mut'0 (self_: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:as_mut 'self_' type invariant] inv'6 self_}
@@ -5306,13 +5301,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {self_.final = result.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -5322,9 +5313,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'9 (_1: t_K)
+  predicate inv'9 [@inline:trivial] (_1: t_K) = invariant''3 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_K [inv'9 x]. inv'9 x = invariant''3 x
+  meta "rewrite_def" predicate inv'9
   
   predicate precondition (self: ()) (args: tuple)
   
@@ -5396,9 +5387,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'10 (_1: t_Tree)
+  predicate inv'10 [@inline:trivial] (_1: t_Tree) = invariant''4 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Tree [inv'10 x]. inv'10 x = invariant''4 x
+  meta "rewrite_def" predicate inv'10
   
   function color (self: t_Tree) : t_Color = match self.t_Tree__node with
       | C_Some {t_Node__color = color'0} -> color'0
@@ -5499,29 +5490,25 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'11 (_1: t_Option)
+  predicate inv'11 [@inline:trivial] (_1: t_Option) = invariant''5 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_Option [inv'11 x]. inv'11 x = invariant''5 x
+  meta "rewrite_def" predicate inv'11
   
   let rec is_none (self_: t_Option) (return (x: bool)) = {[@expl:is_none 'self_' type invariant] inv'11 self_}
     any [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'3 [@inline:trivial] (_1: ()) = true
+  predicate resolve'1 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'3
+  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -5531,7 +5518,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once'0 self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'3 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -5563,7 +5550,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   function fn_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once'0 self args res
-      = (postcondition self args res /\ resolve'3 self)
+      = (postcondition self args res /\ resolve'1 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
   
@@ -5580,41 +5567,56 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'4 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'4 _1
-  
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'12 (_1: MutBorrow.t t_Tree)
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'12 x]. inv'12 x = invariant''6 x
+  meta "rewrite_def" predicate inv'12
   
-  predicate resolve'6 [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'6
-  
-  predicate resolve'7 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve'6 _1
-  
-  meta "rewrite_def" predicate resolve'7
+  meta "rewrite_def" predicate resolve'3
   
   let rec unwrap'0 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
     any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
   
-  predicate resolve'8 (_1: t_V)
+  predicate resolve'4 (_1: t_V)
   
-  predicate resolve'9 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'8 v
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
   
-  predicate resolve'10 [@inline:trivial] (_1: t_Tree) = resolve'9 _1
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'10
+  
+  predicate resolve'11 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
   
   type t_Option'2 = C_None'2 | C_Some'2 t_Node
   
@@ -5622,13 +5624,13 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'13 (_1: t_Node)
+  predicate inv'13 [@inline:trivial] (_1: t_Node) = invariant''7 _1
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Node [inv'13 x]. inv'13 x = invariant''7 x
+  meta "rewrite_def" predicate inv'13
   
   predicate inv'14 (_1: t_Option'2)
   
-  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
       = match x with
         | C_None'2 -> true
         | C_Some'2 a_0 -> inv'13 a_0
@@ -5703,10 +5705,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'15 (_1: tuple'1)
+  predicate inv'15 [@inline:trivial] (_1: tuple'1) = inv _1.f0'1 /\ inv'0 _1.f1'1
   
-  axiom inv_axiom'13 [@rewrite]: forall x: tuple'1 [inv'15 x]. inv'15 x
-      = (let {f0'1 = x0; f1'1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'15
   
   let rec delete_min_rec (self: MutBorrow.t t_Tree) (return (x: tuple'1)) =
     {[@expl:delete_min_rec 'self' type invariant] inv'12 self}
@@ -5775,19 +5776,15 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'16 (_1: MutBorrow.t t_K)
+  predicate inv'16 [@inline:trivial] (_1: MutBorrow.t t_K) = invariant''8 _1
   
-  axiom inv_axiom'14 [@rewrite]: forall x: MutBorrow.t t_K [inv'16 x]. inv'16 x = invariant''8 x
+  meta "rewrite_def" predicate inv'16
   
   let rec swap (x: MutBorrow.t t_K) (y: MutBorrow.t t_K) (return (x'0: ())) = {[@expl:swap 'x' type invariant] inv'16 x}
     {[@expl:swap 'y' type invariant] inv'16 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'11 [@inline:trivial] (self: MutBorrow.t t_K) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'11
-  
-  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_K) = resolve'11 _1
+  predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_K) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'12
   
@@ -5795,22 +5792,18 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'17 (_1: MutBorrow.t t_V)
+  predicate inv'17 [@inline:trivial] (_1: MutBorrow.t t_V) = invariant''9 _1
   
-  axiom inv_axiom'15 [@rewrite]: forall x: MutBorrow.t t_V [inv'17 x]. inv'17 x = invariant''9 x
+  meta "rewrite_def" predicate inv'17
   
   let rec swap'0 (x: MutBorrow.t t_V) (y: MutBorrow.t t_V) (return (x'0: ())) =
     {[@expl:swap 'x' type invariant] inv'17 x}
     {[@expl:swap 'y' type invariant] inv'17 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve'13 [@inline:trivial] (self: MutBorrow.t t_V) = self.final = self.current
+  predicate resolve'13 [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'13
-  
-  predicate resolve'14 [@inline:trivial] (_1: MutBorrow.t t_V) = resolve'13 _1
-  
-  meta "rewrite_def" predicate resolve'14
   
   let rec move_red_left (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_left 'self' type invariant] inv'8 self}
@@ -5863,7 +5856,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   predicate inv'18 (_1: t_Option'1)
   
-  axiom inv_axiom'16 [@rewrite]: forall x: t_Option'1 [inv'18 x]. inv'18 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'1 [inv'18 x]. inv'18 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'15 a_0
@@ -5903,7 +5896,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _14} s1
-      | s1 = -{resolve'0 _14}- s2
+      | s1 = -{resolve _14}- s2
       | s2 = [ &_21 <- node.current.t_Node__key ] s3
       | s3 = cmp {key} {_21} (fun (_ret: t_Ordering) -> [ &_18 <- _ret ] s4)
       | s4 = bb4 ]
@@ -5935,7 +5928,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     | bb34 = any [ br0 -> {_50 = false} (! bb44) | br1 -> {_50} (! bb35) ]
     | bb35 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'2 node}- s2
+      | s1 = -{resolve'0 node}- s2
       | s2 = any
         [ br0 -> {ord = C_Less} (! bb38) | br1 -> {ord = C_Equal} (! bb38) | br2 -> {ord = C_Greater} (! bb36) ] ]
     | bb38 = s0
@@ -5953,20 +5946,20 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s3 = bb39 ]
     | bb39 = s0
       [ s0 = {[@expl:type invariant] inv'5 _59} s1
-      | s1 = -{resolve'5 _59}- s2
+      | s1 = -{resolve'2 _59}- s2
       | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'7 self}- s4
+      | s3 = -{resolve'3 self}- s4
       | s4 = unwrap'0 {_57} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
       | s5 = bb40 ]
     | bb40 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
-      | s1 = -{resolve'10 node'0.t_Node__right}- s2
+      | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
-      | s3 = -{resolve'10 node'0.t_Node__left}- s4
+      | s3 = -{resolve'9 node'0.t_Node__left}- s4
       | s4 = [ &_60 <- { f0'1 = node'0.t_Node__key; f1'1 = node'0.t_Node__val } ] s5
       | s5 = bb42 ]
     | bb42 = s0 [ s0 = [ &_0 <- C_Some'1 _60 ] s1 | s1 = bb76 ]
-    | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve'7 self}- s2 | s2 = bb37 ]
+    | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve'3 self}- s2 | s2 = bb37 ]
     | bb37 = s0 [ s0 = [ &_0 <- C_None'1 ] s1 | s1 = bb76 ]
     | bb44 = s0
       [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_67 <- _ret ] s1)
@@ -5989,10 +5982,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
             [ &_69 <- _ret ] -{inv'3 _ret.final}-
             [ &_70 <- { _70 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'2 node}- s3
+      | s2 = -{resolve'0 node}- s3
       | s3 = [ &node <- _69 ] s4
       | s4 = {[@expl:type invariant] inv'8 _70} s5
-      | s5 = -{resolve'2 _70}- s6
+      | s5 = -{resolve'0 _70}- s6
       | s6 = bb51 ]
     | bb51 = any
       [ br0 -> {ord = C_Less} (! bb63) | br1 -> {ord = C_Equal} (! bb53) | br2 -> {ord = C_Greater} (! bb63) ]
@@ -6066,9 +6059,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s9 = bb57 ]
     | bb57 = s0
       [ s0 = {[@expl:type invariant] inv'17 _86} s1
-      | s1 = -{resolve'14 _86}- s2
+      | s1 = -{resolve'13 _86}- s2
       | s2 = {[@expl:type invariant] inv'17 _84} s3
-      | s3 = -{resolve'14 _84}- s4
+      | s3 = -{resolve'13 _84}- s4
       | s4 = [ &_87 <- C_Some'1 kv ] s5
       | s5 = bb59 ]
     | bb59 = s0 [ s0 = [ &r <- _87 ] s1 | s1 = bb69 ]
@@ -6077,9 +6070,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
     | bb8 = any [ br0 -> {_24 = false} (! bb10) | br1 -> {_24} (! bb9) ]
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'2 node}- s2
+      | s1 = -{resolve'0 node}- s2
       | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'7 self}- s4
+      | s3 = -{resolve'3 self}- s4
       | s4 = [ &_0 <- C_None'1 ] s5
       | s5 = bb76 ]
     | bb10 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
@@ -6105,10 +6098,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
             [ &_35 <- _ret ] -{inv'3 _ret.final}-
             [ &_36 <- { _36 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'2 node}- s3
+      | s2 = -{resolve'0 node}- s3
       | s3 = [ &node <- _35 ] s4
       | s4 = {[@expl:type invariant] inv'8 _36} s5
-      | s5 = -{resolve'2 _36}- s6
+      | s5 = -{resolve'0 _36}- s6
       | s6 = bb21 ]
     | bb21 = s0
       [ s0 = {inv'1 node.current.t_Node__left}
@@ -6129,9 +6122,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       | s2 = bb70 ]
     | bb70 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'2 node}- s2
+      | s1 = -{resolve'0 node}- s2
       | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'7 self}- s4
+      | s3 = -{resolve'3 self}- s4
       | s4 = [ &_0 <- r ] s5
       | s5 = bb76 ]
     | bb76 = return {_0} ]
@@ -6241,25 +6234,51 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V>
   
   predicate resolve'0 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Tree) = resolve'0 _1
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
   
-  meta "rewrite_def" predicate resolve'1
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
   
-  predicate structural_resolve (_1: t_Map) = resolve'1 _1.t_Map__0
+  predicate resolve'1 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
+  
+  predicate resolve'2 (_1: t_K)
+  
+  predicate resolve'3 (_1: t_Node)
+  
+  predicate resolve'4 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'3 x]. resolve'3 x
+      = (resolve'1 x
+      /\ resolve'4 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'4 x.t_Node__right)
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_Node) = resolve'3 _1
+  
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'6 x]. resolve'6 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'5 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'4 x]. resolve'4 x
+      = (resolve'0 x /\ resolve'6 x.t_Tree__node)
+  
+  predicate structural_resolve (_1: t_Map) = resolve'4 _1.t_Map__0
   
   type t_Option'0 = C_None'0 | C_Some'0 t_V
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve x
-      | C_None'0 -> true
-      end
+  predicate resolve'7 (_1: t_Option'0)
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: t_Option'0) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  axiom resolve_axiom'2 [@rewrite]: forall x: t_Option'0 [resolve'7 x]. resolve'7 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 x0 -> resolve x0
+        end
   
   function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'0) : Map.map t_DeepModelTy t_Option'0 =
     match self with
@@ -6271,7 +6290,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V>
   
   function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'0 = view self.t_Map__0
   
-  predicate resolve'4 (self: t_Map) = forall k: t_DeepModelTy. resolve'3 (Map.get (view'0 self) k)
+  predicate resolve'8 (self: t_Map) = forall k: t_DeepModelTy. resolve'7 (Map.get (view'0 self) k)
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -6368,7 +6387,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V>
   
   function resolve_coherence (self: t_Map) : ()
   
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'4 self)
+  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'8 self)
 end
 module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
   use creusot.prelude.Any
@@ -6516,23 +6535,23 @@ module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
   
   predicate invariant''0 (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant''0 x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate inv'5 (_1: t_Map)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'5 x]. inv'5 x = (invariant' x /\ inv'2 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'5 x]. inv'5 x = (invariant' x /\ inv'2 x.t_Map__0)
   
   type t_Option'0 = C_None'0 | C_Some'0 t_V
   
@@ -6595,27 +6614,27 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Tree)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   type t_DeepModelTy
   
@@ -6756,21 +6775,21 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: MutBorrow.t t_Option)
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t t_Option [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
   predicate inv'8 (_1: t_Option'0)
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'7 a_0
@@ -6791,36 +6810,28 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
     {[@expl:unwrap requires] self_ <> C_None'0}
     any [ return (result: MutBorrow.t t_Node) -> {inv'7 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 (self: t_Map) =
     internal_invariant self.t_Map__0 /\ color_invariant self.t_Map__0 /\ color self.t_Map__0 = C_Black
   
   predicate inv'9 (_1: t_Map)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_Map [inv'9 x]. inv'9 x = (invariant''3 x /\ inv'2 x.t_Map__0)
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'9 x]. inv'9 x = (invariant''3 x /\ inv'2 x.t_Map__0)
   
   predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'9 self.current /\ inv'9 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'10 (_1: MutBorrow.t t_Map)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''4 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Map [inv'10 x]. inv'10 x = invariant''4 x
+  meta "rewrite_def" predicate inv'10
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type t_Option'1 = C_None'1 | C_Some'1 t_V
   
@@ -6892,9 +6903,9 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
     | bb3 = s0
       [ s0 = [ &_10 <- { _10 with current = { _10.current with t_Node__color = _9 } } ] s1
       | s1 = {[@expl:type invariant] inv'7 _10} s2
-      | s2 = -{resolve'0 _10}- s3
+      | s2 = -{resolve _10}- s3
       | s3 = {[@expl:type invariant] inv'10 self} s4
-      | s4 = -{resolve'2 self}- s5
+      | s4 = -{resolve'0 self}- s5
       | s5 = [ &_13 <- () ] s6
       | s6 = bb6 ]
     | bb6 = return {_0} ]
@@ -6954,11 +6965,11 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -6968,17 +6979,13 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_DeepModelTy
   
@@ -7092,23 +7099,19 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   predicate inv'6 (_1: t_Map)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Map)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Map [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: t_K; f1: t_V }
   
@@ -7122,9 +7125,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: t_Tree)
+  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Tree [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
@@ -7133,17 +7136,13 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_Node)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_Node [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate same_mappings (self: t_Tree) (o: t_Tree) =
     forall k: t_DeepModelTy, v: t_V. has_mapping self k v = has_mapping o k v
@@ -7152,9 +7151,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 (_1: MutBorrow.t t_Tree)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'10 x]. inv'10 x = invariant''5 x
+  meta "rewrite_def" predicate inv'10
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -7167,10 +7166,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'11 (_1: tuple)
+  predicate inv'11 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: tuple [inv'11 x]. inv'11 x
-      = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'11
   
   let rec delete_max_rec (self: MutBorrow.t t_Tree) (return (x: tuple)) =
     {[@expl:delete_max_rec 'self' type invariant] inv'10 self}
@@ -7193,7 +7191,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   predicate inv'12 (_1: t_Option'1)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'9 a_0
@@ -7253,7 +7251,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   predicate inv'13 (_1: t_Option'0)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'11 a_0
@@ -7278,9 +7276,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
       | s1 = any [ br0 -> {_6.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_6.current = C_Some x0} (! bb3) ] ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'5 _6} s1
-      | s1 = -{resolve'0 _6}- s2
+      | s1 = -{resolve _6}- s2
       | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'2 self}- s4
+      | s3 = -{resolve'0 self}- s4
       | s4 = [ &_0 <- C_None'0 ] s5
       | s5 = bb19 ]
     | bb3 = s0
@@ -7296,17 +7294,17 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
     | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'4 node}- s2
+      | s1 = -{resolve'1 node}- s2
       | s2 = {[@expl:type invariant] inv'5 _6} s3
-      | s3 = -{resolve'0 _6}- s4
+      | s3 = -{resolve _6}- s4
       | s4 = bb7 ]
     | bb6 = s0
       [ s0 = [ &_11 <- C_Red ] s1
       | s1 = [ &node <- { node with current = { node.current with t_Node__color = _11 } } ] s2
       | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'4 node}- s4
+      | s3 = -{resolve'1 node}- s4
       | s4 = {[@expl:type invariant] inv'5 _6} s5
-      | s5 = -{resolve'0 _6}- s6
+      | s5 = -{resolve _6}- s6
       | s6 = bb7 ]
     | bb7 = s0
       [ s0 = {[@expl:assertion] same_mappings old_self.current.t_Map__0 self.current.t_Map__0} s1
@@ -7333,11 +7331,11 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
     | bb13 = s0
       [ s0 = [ &_21 <- { _21 with current = { _21.current with t_Node__color = _20 } } ] s1
       | s1 = {[@expl:type invariant] inv'9 _21} s2
-      | s2 = -{resolve'4 _21}- s3
+      | s2 = -{resolve'1 _21}- s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'2 self}- s5
+      | s4 = -{resolve'0 self}- s5
       | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb15 ]
+    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
     | bb15 = s0 [ s0 = [ &_24 <- () ] s1 | s1 = bb16 ]
     | bb16 = s0 [ s0 = [ &_0 <- C_Some'0 r ] s1 | s1 = bb19 ]
     | bb19 = return {_0} ]
@@ -7514,11 +7512,11 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -7528,17 +7526,13 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
@@ -7581,23 +7575,19 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   predicate inv'6 (_1: t_Map)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Map)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Map [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: t_K; f1: t_V }
   
@@ -7611,9 +7601,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: t_Tree)
+  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Tree [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
@@ -7622,25 +7612,21 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_Node)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_Node [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 (_1: MutBorrow.t t_Tree)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'10 x]. inv'10 x = invariant''5 x
+  meta "rewrite_def" predicate inv'10
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -7653,10 +7639,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'11 (_1: tuple)
+  predicate inv'11 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: tuple [inv'11 x]. inv'11 x
-      = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'11
   
   let rec delete_min_rec (self: MutBorrow.t t_Tree) (return (x: tuple)) =
     {[@expl:delete_min_rec 'self' type invariant] inv'10 self}
@@ -7679,7 +7664,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   predicate inv'12 (_1: t_Option'2)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'2 [inv'12 x]. inv'12 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'12 x]. inv'12 x
       = match x with
         | C_None'2 -> true
         | C_Some'2 a_0 -> inv'9 a_0
@@ -7702,7 +7687,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   predicate inv'13 (_1: t_Option'1)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'11 a_0
@@ -7727,9 +7712,9 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
       | s1 = any [ br0 -> {_6.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_6.current = C_Some x0} (! bb3) ] ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'5 _6} s1
-      | s1 = -{resolve'0 _6}- s2
+      | s1 = -{resolve _6}- s2
       | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'2 self}- s4
+      | s3 = -{resolve'0 self}- s4
       | s4 = [ &_0 <- C_None'1 ] s5
       | s5 = bb18 ]
     | bb3 = s0
@@ -7745,17 +7730,17 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
     | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'4 node}- s2
+      | s1 = -{resolve'1 node}- s2
       | s2 = {[@expl:type invariant] inv'5 _6} s3
-      | s3 = -{resolve'0 _6}- s4
+      | s3 = -{resolve _6}- s4
       | s4 = bb7 ]
     | bb6 = s0
       [ s0 = [ &_11 <- C_Red ] s1
       | s1 = [ &node <- { node with current = { node.current with t_Node__color = _11 } } ] s2
       | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'4 node}- s4
+      | s3 = -{resolve'1 node}- s4
       | s4 = {[@expl:type invariant] inv'5 _6} s5
-      | s5 = -{resolve'0 _6}- s6
+      | s5 = -{resolve _6}- s6
       | s6 = bb7 ]
     | bb7 = s0
       [ s0 = {inv'1 self.current.t_Map__0}
@@ -7781,11 +7766,11 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
     | bb13 = s0
       [ s0 = [ &_19 <- { _19 with current = { _19.current with t_Node__color = _18 } } ] s1
       | s1 = {[@expl:type invariant] inv'9 _19} s2
-      | s2 = -{resolve'4 _19}- s3
+      | s2 = -{resolve'1 _19}- s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'2 self}- s5
+      | s4 = -{resolve'0 self}- s5
       | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb15 ]
+    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
     | bb15 = s0 [ s0 = [ &_0 <- C_Some'1 r ] s1 | s1 = bb18 ]
     | bb18 = return {_0} ]
     [ & _0: t_Option'1 = Any.any_l ()
@@ -7960,11 +7945,11 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'3 self
   
-  predicate inv'4 (_1: t_Node)
+  predicate inv'4 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'4 x]. inv'4 x = invariant' x
+  meta "rewrite_def" predicate inv'4
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'4 a_0
@@ -7974,17 +7959,13 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Option)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Option [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
@@ -8027,23 +8008,19 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   predicate inv'6 (_1: t_Map)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Map)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Map [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple = { f0: t_K; f1: t_V }
   
@@ -8057,9 +8034,9 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: t_Tree)
+  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Tree [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
@@ -8068,33 +8045,29 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_Node)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_Node [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 (_1: MutBorrow.t t_Tree)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'10 x]. inv'10 x = invariant''5 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''6 [@inline:trivial] (self: t_K) = inv self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'11 (_1: t_K)
+  predicate inv'11 [@inline:trivial] (_1: t_K) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_K [inv'11 x]. inv'11 x = invariant''6 x
+  meta "rewrite_def" predicate inv'11
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -8107,14 +8080,13 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'12 (_1: tuple)
+  predicate inv'12 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: tuple [inv'12 x]. inv'12 x
-      = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'12
   
   predicate inv'13 (_1: t_Option'1)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'12 a_0
@@ -8148,7 +8120,7 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   predicate inv'14 (_1: t_Option'2)
   
-  axiom inv_axiom'12 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
       = match x with
         | C_None'2 -> true
         | C_Some'2 a_0 -> inv'9 a_0
@@ -8189,9 +8161,9 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
       | s1 = any [ br0 -> {_8.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_8.current = C_Some x0} (! bb3) ] ]
     | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'5 _8} s1
-      | s1 = -{resolve'0 _8}- s2
+      | s1 = -{resolve _8}- s2
       | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'2 self}- s4
+      | s3 = -{resolve'0 self}- s4
       | s4 = [ &_0 <- C_None'1 ] s5
       | s5 = bb17 ]
     | bb3 = s0
@@ -8207,17 +8179,17 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
     | bb4 = any [ br0 -> {_11 = false} (! bb6) | br1 -> {_11} (! bb5) ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'4 node}- s2
+      | s1 = -{resolve'1 node}- s2
       | s2 = {[@expl:type invariant] inv'5 _8} s3
-      | s3 = -{resolve'0 _8}- s4
+      | s3 = -{resolve _8}- s4
       | s4 = bb7 ]
     | bb6 = s0
       [ s0 = [ &_13 <- C_Red ] s1
       | s1 = [ &node <- { node with current = { node.current with t_Node__color = _13 } } ] s2
       | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'4 node}- s4
+      | s3 = -{resolve'1 node}- s4
       | s4 = {[@expl:type invariant] inv'5 _8} s5
-      | s5 = -{resolve'0 _8}- s6
+      | s5 = -{resolve _8}- s6
       | s6 = bb7 ]
     | bb7 = s0
       [ s0 = {inv'1 self.current.t_Map__0}
@@ -8243,11 +8215,11 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
     | bb13 = s0
       [ s0 = [ &_22 <- { _22 with current = { _22.current with t_Node__color = _21 } } ] s1
       | s1 = {[@expl:type invariant] inv'9 _22} s2
-      | s2 = -{resolve'4 _22}- s3
+      | s2 = -{resolve'1 _22}- s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'2 self}- s5
+      | s4 = -{resolve'0 self}- s5
       | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'2 self}- s2 | s2 = bb15 ]
+    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
     | bb15 = s0 [ s0 = [ &_0 <- r ] s1 | s1 = bb17 ]
     | bb17 = return {_0} ]
     [ & _0: t_Option'1 = Any.any_l ()
@@ -8422,27 +8394,27 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate invariant''0 [@inline:trivial] (self: t_Tree) = inv'2 self
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: t_Tree)
+  predicate inv'5 [@inline:trivial] (_1: t_Tree) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Tree [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
     [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
@@ -8454,9 +8426,9 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: t_K)
+  predicate inv'6 [@inline:trivial] (_1: t_K) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_K [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate precondition (self: ()) (args: tuple)
   
@@ -8516,27 +8488,27 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   
   predicate inv'7 (_1: t_Map)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x = (invariant''2 x /\ inv'2 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x = (invariant''2 x /\ inv'2 x.t_Map__0)
   
   predicate invariant''3 [@inline:trivial] (self: t_Map) = inv'7 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: t_Map)
+  predicate inv'8 [@inline:trivial] (_1: t_Map) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_Map [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
   predicate invariant''4 [@inline:trivial] (self: t_V) = inv'0 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: t_V)
+  predicate inv'9 [@inline:trivial] (_1: t_V) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_V [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
   predicate inv'10 (_1: t_Option'1)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Option'1 [inv'10 x]. inv'10 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'10 x]. inv'10 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'9 a_0
@@ -8739,19 +8711,19 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -8804,9 +8776,9 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'5 (_1: MutBorrow.t t_Tree)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''0 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Tree [inv'5 x]. inv'5 x = invariant''0 x
+  meta "rewrite_def" predicate inv'5
   
   let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
     [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
@@ -8818,9 +8790,9 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'6 (_1: t_K)
+  predicate inv'6 [@inline:trivial] (_1: t_K) = invariant''1 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_K [inv'6 x]. inv'6 x = invariant''1 x
+  meta "rewrite_def" predicate inv'6
   
   predicate precondition (self: ()) (args: tuple)
   
@@ -8837,45 +8809,33 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
                                                                                                          f1 = rhs }}
     any [ return (result: t_Ordering) -> {postcondition_once () { f0 = self_; f1 = rhs } result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Tree) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Tree) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'7 (_1: MutBorrow.t t_Node)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''2 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_Node [inv'7 x]. inv'7 x = invariant''2 x
+  meta "rewrite_def" predicate inv'7
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_Node) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Node) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 (_1: MutBorrow.t t_Option)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''3 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Option [inv'8 x]. inv'8 x = invariant''3 x
+  meta "rewrite_def" predicate inv'8
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Option) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Option) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_V)
   
@@ -8883,17 +8843,13 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 (_1: MutBorrow.t t_V)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_V) = invariant''4 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_V [inv'9 x]. inv'9 x = invariant''4 x
+  meta "rewrite_def" predicate inv'9
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_V) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'5
-  
-  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t t_V) = resolve'5 _1
-  
-  meta "rewrite_def" predicate resolve'6
+  meta "rewrite_def" predicate resolve'2
   
   predicate internal_invariant (self: t_Tree) = bst_invariant self /\ height_invariant self
   
@@ -8902,27 +8858,23 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   
   predicate inv'10 (_1: t_Map)
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_Map [inv'10 x]. inv'10 x = (invariant''5 x /\ inv'2 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'10 x]. inv'10 x = (invariant''5 x /\ inv'2 x.t_Map__0)
   
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'10 self.current /\ inv'10 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'11 (_1: MutBorrow.t t_Map)
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''6 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_Map [inv'11 x]. inv'11 x = invariant''6 x
+  meta "rewrite_def" predicate inv'11
   
-  predicate resolve'7 [@inline:trivial] (self: MutBorrow.t t_Map) = self.final = self.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'7
-  
-  predicate resolve'8 [@inline:trivial] (_1: MutBorrow.t t_Map) = resolve'7 _1
-  
-  meta "rewrite_def" predicate resolve'8
+  meta "rewrite_def" predicate resolve'3
   
   predicate inv'12 (_1: t_Option'1)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
       = match x with
         | C_None'1 -> true
         | C_Some'1 a_0 -> inv'9 a_0
@@ -9002,10 +8954,10 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
                 [ &_36 <- _ret ] -{inv'2 _ret.final}-
                 [ &_37 <- { _37 with current = _ret.final } ] s2)
           | s2 = {[@expl:type invariant] inv'5 tree} s3
-          | s3 = -{resolve'0 tree}- s4
+          | s3 = -{resolve tree}- s4
           | s4 = [ &tree <- _36 ] s5
           | s5 = {[@expl:type invariant] inv'5 _37} s6
-          | s6 = -{resolve'0 _37}- s7
+          | s6 = -{resolve _37}- s7
           | s7 = bb14 ]
         | bb13 = s0
           [ s0 = {inv'2 node.current.t_Node__left}
@@ -9019,20 +8971,20 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
                 [ &_31 <- _ret ] -{inv'2 _ret.final}-
                 [ &_32 <- { _32 with current = _ret.final } ] s2)
           | s2 = {[@expl:type invariant] inv'5 tree} s3
-          | s3 = -{resolve'0 tree}- s4
+          | s3 = -{resolve tree}- s4
           | s4 = [ &tree <- _31 ] s5
           | s5 = {[@expl:type invariant] inv'5 _32} s6
-          | s6 = -{resolve'0 _32}- s7
+          | s6 = -{resolve _32}- s7
           | s7 = bb14 ]
         | bb14 = s0
           [ s0 = {[@expl:type invariant] inv'7 node} s1
-          | s1 = -{resolve'2 node}- s2
+          | s1 = -{resolve'0 node}- s2
           | s2 = {[@expl:type invariant] inv'8 _23} s3
-          | s3 = -{resolve'4 _23}- s4
+          | s3 = -{resolve'1 _23}- s4
           | s4 = bb3 ] ] ]
     | bb15 = s0
       [ s0 = {[@expl:type invariant] inv'8 _23} s1
-      | s1 = -{resolve'4 _23}- s2
+      | s1 = -{resolve'1 _23}- s2
       | s2 = [ &_0 <- C_None'1 ] s3
       | s3 = bb16 ]
     | bb12 = s0
@@ -9048,17 +9000,17 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
             [ &_35 <- { _35 with current = _ret.final } ] s2)
       | s2 = [ &_0 <- C_Some'1 _34 ] s3
       | s3 = {[@expl:type invariant] inv'9 _35} s4
-      | s4 = -{resolve'6 _35}- s5
+      | s4 = -{resolve'2 _35}- s5
       | s5 = {[@expl:type invariant] inv'7 node} s6
-      | s6 = -{resolve'2 node}- s7
+      | s6 = -{resolve'0 node}- s7
       | s7 = {[@expl:type invariant] inv'8 _23} s8
-      | s8 = -{resolve'4 _23}- s9
+      | s8 = -{resolve'1 _23}- s9
       | s9 = bb16 ]
     | bb16 = s0
       [ s0 = {[@expl:type invariant] inv'5 tree} s1
-      | s1 = -{resolve'0 tree}- s2
+      | s1 = -{resolve tree}- s2
       | s2 = {[@expl:type invariant] inv'11 self} s3
-      | s3 = -{resolve'8 self}- s4
+      | s3 = -{resolve'3 self}- s4
       | s4 = return {_0} ] ]
     [ & _0: t_Option'1 = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
@@ -9123,31 +9075,34 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence__refines (* <
   
   predicate resolve'0 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Node) = resolve'0 _1
+  predicate resolve'1 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'2 (_1: t_K)
   
-  predicate resolve'2 [@inline:trivial] (self: t_Node) = resolve'1 self
+  predicate resolve'3 (_1: t_Tree)
   
-  meta "rewrite_def" predicate resolve'2
+  predicate resolve'4 (_1: t_Option)
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Node) = resolve'2 _1
+  axiom resolve_axiom [@rewrite]: forall x: t_Tree [resolve'3 x]. resolve'3 x
+      = (resolve'1 x /\ resolve'4 x.t_Tree__node)
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'5 (_1: t_Node)
   
-  predicate resolve'4 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'3 x
-      | C_None -> true
-      end
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node [resolve'5 x]. resolve'5 x
+      = (resolve'0 x
+      /\ resolve'3 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'3 x.t_Node__right)
   
-  meta "rewrite_def" predicate resolve'4
+  predicate resolve'6 [@inline:trivial] (_1: t_Node) = resolve'5 _1
   
-  predicate resolve'5 [@inline:trivial] (_1: t_Option) = resolve'4 _1
+  meta "rewrite_def" predicate resolve'6
   
-  meta "rewrite_def" predicate resolve'5
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Option [resolve'4 x]. resolve'4 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'6 x0
+        end
   
-  predicate structural_resolve (_1: t_Tree) = resolve'5 _1.t_Tree__node
+  predicate structural_resolve (_1: t_Tree) = resolve'4 _1.t_Tree__node
   
   predicate inv (_1: t_K)
   
@@ -9162,28 +9117,26 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence__refines (* <
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
-  
-  predicate resolve'6 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_Tree. structural_resolve self /\ inv'2 self
-      -> structural_resolve self /\ (forall result: (). resolve'6 self -> resolve'6 self)
+      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
 module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* <Node<K, V> as creusot_contracts::Resolve> *)
   type t_Color = C_Red | C_Black
@@ -9216,14 +9169,42 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* 
   
   predicate resolve'0 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Tree) = resolve'0 _1
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
   
-  meta "rewrite_def" predicate resolve'1
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
+  
+  predicate resolve'1 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
   
   predicate resolve'2 (_1: t_K)
   
+  predicate resolve'3 (_1: t_Node)
+  
+  predicate resolve'4 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'3 x]. resolve'3 x
+      = (resolve'1 x
+      /\ resolve'4 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'4 x.t_Node__right)
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_Node) = resolve'3 _1
+  
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'6 x]. resolve'6 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'5 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'4 x]. resolve'4 x
+      = (resolve'0 x /\ resolve'6 x.t_Tree__node)
+  
   predicate structural_resolve (_1: t_Node) =
-    resolve'1 _1.t_Node__left /\ resolve'2 _1.t_Node__key /\ resolve _1.t_Node__val /\ resolve'1 _1.t_Node__right
+    resolve'4 _1.t_Node__left /\ resolve'2 _1.t_Node__key /\ resolve _1.t_Node__val /\ resolve'4 _1.t_Node__right
   
   predicate inv (_1: t_K)
   
@@ -9233,13 +9214,13 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* 
   
   predicate invariant' (self: t_Node) = inv'1 self
   
-  predicate inv'2 (_1: t_Node)
+  predicate inv'2 [@inline:trivial] (_1: t_Node) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'2 x]. inv'2 x = invariant' x
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Option)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'2 a_0
@@ -9247,26 +9228,17 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* 
   
   predicate inv'4 (_1: t_Tree)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Tree [inv'4 x]. inv'4 x = inv'3 x.t_Tree__node
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
       = (inv'4 x.t_Node__left /\ inv x.t_Node__key /\ inv'0 x.t_Node__val /\ inv'4 x.t_Node__right)
-  
-  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping self.t_Node__left k v
-    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
-  
-  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
-        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
-  
-  predicate resolve'3 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_Node. structural_resolve self /\ inv'1 self
-      -> structural_resolve self /\ (forall result: (). resolve'3 self -> resolve'3 self)
+      -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
 module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <Map<K, V> as creusot_contracts::Resolve> *)
   use mach.int.Int
@@ -9305,11 +9277,41 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   
   predicate resolve'0 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve v
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Tree) = resolve'0 _1
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
   
-  meta "rewrite_def" predicate resolve'1
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
   
-  predicate structural_resolve (_1: t_Map) = resolve'1 _1.t_Map__0
+  predicate resolve'1 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve v
+  
+  predicate resolve'2 (_1: t_K)
+  
+  predicate resolve'3 (_1: t_Node)
+  
+  predicate resolve'4 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'3 x]. resolve'3 x
+      = (resolve'1 x
+      /\ resolve'4 x.t_Node__left /\ resolve'2 x.t_Node__key /\ resolve x.t_Node__val /\ resolve'4 x.t_Node__right)
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_Node) = resolve'3 _1
+  
+  meta "rewrite_def" predicate resolve'5
+  
+  predicate resolve'6 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'6 x]. resolve'6 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'5 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'4 x]. resolve'4 x
+      = (resolve'0 x /\ resolve'6 x.t_Tree__node)
+  
+  predicate structural_resolve (_1: t_Map) = resolve'4 _1.t_Map__0
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -9423,37 +9425,33 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   
   predicate invariant''0 (self: t_Node) = inv'1 self
   
-  predicate inv'3 (_1: t_Node)
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node [inv'3 x]. inv'3 x = invariant''0 x
+  meta "rewrite_def" predicate inv'3
   
   predicate inv'4 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'3 a_0
         end
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
   
   predicate inv'5 (_1: t_Map)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Map [inv'5 x]. inv'5 x = (invariant' x /\ inv'2 x.t_Map__0)
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'5 x]. inv'5 x = (invariant' x /\ inv'2 x.t_Map__0)
   
   type t_Option'0 = C_None'0 | C_Some'0 t_V
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option'0) =
-    match self with
-      | C_Some'0 x -> resolve x
-      | C_None'0 -> true
-      end
+  predicate resolve'7 (_1: t_Option'0)
   
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (_1: t_Option'0) = resolve'2 _1
-  
-  meta "rewrite_def" predicate resolve'3
+  axiom resolve_axiom'2 [@rewrite]: forall x: t_Option'0 [resolve'7 x]. resolve'7 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 x0 -> resolve x0
+        end
   
   function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'0) : Map.map t_DeepModelTy t_Option'0 =
     match self with
@@ -9465,12 +9463,12 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   
   function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'0 = view self.t_Map__0
   
-  predicate resolve'4 (self: t_Map) = forall k: t_DeepModelTy. resolve'3 (Map.get (view'0 self) k)
+  predicate resolve'8 (self: t_Map) = forall k: t_DeepModelTy. resolve'7 (Map.get (view'0 self) k)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_Map. structural_resolve self /\ inv'5 self
-      -> structural_resolve self /\ (forall result: (). resolve'4 self -> resolve'4 self)
+      -> structural_resolve self /\ (forall result: (). resolve'8 self -> resolve'8 self)
 end

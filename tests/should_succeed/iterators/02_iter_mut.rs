@@ -8,7 +8,6 @@ use creusot_contracts::{
 mod common;
 use common::Iterator;
 
-#[derive(Resolve)]
 struct IterMut<'a, T> {
     pub inner: &'a mut [T],
 }
@@ -26,7 +25,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.inner.resolve() && self.inner@.ext_eq(Seq::empty()) }
+        pearlite! { resolve(self.inner) && self.inner@.ext_eq(Seq::empty()) }
     }
 
     #[logic(open, prophetic)]

@@ -11,27 +11,19 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence (* <List<(K, V)> as
   
   predicate resolve'0 (_1: t_V)
   
-  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve self.f0 /\ resolve'0 self.f1
+  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve _1.f0 /\ resolve'0 _1.f1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_1: tuple) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
   type t_Option = C_None | C_Some t_V
   
-  predicate resolve'3 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'0 x
-      | C_None -> true
-      end
+  predicate resolve'2 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: t_Option) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'2 x]. resolve'2 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
   
   type t_DeepModelTy
   
@@ -42,24 +34,25 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence (* <List<(K, V)> as
       | C_Cons {f0 = k; f1 = v} tl -> if deep_model k = index then C_Some v else get tl index
       end
   
-  predicate resolve'5 (self: t_List) = forall k: t_DeepModelTy. resolve'4 (get self k)
+  predicate resolve'3 (self: t_List) = forall k: t_DeepModelTy. resolve'2 (get self k)
   
-  predicate resolve'6 [@inline:trivial] (_1: t_List) = resolve'5 _1
+  predicate resolve'4 (_1: t_List)
   
-  meta "rewrite_def" predicate resolve'6
+  predicate resolve'5 [@inline:trivial] (_1: t_List) = resolve'4 _1
   
-  predicate resolve'7 [@inline:trivial] (self: t_List) = resolve'6 self
+  meta "rewrite_def" predicate resolve'5
   
-  meta "rewrite_def" predicate resolve'7
-  
-  predicate resolve'8 [@inline:trivial] (_1: t_List) = resolve'7 _1
-  
-  meta "rewrite_def" predicate resolve'8
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'4 x]. resolve'4 x
+      = (resolve'3 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'1 x0 /\ resolve'5 x1
+        end)
   
   predicate structural_resolve (_1: t_List) =
     match _1 with
       | C_Nil -> true
-      | C_Cons x0 x1 -> resolve'2 x0 /\ resolve'8 x1
+      | C_Cons x0 x1 -> resolve'1 x0 /\ resolve'5 x1
       end
   
   meta "compute_max_steps" 1000000
@@ -70,7 +63,7 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence (* <List<(K, V)> as
   
   function resolve_coherence (self: t_List) : ()
   
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'5 self)
+  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'3 self)
 end
 module M_hashmap__qyi9060063638777358169__hash (* <usize as Hash> *)
   use creusot.int.UInt64
@@ -161,81 +154,92 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence (* <MyHashMap<K, V> 
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
-  predicate inv'3 (_1: t_List)
+  predicate invariant''0 (self: t_List) = inv'2 self
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
         end
-  
-  predicate invariant''0 (self: t_List) = inv'2 self
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: Seq.seq t_List) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: Seq.seq t_List)
+  predicate inv'4 [@inline:trivial] (_1: Seq.seq t_List) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_List [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''2 (self: t_Vec) = inv'4 (view self)
   
   predicate inv'5 (_1: t_Vec)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''2 x
   
   predicate inv'6 (_1: t_MyHashMap)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
       = (invariant' x /\ inv'5 x.t_MyHashMap__buckets)
   
   predicate resolve (_1: t_V)
   
-  predicate resolve'0 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve x
-      | C_None -> true
-      end
+  predicate resolve'0 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'0
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve x0
+        end
   
-  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
+  predicate resolve'1 (self: t_List) = forall k: t_DeepModelTy. resolve'0 (get self k)
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'2 (_1: t_K)
   
-  predicate resolve'2 (self: t_List) = forall k: t_DeepModelTy. resolve'1 (get self k)
-  
-  predicate resolve'3 [@inline:trivial] (_1: t_List) = resolve'2 _1
+  predicate resolve'3 [@inline:trivial] (_1: tuple) = resolve'2 _1.f0 /\ resolve _1.f1
   
   meta "rewrite_def" predicate resolve'3
   
-  predicate resolve'4 [@inline:trivial] (self: t_Vec) =
-    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'3 (index_logic self i)
+  predicate resolve'4 (_1: t_List)
   
-  meta "rewrite_def" predicate resolve'4
-  
-  predicate resolve'5 [@inline:trivial] (_1: t_Vec) = resolve'4 _1
+  predicate resolve'5 [@inline:trivial] (_1: t_List) = resolve'4 _1
   
   meta "rewrite_def" predicate resolve'5
   
-  predicate structural_resolve (_1: t_MyHashMap) = resolve'5 _1.t_MyHashMap__buckets
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'4 x]. resolve'4 x
+      = (resolve'1 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'3 x0 /\ resolve'5 x1
+        end)
+  
+  predicate resolve'6 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'4 (index_logic self i)
+  
+  meta "rewrite_def" predicate resolve'6
+  
+  predicate resolve'7 (_1: t_Vec)
+  
+  axiom resolve_axiom'1: forall x: t_Vec [resolve'7 x]. resolve'7 x -> resolve'6 x
+  
+  predicate structural_resolve (_1: t_MyHashMap) = resolve'7 _1.t_MyHashMap__buckets
   
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
     index_logic self.t_MyHashMap__buckets (bucket_ix self k)
   
   function view'0 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
   
-  predicate resolve'6 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'1 (Map.get (view'0 self) k)
+  predicate resolve'8 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'0 (Map.get (view'0 self) k)
   
   meta "compute_max_steps" 1000000
   
@@ -245,7 +249,7 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence (* <MyHashMap<K, V> 
   
   function resolve_coherence (self: t_MyHashMap) : ()
   
-  goal vc_resolve_coherence: inv'6 self -> structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'6 self)
+  goal vc_resolve_coherence: inv'6 self -> structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'8 self)
 end
 module M_hashmap__qyi9690720112976707081__new (* MyHashMap<K, V> *)
   use creusot.int.UInt64
@@ -269,19 +273,19 @@ module M_hashmap__qyi9690720112976707081__new (* MyHashMap<K, V> *)
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
   predicate invariant' (self: t_List) = inv'2 self
   
-  predicate inv'3 (_1: t_List)
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
@@ -292,9 +296,9 @@ module M_hashmap__qyi9690720112976707081__new (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'4 (_1: Seq.seq t_List)
+  predicate inv'4 [@inline:trivial] (_1: Seq.seq t_List) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_List [inv'4 x]. inv'4 x = invariant''0 x
+  meta "rewrite_def" predicate inv'4
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -306,7 +310,7 @@ module M_hashmap__qyi9690720112976707081__new (* MyHashMap<K, V> *)
   
   predicate inv'5 (_1: t_Vec)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_List = Seq.get (view self) ix
   
@@ -355,7 +359,7 @@ module M_hashmap__qyi9690720112976707081__new (* MyHashMap<K, V> *)
   
   predicate inv'6 (_1: t_MyHashMap)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
       = (invariant''2 x /\ inv'5 x.t_MyHashMap__buckets)
   
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
@@ -408,32 +412,32 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
-  predicate inv'3 (_1: t_List)
+  predicate invariant' (self: t_List) = inv'2 self
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
         end
-  
-  predicate invariant' (self: t_List) = inv'2 self
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_List) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'4 (_1: Seq.seq t_List)
+  predicate inv'4 [@inline:trivial] (_1: Seq.seq t_List) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_List [inv'4 x]. inv'4 x = invariant''0 x
+  meta "rewrite_def" predicate inv'4
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -445,15 +449,15 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   predicate inv'5 (_1: t_Vec)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'5 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'6 (_1: t_Vec)
+  predicate inv'6 [@inline:trivial] (_1: t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
+  meta "rewrite_def" predicate inv'6
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'6 self_}
     any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
@@ -462,9 +466,9 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_1: t_K)
+  predicate inv'7 [@inline:trivial] (_1: t_K) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_K [inv'7 x]. inv'7 x = invariant''3 x
+  meta "rewrite_def" predicate inv'7
   
   predicate precondition (self: ()) (args: t_K)
   
@@ -494,9 +498,9 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_1: MutBorrow.t t_Vec)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'8 x]. inv'8 x = invariant''4 x
+  meta "rewrite_def" predicate inv'8
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) = UInt64.t'int self < Seq.length seq
   
@@ -506,9 +510,9 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_1: MutBorrow.t t_List)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_List) = invariant''5 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_List [inv'9 x]. inv'9 x = invariant''5 x
+  meta "rewrite_def" predicate inv'9
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) (out: t_List) =
     Seq.get seq (UInt64.t'int self) = out
@@ -531,13 +535,9 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
       {Seq.length (view self_.final) = Seq.length (view self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_List) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Option = C_None | C_Some t_V
   
@@ -572,17 +572,13 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: MutBorrow.t t_K)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_K) = invariant''6 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_K [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t t_K) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_K) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_K) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'0
   
   type tuple'0 = { f0'0: t_K; f1'0: t_K }
   
@@ -606,53 +602,56 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: MutBorrow.t t_V)
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_V) = invariant''7 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: MutBorrow.t t_V [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_V) = self.final = self.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_V) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'1
   
   predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_List) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'12 (_1: MutBorrow.t t_List)
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_List) = invariant''8 _1
   
-  axiom inv_axiom'10 [@rewrite]: forall x: MutBorrow.t t_List [inv'12 x]. inv'12 x = invariant''8 x
+  meta "rewrite_def" predicate inv'12
   
-  predicate resolve'5 [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'5
+  meta "rewrite_def" predicate resolve'2
   
-  predicate resolve'6 [@inline:trivial] (_1: MutBorrow.t t_List) = resolve'5 _1
+  predicate resolve'3 (_1: t_V)
   
-  meta "rewrite_def" predicate resolve'6
+  predicate resolve'4 (_1: t_Option)
   
-  predicate resolve'7 (_1: t_V)
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'4 x]. resolve'4 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'3 x0
+        end
   
-  predicate resolve'8 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'7 x
-      | C_None -> true
-      end
+  predicate resolve'5 (self: t_List) = forall k: t_DeepModelTy. resolve'4 (get self k)
   
-  meta "rewrite_def" predicate resolve'8
+  predicate resolve'6 (_1: t_K)
   
-  predicate resolve'9 [@inline:trivial] (_1: t_Option) = resolve'8 _1
+  predicate resolve'7 [@inline:trivial] (_1: tuple) = resolve'6 _1.f0 /\ resolve'3 _1.f1
+  
+  meta "rewrite_def" predicate resolve'7
+  
+  predicate resolve'8 (_1: t_List)
+  
+  predicate resolve'9 [@inline:trivial] (_1: t_List) = resolve'8 _1
   
   meta "rewrite_def" predicate resolve'9
   
-  predicate resolve'10 (self: t_List) = forall k: t_DeepModelTy. resolve'9 (get self k)
-  
-  predicate resolve'11 [@inline:trivial] (_1: t_List) = resolve'10 _1
-  
-  meta "rewrite_def" predicate resolve'11
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'8 x]. resolve'8 x
+      = (resolve'5 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'7 x0 /\ resolve'9 x1
+        end)
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_List = Seq.get (view self) ix
   
@@ -666,24 +665,20 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
   
   predicate inv'13 (_1: t_MyHashMap)
   
-  axiom inv_axiom'11 [@rewrite]: forall x: t_MyHashMap [inv'13 x]. inv'13 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'13 x]. inv'13 x
       = (invariant''9 x /\ inv'5 x.t_MyHashMap__buckets)
   
   predicate invariant''10 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) = inv'13 self.current /\ inv'13 self.final
   
   meta "rewrite_def" predicate invariant''10
   
-  predicate inv'14 (_1: MutBorrow.t t_MyHashMap)
+  predicate inv'14 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = invariant''10 _1
   
-  axiom inv_axiom'12 [@rewrite]: forall x: MutBorrow.t t_MyHashMap [inv'14 x]. inv'14 x = invariant''10 x
+  meta "rewrite_def" predicate inv'14
   
-  predicate resolve'12 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) = self.final = self.current
+  predicate resolve'10 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'12
-  
-  predicate resolve'13 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = resolve'12 _1
-  
-  meta "rewrite_def" predicate resolve'13
+  meta "rewrite_def" predicate resolve'10
   
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
     index_logic self.t_MyHashMap__buckets (bucket_ix self k)
@@ -731,7 +726,7 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
             [ &l <- _ret ] -{inv'2 _ret.final}-
             [ &_16 <- { _16 with current = _ret.final } ] s2)
       | s2 = {[@expl:type invariant] inv'9 _16} s3
-      | s3 = -{resolve'0 _16}- s4
+      | s3 = -{resolve _16}- s4
       | s4 = [ &old_l <- l ] s5
       | s5 = bb7 ]
     | bb7 = bb7
@@ -776,13 +771,13 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
                     [ &l <- { l with current = C_Cons r0 _ret.final } ] s3))
           | s3 = [ &tl'0 <- tl ] s4
           | s4 = {[@expl:type invariant] inv'10 k} s5
-          | s5 = -{resolve'2 k}- s6
+          | s5 = -{resolve'0 k}- s6
           | s6 = eq {k.current} {key} (fun (_ret: bool) -> [ &_38 <- _ret ] s7)
           | s7 = bb11 ]
         | bb11 = any [ br0 -> {_38 = false} (! bb13) | br1 -> {_38} (! bb12) ]
         | bb13 = s0
           [ s0 = {[@expl:type invariant] inv'11 v} s1
-          | s1 = -{resolve'4 v}- s2
+          | s1 = -{resolve'1 v}- s2
           | s2 = {inv'2 tl'0.current}
             MutBorrow.borrow_final <t_List> {tl'0.current} {MutBorrow.get_id tl'0}
               (fun (_ret: MutBorrow.t t_List) ->
@@ -794,38 +789,38 @@ module M_hashmap__qyi9690720112976707081__add (* MyHashMap<K, V> *)
                 [ &_43 <- _ret ] -{inv'2 _ret.final}-
                 [ &_44 <- { _44 with current = _ret.final } ] s4)
           | s4 = {[@expl:type invariant] inv'9 l} s5
-          | s5 = -{resolve'0 l}- s6
+          | s5 = -{resolve l}- s6
           | s6 = [ &l <- _43 ] s7
           | s7 = {[@expl:type invariant] inv'9 _44} s8
-          | s8 = -{resolve'0 _44}- s9
+          | s8 = -{resolve _44}- s9
           | s9 = {[@expl:type invariant] inv'12 tl'0} s10
-          | s10 = -{resolve'6 tl'0}- s11
+          | s10 = -{resolve'2 tl'0}- s11
           | s11 = bb7 ] ] ]
     | bb14 = s0 [ s0 = [ &_47 <- { f0 = key; f1 = val' } ] s1 | s1 = [ &_51 <- C_Nil ] s2 | s2 = bb15 ]
     | bb15 = s0 [ s0 = [ &_46 <- C_Cons _47 _51 ] s1 | s1 = bb17 ]
     | bb17 = s0
       [ s0 = {[@expl:type invariant] inv'2 l.current} s1
-      | s1 = -{resolve'11 l.current}- s2
+      | s1 = -{resolve'8 l.current}- s2
       | s2 = [ &l <- { l with current = _46 } ] s3
       | s3 = {[@expl:type invariant] inv'9 l} s4
-      | s4 = -{resolve'0 l}- s5
+      | s4 = -{resolve l}- s5
       | s5 = {[@expl:type invariant] inv'9 _17} s6
-      | s6 = -{resolve'0 _17}- s7
+      | s6 = -{resolve _17}- s7
       | s7 = {[@expl:type invariant] inv'14 self} s8
-      | s8 = -{resolve'13 self}- s9
+      | s8 = -{resolve'10 self}- s9
       | s9 = bb20 ]
     | bb12 = s0
       [ s0 = {[@expl:type invariant] inv'12 tl'0} s1
-      | s1 = -{resolve'6 tl'0}- s2
+      | s1 = -{resolve'2 tl'0}- s2
       | s2 = [ &v <- { v with current = val' } ] s3
       | s3 = {[@expl:type invariant] inv'11 v} s4
-      | s4 = -{resolve'4 v}- s5
+      | s4 = -{resolve'1 v}- s5
       | s5 = {[@expl:type invariant] inv'9 _17} s6
-      | s6 = -{resolve'0 _17}- s7
+      | s6 = -{resolve _17}- s7
       | s7 = {[@expl:type invariant] inv'9 l} s8
-      | s8 = -{resolve'0 l}- s9
+      | s8 = -{resolve l}- s9
       | s9 = {[@expl:type invariant] inv'14 self} s10
-      | s10 = -{resolve'13 self}- s11
+      | s10 = -{resolve'10 self}- s11
       | s11 = bb20 ]
     | bb20 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -874,9 +869,9 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_K)
+  predicate inv'0 [@inline:trivial] (_1: t_K) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_K [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: t_K)
   
@@ -914,32 +909,32 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   predicate inv'1 (_1: t_V)
   
-  predicate inv'2 (_1: tuple)
+  predicate inv'2 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'1 _1.f1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'2 x]. inv'2 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'1 x1)
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_List)
   
-  predicate inv'4 (_1: t_List)
+  predicate invariant''0 (self: t_List) = inv'3 self
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x
+  predicate inv'4 [@inline:trivial] (_1: t_List) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'4
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'2 a_0 /\ inv'4 a_1
         end
-  
-  predicate invariant''0 (self: t_List) = inv'3 self
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_List [inv'4 x]. inv'4 x = invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: Seq.seq t_List) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'4 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'5 (_1: Seq.seq t_List)
+  predicate inv'5 [@inline:trivial] (_1: Seq.seq t_List) = invariant''1 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: Seq.seq t_List [inv'5 x]. inv'5 x = invariant''1 x
+  meta "rewrite_def" predicate inv'5
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -951,15 +946,15 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   predicate inv'6 (_1: t_Vec)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
   
   predicate invariant''3 [@inline:trivial] (self: t_Vec) = inv'6 self
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'7 (_1: t_Vec)
+  predicate inv'7 [@inline:trivial] (_1: t_Vec) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_Vec [inv'7 x]. inv'7 x = invariant''3 x
+  meta "rewrite_def" predicate inv'7
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'7 self_}
     any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
@@ -972,9 +967,9 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_1: t_List)
+  predicate inv'8 [@inline:trivial] (_1: t_List) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: t_List [inv'8 x]. inv'8 x = invariant''4 x
+  meta "rewrite_def" predicate inv'8
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) (out: t_List) =
     Seq.get seq (UInt64.t'int self) = out
@@ -1045,28 +1040,28 @@ module M_hashmap__qyi9690720112976707081__get (* MyHashMap<K, V> *)
   
   predicate inv'9 (_1: t_MyHashMap)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_MyHashMap [inv'9 x]. inv'9 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'9 x]. inv'9 x
       = (invariant''5 x /\ inv'6 x.t_MyHashMap__buckets)
   
   predicate invariant''6 [@inline:trivial] (self: t_MyHashMap) = inv'9 self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: t_MyHashMap)
+  predicate inv'10 [@inline:trivial] (_1: t_MyHashMap) = invariant''6 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: t_MyHashMap [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   predicate invariant''7 [@inline:trivial] (self: t_V) = inv'1 self
   
   meta "rewrite_def" predicate invariant''7
   
-  predicate inv'11 (_1: t_V)
+  predicate inv'11 [@inline:trivial] (_1: t_V) = invariant''7 _1
   
-  axiom inv_axiom'9 [@rewrite]: forall x: t_V [inv'11 x]. inv'11 x = invariant''7 x
+  meta "rewrite_def" predicate inv'11
   
   predicate inv'12 (_1: t_Option'0)
   
-  axiom inv_axiom'10 [@rewrite]: forall x: t_Option'0 [inv'12 x]. inv'12 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'12 x]. inv'12 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'11 a_0
@@ -1157,32 +1152,32 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
-  predicate inv'3 (_1: t_List)
+  predicate invariant' (self: t_List) = inv'2 self
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
         end
-  
-  predicate invariant' (self: t_List) = inv'2 self
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_List) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'4 (_1: Seq.seq t_List)
+  predicate inv'4 [@inline:trivial] (_1: Seq.seq t_List) = invariant''0 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_List [inv'4 x]. inv'4 x = invariant''0 x
+  meta "rewrite_def" predicate inv'4
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1194,15 +1189,15 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   predicate inv'5 (_1: t_Vec)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'5 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'6 (_1: t_Vec)
+  predicate inv'6 [@inline:trivial] (_1: t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Vec [inv'6 x]. inv'6 x = invariant''2 x
+  meta "rewrite_def" predicate inv'6
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'6 self_}
     any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
@@ -1244,7 +1239,7 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   predicate inv'7 (_1: t_MyHashMap)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_MyHashMap [inv'7 x]. inv'7 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'7 x]. inv'7 x
       = (invariant''3 x /\ inv'5 x.t_MyHashMap__buckets)
   
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
@@ -1262,17 +1257,17 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'8 (_1: MutBorrow.t t_MyHashMap)
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_MyHashMap [inv'8 x]. inv'8 x = invariant''4 x
+  meta "rewrite_def" predicate inv'8
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'5 self.current /\ inv'5 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'9 (_1: MutBorrow.t t_Vec)
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''5 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'9 x]. inv'9 x = invariant''5 x
+  meta "rewrite_def" predicate inv'9
   
   predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) = UInt64.t'int self < Seq.length seq
   
@@ -1282,9 +1277,9 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'10 (_1: MutBorrow.t t_List)
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_List) = invariant''6 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t t_List [inv'10 x]. inv'10 x = invariant''6 x
+  meta "rewrite_def" predicate inv'10
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List) (out: t_List) =
     Seq.get seq (UInt64.t'int self) = out
@@ -1312,13 +1307,9 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
     {[@expl:replace 'src' type invariant] inv'2 src}
     any [ return (result: t_List) -> {inv'2 result} {dest.final = src} {result = dest.current} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_List) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_List) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec v_Cons (input: t_List) (ret (field_0: tuple) (field_1: t_List)) = any
     [ good (field_0: tuple) (field_1: t_List) -> {C_Cons field_0 field_1 = input} (! ret {field_0} {field_1})
@@ -1335,39 +1326,56 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
         = (if i = deep_model key then C_Some val' else Map.get (view'0 self.current) i)}
       (! return {result}) ]
   
-  predicate resolve'1 (_1: t_V)
+  predicate resolve'0 (_1: t_V)
   
-  predicate resolve'2 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'1 x
-      | C_None -> true
-      end
+  predicate resolve'1 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'2
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
   
-  predicate resolve'3 [@inline:trivial] (_1: t_Option) = resolve'2 _1
+  predicate resolve'2 (self: t_List) = forall k: t_DeepModelTy. resolve'1 (get self k)
   
-  meta "rewrite_def" predicate resolve'3
+  predicate resolve'3 (_1: t_K)
   
-  predicate resolve'4 (self: t_List) = forall k: t_DeepModelTy. resolve'3 (get self k)
+  predicate resolve'4 [@inline:trivial] (_1: tuple) = resolve'3 _1.f0 /\ resolve'0 _1.f1
   
-  predicate resolve'5 [@inline:trivial] (_1: t_List) = resolve'4 _1
+  meta "rewrite_def" predicate resolve'4
   
-  meta "rewrite_def" predicate resolve'5
+  predicate resolve'5 (_1: t_List)
   
-  predicate resolve'6 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'3 (Map.get (view'0 self) k)
+  predicate resolve'6 [@inline:trivial] (_1: t_List) = resolve'5 _1
   
-  predicate resolve'7 [@inline:trivial] (_1: t_MyHashMap) = resolve'6 _1
+  meta "rewrite_def" predicate resolve'6
   
-  meta "rewrite_def" predicate resolve'7
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'5 x]. resolve'5 x
+      = (resolve'2 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'4 x0 /\ resolve'6 x1
+        end)
   
-  predicate resolve'8 [@inline:trivial] (self: MutBorrow.t t_MyHashMap) = self.final = self.current
+  predicate resolve'7 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'1 (Map.get (view'0 self) k)
+  
+  predicate resolve'8 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'5 (index_logic self i)
   
   meta "rewrite_def" predicate resolve'8
   
-  predicate resolve'9 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = resolve'8 _1
+  predicate resolve'9 (_1: t_Vec)
   
-  meta "rewrite_def" predicate resolve'9
+  axiom resolve_axiom'1: forall x: t_Vec [resolve'9 x]. resolve'9 x -> resolve'8 x
+  
+  predicate resolve'10 (_1: t_MyHashMap)
+  
+  axiom resolve_axiom'2 [@rewrite]: forall x: t_MyHashMap [resolve'10 x]. resolve'10 x
+      = (resolve'7 x /\ resolve'9 x.t_MyHashMap__buckets)
+  
+  predicate resolve'11 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'11
   
   meta "compute_max_steps" 1000000
   
@@ -1428,9 +1436,9 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
           | s4 = bb9 ]
         | bb9 = s0
           [ s0 = {[@expl:type invariant] inv'10 _28} s1
-          | s1 = -{resolve'0 _28}- s2
+          | s1 = -{resolve _28}- s2
           | s2 = {[@expl:type invariant] inv'10 _27} s3
-          | s3 = -{resolve'0 _27}- s4
+          | s3 = -{resolve _27}- s4
           | s4 = bb10 ]
         | bb10 = bb10
           [ bb10 = {[@expl:loop invariant #0] inv'7 new'0}
@@ -1473,10 +1481,10 @@ module M_hashmap__qyi9690720112976707081__resize (* MyHashMap<K, V> *)
           | s4 = bb4 ] ] ]
     | bb22 = s0
       [ s0 = {[@expl:type invariant] inv'7 self.current} s1
-      | s1 = -{resolve'7 self.current}- s2
+      | s1 = -{resolve'10 self.current}- s2
       | s2 = [ &self <- { self with current = new'0 } ] s3
       | s3 = {[@expl:type invariant] inv'8 self} s4
-      | s4 = -{resolve'9 self}- s5
+      | s4 = -{resolve'11 self}- s5
       | s5 = bb25 ]
     | bb25 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -1583,9 +1591,9 @@ module M_hashmap__main
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'0 (_1: t_MyHashMap)
+  predicate inv'0 [@inline:trivial] (_1: t_MyHashMap) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_MyHashMap [inv'0 x]. inv'0 x = invariant''0 x
+  meta "rewrite_def" predicate inv'0
   
   let rec get'0 (self: t_MyHashMap) (key: UInt64.t) (return (x: t_Option'0)) =
     {[@expl:get 'self' type invariant] inv'0 self}
@@ -1600,9 +1608,9 @@ module M_hashmap__main
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'1 (_1: MutBorrow.t t_MyHashMap)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_MyHashMap) = invariant''1 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: MutBorrow.t t_MyHashMap [inv'1 x]. inv'1 x = invariant''1 x
+  meta "rewrite_def" predicate inv'1
   
   let rec add (self: MutBorrow.t t_MyHashMap) (key: UInt64.t) (val': Int64.t) (return (x: ())) =
     {[@expl:add 'self' type invariant] inv'1 self}
@@ -1610,6 +1618,41 @@ module M_hashmap__main
     [ return (result: ()) -> {forall i: int. Map.get (view'0 self.final) i
         = (if i = deep_model key then C_Some val' else Map.get (view'0 self.current) i)}
       (! return {result}) ]
+  
+  predicate resolve [@inline:trivial] (_1: t_Option) = true
+  
+  meta "rewrite_def" predicate resolve
+  
+  predicate resolve'0 (self: t_MyHashMap) = forall k: int. resolve (Map.get (view'0 self) k)
+  
+  predicate resolve'1 (self: t_List) = forall k: int. resolve (get self k)
+  
+  predicate resolve'2 (_1: t_List)
+  
+  predicate resolve'3 [@inline:trivial] (_1: t_List) = resolve'2 _1
+  
+  meta "rewrite_def" predicate resolve'3
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_List [resolve'2 x]. resolve'2 x
+      = (resolve'1 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'3 x1
+        end)
+  
+  predicate resolve'4 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'2 (index_logic self i)
+  
+  meta "rewrite_def" predicate resolve'4
+  
+  predicate resolve'5 (_1: t_Vec)
+  
+  axiom resolve_axiom'0: forall x: t_Vec [resolve'5 x]. resolve'5 x -> resolve'4 x
+  
+  predicate resolve'6 (_1: t_MyHashMap)
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_MyHashMap [resolve'6 x]. resolve'6 x
+      = (resolve'0 x /\ resolve'5 x.t_MyHashMap__buckets)
   
   meta "compute_max_steps" 1000000
   
@@ -1651,16 +1694,20 @@ module M_hashmap__main
     | bb12 = s0 [ s0 = get'0 {h1} {(1: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_23 <- _ret ] s1) | s1 = bb13 ]
     | bb13 = s0
       [ s0 = [ &_x <- _23 ] s1
-      | s1 = get'0 {h1} {(2: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_25 <- _ret ] s2)
-      | s2 = bb14 ]
+      | s1 = {[@expl:type invariant] inv h1} s2
+      | s2 = -{resolve'6 h1}- s3
+      | s3 = get'0 {h1} {(2: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_25 <- _ret ] s4)
+      | s4 = bb14 ]
     | bb14 = s0
       [ s0 = [ &_y <- _25 ] s1
       | s1 = get'0 {h2} {(1: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_27 <- _ret ] s2)
       | s2 = bb15 ]
     | bb15 = s0
       [ s0 = [ &_z <- _27 ] s1
-      | s1 = get'0 {h2} {(2: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_29 <- _ret ] s2)
-      | s2 = bb16 ]
+      | s1 = {[@expl:type invariant] inv h2} s2
+      | s2 = -{resolve'6 h2}- s3
+      | s3 = get'0 {h2} {(2: UInt64.t)} (fun (_ret: t_Option'0) -> [ &_29 <- _ret ] s4)
+      | s4 = bb16 ]
     | bb16 = s0 [ s0 = [ &_t <- _29 ] s1 | s1 = bb18 ]
     | bb18 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -1694,11 +1741,11 @@ module M_hashmap__qyi891699778403859561__clone__refines (* <List<T> as creusot_c
   
   predicate invariant' (self: t_List) = inv'0 self
   
-  predicate inv'1 (_1: t_List)
+  predicate inv'1 [@inline:trivial] (_1: t_List) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_List [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'0 x]. inv'0 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv a_0 /\ inv'1 a_1
@@ -1708,9 +1755,9 @@ module M_hashmap__qyi891699778403859561__clone__refines (* <List<T> as creusot_c
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_List)
+  predicate inv'2 [@inline:trivial] (_1: t_List) = invariant''0 _1
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   meta "compute_max_steps" 1000000
   
@@ -1732,27 +1779,19 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines (* <List<(
   
   predicate resolve'0 (_1: t_V)
   
-  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve self.f0 /\ resolve'0 self.f1
+  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve _1.f0 /\ resolve'0 _1.f1
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'2 [@inline:trivial] (_1: tuple) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
   type t_Option = C_None | C_Some t_V
   
-  predicate resolve'3 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve'0 x
-      | C_None -> true
-      end
+  predicate resolve'2 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: t_Option) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'2 x]. resolve'2 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
   
   type t_DeepModelTy
   
@@ -1763,43 +1802,44 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines (* <List<(
       | C_Cons {f0 = k; f1 = v} tl -> if deep_model k = index then C_Some v else get tl index
       end
   
-  predicate resolve'5 (self: t_List) = forall k: t_DeepModelTy. resolve'4 (get self k)
+  predicate resolve'3 (self: t_List) = forall k: t_DeepModelTy. resolve'2 (get self k)
   
-  predicate resolve'6 [@inline:trivial] (_1: t_List) = resolve'5 _1
+  predicate resolve'4 (_1: t_List)
   
-  meta "rewrite_def" predicate resolve'6
+  predicate resolve'5 [@inline:trivial] (_1: t_List) = resolve'4 _1
   
-  predicate resolve'7 [@inline:trivial] (self: t_List) = resolve'6 self
+  meta "rewrite_def" predicate resolve'5
   
-  meta "rewrite_def" predicate resolve'7
-  
-  predicate resolve'8 [@inline:trivial] (_1: t_List) = resolve'7 _1
-  
-  meta "rewrite_def" predicate resolve'8
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'4 x]. resolve'4 x
+      = (resolve'3 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'1 x0 /\ resolve'5 x1
+        end)
   
   predicate structural_resolve (_1: t_List) =
     match _1 with
       | C_Nil -> true
-      | C_Cons x0 x1 -> resolve'2 x0 /\ resolve'8 x1
+      | C_Cons x0 x1 -> resolve'1 x0 /\ resolve'5 x1
       end
   
   predicate inv (_1: t_K)
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
   predicate invariant' (self: t_List) = inv'2 self
   
-  predicate inv'3 (_1: t_List)
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant' x
+  meta "rewrite_def" predicate inv'3
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
@@ -1810,7 +1850,7 @@ module M_hashmap__qyi13807168849605512546__resolve_coherence__refines (* <List<(
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_List. structural_resolve self /\ inv'2 self
-      -> structural_resolve self /\ (forall result: (). resolve'5 self -> resolve'5 self)
+      -> structural_resolve self /\ (forall result: (). resolve'3 self -> resolve'3 self)
 end
 module M_hashmap__qyi1307405214416629806__resolve_coherence__refines (* <MyHashMap<K, V> as creusot_contracts::Resolve> *)
   use mach.int.Int
@@ -1841,17 +1881,13 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines (* <MyHashM
   
   predicate resolve (_1: t_V)
   
-  predicate resolve'0 [@inline:trivial] (self: t_Option) =
-    match self with
-      | C_Some x -> resolve x
-      | C_None -> true
-      end
+  predicate resolve'0 (_1: t_Option)
   
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate resolve'1 [@inline:trivial] (_1: t_Option) = resolve'0 _1
-  
-  meta "rewrite_def" predicate resolve'1
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'0 x]. resolve'0 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve x0
+        end
   
   type t_DeepModelTy
   
@@ -1862,26 +1898,41 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines (* <MyHashM
       | C_Cons {f0 = k; f1 = v} tl -> if deep_model k = index then C_Some v else get tl index
       end
   
-  predicate resolve'2 (self: t_List) = forall k: t_DeepModelTy. resolve'1 (get self k)
+  predicate resolve'1 (self: t_List) = forall k: t_DeepModelTy. resolve'0 (get self k)
   
-  predicate resolve'3 [@inline:trivial] (_1: t_List) = resolve'2 _1
+  predicate resolve'2 (_1: t_K)
+  
+  predicate resolve'3 [@inline:trivial] (_1: tuple) = resolve'2 _1.f0 /\ resolve _1.f1
   
   meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 (_1: t_List)
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_List) = resolve'4 _1
+  
+  meta "rewrite_def" predicate resolve'5
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List [resolve'4 x]. resolve'4 x
+      = (resolve'1 x
+      /\ match x with
+        | C_Nil -> true
+        | C_Cons x0 x1 -> resolve'3 x0 /\ resolve'5 x1
+        end)
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_List = Seq.get (view self) ix
   
   meta "rewrite_def" function index_logic
   
-  predicate resolve'4 [@inline:trivial] (self: t_Vec) =
-    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'3 (index_logic self i)
+  predicate resolve'6 [@inline:trivial] (self: t_Vec) =
+    forall i: int. 0 <= i /\ i < Seq.length (view self) -> resolve'4 (index_logic self i)
   
-  meta "rewrite_def" predicate resolve'4
+  meta "rewrite_def" predicate resolve'6
   
-  predicate resolve'5 [@inline:trivial] (_1: t_Vec) = resolve'4 _1
+  predicate resolve'7 (_1: t_Vec)
   
-  meta "rewrite_def" predicate resolve'5
+  axiom resolve_axiom'1: forall x: t_Vec [resolve'7 x]. resolve'7 x -> resolve'6 x
   
-  predicate structural_resolve (_1: t_MyHashMap) = resolve'5 _1.t_MyHashMap__buckets
+  predicate structural_resolve (_1: t_MyHashMap) = resolve'7 _1.t_MyHashMap__buckets
   
   function hash_log (_1: t_DeepModelTy) : int
   
@@ -1907,42 +1958,42 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines (* <MyHashM
   
   predicate inv'0 (_1: t_V)
   
-  predicate inv'1 (_1: tuple)
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  axiom inv_axiom [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x = (let {f0 = x0; f1 = x1} = x in inv x0 /\ inv'0 x1)
+  meta "rewrite_def" predicate inv'1
   
   predicate inv'2 (_1: t_List)
   
-  predicate inv'3 (_1: t_List)
+  predicate invariant''0 (self: t_List) = inv'2 self
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
+  predicate inv'3 [@inline:trivial] (_1: t_List) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List [inv'2 x]. inv'2 x
       = match x with
         | C_Nil -> true
         | C_Cons a_0 a_1 -> inv'1 a_0 /\ inv'3 a_1
         end
-  
-  predicate invariant''0 (self: t_List) = inv'2 self
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'3 x]. inv'3 x = invariant''0 x
   
   predicate invariant''1 [@inline:trivial] (self: Seq.seq t_List) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'3 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'4 (_1: Seq.seq t_List)
+  predicate inv'4 [@inline:trivial] (_1: Seq.seq t_List) = invariant''1 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Seq.seq t_List [inv'4 x]. inv'4 x = invariant''1 x
+  meta "rewrite_def" predicate inv'4
   
   predicate invariant''2 (self: t_Vec) = inv'4 (view self)
   
   predicate inv'5 (_1: t_Vec)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Vec [inv'5 x]. inv'5 x = invariant''2 x
   
   predicate inv'6 (_1: t_MyHashMap)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap [inv'6 x]. inv'6 x
       = (invariant' x /\ inv'5 x.t_MyHashMap__buckets)
   
   function bucket (self: t_MyHashMap) (k: t_DeepModelTy) : t_List =
@@ -1950,14 +2001,14 @@ module M_hashmap__qyi1307405214416629806__resolve_coherence__refines (* <MyHashM
   
   function view'0 (self: t_MyHashMap) : Map.map t_DeepModelTy t_Option = fun (k: t_DeepModelTy) -> get (bucket self k) k
   
-  predicate resolve'6 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'1 (Map.get (view'0 self) k)
+  predicate resolve'8 (self: t_MyHashMap) = forall k: t_DeepModelTy. resolve'0 (Map.get (view'0 self) k)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_MyHashMap. structural_resolve self /\ inv'6 self
-      -> structural_resolve self /\ inv'6 self /\ (forall result: (). resolve'6 self -> resolve'6 self)
+      -> structural_resolve self /\ inv'6 self /\ (forall result: (). resolve'8 self -> resolve'8 self)
 end
 module M_hashmap__qyi9060063638777358169__hash__refines (* <usize as Hash> *)
   use creusot.int.UInt64

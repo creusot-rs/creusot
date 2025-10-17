@@ -70,6 +70,8 @@ impl<'tcx> Metadata<'tcx> {
         self.erased_defid.get(&id)
     }
 
+
+    /// Returns `true` if the crate has not been verified by Creusot.
     pub(crate) fn is_external_crate(&self, cnum: CrateNum) -> bool {
         self.get(cnum).is_none_or(|meta| meta.is_external_crate)
     }

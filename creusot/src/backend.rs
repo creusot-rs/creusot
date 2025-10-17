@@ -25,7 +25,7 @@ pub(crate) mod optimization;
 pub(crate) mod program;
 pub(crate) mod projections;
 pub(crate) mod signature;
-pub(crate) mod structural_resolve;
+pub(crate) mod resolve;
 pub(crate) mod term;
 pub(crate) mod traits;
 pub(crate) mod ty;

@@ -570,29 +570,30 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn forall_trig(
         self,
         binder: (PIdent, Ty<'tcx>),
-        trigger: Box<[Trigger<'tcx>]>,
+        trigger: impl IntoIterator<Item = Trigger<'tcx>>,
     ) -> Self {
         self.quant(QuantKind::Forall, Box::new([binder]), trigger)
     }
 
     pub(crate) fn forall(self, binder: (PIdent, Ty<'tcx>)) -> Self {
-        self.forall_trig(binder, Box::new([]))
+        self.forall_trig(binder, [])
     }
 
     pub(crate) fn exists(self, binder: (PIdent, Ty<'tcx>)) -> Self {
-        self.quant(QuantKind::Exists, Box::new([binder]), Box::new([]))
+        self.quant(QuantKind::Exists, Box::new([binder]), [])
     }
 
     pub(crate) fn quant(
         self,
         quant_kind: QuantKind,
         binder: QuantBinder<'tcx>,
-        trigger: Box<[Trigger<'tcx>]>,
+        trigger: impl IntoIterator<Item = Trigger<'tcx>>,
     ) -> Self {
         assert!(self.ty.is_bool());
         if self.is_true() || self.is_false() {
             self
         } else {
+            let trigger = trigger.into_iter().collect();
             Term {
                 ty: self.ty,
                 span: self.span,

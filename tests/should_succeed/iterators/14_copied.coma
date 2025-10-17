@@ -1,24 +1,3 @@
-module M_14_copied__qyi4801040389906567440__resolve_coherence (* <Copied<I> as creusot_contracts::Resolve> *)
-  type t_I
-  
-  type t_Copied = { t_Copied__iter: t_I }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate structural_resolve (_1: t_Copied) = resolve _1.t_Copied__iter
-  
-  predicate resolve'0 (self: t_Copied) = resolve self.t_Copied__iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Copied
-  
-  function resolve_coherence (self: t_Copied) : ()
-  
-  goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'0 self)
-end
 module M_14_copied__qyi9881593582958868314__produces_refl (* <Copied<I> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
@@ -131,9 +110,9 @@ module M_14_copied__qyi9881593582958868314__next (* <Copied<I> as common::Iterat
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_I)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_I [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: ()) (args: MutBorrow.t t_I)
   
@@ -148,13 +127,13 @@ module M_14_copied__qyi9881593582958868314__next (* <Copied<I> as common::Iterat
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 (_1: t_T)
+  predicate inv'2 [@inline:trivial] (_1: t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_T [inv'2 x]. inv'2 x = invariant''0 x
+  meta "rewrite_def" predicate inv'2
   
   predicate inv'3 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'2 a_0
@@ -175,29 +154,25 @@ module M_14_copied__qyi9881593582958868314__next (* <Copied<I> as common::Iterat
   
   predicate inv'4 (_1: t_Copied)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Copied [inv'4 x]. inv'4 x = inv x.t_Copied__iter
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Copied [inv'4 x]. inv'4 x = inv x.t_Copied__iter
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Copied) = inv'4 self.current /\ inv'4 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'5 (_1: MutBorrow.t t_Copied)
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Copied) = invariant''1 _1
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_Copied [inv'5 x]. inv'5 x = invariant''1 x
+  meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Copied) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Copied) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Copied) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   type t_Option'0 = C_None'0 | C_Some'0 t_T
   
   predicate inv'6 (_1: t_Option'0)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'6 x]. inv'6 x
       = match x with
         | C_None'0 -> true
         | C_Some'0 a_0 -> inv'1 a_0
@@ -236,7 +211,7 @@ module M_14_copied__qyi9881593582958868314__next (* <Copied<I> as common::Iterat
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = {[@expl:type invariant] inv'5 self} s1
-      | s1 = -{resolve'0 self}- s2
+      | s1 = -{resolve self}- s2
       | s2 = copied {_3} (fun (_ret: t_Option'0) -> [ &_0 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = return {_0} ]
@@ -250,30 +225,6 @@ module M_14_copied__qyi9881593582958868314__next (* <Copied<I> as common::Iterat
         | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
-end
-module M_14_copied__qyi4801040389906567440__resolve_coherence__refines (* <Copied<I> as creusot_contracts::Resolve> *)
-  type t_I
-  
-  type t_Copied = { t_Copied__iter: t_I }
-  
-  predicate resolve (_1: t_I)
-  
-  predicate structural_resolve (_1: t_Copied) = resolve _1.t_Copied__iter
-  
-  predicate inv (_1: t_I)
-  
-  predicate inv'0 (_1: t_Copied)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x = inv x.t_Copied__iter
-  
-  predicate resolve'0 (self: t_Copied) = resolve self.t_Copied__iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Copied. structural_resolve self /\ inv'0 self
-      -> structural_resolve self /\ (forall result: (). resolve'0 self -> resolve'0 self)
 end
 module M_14_copied__qyi9881593582958868314__produces_trans__refines (* <Copied<I> as common::Iterator> *)
   use seq.Seq
@@ -331,9 +282,9 @@ module M_14_copied__qyi9881593582958868314__next__refines (* <Copied<I> as commo
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'1 (_1: MutBorrow.t t_Copied)
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Copied) = invariant' _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_Copied [inv'1 x]. inv'1 x = invariant' x
+  meta "rewrite_def" predicate inv'1
   
   type t_T
   
@@ -364,7 +315,7 @@ module M_14_copied__qyi9881593582958868314__next__refines (* <Copied<I> as commo
   
   predicate inv'3 (_1: t_Option)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'3 x]. inv'3 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'2 a_0

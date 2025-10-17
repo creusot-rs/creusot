@@ -108,13 +108,13 @@ extern_spec! {
 
             impl<T, E> Result<&mut T, E> {
                 #[check(ghost)]
-                #[ensures(forall<t: &mut T> self == Ok(t) ==> result == Ok(*t) && t.resolve())]
+                #[ensures(forall<t: &mut T> self == Ok(t) ==> result == Ok(*t) && resolve(t))]
                 #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
                 fn copied(self) -> Result<T, E>
                 where
                     T: Copy;
 
-                #[ensures(forall<t: &mut T> self == Ok(t) ==> result == Ok(*t) && t.resolve())]
+                #[ensures(forall<t: &mut T> self == Ok(t) ==> result == Ok(*t) && resolve(t))]
                 #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
                 fn cloned(self) -> Result<T, E>
                 where

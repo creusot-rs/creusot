@@ -1,9 +1,7 @@
 use super::Why3Generator;
 use crate::{
     backend::ty::{AdtKind, classify_adt},
-    contracts_items::{
-        Intrinsic, is_ignore_structural_inv, is_open_inv_result, is_tyinv_trivial_if_param_trivial,
-    },
+    contracts_items::{Intrinsic, is_open_inv_result, is_trivial_if_param_trivial},
     ctx::{Namer, TranslationCtx},
     naming::{name, variable_name},
     translation::{
@@ -45,9 +43,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         match resolve_user_inv(ctx, ty, typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
             TraitResolved::NoInstance => {}
-            TraitResolved::Instance { def, .. }
-                if is_tyinv_trivial_if_param_trivial(ctx.tcx, def.0) =>
-            {
+            TraitResolved::Instance { def, .. } if is_trivial_if_param_trivial(ctx.tcx, def.0) => {
                 match ty.kind() {
                     TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => {
                         stack.push(*ty)
@@ -55,9 +51,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                     TyKind::Adt(_, subst) => stack.extend(subst.types()),
                     _ => unreachable!(),
                 }
-                if is_ignore_structural_inv(ctx.tcx, def.0) {
-                    continue;
-                }
+                continue;
             }
             _ => return false,
         }
@@ -73,16 +67,14 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 | AdtKind::Builtin(_) => continue,
                 AdtKind::Struct { partially_opaque: true }
                 | AdtKind::Opaque { always: false }
-                | AdtKind::Empty => {
-                    return false;
-                }
+                | AdtKind::Empty => return false,
                 AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
                     stack.extend(def.all_fields().map(|f| f.ty(ctx.tcx, subst)))
                 }
-                _ => unreachable!(),
+                AdtKind::Ghost(_) | AdtKind::Box(_) => unreachable!(),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
-            TyKind::Param(_) | TyKind::Alias(_, _) => return false,
+            TyKind::Param(_) | TyKind::Alias(_, _) | TyKind::Never => return false,
             TyKind::Bool
             | TyKind::Char
             | TyKind::Int(_)
@@ -96,33 +88,31 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
             _ => ctx.dcx().span_fatal(span, format!("Unsupported type: {ty}")),
         }
     }
+
     true
 }
 
-pub(crate) fn elaborate_inv<'tcx>(
+pub enum TyInvDef<'tcx> {
+    None,
+    Body(Ident, Term<'tcx>),
+    Axiom { axiom: Term<'tcx>, rewrite: bool },
+}
+
+pub(crate) fn elaborate_tyinv_def<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     ty: Ty<'tcx>,
     span: Span,
-) -> Option<(Term<'tcx>, bool)> {
-    let x_ident = Ident::fresh_local("x").into();
+) -> TyInvDef<'tcx> {
+    let x_ident = Ident::fresh_local("x");
     let subject = Term::var(x_ident, ty);
-    let inv_id = Intrinsic::Inv.get(ctx);
-    let subst = ctx.mk_args(&[GenericArg::from(ty)]);
-    let lhs = Term::call(ctx.tcx, names.typing_env(), inv_id, subst, [subject.clone()]);
-    let trig = Box::new([Trigger(Box::new([lhs.clone()]))]);
 
     if is_tyinv_trivial(ctx, names.source_id(), names.typing_env(), ty, span) {
-        return Some((
-            lhs.eq(ctx.tcx, Term::true_(ctx.tcx)).forall_trig((x_ident, ty), trig),
-            true,
-        ));
+        return TyInvDef::Body(x_ident, Term::true_(ctx.tcx));
     }
 
     let mut use_impl = false;
-
     let mut rhs = Term::true_(ctx.tcx);
-
     match resolve_user_inv(ctx, ty, names.typing_env()) {
         TraitResolved::NotATraitItem => unreachable!(),
         TraitResolved::Instance { def, .. } => {
@@ -141,24 +131,44 @@ pub(crate) fn elaborate_inv<'tcx>(
         TraitResolved::NoInstance => (),
     }
 
-    if !matches!(ty.kind(), TyKind::Alias(..) | TyKind::Param(_))
-        && let Some(sinv) = structural_invariant(ctx, names, subject)
-    {
+    if let Some(sinv) = structural_invariant(ctx, names, subject.clone()) {
         rhs = rhs.conj(sinv)
     } else {
         use_impl = true
     }
 
-    let term = if use_impl {
-        if rhs.is_true() {
-            return None;
-        }
-        Term::implies(lhs, rhs)
-    } else {
-        lhs.eq(ctx.tcx, rhs)
-    };
+    if use_impl && rhs.is_true() {
+        return TyInvDef::None;
+    }
 
-    Some((term.forall_trig((x_ident, ty), trig), !use_impl))
+    let mut use_axiom = use_impl;
+    if let TyKind::Adt(def, subst) = ty.kind()
+        && matches!(
+            classify_adt(ctx, names.source_id(), *def, subst),
+            AdtKind::Opaque { .. } | AdtKind::Struct { .. } | AdtKind::Enum
+        )
+    {
+        use_axiom = true;
+    }
+
+    if use_axiom {
+        let lhs = Term::call(
+            ctx.tcx,
+            names.typing_env(),
+            Intrinsic::Inv.get(ctx),
+            ctx.mk_args(&[GenericArg::from(ty)]),
+            [subject],
+        );
+        let term =
+            if use_impl { Term::implies(lhs.clone(), rhs) } else { lhs.clone().eq(ctx.tcx, rhs) };
+
+        TyInvDef::Axiom {
+            axiom: term.forall_trig((x_ident.into(), ty), [Trigger(Box::new([lhs]))]),
+            rewrite: !use_impl,
+        }
+    } else {
+        TyInvDef::Body(x_ident, rhs)
+    }
 }
 
 fn structural_invariant<'tcx>(
@@ -166,28 +176,73 @@ fn structural_invariant<'tcx>(
     names: &impl Namer<'tcx>,
     subject: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if let TraitResolved::Instance { def, .. } =
-        resolve_user_inv(ctx, subject.ty, names.typing_env())
-        && is_ignore_structural_inv(ctx.tcx, def.0)
-    {
-        return Some(Term::true_(ctx.tcx));
-    }
+    let ty = subject.ty;
+    match ty.kind() {
+        TyKind::Adt(def, subst) => match classify_adt(ctx, names.source_id(), *def, subst) {
+            AdtKind::Empty => Some(Term::false_(ctx.tcx)),
+            AdtKind::Opaque { always: true }
+            | AdtKind::Unit
+            | AdtKind::Snapshot(_)
+            | AdtKind::Namespace
+            | AdtKind::Builtin(_)
+            | AdtKind::Ghost(_)
+            | AdtKind::Box(_) => Some(Term::true_(ctx.tcx)),
+            AdtKind::Opaque { always: false } => None,
+            AdtKind::Enum => {
+                let mut triv = true;
+                let arms = def.variants().iter_enumerated().map(|(var_idx, var_def)| {
+                    let tuple_var = var_def.ctor.is_some();
 
-    match subject.ty.kind() {
-        TyKind::Adt(..) => build_inv_term_adt(ctx, names, subject),
-        TyKind::Tuple(tys) => {
-            let idsty: Vec<_> = tys
-                .iter()
-                .enumerate()
-                .map(|(i, ty)| (Ident::fresh_local(format!("x{i}")), ty))
-                .collect();
-            let mut acc = Term::true_(ctx.tcx);
-            for &(id, ty) in &idsty {
-                conj_inv_call(ctx, names, &mut acc, Term::var(id, ty))
+                    let mut exp = Term::true_(ctx.tcx);
+                    let fields = var_def.fields.iter_enumerated().map(|(field_idx, field_def)| {
+                        let field_name = if tuple_var {
+                            Ident::fresh_local(format!("a_{}", field_idx.as_usize()))
+                        } else {
+                            Ident::fresh_local(variable_name(
+                                field_def.ident(ctx.tcx).name.as_str(),
+                            ))
+                        };
+
+                        let field_ty = field_def.ty(ctx.tcx, subst);
+
+                        conj_inv_call(ctx, names, &mut exp, Term::var(field_name, field_ty));
+                        (field_idx, Pattern::binder(field_name, field_ty))
+                    });
+                    let pat = Pattern::constructor(var_idx, fields, ty);
+                    triv = triv && exp.is_true();
+                    (pat, exp)
+                });
+                let t = subject.match_(arms);
+                if triv { Some(Term::true_(ctx.tcx)) } else { Some(t) }
             }
-            let pattern =
-                Pattern::tuple(idsty.iter().map(|&(id, ty)| Pattern::binder(id, ty)), subject.ty);
-            Some(Term::let_(pattern, subject, acc))
+            AdtKind::Struct { partially_opaque } => {
+                let mut exp = Term::true_(ctx.tcx);
+                for (field_idx, field_def) in def.non_enum_variant().fields.iter_enumerated() {
+                    if field_def.vis.is_accessible_from(names.source_id(), ctx.tcx) {
+                        conj_inv_call(
+                            ctx,
+                            names,
+                            &mut exp,
+                            subject.clone().proj(field_idx, field_def.ty(ctx.tcx, subst)),
+                        )
+                    }
+                }
+                if partially_opaque {
+                    exp = exp.conj(Term {
+                        kind: TermKind::PrivateInv { term: Box::new(subject) },
+                        ty: ctx.types.bool,
+                        span: DUMMY_SP,
+                    })
+                }
+                Some(exp)
+            }
+        },
+        TyKind::Tuple(tys) => {
+            let mut exp = Term::true_(ctx.tcx);
+            for (i, ty) in tys.iter().enumerate() {
+                conj_inv_call(ctx, names, &mut exp, subject.clone().proj(i.into(), ty))
+            }
+            Some(exp)
         }
         TyKind::Closure(_, substs) => {
             let idsty: Vec<_> = substs
@@ -204,11 +259,14 @@ fn structural_invariant<'tcx>(
             let pattern = Pattern::constructor(
                 VariantIdx::ZERO,
                 idsty.iter().map(|&(fld, id, ty)| (fld, Pattern::binder(id, ty))),
-                subject.ty,
+                ty,
             );
             Some(Term::let_(pattern, subject, acc))
         }
-        _ => unreachable!(),
+        TyKind::Ref(..) | TyKind::Slice(_) | TyKind::Array(..) => Some(Term::true_(ctx.tcx)),
+        TyKind::Never => Some(Term::false_(ctx.tcx)),
+        TyKind::Alias(..) | TyKind::Param(_) => None,
+        ty => unreachable!("{ty:?}"),
     }
 }
 
@@ -235,71 +293,6 @@ fn conj_inv_call<'tcx>(
     if let Some(inv) = inv_call(ctx, names.typing_env(), names.source_id(), term) {
         let t = std::mem::replace(acc, Term::unit(ctx.tcx) /* Dummy */);
         *acc = t.conj(inv)
-    }
-}
-
-fn build_inv_term_adt<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    names: &impl Namer<'tcx>,
-    subject: Term<'tcx>,
-) -> Option<Term<'tcx>> {
-    let TyKind::Adt(def, subst) = subject.ty.kind() else { unreachable!() };
-    match classify_adt(ctx, names.source_id(), *def, subst) {
-        AdtKind::Empty => Some(Term::false_(ctx.tcx)),
-        AdtKind::Opaque { always: true }
-        | AdtKind::Unit
-        | AdtKind::Snapshot(_)
-        | AdtKind::Namespace
-        | AdtKind::Builtin(_) => Some(Term::true_(ctx.tcx)),
-        AdtKind::Opaque { always: false } => None,
-        AdtKind::Enum => {
-            let mut triv = true;
-            let term_ty = subject.ty;
-            let arms = def.variants().iter_enumerated().map(|(var_idx, var_def)| {
-                let tuple_var = var_def.ctor.is_some();
-
-                let mut exp = Term::true_(ctx.tcx);
-                let fields = var_def.fields.iter_enumerated().map(|(field_idx, field_def)| {
-                    let field_name = if tuple_var {
-                        Ident::fresh_local(format!("a_{}", field_idx.as_usize()))
-                    } else {
-                        Ident::fresh_local(variable_name(field_def.ident(ctx.tcx).name.as_str()))
-                    };
-
-                    let field_ty = field_def.ty(ctx.tcx, subst);
-
-                    conj_inv_call(ctx, names, &mut exp, Term::var(field_name, field_ty));
-                    (field_idx, Pattern::binder(field_name, field_ty))
-                });
-                let pat = Pattern::constructor(var_idx, fields, term_ty);
-                triv = triv && exp.is_true();
-                (pat, exp)
-            });
-            let t = subject.match_(arms);
-            if triv { Some(Term::true_(ctx.tcx)) } else { Some(t) }
-        }
-        AdtKind::Struct { partially_opaque } => {
-            let mut exp = Term::true_(ctx.tcx);
-            for (field_idx, field_def) in def.non_enum_variant().fields.iter_enumerated() {
-                if field_def.vis.is_accessible_from(names.source_id(), ctx.tcx) {
-                    conj_inv_call(
-                        ctx,
-                        names,
-                        &mut exp,
-                        subject.clone().proj(field_idx, field_def.ty(ctx.tcx, subst)),
-                    )
-                }
-            }
-            if partially_opaque {
-                exp = exp.conj(Term {
-                    kind: TermKind::PrivateInv { term: Box::new(subject) },
-                    ty: ctx.types.bool,
-                    span: DUMMY_SP,
-                })
-            }
-            Some(exp)
-        }
-        AdtKind::Ghost(_) | AdtKind::Box(_) => unreachable!(),
     }
 }
 

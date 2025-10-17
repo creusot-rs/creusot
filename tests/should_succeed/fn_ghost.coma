@@ -28,14 +28,14 @@ module M_fn_ghost__foo
   
   meta "rewrite_def" predicate precondition'0
   
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let x = args in closure0'post'return self x result
+  
+  meta "rewrite_def" predicate postcondition_once
+  
   predicate resolve [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve
-  
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure0'post'return self x result /\ resolve self
-  
-  meta "rewrite_def" predicate postcondition_once
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t) =
     let x = args in closure0'post'return self x result /\ self = result_state
@@ -203,9 +203,9 @@ module M_fn_ghost__takes_ghost_fn
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: t_F)
+  predicate inv'0 [@inline:trivial] (_1: t_F) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_F [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: t_F) (args: Int32.t)
   
@@ -285,9 +285,9 @@ module M_fn_ghost__takes_ghost_fnmut
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_F)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_F) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_F [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate precondition (self: t_F) (args: Int32.t)
   

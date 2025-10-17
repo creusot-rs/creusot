@@ -15,18 +15,18 @@ module M_selection_sort_generic__selection_sort
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -38,15 +38,15 @@ module M_selection_sort_generic__selection_sort
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'2 self
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: t_Vec)
+  predicate inv'3 [@inline:trivial] (_1: t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Vec [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
   let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
     any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
@@ -154,17 +154,17 @@ module M_selection_sort_generic__selection_sort
   
   axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv'4 (_1: t_Range)
+  predicate inv'4 [@inline:trivial] (_1: t_Range) = true
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Range [inv'4 x]. inv'4 x = true
+  meta "rewrite_def" predicate inv'4
   
-  predicate inv'5 (_1: Seq.seq UInt64.t)
+  predicate inv'5 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  axiom inv_axiom'4 [@rewrite]: forall x: Seq.seq UInt64.t [inv'5 x]. inv'5 x = true
+  meta "rewrite_def" predicate inv'5
   
   type t_Option = C_None | C_Some UInt64.t
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Range) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
@@ -178,10 +178,6 @@ module M_selection_sort_generic__selection_sort
         end}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Range) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
-  
   let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
     [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
@@ -194,9 +190,9 @@ module M_selection_sort_generic__selection_sort
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'6 (_1: t_T)
+  predicate inv'6 [@inline:trivial] (_1: t_T) = invariant''3 _1
   
-  axiom inv_axiom'5 [@rewrite]: forall x: t_T [inv'6 x]. inv'6 x = invariant''3 x
+  meta "rewrite_def" predicate inv'6
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -233,24 +229,24 @@ module M_selection_sort_generic__selection_sort
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'7 (_1: MutBorrow.t t_Vec)
+  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''4 _1
   
-  axiom inv_axiom'6 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'7 x]. inv'7 x = invariant''4 x
+  meta "rewrite_def" predicate inv'7
   
   predicate invariant''5 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
-  predicate inv'8 (_1: Slice64.slice t_T)
+  predicate inv'8 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''5 _1
   
-  axiom inv_axiom'7 [@rewrite]: forall x: Slice64.slice t_T [inv'8 x]. inv'8 x = invariant''5 x
+  meta "rewrite_def" predicate inv'8
   
   predicate invariant''6 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv'8 self.current /\ inv'8 self.final
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'9 (_1: MutBorrow.t (Slice64.slice t_T))
+  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant''6 _1
   
-  axiom inv_axiom'8 [@rewrite]: forall x: MutBorrow.t (Slice64.slice t_T) [inv'9 x]. inv'9 x = invariant''6 x
+  meta "rewrite_def" predicate inv'9
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
     {[@expl:deref_mut 'self_' type invariant] inv'7 self_}
@@ -269,21 +265,13 @@ module M_selection_sort_generic__selection_sort
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) = self.final = self.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate resolve'3 [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  predicate resolve'4 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve'3 _1
-  
-  meta "rewrite_def" predicate resolve'4
   
   predicate sorted (s: Seq.seq t_DeepModelTy) = sorted_range s 0 (Seq.length s)
   
@@ -320,7 +308,7 @@ module M_selection_sort_generic__selection_sort
           | s2 = next {_23} (fun (_ret: t_Option) -> [ &_22 <- _ret ] s3)
           | s3 = bb8 ]
         | bb8 = s0
-          [ s0 = -{resolve'0 _24}- s1
+          [ s0 = -{resolve _24}- s1
           | s1 = any [ br0 -> {_22 = C_None} (! bb11) | br1 (x0: UInt64.t) -> {_22 = C_Some x0} (! bb12) ] ]
         | bb12 = s0
           [ s0 = v_Some {_22} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -358,7 +346,7 @@ module M_selection_sort_generic__selection_sort
               | s2 = next {_49} (fun (_ret: t_Option) -> [ &_48 <- _ret ] s3)
               | s3 = bb20 ]
             | bb20 = s0
-              [ s0 = -{resolve'0 _50}- s1
+              [ s0 = -{resolve _50}- s1
               | s1 = any [ br0 -> {_48 = C_None} (! bb23) | br1 (x0: UInt64.t) -> {_48 = C_Some x0} (! bb24) ] ]
             | bb24 = s0
               [ s0 = v_Some {_48} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
@@ -391,13 +379,13 @@ module M_selection_sort_generic__selection_sort
           | s2 = bb33 ]
         | bb33 = s0
           [ s0 = {[@expl:type invariant] inv'9 _69} s1
-          | s1 = -{resolve'2 _69}- s2
+          | s1 = -{resolve'0 _69}- s2
           | s2 = {[@expl:assertion] let i'0 = Seq.length produced in forall k1: int, k2: int. 0 <= k1
                 /\ k1 < i'0 /\ i'0 <= k2 /\ k2 < Seq.length (deep_model'1 v)
               -> le_log (Seq.get (deep_model'1 v) k1) (Seq.get (deep_model'1 v) k2)}
             s3
           | s3 = bb6 ] ] ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'7 v} s1 | s1 = -{resolve'4 v}- s2 | s2 = return {_0} ] ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'7 v} s1 | s1 = -{resolve'1 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()

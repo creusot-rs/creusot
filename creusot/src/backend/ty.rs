@@ -64,7 +64,9 @@ pub(crate) fn classify_adt<'tcx>(
         .iter()
         .all(|f| !f.vis.is_accessible_from(scope, ctx.tcx))
     {
-        AdtKind::Opaque { always: false }
+        // A struct with no public field defined in an external crate (e.g., Vec) can be considered
+        // as fully opaque: its structural invariant/resolve will always be true.
+        AdtKind::Opaque { always: ctx.externs.is_external_crate(def.did().krate) }
     } else {
         AdtKind::Struct {
             partially_opaque: !def

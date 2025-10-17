@@ -57,13 +57,9 @@ module M_result__test_result
     {[@expl:unwrap requires] exists t: MutBorrow.t Int32.t. self_ = C_Ok'1 t}
     any [ return (result: MutBorrow.t Int32.t) -> {C_Ok'1 result = self_} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t Int32.t) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   let rec unwrap'2 (self_: t_Result) (return (x: Int32.t)) = {[@expl:unwrap requires] exists t: Int32.t. self_ = C_Ok t}
     any [ return (result: Int32.t) -> {C_Ok result = self_} (! return {result}) ]
@@ -86,9 +82,9 @@ module M_result__test_result
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  predicate resolve'0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'0
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
     let () = args in result = (0: Int32.t)
@@ -98,7 +94,7 @@ module M_result__test_result
   function fn_mut_once (self: ()) (args: ()) (res: Int32.t) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: Int32.t. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -130,7 +126,7 @@ module M_result__test_result
   function fn_once (self: ()) (args: ()) (res: Int32.t) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: Int32.t. postcondition_once self args res
-      = (postcondition self args res /\ resolve'1 self)
+      = (postcondition self args res /\ resolve'0 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: Int32.t) : ()
   
@@ -260,7 +256,7 @@ module M_result__test_result
     | bb39 = s0 [ s0 = unwrap'1 {_54} (fun (_ret: MutBorrow.t Int32.t) -> [ &_53 <- _ret ] s1) | s1 = bb40 ]
     | bb40 = s0
       [ s0 = [ &_53 <- { _53 with current = (0: Int32.t) } ] s1
-      | s1 = -{resolve'0 _53}- s2
+      | s1 = -{resolve _53}- s2
       | s2 = unwrap'2 {ok'0} (fun (_ret: Int32.t) -> [ &_58 <- _ret ] s3)
       | s3 = bb41 ]
     | bb41 = s0
@@ -273,7 +269,7 @@ module M_result__test_result
     | bb44 = s0 [ s0 = unwrap'1 {_62} (fun (_ret: MutBorrow.t Int32.t) -> [ &_61 <- _ret ] s1) | s1 = bb45 ]
     | bb45 = s0
       [ s0 = [ &_61 <- { _61 with current = (1: Int32.t) } ] s1
-      | s1 = -{resolve'0 _61}- s2
+      | s1 = -{resolve _61}- s2
       | s2 = unwrap'2 {ok'0} (fun (_ret: Int32.t) -> [ &_66 <- _ret ] s3)
       | s3 = bb46 ]
     | bb46 = s0
@@ -286,7 +282,7 @@ module M_result__test_result
     | bb49 = s0 [ s0 = unwrap_err'0 {_70} (fun (_ret: MutBorrow.t Int32.t) -> [ &_69 <- _ret ] s1) | s1 = bb50 ]
     | bb50 = s0
       [ s0 = [ &_69 <- { _69 with current = (0: Int32.t) } ] s1
-      | s1 = -{resolve'0 _69}- s2
+      | s1 = -{resolve _69}- s2
       | s2 = unwrap_err'1 {err'0} (fun (_ret: Int32.t) -> [ &_74 <- _ret ] s3)
       | s3 = bb51 ]
     | bb51 = s0
@@ -299,7 +295,7 @@ module M_result__test_result
     | bb54 = s0 [ s0 = unwrap_err'0 {_78} (fun (_ret: MutBorrow.t Int32.t) -> [ &_77 <- _ret ] s1) | s1 = bb55 ]
     | bb55 = s0
       [ s0 = [ &_77 <- { _77 with current = (-1: Int32.t) } ] s1
-      | s1 = -{resolve'0 _77}- s2
+      | s1 = -{resolve _77}- s2
       | s2 = unwrap_err'1 {err'0} (fun (_ret: Int32.t) -> [ &_82 <- _ret ] s3)
       | s3 = bb56 ]
     | bb56 = s0
@@ -419,7 +415,7 @@ module M_result__test_result
     | bb124 = s0 [ s0 = copied'0 {_198} (fun (_ret: t_Result'3) -> [ &_197 <- _ret ] s1) | s1 = bb125 ]
     | bb125 = s0 [ s0 = unwrap_err'3 {_197} (fun (_ret: MutBorrow.t Int32.t) -> [ &_196 <- _ret ] s1) | s1 = bb126 ]
     | bb126 = s0
-      [ s0 = -{resolve'0 _196}- s1
+      [ s0 = -{resolve _196}- s1
       | s1 = [ &_194 <- _196.current = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_194 = false} (! bb128) | br1 -> {_194} (! bb127) ] ]
     | bb127 = s0 [ s0 = as_ref {ok'0} (fun (_ret: t_Result'0) -> [ &_205 <- _ret ] s1) | s1 = bb129 ]
@@ -452,7 +448,7 @@ module M_result__test_result
     | bb144 = s0 [ s0 = cloned'0 {_228} (fun (_ret: t_Result'3) -> [ &_227 <- _ret ] s1) | s1 = bb145 ]
     | bb145 = s0 [ s0 = unwrap_err'3 {_227} (fun (_ret: MutBorrow.t Int32.t) -> [ &_226 <- _ret ] s1) | s1 = bb146 ]
     | bb146 = s0
-      [ s0 = -{resolve'0 _226}- s1
+      [ s0 = -{resolve _226}- s1
       | s1 = [ &_224 <- _226.current = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_224 = false} (! bb148) | br1 -> {_224} (! bb147) ] ]
     | bb147 = s0

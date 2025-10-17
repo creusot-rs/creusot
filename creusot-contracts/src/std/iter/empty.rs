@@ -3,7 +3,7 @@ use crate::{std::iter::Empty, *};
 impl<T> Iterator for Empty<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() }
+        resolve(self)
     }
 
     #[logic(open)]

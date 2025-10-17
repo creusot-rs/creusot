@@ -13,18 +13,18 @@ module M_09_capacity__change_capacity
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -36,15 +36,15 @@ module M_09_capacity__change_capacity
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: MutBorrow.t t_Vec)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
   let rec reserve (self_: MutBorrow.t t_Vec) (additional: UInt64.t) (return (x: ())) =
     {[@expl:reserve 'self_' type invariant] inv'3 self_}
@@ -62,13 +62,9 @@ module M_09_capacity__change_capacity
     {[@expl:shrink_to 'self_' type invariant] inv'3 self_}
     any [ return (result: ()) -> {view self_.final = view self_.current} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = Seq.get (view self) ix
   
@@ -112,7 +108,7 @@ module M_09_capacity__change_capacity
             [ &v <- { v with current = _ret.final } ] s1)
       | s1 = shrink_to {_11} {(1: UInt64.t)} (fun (_ret: ()) -> [ &_10 <- _ret ] s2)
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return {_0} ] ]
+    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec = v
     | & _4: () = Any.any_l ()
@@ -144,18 +140,18 @@ module M_09_capacity__clear_vec
   
   predicate invariant' (self: t_T) = inv self
   
-  predicate inv'0 (_1: t_T)
+  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
   predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'1 (_1: Seq.seq t_T)
+  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq t_T [inv'1 x]. inv'1 x = invariant''0 x
+  meta "rewrite_def" predicate inv'1
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -167,26 +163,22 @@ module M_09_capacity__clear_vec
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''2
   
-  predicate inv'3 (_1: MutBorrow.t t_Vec)
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''2 _1
   
-  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_Vec [inv'3 x]. inv'3 x = invariant''2 x
+  meta "rewrite_def" predicate inv'3
   
   let rec clear (self_: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:clear 'self_' type invariant] inv'3 self_}
     any [ return (result: ()) -> {Seq.length (view self_.final) = 0} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_Vec) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = resolve _1
-  
-  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -202,7 +194,7 @@ module M_09_capacity__clear_vec
             [ &v <- { v with current = _ret.final } ] s1)
       | s1 = clear {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve'0 v}- s2 | s2 = return {_0} ] ]
+    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 v} s1 | s1 = -{resolve v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec = v
     | & _3: () = Any.any_l ()

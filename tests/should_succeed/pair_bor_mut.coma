@@ -12,30 +12,21 @@ module M_pair_bor_mut__pair_bor_mut
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'0 (_1: MutBorrow.t t_T)
+  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
   
-  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_T [inv'0 x]. inv'0 x = invariant' x
+  meta "rewrite_def" predicate inv'0
   
-  predicate resolve [@inline:trivial] (self: MutBorrow.t t_T) = self.final = self.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = resolve _1
+  predicate inv'1 [@inline:trivial] (_1: tuple) = inv'0 _1.f0 /\ inv'0 _1.f1
+  
+  meta "rewrite_def" predicate inv'1
+  
+  predicate resolve'0 [@inline:trivial] (_1: tuple) = resolve _1.f0 /\ resolve _1.f1
   
   meta "rewrite_def" predicate resolve'0
-  
-  predicate inv'1 (_1: tuple)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: tuple [inv'1 x]. inv'1 x
-      = (let {f0 = x0; f1 = x1} = x in inv'0 x0 /\ inv'0 x1)
-  
-  predicate resolve'1 [@inline:trivial] (self: tuple) = resolve'0 self.f0 /\ resolve'0 self.f1
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate resolve'2 [@inline:trivial] (_1: tuple) = resolve'1 _1
-  
-  meta "rewrite_def" predicate resolve'2
   
   meta "compute_max_steps" 1000000
   
@@ -57,7 +48,7 @@ module M_pair_bor_mut__pair_bor_mut
             [ &_5 <- _ret ] -{inv _ret.final}-
             [ &_7 <- { _7 with current = _ret.final } ] s2)
       | s2 = {[@expl:type invariant] inv'0 _7} s3
-      | s3 = -{resolve'0 _7}- s4
+      | s3 = -{resolve _7}- s4
       | s4 = bb3 ]
     | bb2 = s0
       [ s0 = {inv p.f1.current}
@@ -78,11 +69,11 @@ module M_pair_bor_mut__pair_bor_mut
             [ &_0 <- _ret ] -{inv _ret.final}-
             [ &_3 <- { _3 with current = _ret.final } ] s2)
       | s2 = {[@expl:type invariant] inv'0 _5} s3
-      | s3 = -{resolve'0 _5}- s4
+      | s3 = -{resolve _5}- s4
       | s4 = {[@expl:type invariant] inv'0 _3} s5
-      | s5 = -{resolve'0 _3}- s6
+      | s5 = -{resolve _3}- s6
       | s6 = {[@expl:type invariant] inv'1 p} s7
-      | s7 = -{resolve'2 p}- s8
+      | s7 = -{resolve'0 p}- s8
       | s8 = return {_0} ] ]
     [ & _0: MutBorrow.t t_T = Any.any_l ()
     | & p: tuple = p
