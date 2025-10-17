@@ -3,7 +3,8 @@ use rustc_middle::ty::{Ty, TypingEnv};
 use rustc_type_ir::TyKind;
 
 use crate::{
-    contracts_items::{get_builtin, is_opaque},
+    backend::ty::{AdtKind, classify_adt},
+    ctx::Namer,
     translation::pearlite::{Ident, Pattern, Term},
 };
 
@@ -11,44 +12,51 @@ use super::Why3Generator;
 
 pub fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    typing_env: TypingEnv<'tcx>,
+    names: &impl Namer<'tcx>,
     subject: Ident,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let subject = Term::var(subject, ty);
     match ty.kind() {
-        TyKind::Adt(adt, args) if adt.is_box() => {
-            Some(resolve_of(ctx, typing_env, subject.coerce(args.type_at(0))))
-        }
-        TyKind::Adt(adt, _) if is_opaque(ctx.tcx, adt.did()) => None,
-        TyKind::Adt(adt, _) if get_builtin(ctx.tcx, adt.did()).is_some() => None,
-        TyKind::Adt(adt, args) => {
-            let arms = adt.variants().iter_enumerated().map(|(varidx, var)| {
-                let (fields, exps): (Vec<_>, Vec<_>) = var
-                    .fields
-                    .iter_enumerated()
-                    .map(|(ix, f)| {
-                        let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
-                        let fty = f.ty(ctx.tcx, args);
-                        (
-                            (ix, Pattern::binder(sym, fty)),
-                            resolve_of(ctx, typing_env, Term::var(sym, fty)),
-                        )
-                    })
-                    .unzip();
+        TyKind::Adt(adt, subst) => match classify_adt(ctx, names.source_id(), *adt, subst) {
+            AdtKind::Unit | AdtKind::Empty | AdtKind::Snapshot(_) | AdtKind::Namespace => {
+                Some(Term::true_(ctx.tcx))
+            }
+            AdtKind::Box(ty) | AdtKind::Ghost(ty) => {
+                Some(resolve_of(ctx, names.typing_env(), subject.coerce(ty)))
+            }
+            AdtKind::Builtin(_) | AdtKind::Opaque { .. } => None,
+            AdtKind::Transparent | AdtKind::PartiallyOpaque => {
+                let arms = adt.variants().iter_enumerated().map(|(varidx, var)| {
+                    let (fields, exps): (Vec<_>, Vec<_>) = var
+                        .fields
+                        .iter_enumerated()
+                        .map(|(ix, f)| {
+                            let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
+                            let fty = f.ty(ctx.tcx, subst);
+                            (
+                                (ix, Pattern::binder(sym, fty)),
+                                resolve_of(ctx, names.typing_env(), Term::var(sym, fty)),
+                            )
+                        })
+                        .unzip();
 
-                let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
-                (Pattern::constructor(varidx, fields, ty), body)
-            });
-            Some(subject.match_(arms))
-        }
+                    let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);
+                    (Pattern::constructor(varidx, fields, ty), body)
+                });
+                Some(subject.match_(arms))
+            }
+        },
         TyKind::Tuple(tys) => {
             let (fields, exps): (Vec<_>, Vec<_>) = tys
                 .iter()
                 .enumerate()
                 .map(|(i, ty)| {
                     let sym = Ident::fresh_local(&format!("x{i}"));
-                    (Pattern::binder(sym, ty), resolve_of(ctx, typing_env, Term::var(sym, ty)))
+                    (
+                        Pattern::binder(sym, ty),
+                        resolve_of(ctx, names.typing_env(), Term::var(sym, ty)),
+                    )
                 })
                 .unzip();
             let body = exps.into_iter().rfold(Term::true_(ctx.tcx), Term::conj);

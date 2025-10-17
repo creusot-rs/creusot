@@ -2,22 +2,29 @@ module M_array__test_array
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.int.UInt64
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Iter
   
-  type t_Iter = { t_Iter__ptr: t_NonNull; t_Iter__end_or_len: Opaque.ptr; t_Iter__qy95zmarker: () }
+  predicate inv (_1: t_Iter)
   
   function view (self: t_Iter) : Slice64.slice Int32.t
   
   let rec iter (self_: Slice64.slice Int32.t) (return (x: t_Iter)) = any
-    [ return (result: t_Iter) -> {view result = self_} (! return {result}) ]
+    [ return (result: t_Iter) -> {inv result} {view result = self_} (! return {result}) ]
   
   type t_Option = C_None | C_Some Int32.t
+  
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Iter) = inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: MutBorrow.t t_Iter)
+  
+  axiom inv_axiom [@rewrite]: forall x: MutBorrow.t t_Iter [inv'0 x]. inv'0 x = invariant' x
   
   function index_logic [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
@@ -52,7 +59,8 @@ module M_array__test_array
   predicate completed (self: MutBorrow.t t_Iter) =
     resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
+  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = {[@expl:next 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
@@ -85,69 +93,36 @@ module M_array__test_array
   let rec eq (self_: t_Option) (rhs: t_Option) (return (x: bool)) = any
     [ return (result: bool) -> {result = (deep_model'2 self_ = deep_model'2 rhs)} (! return {result}) ]
   
-  type t_IndexRange = { t_IndexRange__start: UInt64.t; t_IndexRange__end: UInt64.t }
+  type t_IntoIter
   
-  type t_ManuallyDrop = { t_ManuallyDrop__value: Int32.t }
+  predicate inv'1 (_1: Seq.seq Int32.t)
   
-  type t_MaybeUninit = { t_MaybeUninit__uninit: (); t_MaybeUninit__value: t_ManuallyDrop }
+  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq Int32.t [inv'1 x]. inv'1 x = true
   
-  type t_PolymorphicIter = {
-    t_PolymorphicIter__alive: t_IndexRange;
-    t_PolymorphicIter__data: Slice64.array t_MaybeUninit }
-  
-  type t_IntoIter = { t_IntoIter__inner: t_PolymorphicIter }
-  
-  predicate inv (_1: Seq.seq Int32.t)
-  
-  axiom inv_axiom [@rewrite]: forall x: Seq.seq Int32.t [inv x]. inv x = true
-  
-  predicate invariant' (self: Slice64.array Int32.t) =
-    inv (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
-  
-  predicate inv'0 (_1: Slice64.array Int32.t)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: Slice64.array Int32.t [inv'0 x]. inv'0 x = invariant' x
-  
-  predicate inv'1 (_1: Seq.seq t_MaybeUninit)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: Seq.seq t_MaybeUninit [inv'1 x]. inv'1 x = true
-  
-  predicate invariant''0 (self: Slice64.array t_MaybeUninit) =
+  predicate invariant''0 (self: Slice64.array Int32.t) =
     inv'1 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
   
-  predicate inv'2 (_1: Slice64.array t_MaybeUninit)
+  predicate inv'2 (_1: Slice64.array Int32.t)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: Slice64.array t_MaybeUninit [inv'2 x]. inv'2 x = invariant''0 x
+  axiom inv_axiom'1 [@rewrite]: forall x: Slice64.array Int32.t [inv'2 x]. inv'2 x = invariant''0 x
   
-  predicate inv'3 (_1: t_PolymorphicIter)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_PolymorphicIter [inv'3 x]. inv'3 x
-      = match x with
-        | {t_PolymorphicIter__alive = alive; t_PolymorphicIter__data = data} -> inv'2 data
-        end
-  
-  predicate inv'4 (_1: t_IntoIter)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_IntoIter [inv'4 x]. inv'4 x
-      = match x with
-        | {t_IntoIter__inner = inner} -> inv'3 inner
-        end
+  predicate inv'3 (_1: t_IntoIter)
   
   function view'0 (self: t_IntoIter) : Seq.seq Int32.t
   
   let rec into_iter (self_: Slice64.array Int32.t) (return (x: t_IntoIter)) =
-    {[@expl:into_iter 'self_' type invariant] inv'0 self_}
-    any [ return (result: t_IntoIter) -> {inv'4 result} {Slice64.view self_ = view'0 result} (! return {result}) ]
+    {[@expl:into_iter 'self_' type invariant] inv'2 self_}
+    any [ return (result: t_IntoIter) -> {inv'3 result} {Slice64.view self_ = view'0 result} (! return {result}) ]
   
   type t_Option'1 = C_None'1 | C_Some'1 Int32.t
   
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv'4 self.current /\ inv'4 self.final
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv'3 self.current /\ inv'3 self.final
   
   meta "rewrite_def" predicate invariant''1
   
-  predicate inv'5 (_1: MutBorrow.t t_IntoIter)
+  predicate inv'4 (_1: MutBorrow.t t_IntoIter)
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'5 x]. inv'5 x = invariant''1 x
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_IntoIter [inv'4 x]. inv'4 x = invariant''1 x
   
   predicate produces'0 (self: t_IntoIter) (visited: Seq.seq Int32.t) (o: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 o)
@@ -171,7 +146,7 @@ module M_array__test_array
     resolve'0 self /\ view'0 self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec next'0 (self_: MutBorrow.t t_IntoIter) (return (x: t_Option'1)) =
-    {[@expl:next 'self_' type invariant] inv'5 self_}
+    {[@expl:next 'self_' type invariant] inv'4 self_}
     any
     [ return (result: t_Option'1) -> {match result with
         | C_None'1 -> completed'0 self_
@@ -216,8 +191,9 @@ module M_array__test_array
       | s1 = iter {_121} (fun (_ret: t_Iter) -> [ &a <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Iter> {a}
-          (fun (_ret: MutBorrow.t t_Iter) -> [ &_9 <- _ret ] [ &a <- _ret.final ] s1)
+      [ s0 = {inv a}
+        MutBorrow.borrow_mut <t_Iter> {a}
+          (fun (_ret: MutBorrow.t t_Iter) -> [ &_9 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
       | s1 = next {_9} (fun (_ret: t_Option) -> [ &_8 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
@@ -233,8 +209,9 @@ module M_array__test_array
       | s5 = bb3 ]
     | bb3 = any [ br0 -> {_16 = false} (! bb5) | br1 -> {_16} (! bb4) ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Iter> {a}
-          (fun (_ret: MutBorrow.t t_Iter) -> [ &_32 <- _ret ] [ &a <- _ret.final ] s1)
+      [ s0 = {inv a}
+        MutBorrow.borrow_mut <t_Iter> {a}
+          (fun (_ret: MutBorrow.t t_Iter) -> [ &_32 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
       | s1 = next {_32} (fun (_ret: t_Option) -> [ &_31 <- _ret ] s2)
       | s2 = bb6 ]
     | bb6 = s0
@@ -250,20 +227,22 @@ module M_array__test_array
       | s5 = bb7 ]
     | bb7 = any [ br0 -> {_39 = false} (! bb9) | br1 -> {_39} (! bb8) ]
     | bb8 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Iter> {a}
-          (fun (_ret: MutBorrow.t t_Iter) -> [ &_55 <- _ret ] [ &a <- _ret.final ] s1)
+      [ s0 = {inv a}
+        MutBorrow.borrow_mut <t_Iter> {a}
+          (fun (_ret: MutBorrow.t t_Iter) -> [ &_55 <- _ret ] -{inv _ret.final}- [ &a <- _ret.final ] s1)
       | s1 = next {_55} (fun (_ret: t_Option) -> [ &_54 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = s0
-      [ s0 = bb0'0
+      [ s0 = {[@expl:type invariant] inv a} s1
+      | s1 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- C_None ] s1'0 | s1'0 = [ &_0'0 <- _1 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
         [ & _0'0: t_Option = Any.any_l () | & _1: t_Option = Any.any_l () ]
-        [ _const_ret (_const: t_Option) -> [ &_118 <- _const ] s1 ]
-      | s1 = [ &_52 <- { f0 = _54; f1 = _118 } ] s2
-      | s2 = [ &left_val'1 <- _52.f0 ] s3
-      | s3 = [ &right_val'1 <- _52.f1 ] s4
-      | s4 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_60 <- _ret ] s5)
-      | s5 = bb11 ]
+        [ _const_ret (_const: t_Option) -> [ &_118 <- _const ] s2 ]
+      | s2 = [ &_52 <- { f0 = _54; f1 = _118 } ] s3
+      | s3 = [ &left_val'1 <- _52.f0 ] s4
+      | s4 = [ &right_val'1 <- _52.f1 ] s5
+      | s5 = eq {left_val'1} {right_val'1} (fun (_ret: bool) -> [ &_60 <- _ret ] s6)
+      | s6 = bb11 ]
     | bb11 = any [ br0 -> {_60 = false} (! bb13) | br1 -> {_60} (! bb12) ]
     | bb12 = s0
       [ s0 = any
@@ -273,9 +252,9 @@ module M_array__test_array
       | s1 = into_iter {_73} (fun (_ret: t_IntoIter) -> [ &b <- _ret ] s2)
       | s2 = bb14 ]
     | bb14 = s0
-      [ s0 = {inv'4 b}
+      [ s0 = {inv'3 b}
         MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] -{inv'4 _ret.final}- [ &b <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_78 <- _ret ] -{inv'3 _ret.final}- [ &b <- _ret.final ] s1)
       | s1 = next'0 {_78} (fun (_ret: t_Option'1) -> [ &_77 <- _ret ] s2)
       | s2 = bb15 ]
     | bb15 = s0
@@ -291,9 +270,9 @@ module M_array__test_array
       | s5 = bb16 ]
     | bb16 = any [ br0 -> {_83 = false} (! bb18) | br1 -> {_83} (! bb17) ]
     | bb17 = s0
-      [ s0 = {inv'4 b}
+      [ s0 = {inv'3 b}
         MutBorrow.borrow_mut <t_IntoIter> {b}
-          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] -{inv'4 _ret.final}- [ &b <- _ret.final ] s1)
+          (fun (_ret: MutBorrow.t t_IntoIter) -> [ &_99 <- _ret ] -{inv'3 _ret.final}- [ &b <- _ret.final ] s1)
       | s1 = next'0 {_99} (fun (_ret: t_Option'1) -> [ &_98 <- _ret ] s2)
       | s2 = bb19 ]
     | bb19 = s0
@@ -324,12 +303,17 @@ module M_array__test_array
       | s2 = [ &_70 <- right_val'1 ] s3
       | s3 = {false} any ]
     | bb9 = s0
-      [ s0 = [ &kind'0 <- C_Eq ] s1
-      | s1 = [ &_47 <- left_val'0 ] s2
-      | s2 = [ &_49 <- right_val'0 ] s3
-      | s3 = {false} any ]
+      [ s0 = {[@expl:type invariant] inv a} s1
+      | s1 = [ &kind'0 <- C_Eq ] s2
+      | s2 = [ &_47 <- left_val'0 ] s3
+      | s3 = [ &_49 <- right_val'0 ] s4
+      | s4 = {false} any ]
     | bb5 = s0
-      [ s0 = [ &kind <- C_Eq ] s1 | s1 = [ &_24 <- left_val ] s2 | s2 = [ &_26 <- right_val ] s3 | s3 = {false} any ] ]
+      [ s0 = {[@expl:type invariant] inv a} s1
+      | s1 = [ &kind <- C_Eq ] s2
+      | s2 = [ &_24 <- left_val ] s3
+      | s3 = [ &_26 <- right_val ] s4
+      | s4 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & a: t_Iter = Any.any_l ()
     | & _6: tuple = Any.any_l ()

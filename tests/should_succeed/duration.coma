@@ -5,13 +5,13 @@ module M_duration__test_duration
   use creusot.int.UInt128
   use creusot.prelude.Any
   
-  type t_Nanoseconds = { t_Nanoseconds__0: UInt32.t }
-  
-  type t_Duration = { t_Duration__secs: UInt64.t; t_Duration__nanos: t_Nanoseconds }
+  type t_Duration
   
   function nanos_to_secs (nanos: int) : int = Int.div nanos 1000000000
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv (_1: t_Duration)
   
   function secs_to_nanos (secs: int) : int = secs * 1000000000
   
@@ -24,33 +24,46 @@ module M_duration__test_duration
       + nanos_to_secs (UInt32.t'int nanos)
     <= UInt64.t'int const_MAX}
     any
-    [ return (result: t_Duration) -> {view result = secs_to_nanos (UInt64.t'int secs) + UInt32.t'int nanos}
+    [ return (result: t_Duration) -> {inv result}
+      {view result = secs_to_nanos (UInt64.t'int secs) + UInt32.t'int nanos}
       (! return {result}) ]
   
-  let rec as_nanos (self_: t_Duration) (return (x: UInt128.t)) = any
+  predicate invariant' [@inline:trivial] (self: t_Duration) = inv self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 (_1: t_Duration)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Duration [inv'0 x]. inv'0 x = invariant' x
+  
+  let rec as_nanos (self_: t_Duration) (return (x: UInt128.t)) = {[@expl:as_nanos 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: UInt128.t) -> {UInt128.t'int result = view self_}
       {UInt128.t'int result <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999}
       (! return {result}) ]
   
   let rec from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {view result = secs_to_nanos (UInt64.t'int secs)} (! return {result}) ]
+    [ return (result: t_Duration) -> {inv result}
+      {view result = secs_to_nanos (UInt64.t'int secs)}
+      (! return {result}) ]
   
   let rec from_millis (millis: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {view result = UInt64.t'int millis * 1000000} (! return {result}) ]
+    [ return (result: t_Duration) -> {inv result} {view result = UInt64.t'int millis * 1000000} (! return {result}) ]
   
   let rec from_micros (micros: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {view result = UInt64.t'int micros * 1000} (! return {result}) ]
+    [ return (result: t_Duration) -> {inv result} {view result = UInt64.t'int micros * 1000} (! return {result}) ]
   
   let rec from_nanos (nanos: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {view result = UInt64.t'int nanos} (! return {result}) ]
+    [ return (result: t_Duration) -> {inv result} {view result = UInt64.t'int nanos} (! return {result}) ]
   
-  let rec is_zero (self_: t_Duration) (return (x: bool)) = any
+  let rec is_zero (self_: t_Duration) (return (x: bool)) = {[@expl:is_zero 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: bool) -> {view self_ = 0 -> result = true}
       {view self_ <> 0 -> result = false}
       (! return {result}) ]
   
-  let rec as_secs (self_: t_Duration) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = nanos_to_secs (view self_)} (! return {result}) ]
+  let rec as_secs (self_: t_Duration) (return (x: UInt64.t)) = {[@expl:as_secs 'self_' type invariant] inv'0 self_}
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = nanos_to_secs (view self_)} (! return {result}) ]
   
   function nanos_to_millis (nanos: int) : int = Int.div nanos 1000000
   
@@ -99,30 +112,44 @@ module M_duration__test_duration
   
   axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
   
-  let rec subsec_millis (self_: t_Duration) (return (x: UInt32.t)) = any
+  let rec subsec_millis (self_: t_Duration) (return (x: UInt32.t)) =
+    {[@expl:subsec_millis 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: UInt32.t) -> {UInt32.t'int result = Int.mod (nanos_to_millis (view self_)) 1000}
       {UInt32.lt result (1000: UInt32.t)}
       (! return {result}) ]
   
   function nanos_to_micros (nanos: int) : int = Int.div nanos 1000
   
-  let rec subsec_micros (self_: t_Duration) (return (x: UInt32.t)) = any
+  let rec subsec_micros (self_: t_Duration) (return (x: UInt32.t)) =
+    {[@expl:subsec_micros 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: UInt32.t) -> {UInt32.t'int result = Int.mod (nanos_to_micros (view self_)) 1000000}
       {UInt32.lt result (1000000: UInt32.t)}
       (! return {result}) ]
   
-  let rec subsec_nanos (self_: t_Duration) (return (x: UInt32.t)) = any
+  let rec subsec_nanos (self_: t_Duration) (return (x: UInt32.t)) =
+    {[@expl:subsec_nanos 'self_' type invariant] inv'0 self_}
+    any
     [ return (result: UInt32.t) -> {UInt32.t'int result = Int.mod (view self_) 1000000000}
       {UInt32.lt result (1000000000: UInt32.t)}
       (! return {result}) ]
   
-  let rec as_millis (self_: t_Duration) (return (x: UInt128.t)) = any
-    [ return (result: UInt128.t) -> {UInt128.t'int result = nanos_to_millis (view self_)} (! return {result}) ]
+  let rec as_millis (self_: t_Duration) (return (x: UInt128.t)) = {[@expl:as_millis 'self_' type invariant] inv'0 self_}
+    any [ return (result: UInt128.t) -> {UInt128.t'int result = nanos_to_millis (view self_)} (! return {result}) ]
   
-  let rec as_micros (self_: t_Duration) (return (x: UInt128.t)) = any
-    [ return (result: UInt128.t) -> {UInt128.t'int result = nanos_to_micros (view self_)} (! return {result}) ]
+  let rec as_micros (self_: t_Duration) (return (x: UInt128.t)) = {[@expl:as_micros 'self_' type invariant] inv'0 self_}
+    any [ return (result: UInt128.t) -> {UInt128.t'int result = nanos_to_micros (view self_)} (! return {result}) ]
   
   type t_Option = C_None | C_Some t_Duration
+  
+  predicate inv'1 (_1: t_Option)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv a_0
+        end
   
   type t_Option'0 = C_None'0 | C_Some'0 int
   
@@ -137,44 +164,67 @@ module M_duration__test_duration
   
   meta "rewrite_def" function deep_model'0
   
-  let rec checked_add (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {nanos_to_secs (view self_ + view rhs) > UInt64.t'int const_MAX -> result = C_None}
+  let rec checked_add (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option)) =
+    {[@expl:checked_add 'self_' type invariant] inv self_}
+    {[@expl:checked_add 'rhs' type invariant] inv rhs}
+    any
+    [ return (result: t_Option) -> {inv'1 result}
+      {nanos_to_secs (view self_ + view rhs) > UInt64.t'int const_MAX -> result = C_None}
       {nanos_to_secs (view self_ + view rhs) <= UInt64.t'int const_MAX
       -> deep_model'0 result = C_Some'0 (view self_ + view rhs)}
       (! return {result}) ]
   
-  let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+  predicate invariant''0 [@inline:trivial] (self: t_Option) = inv'1 self
   
-  let rec is_some (self_: t_Option) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ <> C_None)} (! return {result}) ]
+  meta "rewrite_def" predicate invariant''0
   
-  let rec checked_sub (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {view self_ - view rhs < 0 -> result = C_None}
+  predicate inv'2 (_1: t_Option)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x = invariant''0 x
+  
+  let rec is_none (self_: t_Option) (return (x: bool)) = {[@expl:is_none 'self_' type invariant] inv'2 self_}
+    any [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+  
+  let rec is_some (self_: t_Option) (return (x: bool)) = {[@expl:is_some 'self_' type invariant] inv'2 self_}
+    any [ return (result: bool) -> {result = (self_ <> C_None)} (! return {result}) ]
+  
+  let rec checked_sub (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option)) =
+    {[@expl:checked_sub 'self_' type invariant] inv self_}
+    {[@expl:checked_sub 'rhs' type invariant] inv rhs}
+    any
+    [ return (result: t_Option) -> {inv'1 result}
+      {view self_ - view rhs < 0 -> result = C_None}
       {view self_ - view rhs >= 0 -> deep_model'0 result = C_Some'0 (view self_ - view rhs)}
       (! return {result}) ]
   
-  let rec checked_mul (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {nanos_to_secs (view self_ * UInt32.t'int rhs) > UInt64.t'int const_MAX
-      -> result = C_None}
+  let rec checked_mul (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option)) =
+    {[@expl:checked_mul 'self_' type invariant] inv self_}
+    any
+    [ return (result: t_Option) -> {inv'1 result}
+      {nanos_to_secs (view self_ * UInt32.t'int rhs) > UInt64.t'int const_MAX -> result = C_None}
       {nanos_to_secs (view self_ * UInt32.t'int rhs) <= UInt64.t'int const_MAX
       -> deep_model'0 result = C_Some'0 (view self_ * UInt32.t'int rhs)}
       (! return {result}) ]
   
-  let rec checked_div (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {rhs = (0: UInt32.t) -> result = C_None}
+  let rec checked_div (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option)) =
+    {[@expl:checked_div 'self_' type invariant] inv self_}
+    any
+    [ return (result: t_Option) -> {inv'1 result}
+      {rhs = (0: UInt32.t) -> result = C_None}
       {rhs <> (0: UInt32.t) -> deep_model'0 result = C_Some'0 (Int.div (view self_) (UInt32.t'int rhs))}
       (! return {result}) ]
   
-  let rec add (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) = {[@expl:add requires] view self_
-      + view rhs
-    <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999}
-    any [ return (result: t_Duration) -> {view self_ + view rhs = view result} (! return {result}) ]
+  let rec add (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
+    {[@expl:add 'self_' type invariant] inv self_}
+    {[@expl:add 'rhs' type invariant] inv rhs}
+    {[@expl:add requires] view self_ + view rhs <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999}
+    any [ return (result: t_Duration) -> {inv result} {view self_ + view rhs = view result} (! return {result}) ]
   
-  let rec sub (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) = {[@expl:sub requires] view self_
-      - view rhs
-    >= 0}
-    any [ return (result: t_Duration) -> {view self_ - view rhs = view result} (! return {result}) ]
+  let rec sub (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
+    {[@expl:sub 'self_' type invariant] inv self_}
+    {[@expl:sub 'rhs' type invariant] inv rhs}
+    {[@expl:sub requires] view self_ - view rhs >= 0}
+    any [ return (result: t_Duration) -> {inv result} {view self_ - view rhs = view result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

@@ -555,38 +555,19 @@ module M_17_filter__filter
       (! return {result}) ]
 end
 module M_17_filter__less_than
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use map.Map
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Vec
   
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_IntoIter
   
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_ManuallyDrop = { t_ManuallyDrop__value: () }
-  
-  type t_IntoIter = {
-    t_IntoIter__buf: t_NonNull'0;
-    t_IntoIter__phantom: ();
-    t_IntoIter__cap: UInt64.t;
-    t_IntoIter__alloc: t_ManuallyDrop;
-    t_IntoIter__ptr: t_NonNull'0;
-    t_IntoIter__end: Opaque.ptr }
+  predicate inv (_1: t_IntoIter)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -597,7 +578,7 @@ module M_17_filter__less_than
   function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'0 result} (! return {result}) ]
   
   type closure2 = { c0: UInt32.t }
   
@@ -706,7 +687,7 @@ module M_17_filter__less_than
       {[@expl:closure hist_inv post] hist_inv self.current self.final}
       (! return {result}) ]
   
-  type t_Filter = { t_Filter__iter: t_IntoIter; t_Filter__predicate: closure2 }
+  type t_Filter
   
   predicate immutable (_1: closure2) = forall f: closure2, g: closure2. hist_inv f g -> f = g
   
@@ -722,34 +703,28 @@ module M_17_filter__less_than
   
   predicate invariant' (self: t_Filter)
   
-  predicate inv (_1: t_Filter)
+  predicate inv'0 (_1: t_Filter)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv x]. inv x
-      = (invariant' x
-      /\ match x with
-        | {t_Filter__iter = iter; t_Filter__predicate = predicate'} -> true
-        end)
-  
-  predicate inv'0 (_1: t_IntoIter)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_IntoIter [inv'0 x]. inv'0 x = true
+  axiom inv_axiom: forall x: t_Filter [inv'0 x]. inv'0 x -> invariant' x
   
   function iter (self: t_Filter) : t_IntoIter
   
-  axiom iter_spec: forall self: t_Filter. inv self -> inv'0 (iter self)
+  axiom iter_spec: forall self: t_Filter. inv'0 self -> inv (iter self)
   
   predicate inv'1 (_1: closure2)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: closure2 [inv'1 x]. inv'1 x = true
+  axiom inv_axiom'0 [@rewrite]: forall x: closure2 [inv'1 x]. inv'1 x = true
   
   function func (self: t_Filter) : closure2
   
-  axiom func_spec: forall self: t_Filter. inv self -> inv'1 (func self)
+  axiom func_spec: forall self: t_Filter. inv'0 self -> inv'1 (func self)
   
-  let rec filter (self_: t_IntoIter) (f: closure2) (return (x: t_Filter)) = {[@expl:filter requires #0] immutable f}
+  let rec filter (self_: t_IntoIter) (f: closure2) (return (x: t_Filter)) =
+    {[@expl:filter 'self_' type invariant] inv self_}
+    {[@expl:filter requires #0] immutable f}
     {[@expl:filter requires #1] no_precondition f}
     {[@expl:filter requires #2] precise f}
-    any [ return (result: t_Filter) -> {inv result} {iter result = self_ /\ func result = f} (! return {result}) ]
+    any [ return (result: t_Filter) -> {inv'0 result} {iter result = self_ /\ func result = f} (! return {result}) ]
   
   predicate resolve'2 [@inline:trivial] (_1: t_Filter) = true
   
@@ -806,7 +781,7 @@ module M_17_filter__less_than
   
   predicate from_iter_post (prod: Seq.seq UInt32.t) (res: t_Vec) = prod = view res
   
-  let rec collect (self_: t_Filter) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv self_}
+  let rec collect (self_: t_Filter) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
     any
     [ return (result: t_Vec) -> {exists done': MutBorrow.t t_Filter, prod: Seq.seq UInt32.t. resolve'2 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}

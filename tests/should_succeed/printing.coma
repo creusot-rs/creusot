@@ -1,33 +1,11 @@
 module M_printing__f
   use creusot.slice.Slice64
   use creusot.prelude.Any
-  use creusot.int.UInt64
-  use creusot.int.UInt32
-  use creusot.int.UInt16
-  use creusot.prelude.Opaque
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   
-  type t_Count = C_Is UInt16.t | C_Param UInt64.t | C_Implied
-  
-  type t_Placeholder = {
-    t_Placeholder__position: UInt64.t;
-    t_Placeholder__flags: UInt32.t;
-    t_Placeholder__precision: t_Count;
-    t_Placeholder__width: t_Count }
-  
-  type t_Option = C_None | C_Some (Slice64.slice t_Placeholder)
-  
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_ArgumentType = C_Placeholder t_NonNull Opaque.ptr () | C_Count UInt16.t
-  
-  type t_Argument = { t_Argument__ty: t_ArgumentType }
-  
-  type t_Arguments = {
-    t_Arguments__pieces: Slice64.slice string;
-    t_Arguments__fmt: t_Option;
-    t_Arguments__args: Slice64.slice t_Argument }
+  type t_Arguments
   
   predicate inv (_1: Seq.seq string)
   
@@ -93,14 +71,18 @@ module M_printing__f
   
   axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
+  predicate inv'2 (_1: t_Arguments)
+  
   let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
     {[@expl:new_const 'pieces' type invariant] inv'1 pieces}
     {[@expl:new_const requires] UInt64.le (1: UInt64.t) (1: UInt64.t)}
-    any [ return (result: t_Arguments) -> (! return {result}) ]
+    any [ return (result: t_Arguments) -> {inv'2 result} (! return {result}) ]
   
-  let rec qy95zprint (args: t_Arguments) (return (x: ())) = any [ return (result: ()) -> {true} (! return {result}) ]
+  let rec qy95zprint (args: t_Arguments) (return (x: ())) = {[@expl:_print 'args' type invariant] inv'2 args}
+    any [ return (result: ()) -> {true} (! return {result}) ]
   
-  let rec qy95zeprint (args: t_Arguments) (return (x: ())) = any [ return (result: ()) -> {true} (! return {result}) ]
+  let rec qy95zeprint (args: t_Arguments) (return (x: ())) = {[@expl:_eprint 'args' type invariant] inv'2 args}
+    any [ return (result: ()) -> {true} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

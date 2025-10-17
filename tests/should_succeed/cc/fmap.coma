@@ -76,12 +76,14 @@ module M_fmap__resolves
   
   meta "rewrite_def" predicate resolve'2
   
-  type t_FMapIter = { t_FMapIter__inner: t_FMap }
+  type t_FMapIter
+  
+  predicate inv (_1: t_FMapIter)
   
   function view'0 (self: t_FMapIter) : t_FMap
   
   let rec into_iter (self: t_FMap) (return (x: t_FMapIter)) = any
-    [ return (result: t_FMapIter) -> {view'0 result = self} (! return {result}) ]
+    [ return (result: t_FMapIter) -> {inv result} {view'0 result = self} (! return {result}) ]
   
   type tuple = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
   
@@ -120,17 +122,22 @@ module M_fmap__resolves
   
   axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple) self
   
-  predicate inv (_1: t_FMapIter)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FMapIter [inv x]. inv x = true
-  
   predicate inv'0 (_1: Seq.seq tuple)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: Seq.seq tuple [inv'0 x]. inv'0 x = true
+  axiom inv_axiom [@rewrite]: forall x: Seq.seq tuple [inv'0 x]. inv'0 x = true
+  
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_FMapIter) = inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 (_1: MutBorrow.t t_FMapIter)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: MutBorrow.t t_FMapIter [inv'1 x]. inv'1 x = invariant' x
   
   predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
   
-  let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = any
+  let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'1 self}
+    any
     [ return (result: t_Option'0) -> {match result with
         | C_None'0 -> completed self
         | C_Some'0 {f0 = k; f1 = v} -> produces self.current (Seq.singleton { f0 = k; f1 = v }) self.final
@@ -204,15 +211,20 @@ module M_fmap__resolves
         (! [ &variant_old_bb9 <- 1 - Seq.length produced ] s0)
         [ s0 = bb10 ]
         [ bb10 = s0
-          [ s0 = MutBorrow.borrow_mut <t_FMapIter> {iter}
-              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_34 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_FMapIter> {_34.current} {MutBorrow.get_id _34}
-              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_33 <- _ret ] [ &_34 <- { _34 with current = _ret.final } ] s2)
+          [ s0 = {inv iter}
+            MutBorrow.borrow_mut <t_FMapIter> {iter}
+              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_34 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
+          | s1 = {inv _34.current}
+            MutBorrow.borrow_final <t_FMapIter> {_34.current} {MutBorrow.get_id _34}
+              (fun (_ret: MutBorrow.t t_FMapIter) ->
+                [ &_33 <- _ret ] -{inv _ret.final}-
+                [ &_34 <- { _34 with current = _ret.final } ] s2)
           | s2 = next {_33} (fun (_ret: t_Option'0) -> [ &_32 <- _ret ] s3)
           | s3 = bb11 ]
         | bb11 = s0
-          [ s0 = -{resolve'4 _34}- s1
-          | s1 = any [ br0 -> {_32 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_32 = C_Some'0 x0} (! bb15) ] ]
+          [ s0 = {[@expl:type invariant] inv'1 _34} s1
+          | s1 = -{resolve'4 _34}- s2
+          | s2 = any [ br0 -> {_32 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_32 = C_Some'0 x0} (! bb15) ] ]
         | bb15 = s0
           [ s0 = v_Some {_32} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_37 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -227,10 +239,11 @@ module M_fmap__resolves
           | s6 = -{resolve'0 v2}- s7
           | s7 = bb9 ] ] ]
     | bb14 = s0
-      [ s0 = -{resolve'8 iter}- s1
-      | s1 = UInt64.add {k} {v} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s2)
-      | s2 = new'0 {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb17 ]
+      [ s0 = {[@expl:type invariant] inv iter} s1
+      | s1 = -{resolve'8 iter}- s2
+      | s2 = UInt64.add {k} {v} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s3)
+      | s3 = new'0 {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
+      | s4 = bb17 ]
     | bb17 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()

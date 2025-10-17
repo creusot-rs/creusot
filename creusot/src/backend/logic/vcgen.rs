@@ -529,7 +529,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let field = match ty.kind() {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
-                    TyKind::Adt(def, substs) => self.names.field(def.did(), substs, *idx),
+                    TyKind::Adt(def, subst) => self.names.field(def.did(), subst, *idx),
                     TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
                     TyKind::Tuple(tys) => self.names.tuple_field(tys, *idx),
                     k => unreachable!("Projection from {k:?}"),

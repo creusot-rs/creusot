@@ -1,5 +1,6 @@
 use super::pearlite::{Term, TermKind};
 use crate::{
+    backend::ty_inv::sig_add_type_invariant_spec,
     contracts_items::{is_law, is_pearlite, is_sealed, is_spec},
     ctx::*,
     naming::name,
@@ -130,8 +131,8 @@ fn logic_refinement_term<'tcx>(
     let mut impl_sig = ctx.sig(impl_item_id).clone();
 
     if !is_pearlite(ctx.tcx, impl_item_id) {
-        trait_sig.add_type_invariant_spec(ctx, trait_item_id, typing_env);
-        impl_sig.add_type_invariant_spec(ctx, impl_item_id, typing_env);
+        sig_add_type_invariant_spec(ctx, typing_env, impl_item_id, &mut trait_sig, trait_item_id);
+        sig_add_type_invariant_spec(ctx, typing_env, impl_item_id, &mut impl_sig, impl_item_id);
     }
 
     let span = ctx.tcx.def_span(impl_item_id);

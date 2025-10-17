@@ -1,8 +1,6 @@
 use crate::{
-    backend::{closures::ClosSubst, ty_inv::inv_call},
-    contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_open_inv_result,
-    },
+    backend::closures::ClosSubst,
+    contracts_items::{Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates},
     ctx::*,
     naming::{name, variable_name},
     translation::pearlite::{Ident, Literal, PIdent, Term, TermKind, normalize},
@@ -16,7 +14,7 @@ use rustc_middle::{
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
-use std::{collections::HashSet, iter::repeat};
+use std::iter::repeat;
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -299,54 +297,6 @@ impl<'tcx> PreSignature<'tcx> {
     ) -> Self {
         self.contract = self.contract.normalize(ctx, typing_env);
         self
-    }
-
-    pub(crate) fn add_type_invariant_spec(
-        &mut self,
-        ctx: &TranslationCtx<'tcx>,
-        def_id: DefId,
-        typing_env: TypingEnv<'tcx>,
-    ) {
-        let fn_name = ctx.opt_item_name(def_id);
-        let fn_name = match &fn_name {
-            Some(fn_name) => fn_name.as_str(),
-            None => "closure",
-        };
-
-        let params_open_inv: HashSet<usize> = ctx
-            .params_open_inv(def_id)
-            .iter()
-            .copied()
-            .flatten()
-            .map(|&i| if ctx.is_closure_like(def_id) { i + 1 } else { i })
-            .collect();
-
-        let new_requires = self.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
-            if !params_open_inv.contains(&i)
-                && let Some(term) = inv_call(ctx, typing_env, Term::var(ident.0, *ty))
-            {
-                let expl =
-                    format!("expl:{} '{}' type invariant", fn_name, ident.0.name().to_string());
-                Some(Condition { term: term.span(*span), expl })
-            } else {
-                None
-            }
-        });
-        self.contract.requires.splice(0..0, new_requires);
-
-        let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
-        if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
-            && let Some(term) = inv_call(ctx, typing_env, Term::var(name::result(), self.output))
-        {
-            let expl = format!("expl:{} result type invariant", fn_name);
-            self.contract.ensures.insert(
-                0,
-                Condition {
-                    term: term.span(ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id))),
-                    expl,
-                },
-            );
-        }
     }
 }
 

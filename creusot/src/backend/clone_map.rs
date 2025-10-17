@@ -93,11 +93,11 @@ pub(crate) trait Namer<'tcx> {
                 self.def_ty(def_id, subst);
                 Dependency::ClosureAccessor(def_id, subst, ix.as_u32())
             }
-            DefKind::Struct | DefKind::Union => {
-                let field_did =
-                    self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
-                Dependency::Item(field_did, subst)
+            DefKind::Struct => {
+                let fields = &self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields;
+                Dependency::Item(fields[ix].did, subst)
             }
+            DefKind::Union => unimplemented!("Field access for unions is not implemented."),
             _ => unreachable!(),
         };
 
@@ -447,7 +447,7 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
                 if scc.len() > 1
                     && !scc.iter().all(|node| {
                         if let Some((did, _)) = node.did()
-                            && get_builtin(tcx, did).is_some()
+                            && (get_builtin(tcx, did).is_some() || Intrinsic::Snapshot.is(ctx, did))
                         {
                             false
                         } else {

@@ -25,7 +25,7 @@ impl<F> FnGhost for F {}
 /// `#[check(ghost)]` closures.
 #[doc(hidden)]
 #[intrinsic("fn_ghost_wrapper")]
-pub struct FnGhostWrapper<F>(F);
+pub struct FnGhostWrapper<F>(pub F);
 
 impl<F: Clone> Clone for FnGhostWrapper<F> {
     #[ensures(F::clone.postcondition((&self@,), result@))]
@@ -81,7 +81,7 @@ impl<F> FnGhostWrapper<F> {
 impl<F> View for FnGhostWrapper<F> {
     type ViewTy = F;
 
-    #[logic(inline)]
+    #[logic(open, inline)]
     fn view(self) -> Self::ViewTy {
         self.0
     }

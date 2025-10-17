@@ -39,14 +39,9 @@ module M_seq_iter__reverse_ghost
     {[@expl:into_inner 'self' type invariant] inv'2 self}
     any [ return (result: Seq.seq t_T) -> {inv'1 result} {result = self} (! return {result}) ]
   
-  type t_SeqIter = { t_SeqIter__inner: Seq.seq t_T }
+  type t_SeqIter
   
   predicate inv'3 (_1: t_SeqIter)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_SeqIter [inv'3 x]. inv'3 x
-      = match x with
-        | {t_SeqIter__inner = inner} -> inv'1 inner
-        end
   
   function view (self: t_SeqIter) : Seq.seq t_T
   
@@ -77,11 +72,11 @@ module M_seq_iter__reverse_ghost
   
   predicate inv'4 (_1: MutBorrow.t t_SeqIter)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: MutBorrow.t t_SeqIter [inv'4 x]. inv'4 x = invariant''2 x
+  axiom inv_axiom'2 [@rewrite]: forall x: MutBorrow.t t_SeqIter [inv'4 x]. inv'4 x = invariant''2 x
   
   predicate inv'5 (_1: t_Option)
   
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv a_0
@@ -116,7 +111,7 @@ module M_seq_iter__reverse_ghost
   
   predicate inv'6 (_1: MutBorrow.t (Seq.seq t_T))
   
-  axiom inv_axiom'5 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_T) [inv'6 x]. inv'6 x = invariant''3 x
+  axiom inv_axiom'4 [@rewrite]: forall x: MutBorrow.t (Seq.seq t_T) [inv'6 x]. inv'6 x = invariant''3 x
   
   function push_front [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
@@ -321,17 +316,13 @@ module M_seq_iter__reverse_ghost_ref
     {[@expl:into_inner 'self' type invariant] inv'7 self}
     any [ return (result: Seq.seq t_T) -> {inv'6 result} {result = self} (! return {result}) ]
   
-  type t_SeqIterRef = { t_SeqIterRef__inner: Seq.seq t_T; t_SeqIterRef__index: int }
+  type t_SeqIterRef
   
   predicate invariant''7 (self: t_SeqIterRef)
   
   predicate inv'8 (_1: t_SeqIterRef)
   
-  axiom inv_axiom'7 [@rewrite]: forall x: t_SeqIterRef [inv'8 x]. inv'8 x
-      = (invariant''7 x
-      /\ match x with
-        | {t_SeqIterRef__inner = inner; t_SeqIterRef__index = index} -> inv'6 inner
-        end)
+  axiom inv_axiom'7: forall x: t_SeqIterRef [inv'8 x]. inv'8 x -> invariant''7 x
   
   function view (self: t_SeqIterRef) : Seq.seq t_T
   

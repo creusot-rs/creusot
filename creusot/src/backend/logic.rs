@@ -123,9 +123,9 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
 }
 
 /// Translate a logical term to why3.
-pub(crate) fn lower_logical_defn<'tcx, N: Namer<'tcx>>(
+pub(crate) fn lower_logical_defn<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    names: &N,
+    names: &impl Namer<'tcx>,
     sig: LogicSignature,
     kind: DeclKind,
     body: Term<'tcx>,

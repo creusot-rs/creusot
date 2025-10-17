@@ -54,7 +54,8 @@ impl<'tcx> Dependency<'tcx> {
     pub(crate) fn base_ident(self, ctx: &TranslationCtx<'tcx>) -> Option<Symbol> {
         match self {
             Dependency::Type(ty) => match ty.kind() {
-                TyKind::Adt(def, _) if !def.is_box() => {
+                TyKind::Adt(def, _) => {
+                    assert!(!def.is_box());
                     Some(item_symb(ctx.tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
                 }
                 TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(

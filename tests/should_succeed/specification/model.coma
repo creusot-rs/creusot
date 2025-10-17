@@ -1,11 +1,10 @@
 module M_model__test_arc
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Arc
   
-  type t_Arc = { t_Arc__ptr: t_NonNull; t_Arc__phantom: (); t_Arc__alloc: () }
+  predicate inv (_1: t_Arc)
   
   function view [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -17,18 +16,18 @@ module M_model__test_arc
   
   meta "select_lsinst" "all"
   
-  let rec test_arc (a: t_Arc) (return (x: ())) = {[@expl:test_arc requires] view (view'0 a) = 0}
+  let rec test_arc (a: t_Arc) (return (x: ())) = {[@expl:test_arc 'a' type invariant] inv a}
+    {[@expl:test_arc requires] view (view'0 a) = 0}
     (! bb0
     [ bb0 = bb1 | bb1 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_model__test_rc
   use creusot.prelude.Any
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Rc
   
-  type t_Rc = { t_Rc__ptr: t_NonNull; t_Rc__phantom: (); t_Rc__alloc: () }
+  predicate inv (_1: t_Rc)
   
   function view [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -40,7 +39,8 @@ module M_model__test_rc
   
   meta "select_lsinst" "all"
   
-  let rec test_rc (v: t_Rc) (return (x: ())) = {[@expl:test_rc requires] view (view'0 v) = 0}
+  let rec test_rc (v: t_Rc) (return (x: ())) = {[@expl:test_rc 'v' type invariant] inv v}
+    {[@expl:test_rc requires] view (view'0 v) = 0}
     (! bb0
     [ bb0 = bb1 | bb1 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -1,5 +1,4 @@
 module M_string__test_string_len
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   use seq.Seq
   use creusot.prelude.Char
@@ -8,19 +7,17 @@ module M_string__test_string_len
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_String
   
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  predicate inv (_1: t_String)
   
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
+  predicate invariant' [@inline:trivial] (self: t_String) = inv self
   
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
+  meta "rewrite_def" predicate invariant'
   
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
+  predicate inv'0 (_1: t_String)
   
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
-  
-  type t_String = { t_String__vec: t_Vec }
+  axiom inv_axiom [@rewrite]: forall x: t_String [inv'0 x]. inv'0 x = invariant' x
   
   function tail (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
@@ -41,15 +38,15 @@ module M_string__test_string_len
   
   function view (self: t_String) : Seq.seq Char.t
   
-  let rec len (self_: t_String) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view self_))} (! return {result}) ]
+  let rec len (self_: t_String) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'0 self_}
+    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view self_))} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_string_len (s: t_String) (return (x: UInt64.t)) = {[@expl:test_string_len requires #0] view s
-    = Seq.create 1 [|Char.of_int 195|]}
+  let rec test_string_len (s: t_String) (return (x: UInt64.t)) = {[@expl:test_string_len 's' type invariant] inv s}
+    {[@expl:test_string_len requires #0] view s = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_string_len requires #1] to_utf8 (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
     [ bb0 = s0 [ s0 = len {s} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]

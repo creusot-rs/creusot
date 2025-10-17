@@ -1,6 +1,5 @@
 module M_08_collect_extend__extend
   use seq.Seq
-  use creusot.prelude.Opaque
   use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -15,17 +14,7 @@ module M_08_collect_extend__extend
   
   type t_T
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -217,24 +206,13 @@ module M_08_collect_extend__extend
       (! return {result}) ]
 end
 module M_08_collect_extend__collect
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
+  use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   type t_Item
   
@@ -422,36 +400,17 @@ module M_08_collect_extend__collect
 end
 module M_08_collect_extend__extend_index
   use creusot.prelude.MutBorrow
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
+  type t_Vec
   
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
+  type t_IntoIter
   
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
-  
-  type t_NonNull'0 = { t_NonNull__pointer'0: Opaque.ptr }
-  
-  type t_ManuallyDrop = { t_ManuallyDrop__value: () }
-  
-  type t_IntoIter = {
-    t_IntoIter__buf: t_NonNull'0;
-    t_IntoIter__phantom: ();
-    t_IntoIter__cap: UInt64.t;
-    t_IntoIter__alloc: t_ManuallyDrop;
-    t_IntoIter__ptr: t_NonNull'0;
-    t_IntoIter__end: Opaque.ptr }
+  predicate inv (_1: t_IntoIter)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -462,7 +421,7 @@ module M_08_collect_extend__extend_index
   function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'0 result} (! return {result}) ]
   
   predicate produces (self: t_IntoIter) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter) =
     view'0 self = Seq.(++) visited (view'0 rhs)
@@ -485,7 +444,9 @@ module M_08_collect_extend__extend_index
   predicate completed (self: MutBorrow.t t_IntoIter) =
     resolve self /\ view'0 self.current = (Seq.empty: Seq.seq UInt32.t)
   
-  let rec extend (vec: MutBorrow.t t_Vec) (iter: t_IntoIter) (return (x: ())) = any
+  let rec extend (vec: MutBorrow.t t_Vec) (iter: t_IntoIter) (return (x: ())) =
+    {[@expl:extend 'iter' type invariant] inv iter}
+    any
     [ return (result: ()) -> {exists done': MutBorrow.t t_IntoIter, prod: Seq.seq UInt32.t. completed done'
         /\ produces iter prod done'.current /\ view vec.final = Seq.(++) (view vec.current) prod}
       (! return {result}) ]
@@ -531,27 +492,16 @@ module M_08_collect_extend__extend_index
     | & _10: t_IntoIter = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_08_collect_extend__collect_example
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.prelude.Any
   
   type t_I
   
-  type t_NonNull = { t_NonNull__pointer: Opaque.ptr }
-  
-  type t_Unique = { t_Unique__pointer: t_NonNull; t_Unique__qy95zmarker: () }
-  
-  type t_UsizeNoHighBit = { t_UsizeNoHighBit__0: UInt64.t }
-  
-  type t_RawVecInner = { t_RawVecInner__ptr: t_Unique; t_RawVecInner__cap: t_UsizeNoHighBit; t_RawVecInner__alloc: () }
-  
-  type t_RawVec = { t_RawVec__inner: t_RawVecInner; t_RawVec__qy95zmarker: () }
-  
-  type t_Vec = { t_Vec__buf: t_RawVec; t_Vec__len: UInt64.t }
+  type t_Vec
   
   predicate inv (_1: t_I)
   

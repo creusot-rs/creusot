@@ -68,6 +68,16 @@ impl<T> Resolve for VecDeque<T> {
     fn resolve_coherence(self) {}
 }
 
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> Invariant for VecDeque<T, A> {
+    #[logic(open, prophetic)]
+    #[creusot::trusted_ignore_structural_inv]
+    #[creusot::trusted_is_tyinv_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { invariant::inv(self@) }
+    }
+}
+
 extern_spec! {
     mod std {
         mod collections {
@@ -181,6 +191,8 @@ impl<'a, T> Iterator for Iter<'a, T> {
 #[cfg(not(feature = "nightly"))]
 mod impls {
     use super::*;
+    impl<T> Resolve for Vec<T> {}
+    impl<T> Invariant for Vec<T> {}
     impl<T> View for VecDeque<T> {
         type ViewTy = Seq<T>;
     }
