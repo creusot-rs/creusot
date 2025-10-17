@@ -6,7 +6,8 @@ mod m {
 
     pub struct S<A, B> {
         pub a: A,
-        #[allow(unused)] b: B
+        #[allow(unused)]
+        b: B,
     }
 
     impl<B> Invariant for S<i32, B> {
@@ -19,10 +20,10 @@ mod m {
 use m::*;
 
 #[ensures(resolve(x.a) ==> resolve::resolve(x))]
-pub fn f<A, B>(x : S<A, B>) -> A {
+pub fn f<A, B>(x: S<A, B>) -> A {
     x.a
 }
 
-pub fn g<B>(x : &mut S<i32, B>) {
+pub fn g<B>(x: &mut S<i32, B>) {
     x.a = 34;
 }

@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{invariant::Invariant, Clone, *};
+use creusot_contracts::{Clone, invariant::Invariant, *};
 
 #[derive(Copy, Clone)]
 pub struct IsZero(pub i32);
