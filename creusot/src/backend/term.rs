@@ -70,6 +70,22 @@ pub(crate) fn lower_condition<'tcx>(
     WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
 }
 
+pub(crate) fn lower_pat<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    pat: &Pattern<'tcx>,
+) -> WPattern {
+    Lower { ctx, names, weakdep: false }.lower_pat(pat)
+}
+
+pub(crate) fn lower_literal<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    lit: &Literal<'tcx>,
+) -> Exp {
+    Lower { ctx, names, weakdep: false }.lower_literal(lit)
+}
+
 pub(crate) fn unsupported_cast<'tcx>(
     ctx: &Why3Generator<'tcx>,
     span: rustc_span::Span,
@@ -91,7 +107,7 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
-            TermKind::Lit(l) => lower_literal(self.ctx, self.names, l),
+            TermKind::Lit(l) => self.lower_literal(l),
             TermKind::SeqLiteral(elts) => {
                 let elts: Box<[Exp]> = elts.iter().map(|elt| self.lower_term(elt)).collect();
                 Exp::qvar(name::seq_create())
@@ -383,8 +399,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         }
     }
 
-    // FIXME: this is a duplicate with vcgen::build_pattern_inner
-    // The only difference is the `bounds` parameter
     fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {
         match &pat.kind {
             PatternKind::Constructor(variant, fields) => {
@@ -416,7 +430,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name) => WPattern::VarP(name.0),
+            PatternKind::Binder(name, box Pattern { kind: PatternKind::Wildcard, .. }) => {
+                WPattern::VarP(name.0)
+            }
+            PatternKind::Binder(name, pat) => WPattern::As(Box::new(self.lower_pat(pat)), name.0),
             PatternKind::Bool(true) => WPattern::mk_true(),
             PatternKind::Bool(false) => WPattern::mk_false(),
             PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
@@ -462,56 +479,51 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))
             .collect()
     }
+
+    pub(crate) fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
+        match *lit {
+            Literal::Integer(i) => Constant::Int(i, None).into(),
+            Literal::UInteger(i) => Constant::Uint(i, None).into(),
+            Literal::MachSigned(mut i, ity) => {
+                let why_ty =
+                    Type::qconstructor(self.names.in_pre(ity_to_prelude(self.tcx(), ity), "t"));
+                if self.names.bitwise_mode() {
+                    // In bitwise mode, integers are bit vectors, whose literals are always unsigned
+                    if i < 0 && ity != IntTy::I128 {
+                        let target_width = self.ctx.sess.target.pointer_width;
+                        i += 1 << ity.normalize(target_width).bit_width().unwrap();
+                    }
+                    Constant::Uint(i as u128, Some(why_ty)).into()
+                } else {
+                    Constant::Int(i, Some(why_ty)).into()
+                }
+            }
+            Literal::MachUnsigned(u, uty) => {
+                let why_ty =
+                    Type::qconstructor(self.names.in_pre(uty_to_prelude(self.tcx(), uty), "t"));
+                Constant::Uint(u, Some(why_ty)).into()
+            }
+            Literal::Bool(true) => Constant::const_true().into(),
+            Literal::Bool(false) => Constant::const_false().into(),
+            Literal::Char(c) => Exp::qvar(self.names.in_pre(PreMod::Char, "of_int"))
+                .app([Constant::Int(c as u32 as i128, None).into()]),
+            Literal::Function(id, subst) => {
+                self.names.item(id, subst);
+                Exp::unit()
+            }
+            Literal::Float(ref f, fty) => {
+                let why_ty = Type::qconstructor(self.names.in_pre(floatty_to_prelude(fty), "t"));
+                Constant::Float(f.0, Some(why_ty)).into()
+            }
+            Literal::ZST => Exp::unit(),
+            Literal::String(ref string) => Constant::String(string.clone()).into(),
+        }
+    }
 }
 
 impl<'a, 'tcx, N: Namer<'tcx>> HasTyCtxt<'tcx> for Lower<'a, 'tcx, N> {
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.ctx.tcx()
-    }
-}
-
-pub(crate) fn lower_literal<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    names: &impl Namer<'tcx>,
-    lit: &Literal<'tcx>,
-) -> Exp {
-    match *lit {
-        Literal::Integer(i) => Constant::Int(i, None).into(),
-        Literal::UInteger(i) => Constant::Uint(i, None).into(),
-        Literal::MachSigned(mut i, ity) => {
-            let why_ty = Type::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, ity), "t"));
-            if names.bitwise_mode() {
-                // In bitwise mode, integers are bit vectors, whose literals are always unsigned
-                if i < 0 && ity != IntTy::I128 {
-                    let target_width = ctx.tcx.sess.target.pointer_width;
-                    i += 1 << ity.normalize(target_width).bit_width().unwrap();
-                }
-                Constant::Uint(i as u128, Some(why_ty)).into()
-            } else {
-                Constant::Int(i, Some(why_ty)).into()
-            }
-        }
-        Literal::MachUnsigned(u, uty) => {
-            let why_ty = Type::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, uty), "t"));
-            Constant::Uint(u, Some(why_ty)).into()
-        }
-        Literal::Bool(true) => Constant::const_true().into(),
-        Literal::Bool(false) => Constant::const_false().into(),
-        Literal::Char(c) => Exp::qvar(names.in_pre(PreMod::Char, "of_int")).app([Constant::Int(
-            c as u32 as i128,
-            None,
-        )
-        .into()]),
-        Literal::Function(id, subst) => {
-            names.item(id, subst);
-            Exp::unit()
-        }
-        Literal::Float(ref f, fty) => {
-            let why_ty = Type::qconstructor(names.in_pre(floatty_to_prelude(fty), "t"));
-            Constant::Float(f.0, Some(why_ty)).into()
-        }
-        Literal::ZST => Exp::unit(),
-        Literal::String(ref string) => Constant::String(string.clone()).into(),
     }
 }
 

@@ -171,7 +171,7 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_model_acc (* Tree<K
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -304,7 +304,7 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_model (* Tree<K, V>
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -442,7 +442,7 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_inj (* Tree<K, V> *
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -502,10 +502,7 @@ module M_red_black_tree__qyi3529752165842986389__has_mapping_inj (* Tree<K, V> *
     -> has_mapping self k v2
     -> ([@expl:has_mapping_model requires] bst_invariant self)
     /\ ((forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'0 v))
-    -> (let _ = has_mapping_model self k in match Map.get (view self) k with
-      | C_None'0 -> [@expl:has_mapping_inj ensures] v1 = v2
-      | C_Some'0 _v -> [@expl:has_mapping_inj ensures] v1 = v2
-      end))
+    -> ([@expl:has_mapping_inj ensures] v1 = v2))
 end
 module M_red_black_tree__qyi3665871523867809084__has_mapping (* Node<K, V> *)
   type t_Color = C_Red | C_Black
@@ -747,10 +744,10 @@ module M_red_black_tree__qyi3529752165842986389__height (* Tree<K, V> *)
   
   goal vc_height: match self with
       | {t_Tree__node = C_None} -> [@expl:height ensures] 0 >= 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left >= 0 -> ([@expl:height ensures] height left >= 0)
-        | C_Black -> height left >= 0 -> ([@expl:height ensures] height left + 1 >= 0)
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left >= 0
+      -> ([@expl:height ensures] height left >= 0)
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left >= 0
+      -> ([@expl:height ensures] height left + 1 >= 0)
       end
 end
 module M_red_black_tree__qyi3665871523867809084__height (* Node<K, V> *)
@@ -773,10 +770,8 @@ module M_red_black_tree__qyi3665871523867809084__height (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -1163,7 +1158,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -1172,10 +1167,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -1185,7 +1178,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_right (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -1638,7 +1631,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -1647,10 +1640,8 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -1660,7 +1651,7 @@ module M_red_black_tree__qyi3665871523867809084__rotate_left (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -2004,7 +1995,7 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -2013,10 +2004,8 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -2026,7 +2015,7 @@ module M_red_black_tree__qyi3665871523867809084__flip_colors (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -2285,7 +2274,7 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -2294,10 +2283,8 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color'0}} -> match color'0 with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -2307,7 +2294,7 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -2445,7 +2432,7 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -2457,8 +2444,10 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -2679,7 +2668,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -2688,10 +2677,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -2701,7 +2688,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -2865,7 +2852,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -2875,8 +2862,10 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -3141,7 +3130,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -3150,10 +3139,8 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -3163,7 +3150,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -3309,7 +3296,7 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -3319,8 +3306,10 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -3664,7 +3653,7 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -3673,10 +3662,8 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -3686,7 +3673,7 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -3706,7 +3693,7 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -3729,8 +3716,10 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -3787,26 +3776,26 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
     | bb17 = s0
       [ s0 = {[@expl:type invariant] inv'5 _11} s1
       | s1 = -{resolve _11}- s2
-      | s2 = [ &_35 <- C_None ] s3
-      | s3 = [ &_34 <- { t_Tree__node = _35 } ] s4
+      | s2 = [ &_34 <- C_None ] s3
+      | s3 = [ &_33 <- { t_Tree__node = _34 } ] s4
       | s4 = bb18 ]
     | bb18 = s0
-      [ s0 = [ &_36 <- C_Red ] s1
-      | s1 = [ &_40 <- C_None ] s2
-      | s2 = [ &_39 <- { t_Tree__node = _40 } ] s3
+      [ s0 = [ &_35 <- C_Red ] s1
+      | s1 = [ &_39 <- C_None ] s2
+      | s2 = [ &_38 <- { t_Tree__node = _39 } ] s3
       | s3 = bb19 ]
     | bb19 = s0
-      [ s0 = [ &_33 <- { t_Node__left = _34;
-                         t_Node__color = _36;
+      [ s0 = [ &_32 <- { t_Node__left = _33;
+                         t_Node__color = _35;
                          t_Node__key = key;
                          t_Node__val = val';
-                         t_Node__right = _39 } ] s1
+                         t_Node__right = _38 } ] s1
       | s1 = bb24 ]
-    | bb24 = s0 [ s0 = [ &_31 <- C_Some _33 ] s1 | s1 = bb26 ]
+    | bb24 = s0 [ s0 = [ &_30 <- C_Some _32 ] s1 | s1 = bb26 ]
     | bb26 = s0
       [ s0 = {[@expl:type invariant] inv'2 self.current.t_Tree__node} s1
       | s1 = -{resolve'5 self.current.t_Tree__node}- s2
-      | s2 = [ &self <- { self with current = { t_Tree__node = _31 } } ] s3
+      | s2 = [ &self <- { self with current = { t_Tree__node = _30 } } ] s3
       | s3 = {[@expl:type invariant] inv'6 self} s4
       | s4 = -{resolve'8 self}- s5
       | s5 = bb32 ]
@@ -3880,13 +3869,13 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
     | & _25: MutBorrow.t t_Tree = Any.any_l ()
     | & _28: () = Any.any_l ()
     | & _29: MutBorrow.t t_Node = Any.any_l ()
-    | & _31: t_Option = Any.any_l ()
-    | & _33: t_Node = Any.any_l ()
-    | & _34: t_Tree = Any.any_l ()
-    | & _35: t_Option = Any.any_l ()
-    | & _36: t_Color = Any.any_l ()
-    | & _39: t_Tree = Any.any_l ()
-    | & _40: t_Option = Any.any_l () ])
+    | & _30: t_Option = Any.any_l ()
+    | & _32: t_Node = Any.any_l ()
+    | & _33: t_Tree = Any.any_l ()
+    | & _34: t_Option = Any.any_l ()
+    | & _35: t_Color = Any.any_l ()
+    | & _38: t_Tree = Any.any_l ()
+    | & _39: t_Option = Any.any_l () ])
     [ return (result: ()) -> {[@expl:insert_rec ensures #0] internal_invariant'0 self.final}
       {[@expl:insert_rec ensures #1] height self.current = height self.final}
       {[@expl:insert_rec ensures #2] match_t (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) self.final
@@ -4088,7 +4077,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -4097,10 +4086,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color'0}} -> match color'0 with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -4110,7 +4097,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -4202,7 +4189,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -4212,8 +4199,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -4791,7 +4780,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -4800,10 +4789,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color'0}} -> match color'0 with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -4813,7 +4800,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -4830,7 +4817,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -4840,8 +4827,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -5413,7 +5402,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -5422,10 +5411,8 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color'0}} -> match color'0 with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -5435,7 +5422,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -5655,7 +5642,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -5665,8 +5652,10 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   predicate match_n (self: t_CP) (node: t_Node) =
@@ -5763,11 +5752,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   axiom has_mapping_model_spec: forall self: t_Tree, k: t_DeepModelTy. bst_invariant self
       -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'3 v))
   
-  function has_mapping_inj (self: t_Tree) (k: t_DeepModelTy) (v1: t_V) (v2: t_V) : () =
-    let _ = has_mapping_model self k in match Map.get (view self) k with
-      | C_None'3 -> ()
-      | C_Some'3 _v -> ()
-      end
+  function has_mapping_inj (self: t_Tree) (k: t_DeepModelTy) (v1: t_V) (v2: t_V) : () = has_mapping_model self k
   
   axiom has_mapping_inj_spec: forall self: t_Tree, k: t_DeepModelTy, v1: t_V, v2: t_V. bst_invariant self
       -> has_mapping self k v1 -> has_mapping self k v2 -> v1 = v2
@@ -6348,7 +6333,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V>
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -6479,16 +6464,14 @@ module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -6498,7 +6481,7 @@ module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -6515,7 +6498,7 @@ module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -6703,16 +6686,14 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -6722,7 +6703,7 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -6739,7 +6720,7 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -6748,8 +6729,10 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
@@ -7054,16 +7037,14 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -7073,7 +7054,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -7090,7 +7071,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -7144,9 +7125,6 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate resolve'1
   
-  predicate same_mappings (self: t_Tree) (o: t_Tree) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping self k v = has_mapping o k v
-  
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
@@ -7160,8 +7138,10 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
@@ -7266,94 +7246,91 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   let rec delete_max (self: MutBorrow.t t_Map) (return (x: t_Option'0)) =
     {[@expl:delete_max 'self' type invariant] inv'7 self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
-    | bb1 = s0
+    [ bb0 = s0
       [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_6 <- _ret ] -{inv'2 _ret.final}-
+            [ &_4 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
-      | s1 = any [ br0 -> {_6.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_6.current = C_Some x0} (! bb3) ] ]
-    | bb8 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _6} s1
-      | s1 = -{resolve _6}- s2
+      | s1 = any [ br0 -> {_4.current = C_None} (! bb7) | br1 (x0: t_Node) -> {_4.current = C_Some x0} (! bb2) ] ]
+    | bb7 = s0
+      [ s0 = {[@expl:type invariant] inv'5 _4} s1
+      | s1 = -{resolve _4}- s2
       | s2 = {[@expl:type invariant] inv'7 self} s3
       | s3 = -{resolve'0 self}- s4
       | s4 = [ &_0 <- C_None'0 ] s5
-      | s5 = bb19 ]
-    | bb3 = s0
-      [ s0 = v_Some {_6.current}
+      | s5 = bb18 ]
+    | bb2 = s0
+      [ s0 = v_Some {_4.current}
           (fun (r0: t_Node) ->
             {inv'4 r0}
-            MutBorrow.borrow_final <t_Node> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _6) 1}
+            MutBorrow.borrow_final <t_Node> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
               (fun (_ret: MutBorrow.t t_Node) ->
                 [ &node <- _ret ] -{inv'4 _ret.final}-
-                [ &_6 <- { _6 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
-    | bb5 = s0
+                [ &_4 <- { _4 with current = C_Some _ret.final } ] s1))
+      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_7 <- _ret ] s2)
+      | s2 = bb3 ]
+    | bb3 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ]
+    | bb4 = s0
       [ s0 = {[@expl:type invariant] inv'9 node} s1
       | s1 = -{resolve'1 node}- s2
-      | s2 = {[@expl:type invariant] inv'5 _6} s3
-      | s3 = -{resolve _6}- s4
-      | s4 = bb7 ]
-    | bb6 = s0
-      [ s0 = [ &_11 <- C_Red ] s1
-      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _11 } } ] s2
+      | s2 = {[@expl:type invariant] inv'5 _4} s3
+      | s3 = -{resolve _4}- s4
+      | s4 = bb6 ]
+    | bb5 = s0
+      [ s0 = [ &_9 <- C_Red ] s1
+      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _9 } } ] s2
       | s2 = {[@expl:type invariant] inv'9 node} s3
       | s3 = -{resolve'1 node}- s4
-      | s4 = {[@expl:type invariant] inv'5 _6} s5
-      | s5 = -{resolve _6}- s6
-      | s6 = bb7 ]
-    | bb7 = s0
-      [ s0 = {[@expl:assertion] same_mappings old_self.current.t_Map__0 self.current.t_Map__0} s1
-      | s1 = {inv'1 self.current.t_Map__0}
+      | s4 = {[@expl:type invariant] inv'5 _4} s5
+      | s5 = -{resolve _4}- s6
+      | s6 = bb6 ]
+    | bb6 = s0
+      [ s0 = {inv'1 self.current.t_Map__0}
         MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_16 <- _ret ] -{inv'1 _ret.final}-
-            [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s2)
-      | s2 = delete_max_rec {_16} (fun (_ret: tuple) -> [ &r <- _ret ] s3)
-      | s3 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_18 <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = any [ br0 -> {_18 = false} (! bb14) | br1 -> {_18} (! bb11) ]
-    | bb11 = s0
-      [ s0 = [ &_20 <- C_Black ] s1
+            [ &_12 <- _ret ] -{inv'1 _ret.final}-
+            [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
+      | s1 = delete_max_rec {_12} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
+      | s2 = bb8 ]
+    | bb8 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_14 <- _ret ] s1) | s1 = bb9 ]
+    | bb9 = any [ br0 -> {_14 = false} (! bb13) | br1 -> {_14} (! bb10) ]
+    | bb10 = s0
+      [ s0 = [ &_16 <- C_Black ] s1
       | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_23 <- _ret ] -{inv'2 _ret.final}-
+            [ &_19 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s2)
-      | s2 = as_mut {_23} (fun (_ret: t_Option'1) -> [ &_22 <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0 [ s0 = unwrap {_22} (fun (_ret: MutBorrow.t t_Node) -> [ &_21 <- _ret ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = [ &_21 <- { _21 with current = { _21.current with t_Node__color = _20 } } ] s1
-      | s1 = {[@expl:type invariant] inv'9 _21} s2
-      | s2 = -{resolve'1 _21}- s3
+      | s2 = as_mut {_19} (fun (_ret: t_Option'1) -> [ &_18 <- _ret ] s3)
+      | s3 = bb11 ]
+    | bb11 = s0 [ s0 = unwrap {_18} (fun (_ret: MutBorrow.t t_Node) -> [ &_17 <- _ret ] s1) | s1 = bb12 ]
+    | bb12 = s0
+      [ s0 = [ &_17 <- { _17 with current = { _17.current with t_Node__color = _16 } } ] s1
+      | s1 = {[@expl:type invariant] inv'9 _17} s2
+      | s2 = -{resolve'1 _17}- s3
       | s3 = {[@expl:type invariant] inv'7 self} s4
       | s4 = -{resolve'0 self}- s5
-      | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
-    | bb15 = s0 [ s0 = [ &_24 <- () ] s1 | s1 = bb16 ]
-    | bb16 = s0 [ s0 = [ &_0 <- C_Some'0 r ] s1 | s1 = bb19 ]
-    | bb19 = return {_0} ]
+      | s5 = bb14 ]
+    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb14 ]
+    | bb14 = s0 [ s0 = [ &_20 <- () ] s1 | s1 = bb15 ]
+    | bb15 = s0 [ s0 = [ &_0 <- C_Some'0 r ] s1 | s1 = bb18 ]
+    | bb18 = return {_0} ]
     [ & _0: t_Option'0 = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
-    | & old_self: MutBorrow.t t_Map = Any.any_l ()
-    | & _6: MutBorrow.t t_Option = Any.any_l ()
+    | & _4: MutBorrow.t t_Option = Any.any_l ()
     | & node: MutBorrow.t t_Node = Any.any_l ()
-    | & _9: bool = Any.any_l ()
-    | & _11: t_Color = Any.any_l ()
+    | & _7: bool = Any.any_l ()
+    | & _9: t_Color = Any.any_l ()
     | & r: tuple = Any.any_l ()
-    | & _16: MutBorrow.t t_Tree = Any.any_l ()
-    | & _18: bool = Any.any_l ()
-    | & _20: t_Color = Any.any_l ()
-    | & _21: MutBorrow.t t_Node = Any.any_l ()
-    | & _22: t_Option'1 = Any.any_l ()
-    | & _23: MutBorrow.t t_Option = Any.any_l ()
-    | & _24: () = Any.any_l () ])
+    | & _12: MutBorrow.t t_Tree = Any.any_l ()
+    | & _14: bool = Any.any_l ()
+    | & _16: t_Color = Any.any_l ()
+    | & _17: MutBorrow.t t_Node = Any.any_l ()
+    | & _18: t_Option'1 = Any.any_l ()
+    | & _19: MutBorrow.t t_Option = Any.any_l ()
+    | & _20: () = Any.any_l () ])
     [ return (result: t_Option'0) -> {[@expl:delete_max result type invariant] inv'13 result}
       {[@expl:delete_max ensures] match result with
         | C_Some'0 {f0 = k; f1 = v} -> Map.get (view'0 self.current) (deep_model k) = C_Some'2 v
@@ -7452,7 +7429,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -7536,10 +7513,8 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -7549,7 +7524,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -7566,7 +7541,7 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -7633,8 +7608,10 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
@@ -7885,7 +7862,7 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -7969,10 +7946,8 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -7982,7 +7957,7 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -7999,7 +7974,7 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -8074,8 +8049,10 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
@@ -8334,7 +8311,7 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -8449,10 +8426,8 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -8462,7 +8437,7 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -8479,7 +8454,7 @@ module M_red_black_tree__qyi1722927563742988856__get (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
@@ -8655,7 +8630,7 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
@@ -8738,23 +8713,23 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   
   predicate match_t (self: t_CP) (tree: t_Tree) =
     match self with
       | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> exists node: t_Node. tree.t_Tree__node = C_Some node
-        /\ node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
       end
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color'0}} -> match color'0 with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -8764,7 +8739,7 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -9369,16 +9344,14 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   predicate bst_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in bst_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> bst_invariant_here node
       /\ bst_invariant left /\ bst_invariant right
       end
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = color}} -> match color with
-        | C_Red -> height left
-        | C_Black -> height left + 1
-        end
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Black}} -> height left + 1
       end
   
   axiom height_spec: forall self: t_Tree. height self >= 0
@@ -9388,7 +9361,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   predicate height_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in height_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> height_invariant_here node
       /\ height_invariant left /\ height_invariant right
       end
   
@@ -9405,7 +9378,7 @@ module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <
   predicate color_invariant (self: t_Tree) =
     match self with
       | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some node} -> let {t_Node__left = left; t_Node__right = right} = node in color_invariant_here node
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
       /\ color_invariant left /\ color_invariant right
       end
   

@@ -309,7 +309,7 @@ pub enum PatternKind<'tcx> {
     Deref(Box<Pattern<'tcx>>),
     Tuple(Box<[Pattern<'tcx>]>),
     Wildcard,
-    Binder(PIdent),
+    Binder(PIdent, Box<Pattern<'tcx>>),
     Bool(bool),
     Or(Box<[Pattern<'tcx>]>),
 }
@@ -329,11 +329,15 @@ impl<'tcx> Pattern<'tcx> {
     }
 
     pub(crate) fn binder(x: impl Into<PIdent>, ty: Ty<'tcx>) -> Self {
-        Pattern { ty, kind: PatternKind::Binder(x.into()), span: DUMMY_SP }
+        Pattern {
+            ty,
+            kind: PatternKind::Binder(x.into(), Box::new(Pattern::wildcard(ty))),
+            span: DUMMY_SP,
+        }
     }
 
     pub(crate) fn binder_sp(x: impl Into<PIdent>, span: Span, ty: Ty<'tcx>) -> Self {
-        Pattern { ty, kind: PatternKind::Binder(x.into()), span }
+        Pattern::binder(x, ty).span(span)
     }
 
     pub(crate) fn deref(self, ty: Ty<'tcx>) -> Self {
@@ -376,7 +380,7 @@ impl<'tcx> Pattern<'tcx> {
                 fields.iter_mut().for_each(|f| f.rename_binds(binders, seen))
             }
             PatternKind::Wildcard => {}
-            PatternKind::Binder(s) => {
+            PatternKind::Binder(s, pat) => {
                 if seen.contains(&s.0) {
                     s.0 = binders[&s.0]
                 } else {
@@ -385,6 +389,7 @@ impl<'tcx> Pattern<'tcx> {
                     seen.insert(s.0);
                     s.0 = new_ident
                 }
+                pat.rename_binds(binders, seen);
             }
             PatternKind::Bool(_) => {}
             PatternKind::Deref(pointee) => pointee.rename_binds(binders, seen),
@@ -401,8 +406,9 @@ impl<'tcx> Pattern<'tcx> {
             }
             PatternKind::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
             PatternKind::Wildcard => {}
-            PatternKind::Binder(s) => {
+            PatternKind::Binder(s, pat) => {
                 binders.insert(s.0);
+                pat.binds(binders);
             }
             PatternKind::Bool(_) => {}
             PatternKind::Deref(pointee) => pointee.binds(binders),

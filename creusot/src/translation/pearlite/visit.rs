@@ -72,9 +72,11 @@ pub fn super_visit_pattern<'tcx, V: TermVisitor<'tcx>>(pattern: &Pattern<'tcx>, 
         PatternKind::Constructor(_, patterns) => {
             patterns.iter().for_each(|(_, p)| visitor.visit_pattern(p))
         }
-        PatternKind::Deref(pattern) => visitor.visit_pattern(pattern),
+        PatternKind::Deref(pattern) | PatternKind::Binder(_, pattern) => {
+            visitor.visit_pattern(pattern)
+        }
         PatternKind::Tuple(patterns) => patterns.iter().for_each(|p| visitor.visit_pattern(p)),
-        PatternKind::Wildcard | PatternKind::Binder(_) | PatternKind::Bool(_) => (),
+        PatternKind::Wildcard | PatternKind::Bool(_) => (),
         PatternKind::Or(patterns) => patterns.iter().for_each(|p| visitor.visit_pattern(p)),
     }
 }
