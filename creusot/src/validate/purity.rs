@@ -1,7 +1,7 @@
 use crate::{
     contracts_items::{
         Intrinsic, is_check_ghost_trusted, is_erasure, is_logic, is_prophetic, is_snapshot_closure,
-        is_spec,
+        is_spec, is_trusted,
     },
     ctx::{HasTyCtxt, TranslationCtx},
     translation::traits::TraitResolved,
@@ -41,8 +41,14 @@ impl Purity {
         }
     }
 
-    fn can_call(self, other: Purity) -> bool {
+    /// If `logic_only` is `true`, this only checks for `Purity::Logic` VS `Purity::Program`.
+    fn can_call(self, other: Purity, logic_only: bool) -> bool {
         match (self, other) {
+            (Purity::Ghost | Purity::Program { .. }, Purity::Ghost | Purity::Program { .. })
+                if logic_only =>
+            {
+                true
+            }
             (Purity::Logic { prophetic }, Purity::Logic { prophetic: prophetic2 }) => {
                 prophetic || !prophetic2
             }
@@ -81,8 +87,9 @@ pub(crate) fn validate_purity<'tcx>(
     if ctx.tcx.is_closure_like(def_id) || is_check_ghost_trusted(ctx.tcx, def_id) {
         return;
     }
+    let is_trusted = is_trusted(ctx.tcx, def_id);
     let typing_env = ctx.typing_env(def_id);
-    PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env }
+    PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env, is_trusted }
         .visit_expr(&thir[expr]);
 }
 
@@ -92,6 +99,10 @@ struct PurityVisitor<'a, 'tcx> {
     context: Purity,
     /// Typing environment of the caller function
     typing_env: TypingEnv<'tcx>,
+    /// The caller function is `#[trusted]`.
+    ///
+    /// This mean we should only check `logic`/program calls, NOT the `check(...)`.
+    is_trusted: bool,
 }
 
 enum ClosureKind {
@@ -142,8 +153,7 @@ impl PurityVisitor<'_, '_> {
                     if !block.stmts.is_empty() {
                         return None;
                     }
-                    let Some(expr_) = block.expr else { return None };
-                    expr = expr_;
+                    expr = block.expr?;
                 }
                 ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                     if is_spec(self.ctx.tcx, closure_id.to_def_id()) {
@@ -220,7 +230,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 )
                         )
                     {
-                    } else if !self.context.can_call(fn_purity) {
+                    } else if !self.context.can_call(fn_purity, self.is_trusted) {
                         // Emit a nicer error specifically for calls of ghost functions.
                         if fn_purity == Purity::Ghost
                             && matches!(self.context, Purity::Program { .. })
