@@ -29,7 +29,9 @@ impl<B, I: Iterator, F: FnMut(I::Item) -> Option<B>> Invariant for FilterMap<I, 
 }
 
 #[logic(prophetic)]
-pub fn private_invariant<B, I: Iterator, F: FnMut(I::Item) -> Option<B>>(f: FilterMap<I, F>) -> bool {
+pub fn private_invariant<B, I: Iterator, F: FnMut(I::Item) -> Option<B>>(
+    f: FilterMap<I, F>,
+) -> bool {
     // trivial precondition: simplification for sake of proof complexity
     no_precondition(f.func()) &&
     // immutable state: simplification for sake of proof complexity
