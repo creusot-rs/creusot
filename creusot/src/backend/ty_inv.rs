@@ -3,7 +3,7 @@ use crate::{
     backend::ty::{AdtKind, classify_adt},
     contracts_items::{Intrinsic, is_open_inv_result, is_trivial_if_param_trivial},
     ctx::{Namer, TranslationCtx},
-    naming::{name, variable_name},
+    naming::{field_name, name},
     translation::{
         pearlite::{Ident, Pattern, Term, TermKind, Trigger},
         specification::{Condition, PreSignature},
@@ -191,20 +191,10 @@ fn structural_invariant<'tcx>(
             AdtKind::Enum => {
                 let mut triv = true;
                 let arms = def.variants().iter_enumerated().map(|(var_idx, var_def)| {
-                    let tuple_var = var_def.ctor.is_some();
-
                     let mut exp = Term::true_(ctx.tcx);
                     let fields = var_def.fields.iter_enumerated().map(|(field_idx, field_def)| {
-                        let field_name = if tuple_var {
-                            Ident::fresh_local(format!("a_{}", field_idx.as_usize()))
-                        } else {
-                            Ident::fresh_local(variable_name(
-                                field_def.ident(ctx.tcx).name.as_str(),
-                            ))
-                        };
-
+                        let field_name = Ident::fresh_local(field_name(field_def.name.as_str()));
                         let field_ty = field_def.ty(ctx.tcx, subst);
-
                         conj_inv_call(ctx, names, &mut exp, Term::var(field_name, field_ty));
                         (field_idx, Pattern::binder(field_name, field_ty))
                     });

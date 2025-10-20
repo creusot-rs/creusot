@@ -42,7 +42,7 @@ use crate::{
     gather_spec_closures::{
         InvariantsAndVariants, SpecClosures, corrected_invariant_names_and_locations,
     },
-    naming::variable_name,
+    naming::lowercase_prefix,
     translation::{
         fmir::{self, BorrowKind},
         function::discriminator_for_switch,
@@ -976,7 +976,7 @@ impl<'tcx> BodyLocals<'tcx> {
                     _ => false,
                 });
                 let debug_info = x.expect("expected user variable to have name");
-                Ident::fresh(ctx.crate_name(), variable_name(debug_info.name.as_str()))
+                Ident::fresh(ctx.crate_name(), lowercase_prefix("v_", debug_info.name.as_str()))
             };
             locals.insert(loc, ident);
             vars.insert(

@@ -2,7 +2,7 @@ use crate::{
     backend::closures::ClosSubst,
     contracts_items::{Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates},
     ctx::*,
-    naming::{name, variable_name},
+    naming::{lowercase_prefix, name},
     translation::pearlite::{Ident, PIdent, Term, normalize},
     util::erased_identity_for_item,
 };
@@ -457,7 +457,7 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
                         let ident = if name.is_empty() || name == "_" {
                             Ident::fresh_local(format!("_{ix}"))
                         } else {
-                            Ident::fresh_local(variable_name(name))
+                            Ident::fresh_local(lowercase_prefix("v_", name))
                         };
                         (ident.into(), span, ty)
                     }
@@ -482,7 +482,7 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
                             let ident = if name.is_empty() || name == "_" {
                                 Ident::fresh_local(format!("_{ix}"))
                             } else {
-                                Ident::fresh_local(variable_name(name))
+                                Ident::fresh_local(lowercase_prefix("v_", name))
                             };
                             (ident.into(), span, ty)
                         }

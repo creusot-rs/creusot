@@ -1,7 +1,6 @@
 use crate::{
     contracts_items::{is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
-    naming::ModulePath,
     util::{impl_subject, path_of_span},
 };
 use creusot_args::options::SpanMode;
@@ -169,10 +168,6 @@ impl<'tcx> Why3Generator<'tcx> {
             }
             id.index = parent_id;
         }
-    }
-
-    pub(crate) fn module_path(&self, def_id: DefId) -> ModulePath {
-        ModulePath::new(self.tcx, def_id)
     }
 }
 

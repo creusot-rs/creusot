@@ -1,14 +1,14 @@
 use rustc_abi::FieldIdx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{self, GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::AliasTyKind;
 
 use crate::{
     contracts_items::Intrinsic,
     ctx::{PreMod, TranslationCtx},
-    naming::{item_symb, lowercase_prefix, to_alphanumeric, translate_name, type_name, value_name},
+    naming::{ascii_item_name, field_name, lowercase_prefix, type_string, uppercase_prefix},
 };
 
 /// Dependencies between items and the resolution logic to find the 'monomorphic' forms accounting
@@ -54,74 +54,58 @@ impl<'tcx> Dependency<'tcx> {
 
     pub(crate) fn base_ident(self, ctx: &TranslationCtx<'tcx>) -> Option<Symbol> {
         match self {
-            Dependency::Type(ty) => match ty.kind() {
-                TyKind::Adt(def, _) => {
-                    assert!(!def.is_box());
-                    Some(item_symb(ctx.tcx, def.did(), rustc_hir::def::Namespace::TypeNS))
-                }
-                TyKind::Alias(AliasTyKind::Opaque, aty) => Some(Symbol::intern(&format!(
-                    "opaque{}",
-                    ctx.def_path(aty.def_id).data.last().unwrap().disambiguator
-                ))),
-                TyKind::Alias(AliasTyKind::Projection, aty) => Some(Symbol::intern(&type_name(
-                    ctx.opt_item_name(aty.def_id).unwrap_or(Symbol::intern("synthetic")).as_str(),
-                ))),
-                TyKind::Closure(def_id, _) => Some(Symbol::intern(&format!(
-                    "closure{}",
-                    ctx.def_path(*def_id).data.last().unwrap().disambiguator
-                ))),
-                TyKind::Param(p) => Some(Symbol::intern(&type_name(
-                    &p.name
-                        .as_str()
-                        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == '\''), "_"),
-                ))),
-                TyKind::Tuple(_) => Some(Symbol::intern("tuple")),
-                TyKind::Dynamic(_, _) => {
-                    Some(Symbol::intern(&type_string(ctx.tcx, String::new(), ty)))
-                }
-                _ => None,
-            },
+            Dependency::Type(ty) => Some(Symbol::intern(&lowercase_prefix(
+                "t_",
+                &type_string(ctx.tcx, String::new(), ty),
+            ))),
             Dependency::PrivateFields(did, _) => {
                 assert_eq!(ctx.def_kind(did), DefKind::Struct);
-                let symty = item_symb(ctx.tcx, did, rustc_hir::def::Namespace::TypeNS);
-                Some(Symbol::intern(&format!("{symty}__private")))
+                let mut name = lowercase_prefix("t_", ctx.item_name(did).as_str());
+                name.push_str("__private");
+                Some(Symbol::intern(&name))
             }
             Dependency::Item(did, subst) => match ctx.def_kind(did) {
-                DefKind::Impl { .. } => Some(ctx.item_name(ctx.trait_id_of_impl(did).unwrap())),
                 DefKind::Closure => Some(Symbol::intern(&format!(
                     "closure{}",
-                    ctx.def_path(did).data.last().unwrap().disambiguator
+                    ctx.def_key(did).disambiguated_data.disambiguator
                 ))),
-                DefKind::Field => {
-                    let variant = ctx.item_name(ctx.parent(did));
-                    let field = ctx.item_name(did);
-                    Some(Symbol::intern(&format!(
-                        "{}__{}",
-                        type_name(&translate_name(variant.as_str())),
-                        translate_name(field.as_str())
-                    )))
-                }
+                DefKind::Field => Some(Symbol::intern(&field_name(ctx.item_name(did).as_str()))),
                 DefKind::Variant => {
-                    Some(item_symb(ctx.tcx, did, rustc_hir::def::Namespace::ValueNS))
+                    Some(Symbol::intern(&uppercase_prefix("C_", ctx.item_name(did).as_str())))
                 }
                 _ if Intrinsic::SizeOfLogic.is(ctx, did) => {
                     Some(Symbol::intern(&type_string(ctx.tcx, "size_of".into(), subst.type_at(0))))
                 }
-                DefKind::Const | DefKind::AssocConst | DefKind::ConstParam => {
-                    ctx.opt_item_name(did).map(|name| {
-                        Symbol::intern(&lowercase_prefix("const_", &translate_name(name.as_str())))
-                    })
-                }
-                _ => ctx
+                DefKind::Const | DefKind::AssocConst | DefKind::ConstParam => ctx
                     .opt_item_name(did)
-                    .map(|name| Symbol::intern(&value_name(&translate_name(name.as_str())))),
+                    .map(|name| Symbol::intern(&lowercase_prefix("const_", name.as_str()))),
+                _ => {
+                    let name = ctx.opt_item_name(did)?;
+                    let name = name.as_str();
+                    let mut name =
+                        lowercase_prefix("f_", name.strip_suffix("_logic").unwrap_or(name));
+                    let first_ty = if let Some(parent) = ctx.impl_of_assoc(did)
+                        && let Some(trait_ref) = ctx.impl_trait_ref(parent)
+                    {
+                        // AssocFn in a trait impl: get the instantiated Self type
+                        first_ty_arg(trait_ref.instantiate(ctx.tcx, subst).args)
+                    } else {
+                        // AssocFn in a trait or in an inherent impl: Self is the first argument in `subst`
+                        // And for plain fn, also display the first type argument in its name.
+                        first_ty_arg(subst)
+                    };
+                    if let Some(ty) = first_ty {
+                        name = type_string(ctx.tcx, name, ty);
+                    }
+                    Some(Symbol::intern(&name))
+                }
             },
             Dependency::ClosureAccessor(_, _, ix) => Some(Symbol::intern(&format!("c{ix}"))),
             Dependency::TupleField(_, ix) => Some(Symbol::intern(&format!("f{}", ix.as_u32()))),
             Dependency::TyInvAxiom(..) => Some(Symbol::intern("inv_axiom")),
             Dependency::ResolveAxiom(..) => Some(Symbol::intern("resolve_axiom")),
             Dependency::Eliminator(did, _) => {
-                Some(Symbol::intern(&value_name(&translate_name(ctx.item_name(did).as_str()))))
+                Some(Symbol::intern(&ascii_item_name("elim_", ctx.tcx, did)))
             }
             Dependency::DynCast(source, target) => Some(Symbol::intern(&type_string(
                 ctx.tcx,
@@ -135,89 +119,8 @@ impl<'tcx> Dependency<'tcx> {
     }
 }
 
-/// Append stringified type to prefix.
-///
-/// Examples: with `"size_of"` as the prefix,
-/// `Option<T>` becomes `"size_of_Option_T"`; `(T, U)` becomes `"size_of_tuple_T_U"`.
-///
-/// No need to be too rigorous. This is just used to generate more meaningful Why3 identifiers.
-fn type_string(tcx: TyCtxt, mut prefix: String, ty: Ty) -> String {
-    type_string_walk(tcx, &mut prefix, ty);
-    prefix
-}
-
-fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
-    use rustc_type_ir::TyKind::*;
-    match ty.kind() {
-        Int(int_ty) => push_(prefix, int_ty.name_str()),
-        Uint(uint_ty) => push_(prefix, uint_ty.name_str()),
-        Float(float_ty) => push_(prefix, float_ty.name_str()),
-        Bool => push_(prefix, "bool"),
-        Char => push_(prefix, "char"),
-        Str => push_(prefix, "str"),
-        Array(ty, len) => {
-            push_(prefix, "array");
-            type_string_walk(tcx, prefix, *ty);
-            match len.kind() {
-                rustc_type_ir::ConstKind::Value(v)
-                    if let ty::ValTreeKind::Leaf(scalar) = *v.valtree =>
-                {
-                    push_(prefix, &scalar.to_target_usize(tcx).to_string())
-                }
-                _ => push_(prefix, "n"),
-            }
-        }
-        Slice(ty) => {
-            push_(prefix, "slice");
-            type_string_walk(tcx, prefix, *ty)
-        }
-        RawPtr(ty, _) => {
-            push_(prefix, "ptr");
-            type_string_walk(tcx, prefix, *ty)
-        }
-        Ref(_, ty, _) => {
-            push_(prefix, "ref");
-            type_string_walk(tcx, prefix, *ty)
-        }
-        Tuple(args) if args.is_empty() => {
-            push_(prefix, "unit");
-        }
-        Tuple(args) => {
-            push_(prefix, "tup");
-            prefix.push_str(&args.len().to_string());
-            for ty in args.iter() {
-                type_string_walk(tcx, prefix, ty)
-            }
-        }
-        Param(p) => push_(prefix, &to_alphanumeric(p.name.as_str())),
-        Adt(def, args) => {
-            match tcx.def_key(def.did()).get_opt_name() {
-                None => push_(prefix, "x"),
-                Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
-            };
-            for arg in args.iter() {
-                let GenericArgKind::Type(ty) = arg.kind() else { continue };
-                type_string_walk(tcx, prefix, ty)
-            }
-        }
-        Alias(_, t) => match tcx.def_key(t.def_id).get_opt_name() {
-            None => push_(prefix, "x"),
-            Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
-        },
-        Dynamic(traits, _) => {
-            prefix.push_str("dyn");
-            for tr in traits.iter() {
-                let ty::ExistentialPredicate::Trait(tr) = tr.skip_binder() else { continue };
-                let Some(name) = tcx.def_key(tr.def_id).get_opt_name() else { continue };
-                push_(prefix, &to_alphanumeric(name.as_str()));
-                break;
-            }
-        }
-        _ => push_(prefix, "x"), // Unhandled types appear as "x"
-    };
-}
-
-fn push_(prefix: &mut String, str: &str) {
-    prefix.push('_');
-    prefix.push_str(str);
+fn first_ty_arg(args: GenericArgsRef) -> Option<Ty> {
+    args.iter()
+        .filter_map(|arg| if let GenericArgKind::Type(ty) = arg.kind() { Some(ty) } else { None })
+        .next()
 }

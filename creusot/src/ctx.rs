@@ -6,7 +6,7 @@ use crate::{
         is_open_inv_param, is_prophetic, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
-    naming::variable_name,
+    naming::{ComaNames, ModulePath, lowercase_prefix},
     translation::{
         self,
         external::{
@@ -176,6 +176,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexMap<LocalDefId, Erasure<'tcx>>,
+    coma_names: ComaNames,
     params_open_inv: HashMap<DefId, Vec<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
@@ -260,6 +261,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             extern_spec_items: Default::default(),
             erased_local_defid: Default::default(),
             erasures_to_check: Default::default(),
+            coma_names: ComaNames::new(tcx),
             fmir_body: Default::default(),
             trait_impl: Default::default(),
             sig: Default::default(),
@@ -612,10 +614,16 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn rename(&self, ident: HirId) -> Ident {
         *self.renamer.borrow_mut().entry(ident).or_insert_with(|| {
-            let r = Ident::fresh(self.crate_name(), variable_name(self.hir_name(ident).as_str()));
+            let r = Ident::fresh(self.crate_name(), {
+                lowercase_prefix("v_", self.hir_name(ident).as_str())
+            });
             self.corenamer.borrow_mut().insert(r, ident);
             r
         })
+    }
+
+    pub(crate) fn module_path(&self, id: DefId) -> ModulePath {
+        self.coma_names.get(self.tcx, id)
     }
 
     pub(crate) fn crate_name(&self) -> why3::Symbol {

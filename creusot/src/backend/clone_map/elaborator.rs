@@ -397,10 +397,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             let outer_return = Ident::fresh_local("ret");
             let inner_return = Ident::fresh_local("const_ret");
             let value_name = Ident::fresh_local("_const");
-            let setter = Ident::fresh_local(format!(
-                "set_{}",
-                crate::naming::translate_name(ctx.item_name(def_id).as_str())
-            ));
+            let setter =
+                Ident::fresh_local(crate::naming::ascii_item_name("set_", ctx.tcx, def_id));
 
             names.register_constant_setter(setter);
             let mut decls = val(sig.why_sig, DeclKind::Constant);
