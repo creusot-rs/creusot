@@ -10,33 +10,142 @@ module M_1562__qyi17754419174301240535__foo (* List<T> *)
   
   type t_List = { t_List__head: t_Option }
   
-  let rec is_none (self_: t_Option) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+  predicate inv (_1: t_Rc)
   
-  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {result = self_.current /\ self_.final = C_None} (! return {result}) ]
+  predicate inv'0 (_1: t_Node)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'0 x]. inv'0 x = inv x.t_Node__next
+  
+  predicate inv'1 (_1: t_Option)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'1 x]. inv'1 x
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'0 a_0
+        end
+  
+  predicate invariant' [@inline:trivial] (self: t_Option) = inv'1 self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'2 [@inline:trivial] (_1: t_Option) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'2
+  
+  let rec is_none (self_: t_Option) (return (x: bool)) = {[@expl:is_none 'self_' type invariant] inv'2 self_}
+    any [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
+  
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'3 self_}
+    any
+    [ return (result: t_Option) -> {inv'1 result} {result = self_.current /\ self_.final = C_None} (! return {result}) ]
+  
+  predicate inv'4 (_1: t_List)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_List [inv'4 x]. inv'4 x = inv'1 x.t_List__head
+  
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_List) = inv'4 self.current /\ inv'4 self.final
+  
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_List) = invariant''1 _1
+  
+  meta "rewrite_def" predicate inv'5
   
   predicate resolve [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  let rec unwrap (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap requires] self_ <> C_None}
-    any [ return (result: t_Node) -> {C_Some result = self_} (! return {result}) ]
+  let rec unwrap (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'1 self_}
+    {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: t_Node) -> {inv'0 result} {C_Some result = self_} (! return {result}) ]
   
-  let rec clone' (self_: t_Rc) (return (x: t_Rc)) = any
-    [ return (result: t_Rc) -> {result = self_} (! return {result}) ]
+  predicate resolve'0 (_1: t_Rc)
+  
+  predicate resolve'1 (_1: t_Node)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'1 x]. resolve'1 x = resolve'0 x.t_Node__next
+  
+  predicate invariant''2 [@inline:trivial] (self: t_Rc) = inv self
+  
+  meta "rewrite_def" predicate invariant''2
+  
+  predicate inv'6 [@inline:trivial] (_1: t_Rc) = invariant''2 _1
+  
+  meta "rewrite_def" predicate inv'6
+  
+  let rec clone' (self_: t_Rc) (return (x: t_Rc)) = {[@expl:clone 'self_' type invariant] inv'6 self_}
+    any [ return (result: t_Rc) -> {inv result} {result = self_} (! return {result}) ]
   
   type t_PermCell
   
   function view (self: t_Rc) : t_PermCell
   
-  let rec as_ref (self_: t_Rc) (return (x: t_PermCell)) = any
-    [ return (result: t_PermCell) -> {result = view self_} (! return {result}) ]
+  let rec as_ref (self_: t_Rc) (return (x: t_PermCell)) = {[@expl:as_ref 'self_' type invariant] inv'6 self_}
+    any [ return (result: t_PermCell) -> {result = view self_} (! return {result}) ]
   
   type t_PermCellOwn
   
-  let rec borrow_mut (self: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_PermCellOwn)) = any
-    [ return (result: MutBorrow.t t_PermCellOwn) -> {result = self} (! return {result}) ]
+  predicate invariant''3 [@inline:trivial] (self: t_List) = inv'4 self
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'7 [@inline:trivial] (_1: t_List) = invariant''3 _1
+  
+  meta "rewrite_def" predicate inv'7
+  
+  function val' (self: t_PermCellOwn) : t_List
+  
+  predicate invariant''4 [@inline:trivial] (self: t_PermCellOwn) = inv'7 (val' self)
+  
+  meta "rewrite_def" predicate invariant''4
+  
+  predicate inv'8 (_1: t_PermCellOwn)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PermCellOwn [inv'8 x]. inv'8 x = invariant''4 x
+  
+  predicate invariant''5 [@inline:trivial] (self: t_PermCellOwn) = inv'8 self
+  
+  meta "rewrite_def" predicate invariant''5
+  
+  predicate inv'9 [@inline:trivial] (_1: t_PermCellOwn) = invariant''5 _1
+  
+  meta "rewrite_def" predicate inv'9
+  
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'9 self.current /\ inv'9 self.final
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'10
+  
+  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'8 self.current /\ inv'8 self.final
+  
+  meta "rewrite_def" predicate invariant''7
+  
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''7 _1
+  
+  meta "rewrite_def" predicate inv'11
+  
+  predicate invariant''8 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn) = inv'11 self
+  
+  meta "rewrite_def" predicate invariant''8
+  
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn) = invariant''8 _1
+  
+  meta "rewrite_def" predicate inv'12
+  
+  let rec borrow_mut (self: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_PermCellOwn)) =
+    {[@expl:borrow_mut 'self' type invariant] inv'10 self}
+    any [ return (result: MutBorrow.t t_PermCellOwn) -> {inv'12 result} {result = self} (! return {result}) ]
   
   type t_Id
   
@@ -48,25 +157,44 @@ module M_1562__qyi17754419174301240535__foo (* List<T> *)
   
   meta "rewrite_def" function fin
   
-  function val' (self: t_PermCellOwn) : t_List
-  
   function view'0 [@inline:trivial] (self: t_PermCellOwn) : t_List = val' self
   
   meta "rewrite_def" function view'0
   
   let rec borrow_mut'0 (self: t_PermCell) (perm: MutBorrow.t t_PermCellOwn) (return (x: MutBorrow.t t_List)) =
+    {[@expl:borrow_mut 'perm' type invariant] inv'12 perm}
     {[@expl:borrow_mut requires] id self = id'0 perm.current}
     any
-    [ return (result: MutBorrow.t t_List) -> {id self = id'0 (fin perm)}
+    [ return (result: MutBorrow.t t_List) -> {inv'5 result}
+      {id self = id'0 (fin perm)}
       {result.current = view'0 perm.current}
       {result.final = view'0 (fin perm)}
       (! return {result}) ]
+  
+  predicate resolve'2 [@inline:trivial] (_1: t_List) = true
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate resolve'3 [@inline:trivial] (self: t_PermCellOwn) = resolve'2 (val' self)
+  
+  meta "rewrite_def" predicate resolve'3
+  
+  predicate resolve'4 (_1: t_PermCellOwn)
+  
+  axiom resolve_axiom'0: forall x: t_PermCellOwn [resolve'4 x]. resolve'4 x -> resolve'3 x
+  
+  predicate resolve'5 [@inline:trivial] (_1: t_PermCellOwn) = resolve'4 _1
+  
+  meta "rewrite_def" predicate resolve'5
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo (self: MutBorrow.t t_List) (perm: t_PermCellOwn) (return (x: ())) = {[@expl:foo requires] false}
+  let rec foo (self: MutBorrow.t t_List) (perm: t_PermCellOwn) (return (x: ())) =
+    {[@expl:foo 'self' type invariant] inv'5 self}
+    {[@expl:foo 'perm' type invariant] inv'9 perm}
+    {[@expl:foo requires] false}
     (! bb0
     [ bb0 = s0 [ s0 = [ &p <- self ] s1 | s1 = bb2 ]
     | bb2 = bb2
@@ -74,30 +202,55 @@ module M_1562__qyi17754419174301240535__foo (* List<T> *)
         [ s0 = is_none {p.current.t_List__head} (fun (_ret: bool) -> [ &_7 <- _ret ] s1) | s1 = bb3 ])
         [ bb3 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ]
         | bb5 = s0
-          [ s0 = MutBorrow.borrow_final <t_Option> {p.current.t_List__head}
-              {MutBorrow.inherit_id (MutBorrow.get_id p) 1}
+          [ s0 = {inv'1 p.current.t_List__head}
+            MutBorrow.borrow_final <t_Option> {p.current.t_List__head} {MutBorrow.inherit_id (MutBorrow.get_id p) 1}
               (fun (_ret: MutBorrow.t t_Option) ->
-                [ &_11 <- _ret ] [ &p <- { p with current = { t_List__head = _ret.final } } ] s1)
+                [ &_11 <- _ret ] -{inv'1 _ret.final}-
+                [ &p <- { p with current = { t_List__head = _ret.final } } ] s1)
           | s1 = take {_11} (fun (_ret: t_Option) -> [ &_10 <- _ret ] s2)
           | s2 = bb6 ]
-        | bb6 = s0 [ s0 = -{resolve p}- s1 | s1 = unwrap {_10} (fun (_ret: t_Node) -> [ &curr <- _ret ] s2) | s2 = bb7 ]
-        | bb7 = s0 [ s0 = clone' {curr.t_Node__next} (fun (_ret: t_Rc) -> [ &_12 <- _ret ] s1) | s1 = bb9 ]
+        | bb6 = s0
+          [ s0 = {[@expl:type invariant] inv'5 p} s1
+          | s1 = -{resolve p}- s2
+          | s2 = unwrap {_10} (fun (_ret: t_Node) -> [ &curr <- _ret ] s3)
+          | s3 = bb7 ]
+        | bb7 = s0
+          [ s0 = {[@expl:type invariant] inv'0 curr} s1
+          | s1 = -{resolve'1 curr}- s2
+          | s2 = clone' {curr.t_Node__next} (fun (_ret: t_Rc) -> [ &_12 <- _ret ] s3)
+          | s3 = bb9 ]
         | bb9 = s0 [ s0 = [ &next <- _12 ] s1 | s1 = bb11 ]
-        | bb11 = s0 [ s0 = as_ref {next} (fun (_ret: t_PermCell) -> [ &_17 <- _ret ] s1) | s1 = bb12 ]
+        | bb11 = s0
+          [ s0 = {[@expl:type invariant] inv next} s1
+          | s1 = -{resolve'0 next}- s2
+          | s2 = as_ref {next} (fun (_ret: t_PermCell) -> [ &_17 <- _ret ] s3)
+          | s3 = bb12 ]
         | bb12 = s0
-          [ s0 = MutBorrow.borrow_mut <t_PermCellOwn> {perm}
-              (fun (_ret: MutBorrow.t t_PermCellOwn) -> [ &_20 <- _ret ] [ &perm <- _ret.final ] s1)
+          [ s0 = {inv'9 perm}
+            MutBorrow.borrow_mut <t_PermCellOwn> {perm}
+              (fun (_ret: MutBorrow.t t_PermCellOwn) ->
+                [ &_20 <- _ret ] -{inv'9 _ret.final}-
+                [ &perm <- _ret.final ] s1)
           | s1 = borrow_mut {_20} (fun (_ret: MutBorrow.t t_PermCellOwn) -> [ &_19 <- _ret ] s2)
           | s2 = bb13 ]
         | bb13 = s0
           [ s0 = borrow_mut'0 {_17} {_19} (fun (_ret: MutBorrow.t t_List) -> [ &_15 <- _ret ] s1) | s1 = bb14 ]
         | bb14 = s0
-          [ s0 = MutBorrow.borrow_final <t_List> {_15.current} {MutBorrow.get_id _15}
-              (fun (_ret: MutBorrow.t t_List) -> [ &_14 <- _ret ] [ &_15 <- { _15 with current = _ret.final } ] s1)
+          [ s0 = {inv'4 _15.current}
+            MutBorrow.borrow_final <t_List> {_15.current} {MutBorrow.get_id _15}
+              (fun (_ret: MutBorrow.t t_List) ->
+                [ &_14 <- _ret ] -{inv'4 _ret.final}-
+                [ &_15 <- { _15 with current = _ret.final } ] s1)
           | s1 = [ &p <- _14 ] s2
-          | s2 = -{resolve _15}- s3
-          | s3 = bb2 ] ] ]
-    | bb4 = s0 [ s0 = -{resolve p}- s1 | s1 = bb16 ]
+          | s2 = {[@expl:type invariant] inv'5 _15} s3
+          | s3 = -{resolve _15}- s4
+          | s4 = bb2 ] ] ]
+    | bb4 = s0
+      [ s0 = {[@expl:type invariant] inv'5 p} s1
+      | s1 = -{resolve p}- s2
+      | s2 = {[@expl:type invariant] inv'9 perm} s3
+      | s3 = -{resolve'5 perm}- s4
+      | s4 = bb16 ]
     | bb16 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_List = self

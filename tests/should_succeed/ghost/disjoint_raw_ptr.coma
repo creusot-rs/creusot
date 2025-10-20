@@ -93,6 +93,12 @@ module M_disjoint_raw_ptr__foo
     {[@expl:deref_mut 'self' type invariant] inv'3 self}
     any [ return (result: MutBorrow.t t_PtrOwn) -> {inv'4 result} {result = self} (! return {result}) ]
   
+  predicate resolve (_1: t_PtrOwn)
+  
+  predicate resolve'0 [@inline:trivial] (_1: t_PtrOwn) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
+  
   predicate invariant''3 [@inline:trivial] (self: t_PtrOwn) = inv'1 self
   
   meta "rewrite_def" predicate invariant''3
@@ -121,13 +127,13 @@ module M_disjoint_raw_ptr__foo
       {own1.current = own1.final}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = _1.final = _1.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve'1
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'0 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -157,9 +163,10 @@ module M_disjoint_raw_ptr__foo
       | s5 = bb3 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'1 own2} s1
-      | s1 = [ &_17 <- own2 ] s2
-      | s2 = deref {_17} (fun (_ret: t_PtrOwn) -> [ &_15 <- _ret ] s3)
-      | s3 = bb4 ]
+      | s1 = -{resolve'0 own2}- s2
+      | s2 = [ &_17 <- own2 ] s3
+      | s3 = deref {_17} (fun (_ret: t_PtrOwn) -> [ &_15 <- _ret ] s4)
+      | s4 = bb4 ]
     | bb4 = s0
       [ s0 = {inv'0 _11.current}
         MutBorrow.borrow_final <t_PtrOwn> {_11.current} {MutBorrow.get_id _11}
@@ -170,12 +177,13 @@ module M_disjoint_raw_ptr__foo
       | s2 = bb5 ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv'3 _13} s1
-      | s1 = -{resolve _13}- s2
+      | s1 = -{resolve'1 _13}- s2
       | s2 = {[@expl:type invariant] inv'4 _11} s3
-      | s3 = -{resolve'0 _11}- s4
+      | s3 = -{resolve'2 _11}- s4
       | s4 = {[@expl:type invariant] inv'1 own1} s5
-      | s5 = new'0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s6)
-      | s6 = bb6 ]
+      | s5 = -{resolve'0 own1}- s6
+      | s6 = new'0 {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s7)
+      | s7 = bb6 ]
     | bb6 = s0 [ s0 = {[@expl:assertion] own1 <> own2} s1 | s1 = {[@expl:assertion] p1 <> p2} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()

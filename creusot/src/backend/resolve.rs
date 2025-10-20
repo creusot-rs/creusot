@@ -53,11 +53,10 @@ pub fn is_resolve_trivial<'tcx>(
             TyKind::Adt(def, subst) => match classify_adt(ctx, scope, *def, subst) {
                 AdtKind::Namespace
                 | AdtKind::Snapshot(_)
-                | AdtKind::Opaque { always: true }
                 | AdtKind::Unit
                 | AdtKind::Builtin(_)
                 | AdtKind::Empty => (),
-                AdtKind::Struct { partially_opaque: true } | AdtKind::Opaque { always: false } => {
+                AdtKind::Struct { partially_opaque: true } | AdtKind::Opaque { .. } => {
                     return false;
                 }
                 AdtKind::Box(ty) | AdtKind::Ghost(ty) => stack.push(ty),

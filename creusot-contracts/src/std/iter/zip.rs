@@ -9,18 +9,21 @@ pub trait ZipExt<A: Iterator, B: Iterator> {
 }
 
 impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn itera(self) -> A {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iterb(self) -> B {
         dead
+    }
+}
+
+impl<A: Iterator, B: Iterator> Invariant for Zip<A, B> {
+    #[logic(prophetic, open, inline)]
+    fn invariant(self) -> bool {
+        inv(self.itera()) && inv(self.iterb())
     }
 }
 

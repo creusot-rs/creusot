@@ -10,13 +10,11 @@ pub trait TakeExt<I> {
     fn iter_mut(&mut self) -> &mut I;
 
     #[logic]
-    fn n(self) -> Int;
+    fn n(self) -> usize;
 }
 
 impl<I> TakeExt<I> for Take<I> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
@@ -28,11 +26,16 @@ impl<I> TakeExt<I> for Take<I> {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(result >= 0 && result <= usize::MAX@)]
-    fn n(self) -> Int {
+    fn n(self) -> usize {
         dead
+    }
+}
+
+impl<I: Iterator> Invariant for Take<I> {
+    #[logic(prophetic, open, inline)]
+    fn invariant(self) -> bool {
+        inv(self.iter())
     }
 }
 
@@ -53,15 +56,15 @@ impl<I: Iterator> Iterator for Take<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            self.n() == 0 && resolve(self) ||
-            (*self).n() > 0 && (*self).n() == (^self).n() + 1 && self.iter_mut().completed()
+            self.n()@ == 0 && resolve(self) ||
+            (*self).n()@ > 0 && (*self).n()@ == (^self).n()@ + 1 && self.iter_mut().completed()
         }
     }
 
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            self.n() == o.n() + visited.len() && self.iter().produces(visited, o.iter())
+            self.n()@ == o.n()@ + visited.len() && self.iter().produces(visited, o.iter())
         }
     }
 

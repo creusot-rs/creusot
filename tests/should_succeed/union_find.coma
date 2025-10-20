@@ -1138,13 +1138,23 @@ module M_union_find__implementation__make
       {result = get self.current key}
       (! return {result}) ]
   
+  predicate resolve'0 (_1: t_PtrOwn)
+  
+  predicate resolve'1 (_1: t_Option)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
+  
   function insert'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element = Fset.add e self
   
   meta "rewrite_def" function insert'0
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_UnionFind) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_UnionFind) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'1 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -1219,7 +1229,8 @@ module M_union_find__implementation__make
             s1)
       | s1 = insert_ghost {_44} {elt} {perm'0} (fun (_ret: t_Option) -> [ &_43 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'16 _43} s3
-      | s3 = bb17 ]
+      | s3 = -{resolve'1 _43}- s4
+      | s4 = bb17 ]
     | bb17 = s0 [ s0 = [ &_47 <- insert'0 uf'0.current.t_UnionFind__0.t_UFInner__domain elt ] s1 | s1 = bb18 ]
     | bb18 = s0
       [ s0 =
@@ -1246,7 +1257,7 @@ module M_union_find__implementation__make
         [ &uf'0 <- { uf'0 with current = { t_UnionFind__0 = { uf'0.current.t_UnionFind__0 with t_UFInner__roots = _53 } } } ]
         s1
       | s1 = {[@expl:type invariant] inv'9 uf'0} s2
-      | s2 = -{resolve'0 uf'0}- s3
+      | s2 = -{resolve'2 uf'0}- s3
       | s3 = new'1 {_19} (fun (_ret: ()) -> [ &_18 <- _ret ] s4)
       | s4 = bb22 ]
     | bb22 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb23 ]
@@ -4364,7 +4375,7 @@ module M_union_find__example
   
   predicate inv (_1: t_UnionFind)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UnionFind [inv x]. inv x = invariant' x
+  axiom inv_axiom: forall x: t_UnionFind [inv x]. inv x -> invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_UnionFind) = inv self
   
@@ -4419,6 +4430,8 @@ module M_union_find__example
     {[@expl:borrow_mut 'self' type invariant] inv'1 self}
     any [ return (result: MutBorrow.t t_UnionFind) -> {inv'3 result} {result = self} (! return {result}) ]
   
+  predicate inv'4 (_1: t_Element)
+  
   predicate in_domain (self: t_UnionFind) (e: t_Element) = contains (domain self) e
   
   function fin [@inline:trivial] (self: MutBorrow.t t_UnionFind) : t_UnionFind = self.final
@@ -4445,7 +4458,8 @@ module M_union_find__example
   let rec make (uf: MutBorrow.t t_UnionFind) (payload: Int32.t) (return (x: t_Element)) =
     {[@expl:make 'uf' type invariant] inv'3 uf}
     any
-    [ return (result: t_Element) -> {not in_domain uf.current result}
+    [ return (result: t_Element) -> {inv'4 result}
+      {not in_domain uf.current result}
       {domain (fin uf) = insert (domain uf.current) result}
       {roots_map (fin uf) = Map.set (roots_map uf.current) result result}
       {payloads_map (fin uf) = Map.set (payloads_map uf.current) result payload}
@@ -4455,28 +4469,28 @@ module M_union_find__example
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'4 [@inline:trivial] (_1: t_UnionFind) = invariant''4 _1
+  predicate inv'5 [@inline:trivial] (_1: t_UnionFind) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''5 [@inline:trivial] (self: t_UnionFind) = inv self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'5 [@inline:trivial] (_1: t_UnionFind) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'5
-  
-  predicate invariant''6 [@inline:trivial] (self: t_UnionFind) = inv'5 self
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'6 [@inline:trivial] (_1: t_UnionFind) = invariant''6 _1
+  predicate inv'6 [@inline:trivial] (_1: t_UnionFind) = invariant''5 _1
   
   meta "rewrite_def" predicate inv'6
   
-  let rec borrow (self: t_UnionFind) (return (x: t_UnionFind)) = {[@expl:borrow 'self' type invariant] inv'4 self}
-    any [ return (result: t_UnionFind) -> {inv'6 result} {result = self} (! return {result}) ]
+  predicate invariant''6 [@inline:trivial] (self: t_UnionFind) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'7 [@inline:trivial] (_1: t_UnionFind) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'7
+  
+  let rec borrow (self: t_UnionFind) (return (x: t_UnionFind)) = {[@expl:borrow 'self' type invariant] inv'5 self}
+    any [ return (result: t_UnionFind) -> {inv'7 result} {result = self} (! return {result}) ]
   
   function root (self: t_UnionFind) (e: t_Element) : t_Element = index_logic (roots_map self) e
   
@@ -4486,7 +4500,8 @@ module M_union_find__example
   
   function payload (self: t_UnionFind) (e: t_Element) : Int32.t = index_logic'0 (payloads_map self) e
   
-  let rec get (uf: t_UnionFind) (elem: t_Element) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'6 uf}
+  let rec get (uf: t_UnionFind) (elem: t_Element) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'7 uf}
+    {[@expl:get 'elem' type invariant] inv'4 elem}
     {[@expl:get requires #0] in_domain uf elem}
     {[@expl:get requires #1] root uf elem = elem}
     any [ return (result: Int32.t) -> {result = payload uf elem} (! return {result}) ]
@@ -4497,9 +4512,12 @@ module M_union_find__example
   
   let rec union (uf: MutBorrow.t t_UnionFind) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
     {[@expl:union 'uf' type invariant] inv'3 uf}
+    {[@expl:union 'x' type invariant] inv'4 x}
+    {[@expl:union 'y' type invariant] inv'4 y}
     {[@expl:union requires] in_domain uf.current x /\ in_domain uf.current y}
     any
-    [ return (result: t_Element) -> {domain_unchanged uf /\ payloads_unchanged uf}
+    [ return (result: t_Element) -> {inv'4 result}
+      {domain_unchanged uf /\ payloads_unchanged uf}
       {result = root uf.current x \/ result = root uf.current y}
       {forall z: t_Element. in_domain uf.current z
         -> root (fin uf) z
@@ -4516,6 +4534,8 @@ module M_union_find__example
   
   let rec equiv (uf: MutBorrow.t t_UnionFind) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
     {[@expl:equiv 'uf' type invariant] inv'3 uf}
+    {[@expl:equiv 'e1' type invariant] inv'4 e1}
+    {[@expl:equiv 'e2' type invariant] inv'4 e2}
     {[@expl:equiv requires #0] in_domain uf.current e1}
     {[@expl:equiv requires #1] in_domain uf.current e2}
     any
@@ -4523,8 +4543,16 @@ module M_union_find__example
   
   let rec find (uf: MutBorrow.t t_UnionFind) (elem: t_Element) (return (x: t_Element)) =
     {[@expl:find 'uf' type invariant] inv'3 uf}
+    {[@expl:find 'elem' type invariant] inv'4 elem}
     {[@expl:find requires] in_domain uf.current elem}
-    any [ return (result: t_Element) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
+    any
+    [ return (result: t_Element) -> {inv'4 result} {result = root uf.current elem} {unchanged uf} (! return {result}) ]
+  
+  predicate resolve (_1: t_UnionFind)
+  
+  predicate resolve'0 [@inline:trivial] (_1: t_UnionFind) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -4601,18 +4629,19 @@ module M_union_find__example
     | bb33 = s0 [ s0 = [ &_56 <- _58 = _63 ] s1 | s1 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
     | bb34 = s0
       [ s0 = {[@expl:type invariant] inv'0 uf} s1
-      | s1 = borrow {uf} (fun (_ret: t_UnionFind) -> [ &_72 <- _ret ] s2)
-      | s2 = bb36 ]
+      | s1 = -{resolve'0 uf}- s2
+      | s2 = borrow {uf} (fun (_ret: t_UnionFind) -> [ &_72 <- _ret ] s3)
+      | s3 = bb36 ]
     | bb36 = s0 [ s0 = get {_72} {z} (fun (_ret: Int32.t) -> [ &_71 <- _ret ] s1) | s1 = bb37 ]
     | bb37 = s0
       [ s0 = [ &_69 <- _71 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
     | bb38 = return {_0}
     | bb39 = {false} any
-    | bb35 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ] ]
+    | bb35 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb25 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & uf: t_UnionFind = Any.any_l ()
     | & x: t_Element = Any.any_l ()
@@ -4661,30 +4690,41 @@ module M_union_find__example_addrs_eq
   
   type t_Element
   
+  predicate inv (_1: t_Element)
+  
+  predicate invariant' [@inline:trivial] (self: t_Element) = inv self
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'0 [@inline:trivial] (_1: t_Element) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'0
+  
   function deep_model (self: t_Element) : UInt64.t
   
   function deep_model'0 [@inline:trivial] (self: t_Element) : UInt64.t = deep_model self
   
   meta "rewrite_def" function deep_model'0
   
-  let rec eq (self: t_Element) (other: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model'0 self = deep_model'0 other)} (! return {result}) ]
+  let rec eq (self: t_Element) (other: t_Element) (return (x: bool)) = {[@expl:eq 'self' type invariant] inv'0 self}
+    {[@expl:eq 'other' type invariant] inv'0 other}
+    any [ return (result: bool) -> {result = (deep_model'0 self = deep_model'0 other)} (! return {result}) ]
   
   type t_UnionFind
   
-  predicate invariant' (self: t_UnionFind)
+  predicate invariant''0 (self: t_UnionFind)
   
-  predicate inv (_1: t_UnionFind)
+  predicate inv'1 (_1: t_UnionFind)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UnionFind [inv x]. inv x = invariant' x
+  axiom inv_axiom: forall x: t_UnionFind [inv'1 x]. inv'1 x -> invariant''0 x
   
-  predicate invariant''0 [@inline:trivial] (self: t_UnionFind) = inv self
+  predicate invariant''1 [@inline:trivial] (self: t_UnionFind) = inv'1 self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant''1
   
-  predicate inv'0 [@inline:trivial] (_1: t_UnionFind) = invariant''0 _1
+  predicate inv'2 [@inline:trivial] (_1: t_UnionFind) = invariant''1 _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv'2
   
   predicate contains [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) = Fset.mem e self
   
@@ -4692,7 +4732,7 @@ module M_union_find__example_addrs_eq
   
   function domain (self: t_UnionFind) : Fset.fset t_Element
   
-  axiom domain_spec: forall self: t_UnionFind. inv self
+  axiom domain_spec: forall self: t_UnionFind. inv'1 self
       -> (forall e1: t_Element, e2: t_Element. contains (domain self) e1
           /\ contains (domain self) e2 /\ deep_model e1 = deep_model e2 -> e1 = e2)
   
@@ -4703,7 +4743,9 @@ module M_union_find__example_addrs_eq
   meta "select_lsinst" "all"
   
   let rec example_addrs_eq (uf: t_UnionFind) (e1: t_Element) (e2: t_Element) (return (x: ())) =
-    {[@expl:example_addrs_eq 'uf' type invariant] inv'0 uf}
+    {[@expl:example_addrs_eq 'uf' type invariant] inv'2 uf}
+    {[@expl:example_addrs_eq 'e1' type invariant] inv e1}
+    {[@expl:example_addrs_eq 'e2' type invariant] inv e2}
     {[@expl:example_addrs_eq requires] in_domain uf e1 /\ in_domain uf e2}
     (! bb0
     [ bb0 = s0 [ s0 = eq {e1} {e2} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]

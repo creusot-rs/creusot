@@ -12,16 +12,12 @@ pub trait MapExt<I, F> {
 }
 
 impl<I, F> MapExt<I, F> for Map<I, F> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
         dead
     }
@@ -38,6 +34,19 @@ impl<I, F> Resolve for Map<I, F> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
+    #[logic(prophetic)]
+    #[ensures(result ==> inv(self.iter()) && inv(self.func()))]
+    fn invariant(self) -> bool {
+        pearlite! {
+            inv(self.iter()) && inv(self.func()) &&
+            reinitialize::<I, B, F>() &&
+            preservation(self.iter(), self.func()) &&
+            next_precondition(self.iter(), self.func())
+        }
+    }
 }
 
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {

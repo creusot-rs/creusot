@@ -10,35 +10,28 @@ pub trait FilterExt<I, F> {
 }
 
 impl<I, F> FilterExt<I, F> for Filter<I, F> {
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn iter(self) -> I {
         dead
     }
 
-    #[trusted]
     #[logic(opaque)]
-    #[ensures(inv(self) ==> inv(result))]
     fn func(self) -> F {
         dead
     }
 }
 
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
-    #[logic(prophetic)]
+    #[logic(prophetic, open, inline)]
+    #[ensures(result ==> inv(self.iter()) && inv(self.func()))]
     fn invariant(self) -> bool {
-        pearlite! {
-            // trivial precondition: simplification for sake of proof complexity
-            forall<f: F, i: &I::Item> f.precondition((i,)) &&
-            // immutable state: simplification for sake of proof complexity
-            (forall<f: F, g: F> f.hist_inv(g) ==> f == g) &&
-            // precision of postcondition. This is not *necessary*, but simplifies the proof that we have returned *all* elements which evaluate to true.
-            // If we remove this we could prove an alternate statement of produces that says we returned `true` for elements in `visited`, and `false` for
-            // ones which we didn't remove. *if* the postcondition happened to be precise, these two statements would be equivalent .
-            (forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)))
-        }
+        inv(self.iter()) && inv(self.func()) && private_invariant(self)
     }
+}
+
+#[logic(prophetic)]
+pub fn private_invariant<I: Iterator, F: FnMut(&I::Item) -> bool>(f: Filter<I, F>) -> bool {
+    no_precondition(f.func()) && immutable(f.func()) && precise(f.func())
 }
 
 /// Asserts that `f` has no precondition: any closure state can be called with any input value
@@ -55,7 +48,13 @@ pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f: F, g: F> f.hist_inv(g) ==> f == g }
 }
 
-/// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
+/// Asserts that the postcondition of `f` is *precise*: that there are never two possible values
+/// matching the postcondition
+// precision of postcondition. This is not *necessary*, but simplifies the proof that we have
+// returned *all* elements which evaluate to true. If we remove this we could prove an alternate
+// statement of produces that says we returned `true` for elements in `visited`, and `false` for
+// ones which we didn't remove. *if* the postcondition happened to be precise, these two statements
+// would be equivalent .
 #[logic(open, prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
@@ -78,7 +77,7 @@ where
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            self.invariant() ==>
+            private_invariant(self) ==>
             self.func().hist_inv(succ.func()) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values

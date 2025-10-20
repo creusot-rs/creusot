@@ -823,13 +823,23 @@ module M_union_find_cpp__implementation__make
       {result = get self.current key}
       (! return {result}) ]
   
+  predicate resolve'0 (_1: t_PtrOwn)
+  
+  predicate resolve'1 (_1: t_Option)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'1 x]. resolve'1 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'0 x0
+        end
+  
   function insert'0 [@inline:trivial] (self: Fset.fset t_Elem) (e: t_Elem) : Fset.fset t_Elem = Fset.add e self
   
   meta "rewrite_def" function insert'0
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_UF) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_UF) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve'2
   
   let rec new'1 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -899,7 +909,8 @@ module M_union_find_cpp__implementation__make
             s1)
       | s1 = insert_ghost {_38} {elt} {perm'0} (fun (_ret: t_Option) -> [ &_37 <- _ret ] s2)
       | s2 = {[@expl:type invariant] inv'16 _37} s3
-      | s3 = bb14 ]
+      | s3 = -{resolve'1 _37}- s4
+      | s4 = bb14 ]
     | bb14 = s0 [ s0 = [ &_41 <- insert'0 uf'0.current.t_UF__0.t_UFInner__domain elt ] s1 | s1 = bb15 ]
     | bb15 = s0
       [ s0 = [ &uf'0 <- { uf'0 with current = { t_UF__0 = { uf'0.current.t_UF__0 with t_UFInner__domain = _41 } } } ] s1
@@ -913,7 +924,7 @@ module M_union_find_cpp__implementation__make
     | bb17 = s0
       [ s0 = [ &uf'0 <- { uf'0 with current = { t_UF__0 = { uf'0.current.t_UF__0 with t_UFInner__roots = _45 } } } ] s1
       | s1 = {[@expl:type invariant] inv'9 uf'0} s2
-      | s2 = -{resolve'0 uf'0}- s3
+      | s2 = -{resolve'2 uf'0}- s3
       | s3 = new'1 {_19} (fun (_ret: ()) -> [ &_18 <- _ret ] s4)
       | s4 = bb18 ]
     | bb18 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb19 ]
@@ -3333,7 +3344,7 @@ module M_union_find_cpp__example
   
   predicate inv (_1: t_UF)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF [inv x]. inv x = invariant' x
+  axiom inv_axiom: forall x: t_UF [inv x]. inv x -> invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_UF) = inv self
   
@@ -3378,6 +3389,8 @@ module M_union_find_cpp__example
     {[@expl:borrow_mut 'self' type invariant] inv'1 self}
     any [ return (result: MutBorrow.t t_UF) -> {inv'3 result} {result = self} (! return {result}) ]
   
+  predicate inv'4 (_1: t_Elem)
+  
   predicate contains [@inline:trivial] (self: Fset.fset t_Elem) (e: t_Elem) = Fset.mem e self
   
   meta "rewrite_def" predicate contains
@@ -3408,7 +3421,8 @@ module M_union_find_cpp__example
   let rec make (uf: MutBorrow.t t_UF) (payload: Int32.t) (return (x: t_Elem)) =
     {[@expl:make 'uf' type invariant] inv'3 uf}
     any
-    [ return (result: t_Elem) -> {not in_domain uf.current result}
+    [ return (result: t_Elem) -> {inv'4 result}
+      {not in_domain uf.current result}
       {domain (fin uf) = insert (domain uf.current) result}
       {roots_map (fin uf) = Map.set (roots_map uf.current) result result}
       {payloads_map (fin uf) = Map.set (payloads_map uf.current) result payload}
@@ -3418,28 +3432,28 @@ module M_union_find_cpp__example
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'4 [@inline:trivial] (_1: t_UF) = invariant''4 _1
+  predicate inv'5 [@inline:trivial] (_1: t_UF) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''5 [@inline:trivial] (self: t_UF) = inv self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'5 [@inline:trivial] (_1: t_UF) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'5
-  
-  predicate invariant''6 [@inline:trivial] (self: t_UF) = inv'5 self
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'6 [@inline:trivial] (_1: t_UF) = invariant''6 _1
+  predicate inv'6 [@inline:trivial] (_1: t_UF) = invariant''5 _1
   
   meta "rewrite_def" predicate inv'6
   
-  let rec borrow (self: t_UF) (return (x: t_UF)) = {[@expl:borrow 'self' type invariant] inv'4 self}
-    any [ return (result: t_UF) -> {inv'6 result} {result = self} (! return {result}) ]
+  predicate invariant''6 [@inline:trivial] (self: t_UF) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'7 [@inline:trivial] (_1: t_UF) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'7
+  
+  let rec borrow (self: t_UF) (return (x: t_UF)) = {[@expl:borrow 'self' type invariant] inv'5 self}
+    any [ return (result: t_UF) -> {inv'7 result} {result = self} (! return {result}) ]
   
   function root (self: t_UF) (e: t_Elem) : t_Elem = index_logic (roots_map self) e
   
@@ -3449,7 +3463,8 @@ module M_union_find_cpp__example
   
   function payload (self: t_UF) (e: t_Elem) : Int32.t = index_logic'0 (payloads_map self) e
   
-  let rec get (uf: t_UF) (elem: t_Elem) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'6 uf}
+  let rec get (uf: t_UF) (elem: t_Elem) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'7 uf}
+    {[@expl:get 'elem' type invariant] inv'4 elem}
     {[@expl:get requires #0] in_domain uf elem}
     {[@expl:get requires #1] root uf elem = elem}
     any [ return (result: Int32.t) -> {result = payload uf elem} (! return {result}) ]
@@ -3460,9 +3475,12 @@ module M_union_find_cpp__example
   
   let rec union (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem) (return (x'0: t_Elem)) =
     {[@expl:union 'uf' type invariant] inv'3 uf}
+    {[@expl:union 'x' type invariant] inv'4 x}
+    {[@expl:union 'y' type invariant] inv'4 y}
     {[@expl:union requires] in_domain uf.current x /\ in_domain uf.current y}
     any
-    [ return (result: t_Elem) -> {domain_unchanged uf /\ payloads_unchanged uf}
+    [ return (result: t_Elem) -> {inv'4 result}
+      {domain_unchanged uf /\ payloads_unchanged uf}
       {result = root uf.current x \/ result = root uf.current y}
       {forall z: t_Elem. in_domain uf.current z
         -> root (fin uf) z
@@ -3478,8 +3496,15 @@ module M_union_find_cpp__example
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UF) (elem: t_Elem) (return (x: t_Elem)) = {[@expl:find 'uf' type invariant] inv'3 uf}
+    {[@expl:find 'elem' type invariant] inv'4 elem}
     {[@expl:find requires] in_domain uf.current elem}
-    any [ return (result: t_Elem) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
+    any [ return (result: t_Elem) -> {inv'4 result} {result = root uf.current elem} {unchanged uf} (! return {result}) ]
+  
+  predicate resolve (_1: t_UF)
+  
+  predicate resolve'0 [@inline:trivial] (_1: t_UF) = resolve _1
+  
+  meta "rewrite_def" predicate resolve'0
   
   meta "compute_max_steps" 1000000
   
@@ -3548,17 +3573,18 @@ module M_union_find_cpp__example
     | bb29 = s0 [ s0 = [ &_49 <- _51 = _56 ] s1 | s1 = any [ br0 -> {_49 = false} (! bb31) | br1 -> {_49} (! bb30) ] ]
     | bb30 = s0
       [ s0 = {[@expl:type invariant] inv'0 uf} s1
-      | s1 = borrow {uf} (fun (_ret: t_UF) -> [ &_65 <- _ret ] s2)
-      | s2 = bb32 ]
+      | s1 = -{resolve'0 uf}- s2
+      | s2 = borrow {uf} (fun (_ret: t_UF) -> [ &_65 <- _ret ] s3)
+      | s3 = bb32 ]
     | bb32 = s0 [ s0 = get {_65} {z} (fun (_ret: Int32.t) -> [ &_64 <- _ret ] s1) | s1 = bb33 ]
     | bb33 = s0
       [ s0 = [ &_62 <- _64 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_62 = false} (! bb35) | br1 -> {_62} (! bb34) ] ]
     | bb34 = return {_0}
     | bb35 = {false} any
-    | bb31 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = {false} any ] ]
+    | bb31 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb19 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb15 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'0 uf} s1 | s1 = -{resolve'0 uf}- s2 | s2 = {false} any ] ]
     [ & _0: () = Any.any_l ()
     | & uf: t_UF = Any.any_l ()
     | & x: t_Elem = Any.any_l ()

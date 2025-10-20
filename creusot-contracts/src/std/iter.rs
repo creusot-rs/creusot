@@ -97,12 +97,12 @@ extern_spec! {
                 fn next(&mut self) -> Option<Self::Item>;
 
                 #[check(ghost)]
-                #[ensures(result.iter() == self && result.n() == n@)]
+                #[ensures(result.iter() == self && result.n() == n)]
                 fn skip(self, n: usize) -> Skip<Self>
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[ensures(result.iter() == self && result.n() == n@)]
+                #[ensures(result.iter() == self && result.n() == n)]
                 fn take(self, n: usize) -> Take<Self>
                     where Self: Sized;
 
@@ -148,7 +148,7 @@ extern_spec! {
                 // These two requirements are here only to prove the absence of overflows
                 #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
                 #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
-                #[ensures(result.iter() == self && result.n() == 0)]
+                #[ensures(result.iter() == self && result.n()@ == 0)]
                 fn enumerate(self) -> Enumerate<Self>
                     where Self: Sized;
 

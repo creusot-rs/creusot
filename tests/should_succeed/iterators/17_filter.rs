@@ -19,17 +19,29 @@ pub struct Filter<I: Iterator, F: FnMut(&I::Item) -> bool> {
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
     #[logic(prophetic)]
     fn invariant(self) -> bool {
-        pearlite! {
-            // trivial precondition: simplification for sake of proof complexity
-            forall<f: F, i: &I::Item> f.precondition((i,)) &&
-            // immutable state: simplification for sake of proof complexity
-            (forall<f: F, g: F> f.hist_inv(g) ==> f == g) &&
-            // precision of postcondition. In some sense this is not *necessary*, but without this we cannot prove that we return *all* elements
-            // for all elements where the predicate evaluated to true, since we don't actually have access to the closure's return value directly,
-            // only what the postcondition says about it.
-            (forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)))
-        }
+        no_precondition(self.func) && immutable(self.func) && precise(self.func)
     }
+}
+
+/// trivial precondition: simplification for sake of proof complexity
+#[logic(open, prophetic)]
+pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
+    pearlite! { forall<f: F, i: A> f.precondition((i,)) }
+}
+
+/// immutable state: simplification for sake of proof complexity
+#[logic(open, prophetic)]
+pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
+    pearlite! { forall<f: F, g: F> f.hist_inv(g) ==> f == g }
+}
+
+// precision of postcondition. In some sense this is not *necessary*, but without this we cannot
+// prove that we return *all* elements for all elements where the predicate evaluated to true, since
+// we don't actually have access to the closure's return value directly, only what the postcondition
+// says about it.
+#[logic(open, prophetic)]
+pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
+    pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
 }
 
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
@@ -119,19 +131,4 @@ pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
             |i| *i < n,
         )
         .collect()
-}
-
-#[logic(open, prophetic)]
-pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f: F, i: A> f.precondition((i,)) }
-}
-
-#[logic(open, prophetic)]
-pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f: F, g: F> f.hist_inv(g) ==> f == g }
-}
-
-#[logic(open, prophetic)]
-pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
 }

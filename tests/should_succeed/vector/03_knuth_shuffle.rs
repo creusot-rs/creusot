@@ -13,6 +13,7 @@ fn rand_in_range(l: usize, u: usize) -> usize {
 pub fn knuth_shuffle<T>(v: &mut Vec<T>) {
     let old_v = snapshot! { v };
 
+    #[invariant(inv(v))]
     #[invariant(v@.permutation_of(old_v@))]
     for n in 0..v.len() {
         let upper = v.len() - n;

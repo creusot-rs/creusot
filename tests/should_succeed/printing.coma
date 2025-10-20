@@ -71,14 +71,18 @@ module M_printing__f
   
   axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
   
+  predicate inv'2 (_1: t_Arguments)
+  
   let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
     {[@expl:new_const 'pieces' type invariant] inv'1 pieces}
     {[@expl:new_const requires] UInt64.le (1: UInt64.t) (1: UInt64.t)}
-    any [ return (result: t_Arguments) -> (! return {result}) ]
+    any [ return (result: t_Arguments) -> {inv'2 result} (! return {result}) ]
   
-  let rec qy95zprint (args: t_Arguments) (return (x: ())) = any [ return (result: ()) -> {true} (! return {result}) ]
+  let rec qy95zprint (args: t_Arguments) (return (x: ())) = {[@expl:_print 'args' type invariant] inv'2 args}
+    any [ return (result: ()) -> {true} (! return {result}) ]
   
-  let rec qy95zeprint (args: t_Arguments) (return (x: ())) = any [ return (result: ()) -> {true} (! return {result}) ]
+  let rec qy95zeprint (args: t_Arguments) (return (x: ())) = {[@expl:_eprint 'args' type invariant] inv'2 args}
+    any [ return (result: ()) -> {true} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
