@@ -319,7 +319,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
                     let (bound, term) = match pearlite::from_thir(self, local_id) {
                         Ok(t) => t,
-                        Err(err) => err.abort(self.tcx),
+                        Err(err) => err.raise_fatal(),
                     };
                     let bound = bound.iter().map(|b| b.0).collect();
                     Box::new(Some(ScopedTerm(

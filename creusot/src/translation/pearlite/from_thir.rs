@@ -1,7 +1,6 @@
 use crate::{
     contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
     ctx::TranslationCtx,
-    error::{CreusotResult, Error},
     translation::pearlite::{
         BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger,
         UnOp,
@@ -20,22 +19,23 @@ use rustc_middle::{
     },
     ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
-use rustc_span::sym;
+use rustc_span::{ErrorGuaranteed, sym};
 use std::{
     assert_matches::assert_matches,
     fmt::{Display, Formatter},
 };
 
-const TRIGGER_ERROR: &str = "Triggers can only be used inside quantifiers";
+type Triggers<'tcx> = Box<[Trigger<'tcx>]>;
+type BoundVars<'tcx> = Box<[(PIdent, Ty<'tcx>)]>;
 
 /// Get a Pearlite term together with its free variables.
 pub(crate) fn from_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Term<'tcx>)> {
+) -> Result<(BoundVars<'tcx>, Term<'tcx>), ErrorGuaranteed> {
     let (bound, triggers, term) = from_thir_with_triggers(ctx, id)?;
     if !triggers.is_empty() {
-        Err(Error::msg(ctx.def_span(id), TRIGGER_ERROR))
+        Err(ctx.dcx().span_err(ctx.def_span(id), "Triggers can only be used inside quantifiers"))
     } else {
         Ok((bound, term))
     }
@@ -44,7 +44,7 @@ pub(crate) fn from_thir<'tcx>(
 fn from_thir_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+) -> Result<(BoundVars<'tcx>, Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
     let did = id.into();
     let (thir, expr) = ctx.thir_body(id);
     let thir = &thir.borrow();
@@ -72,7 +72,7 @@ fn from_thir_with_triggers<'tcx>(
             .iter()
             .chain(thir.params.iter().skip(1))
             .filter_map(to_pattern)
-            .collect::<CreusotResult<_>>()
+            .collect::<Result<_, ErrorGuaranteed>>()
     } else if is_logic_closure(ctx.tcx, did) {
         // Skip implicit `self` parameter, and remove the & pattern which is sometimes
         // added for parameters of mappings.
@@ -90,13 +90,13 @@ fn from_thir_with_triggers<'tcx>(
                     _ => pat,
                 })
             })
-            .collect::<CreusotResult<_>>()
+            .collect::<Result<_, ErrorGuaranteed>>()
     } else {
         assert!(!is_closure);
         // Case of non-specs or trait item specs (which desugar to extra trait items).
-        thir.params.iter().filter_map(to_pattern).collect::<CreusotResult<_>>()
+        thir.params.iter().filter_map(to_pattern).collect::<Result<_, ErrorGuaranteed>>()
     }?;
-    let bound: Box<[(PIdent, Ty<'tcx>)]> = patterns
+    let bound: BoundVars = patterns
         .iter()
         .enumerate()
         .map(|(idx, pat)| {
@@ -132,7 +132,7 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'tcx> ThirTerm<'_, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> CreusotResult<(Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+    fn body_term(&self, expr: ExprId) -> Result<(Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
@@ -143,7 +143,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         &self,
         expr: ExprId,
         triggers: &mut Vec<Trigger<'tcx>>,
-    ) -> CreusotResult<ExprId> {
+    ) -> Result<ExprId, ErrorGuaranteed> {
         match self.head(expr).kind {
             ExprKind::Call { ty, ref args, .. } => {
                 if let TyKind::FnDef(id, _) = *ty.kind()
@@ -155,7 +155,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         self.collect_triggers(args[1], triggers)
                     } else {
                         let span = self.thir[args[0]].span;
-                        Err(Error::msg(span, "Triggers must be tuples"))
+                        Err(self.ctx.dcx().span_err(span, "Triggers must be tuples"))
                     }
                 } else {
                     Ok(expr)
@@ -217,7 +217,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     }
 
     /// Translate a THIR expression into a term.
-    fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
+    fn expr_term(&self, expr: ExprId) -> Result<Term<'tcx>, ErrorGuaranteed> {
         let thir::Expr { span, ty, ref kind, .. } = *self.head(expr);
         if let Some(p) = self.to_capture(expr) {
             return Ok(Term { kind: TermKind::Capture(p), ty, span });
@@ -254,7 +254,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Gt => BinOp::Gt,
                     Div | Rem | Ne | Eq => unreachable!(),
                     Offset | Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
-                        return Err(Error::msg(span, "Unsupported binary operation {op}"));
+                        return Err(self
+                            .ctx
+                            .dcx()
+                            .span_err(span, "Unsupported binary operation {op}"));
                     }
                 };
                 Ok(Term {
@@ -283,7 +286,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Not => UnOp::Not,
                     Neg => UnOp::Neg,
                     PtrMetadata => {
-                        return Err(Error::msg(span, "Unsupported unary operation {op}"));
+                        return Err(self
+                            .ctx
+                            .dcx()
+                            .span_err(span, "Unsupported unary operation {op}"));
                     }
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
@@ -353,11 +359,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         Ok(Term { ty, span, kind: TermKind::Old { term: Box::new(term) } })
                     }
                     Intrinsic::ClosureResult => Ok(Term::unit(self.ctx.tcx).span(span)),
-                    Intrinsic::Dead => Err(Error::msg(
+                    Intrinsic::Dead => Err(self.ctx.dcx().span_err(
                         span,
                         "The `dead` term can only be used for the body of `logic(opaque)` functions",
                     )),
-                    Intrinsic::Trigger => Err(Error::msg(
+                    Intrinsic::Trigger => Err(self.ctx.dcx().span_err(
                         span,
                         "Triggers can only be used directly inside quantifiers",
                     )),
@@ -375,10 +381,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                     break fields
                                         .iter()
                                         .map(|&item| self.expr_term(item))
-                                        .collect::<CreusotResult<_>>()?;
+                                        .collect::<Result<_, ErrorGuaranteed>>()?;
                                 }
                                 _ => {
-                                    return Err(Error::msg(
+                                    return Err(self.ctx.dcx().span_err(
                                         span,
                                         "Bad seq! This should not happen.",
                                     ));
@@ -441,7 +447,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 let mut fields: Vec<_> = fields
                     .iter()
                     .map(|f| Ok((f.name, self.expr_term(f.expr)?)))
-                    .collect::<Result<_, Error>>()?;
+                    .collect::<Result<_, ErrorGuaranteed>>()?;
 
                 match base {
                     thir::AdtExprBase::None => (),
@@ -465,7 +471,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         }
                     }
                     thir::AdtExprBase::DefaultFields(_) => {
-                        return Err(Error::msg(
+                        return Err(self.ctx.dcx().span_err(
                             span,
                             "Default field values syntax is not supported in pearlite",
                         ));
@@ -497,7 +503,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::Match { scrutinee, ref arms, .. } => {
                 let scrutinee = self.expr_term(scrutinee)?;
                 if arms.is_empty() {
-                    return Err(Error::msg(
+                    return Err(self.ctx.dcx().span_err(
                         span,
                         "Empty matches are forbidden in Pearlite, because Why3 types are always inhabited.",
                     ));
@@ -534,7 +540,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::Box { value } => self.expr_term(value),
             ExprKind::NonHirLiteral { .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => Ok(Term::item(*id, substs, ty).span(span)),
-                _ => Err(Error::msg(span, "unhandled literal expression")),
+                _ => Err(self.ctx.dcx().span_err(span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, args, .. } => Ok(Term::item(def_id, args, ty)),
             ExprKind::ZstLiteral { .. } => match ty.kind() {
@@ -558,7 +564,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 // When the cast comes from an empty match, prefer the error message
                 // from the empty match. It is more helpful because it has a visible source.
                 let _ = self.expr_term(source)?;
-                Err(Error::msg(
+                Err(self.ctx.dcx().span_err(
                     span,
                     "Casts from ! are not supported in Pearlite, because Why3 types are always inhabited.",
                 ))
@@ -569,16 +575,18 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::ConstParam { param, def_id: _ } => {
                 Ok(Term::const_param(self.ctx.tcx, param, ty, span))
             }
-            ref ek => Err(Error::msg(span, format!("Unsupported expression kind {:?}", ek))),
+            ref ek => {
+                Err(self.ctx.dcx().span_err(span, format!("Unsupported expression kind {:?}", ek)))
+            }
         };
         Ok(Term { ty, ..res? })
     }
 
-    fn arm_term(&self, arm: ArmId) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
+    fn arm_term(&self, arm: ArmId) -> Result<(Pattern<'tcx>, Term<'tcx>), ErrorGuaranteed> {
         let arm = &self.thir[arm];
 
         if arm.guard.is_some() {
-            return Err(Error::msg(arm.span, "match guards are unsupported"));
+            return Err(self.ctx.dcx().span_err(arm.span, "match guards are unsupported"));
         }
 
         let pattern = self.pattern_term(self.ctx, &arm.pattern, false)?;
@@ -592,7 +600,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         ctx: &TranslationCtx<'tcx>,
         pat: &Pat<'tcx>,
         mut_allowed: bool,
-    ) -> CreusotResult<Pattern<'tcx>> {
+    ) -> Result<Pattern<'tcx>, ErrorGuaranteed> {
         trace!("{:?}", pat);
         match &pat.kind {
             PatKind::Wild => {
@@ -600,13 +608,16 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             PatKind::Binding { mode, var, .. } => {
                 if mode.0 == ByRef::Yes(Mutability::Mut) {
-                    return Err(Error::msg(
-                        pat.span,
-                        "mut ref binders are not supported in pearlite",
-                    ));
+                    return Err(self
+                        .ctx
+                        .dcx()
+                        .span_err(pat.span, "mut ref binders are not supported in pearlite"));
                 }
                 if !mut_allowed && mode.1 == Mutability::Mut {
-                    return Err(Error::msg(pat.span, "mut binders are not supported in pearlite"));
+                    return Err(self
+                        .ctx
+                        .dcx()
+                        .span_err(pat.span, "mut binders are not supported in pearlite"));
                 }
                 let ident = self.rename(var.0);
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(ident) })
@@ -615,14 +626,14 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 let fields = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(ctx, &pat.pattern, mut_allowed)?)))
-                    .collect::<Result<Vec<_>, Error>>()?;
+                    .collect::<Result<Vec<_>, ErrorGuaranteed>>()?;
                 Ok(Pattern::constructor(*variant_index, fields, pat.ty).span(pat.span))
             }
             PatKind::Leaf { subpatterns } => {
                 let fields = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(ctx, &pat.pattern, mut_allowed)?)))
-                    .collect::<Result<Vec<_>, Error>>()?;
+                    .collect::<Result<Vec<_>, ErrorGuaranteed>>()?;
 
                 if let TyKind::Tuple(_) = pat.ty.kind() {
                     Ok(Pattern::tuple(fields.into_iter().map(|a| a.1), pat.ty).span(pat.span))
@@ -642,10 +653,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }),
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
-                    return Err(Error::msg(
-                        pat.span,
-                        "non-boolean constant patterns are unsupported",
-                    ));
+                    return Err(self
+                        .ctx
+                        .dcx()
+                        .span_err(pat.span, "non-boolean constant patterns are unsupported"));
                 }
                 Ok(Pattern {
                     ty: pat.ty,
@@ -660,22 +671,22 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             PatKind::Or { pats } => {
                 let pats = pats
                     .iter()
-                    .map(|pat| self.pattern_term(ctx, &pat, mut_allowed))
-                    .collect::<Result<Box<[_]>, Error>>()?;
+                    .map(|pat| self.pattern_term(ctx, pat, mut_allowed))
+                    .collect::<Result<Box<[_]>, ErrorGuaranteed>>()?;
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Or(pats) })
             }
             ref pk => ctx.dcx().span_bug(pat.span, format!("Unsupported pattern kind {:?}", pk)),
         }
     }
 
-    fn stmt_term(&self, stmt: StmtId, inner: Term<'tcx>) -> CreusotResult<Term<'tcx>> {
+    fn stmt_term(&self, stmt: StmtId, inner: Term<'tcx>) -> Result<Term<'tcx>, ErrorGuaranteed> {
         match &self.thir[stmt].kind {
             StmtKind::Expr { expr, .. } => {
                 let arg = self.expr_term(*expr)?;
-                if let TermKind::Tuple { fields } = &arg.kind {
-                    if fields.is_empty() {
-                        return Ok(inner);
-                    }
+                if let TermKind::Tuple { fields } = &arg.kind
+                    && fields.is_empty()
+                {
+                    return Ok(inner);
                 };
                 let span = self.thir[*expr].span;
                 Ok(Term::let_(Pattern::wildcard(arg.ty), arg, inner).span(span))
@@ -692,7 +703,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         owner: OwnerId { def_id: self.item_id },
                         local_id: init_scope.local_id,
                     });
-                    Err(Error::msg(span, "let-bindings must have values"))
+                    Err(self.ctx.dcx().span_err(span, "let-bindings must have values"))
                 }
             }
         }
@@ -701,14 +712,14 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> CreusotResult<(Box<[(PIdent, Ty<'tcx>)]>, Box<[Trigger<'tcx>]>, Term<'tcx>)> {
+    ) -> Result<(BoundVars<'tcx>, Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
         let e = self.head(body);
         trace!("{:?}", e.kind);
         match e.kind {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 from_thir_with_triggers(self.ctx, closure_id)
             }
-            _ => Err(Error::msg(e.span, "unexpected error in quantifier")),
+            _ => Err(self.ctx.dcx().span_err(e.span, "unexpected error in quantifier")),
         }
     }
 
@@ -728,7 +739,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     /// However we translate `&mut x` should be the same as if we had first substituted `a`.
     /// This is not fully satisfactory, but the other choice where we correspond to the behavior of programs is not stable under
     /// substitution.
-    fn logical_reborrow(&self, rebor_id: ExprId) -> Result<TermKind<'tcx>, Error> {
+    fn logical_reborrow(&self, rebor_id: ExprId) -> Result<TermKind<'tcx>, ErrorGuaranteed> {
         let (inner, projections) = self.logical_reborrow_inner(rebor_id)?;
         if projections.is_empty() {
             return Ok(inner.kind);
@@ -739,14 +750,12 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     fn logical_reborrow_inner(
         &self,
         rebor_id: ExprId,
-    ) -> Result<(Term<'tcx>, Vec<ProjectionElem<Term<'tcx>, Ty<'tcx>>>), Error> {
+    ) -> Result<(Term<'tcx>, Vec<ProjectionElem<Term<'tcx>, Ty<'tcx>>>), ErrorGuaranteed> {
         let thir::Expr { ty, span, ref kind, .. } = *self.head(rebor_id);
         if self.to_capture(rebor_id).is_some() {
-            return Err(Error::msg(
+            return Err(self.ctx.dcx().span_err(
                 span,
-                format!(
-                    "Logical reborrow of a partial capture is not possible, because the prophecy of the captured borrow is not visible within the closure."
-                ),
+                "Logical reborrow of a partial capture is not possible, because the prophecy of the captured borrow is not visible within the closure."
             ));
         }
         match *kind {
@@ -805,11 +814,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     self.thir[args[0]].ty.kind(),
                     TyKind::Str | TyKind::Array(_, _) | TyKind::Slice(_)
                 ) {
-                    return Err(Error::msg(
+                    return Err(self.ctx.dcx().span_err(
                         span,
-                        format!(
-                            "Unsupported logical reborrow of indexing, only slice indexing is supported"
-                        ),
+                        "Unsupported logical reborrow of indexing, only slice indexing is supported"
                     ));
                 }
 
@@ -820,7 +827,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             _ => (),
         }
 
-        Err(Error::msg(
+        Err(self.ctx.dcx().span_err(
             span,
             format!(
                 "Unsupported logical reborrow: {kind:?}, only field projections and slice indexing are supported"
