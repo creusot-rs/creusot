@@ -58,19 +58,6 @@ use why3::Ident;
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
-macro_rules! queryish {
-    ($name:ident, $key:ty, $res:ty, $builder:ident) => {
-        pub(crate) fn $name(&self, item: $key) -> &$res {
-            self.$name.insert(item, |&item| Box::new(self.$builder(item)))
-        }
-    };
-    ($name:ident, $key:ty, $res:ty, $builder:expr) => {
-        pub(crate) fn $name(&self, item: $key) -> &$res {
-            self.$name.insert(item, |&item| Box::new(($builder)(self, item)))
-        }
-    };
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub struct BodyId {
     pub def_id: DefId,
@@ -190,10 +177,10 @@ pub struct TranslationCtx<'tcx> {
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexMap<LocalDefId, Erasure<'tcx>>,
     params_open_inv: HashMap<DefId, Vec<usize>>,
-    laws: OnceMap<DefId, Box<Vec<DefId>>>,
+    laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
-    trait_impl: OnceMap<DefId, Box<Vec<Refinement<'tcx>>>>,
+    trait_impl: OnceMap<DefId, Vec<Refinement<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
     renamer: RefCell<HashMap<HirId, Ident>>,
@@ -301,7 +288,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn thir_body(&self, def_id: LocalDefId) -> ThirExpr<'tcx> {
-        self.tcx.thir_body(&def_id).unwrap_or_else(|err| err.raise_fatal())
+        self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal())
     }
 
     pub(crate) fn erased_thir(&self, def_id: DefId) -> Option<&AnfBlock<'tcx>> {
@@ -309,9 +296,13 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.externs.erased_thir(def_id)
     }
 
-    queryish!(trait_impl, DefId, Vec<Refinement<'tcx>>, translate_impl);
+    pub(crate) fn trait_impl(&self, item: DefId) -> &[Refinement<'tcx>] {
+        self.trait_impl.insert(item, |&item| self.translate_impl(item))
+    }
 
-    queryish!(fmir_body, BodyId, fmir::Body<'tcx>, translation::function::fmir);
+    pub(crate) fn fmir_body(&self, item: BodyId) -> &fmir::Body<'tcx> {
+        self.fmir_body.insert(item, |&item| Box::new(translation::function::fmir(self, item)))
+    }
 
     /// Compute the pearlite term associated with `def_id`.
     ///
@@ -328,7 +319,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
                     let (bound, term) = match pearlite::from_thir(self, local_id) {
                         Ok(t) => t,
-                        Err(err) => err.abort(self.tcx),
+                        Err(err) => err.raise_fatal(),
                     };
                     let bound = bound.iter().map(|b| b.0).collect();
                     Box::new(Some(ScopedTerm(
@@ -349,7 +340,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.params_open_inv.get(&def_id)
     }
 
-    queryish!(sig, DefId, PreSignature<'tcx>, (pre_sig_of));
+    pub(crate) fn sig(&self, item: DefId) -> &PreSignature<'tcx> {
+        self.sig.insert(item, |&item| Box::new(pre_sig_of(self, item)))
+    }
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
         callbacks::get_body(self.tcx, def_id)
@@ -370,14 +363,18 @@ impl<'tcx> TranslationCtx<'tcx> {
         Term::call_no_normalize(self.tcx, Intrinsic::Resolve.get(self), subst, [term])
     }
 
-    queryish!(laws, DefId, [DefId], laws_inner);
+    pub(crate) fn laws(&self, item: DefId) -> &[DefId] {
+        self.laws.insert(item, |&item| self.laws_inner(item))
+    }
 
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
     }
 
-    queryish!(opacity, DefId, Opacity, mk_opacity);
+    pub(crate) fn opacity(&self, item: DefId) -> &Opacity {
+        self.opacity.insert(item, |&item| Box::new(self.mk_opacity(item)))
+    }
 
     /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
@@ -465,8 +462,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let clauses =
                 base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
             let res = ParamEnv::new(self.mk_clauses_from_iter(clauses));
-            let res = normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy());
-            res
+            normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy())
         } else {
             self.tcx.param_env(def_id)
         }
