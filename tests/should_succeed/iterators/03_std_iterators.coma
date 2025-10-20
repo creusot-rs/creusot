@@ -41,13 +41,15 @@ module M_03_std_iterators__slice_iter
   
   meta "rewrite_def" predicate inv'3
   
+  predicate inv'4 (_1: t_Iter)
+  
   function view (self: t_Iter) : Slice64.slice t_T
   
   let rec iter (self_: Slice64.slice t_T) (return (x: t_Iter)) = {[@expl:iter 'self_' type invariant] inv'3 self_}
-    any [ return (result: t_Iter) -> {view result = self_} (! return {result}) ]
+    any [ return (result: t_Iter) -> {inv'4 result} {view result = self_} (! return {result}) ]
   
-  let rec into_iter (self_: t_Iter) (return (x: t_Iter)) = any
-    [ return (result: t_Iter) -> {result = self_} (! return {result}) ]
+  let rec into_iter (self_: t_Iter) (return (x: t_Iter)) = {[@expl:into_iter 'self_' type invariant] inv'4 self_}
+    any [ return (result: t_Iter) -> {inv'4 result} {result = self_} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
@@ -71,10 +73,6 @@ module M_03_std_iterators__slice_iter
   function produces_refl (self: t_Iter) : () = ()
   
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq t_T) self
-  
-  predicate inv'4 [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate inv'4
   
   predicate invariant''3 [@inline:trivial] (self: t_T) = inv self
   
@@ -101,9 +99,17 @@ module M_03_std_iterators__slice_iter
   
   type t_Option = C_None | C_Some t_T
   
-  predicate inv'8 (_1: t_Option)
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Iter) = inv'4 self.current /\ inv'4 self.final
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'8 x]. inv'8 x
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Iter) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'8
+  
+  predicate inv'9 (_1: t_Option)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'9 x]. inv'9 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'5 a_0
@@ -116,8 +122,9 @@ module M_03_std_iterators__slice_iter
   predicate completed (self: MutBorrow.t t_Iter) =
     resolve self /\ Slice64.view (view self.current) = (Seq.empty: Seq.seq t_T)
   
-  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {inv'8 result}
+  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = {[@expl:next 'self_' type invariant] inv'8 self_}
+    any
+    [ return (result: t_Option) -> {inv'9 result}
       {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
@@ -151,15 +158,20 @@ module M_03_std_iterators__slice_iter
         (! s0)
         [ s0 = bb6 ]
         [ bb6 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Iter> {iter'0}
-              (fun (_ret: MutBorrow.t t_Iter) -> [ &_21 <- _ret ] [ &iter'0 <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Iter> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret: MutBorrow.t t_Iter) -> [ &_20 <- _ret ] [ &_21 <- { _21 with current = _ret.final } ] s2)
+          [ s0 = {inv'4 iter'0}
+            MutBorrow.borrow_mut <t_Iter> {iter'0}
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_21 <- _ret ] -{inv'4 _ret.final}- [ &iter'0 <- _ret.final ] s1)
+          | s1 = {inv'4 _21.current}
+            MutBorrow.borrow_final <t_Iter> {_21.current} {MutBorrow.get_id _21}
+              (fun (_ret: MutBorrow.t t_Iter) ->
+                [ &_20 <- _ret ] -{inv'4 _ret.final}-
+                [ &_21 <- { _21 with current = _ret.final } ] s2)
           | s2 = next {_20} (fun (_ret: t_Option) -> [ &_19 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve _21}- s1
-          | s1 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: t_T) -> {_19 = C_Some x0} (! bb11) ] ]
+          [ s0 = {[@expl:type invariant] inv'8 _21} s1
+          | s1 = -{resolve _21}- s2
+          | s2 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: t_T) -> {_19 = C_Some x0} (! bb11) ] ]
         | bb11 = s0
           [ s0 = v_Some {_19} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_24 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -168,7 +180,11 @@ module M_03_std_iterators__slice_iter
           [ s0 = [ &produced <- _24 ] s1
           | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s2)
           | s2 = bb5 ] ] ]
-    | bb10 = s0 [ s0 = -{resolve'0 iter'0}- s1 | s1 = [ &_0 <- i ] s2 | s2 = return {_0} ] ]
+    | bb10 = s0
+      [ s0 = {[@expl:type invariant] inv'4 iter'0} s1
+      | s1 = -{resolve'0 iter'0}- s2
+      | s2 = [ &_0 <- i ] s3
+      | s3 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
     | & slice: Slice64.slice t_T = slice
     | & i: UInt64.t = Any.any_l ()
@@ -225,7 +241,7 @@ module M_03_std_iterators__vec_iter
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'2 self
   
@@ -235,10 +251,12 @@ module M_03_std_iterators__vec_iter
   
   meta "rewrite_def" predicate inv'3
   
+  predicate inv'4 (_1: t_Iter)
+  
   function view'0 (self: t_Iter) : Slice64.slice t_T
   
   let rec into_iter (self_: t_Vec) (return (x: t_Iter)) = {[@expl:into_iter 'self_' type invariant] inv'3 self_}
-    any [ return (result: t_Iter) -> {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
+    any [ return (result: t_Iter) -> {inv'4 result} {view self_ = Slice64.view (view'0 result)} (! return {result}) ]
   
   function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
@@ -262,10 +280,6 @@ module M_03_std_iterators__vec_iter
   function produces_refl (self: t_Iter) : () = ()
   
   axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq t_T) self
-  
-  predicate inv'4 [@inline:trivial] (_1: t_Iter) = true
-  
-  meta "rewrite_def" predicate inv'4
   
   predicate invariant''3 [@inline:trivial] (self: t_T) = inv self
   
@@ -292,9 +306,17 @@ module M_03_std_iterators__vec_iter
   
   type t_Option = C_None | C_Some t_T
   
-  predicate inv'8 (_1: t_Option)
+  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Iter) = inv'4 self.current /\ inv'4 self.final
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'8 x]. inv'8 x
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Iter) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'8
+  
+  predicate inv'9 (_1: t_Option)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'9 x]. inv'9 x
       = match x with
         | C_None -> true
         | C_Some a_0 -> inv'5 a_0
@@ -307,8 +329,9 @@ module M_03_std_iterators__vec_iter
   predicate completed (self: MutBorrow.t t_Iter) =
     resolve self /\ Slice64.view (view'0 self.current) = (Seq.empty: Seq.seq t_T)
   
-  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {inv'8 result}
+  let rec next (self_: MutBorrow.t t_Iter) (return (x: t_Option)) = {[@expl:next 'self_' type invariant] inv'8 self_}
+    any
+    [ return (result: t_Option) -> {inv'9 result}
       {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
@@ -340,15 +363,20 @@ module M_03_std_iterators__vec_iter
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Iter> {iter}
-              (fun (_ret: MutBorrow.t t_Iter) -> [ &_20 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Iter> {_20.current} {MutBorrow.get_id _20}
-              (fun (_ret: MutBorrow.t t_Iter) -> [ &_19 <- _ret ] [ &_20 <- { _20 with current = _ret.final } ] s2)
+          [ s0 = {inv'4 iter}
+            MutBorrow.borrow_mut <t_Iter> {iter}
+              (fun (_ret: MutBorrow.t t_Iter) -> [ &_20 <- _ret ] -{inv'4 _ret.final}- [ &iter <- _ret.final ] s1)
+          | s1 = {inv'4 _20.current}
+            MutBorrow.borrow_final <t_Iter> {_20.current} {MutBorrow.get_id _20}
+              (fun (_ret: MutBorrow.t t_Iter) ->
+                [ &_19 <- _ret ] -{inv'4 _ret.final}-
+                [ &_20 <- { _20 with current = _ret.final } ] s2)
           | s2 = next {_19} (fun (_ret: t_Option) -> [ &_18 <- _ret ] s3)
           | s3 = bb6 ]
         | bb6 = s0
-          [ s0 = -{resolve _20}- s1
-          | s1 = any [ br0 -> {_18 = C_None} (! bb9) | br1 (x0: t_T) -> {_18 = C_Some x0} (! bb10) ] ]
+          [ s0 = {[@expl:type invariant] inv'8 _20} s1
+          | s1 = -{resolve _20}- s2
+          | s2 = any [ br0 -> {_18 = C_None} (! bb9) | br1 (x0: t_T) -> {_18 = C_Some x0} (! bb10) ] ]
         | bb10 = s0
           [ s0 = v_Some {_18} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_23 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -357,7 +385,11 @@ module M_03_std_iterators__vec_iter
           [ s0 = [ &produced <- _23 ] s1
           | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s2)
           | s2 = bb4 ] ] ]
-    | bb9 = s0 [ s0 = -{resolve'0 iter}- s1 | s1 = [ &_0 <- i ] s2 | s2 = return {_0} ] ]
+    | bb9 = s0
+      [ s0 = {[@expl:type invariant] inv'4 iter} s1
+      | s1 = -{resolve'0 iter}- s2
+      | s2 = [ &_0 <- i ] s3
+      | s3 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
     | & vec: t_Vec = vec
     | & i: UInt64.t = Any.any_l ()
@@ -395,16 +427,18 @@ module M_03_std_iterators__all_zero
   
   type t_IterMut
   
+  predicate inv (_1: t_IterMut)
+  
   function view'0 (self: t_IterMut) : MutBorrow.t (Slice64.slice UInt64.t)
   
   axiom view_spec'0: forall self: t_IterMut. Seq.length (Slice64.view (view'0 self).final)
       = Seq.length (Slice64.view (view'0 self).current)
   
   let rec iter_mut (self_: MutBorrow.t (Slice64.slice UInt64.t)) (return (x: t_IterMut)) = any
-    [ return (result: t_IterMut) -> {view'0 result = self_} (! return {result}) ]
+    [ return (result: t_IterMut) -> {inv result} {view'0 result = self_} (! return {result}) ]
   
-  let rec into_iter (self_: t_IterMut) (return (x: t_IterMut)) = any
-    [ return (result: t_IterMut) -> {result = self_} (! return {result}) ]
+  let rec into_iter (self_: t_IterMut) (return (x: t_IterMut)) = {[@expl:into_iter 'self_' type invariant] inv self_}
+    any [ return (result: t_IterMut) -> {inv result} {result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt64.t)) = _1.final = _1.current
   
@@ -439,15 +473,19 @@ module M_03_std_iterators__all_zero
   
   axiom produces_refl_spec: forall self: t_IterMut. produces self (Seq.empty: Seq.seq (MutBorrow.t UInt64.t)) self
   
-  predicate inv [@inline:trivial] (_1: t_IterMut) = true
-  
-  meta "rewrite_def" predicate inv
-  
   predicate inv'0 [@inline:trivial] (_1: Seq.seq (MutBorrow.t UInt64.t)) = true
   
   meta "rewrite_def" predicate inv'0
   
   type t_Option = C_None | C_Some (MutBorrow.t UInt64.t)
+  
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_IterMut) = inv self.current /\ inv self.final
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_IterMut) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'1
   
   predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IterMut) = _1.final = _1.current
   
@@ -456,7 +494,8 @@ module M_03_std_iterators__all_zero
   predicate completed (self: MutBorrow.t t_IterMut) =
     resolve'0 self /\ Slice64.view (view'0 self.current).current = (Seq.empty: Seq.seq UInt64.t)
   
-  let rec next (self_: MutBorrow.t t_IterMut) (return (x: t_Option)) = any
+  let rec next (self_: MutBorrow.t t_IterMut) (return (x: t_Option)) = {[@expl:next 'self_' type invariant] inv'1 self_}
+    any
     [ return (result: t_Option) -> {match result with
         | C_None -> completed self_
         | C_Some v -> produces self_.current (Seq.singleton v) self_.final
@@ -517,15 +556,20 @@ module M_03_std_iterators__all_zero
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
-          [ s0 = MutBorrow.borrow_mut <t_IterMut> {iter}
-              (fun (_ret: MutBorrow.t t_IterMut) -> [ &_21 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_IterMut> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret: MutBorrow.t t_IterMut) -> [ &_20 <- _ret ] [ &_21 <- { _21 with current = _ret.final } ] s2)
+          [ s0 = {inv iter}
+            MutBorrow.borrow_mut <t_IterMut> {iter}
+              (fun (_ret: MutBorrow.t t_IterMut) -> [ &_21 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
+          | s1 = {inv _21.current}
+            MutBorrow.borrow_final <t_IterMut> {_21.current} {MutBorrow.get_id _21}
+              (fun (_ret: MutBorrow.t t_IterMut) ->
+                [ &_20 <- _ret ] -{inv _ret.final}-
+                [ &_21 <- { _21 with current = _ret.final } ] s2)
           | s2 = next {_20} (fun (_ret: t_Option) -> [ &_19 <- _ret ] s3)
           | s3 = bb8 ]
         | bb8 = s0
-          [ s0 = -{resolve'0 _21}- s1
-          | s1 = any [ br0 -> {_19 = C_None} (! bb11) | br1 (x0: MutBorrow.t UInt64.t) -> {_19 = C_Some x0} (! bb12) ] ]
+          [ s0 = {[@expl:type invariant] inv'1 _21} s1
+          | s1 = -{resolve'0 _21}- s2
+          | s2 = any [ br0 -> {_19 = C_None} (! bb11) | br1 (x0: MutBorrow.t UInt64.t) -> {_19 = C_Some x0} (! bb12) ] ]
         | bb12 = s0
           [ s0 = v_Some {_19} (fun (r0: MutBorrow.t UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_24 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -536,7 +580,11 @@ module M_03_std_iterators__all_zero
           | s2 = [ &x <- { x with current = (0: UInt64.t) } ] s3
           | s3 = -{resolve'1 x}- s4
           | s4 = bb6 ] ] ]
-    | bb11 = s0 [ s0 = -{resolve'3 iter}- s1 | s1 = -{resolve'4 v}- s2 | s2 = return {_0} ] ]
+    | bb11 = s0
+      [ s0 = {[@expl:type invariant] inv iter} s1
+      | s1 = -{resolve'3 iter}- s2
+      | s2 = -{resolve'4 v}- s3
+      | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec = v
     | & iter: t_IterMut = Any.any_l ()
@@ -587,7 +635,7 @@ module M_03_std_iterators__skip_take
   
   predicate inv'0 (_1: t_Take)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Take [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom: forall x: t_Take [inv'0 x]. inv'0 x -> invariant' x
   
   predicate postcondition_once (self: ()) (args: tuple) (result: t_Take)
   
@@ -609,7 +657,7 @@ module M_03_std_iterators__skip_take
   
   predicate inv'1 (_1: t_Skip)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Skip [inv'1 x]. inv'1 x = invariant''0 x
+  axiom inv_axiom'0: forall x: t_Skip [inv'1 x]. inv'1 x -> invariant''0 x
   
   function n'0 (self: t_Skip) : UInt64.t
   
@@ -793,10 +841,12 @@ module M_03_std_iterators__counter
   
   type t_Iter
   
+  predicate inv (_1: t_Iter)
+  
   function view'0 (self: t_Iter) : Slice64.slice UInt32.t
   
   let rec iter (self_: Slice64.slice UInt32.t) (return (x: t_Iter)) = any
-    [ return (result: t_Iter) -> {view'0 result = self_} (! return {result}) ]
+    [ return (result: t_Iter) -> {inv result} {view'0 result = self_} (! return {result}) ]
   
   type closure0 = { c0: MutBorrow.t UInt64.t }
   
@@ -946,17 +996,18 @@ module M_03_std_iterators__counter
     /\ preservation_inv self.t_MapInv__iter self.t_MapInv__func self.t_MapInv__produced
     /\ next_precondition self.t_MapInv__iter self.t_MapInv__func self.t_MapInv__produced
   
-  predicate inv (_1: t_MapInv)
+  predicate inv'0 (_1: t_MapInv)
   
-  axiom inv_axiom [@rewrite]: forall x: t_MapInv [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_MapInv [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_MapInv__iter)
   
   let rec map_inv (self: t_Iter) (func: closure0) (return (x: t_MapInv)) =
+    {[@expl:map_inv 'self' type invariant] inv self}
     {[@expl:map_inv requires #0] forall e: UInt32.t, i2: t_Iter. produces self (Seq.singleton e) i2
       -> precondition func { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
     {[@expl:map_inv requires #1] reinitialize}
     {[@expl:map_inv requires #2] preservation self func}
     any
-    [ return (result: t_MapInv) -> {inv result}
+    [ return (result: t_MapInv) -> {inv'0 result}
       {result = { t_MapInv__iter = self; t_MapInv__func = func; t_MapInv__produced = Seq.empty: Seq.seq UInt32.t }}
       (! return {result}) ]
   
@@ -1006,7 +1057,7 @@ module M_03_std_iterators__counter
   
   predicate from_iter_post (prod: Seq.seq UInt32.t) (res: t_Vec) = prod = view res
   
-  let rec collect (self_: t_MapInv) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv self_}
+  let rec collect (self_: t_MapInv) (return (x: t_Vec)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
     any
     [ return (result: t_Vec) -> {exists done': MutBorrow.t t_MapInv, prod: Seq.seq UInt32.t. resolve'4 done'.final
         /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
@@ -1259,7 +1310,7 @@ module M_03_std_iterators__enumerate_range
   
   predicate inv'0 (_1: t_Enumerate)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom: forall x: t_Enumerate [inv'0 x]. inv'0 x -> invariant' x
   
   function n (self: t_Enumerate) : UInt64.t
   
@@ -1475,7 +1526,7 @@ module M_03_std_iterators__my_reverse
   
   predicate inv'5 (_1: t_Zip)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip [inv'5 x]. inv'5 x = invariant''3 x
+  axiom inv_axiom: forall x: t_Zip [inv'5 x]. inv'5 x -> invariant''3 x
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: t_Range) (result: t_Range) =
     let self_ = args in result = self_

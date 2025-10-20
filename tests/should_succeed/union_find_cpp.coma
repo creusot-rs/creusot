@@ -3344,7 +3344,7 @@ module M_union_find_cpp__example
   
   predicate inv (_1: t_UF)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF [inv x]. inv x = invariant' x
+  axiom inv_axiom: forall x: t_UF [inv x]. inv x -> invariant' x
   
   predicate invariant''0 [@inline:trivial] (self: t_UF) = inv self
   
@@ -3389,6 +3389,8 @@ module M_union_find_cpp__example
     {[@expl:borrow_mut 'self' type invariant] inv'1 self}
     any [ return (result: MutBorrow.t t_UF) -> {inv'3 result} {result = self} (! return {result}) ]
   
+  predicate inv'4 (_1: t_Elem)
+  
   predicate contains [@inline:trivial] (self: Fset.fset t_Elem) (e: t_Elem) = Fset.mem e self
   
   meta "rewrite_def" predicate contains
@@ -3419,7 +3421,8 @@ module M_union_find_cpp__example
   let rec make (uf: MutBorrow.t t_UF) (payload: Int32.t) (return (x: t_Elem)) =
     {[@expl:make 'uf' type invariant] inv'3 uf}
     any
-    [ return (result: t_Elem) -> {not in_domain uf.current result}
+    [ return (result: t_Elem) -> {inv'4 result}
+      {not in_domain uf.current result}
       {domain (fin uf) = insert (domain uf.current) result}
       {roots_map (fin uf) = Map.set (roots_map uf.current) result result}
       {payloads_map (fin uf) = Map.set (payloads_map uf.current) result payload}
@@ -3429,28 +3432,28 @@ module M_union_find_cpp__example
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'4 [@inline:trivial] (_1: t_UF) = invariant''4 _1
+  predicate inv'5 [@inline:trivial] (_1: t_UF) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv'5
   
   predicate invariant''5 [@inline:trivial] (self: t_UF) = inv self
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'5 [@inline:trivial] (_1: t_UF) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'5
-  
-  predicate invariant''6 [@inline:trivial] (self: t_UF) = inv'5 self
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'6 [@inline:trivial] (_1: t_UF) = invariant''6 _1
+  predicate inv'6 [@inline:trivial] (_1: t_UF) = invariant''5 _1
   
   meta "rewrite_def" predicate inv'6
   
-  let rec borrow (self: t_UF) (return (x: t_UF)) = {[@expl:borrow 'self' type invariant] inv'4 self}
-    any [ return (result: t_UF) -> {inv'6 result} {result = self} (! return {result}) ]
+  predicate invariant''6 [@inline:trivial] (self: t_UF) = inv'6 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'7 [@inline:trivial] (_1: t_UF) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'7
+  
+  let rec borrow (self: t_UF) (return (x: t_UF)) = {[@expl:borrow 'self' type invariant] inv'5 self}
+    any [ return (result: t_UF) -> {inv'7 result} {result = self} (! return {result}) ]
   
   function root (self: t_UF) (e: t_Elem) : t_Elem = index_logic (roots_map self) e
   
@@ -3460,7 +3463,8 @@ module M_union_find_cpp__example
   
   function payload (self: t_UF) (e: t_Elem) : Int32.t = index_logic'0 (payloads_map self) e
   
-  let rec get (uf: t_UF) (elem: t_Elem) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'6 uf}
+  let rec get (uf: t_UF) (elem: t_Elem) (return (x: Int32.t)) = {[@expl:get 'uf' type invariant] inv'7 uf}
+    {[@expl:get 'elem' type invariant] inv'4 elem}
     {[@expl:get requires #0] in_domain uf elem}
     {[@expl:get requires #1] root uf elem = elem}
     any [ return (result: Int32.t) -> {result = payload uf elem} (! return {result}) ]
@@ -3471,9 +3475,12 @@ module M_union_find_cpp__example
   
   let rec union (uf: MutBorrow.t t_UF) (x: t_Elem) (y: t_Elem) (return (x'0: t_Elem)) =
     {[@expl:union 'uf' type invariant] inv'3 uf}
+    {[@expl:union 'x' type invariant] inv'4 x}
+    {[@expl:union 'y' type invariant] inv'4 y}
     {[@expl:union requires] in_domain uf.current x /\ in_domain uf.current y}
     any
-    [ return (result: t_Elem) -> {domain_unchanged uf /\ payloads_unchanged uf}
+    [ return (result: t_Elem) -> {inv'4 result}
+      {domain_unchanged uf /\ payloads_unchanged uf}
       {result = root uf.current x \/ result = root uf.current y}
       {forall z: t_Elem. in_domain uf.current z
         -> root (fin uf) z
@@ -3489,8 +3496,9 @@ module M_union_find_cpp__example
     /\ roots_map self.current = roots_map self.final /\ payloads_map self.current = payloads_map self.final
   
   let rec find (uf: MutBorrow.t t_UF) (elem: t_Elem) (return (x: t_Elem)) = {[@expl:find 'uf' type invariant] inv'3 uf}
+    {[@expl:find 'elem' type invariant] inv'4 elem}
     {[@expl:find requires] in_domain uf.current elem}
-    any [ return (result: t_Elem) -> {result = root uf.current elem} {unchanged uf} (! return {result}) ]
+    any [ return (result: t_Elem) -> {inv'4 result} {result = root uf.current elem} {unchanged uf} (! return {result}) ]
   
   predicate resolve (_1: t_UF)
   

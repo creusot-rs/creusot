@@ -538,6 +538,8 @@ module M_17_filter__less_than
   
   type t_IntoIter
   
+  predicate inv (_1: t_IntoIter)
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view (self: t_Vec) : Seq.seq UInt32.t
@@ -547,7 +549,7 @@ module M_17_filter__less_than
   function view'0 (self: t_IntoIter) : Seq.seq UInt32.t
   
   let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {view self_ = view'0 result} (! return {result}) ]
+    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'0 result} (! return {result}) ]
   
   type closure2 = { c0: UInt32.t }
   
@@ -666,10 +668,6 @@ module M_17_filter__less_than
     forall f1: closure2, f2: closure2, i: UInt32.t. not (postcondition_mut f1 i f2 true
       /\ postcondition_mut f1 i f2 false)
   
-  predicate inv [@inline:trivial] (_1: t_IntoIter) = true
-  
-  meta "rewrite_def" predicate inv
-  
   function iter (self: t_Filter) : t_IntoIter
   
   predicate inv'0 [@inline:trivial] (_1: closure2) = true
@@ -689,9 +687,11 @@ module M_17_filter__less_than
   
   predicate inv'1 (_1: t_Filter)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Filter [inv'1 x]. inv'1 x = invariant' x
+  axiom inv_axiom: forall x: t_Filter [inv'1 x]. inv'1 x -> invariant' x
   
-  let rec filter (self_: t_IntoIter) (f: closure2) (return (x: t_Filter)) = {[@expl:filter requires #0] immutable f}
+  let rec filter (self_: t_IntoIter) (f: closure2) (return (x: t_Filter)) =
+    {[@expl:filter 'self_' type invariant] inv self_}
+    {[@expl:filter requires #0] immutable f}
     {[@expl:filter requires #1] no_precondition f}
     {[@expl:filter requires #2] precise f}
     any [ return (result: t_Filter) -> {inv'1 result} {iter result = self_ /\ func result = f} (! return {result}) ]

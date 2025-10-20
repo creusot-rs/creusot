@@ -5,13 +5,19 @@ module M_hash_map__qyi5744717520881225036__new (* Foo *)
   
   type t_Foo = { t_Foo__0: t_HashMap }
   
+  predicate inv (_1: t_HashMap)
+  
+  predicate inv'0 (_1: t_Foo)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv'0 x]. inv'0 x = inv x.t_Foo__0
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec new (return (x: t_Foo)) = (! bb0
     [ bb0 = {false} any ] [ & _0: t_Foo = Any.any_l () | & _1: t_HashMap = Any.any_l () ])
-    [ return (result: t_Foo) -> (! return {result}) ]
+    [ return (result: t_Foo) -> {[@expl:new result type invariant] inv'0 result} (! return {result}) ]
 end
 module M_hash_map__qyi5744717520881225036__add (* Foo *)
   use creusot.prelude.Any
@@ -23,6 +29,20 @@ module M_hash_map__qyi5744717520881225036__add (* Foo *)
   type t_HashMap
   
   type t_Foo = { t_Foo__0: t_HashMap }
+  
+  predicate inv (_1: t_HashMap)
+  
+  predicate inv'0 (_1: t_Foo)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv'0 x]. inv'0 x = inv x.t_Foo__0
+  
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Foo) = inv'0 self.current /\ inv'0 self.final
+  
+  meta "rewrite_def" predicate invariant'
+  
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'1
   
   type t_FMap
   
@@ -44,7 +64,9 @@ module M_hash_map__qyi5744717520881225036__add (* Foo *)
   
   meta "select_lsinst" "all"
   
-  let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) = (! bb0
+  let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) =
+    {[@expl:add 'self' type invariant] inv'1 self}
+    (! bb0
     [ bb0 = {false} any ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Foo = self

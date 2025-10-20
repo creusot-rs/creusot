@@ -36119,11 +36119,15 @@ module M_creusot_contracts__std__io__extern_spec_std_ioqy95z_print_body
   
   type t_Arguments
   
+  predicate inv (_1: t_Arguments)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec extern_spec_std_ioqy95z_print_body (args: t_Arguments) (return (x: ())) = (! bb0
+  let rec extern_spec_std_ioqy95z_print_body (args: t_Arguments) (return (x: ())) =
+    {[@expl:extern_spec_std_io__print_body 'args' type invariant] inv args}
+    (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
     [ return (result: ()) -> {[@expl:extern_spec_std_io__print_body ensures] true} (! return {result}) ]
 end
@@ -36136,11 +36140,15 @@ module M_creusot_contracts__std__io__extern_spec_std_ioqy95z_eprint_body
   
   type t_Arguments
   
+  predicate inv (_1: t_Arguments)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec extern_spec_std_ioqy95z_eprint_body (args: t_Arguments) (return (x: ())) = (! bb0
+  let rec extern_spec_std_ioqy95z_eprint_body (args: t_Arguments) (return (x: ())) =
+    {[@expl:extern_spec_std_io__eprint_body 'args' type invariant] inv args}
+    (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
     [ return (result: ()) -> {[@expl:extern_spec_std_io__eprint_body ensures] true} (! return {result}) ]
 end
@@ -45783,10 +45791,12 @@ module M_creusot_contracts__std__ptr__extern_spec_Tqy95z_ptrconst_T_is_aligned_t
   
   axiom cmp_le_log_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log x y <> C_Greater)
   
+  predicate inv'2 (_1: t_Arguments)
+  
   let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
     {[@expl:new_const 'pieces' type invariant] inv'1 pieces}
     {[@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t)}
-    any [ return (result: t_Arguments) -> (! return {result}) ]
+    any [ return (result: t_Arguments) -> {inv'2 result} (! return {result}) ]
   
   predicate is_aligned_to_logic (self: Opaque.ptr) (align: UInt64BW.t) =
     UInt64BW.bw_and (PtrBW.addr_logic_u64 self) (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)
@@ -45997,10 +46007,12 @@ module M_creusot_contracts__std__ptr__extern_spec_Tqy95z_ptrmut_T_is_aligned_to_
   
   axiom cmp_le_log_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log x y <> C_Greater)
   
+  predicate inv'2 (_1: t_Arguments)
+  
   let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
     {[@expl:new_const 'pieces' type invariant] inv'1 pieces}
     {[@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t)}
-    any [ return (result: t_Arguments) -> (! return {result}) ]
+    any [ return (result: t_Arguments) -> {inv'2 result} (! return {result}) ]
   
   predicate is_aligned_to_logic (self: Opaque.ptr) (align: UInt64BW.t) =
     UInt64BW.bw_and (PtrBW.addr_logic_u64 self) (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)
@@ -46262,6 +46274,8 @@ module M_creusot_contracts__std__range__extern_spec_T_From_RangeInclusive_T_lega
   
   predicate inv (_1: t_T)
   
+  predicate inv'0 (_1: t_RangeInclusive'0)
+  
   function start_log (self: t_RangeInclusive'0) : t_T
   
   function end_log (self: t_RangeInclusive'0) : t_T
@@ -46327,14 +46341,15 @@ module M_creusot_contracts__std__range__extern_spec_T_From_RangeInclusive_T_lega
   let rec new (start: t_T) (end': t_T) (return (x: t_RangeInclusive'0)) = {[@expl:new 'start' type invariant] inv start}
     {[@expl:new 'end' type invariant] inv end'}
     any
-    [ return (result: t_RangeInclusive'0) -> {start_log result = start}
+    [ return (result: t_RangeInclusive'0) -> {inv'0 result}
+      {start_log result = start}
       {end_log result = end'}
       {le_log (deep_model start) (deep_model end') -> not is_empty_log result}
       (! return {result}) ]
   
-  predicate inv'0 (_1: t_RangeInclusive)
+  predicate inv'1 (_1: t_RangeInclusive)
   
-  axiom inv_axiom [@rewrite]: forall x: t_RangeInclusive [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_RangeInclusive [inv'1 x]. inv'1 x
       = (inv x.t_RangeInclusive__start /\ inv x.t_RangeInclusive__last)
   
   meta "compute_max_steps" 1000000
@@ -46343,7 +46358,7 @@ module M_creusot_contracts__std__range__extern_spec_T_From_RangeInclusive_T_lega
   
   let rec extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body (value: t_RangeInclusive)
     (return (x: t_RangeInclusive'0)) =
-    {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body 'value' type invariant] inv'0 value}
+    {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body 'value' type invariant] inv'1 value}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0
@@ -46352,7 +46367,8 @@ module M_creusot_contracts__std__range__extern_spec_T_From_RangeInclusive_T_lega
       | s1 = bb3 ]
     | bb3 = return {_0} ] [ & _0: t_RangeInclusive'0 = Any.any_l () | & value: t_RangeInclusive = value ])
     [ return (result: t_RangeInclusive'0) ->
-    {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #0] start_log result
+    {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body result type invariant] inv'0 result}
+      {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #0] start_log result
       = value.t_RangeInclusive__start}
       {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #1] end_log result
       = value.t_RangeInclusive__last}
@@ -47505,7 +47521,7 @@ module M_creusot_contracts__std__deque__qyi13680360502534194761__resolve_coheren
   
   predicate inv'2 (_1: t_VecDeque)
   
-  axiom inv_axiom [@rewrite]: forall x: t_VecDeque [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom: forall x: t_VecDeque [inv'2 x]. inv'2 x -> invariant''1 x
   
   predicate resolve (_1: t_T)
   
@@ -47546,7 +47562,7 @@ module M_creusot_contracts__std__iter__cloned__qyi7712864753404203214__resolve_c
   
   predicate inv'0 (_1: t_Cloned)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Cloned [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom: forall x: t_Cloned [inv'0 x]. inv'0 x -> invariant' x
   
   predicate resolve (_1: t_I)
   
@@ -47582,7 +47598,7 @@ module M_creusot_contracts__std__iter__copied__qyi10817769304312191898__resolve_
   
   predicate inv'0 (_1: t_Copied)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Copied [inv'0 x]. inv'0 x = invariant' x
+  axiom inv_axiom: forall x: t_Copied [inv'0 x]. inv'0 x -> invariant' x
   
   predicate resolve (_1: t_I)
   
@@ -47782,9 +47798,7 @@ module M_creusot_contracts__std__slice__qyi6798028551487775744__resolve_coherenc
   
   predicate structural_resolve (_1: t_IterMut)
   
-  predicate inv [@inline:trivial] (_1: t_IterMut) = true
-  
-  meta "rewrite_def" predicate inv
+  predicate inv (_1: t_IterMut)
   
   type t_T
   
@@ -47846,7 +47860,7 @@ module M_creusot_contracts__std__vec__qyi16169840827095121464__resolve_coherence
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
   
   predicate resolve (_1: t_T)
   
@@ -47878,9 +47892,7 @@ module M_creusot_contracts__std__vec__qyi9945000909994515642__resolve_coherence_
   
   predicate structural_resolve (_1: t_IntoIter)
   
-  predicate inv [@inline:trivial] (_1: t_IntoIter) = true
-  
-  meta "rewrite_def" predicate inv
+  predicate inv (_1: t_IntoIter)
   
   type t_T
   

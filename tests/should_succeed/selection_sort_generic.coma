@@ -38,7 +38,7 @@ module M_selection_sort_generic__selection_sort
   
   predicate inv'2 (_1: t_Vec)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Vec [inv'2 x]. inv'2 x = invariant''1 x
+  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
   
   predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'2 self
   
@@ -132,6 +132,14 @@ module M_selection_sort_generic__selection_sort
   
   predicate permutation_of (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
   
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''3
+  
+  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''3 _1
+  
+  meta "rewrite_def" predicate inv'4
+  
   function deep_model'2 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function deep_model'2
@@ -154,13 +162,13 @@ module M_selection_sort_generic__selection_sort
   
   axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv'4 [@inline:trivial] (_1: t_Range) = true
-  
-  meta "rewrite_def" predicate inv'4
-  
-  predicate inv'5 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  predicate inv'5 [@inline:trivial] (_1: t_Range) = true
   
   meta "rewrite_def" predicate inv'5
+  
+  predicate inv'6 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv'6
   
   type t_Option = C_None | C_Some UInt64.t
   
@@ -186,13 +194,13 @@ module M_selection_sort_generic__selection_sort
   
   meta "rewrite_def" predicate in_bounds
   
-  predicate invariant''3 [@inline:trivial] (self: t_T) = inv self
+  predicate invariant''4 [@inline:trivial] (self: t_T) = inv self
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant''4
   
-  predicate inv'6 [@inline:trivial] (_1: t_T) = invariant''3 _1
+  predicate inv'7 [@inline:trivial] (_1: t_T) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'6
+  meta "rewrite_def" predicate inv'7
   
   predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -201,14 +209,14 @@ module M_selection_sort_generic__selection_sort
   
   let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
     {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return (result: t_T) -> {inv'6 result} {has_value ix (view self_) result} (! return {result}) ]
+    any [ return (result: t_T) -> {inv'7 result} {has_value ix (view self_) result} (! return {result}) ]
   
   type tuple = { f0: t_T; f1: t_T }
   
   predicate precondition (self: ()) (args: tuple)
   
   axiom precondition_fndef:
-    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'6 other /\ inv'6 self_)
+    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'7 other /\ inv'7 self_)
       -> precondition () args
   
   function deep_model'3 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
@@ -224,14 +232,6 @@ module M_selection_sort_generic__selection_sort
   let rec lt (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:lt requires] precondition () { f0 = self_;
                                                                                                    f1 = other }}
     any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
-  
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'2 self.current /\ inv'2 self.final
-  
-  meta "rewrite_def" predicate invariant''4
-  
-  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''4 _1
-  
-  meta "rewrite_def" predicate inv'7
   
   predicate invariant''5 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
   
@@ -249,7 +249,7 @@ module M_selection_sort_generic__selection_sort
   meta "rewrite_def" predicate inv'9
   
   let rec deref_mut (self_: MutBorrow.t t_Vec) (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:deref_mut 'self_' type invariant] inv'7 self_}
+    {[@expl:deref_mut 'self_' type invariant] inv'4 self_}
     any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'9 result}
       {Slice64.view result.current = view self_.current}
@@ -279,7 +279,7 @@ module M_selection_sort_generic__selection_sort
   
   meta "select_lsinst" "all"
   
-  let rec selection_sort (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:selection_sort 'v' type invariant] inv'7 v}
+  let rec selection_sort (v: MutBorrow.t t_Vec) (return (x: ())) = {[@expl:selection_sort 'v' type invariant] inv'4 v}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
@@ -292,44 +292,45 @@ module M_selection_sort_generic__selection_sort
     | bb5 = s0 [ s0 = [ &old_6_0 <- v ] s1 | s1 = bb6 ]
     | bb6 = bb6
       [ bb6 = {[@expl:mut invariant] old_6_0.final = v.final}
-        {[@expl:for invariant] inv'5 produced}
-        {[@expl:for invariant] inv'4 iter}
+        {[@expl:for invariant] inv'6 produced}
+        {[@expl:for invariant] inv'5 iter}
         {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] permutation_of (view v.current) (view old_v.current)}
-        {[@expl:loop invariant #1] sorted_range (deep_model'1 v) 0 (Seq.length produced)}
-        {[@expl:loop invariant #2] partition (deep_model'1 v) (Seq.length produced)}
+        {[@expl:loop invariant #0] inv'4 v}
+        {[@expl:loop invariant #1] permutation_of (view v.current) (view old_v.current)}
+        {[@expl:loop invariant #2] sorted_range (deep_model'1 v) 0 (Seq.length produced)}
+        {[@expl:loop invariant #3] partition (deep_model'1 v) (Seq.length produced)}
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_24 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range> {_24.current} {MutBorrow.get_id _24}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_23 <- _ret ] [ &_24 <- { _24 with current = _ret.final } ] s2)
-          | s2 = next {_23} (fun (_ret: t_Option) -> [ &_22 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_25 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range> {_25.current} {MutBorrow.get_id _25}
+              (fun (_ret: MutBorrow.t t_Range) -> [ &_24 <- _ret ] [ &_25 <- { _25 with current = _ret.final } ] s2)
+          | s2 = next {_24} (fun (_ret: t_Option) -> [ &_23 <- _ret ] s3)
           | s3 = bb8 ]
         | bb8 = s0
-          [ s0 = -{resolve _24}- s1
-          | s1 = any [ br0 -> {_22 = C_None} (! bb11) | br1 (x0: UInt64.t) -> {_22 = C_Some x0} (! bb12) ] ]
+          [ s0 = -{resolve _25}- s1
+          | s1 = any [ br0 -> {_23 = C_None} (! bb11) | br1 (x0: UInt64.t) -> {_23 = C_Some x0} (! bb12) ] ]
         | bb12 = s0
-          [ s0 = v_Some {_22} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_27 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = v_Some {_23} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_28 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb13 ]
         | bb13 = s0
-          [ s0 = [ &produced <- _27 ] s1
+          [ s0 = [ &produced <- _28 ] s1
           | s1 = [ &i <- __creusot_proc_iter_elem ] s2
           | s2 = [ &min <- i ] s3
-          | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_34 <- _ret ] s4)
-          | s4 = len {v.current} (fun (_ret: UInt64.t) -> [ &_36 <- _ret ] s5)
+          | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_35 <- _ret ] s4)
+          | s4 = len {v.current} (fun (_ret: UInt64.t) -> [ &_37 <- _ret ] s5)
           | s5 = bb14 ]
         | bb14 = s0
-          [ s0 = [ &_33 <- { t_Range__start = _34; t_Range__end = _36 } ] s1
-          | s1 = into_iter {_33} (fun (_ret: t_Range) -> [ &iter'0 <- _ret ] s2)
+          [ s0 = [ &_34 <- { t_Range__start = _35; t_Range__end = _37 } ] s1
+          | s1 = into_iter {_34} (fun (_ret: t_Range) -> [ &iter'0 <- _ret ] s2)
           | s2 = bb15 ]
         | bb15 = s0 [ s0 = [ &iter_old'0 <- iter'0 ] s1 | s1 = bb16 ]
         | bb16 = s0 [ s0 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb18 ]
         | bb18 = bb18
-          [ bb18 = {[@expl:for invariant] inv'5 produced'0}
-            {[@expl:for invariant] inv'4 iter'0}
+          [ bb18 = {[@expl:for invariant] inv'6 produced'0}
+            {[@expl:for invariant] inv'5 iter'0}
             {[@expl:for invariant] produces iter_old'0 produced'0 iter'0}
             {[@expl:loop invariant #0] forall k: int. UInt64.t'int i <= k
                 /\ k < Seq.length produced'0 + UInt64.t'int i + 1
@@ -340,52 +341,52 @@ module M_selection_sort_generic__selection_sort
             [ s0 = bb19 ]
             [ bb19 = s0
               [ s0 = MutBorrow.borrow_mut <t_Range> {iter'0}
-                  (fun (_ret: MutBorrow.t t_Range) -> [ &_50 <- _ret ] [ &iter'0 <- _ret.final ] s1)
-              | s1 = MutBorrow.borrow_final <t_Range> {_50.current} {MutBorrow.get_id _50}
-                  (fun (_ret: MutBorrow.t t_Range) -> [ &_49 <- _ret ] [ &_50 <- { _50 with current = _ret.final } ] s2)
-              | s2 = next {_49} (fun (_ret: t_Option) -> [ &_48 <- _ret ] s3)
+                  (fun (_ret: MutBorrow.t t_Range) -> [ &_51 <- _ret ] [ &iter'0 <- _ret.final ] s1)
+              | s1 = MutBorrow.borrow_final <t_Range> {_51.current} {MutBorrow.get_id _51}
+                  (fun (_ret: MutBorrow.t t_Range) -> [ &_50 <- _ret ] [ &_51 <- { _51 with current = _ret.final } ] s2)
+              | s2 = next {_50} (fun (_ret: t_Option) -> [ &_49 <- _ret ] s3)
               | s3 = bb20 ]
             | bb20 = s0
-              [ s0 = -{resolve _50}- s1
-              | s1 = any [ br0 -> {_48 = C_None} (! bb23) | br1 (x0: UInt64.t) -> {_48 = C_Some x0} (! bb24) ] ]
+              [ s0 = -{resolve _51}- s1
+              | s1 = any [ br0 -> {_49 = C_None} (! bb23) | br1 (x0: UInt64.t) -> {_49 = C_Some x0} (! bb24) ] ]
             | bb24 = s0
-              [ s0 = v_Some {_48} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
-              | s1 = [ &_53 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+              [ s0 = v_Some {_49} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+              | s1 = [ &_54 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
               | s2 = bb25 ]
             | bb25 = s0
-              [ s0 = [ &produced'0 <- _53 ] s1
+              [ s0 = [ &produced'0 <- _54 ] s1
               | s1 = [ &j <- __creusot_proc_iter_elem'0 ] s2
-              | s2 = index {v.current} {j} (fun (_ret: t_T) -> [ &_58 <- _ret ] s3)
+              | s2 = index {v.current} {j} (fun (_ret: t_T) -> [ &_59 <- _ret ] s3)
               | s3 = bb26 ]
-            | bb26 = s0 [ s0 = index {v.current} {min} (fun (_ret: t_T) -> [ &_62 <- _ret ] s1) | s1 = bb27 ]
-            | bb27 = s0 [ s0 = lt {_58} {_62} (fun (_ret: bool) -> [ &_56 <- _ret ] s1) | s1 = bb28 ]
-            | bb28 = any [ br0 -> {_56 = false} (! bb18) | br1 -> {_56} (! bb29) ]
+            | bb26 = s0 [ s0 = index {v.current} {min} (fun (_ret: t_T) -> [ &_63 <- _ret ] s1) | s1 = bb27 ]
+            | bb27 = s0 [ s0 = lt {_59} {_63} (fun (_ret: bool) -> [ &_57 <- _ret ] s1) | s1 = bb28 ]
+            | bb28 = any [ br0 -> {_57 = false} (! bb18) | br1 -> {_57} (! bb29) ]
             | bb29 = s0 [ s0 = [ &min <- j ] s1 | s1 = bb18 ] ] ]
         | bb23 = s0
           [ s0 = {inv'2 v.current}
             MutBorrow.borrow_mut <t_Vec> {v.current}
               (fun (_ret: MutBorrow.t t_Vec) ->
-                [ &_70 <- _ret ] -{inv'2 _ret.final}-
+                [ &_71 <- _ret ] -{inv'2 _ret.final}-
                 [ &v <- { v with current = _ret.final } ] s1)
-          | s1 = deref_mut {_70} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_69 <- _ret ] s2)
+          | s1 = deref_mut {_71} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_70 <- _ret ] s2)
           | s2 = bb32 ]
         | bb32 = s0
-          [ s0 = {inv'8 _69.current}
-            MutBorrow.borrow_final <Slice64.slice t_T> {_69.current} {MutBorrow.get_id _69}
+          [ s0 = {inv'8 _70.current}
+            MutBorrow.borrow_final <Slice64.slice t_T> {_70.current} {MutBorrow.get_id _70}
               (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
-                [ &_68 <- _ret ] -{inv'8 _ret.final}-
-                [ &_69 <- { _69 with current = _ret.final } ] s1)
-          | s1 = swap {_68} {i} {min} (fun (_ret: ()) -> [ &_67 <- _ret ] s2)
+                [ &_69 <- _ret ] -{inv'8 _ret.final}-
+                [ &_70 <- { _70 with current = _ret.final } ] s1)
+          | s1 = swap {_69} {i} {min} (fun (_ret: ()) -> [ &_68 <- _ret ] s2)
           | s2 = bb33 ]
         | bb33 = s0
-          [ s0 = {[@expl:type invariant] inv'9 _69} s1
-          | s1 = -{resolve'0 _69}- s2
+          [ s0 = {[@expl:type invariant] inv'9 _70} s1
+          | s1 = -{resolve'0 _70}- s2
           | s2 = {[@expl:assertion] let i'0 = Seq.length produced in forall k1: int, k2: int. 0 <= k1
                 /\ k1 < i'0 /\ i'0 <= k2 /\ k2 < Seq.length (deep_model'1 v)
               -> le_log (Seq.get (deep_model'1 v) k1) (Seq.get (deep_model'1 v) k2)}
             s3
           | s3 = bb6 ] ] ]
-    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'7 v} s1 | s1 = -{resolve'1 v}- s2 | s2 = return {_0} ] ]
+    | bb11 = s0 [ s0 = {[@expl:type invariant] inv'4 v} s1 | s1 = -{resolve'1 v}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec = v
     | & old_v: MutBorrow.t t_Vec = Any.any_l ()
@@ -394,32 +395,32 @@ module M_selection_sort_generic__selection_sort
     | & _8: UInt64.t = Any.any_l ()
     | & iter_old: t_Range = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _22: t_Option = Any.any_l ()
-    | & _23: MutBorrow.t t_Range = Any.any_l ()
+    | & _23: t_Option = Any.any_l ()
     | & _24: MutBorrow.t t_Range = Any.any_l ()
+    | & _25: MutBorrow.t t_Range = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
-    | & _27: Seq.seq UInt64.t = Any.any_l ()
+    | & _28: Seq.seq UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & min: UInt64.t = Any.any_l ()
     | & iter'0: t_Range = Any.any_l ()
-    | & _33: t_Range = Any.any_l ()
-    | & _34: UInt64.t = Any.any_l ()
-    | & _36: UInt64.t = Any.any_l ()
+    | & _34: t_Range = Any.any_l ()
+    | & _35: UInt64.t = Any.any_l ()
+    | & _37: UInt64.t = Any.any_l ()
     | & iter_old'0: t_Range = Any.any_l ()
     | & produced'0: Seq.seq UInt64.t = Any.any_l ()
-    | & _48: t_Option = Any.any_l ()
-    | & _49: MutBorrow.t t_Range = Any.any_l ()
+    | & _49: t_Option = Any.any_l ()
     | & _50: MutBorrow.t t_Range = Any.any_l ()
+    | & _51: MutBorrow.t t_Range = Any.any_l ()
     | & __creusot_proc_iter_elem'0: UInt64.t = Any.any_l ()
-    | & _53: Seq.seq UInt64.t = Any.any_l ()
+    | & _54: Seq.seq UInt64.t = Any.any_l ()
     | & j: UInt64.t = Any.any_l ()
-    | & _56: bool = Any.any_l ()
-    | & _58: t_T = Any.any_l ()
-    | & _62: t_T = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _68: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+    | & _57: bool = Any.any_l ()
+    | & _59: t_T = Any.any_l ()
+    | & _63: t_T = Any.any_l ()
+    | & _68: () = Any.any_l ()
     | & _69: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
-    | & _70: MutBorrow.t t_Vec = Any.any_l ()
+    | & _70: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+    | & _71: MutBorrow.t t_Vec = Any.any_l ()
     | & old_6_0: MutBorrow.t t_Vec = Any.any_l () ])
     [ return (result: ()) -> {[@expl:selection_sort ensures #0] sorted (deep_model'0 v.final)}
       {[@expl:selection_sort ensures #1] permutation_of (view v.final) (view v.current)}
