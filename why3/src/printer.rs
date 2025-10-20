@@ -1003,7 +1003,7 @@ impl Print for Pattern {
                     if !pats.is_empty() {
                         doc = doc.append(alloc.space()).append(alloc.intersperse(
                             pats.iter().map(|p| {
-                                if matches!(p, Pattern::ConsP(_, _)) {
+                                if matches!(p, Pattern::ConsP(_, _) | Pattern::As(..)) {
                                     pretty_rec(p, alloc, scope, seen).parens()
                                 } else {
                                     pretty_rec(p, alloc, scope, seen)
@@ -1026,6 +1026,16 @@ impl Print for Pattern {
                 }
                 Pattern::OrP(pats) => {
                     alloc.intersperse(pats.iter().map(|p| pretty_rec(p, alloc, scope, seen)), " | ")
+                }
+                Pattern::As(pat, v) => {
+                    if !seen.contains(v) {
+                        scope.bind_value(*v);
+                        seen.insert(*v);
+                    }
+                    pretty_rec(pat, alloc, scope, seen)
+                        .append(alloc.space())
+                        .append("as ")
+                        .append(v.pretty_value_name(alloc, scope))
                 }
             }
         }

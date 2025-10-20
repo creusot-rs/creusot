@@ -2,7 +2,7 @@ mod binder;
 
 use crate::{Ident, Name, QName, declaration::Attribute, name, ty::Type};
 use indexmap::IndexSet;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -230,14 +230,14 @@ impl<'a> ExpMutVisitor for BoundSubst<'a> {
             Exp::Let { pattern, arg, body } => {
                 self.visit_mut(arg);
                 let mut bound = self.bound.clone();
-                pattern.refresh(&mut bound);
+                pattern.refresh(&mut bound, &mut HashSet::new());
                 BoundSubst { bound, ..*self }.visit_mut(body);
             }
             Exp::Match(scrut, brs) => {
                 self.visit_mut(scrut);
                 for (pat, br) in brs {
                     let mut bound = self.bound.clone();
-                    pat.refresh(&mut bound);
+                    pat.refresh(&mut bound, &mut HashSet::new());
                     BoundSubst { bound, ..*self }.visit_mut(br);
                 }
             }
@@ -821,6 +821,7 @@ impl Constant {
 pub enum Pattern {
     Wildcard,
     VarP(Ident),
+    As(Box<Pattern>, Ident),
     TupleP(Box<[Pattern]>),
     ConsP(Name, Box<[Pattern]>),
     RecP(Box<[(Name, Pattern)]>),
@@ -875,25 +876,38 @@ impl Pattern {
                     set
                 })
             }
+            Pattern::As(pat, s) => {
+                let mut b = pat.binders();
+                b.insert(s.clone());
+                b
+            }
         }
     }
 
-    pub fn refresh(&mut self, bound: &mut HashMap<Ident, Ident>) {
+    pub fn refresh(&mut self, bound: &mut HashMap<Ident, Ident>, seen: &mut HashSet<Ident>) {
         match self {
             Pattern::Wildcard => {}
-            Pattern::VarP(id) => refresh_var(id, bound),
-            Pattern::TupleP(pats) => {
-                pats.iter_mut().for_each(|p| p.refresh(bound));
+            Pattern::VarP(id) => {
+                if let Some(id2) = seen.get(id) {
+                    *id = *id2
+                } else {
+                    seen.insert(*id);
+                    refresh_var(id, bound)
+                }
             }
-            Pattern::ConsP(_, pats) => {
-                pats.iter_mut().for_each(|p| p.refresh(bound));
+            Pattern::As(pat, id) => {
+                if let Some(id2) = seen.get(id) {
+                    *id = *id2
+                } else {
+                    seen.insert(*id);
+                    refresh_var(id, bound)
+                }
+                pat.refresh(bound, seen);
             }
-            Pattern::RecP(fields) => {
-                fields.iter_mut().for_each(|(_, p)| p.refresh(bound));
-            }
-            Pattern::OrP(pats) => {
-                pats.iter_mut().for_each(|p| p.refresh(bound));
-            }
+            Pattern::TupleP(pats) => pats.iter_mut().for_each(|p| p.refresh(bound, seen)),
+            Pattern::ConsP(_, pats) => pats.iter_mut().for_each(|p| p.refresh(bound, seen)),
+            Pattern::RecP(fields) => fields.iter_mut().for_each(|(_, p)| p.refresh(bound, seen)),
+            Pattern::OrP(pats) => pats.iter_mut().for_each(|p| p.refresh(bound, seen)),
         }
     }
 }

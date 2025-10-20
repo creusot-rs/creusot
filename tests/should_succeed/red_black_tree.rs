@@ -31,32 +31,24 @@ struct Tree<K, V> {
 impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
-        pearlite! {
-            match self {
-                Tree { node: None } => false,
-                Tree { node: Some(box Node { left, key, val, right, .. }) } =>
-                    left.has_mapping(k, v) || right.has_mapping(k, v) || k == key.deep_model() && v == val
+        match self {
+            Tree { node: None } => false,
+            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+                left.has_mapping(k, v)
+                    || right.has_mapping(k, v)
+                    || k == key.deep_model() && v == val
             }
         }
     }
 
     #[logic]
-    fn same_mappings(self, o: Self) -> bool {
-        pearlite! {
-            forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
-        }
-    }
-
-    #[logic]
     fn model_acc(self, accu: <Self as View>::ViewTy) -> <Self as View>::ViewTy {
-        pearlite! {
-            match self {
-                Tree { node: None } => accu,
-                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
-                    let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
-                    right.model_acc(accu2)
-                }
+        match self {
+            Tree { node: None } => accu,
+            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+                let accu1 = left.model_acc(accu);
+                let accu2 = accu1.set(key.deep_model(), Some(val));
+                right.model_acc(accu2)
             }
         }
     }
@@ -65,15 +57,13 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[ensures(self.model_acc(accu).get(k) == accu.get(k) ||
               exists<v: V> self.model_acc(accu).get(k) == Some(v) && self.has_mapping(k, v))]
     fn model_acc_has_mapping(self, accu: <Self as View>::ViewTy, k: K::DeepModelTy) {
-        pearlite! {
-            match self {
-                Tree { node: None } => (),
-                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
-                    left.model_acc_has_mapping(accu, k);
-                    let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
-                    right.model_acc_has_mapping(accu2, k)
-                }
+        match self {
+            Tree { node: None } => (),
+            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+                left.model_acc_has_mapping(accu, k);
+                let accu1 = left.model_acc(accu);
+                let accu2 = accu1.set(key.deep_model(), Some(val));
+                right.model_acc_has_mapping(accu2, k)
             }
         }
     }
@@ -85,16 +75,14 @@ impl<K: DeepModel, V> Tree<K, V> {
     where
         K::DeepModelTy: OrdLogic,
     {
-        pearlite! {
-            match self {
-                Tree { node: None } => (),
-                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
-                    left.has_mapping_model_acc(accu, k);
-                    let accu1 = left.model_acc(accu);
-                    let accu2 = accu1.set(key.deep_model(), Some(val));
-                    right.has_mapping_model_acc(accu2, k);
-                    right.model_acc_has_mapping(accu2, k)
-                }
+        match self {
+            Tree { node: None } => (),
+            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+                left.has_mapping_model_acc(accu, k);
+                let accu1 = left.model_acc(accu);
+                let accu2 = accu1.set(key.deep_model(), Some(val));
+                right.has_mapping_model_acc(accu2, k);
+                right.model_acc_has_mapping(accu2, k)
             }
         }
     }
@@ -106,10 +94,8 @@ impl<K: DeepModel, V> Tree<K, V> {
     where
         K::DeepModelTy: OrdLogic,
     {
-        pearlite! { {
-            self.model_acc_has_mapping(Mapping::cst(None), k);
-            self.has_mapping_model_acc(Mapping::cst(None), k)
-        } }
+        self.model_acc_has_mapping(Mapping::cst(None), k);
+        self.has_mapping_model_acc(Mapping::cst(None), k)
     }
 
     #[logic]
@@ -121,10 +107,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     where
         K::DeepModelTy: OrdLogic,
     {
-        pearlite! { {
-            self.has_mapping_model(k);
-            match self@.get(k) { None => (), Some(_v) => () }
-        } }
+        self.has_mapping_model(k)
     }
 }
 
@@ -133,17 +116,14 @@ impl<K: DeepModel, V> Node<K, V> {
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.has_mapping(k, v))]
     fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
-        pearlite! {
-            self.left.has_mapping(k, v) || self.right.has_mapping(k, v) ||
-                k == self.key.deep_model() && v == self.val
-        }
+        self.left.has_mapping(k, v)
+            || self.right.has_mapping(k, v)
+            || k == self.key.deep_model() && v == self.val
     }
 
     #[logic]
     fn same_mappings(self, o: Self) -> bool {
-        pearlite! {
-            forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
-        }
+        pearlite! { forall<k: K::DeepModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v) }
     }
 }
 
@@ -152,9 +132,7 @@ impl<K: DeepModel, V> View for Node<K, V> {
 
     #[logic]
     fn view(self) -> Self::ViewTy {
-        pearlite! {
-            self.right.model_acc(self.left.view().set(self.key.deep_model(), Some(self.val)))
-        }
+        self.right.model_acc(self.left.view().set(self.key.deep_model(), Some(self.val)))
     }
 }
 
@@ -163,16 +141,14 @@ impl<K: DeepModel, V> View for Tree<K, V> {
 
     #[logic]
     fn view(self) -> Self::ViewTy {
-        pearlite! { self.model_acc(Mapping::cst(None)) }
+        self.model_acc(Mapping::cst(None))
     }
 }
 
 impl<K: DeepModel, V> Resolve for Tree<K, V> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! {
-            forall<k, v> self.has_mapping(k, v) ==> resolve(v)
-        }
+        pearlite! { forall<k, v> self.has_mapping(k, v) ==> resolve(v) }
     }
 
     #[logic(prophetic)]
@@ -184,9 +160,7 @@ impl<K: DeepModel, V> Resolve for Tree<K, V> {
 impl<K: DeepModel, V> Resolve for Node<K, V> {
     #[logic(prophetic)]
     fn resolve(self) -> bool {
-        pearlite! {
-            forall<k, v> self.has_mapping(k, v) ==> resolve(v)
-        }
+        pearlite! { forall<k, v> self.has_mapping(k, v) ==> resolve(v) }
     }
 
     #[logic(prophetic)]
@@ -211,9 +185,7 @@ where
 
     #[logic]
     fn bst_invariant(self) -> bool {
-        pearlite! {
-            self.bst_invariant_here() && self.left.bst_invariant() && self.right.bst_invariant()
-        }
+        self.bst_invariant_here() && self.left.bst_invariant() && self.right.bst_invariant()
     }
 }
 
@@ -223,13 +195,10 @@ where
 {
     #[logic]
     fn bst_invariant(self) -> bool {
-        pearlite! {
-            match self {
-                Tree { node: None } => true,
-                Tree { node: Some(box node) } => {
-                    let Node { left, right, .. } = node;
-                    node.bst_invariant_here() && left.bst_invariant() && right.bst_invariant()
-                }
+        match self {
+            Tree { node: None } => true,
+            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+                node.bst_invariant_here() && left.bst_invariant() && right.bst_invariant()
             }
         }
     }
@@ -245,28 +214,27 @@ use CP::*;
 
 #[logic]
 fn cpn(c: Color, l: CP, r: CP) -> CP {
-    pearlite! { CPN(c, Box::new(l), Box::new(r)) }
+    CPN(c, Box::new(l), Box::new(r))
 }
 
 impl CP {
     #[logic]
     fn match_t<K, V>(self, tree: Tree<K, V>) -> bool {
-        pearlite! {
-            match self {
-                CPL(color) => tree.color() == color && tree.color_invariant(),
-                CPN(color, box l, box r) =>
-                    exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
-                    node.color == color && l.match_t(node.left) && r.match_t(node.right)
-            }
+        match self {
+            CPL(color) => tree.color() == color && tree.color_invariant(),
+            CPN(color, box l, box r) => match tree.node {
+                Some(node) => node.color == color && l.match_t(node.left) && r.match_t(node.right),
+                None => false,
+            },
         }
     }
 
     #[logic]
     fn match_n<K, V>(self, node: Node<K, V>) -> bool {
-        pearlite! {
-            match self {
-                CPL(color) => node.color == color && node.color_invariant(),
-                CPN(color, box l, box r) => node.color == color && l.match_t(node.left) && r.match_t(node.right)
+        match self {
+            CPL(color) => node.color == color && node.color_invariant(),
+            CPN(color, box l, box r) => {
+                node.color == color && l.match_t(node.left) && r.match_t(node.right)
             }
         }
     }
@@ -275,23 +243,18 @@ impl CP {
 impl<K, V> Tree<K, V> {
     #[logic]
     fn color(self) -> Color {
-        pearlite! {
-            match self.node {
-                Some(box Node { color, .. }) => color,
-                _ => Black,
-            }
+        match self.node {
+            Some(box Node { color, .. }) => color,
+            _ => Black,
         }
     }
 
     #[logic]
     fn color_invariant(self) -> bool {
-        pearlite! {
-            match self {
-                Tree { node: None } => true,
-                Tree { node: Some(box node) } => {
-                    let Node { left, right, .. } = node;
-                    node.color_invariant_here() && left.color_invariant() && right.color_invariant()
-                }
+        match self {
+            Tree { node: None } => true,
+            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+                node.color_invariant_here() && left.color_invariant() && right.color_invariant()
             }
         }
     }
@@ -300,12 +263,12 @@ impl<K, V> Tree<K, V> {
 impl<K, V> Node<K, V> {
     #[logic]
     fn color_invariant_here(self) -> bool {
-        pearlite! { self.right.color() == Black && (self.color == Black || self.left.color() == Black) }
+        self.right.color() == Black && (self.color == Black || self.left.color() == Black)
     }
 
     #[logic]
     fn color_invariant(self) -> bool {
-        pearlite! { self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant() }
+        self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant()
     }
 }
 
@@ -315,28 +278,19 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[ensures(result >= 0)]
     fn height(self) -> Int {
-        pearlite! {
-            match self {
-                Tree { node: None } => 0,
-                Tree { node: Some(box Node { left, color, .. })} => {
-                    match color {
-                        Red => left.height(),
-                        Black => left.height()+1
-                    }
-                }
-            }
+        match self {
+            Tree { node: None } => 0,
+            Tree { node: Some(box Node { left, color: Red, .. }) } => left.height(),
+            Tree { node: Some(box Node { left, color: Black, .. }) } => left.height() + 1,
         }
     }
 
     #[logic]
     fn height_invariant(self) -> bool {
-        pearlite! {
-            match self {
-                Tree { node: None } => true,
-                Tree { node: Some(box node) } => {
-                    let Node { left, right, .. } = node;
-                    node.height_invariant_here() && left.height_invariant() && right.height_invariant()
-                }
+        match self {
+            Tree { node: None } => true,
+            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+                node.height_invariant_here() && left.height_invariant() && right.height_invariant()
             }
         }
     }
@@ -347,22 +301,22 @@ impl<K: DeepModel, V> Node<K, V> {
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.height())]
     fn height(self) -> Int {
-        pearlite! {
-            match self.color {
-                Red => self.left.height(),
-                Black => self.left.height()+1
-            }
+        match self.color {
+            Red => self.left.height(),
+            Black => self.left.height() + 1,
         }
     }
 
     #[logic]
     fn height_invariant_here(self) -> bool {
-        pearlite! { self.left.height() == self.right.height() }
+        self.left.height() == self.right.height()
     }
 
     #[logic]
     fn height_invariant(self) -> bool {
-        pearlite! { self.height_invariant_here() && self.left.height_invariant() && self.right.height_invariant() }
+        self.height_invariant_here()
+            && self.left.height_invariant()
+            && self.right.height_invariant()
     }
 }
 
@@ -374,9 +328,7 @@ where
 {
     #[logic]
     fn internal_invariant(self) -> bool {
-        pearlite! {
-            self.bst_invariant() && self.height_invariant()
-        }
+        self.bst_invariant() && self.height_invariant()
     }
 }
 
@@ -389,9 +341,7 @@ where
     // This might be made a proper type invariant, but move_red_left/move_red_right need to be
     // rewritten, perhaps by taking a continuation as closure in parameter.
     fn internal_invariant(self) -> bool {
-        pearlite! {
-            self.bst_invariant() && self.height_invariant()
-        }
+        self.bst_invariant() && self.height_invariant()
     }
 }
 
@@ -399,6 +349,7 @@ where
 
 impl<K: DeepModel, V> Tree<K, V> {
     #[ensures(result == (self.color() == Red))]
+    #[check(terminates)]
     fn is_red(&self) -> bool {
         match self.node {
             Some(box Node { color: Red, .. }) => true,
@@ -497,6 +448,7 @@ where
     #[ensures(exists<r1: Box<Self>, r2: Box<Self>> (*self).right.node == Some(r1) && (^self).right.node == Some(r2) &&
               r1.left == r2.left && r1.right == r2.right && r1.key == r2.key &&
               (*self).color == r2.color && (^self).color == r1.color && r1.key == r2.key)]
+    #[check(terminates)]
     fn flip_colors(&mut self) {
         self.left.node.as_mut().unwrap().color = self.color;
         std::mem::swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
@@ -624,13 +576,11 @@ where
                 val,
                 right: Tree { node: None },
             }));
-            return; // FIXME: not necessary, but Creusot crashes if we remove this return.
         }
     }
 
     #[requires((*self).internal_invariant())]
-    #[requires(CPL(Red).match_t(*self) ||
-               cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
+    #[requires(CPL(Red).match_t(*self) || cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures((*self).has_mapping(result.0.deep_model(), result.1))]
@@ -657,8 +607,7 @@ where
     }
 
     #[requires((*self).internal_invariant())]
-    #[requires(CPL(Red).match_t(*self) ||
-               cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
+    #[requires(CPL(Red).match_t(*self) || cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures((*self).has_mapping(result.0.deep_model(), result.1))]
@@ -682,8 +631,7 @@ where
     }
 
     #[requires((*self).internal_invariant())]
-    #[requires(CPL(Red).match_t(*self) ||
-               cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
+    #[requires(CPL(Red).match_t(*self) || cpn(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures(match result {
@@ -757,9 +705,7 @@ where
 {
     #[logic]
     fn invariant(self) -> bool {
-        pearlite! {
-            self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
-        }
+        self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
     }
 }
 
@@ -803,7 +749,6 @@ where
         None => (^self)@ == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
-        let old_self = snapshot! { self };
         if let Some(node) = &mut self.0.node {
             if !node.left.is_red() {
                 node.color = Red;
@@ -811,7 +756,6 @@ where
         } else {
             return None;
         }
-        proof_assert! { old_self.0.same_mappings(self.0) }
         let r = self.0.delete_max_rec();
         if self.0.is_red() {
             self.0.node.as_mut().unwrap().color = Black;

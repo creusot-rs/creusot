@@ -7,7 +7,7 @@ use crate::{
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
-            binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pure,
+            binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pat, lower_pure,
             tyconst_to_term_final, unsupported_cast,
         },
         ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
@@ -17,15 +17,14 @@ use crate::{
     naming::name,
     translation::{
         pearlite::{
-            BinOp, Literal, Pattern, PatternKind, Term, TermKind, UnOp,
+            BinOp, Literal, Pattern, Term, TermKind, UnOp,
             visit::{TermVisitor, super_visit_term},
         },
         traits::TraitResolved,
     },
     util::erased_identity_for_item,
 };
-use rustc_ast::Mutability;
-use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::ProjectionElem,
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
@@ -216,6 +215,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
         lower_pure(self.ctx, self.names, lit)
+    }
+
+    fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {
+        lower_pat(self.ctx, self.names, pat)
     }
 
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Exp {
@@ -481,19 +484,18 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Match { scrutinee, arms } => self.build_wp(scrutinee, &|scrut| {
                 let arms = arms
                     .iter()
-                    .map(|arm| self.build_pattern(&arm.0, &|pat| (pat, self.build_wp(&arm.1, k))));
+                    .map(|arm| (self.lower_pat(&arm.0), self.build_wp(&arm.1, k)));
                 scrut.match_(arms)
             }),
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
-                self.build_pattern(pattern, &|pattern| {
-                    if pattern.is_wildcard() && arg.is_unit() {
-                        self.build_wp(body, k)
-                    } else {
-                        let body = self.build_wp(body, k).boxed();
-                        Exp::Let { pattern, arg: arg.clone().boxed(), body }
-                    }
-                })
+                let pattern = self.lower_pat(pattern);
+                if pattern.is_wildcard() && arg.is_unit() {
+                    self.build_wp(body, k)
+                } else {
+                    let body = self.build_wp(body, k).boxed();
+                    Exp::Let { pattern, arg: arg.clone().boxed(), body }
+                }
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, idx } => {
@@ -559,83 +561,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Capture(_) => self.ctx.span_bug(t.span, "capture should not appear here."),
             TermKind::PrivateInv { .. } | TermKind::PrivateResolve { .. } => {
                 self.ctx.span_bug(t.span, "private_inv and private_resolve should not appear here.")
-            }
-        }
-    }
-
-    fn build_pattern<A>(&self, pat: &Pattern<'tcx>, k: PostCont<'_, 'tcx, WPattern, A>) -> A {
-        let pat = self.build_pattern_inner(pat);
-        k(pat)
-    }
-
-    // FIXME: this is a duplicate with term::lower_pat
-    // The only difference is the `bounds` parameter
-    fn build_pattern_inner(&self, pat: &Pattern<'tcx>) -> WPattern {
-        match &pat.kind {
-            PatternKind::Constructor(variant, fields) => {
-                let ty = self.names.normalize(pat.ty);
-                let (var_did, subst) = match *ty.kind() {
-                    TyKind::Adt(def, subst) => (def.variant(*variant).def_id, subst),
-                    TyKind::Closure(did, subst) => (did, subst),
-                    _ => unreachable!(),
-                };
-                let flds = fields.iter().map(|(fld, pat)| (*fld, self.build_pattern_inner(pat)));
-                if self.ctx.def_kind(var_did) == DefKind::Variant {
-                    let mut pats: Box<[_]> = ty.ty_adt_def().unwrap().variants()[*variant]
-                        .fields
-                        .indices()
-                        .map(|_| WPattern::Wildcard)
-                        .collect();
-
-                    for (idx, pat) in flds {
-                        pats[idx.as_usize()] = pat
-                    }
-                    WPattern::ConsP(Name::local(self.names.item_ident(var_did, subst)), pats)
-                } else if fields.is_empty() {
-                    WPattern::TupleP(Box::new([]))
-                } else {
-                    let flds: Box<[_]> = flds
-                        .map(|(fld, p)| (Name::local(self.names.field(var_did, subst, fld)), p))
-                        .collect();
-                    WPattern::RecP(flds)
-                }
-            }
-            PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name) => WPattern::VarP(name.0),
-            PatternKind::Bool(true) => WPattern::mk_true(),
-            PatternKind::Bool(false) => WPattern::mk_false(),
-            PatternKind::Tuple(pats) if pats.is_empty() => WPattern::TupleP(Box::new([])),
-            PatternKind::Tuple(pats) if pats.len() == 1 => self.build_pattern_inner(&pats[0]),
-            PatternKind::Tuple(pats) => {
-                let ty = self.names.normalize(pat.ty);
-                let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
-                let flds: Box<[_]> = pats
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, pat)| {
-                        (
-                            Name::local(self.names.tuple_field(tys, idx.into())),
-                            self.build_pattern_inner(pat),
-                        )
-                    })
-                    .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
-                    .collect();
-                if flds.is_empty() { WPattern::Wildcard } else { WPattern::RecP(flds) }
-            }
-            PatternKind::Deref(pointee) => {
-                let ty = self.names.normalize(pat.ty);
-                match ty.kind() {
-                    TyKind::Adt(def, _) if def.is_box() => self.build_pattern_inner(pointee),
-                    TyKind::Ref(_, _, Mutability::Not) => self.build_pattern_inner(pointee),
-                    TyKind::Ref(_, _, Mutability::Mut) => WPattern::RecP(Box::new([(
-                        Name::Global(name::current()),
-                        self.build_pattern_inner(pointee),
-                    )])),
-                    _ => unreachable!(),
-                }
-            }
-            PatternKind::Or(patterns) => {
-                WPattern::OrP(patterns.iter().map(|p| self.build_pattern_inner(p)).collect())
             }
         }
     }

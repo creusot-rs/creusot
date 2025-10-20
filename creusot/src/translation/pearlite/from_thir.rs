@@ -101,7 +101,7 @@ fn from_thir_with_triggers<'tcx>(
         .enumerate()
         .map(|(idx, pat)| {
             let ident = match pat.kind {
-                PatternKind::Binder(var) => var,
+                PatternKind::Binder(var, _) => var,
                 _ => Ident::fresh_local(format!("__{}", idx)).into(),
             };
             (
@@ -113,7 +113,8 @@ fn from_thir_with_triggers<'tcx>(
     let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
         body,
         |body: Term<'tcx>, (pattern, (ident, ty))| match pattern.kind {
-            PatternKind::Binder(_) | PatternKind::Wildcard => body,
+            PatternKind::Binder(_, box Pattern { kind: PatternKind::Wildcard, .. })
+            | PatternKind::Wildcard => body,
             _ => {
                 let span = body.span;
                 Term::let_(pattern, Term::var(ident, ty), body).span(span)
@@ -606,7 +607,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             PatKind::Wild => {
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard })
             }
-            PatKind::Binding { mode, var, .. } => {
+            PatKind::Binding { mode, var, subpattern, .. } => {
                 if mode.0 == ByRef::Yes(Mutability::Mut) {
                     return Err(self
                         .ctx
@@ -620,7 +621,15 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         .span_err(pat.span, "mut binders are not supported in pearlite"));
                 }
                 let ident = self.rename(var.0);
-                Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Binder(ident) })
+                let subpattern = match subpattern {
+                    Some(pat) => self.pattern_term(ctx, pat, mut_allowed)?,
+                    None => Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard },
+                };
+                Ok(Pattern {
+                    ty: pat.ty,
+                    span: pat.span,
+                    kind: PatternKind::Binder(ident, Box::new(subpattern)),
+                })
             }
             PatKind::Variant { subpatterns, variant_index, .. } => {
                 let fields = subpatterns
