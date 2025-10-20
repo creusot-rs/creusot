@@ -93,6 +93,7 @@ impl<T: ?Sized> PermCellOwn<T> {
 impl<T> PermCell<T> {
     /// Creates a new `PermCell` containing the given value.
     #[trusted]
+    #[check(terminates)]
     #[ensures(result.0.id() == result.1.id())]
     #[ensures((*result.1)@ == value)]
     pub fn new(value: T) -> (Self, Ghost<PermCellOwn<T>>) {
@@ -111,6 +112,7 @@ impl<T> PermCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
     #[ensures(resolve(perm@))]
@@ -132,6 +134,7 @@ impl<T> PermCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(val == (^perm)@)]
     #[ensures(result == perm@)]
@@ -143,6 +146,7 @@ impl<T> PermCell<T> {
 
     /// Unwraps the value, consuming the cell.
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(result == perm@)]
     pub fn into_inner(self, perm: Ghost<PermCellOwn<T>>) -> T {
@@ -163,6 +167,7 @@ impl<T> PermCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(*result == perm@)]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a PermCellOwn<T>>) -> &'a T {
@@ -183,6 +188,7 @@ impl<T> PermCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(self.id() == (^perm).id())]
     #[ensures(*result == perm@)]
@@ -204,6 +210,7 @@ impl<T: Copy> PermCell<T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
     #[trusted]
+    #[check(terminates)]
     #[requires(self.id() == perm.id())]
     #[ensures(result == (**perm)@)]
     pub unsafe fn get(&self, perm: Ghost<&PermCellOwn<T>>) -> T {
@@ -236,6 +243,7 @@ impl<T> PermCell<T> {
 
     /// Returns a `&PermCell<T>` from a `&mut T`
     #[trusted]
+    #[check(terminates)]
     #[ensures(result.0.id() == result.1.id())]
     #[ensures(^t == (^result.1)@)]
     #[ensures(*t == result.1@)]
