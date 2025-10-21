@@ -1,7 +1,4 @@
-use crate::{
-    std::iter::{DoubleEndedIterator, Iterator, Rev},
-    *,
-};
+use crate::{prelude::*, std::iter::Rev};
 
 pub trait RevExt<I> {
     #[logic]
@@ -32,7 +29,7 @@ impl<I> Invariant for Rev<I> {
     }
 }
 
-impl<I: DoubleEndedIterator> Iterator for Rev<I> {
+impl<I: DoubleEndedIteratorSpec> IteratorSpec for Rev<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { self.iter_mut().completed() }

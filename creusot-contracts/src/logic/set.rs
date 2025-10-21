@@ -1,9 +1,10 @@
-use crate::{logic::Mapping, *};
+use crate::{logic::Mapping, prelude::*};
+use std::marker::PhantomData;
 
 /// A (possibly infinite) set type.
 #[opaque]
 #[builtin("set.Set.set")]
-pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
+pub struct Set<T: ?Sized>(PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {
     /// The empty set.

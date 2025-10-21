@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, *};
+use creusot_contracts::{invariant::inv, prelude::*};
 
 fn f<T>(_: &mut T) {}
 

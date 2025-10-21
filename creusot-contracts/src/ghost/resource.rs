@@ -24,7 +24,7 @@ mod m {
     /// # Example
     ///
     /// ```rust
-    /// use creusot_contracts::{*, ghost::resource::Resource, logic::ra::agree::Ag};
+    /// use creusot_contracts::{ghost::resource::Resource, logic::ra::agree::Ag, prelude::*};
     /// let mut res: Ghost<Resource<Ag<Int>>> = Resource::alloc(snapshot!(Ag(1)));
     ///
     /// ghost! {
@@ -39,14 +39,13 @@ mod m {
     pub struct Resource<R>(PhantomData<R>);
 
     use crate::{
-        Ghost, Snapshot,
         logic::{
             Id, Set,
             ra::{RA, update::Update},
         },
-        *,
+        prelude::*,
     };
-    use ::std::marker::PhantomData;
+    use std::marker::PhantomData;
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 /* Possible specifications:
  *    count(result) = 1   (from bitcount.rs ?)

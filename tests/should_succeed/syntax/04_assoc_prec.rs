@@ -2,7 +2,7 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // TODO: these could be unit tests in the why3 crate
 

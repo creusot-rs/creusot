@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 /// Creates a test array, vector of `[0, 1, 2, 3, 4]`
 #[ensures(

@@ -1,6 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, std::iter::Cloned, *};
+use crate::{invariant::*, prelude::*};
+use std::iter::Cloned;
 
 pub trait ClonedExt<I> {
     #[logic]
@@ -34,9 +35,9 @@ impl<I> Resolve for Cloned<I> {
     fn resolve_coherence(self) {}
 }
 
-impl<'a, I, T: 'a> Iterator for Cloned<I>
+impl<'a, I, T: 'a> IteratorSpec for Cloned<I>
 where
-    I: Iterator<Item = &'a T>,
+    I: IteratorSpec<Item = &'a T>,
     T: Clone,
 {
     #[logic(open, prophetic)]

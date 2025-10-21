@@ -1,9 +1,10 @@
 //! Definition of [`Snapshot`]
 
-use crate::{ghost::Plain, logic::ops::Fin, *};
+use crate::{ghost::Plain, logic::ops::Fin, prelude::*};
 
+use std::marker::PhantomData;
 #[cfg(creusot)]
-use crate::std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut};
 
 /// A copyable snapshot, usable in pearlite.
 ///
@@ -21,12 +22,12 @@ use crate::std::ops::{Deref, DerefMut};
 /// ## Example
 ///
 /// ```
-/// # use creusot_contracts::{*, logic::Mapping};
+/// # use creusot_contracts::{logic::Mapping, prelude::*};
 /// let x: Snapshot<Int> = snapshot!(1);
 /// let m: Snapshot<Mapping<Int, Int>> = snapshot!(|x| x + 1);
 /// ```
 #[intrinsic("snapshot")]
-pub struct Snapshot<T: ?Sized>(std::marker::PhantomData<T>);
+pub struct Snapshot<T: ?Sized>(PhantomData<T>);
 
 #[cfg(creusot)]
 impl<T: ?Sized> Deref for Snapshot<T> {
@@ -86,7 +87,7 @@ impl<T> Snapshot<T> {
     ///
     /// # Example
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let x = snapshot!(1);
     /// proof_assert!(x.inner() == 1);
     /// proof_assert!(*x == 1); // prefer this
@@ -101,7 +102,7 @@ impl<T> Snapshot<T> {
     #[doc(hidden)]
     #[cfg(not(creusot))]
     pub fn from_fn(_: fn() -> T) -> Self {
-        Snapshot(std::marker::PhantomData)
+        Snapshot(PhantomData)
     }
 
     /// Extract a plain value from a snapshot in ghost code.

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub struct A {
     pub l: usize,

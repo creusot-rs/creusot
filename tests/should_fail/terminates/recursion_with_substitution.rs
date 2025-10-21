@@ -1,7 +1,7 @@
 // Ensures that variants are correctly checked when recursing while substituing some types.
 
 extern crate creusot_contracts;
-use creusot_contracts::{logic::WellFounded, *};
+use creusot_contracts::{logic::WellFounded, prelude::*};
 
 pub trait MyTrait {
     #[logic]

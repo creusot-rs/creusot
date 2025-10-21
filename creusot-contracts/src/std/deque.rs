@@ -1,11 +1,10 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
-use crate::{logic::ops::IndexLogic, *};
+use crate::{invariant::inv, resolve::structural_resolve};
+use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
-use ::std::alloc::Allocator;
-pub use ::std::collections::VecDeque;
-use ::std::{
-    collections::vec_deque::Iter,
+use std::alloc::Allocator;
+use std::{
+    collections::{VecDeque, vec_deque::Iter},
     ops::{Index, IndexMut},
 };
 
@@ -75,7 +74,7 @@ impl<T, A: Allocator> Invariant for VecDeque<T, A> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { invariant::inv(self@) }
+        pearlite! { inv(self@) }
     }
 }
 
@@ -164,7 +163,7 @@ impl<'a, T> View for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T> {
+impl<'a, T> IteratorSpec for Iter<'a, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { resolve(self) && (*self@)@ == Seq::empty() }
@@ -191,7 +190,9 @@ impl<'a, T> Iterator for Iter<'a, T> {
 /// Dummy impls that don't use the unstable trait Allocator
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use super::*;
+    use crate::{logic::ops::IndexLogic, prelude::*};
+    use std::collections::VecDeque;
+
     impl<T> Resolve for VecDeque<T> {}
     impl<T> Invariant for VecDeque<T> {}
     impl<T> View for VecDeque<T> {

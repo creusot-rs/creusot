@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(resolve(_x))]
 #[ensures(^_x.0 == *_x.0)]

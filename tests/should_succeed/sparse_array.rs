@@ -16,7 +16,7 @@ extern crate creusot_contracts;
 use creusot_contracts::resolve::structural_resolve;
 use creusot_contracts::{
     logic::{FSet, Int, Seq},
-    *,
+    prelude::*,
 };
 
 /* The sparse array data structure

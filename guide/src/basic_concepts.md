@@ -7,7 +7,7 @@ If you need to have Creusot-only code, you can use the `#[cfg(creusot)]` attribu
 Note that you must explicitly use the `creusot_contracts` crate in your code (which should be the case once you actually prove things, but not necessarily when you initially set up a project), such as with the line:
 
 ```rust
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 ```
 
 or you will get a compilation error complaining that the `creusot_contracts` crate is not loaded.

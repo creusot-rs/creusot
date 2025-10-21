@@ -1,4 +1,4 @@
-# Quickstart
+# Quick start
 
 ## Installation
 
@@ -16,7 +16,7 @@ That command creates a directory `package-name` containing the basic elements of
 
 ```rust
 // src/lib.rs
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(x@ < i64::MAX@)]
 #[ensures(result@ == x@ + 1)]
@@ -116,4 +116,4 @@ You must specify a file `why3session.xml` or a Coma file.
 Difference with `cargo creusot prove`:
 
 - `cargo creusot prove` (with `-i` or `--ide-always`) runs the Creusot compiler and the Why3find proof search beforehand, ensuring that you're always working on the latest version of your code.
-- `cargo creusot why3 ide` only runs `why3 ide` with the necessary options to load Coma files produced by Creusot. It's up to you to make sure that the Coma files are up to date.
+- `cargo creusot why3 ide` only runs `why3 ide` with the necessary options to load Coma files produced by Creusot. It's up to you to make sure that the Coma files are up-to-date.

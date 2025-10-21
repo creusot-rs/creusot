@@ -14,7 +14,7 @@ pub fn proof_assert(_: TS1) -> TS1 {
 }
 
 pub fn snapshot(_: TS1) -> TS1 {
-    quote::quote! { ::creusot_contracts::snapshot::Snapshot::from_fn(|| std::process::abort()) }
+    quote::quote! { ::creusot_contracts::snapshot::Snapshot::from_fn(|| ::std::process::abort()) }
         .into()
 }
 

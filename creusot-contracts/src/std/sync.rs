@@ -1,7 +1,7 @@
-use crate::*;
+use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use ::std::alloc::Allocator;
-use ::std::sync::Arc;
+use std::alloc::Allocator;
+use std::sync::Arc;
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {

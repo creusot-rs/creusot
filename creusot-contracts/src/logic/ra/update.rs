@@ -2,7 +2,7 @@
 use crate::logic::such_that;
 use crate::{
     logic::{Mapping, ra::RA},
-    *,
+    prelude::*,
 };
 
 pub trait Update<R: RA> {

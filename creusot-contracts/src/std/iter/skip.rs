@@ -1,6 +1,7 @@
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{std::iter::Skip, *};
+use std::iter::Skip;
 
 pub trait SkipExt<I> {
     #[logic]
@@ -42,7 +43,7 @@ impl<I: Iterator> Invariant for Skip<I> {
     }
 }
 
-impl<I: Iterator> Iterator for Skip<I> {
+impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {

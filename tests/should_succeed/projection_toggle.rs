@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(if toggle { result == a && ^b == *b } else { result == b && ^a == *a })]
 fn proj_toggle<'a, T: PartialEq>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {

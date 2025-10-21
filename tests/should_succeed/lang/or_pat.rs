@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[logic]
 #[ensures(x == (None, None) ==> result == 1i32)]

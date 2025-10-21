@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(*(result.0) == *x)]
 pub fn reborrow_tuple<T>(x: &mut T) -> (&mut T, u32) {

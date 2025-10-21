@@ -1,4 +1,5 @@
-use crate::{logic::ops::IndexLogic, *};
+use crate::{logic::ops::IndexLogic, prelude::*};
+use std::marker::PhantomData;
 
 /// A mapping: map every value of type `A` to a value of type `B`.
 ///
@@ -10,13 +11,13 @@ use crate::{logic::ops::IndexLogic, *};
 /// ## Example
 ///
 /// ```
-/// # use creusot_contracts::{logic::Mapping, *};
+/// # use creusot_contracts::{logic::Mapping, prelude::*};
 /// let value = snapshot!(4);
 /// let map: Snapshot<Mapping<Int, Int>> = snapshot!(|n| if n % 2 == 0 { 0 } else { *value });
 /// proof_assert!(map.get(1) == 4);
 /// ```
 #[builtin("map.Map.map")]
-pub struct Mapping<A: ?Sized, B>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
+pub struct Mapping<A: ?Sized, B>(PhantomData<A>, PhantomData<B>);
 
 impl<A: ?Sized, B> Mapping<A, B> {
     /// Get the value associated with `a` in the map.

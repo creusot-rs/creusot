@@ -1,17 +1,12 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
-use crate::{
-    invariant::*,
-    logic::ops::IndexLogic,
-    std::{
-        ops::{Deref, DerefMut, Index, IndexMut},
-        slice::SliceIndex,
-    },
-    *,
-};
+use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
+use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
-use ::std::alloc::Allocator;
-pub use ::std::vec::*;
+use std::alloc::Allocator;
+use std::{
+    ops::{Deref, DerefMut, Index, IndexMut},
+    vec::*,
+};
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for Vec<T, A> {
@@ -90,7 +85,7 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { invariant::inv(self@) }
+        pearlite! { inv(self@) }
     }
 }
 
@@ -170,12 +165,10 @@ extern_spec! {
                     I::into_iter.postcondition((iter,), start_) &&
                     done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
                 )]
-                fn extend<I>(&mut self, iter: I)
-                where
-                    I: IntoIterator<Item = T>, I::IntoIter: Iterator;
+                fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
             }
 
-            impl<T, I: SliceIndex<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
+            impl<T, I: SliceIndexSpec<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
                 #[check(ghost)]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
@@ -185,7 +178,7 @@ extern_spec! {
                 fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
             }
 
-            impl<T, I: SliceIndex<[T]>, A: Allocator> Index<I> for Vec<T, A> {
+            impl<T, I: SliceIndexSpec<[T]>, A: Allocator> Index<I> for Vec<T, A> {
                 #[check(ghost)]
                 #[requires(ix.in_bounds(self@))]
                 #[ensures(ix.has_value(self@, *result))]
@@ -245,7 +238,7 @@ extern_spec! {
 }
 
 #[cfg(feature = "nightly")]
-impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
+impl<T, A: Allocator> View for IntoIter<T, A> {
     type ViewTy = Seq<T>;
 
     #[logic(opaque)]
@@ -255,7 +248,7 @@ impl<T, A: Allocator> View for std::vec::IntoIter<T, A> {
 }
 
 #[cfg(feature = "nightly")]
-impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
+impl<T, A: Allocator> Resolve for IntoIter<T, A> {
     #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self@.len() ==> resolve(self@[i]) }
@@ -269,7 +262,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
 }
 
 #[cfg(feature = "nightly")]
-impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
+impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { resolve(self) && self@ == Seq::empty() }
@@ -293,7 +286,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }
 
-impl<T> FromIterator<T> for Vec<T> {
+impl<T> FromIteratorSpec<T> for Vec<T> {
     #[logic(open)]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }
@@ -303,7 +296,9 @@ impl<T> FromIterator<T> for Vec<T> {
 /// Dummy impls that don't use the unstable trait Allocator
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use super::*;
+    use crate::prelude::*;
+    use std::vec::*;
+
     impl<T> View for Vec<T> {
         type ViewTy = Seq<T>;
     }
@@ -313,9 +308,9 @@ mod impls {
     }
     impl<T> Resolve for Vec<T> {}
     impl<T> Invariant for Vec<T> {}
-    impl<T> View for std::vec::IntoIter<T> {
+    impl<T> View for IntoIter<T> {
         type ViewTy = Seq<T>;
     }
-    impl<T> Resolve for std::vec::IntoIter<T> {}
-    impl<T> Iterator for std::vec::IntoIter<T> {}
+    impl<T> Resolve for IntoIter<T> {}
+    impl<T> IteratorSpec for IntoIter<T> {}
 }

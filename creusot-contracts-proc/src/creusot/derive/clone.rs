@@ -24,7 +24,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl #impl_generics ::std::clone::Clone for #name #ty_generics #where_clause {
-            #[::creusot_contracts::ensures(#post)]
+            #[::creusot_contracts::macros::ensures(#post)]
             fn clone(&self) -> Self {
                 #body
             }

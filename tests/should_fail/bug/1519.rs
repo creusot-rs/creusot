@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 
 // Previously crashed creusot in the termination check, because of the missing `le` and `idemp` in the impl block.
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub trait RA: Sized {
     #[logic]

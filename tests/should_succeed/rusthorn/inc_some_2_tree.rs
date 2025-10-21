@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub enum Tree {
     Node(Box<Tree>, u32, Box<Tree>),

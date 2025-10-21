@@ -1,8 +1,11 @@
-use crate::{logic::OrdLogic, *};
-pub use ::std::cmp::*;
+use crate::{logic::OrdLogic, prelude::*};
+use std::cmp::*;
 
 #[cfg(creusot)]
 pub use creusot_contracts_proc::PartialEq;
+
+#[cfg(not(creusot))]
+pub use std::cmp::PartialEq;
 
 extern_spec! {
     mod std {

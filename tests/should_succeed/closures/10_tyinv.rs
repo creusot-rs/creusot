@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::*, *};
+use creusot_contracts::{invariant::*, prelude::*};
 
 pub struct Zero<T>(u32, T);
 

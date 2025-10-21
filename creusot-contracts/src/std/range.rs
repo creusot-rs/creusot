@@ -1,6 +1,6 @@
-use crate::*;
+use crate::prelude::*;
 #[cfg(creusot)]
-use ::std::range::{Range, RangeFrom, RangeInclusive, legacy};
+use std::range::{Range, RangeFrom, RangeInclusive, legacy};
 
 extern_spec! {
     impl<T> From<Range<T>> for legacy::Range<T> {

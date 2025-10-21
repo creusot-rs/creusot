@@ -1,13 +1,13 @@
-use crate::*;
+use crate::prelude::*;
 #[cfg(creusot)]
-use ::std::fmt::{Arguments, Debug, Error, Formatter};
+use std::fmt::{Arguments, Debug, Formatter, Result};
 
 extern_spec! {
     mod core {
         mod fmt {
             impl<'a> Formatter<'a> {
                 #[requires(true)]
-                fn write_str(&mut self, data: &str) -> Result<(), Error>;
+                fn write_str(&mut self, data: &str) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_field1_finish<'b>(
@@ -15,7 +15,7 @@ extern_spec! {
                     name: &str,
                     name1: &str,
                     value1: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_field2_finish<'b>(
@@ -25,7 +25,7 @@ extern_spec! {
                     value1: &dyn Debug,
                     name2: &str,
                     value2: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_field3_finish<'b>(
@@ -37,7 +37,7 @@ extern_spec! {
                     value2: &dyn Debug,
                     name3: &str,
                     value3: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_field4_finish<'b>(
@@ -51,7 +51,7 @@ extern_spec! {
                     value3: &dyn Debug,
                     name4: &str,
                     value4: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_field5_finish<'b>(
@@ -67,7 +67,7 @@ extern_spec! {
                     value4: &dyn Debug,
                     name5: &str,
                     value5: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_struct_fields_finish<'b>(
@@ -75,14 +75,14 @@ extern_spec! {
                     name: &str,
                     names: &[&str],
                     values: &[&dyn Debug],
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_field1_finish<'b>(
                     &'b mut self,
                     name: &str,
                     value1: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_field2_finish<'b>(
@@ -90,7 +90,7 @@ extern_spec! {
                     name: &str,
                     value1: &dyn Debug,
                     value2: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_field3_finish<'b>(
@@ -99,7 +99,7 @@ extern_spec! {
                     value1: &dyn Debug,
                     value2: &dyn Debug,
                     value3: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_field4_finish<'b>(
@@ -109,7 +109,7 @@ extern_spec! {
                     value2: &dyn Debug,
                     value3: &dyn Debug,
                     value4: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_field5_finish<'b>(
@@ -120,14 +120,14 @@ extern_spec! {
                     value3: &dyn Debug,
                     value4: &dyn Debug,
                     value5: &dyn Debug,
-                ) -> ::std::fmt::Result;
+                ) -> Result;
 
                 #[requires(true)]
                 fn debug_tuple_fields_finish<'b>(
                     &'b mut self,
                     name: &str,
                     values: &[&dyn Debug],
-                ) -> ::std::fmt::Result;
+                ) -> Result;
             }
         }
     }

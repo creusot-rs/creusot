@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, prelude::*};
 
 #[logic(open)]
 #[ensures(result == !(x == y))]

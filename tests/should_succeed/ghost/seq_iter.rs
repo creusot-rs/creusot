@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(*result == (*s).reverse())]
 pub fn reverse_ghost<T>(s: Ghost<Seq<T>>) -> Ghost<Seq<T>> {

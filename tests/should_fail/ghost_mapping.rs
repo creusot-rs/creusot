@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Mapping, *};
+use creusot_contracts::{logic::Mapping, prelude::*};
 
 #[logic(open(self), prophetic)]
 pub fn f(x: &mut i32) -> Mapping<(), i32> {

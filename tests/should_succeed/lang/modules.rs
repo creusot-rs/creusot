@@ -2,7 +2,7 @@
 extern crate creusot_contracts;
 
 pub mod nested {
-    use creusot_contracts::*;
+    use creusot_contracts::prelude::*;
 
     enum Nested {
         Test,

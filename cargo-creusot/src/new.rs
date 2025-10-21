@@ -70,7 +70,7 @@ fn bin_template(name: &str) -> String {
     let name = name.replace("-", "_");
     format!(
         r#"#[allow(unused_imports)]
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 use {name}::*;
 
 fn main() {{
@@ -82,7 +82,7 @@ fn main() {{
 }
 
 const TEST_TEMPLATE: &str = r#"#[allow(unused_imports)]
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[test]
 fn it_works() {
@@ -90,7 +90,7 @@ fn it_works() {
 }
 "#;
 
-const LIB_TEMPLATE: &str = r#"use creusot_contracts::*;
+const LIB_TEMPLATE: &str = r#"use creusot_contracts::prelude::*;
 
 #[requires(a@ < i64::MAX@)]
 #[ensures(result@ == a@ + 1)]

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // - Any `trait Tr` is implemented by `dyn Tr`,
 // - but `trait False` below has no valid implementation.

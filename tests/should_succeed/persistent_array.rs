@@ -3,7 +3,6 @@ extern crate creusot_contracts;
 pub mod implementation {
     use ::std::rc::Rc;
     use creusot_contracts::{
-        Clone,
         cell::{PermCell, PermCellOwn},
         ghost::{
             local_invariant::{
@@ -12,7 +11,7 @@ pub mod implementation {
             resource::fmap_view::{Authority, Fragment},
         },
         logic::{FMap, Id, Mapping},
-        *,
+        prelude::*,
     };
 
     declare_namespace! { PARRAY }
@@ -213,7 +212,7 @@ pub mod implementation {
             match unsafe { inner.borrow(ghost!(pa.perms.get_ghost(&*inner.id_ghost()).unwrap())) } {
                 Inner::Direct(v) => &v[i],
                 Inner::Link { index, value, .. } if i == *index => value,
-                Inner::Link { next, .. } => Self::get_inner_immut(next, i, pa),
+                Inner::Link { next, .. } => unsafe { Self::get_inner_immut(next, i, pa) },
             }
         }
 
@@ -238,7 +237,7 @@ pub mod implementation {
                 let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
                     unreachable!()
                 };
-                arr.get_unchecked(index)
+                unsafe { arr.get_unchecked(index) }
             })
         }
 
@@ -296,7 +295,7 @@ pub mod implementation {
     }
 }
 
-use creusot_contracts::{ghost::local_invariant::Tokens, vec, *};
+use creusot_contracts::{ghost::local_invariant::Tokens, prelude::*, vec};
 use implementation::PersistentArray;
 
 #[requires(tokens.contains(implementation::PARRAY()))]

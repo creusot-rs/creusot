@@ -10,7 +10,7 @@ use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    ExprMacro, Ident, Lit, Pat, PatIdent, PatType, UnOp,
+    Ident, Lit, Pat, PatIdent, PatType, Path, UnOp, parse_quote_spanned,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
@@ -135,15 +135,22 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
         // or we don't translate parameters, but then we let the user write non-pearlite code
         // in pearlite...
-        Term::Macro(ExprMacro { mac, .. }) => {
-            if ["proof_assert", "pearlite", "seq"].iter().any(|i| mac.path.is_ident(i)) {
-                Ok(term.to_token_stream().into())
+        Term::Macro(term) => {
+            let mut term = term.clone();
+            let path: Path = if term.mac.path.is_ident("proof_assert") {
+                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::macros::proof_assert }
+            } else if term.mac.path.is_ident("pearlite") {
+                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::macros::pearlite }
+            } else if term.mac.path.is_ident("seq") {
+                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::logic::seq::seq }
             } else {
-                Err(EncodeError::Unsupported(
-                    sp,
-                    "macros other than `pearlite!` or `proof_assert!` or `seq!` are unsupported in pearlite code".into(),
-                ))
-            }
+                return Err(EncodeError::Unsupported(
+                        sp,
+                        "macros other than `pearlite!` or `proof_assert!` or `seq!` are unsupported in pearlite code".into(),
+                    ));
+            };
+            term.mac.path = path;
+            Ok(term.to_token_stream().into())
         }
         Term::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
         Term::Binary(TermBinary { left, op, right }) => {

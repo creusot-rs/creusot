@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // une spécification qui conduit à prouver n'importe quoi
 #[requires(cond.precondition(()) && forall <b:bool> branch.precondition((b,))

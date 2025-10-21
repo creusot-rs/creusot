@@ -20,7 +20,7 @@ pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let expanded = quote! {
         impl #impl_generics ::std::cmp::PartialEq for #name #ty_generics #where_clause {
-            #[::creusot_contracts::ensures(result == (::creusot_contracts::model::DeepModel::deep_model(self) ==
+            #[::creusot_contracts::macros::ensures(result == (::creusot_contracts::model::DeepModel::deep_model(self) ==
                                  ::creusot_contracts::model::DeepModel::deep_model(rhs)))]
             fn eq(&self, rhs: &Self) -> bool {
                 #eq

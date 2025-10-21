@@ -1,9 +1,8 @@
 use crate::{
     ghost::Plain,
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
-    *,
+    prelude::*,
 };
-pub use ::std::num::*;
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {

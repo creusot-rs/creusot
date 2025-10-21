@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::FnGhost, *};
+use creusot_contracts::{ghost::FnGhost, prelude::*};
 
 pub fn foo() {
     let f = #[check(ghost)]

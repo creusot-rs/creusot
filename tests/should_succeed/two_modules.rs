@@ -10,7 +10,7 @@ mod mod1 {
 }
 
 mod mod2 {
-    use mod1;
+    use crate::mod1;
 
     pub fn x(_t: mod1::T) -> bool {
         true

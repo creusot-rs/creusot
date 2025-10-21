@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(p.0@ == 1)]
 #[ensures(result@ == 2)]

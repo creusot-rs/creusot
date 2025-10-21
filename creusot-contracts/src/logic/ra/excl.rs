@@ -1,6 +1,6 @@
 use crate::{
     logic::ra::{RA, update::Update},
-    *,
+    prelude::*,
 };
 
 /// The 'exclusive' Resource Algebra.

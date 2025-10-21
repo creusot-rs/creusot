@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(result == x)]
 pub fn try_option<T>(x: Option<T>) -> Option<T> {

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(if *ma >= *mb { *mb == ^mb && result == ma }
                    else { *ma == ^ma && result == mb })]

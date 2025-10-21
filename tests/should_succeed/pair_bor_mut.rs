@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(if take_first { result == p.0 && ^p.1 == *p.1 }
           else { result == p.1 && ^p.0 == *p.0 } )]

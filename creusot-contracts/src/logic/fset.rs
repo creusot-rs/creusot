@@ -1,6 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{logic::Mapping, *};
+use crate::{logic::Mapping, prelude::*};
+use std::marker::PhantomData;
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
 ///
@@ -8,8 +9,8 @@ use crate::{logic::Mapping, *};
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashSet`](::std::collections::HashSet) and
-/// [`std::collections::BTreeSet`](::std::collections::BTreeSet) have finite
+/// Since [`std::collections::HashSet`](std::collections::HashSet) and
+/// [`std::collections::BTreeSet`](std::collections::BTreeSet) have finite
 /// capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
@@ -25,9 +26,9 @@ use crate::{logic::Mapping, *};
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[opaque]
 #[builtin("set.Fset.fset")]
-pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
+pub struct FSet<T>(PhantomData<T>);
 
-impl<T: ?Sized> FSet<T> {
+impl<T> FSet<T> {
     /// Returns the empty set.
     #[logic]
     #[builtin("set.Fset.empty", ascription)]
@@ -157,10 +158,7 @@ impl<T: ?Sized> FSet<T> {
     /// - If the set is empty, the result is unspecified
     #[logic]
     #[builtin("set.Fset.pick")]
-    pub fn peek(self) -> T
-    where
-        T: Sized,
-    {
+    pub fn peek(self) -> T {
         dead
     }
 
@@ -176,9 +174,7 @@ impl<T: ?Sized> FSet<T> {
             forall <e: T> self.contains(e) == other.contains(e)
         }
     }
-}
 
-impl<T> FSet<T> {
     /// Returns the set containing only `x`.
     #[logic(open)]
     #[ensures(forall<y: T> result.contains(y) == (x == y))]
@@ -281,7 +277,7 @@ impl FSet<Int> {
 }
 
 /// Ghost definitions
-impl<T: ?Sized> FSet<T> {
+impl<T> FSet<T> {
     /// Create a new, empty set on the ghost heap.
     #[trusted]
     #[check(ghost)]
@@ -297,7 +293,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FSet, *};
+    /// use creusot_contracts::{logic::FSet, prelude::*};
     ///
     /// let mut set = FSet::new();
     /// ghost! {
@@ -321,7 +317,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FSet, *};
+    /// use creusot_contracts::{logic::FSet, prelude::*};
     ///
     /// let mut set = FSet::new();
     /// ghost! {
@@ -349,7 +345,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FSet, *};
+    /// use creusot_contracts::{logic::FSet, prelude::*};
     ///
     /// let mut set = FSet::new();
     /// ghost! {
@@ -368,10 +364,7 @@ impl<T: ?Sized> FSet<T> {
     #[check(ghost)]
     #[ensures(^self == (*self).insert(value))]
     #[ensures(result == !(*self).contains(value))]
-    pub fn insert_ghost(&mut self, value: T) -> bool
-    where
-        T: Sized,
-    {
+    pub fn insert_ghost(&mut self, value: T) -> bool {
         let _ = value;
         panic!()
     }
@@ -390,7 +383,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FSet, *};
+    /// use creusot_contracts::{logic::FSet, prelude::*};
     ///
     /// let mut set = FSet::new();
     /// let res = ghost! {
@@ -413,7 +406,7 @@ impl<T: ?Sized> FSet<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, logic::FSet};
+    /// use creusot_contracts::{prelude::*, logic::FSet};
     ///
     /// let mut s = FSet::new();
     /// ghost! {
@@ -449,8 +442,22 @@ impl<T> Invariant for FSet<T> {
         pearlite! { forall<x: T> self.contains(x) ==> inv(x) }
     }
 }
+impl<T> Resolve for FSet<T> {
+    #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        pearlite! { forall<x: T> self.contains(x) ==> resolve(x) }
+    }
+
+    #[trusted]
+    #[logic(open(self), prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
 
 // Properties
+// TODO: replace quantification with parameters, and move to impl block.
 
 /// Distributivity of `unions` over `union`.
 #[logic(open)]
@@ -522,18 +529,4 @@ pub fn concat_replicate_up_to<T>(n: Int, m: Int, s: FSet<T>) {
             concat_replicate_up_to(n, m - 1, s);
         }
     }
-}
-
-impl<T: ?Sized> Resolve for FSet<T> {
-    #[logic(open, prophetic)]
-    #[creusot::trusted_trivial_if_param_trivial]
-    fn resolve(self) -> bool {
-        pearlite! { forall<x: T> self.contains(x) ==> resolve(x) }
-    }
-
-    #[trusted]
-    #[logic(open(self), prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
 }

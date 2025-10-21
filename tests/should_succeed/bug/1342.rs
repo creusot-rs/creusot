@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::FSet, *};
+use creusot_contracts::{logic::FSet, prelude::*};
 
 #[logic(open)]
 #[variant(fset.len())]

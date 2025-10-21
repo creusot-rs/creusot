@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, prelude::*};
 
 // Bug #181
 #[logic(open)]

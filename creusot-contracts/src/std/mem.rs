@@ -1,5 +1,5 @@
-use crate::*;
-pub use ::std::mem::*;
+use crate::prelude::*;
+use std::mem::*;
 
 extern_spec! {
     mod std {
@@ -45,7 +45,7 @@ extern_spec! {
             // pub fn bad() {
             //     ghost! {
             //         let x = [0usize; usize::MAX];
-            //         let _ = ::std::mem::size_of_val(&x);
+            //         let _ = std::mem::size_of_val(&x);
             //     };
             // }
             // ```

@@ -1,7 +1,7 @@
 // This example was tken from an issue of yannickmoy@ (#309).
 // It performs a 'substring' match between two vectors of u8.
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, prelude::*};
 
 #[logic(open)]
 pub fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {

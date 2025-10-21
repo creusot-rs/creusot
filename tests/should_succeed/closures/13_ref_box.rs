@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(f.precondition((x,)))]
 #[ensures(f.postcondition((x,), result))]

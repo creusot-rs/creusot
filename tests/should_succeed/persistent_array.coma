@@ -1,4 +1,4 @@
-module M_persistent_array__implementation__qyi15164097500274694161__clone (* <implementation::PersistentArray<T> as creusot_contracts::Clone> *)
+module M_persistent_array__implementation__qyi15164097500274694161__clone (* <implementation::PersistentArray<T> as std::clone::Clone> *)
   type namespace_other
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other
@@ -1392,18 +1392,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate inv'35
   
-  predicate invariant''27 [@inline:trivial] (self: t_PersistentArray) = inv'35 self
-  
-  meta "rewrite_def" predicate invariant''27
-  
-  predicate inv'36 [@inline:trivial] (_1: t_PersistentArray) = invariant''27 _1
+  predicate inv'36 [@inline:trivial] (_1: closure0) =
+    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv'35 x0 /\ inv'8 x2
   
   meta "rewrite_def" predicate inv'36
-  
-  predicate inv'37 [@inline:trivial] (_1: closure0) =
-    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv'36 x0 /\ inv'8 x2
-  
-  meta "rewrite_def" predicate inv'37
   
   let rec closure0 [@coma:extspec] (self: closure0) (pa: MutBorrow.t t_PA) (return (x: t_Fragment)) = bb0
     [ bb0 = s0 [ s0 = deref {pa} (fun (_ret: MutBorrow.t t_PA) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
@@ -1572,13 +1564,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   type t_Tokens
   
-  predicate invariant''28 [@inline:trivial] (self: t_Rc'0) = inv'33 self
+  predicate invariant''27 [@inline:trivial] (self: t_Rc'0) = inv'33 self
   
-  meta "rewrite_def" predicate invariant''28
+  meta "rewrite_def" predicate invariant''27
   
-  predicate inv'38 [@inline:trivial] (_1: t_Rc'0) = invariant''28 _1
+  predicate inv'37 [@inline:trivial] (_1: t_Rc'0) = invariant''27 _1
   
-  meta "rewrite_def" predicate inv'38
+  meta "rewrite_def" predicate inv'37
   
   type tuple'1 = { f0'1: t_Rc'0; f1'1: t_Tokens; f2: closure0 }
   
@@ -1711,7 +1703,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
           /\ inv'15 t
         -> precondition f t
         /\ (forall res: t_Fragment. postcondition_once'0 f t res -> protocol (fin t) (public self'0)))
-    /\ contains'3 tokens (namespace self'0) /\ inv'37 f
+    /\ contains'3 tokens (namespace self'0) /\ inv'36 f
   
   meta "rewrite_def" predicate precondition'0
   
@@ -1719,7 +1711,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   axiom new_logic_spec: forall x: t_LocalInvariant. new_logic x = x
   
-  predicate invariant''29 [@inline:trivial] (self: t_Rc'0) = inv'32 self
+  predicate invariant''28 [@inline:trivial] (self: t_Rc'0) = inv'32 self
+  
+  meta "rewrite_def" predicate invariant''28
+  
+  predicate inv'38 [@inline:trivial] (_1: t_Rc'0) = invariant''28 _1
+  
+  meta "rewrite_def" predicate inv'38
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: t_Rc'0) = let self_ = args in inv'38 self_
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate invariant''29 [@inline:trivial] (self: t_Rc'0) = inv'38 self
   
   meta "rewrite_def" predicate invariant''29
   
@@ -1727,30 +1731,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   
   meta "rewrite_def" predicate inv'39
   
-  predicate precondition'1 [@inline:trivial] (self: ()) (args: t_Rc'0) = let self_ = args in inv'39 self_
-  
-  meta "rewrite_def" predicate precondition'1
-  
-  predicate invariant''30 [@inline:trivial] (self: t_Rc'0) = inv'39 self
-  
-  meta "rewrite_def" predicate invariant''30
-  
-  predicate inv'40 [@inline:trivial] (_1: t_Rc'0) = invariant''30 _1
-  
-  meta "rewrite_def" predicate inv'40
-  
   predicate precondition'2 [@inline:trivial] (self: ()) (args: tuple'1) =
     let {f0'1 = self'0; f1'1 = tokens; f2 = f} = args in (forall this: t_LocalInvariant. postcondition () self'0 this
         -> precondition'0 () { f0'2 = new_logic this; f1'2 = tokens; f2'0 = f })
-    /\ precondition'1 () self'0 /\ inv'37 f /\ inv'40 self'0
+    /\ precondition'1 () self'0 /\ inv'36 f /\ inv'39 self'0
   
   meta "rewrite_def" predicate precondition'2
   
-  let rec deref'2 (self_: t_Rc'0) (return (x: t_LocalInvariant)) = {[@expl:deref 'self_' type invariant] inv'39 self_}
+  let rec deref'2 (self_: t_Rc'0) (return (x: t_LocalInvariant)) = {[@expl:deref 'self_' type invariant] inv'38 self_}
     any [ return (result: t_LocalInvariant) -> {result = view'7 self_} (! return {result}) ]
   
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return (x: t_Fragment)) =
-    {[@expl:open 'f' type invariant] inv'37 f}
+    {[@expl:open 'f' type invariant] inv'36 f}
     {[@expl:open requires #0] contains'3 tokens (namespace self)}
     {[@expl:open requires #1] forall t: MutBorrow.t t_PA. protocol t.current (public self) /\ inv'15 t
       -> precondition f t /\ (forall res: t_Fragment. postcondition_once'0 f t res -> protocol (fin t) (public self))}
@@ -1823,8 +1815,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       = (postcondition'0 self args res /\ self = res_state)
   
   let rec open'0 (self: t_Rc'0) (tokens: t_Tokens) (f: closure0) (return (x: t_Fragment)) =
-    {[@expl:open 'self' type invariant] inv'40 self}
-    {[@expl:open 'f' type invariant] inv'37 f}
+    {[@expl:open 'self' type invariant] inv'39 self}
+    {[@expl:open 'f' type invariant] inv'36 f}
     {[@expl:open requires #0] precondition'1 () self}
     {[@expl:open requires #1] forall this: t_LocalInvariant. postcondition () self this
       -> precondition'0 () { f0'2 = new_logic this; f1'2 = tokens; f2'0 = f }}
@@ -1902,8 +1894,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
       = (postcondition'1 self args res /\ self = res_state)
   
   let rec open'1 (self: t_Rc'0) (tokens: t_Tokens) (f: closure0) (return (x: t_Fragment)) =
-    {[@expl:open 'self' type invariant] inv'38 self}
-    {[@expl:open 'f' type invariant] inv'37 f}
+    {[@expl:open 'self' type invariant] inv'37 self}
+    {[@expl:open 'f' type invariant] inv'36 f}
     {[@expl:open requires] precondition'2 () { f0'1 = new_logic'0 self; f1'1 = tokens; f2 = f }}
     any
     [ return (result: t_Fragment) -> {inv'19 result}
@@ -1913,10 +1905,10 @@ module M_persistent_array__implementation__qyi7256199225841846155__set (* implem
   let rec new'1 (value: t_PermCell) (return (x: t_Rc)) = any
     [ return (result: t_Rc) -> {inv result} {view'6 result = value} (! return {result}) ]
   
-  let rec deref'3 (self: t_Rc'0) (return (x: t_Rc'0)) = {[@expl:deref 'self' type invariant] inv'38 self}
-    any [ return (result: t_Rc'0) -> {inv'39 result} {result = self} (! return {result}) ]
+  let rec deref'3 (self: t_Rc'0) (return (x: t_Rc'0)) = {[@expl:deref 'self' type invariant] inv'37 self}
+    any [ return (result: t_Rc'0) -> {inv'38 result} {result = self} (! return {result}) ]
   
-  let rec clone''0 (self_: t_Rc'0) (return (x: t_Rc'0)) = {[@expl:clone 'self_' type invariant] inv'39 self_}
+  let rec clone''0 (self_: t_Rc'0) (return (x: t_Rc'0)) = {[@expl:clone 'self_' type invariant] inv'38 self_}
     any [ return (result: t_Rc'0) -> {inv'32 result} {result = self_} (! return {result}) ]
   
   let rec new'2 (x: t_Rc'0) (return (x'0: t_Rc'0)) = {[@expl:new 'x' type invariant] inv'32 x}
@@ -2853,9 +2845,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
     | bb17 = s0 [ s0 = [ &_8 <- value ] s1 | s1 = bb20 ]
     | bb13 = s0
       [ s0 = v_Link {_9} (fun (rindex: UInt64.t) (rvalue: t_T) (rnext: t_Rc) -> [ &next <- rnext ] s1)
-      | s1 = get_inner_immut {next} {i} {pa} (fun (_ret: t_T) -> [ &_44 <- _ret ] s2)
+      | s1 = get_inner_immut {next} {i} {pa} (fun (_ret: t_T) -> [ &_45 <- _ret ] s2)
       | s2 = bb19 ]
-    | bb19 = s0 [ s0 = [ &_8 <- _44 ] s1 | s1 = bb20 ]
+    | bb19 = s0 [ s0 = [ &_44 <- _45 ] s1 | s1 = [ &_8 <- _44 ] s2 | s2 = bb20 ]
     | bb15 = s0
       [ s0 = v_Direct {_9} (fun (r0: t_Vec) -> [ &v <- r0 ] s1)
       | s1 = index {v} {i} (fun (_ret: t_T) -> [ &_33 <- _ret ] s2)
@@ -2886,7 +2878,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get_inner_imm
     | & value'0: t_T = Any.any_l ()
     | & _40: bool = Any.any_l ()
     | & next: t_Rc = Any.any_l ()
-    | & _44: t_T = Any.any_l () ])
+    | & _44: t_T = Any.any_l ()
+    | & _45: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:get_inner_immut result type invariant] inv'21 result}
       {[@expl:get_inner_immut ensures] result
       = Seq.get (index_logic'2 (view'4 pa.t_PA__auth) (id (view inner))) (UInt64.t'int i)}
@@ -3438,17 +3431,9 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate inv'34
   
-  predicate invariant''28 [@inline:trivial] (self: t_PersistentArray) = inv'34 self
-  
-  meta "rewrite_def" predicate invariant''28
-  
-  predicate inv'35 [@inline:trivial] (_1: t_PersistentArray) = invariant''28 _1
+  predicate inv'35 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv'34 x0
   
   meta "rewrite_def" predicate inv'35
-  
-  predicate inv'36 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv'35 x0
-  
-  meta "rewrite_def" predicate inv'36
   
   let rec closure0 [@coma:extspec] (self: closure0) (pa: MutBorrow.t t_PA) (return (x: t_T)) = bb0
     [ bb0 = s0 [ s0 = deref {pa} (fun (_ret: MutBorrow.t t_PA) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
@@ -3554,13 +3539,13 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   type t_Tokens
   
-  predicate invariant''29 [@inline:trivial] (self: t_Rc) = inv'32 self
+  predicate invariant''28 [@inline:trivial] (self: t_Rc) = inv'32 self
   
-  meta "rewrite_def" predicate invariant''29
+  meta "rewrite_def" predicate invariant''28
   
-  predicate inv'37 [@inline:trivial] (_1: t_Rc) = invariant''29 _1
+  predicate inv'36 [@inline:trivial] (_1: t_Rc) = invariant''28 _1
   
-  meta "rewrite_def" predicate inv'37
+  meta "rewrite_def" predicate inv'36
   
   type tuple'0 = { f0'0: t_Rc; f1'0: t_Tokens; f2: closure0 }
   
@@ -3651,7 +3636,7 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
     let {f0'1 = self'0; f1'1 = tokens; f2'0 = f} = args in (forall t: MutBorrow.t t_PA. protocol t.current (public self'0)
           /\ inv'12 t
         -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self'0)))
-    /\ contains'3 tokens (namespace self'0) /\ inv'36 f
+    /\ contains'3 tokens (namespace self'0) /\ inv'35 f
   
   meta "rewrite_def" predicate precondition'0
   
@@ -3659,7 +3644,19 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   axiom new_logic_spec: forall x: t_LocalInvariant. new_logic x = x
   
-  predicate invariant''30 [@inline:trivial] (self: t_Rc) = inv'31 self
+  predicate invariant''29 [@inline:trivial] (self: t_Rc) = inv'31 self
+  
+  meta "rewrite_def" predicate invariant''29
+  
+  predicate inv'37 [@inline:trivial] (_1: t_Rc) = invariant''29 _1
+  
+  meta "rewrite_def" predicate inv'37
+  
+  predicate precondition'1 [@inline:trivial] (self: ()) (args: t_Rc) = let self_ = args in inv'37 self_
+  
+  meta "rewrite_def" predicate precondition'1
+  
+  predicate invariant''30 [@inline:trivial] (self: t_Rc) = inv'37 self
   
   meta "rewrite_def" predicate invariant''30
   
@@ -3667,30 +3664,18 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
   
   meta "rewrite_def" predicate inv'38
   
-  predicate precondition'1 [@inline:trivial] (self: ()) (args: t_Rc) = let self_ = args in inv'38 self_
-  
-  meta "rewrite_def" predicate precondition'1
-  
-  predicate invariant''31 [@inline:trivial] (self: t_Rc) = inv'38 self
-  
-  meta "rewrite_def" predicate invariant''31
-  
-  predicate inv'39 [@inline:trivial] (_1: t_Rc) = invariant''31 _1
-  
-  meta "rewrite_def" predicate inv'39
-  
   predicate precondition'2 [@inline:trivial] (self: ()) (args: tuple'0) =
     let {f0'0 = self'0; f1'0 = tokens; f2 = f} = args in (forall this: t_LocalInvariant. postcondition () self'0 this
         -> precondition'0 () { f0'1 = new_logic this; f1'1 = tokens; f2'0 = f })
-    /\ precondition'1 () self'0 /\ inv'36 f /\ inv'39 self'0
+    /\ precondition'1 () self'0 /\ inv'35 f /\ inv'38 self'0
   
   meta "rewrite_def" predicate precondition'2
   
-  let rec deref'4 (self_: t_Rc) (return (x: t_LocalInvariant)) = {[@expl:deref 'self_' type invariant] inv'38 self_}
+  let rec deref'4 (self_: t_Rc) (return (x: t_LocalInvariant)) = {[@expl:deref 'self_' type invariant] inv'37 self_}
     any [ return (result: t_LocalInvariant) -> {result = view self_} (! return {result}) ]
   
   let rec open (self: t_LocalInvariant) (tokens: t_Tokens) (f: closure0) (return (x: t_T)) =
-    {[@expl:open 'f' type invariant] inv'36 f}
+    {[@expl:open 'f' type invariant] inv'35 f}
     {[@expl:open requires #0] contains'3 tokens (namespace self)}
     {[@expl:open requires #1] forall t: MutBorrow.t t_PA. protocol t.current (public self) /\ inv'12 t
       -> precondition f t /\ (forall res: t_T. postcondition_once'0 f t res -> protocol (fin t) (public self))}
@@ -3763,8 +3748,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
       = (postcondition'0 self args res /\ self = res_state)
   
   let rec open'0 (self: t_Rc) (tokens: t_Tokens) (f: closure0) (return (x: t_T)) =
-    {[@expl:open 'self' type invariant] inv'39 self}
-    {[@expl:open 'f' type invariant] inv'36 f}
+    {[@expl:open 'self' type invariant] inv'38 self}
+    {[@expl:open 'f' type invariant] inv'35 f}
     {[@expl:open requires #0] precondition'1 () self}
     {[@expl:open requires #1] forall this: t_LocalInvariant. postcondition () self this
       -> precondition'0 () { f0'1 = new_logic this; f1'1 = tokens; f2'0 = f }}
@@ -3842,8 +3827,8 @@ module M_persistent_array__implementation__qyi7256199225841846155__get (* implem
       = (postcondition'1 self args res /\ self = res_state)
   
   let rec open'1 (self: t_Rc) (tokens: t_Tokens) (f: closure0) (return (x: t_T)) =
-    {[@expl:open 'self' type invariant] inv'37 self}
-    {[@expl:open 'f' type invariant] inv'36 f}
+    {[@expl:open 'self' type invariant] inv'36 self}
+    {[@expl:open 'f' type invariant] inv'35 f}
     {[@expl:open requires] precondition'2 () { f0'0 = new_logic'0 self; f1'0 = tokens; f2 = f }}
     any
     [ return (result: t_T) -> {inv'30 result}
@@ -5108,7 +5093,7 @@ module M_persistent_array__testing
     | & a2_model: Seq.seq Int32.t = Any.any_l ()
     | & a3_model: Seq.seq Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_persistent_array__implementation__qyi15164097500274694161__clone__refines (* <implementation::PersistentArray<T> as creusot_contracts::Clone> *)
+module M_persistent_array__implementation__qyi15164097500274694161__clone__refines (* <implementation::PersistentArray<T> as std::clone::Clone> *)
   type namespace_other
   
   type t_Namespace = Namespace_PARRAY int | Other namespace_other

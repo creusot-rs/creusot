@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, *};
+use creusot_contracts::{ghost::PtrOwn, prelude::*};
 
 pub struct S {
     pub perm: Ghost<PtrOwn<i32>>,

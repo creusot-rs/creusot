@@ -1,6 +1,6 @@
 //! Arithmetic operators in logic
 
-use crate::*;
+use crate::prelude::*;
 
 /// Trait for addition (`+`) in logic code.
 #[diagnostic::on_unimplemented(

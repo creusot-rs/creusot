@@ -1,4 +1,4 @@
-use crate::{ghost::Plain, *};
+use crate::{ghost::Plain, prelude::*};
 
 /// A unique id, usable in logic and ghost code
 ///

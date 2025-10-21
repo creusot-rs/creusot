@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub fn is_some_none() {
     let none: Option<i32> = None;
@@ -32,7 +32,13 @@ pub fn map() {
     let none: Option<i32> = None;
     let some: Option<i32> = Some(1);
 
-    assert!(none.map(|_| panic!()) == None);
+    assert!(
+        none.map(|_| {
+            panic!();
+            #[allow(unreachable_code)]
+            ()
+        }) == None
+    );
     assert!(some.map(|_| 3) == Some(3));
     assert!(some.map(|x| x + 1) == Some(2));
 }

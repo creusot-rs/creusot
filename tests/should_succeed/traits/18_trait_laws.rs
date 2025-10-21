@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub trait Symmetric {
     // Hack: return type must be sized for `a.op(b) == b.op(a)` to typecheck

@@ -5,7 +5,7 @@ use crate::{
         RA,
         update::{LocalUpdate, Update},
     },
-    *,
+    prelude::*,
 };
 
 /// The 'sum' (or 'either') Resource Algebra.

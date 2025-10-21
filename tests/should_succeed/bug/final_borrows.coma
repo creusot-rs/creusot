@@ -106,13 +106,13 @@ module M_final_borrows__select
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_4 <- _ret ] -{inv _ret.final}-
             [ &_6 <- { _6 with current = _ret.final } ] s1)
-      | s1 = {inv _4.current}
+      | s1 = {[@expl:type invariant] inv'0 _6} s2
+      | s2 = -{resolve _6}- s3
+      | s3 = {inv _4.current}
         MutBorrow.borrow_final <t_T> {_4.current} {MutBorrow.get_id _4}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'0 _6} s3
-      | s3 = -{resolve _6}- s4
+            [ &_4 <- { _4 with current = _ret.final } ] s4)
       | s4 = {[@expl:type invariant] inv'0 _4} s5
       | s5 = -{resolve _4}- s6
       | s6 = {[@expl:type invariant] inv'0 r2} s7
@@ -187,13 +187,13 @@ module M_final_borrows__reborrow_field
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _4} s3
+      | s3 = -{resolve _4}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _4} s4
-      | s4 = -{resolve _4}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'2 r} s8
@@ -317,27 +317,27 @@ module M_final_borrows__nested_fields
   
   meta "rewrite_def" predicate inv'0
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t tuple) = inv'0 self.current /\ inv'0 self.final
+  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
   
   meta "rewrite_def" predicate invariant'
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t tuple) = invariant' _1
+  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
   
   meta "rewrite_def" predicate inv'1
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t tuple) = inv'0 self.current /\ inv'0 self.final
   
   meta "rewrite_def" predicate invariant''0
   
-  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant''0 _1
+  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t tuple) = invariant''0 _1
   
   meta "rewrite_def" predicate inv'2
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
@@ -380,17 +380,17 @@ module M_final_borrows__nested_fields
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_5 <- { _5 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'1 borrow1} s4
-      | s4 = -{resolve borrow1}- s5
-      | s5 = {inv _2.current}
+      | s3 = {[@expl:type invariant] inv'1 _5} s4
+      | s4 = -{resolve _5}- s5
+      | s5 = {[@expl:type invariant] inv'2 borrow1} s6
+      | s6 = -{resolve'0 borrow1}- s7
+      | s7 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s6)
-      | s6 = {[@expl:type invariant] inv'2 _5} s7
-      | s7 = -{resolve'0 _5}- s8
-      | s8 = {[@expl:type invariant] inv'2 _2} s9
-      | s9 = -{resolve'0 _2}- s10
+            [ &_2 <- { _2 with current = _ret.final } ] s8)
+      | s8 = {[@expl:type invariant] inv'1 _2} s9
+      | s9 = -{resolve _2}- s10
       | s10 = {[@expl:type invariant] inv'4 r} s11
       | s11 = -{resolve'1 r}- s12
       | s12 = return {_0} ] ]
@@ -399,7 +399,7 @@ module M_final_borrows__nested_fields
     | & _2: MutBorrow.t t_T = Any.any_l ()
     | & borrow1: MutBorrow.t tuple = Any.any_l ()
     | & _5: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:nested_fields result type invariant] inv'2 result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:nested_fields result type invariant] inv'1 result}
       {[@expl:nested_fields ensures] result
       = MutBorrow.borrow_logic r.current.f0'0.f1 r.final.f0'0.f1 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id r) 1) 2)}
       (! return {result}) ]
@@ -785,13 +785,13 @@ module M_final_borrows__unnesting_non_extensional
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_5 <- { _5 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _5} s3
+      | s3 = -{resolve _5}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _5} s4
-      | s4 = -{resolve _5}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'1 x} s8
@@ -1133,13 +1133,13 @@ module M_final_borrows__borrow_in_box
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _4} s3
+      | s3 = -{resolve _4}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _4} s4
-      | s4 = -{resolve _4}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'1 x} s8
@@ -1298,13 +1298,13 @@ module M_final_borrows__reborrow_in_box
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _4} s3
+      | s3 = -{resolve _4}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _4} s4
-      | s4 = -{resolve _4}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'2 x} s8
@@ -1607,13 +1607,13 @@ module M_final_borrows__index_mut_slice
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_5 <- { _5 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _5} s3
+      | s3 = -{resolve _5}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _5} s4
-      | s4 = -{resolve _5}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'4 v} s8
@@ -1722,13 +1722,13 @@ module M_final_borrows__index_mut_array
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_2 <- _ret ] -{inv _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = {inv _2.current}
+      | s2 = {[@expl:type invariant] inv'0 _4} s3
+      | s3 = -{resolve _4}- s4
+      | s4 = {inv _2.current}
         MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'0 _4} s4
-      | s4 = -{resolve _4}- s5
+            [ &_2 <- { _2 with current = _ret.final } ] s5)
       | s5 = {[@expl:type invariant] inv'0 _2} s6
       | s6 = -{resolve _2}- s7
       | s7 = {[@expl:type invariant] inv'4 v} s8

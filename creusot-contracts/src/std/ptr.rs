@@ -1,7 +1,7 @@
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic};
-use crate::*;
-pub use ::std::ptr::*;
+use std::ptr::*;
 
 /// Metadata of a pointer in logic.
 ///

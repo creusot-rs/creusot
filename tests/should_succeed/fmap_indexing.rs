@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::FMap, *};
+use creusot_contracts::{logic::FMap, prelude::*};
 
 pub fn foo() {
     let mut map = snapshot!(FMap::empty());

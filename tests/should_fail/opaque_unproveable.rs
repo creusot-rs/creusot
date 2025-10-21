@@ -1,9 +1,9 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 mod x {
-    use creusot_contracts::*;
+    use creusot_contracts::prelude::*;
 
     #[logic(open(self))]
     pub fn opaque() -> bool {

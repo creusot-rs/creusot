@@ -1,6 +1,6 @@
 #![feature(unboxed_closures, fn_traits, tuple_trait)]
 extern crate creusot_contracts;
-use creusot_contracts::{std::ops::*, *};
+use creusot_contracts::prelude::*;
 use std::marker::Tuple;
 
 #[requires(f.precondition(a))]

@@ -1,7 +1,7 @@
 #![allow(unreachable_code)]
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub fn should_not_return() {
     ghost! {

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // Check that we can make snapshots in ghost code.
 pub fn foo() {

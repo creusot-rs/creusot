@@ -1,5 +1,6 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+#[allow(unused)]
+use creusot_contracts::prelude::*;
 
 #[allow(unused_assignments)]
 pub fn maybe_uninit<T: Default>(b: bool, y: T) -> T {

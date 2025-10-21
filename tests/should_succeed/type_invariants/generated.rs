@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, *};
+use creusot_contracts::{invariant::Invariant, prelude::*};
 
 pub struct Sum10(i32, i32);
 
@@ -16,5 +16,5 @@ pub enum Foo<'a, T> {
 }
 
 pub fn use_foo<'a>(x: Foo<'a, (Foo<'a, u32>, &'a mut Sum10)>) {
-    proof_assert!(invariant::inv(x));
+    proof_assert!(inv(x));
 }

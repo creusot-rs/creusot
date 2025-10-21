@@ -5,7 +5,7 @@ use crate::{
         FMap,
         ra::{RA, UnitRA, update::LocalUpdate},
     },
-    *,
+    prelude::*,
 };
 
 impl<K, V: RA> RA for FMap<K, V> {

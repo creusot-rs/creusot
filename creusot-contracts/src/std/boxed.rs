@@ -1,9 +1,8 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, *};
+use crate::{invariant::*, prelude::*};
 #[cfg(feature = "nightly")]
-use ::std::alloc::Allocator;
-pub use ::std::boxed::*;
+use std::alloc::Allocator;
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {

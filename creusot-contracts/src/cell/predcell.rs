@@ -2,7 +2,7 @@
 //!
 //! This module provides [PredCell], a wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
 
-use crate::{logic::Mapping, *};
+use crate::{logic::Mapping, prelude::*};
 
 /// Cell over predicates
 ///

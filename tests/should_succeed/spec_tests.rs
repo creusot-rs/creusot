@@ -1,7 +1,7 @@
 // NO_REPLAY
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub enum T {
     A,

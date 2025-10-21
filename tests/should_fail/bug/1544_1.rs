@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::ops::AddLogic, *};
+use creusot_contracts::{logic::ops::AddLogic, prelude::*};
 
 pub fn should_not_ice() {
     let x: S<42> = S;

@@ -4,7 +4,7 @@
 //! To use ghost code in creusot, you must use the [`ghost!`] macro:
 //!
 //! ```
-//! # use creusot_contracts::*;
+//! # use creusot_contracts::prelude::*;
 //! let x: Ghost<i32> = ghost!(1);
 //! ghost! {
 //!     let y: i32 = *x;
@@ -15,12 +15,10 @@
 //! There are restrictions on the values that can enter/exit a `ghost!` block: see
 //! [`Ghost`] and [`ghost!`] for more details.
 
-use ::std::marker::PhantomData;
-
-use crate::{
-    logic::ops::Fin,
-    std::ops::{Deref, DerefMut},
-    *,
+use crate::{logic::ops::Fin, prelude::*};
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 mod fn_ghost;

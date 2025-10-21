@@ -1,4 +1,4 @@
-use crate::*;
+use crate::prelude::*;
 
 extern_spec! {
     mod std {

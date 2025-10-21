@@ -1,8 +1,7 @@
-use crate::*;
-use ::std::convert::Infallible;
+use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use ::std::marker::Tuple;
-pub use ::std::ops::*;
+use std::marker::Tuple;
+use std::{convert::Infallible, ops::*};
 
 // Note: we should NOT give a generic extern spec for Deref::deref, since this
 // method is an exception being used both as a logic function and as a program
@@ -219,9 +218,9 @@ impl<T: DeepModel> DeepModel for Bound<T> {
     }
 }
 
-/// Methods for the specification of [`::std::ops::RangeBounds`].
+/// Methods for the specification of [`std::ops::RangeBounds`].
 pub trait RangeBounds<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>:
-    ::std::ops::RangeBounds<T>
+    std::ops::RangeBounds<T>
 {
     #[logic]
     fn start_bound_logic(&self) -> Bound<&T>;
@@ -457,7 +456,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<&T
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::Range<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -470,7 +469,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::Range<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -483,7 +482,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeFrom<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::RangeFrom<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -496,7 +495,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeFrom<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::RangeFrom<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -509,7 +508,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeInclusive<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::RangeInclusive<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -522,7 +521,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::Range
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for ::std::range::RangeInclusive<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::RangeInclusive<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -656,7 +655,7 @@ extern_spec! {
                 })]
                 fn from_residual(residual: Result<Infallible, E>) -> Self {
                     match residual {
-                        Err(e) => Err(::std::convert::From::from(e)),
+                        Err(e) => Err(std::convert::From::from(e)),
                     }
                 }
             }
@@ -667,7 +666,7 @@ extern_spec! {
 /// Dummy impls that don't use the unstable traits Tuple, FnOnce<Args>, FnMut<Args>, Fn<Args>
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use super::*;
+    use crate::std::ops::*;
 
     impl<O, F: FnOnce() -> O> FnOnceExt<()> for F {
         type Output = O;

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(result == (x.1, x.0))]
 fn swap<T>(x: (T, T)) -> (T, T) {

@@ -10,7 +10,7 @@ pub mod sum;
 pub mod update;
 pub mod view;
 
-use crate::{logic::Set, *};
+use crate::{logic::Set, prelude::*};
 
 /// Define a _Resource Algebra_.
 ///

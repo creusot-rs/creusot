@@ -1,5 +1,5 @@
-use crate::*;
-use ::std::fmt;
+use crate::prelude::*;
+use std::fmt;
 
 extern_spec! {
     mod std {

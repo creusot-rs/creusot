@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic, maintains, requires};
+use creusot_contracts::prelude::*;
 
 pub struct Transition;
 pub struct Machine;

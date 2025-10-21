@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[logic(prophetic)]
 #[requires((*x)@ == 1 && (^x)@ == 2)]

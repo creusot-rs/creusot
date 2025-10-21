@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use ::std::rc::Rc;
 use creusot_contracts::{
     cell::{PermCell, PermCellOwn},
-    *,
+    prelude::*,
 };
 
 pub struct Node<T> {

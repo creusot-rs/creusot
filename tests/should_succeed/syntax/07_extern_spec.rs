@@ -1,7 +1,7 @@
 #![allow(unused_variables)]
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 trait UseSelf {
     fn func(&self, rhs: &Self) -> bool;

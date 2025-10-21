@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, *};
+use creusot_contracts::{ghost::PtrOwn, prelude::*};
 
 fn foo(x: i32) -> i32 {
     x

@@ -1,15 +1,10 @@
-use crate::{
-    std::{
-        iter::DoubleEndedIterator,
-        ops::{Range, RangeInclusive},
-    },
-    *,
-};
+use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use ::std::iter::Step;
+use std::iter::Step;
+use std::ops::{Range, RangeInclusive};
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
+impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -40,7 +35,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
 }
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for Range<Idx> {
+impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range<Idx> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -73,7 +68,7 @@ pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<
 }
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
+impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<Idx> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -104,7 +99,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
 }
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeInclusive<Idx> {
+impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
@@ -132,10 +127,10 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIterator for RangeIncl
 macro_rules! impl_range {
     ( $( $ty:tt ),+ ) => {
         $(
-            impl Iterator for Range<$ty> {}
-            impl Iterator for RangeInclusive<$ty> {}
-            impl DoubleEndedIterator for Range<$ty> {}
-            impl DoubleEndedIterator for RangeInclusive<$ty> {}
+            impl IteratorSpec for Range<$ty> {}
+            impl IteratorSpec for RangeInclusive<$ty> {}
+            impl DoubleEndedIteratorSpec for Range<$ty> {}
+            impl DoubleEndedIteratorSpec for RangeInclusive<$ty> {}
         )+
     };
 }

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::PartialEq;
+use creusot_contracts::prelude::PartialEq;
 
 pub trait One {
     fn one() -> Self;

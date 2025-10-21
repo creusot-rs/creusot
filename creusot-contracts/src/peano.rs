@@ -25,8 +25,11 @@
 //! overflow the backing integer. Since ghost code is not executed, the time argument is
 //! not applicable.
 
-use crate::{Clone, Default, PartialEq, *};
-use ::std::cmp::Ordering;
+use crate::{
+    logic::ord::ord_laws_impl,
+    prelude::{Clone, Default, *},
+};
+use std::cmp::Ordering;
 
 /// A peano integer wrapping a 64-bits integer.
 ///

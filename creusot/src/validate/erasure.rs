@@ -774,7 +774,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                         let args = args
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
-                            .collect::<Result<::std::boxed::Box<[_]>, _>>()?;
+                            .collect::<Result<std::boxed::Box<[_]>, _>>()?;
                         let (fun_id_resolved, subst_resolved) =
                             TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst.0)
                                 .to_opt(fun_id, subst.0)
@@ -889,7 +889,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let values = fields
                     .iter()
                     .map(|f| self.a_normal_form_expr(*f, stmts))
-                    .collect::<Result<::std::boxed::Box<[_]>, _>>()?;
+                    .collect::<Result<std::boxed::Box<[_]>, _>>()?;
                 if fields.len() >= 1
                     && fields.iter().skip(1).all(|e| is_ghost_or_snap(self.tcx, self.thir[*e].ty))
                 {
@@ -1195,7 +1195,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let subpatterns = subpatterns
                     .iter()
                     .map(|p| self.a_normal_form_pat(&p.pattern))
-                    .collect::<Result<::std::boxed::Box<[_]>, _>>()?;
+                    .collect::<Result<Box<[_]>, _>>()?;
                 // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
                 Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
             }

@@ -1,5 +1,5 @@
 //! Logical models of types: [`View`] and [`DeepModel`]
-use crate::*;
+use crate::prelude::*;
 
 /// The view of a type is its logical model as typically used to specify a data
 /// structure. It is typically "shallow", and does not involve the model of

@@ -1,13 +1,13 @@
 //! Raw pointers with ghost code
 
-use ::std::marker::PhantomData;
+use std::marker::PhantomData;
 
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::{
     mem::{size_of_logic, size_of_val_logic},
     ptr::{metadata_logic, metadata_matches},
 };
-use crate::*;
 
 /// Token that represents the ownership of a memory cell
 ///

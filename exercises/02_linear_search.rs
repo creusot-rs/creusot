@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // Prove the following:
 // 1. If we return Some(i) it is the first index containing `tgt`

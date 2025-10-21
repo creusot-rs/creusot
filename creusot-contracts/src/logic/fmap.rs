@@ -1,10 +1,10 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
-    std::option::OptionExt as _,
-    *,
+    prelude::*,
 };
+use std::marker::PhantomData;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
 ///
@@ -12,8 +12,8 @@ use crate::{
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashMap`](::std::collections::HashMap) and
-/// [`std::collections::BTreeMap`](::std::collections::BTreeMap) have finite
+/// Since [`std::collections::HashMap`](std::collections::HashMap) and
+/// [`std::collections::BTreeMap`](std::collections::BTreeMap) have finite
 /// capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
@@ -28,9 +28,9 @@ use crate::{
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[opaque]
-pub struct FMap<K: ?Sized, V>(std::marker::PhantomData<K>, std::marker::PhantomData<V>);
+pub struct FMap<K, V>(PhantomData<K>, PhantomData<V>);
 
-impl<K: ?Sized, V> View for FMap<K, V> {
+impl<K, V> View for FMap<K, V> {
     type ViewTy = Mapping<K, Option<V>>;
 
     /// View of the map
@@ -46,7 +46,7 @@ impl<K: ?Sized, V> View for FMap<K, V> {
 }
 
 /// Logical definitions
-impl<K: ?Sized, V> FMap<K, V> {
+impl<K, V> FMap<K, V> {
     /// Returns the empty map.
     #[trusted]
     #[logic(opaque)]
@@ -206,10 +206,7 @@ impl<K: ?Sized, V> FMap<K, V> {
         Some(v) => Some(f[(k, v)]),
     })]
     #[ensures(result.len() == self.len())]
-    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2>
-    where
-        K: Sized,
-    {
+    pub fn map<V2>(self, f: Mapping<(K, V), V2>) -> FMap<K, V2> {
         self.filter_map(|(k, v)| Some(f[(k, v)]))
     }
 
@@ -222,10 +219,7 @@ impl<K: ?Sized, V> FMap<K, V> {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
     })]
-    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self
-    where
-        K: Sized,
-    {
+    pub fn filter(self, p: Mapping<(K, V), bool>) -> Self {
         self.filter_map(|(k, v)| if p[(k, v)] { Some(v) } else { None })
     }
 
@@ -237,10 +231,7 @@ impl<K: ?Sized, V> FMap<K, V> {
         None => None,
         Some(v) => f[(k, v)],
     })]
-    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2>
-    where
-        K: Sized,
-    {
+    pub fn filter_map<V2>(self, f: Mapping<(K, V), Option<V2>>) -> FMap<K, V2> {
         dead
     }
 
@@ -254,7 +245,7 @@ impl<K: ?Sized, V> FMap<K, V> {
     }
 }
 
-impl<K: ?Sized, V> IndexLogic<K> for FMap<K, V> {
+impl<K, V> IndexLogic<K> for FMap<K, V> {
     type Item = V;
 
     #[logic(open, inline)]
@@ -280,7 +271,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -311,7 +302,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -331,7 +322,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -354,7 +345,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -388,7 +379,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -419,7 +410,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// ghost! {
@@ -446,7 +437,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{logic::FMap, *};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut map = FMap::new();
     /// let res = ghost! {
@@ -470,7 +461,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, logic::FMap};
+    /// use creusot_contracts::{logic::FMap, prelude::*};
     ///
     /// let mut s = FMap::new();
     /// ghost! {
@@ -524,7 +515,7 @@ impl<K, V> FMap<K, V> {
     }
 }
 
-impl<'a, K, V> ::std::ops::Index<&'a K> for FMap<K, V> {
+impl<'a, K, V> std::ops::Index<&'a K> for FMap<K, V> {
     type Output = V;
 
     #[check(ghost)]
@@ -547,7 +538,7 @@ impl<K: Clone + Copy, V: Clone + Copy> Clone for FMap<K, V> {
 // Having `Copy` guarantees that the operation is pure, even if we decide to change the definition of `Clone`.
 impl<K: Clone + Copy, V: Clone + Copy> Copy for FMap<K, V> {}
 
-impl<K: ?Sized, V> Invariant for FMap<K, V> {
+impl<K, V> Invariant for FMap<K, V> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -583,7 +574,7 @@ impl<K, V> View for FMapIter<K, V> {
     }
 }
 
-impl<K, V> ::std::iter::Iterator for FMapIter<K, V> {
+impl<K, V> Iterator for FMapIter<K, V> {
     type Item = (K, V);
 
     #[check(ghost)]
@@ -596,7 +587,7 @@ impl<K, V> ::std::iter::Iterator for FMapIter<K, V> {
     }
 }
 
-impl<K, V> crate::Iterator for FMapIter<K, V> {
+impl<K, V> IteratorSpec for FMapIter<K, V> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<(K, V)>, o: Self) -> bool {
         pearlite! {
@@ -659,13 +650,13 @@ impl<K, V> View for FMapIterRef<'_, K, V> {
     type ViewTy = FMap<K, V>;
     #[logic]
     fn view(self) -> FMap<K, V> {
-        pearlite! { logic::such_that(|m: FMap<K, V>|
+        pearlite! { such_that(|m: FMap<K, V>|
             forall<k, v> (m.get(k) == Some(v)) == (self.inner.get(&k) == Some(&v))
         ) }
     }
 }
 
-impl<'a, K, V> ::std::iter::Iterator for FMapIterRef<'a, K, V> {
+impl<'a, K, V> Iterator for FMapIterRef<'a, K, V> {
     type Item = (&'a K, &'a V);
 
     #[trusted] // FIXME: the definition of the view makes this incredibly hard to prove.
@@ -679,7 +670,7 @@ impl<'a, K, V> ::std::iter::Iterator for FMapIterRef<'a, K, V> {
     }
 }
 
-impl<'a, K, V> crate::Iterator for FMapIterRef<'a, K, V> {
+impl<'a, K, V> IteratorSpec for FMapIterRef<'a, K, V> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<(&'a K, &'a V)>, o: Self) -> bool {
         pearlite! {
@@ -717,7 +708,7 @@ impl<'a, K, V> crate::Iterator for FMapIterRef<'a, K, V> {
     }
 }
 
-impl<K: ?Sized, V> Resolve for FMap<K, V> {
+impl<K, V> Resolve for FMap<K, V> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {

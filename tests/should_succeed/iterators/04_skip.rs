@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, *};
+use creusot_contracts::{invariant::inv, prelude::*};
 
 mod common;
 use common::Iterator;

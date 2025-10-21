@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(i@ < a@.len())]
 pub fn read_write<T: Eq + Copy + DeepModel>(a: &mut Vec<T>, i: usize, x: T) {

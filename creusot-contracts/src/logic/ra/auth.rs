@@ -1,4 +1,4 @@
-use ::std::marker::PhantomData;
+use std::marker::PhantomData;
 
 use crate::{
     logic::ra::{
@@ -6,7 +6,7 @@ use crate::{
         update::{LocalUpdate, Update},
         view::{View, ViewRel},
     },
-    *,
+    prelude::*,
 };
 
 /// The 'authority' Resource Algebra.

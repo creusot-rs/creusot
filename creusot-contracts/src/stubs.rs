@@ -1,4 +1,8 @@
-use crate::{logic::ops::IndexLogic, model::View, *};
+use crate::{
+    logic::{Mapping, ops::IndexLogic},
+    model::View,
+    prelude::*,
+};
 
 #[logic(opaque)]
 #[intrinsic("equal")]
@@ -62,13 +66,13 @@ pub fn closure_result<R: ?Sized>(_: R, _: R) {}
 #[check(ghost)]
 #[trusted]
 #[intrinsic("snapshot_from_fn")]
-pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> T>(_: F) -> crate::Snapshot<T> {
+pub fn snapshot_from_fn<T: ?Sized, F: Fn() -> T>(_: F) -> Snapshot<T> {
     panic!()
 }
 
 #[logic(opaque)]
 #[builtin("identity")]
-pub fn mapping_from_fn<A: ?Sized, B, F: FnOnce(&A) -> B>(_: F) -> crate::logic::Mapping<A, B> {
+pub fn mapping_from_fn<A: ?Sized, B, F: FnOnce(&A) -> B>(_: F) -> Mapping<A, B> {
     dead
 }
 

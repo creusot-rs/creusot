@@ -1,4 +1,4 @@
-module M_red_black_tree__qyi11959472507597060150__clone (* <Color as creusot_contracts::Clone> *)
+module M_red_black_tree__qyi11959472507597060150__clone (* <Color as std::clone::Clone> *)
   use creusot.prelude.Any
   
   type t_Color = C_Red | C_Black
@@ -561,7 +561,7 @@ module M_red_black_tree__qyi3665871523867809084__has_mapping (* Node<K, V> *)
     
 
 end
-module M_red_black_tree__qyi8412372133095258695__resolve_coherence (* <Tree<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi8412372133095258695__resolve_coherence (* <Tree<K, V> as creusot_contracts::resolve::Resolve> *)
   type t_Color = C_Red | C_Black
   
   type t_K
@@ -638,7 +638,7 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence (* <Tree<K, V
   
   goal vc_resolve_coherence: structural_resolve self -> ([@expl:resolve_coherence ensures] resolve'1 self)
 end
-module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi17767811206440054577__resolve_coherence (* <Node<K, V> as creusot_contracts::resolve::Resolve> *)
   type t_Color = C_Red | C_Black
   
   type t_K
@@ -2456,7 +2456,9 @@ module M_red_black_tree__qyi3665871523867809084__balance (* Node<K, V> *)
       | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   meta "compute_max_steps" 1000000
   
@@ -2874,7 +2876,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_left (* Node<K, V> *)
       | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   meta "compute_max_steps" 1000000
   
@@ -3318,7 +3322,9 @@ module M_red_black_tree__qyi3665871523867809084__move_red_right (* Node<K, V> *)
       | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   meta "compute_max_steps" 1000000
   
@@ -3728,7 +3734,9 @@ module M_red_black_tree__qyi3529752165842986389__insert_rec (* Tree<K, V> *)
       | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'9 self}
     {[@expl:balance requires #0] internal_invariant self.current}
@@ -4144,150 +4152,18 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
         /\ r.t_Node__key = self.current.t_Node__key}
       (! return {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 t_Node
-  
-  predicate invariant''4 [@inline:trivial] (self: t_Option) = inv'2 self
-  
-  meta "rewrite_def" predicate invariant''4
-  
-  predicate inv'10 [@inline:trivial] (_1: t_Option) = invariant''4 _1
-  
-  meta "rewrite_def" predicate inv'10
-  
-  predicate invariant''5 [@inline:trivial] (self: t_Node) = inv'4 self
-  
-  meta "rewrite_def" predicate invariant''5
-  
-  predicate inv'11 [@inline:trivial] (_1: t_Node) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'11
-  
-  predicate inv'12 (_1: t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'11 a_0
-        end
-  
-  let rec as_ref (self_: t_Option) (return (x: t_Option'1)) = {[@expl:as_ref 'self_' type invariant] inv'10 self_}
-    any
-    [ return (result: t_Option'1) -> {inv'12 result}
-      {self_ = C_None -> result = C_None'1}
-      {self_ = C_None \/ (exists r: t_Node. result = C_Some'1 r /\ self_ = C_Some r)}
-      (! return {result}) ]
-  
-  let rec unwrap'0 (self_: t_Option'1) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'12 self_}
-    {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return (result: t_Node) -> {inv'11 result} {C_Some'1 result = self_} (! return {result}) ]
-  
-  type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
-  
-  predicate color_invariant_here (self: t_Node) =
-    color self.t_Node__right = C_Black /\ (self.t_Node__color = C_Black \/ color self.t_Node__left = C_Black)
-  
-  predicate color_invariant (self: t_Tree) =
-    match self with
-      | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
-      /\ color_invariant left /\ color_invariant right
-      end
-  
-  predicate color_invariant'0 (self: t_Node) =
-    color_invariant_here self /\ color_invariant self.t_Node__left /\ color_invariant self.t_Node__right
-  
-  predicate match_t (self: t_CP) (tree: t_Tree) =
-    match self with
-      | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> match tree.t_Tree__node with
-        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
-        | C_None -> false
-        end
-      end
-  
-  predicate match_n (self: t_CP) (node: t_Node) =
-    match self with
-      | C_CPL color'0 -> node.t_Node__color = color'0 /\ color_invariant'0 node
-      | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
-      end
-  
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
-  
-  let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:move_red_right 'self' type invariant] inv'8 self}
-    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
-    {[@expl:move_red_right requires #1] internal_invariant self.current}
-    {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
-    any
-    [ return (result: MutBorrow.t t_Node) -> {inv'8 result}
-      {internal_invariant result.current}
-      {internal_invariant result.final
-        /\ height'0 result.current = height'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
-      -> internal_invariant self.final}
-      {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {result.current.t_Node__key = self.current.t_Node__key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
-        -> has_mapping'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
-        = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
-      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
-      \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
-      {color_invariant'0 result.final
-        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
-      -> color_invariant'0 self.final}
-      (! return {result}) ]
-  
   predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
-  
-  type tuple'0 = { f0'0: t_K; f1'0: t_V }
-  
-  let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'8 self}
-    {[@expl:balance requires #0] internal_invariant self.current}
-    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
-    -> color_invariant self.current.t_Node__left}
-    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
-    -> color_invariant self.current.t_Node__right}
-    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
-      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
-    any
-    [ return (result: ()) -> {same_mappings self.current self.final}
-      {internal_invariant self.final}
-      {height'0 self.current = height'0 self.final}
-      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
-      -> self.current = self.final}
-      {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
-      -> match_n (C_CPL (C_Red)) self.final}
-      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) self.current
-      -> match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.final}
-      {match_n (cpn (C_Red) (C_CPL (C_Black)) (C_CPL (C_Red))) self.current
-      -> match_n (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) self.final}
-      {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) self.current -> match_n (C_CPL (C_Red)) self.final}
-      (! return {result}) ]
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
-  
-  meta "rewrite_def" predicate inv'13
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
   
   meta "rewrite_def" predicate postcondition_once
   
-  predicate resolve'2 [@inline:trivial] (_1: ()) = true
+  predicate resolve'1 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve'1
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -4297,7 +4173,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -4329,7 +4205,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   function fn_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (postcondition self args res /\ resolve'2 self)
+      = (postcondition self args res /\ resolve'1 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
   
@@ -4346,11 +4222,23 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''4
+  
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''4 _1
+  
+  meta "rewrite_def" predicate inv'10
+  
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'3
   
-  let rec unwrap'1 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
+  let rec unwrap'0 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
     {[@expl:unwrap requires] self_ <> C_None}
     any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
   
@@ -4385,18 +4273,107 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
   axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
       = (resolve'5 x /\ resolve'11 x.t_Tree__node)
   
+  type tuple'0 = { f0'0: t_K; f1'0: t_V }
+  
+  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
+    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  
+  type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
+  
+  predicate color_invariant_here (self: t_Node) =
+    color self.t_Node__right = C_Black /\ (self.t_Node__color = C_Black \/ color self.t_Node__left = C_Black)
+  
+  predicate color_invariant (self: t_Tree) =
+    match self with
+      | {t_Tree__node = C_None} -> true
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
+      /\ color_invariant left /\ color_invariant right
+      end
+  
+  predicate color_invariant'0 (self: t_Node) =
+    color_invariant_here self /\ color_invariant self.t_Node__left /\ color_invariant self.t_Node__right
+  
+  predicate match_t (self: t_CP) (tree: t_Tree) =
+    match self with
+      | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
+      end
+  
+  predicate match_n (self: t_CP) (node: t_Node) =
+    match self with
+      | C_CPL color'0 -> node.t_Node__color = color'0 /\ color_invariant'0 node
+      | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      end
+  
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
+  
+  let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
+    {[@expl:move_red_right 'self' type invariant] inv'8 self}
+    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:move_red_right requires #1] internal_invariant self.current}
+    {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
+    any
+    [ return (result: MutBorrow.t t_Node) -> {inv'8 result}
+      {internal_invariant result.current}
+      {internal_invariant result.final
+        /\ height'0 result.current = height'0 result.final
+        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
+      -> internal_invariant self.final}
+      {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
+      {result.current.t_Node__key = self.current.t_Node__key}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
+        -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
+        = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
+      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
+      \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
+      {color_invariant'0 result.final
+        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
+      -> color_invariant'0 self.final}
+      (! return {result}) ]
+  
+  let rec balance (self: MutBorrow.t t_Node) (return (x: ())) = {[@expl:balance 'self' type invariant] inv'8 self}
+    {[@expl:balance requires #0] internal_invariant self.current}
+    {[@expl:balance requires #1] self.current.t_Node__color = C_Red /\ color self.current.t_Node__left = C_Red
+    -> color_invariant self.current.t_Node__left}
+    {[@expl:balance requires #2] self.current.t_Node__color = C_Red /\ color self.current.t_Node__right = C_Red
+    -> color_invariant self.current.t_Node__right}
+    {[@expl:balance requires #3] self.current.t_Node__color = C_Red
+      /\ color self.current.t_Node__right = C_Red /\ color self.current.t_Node__left = C_Red -> false}
+    any
+    [ return (result: ()) -> {same_mappings self.current self.final}
+      {internal_invariant self.final}
+      {height'0 self.current = height'0 self.final}
+      {color_invariant self.current.t_Node__left /\ color self.current.t_Node__right = C_Black
+      -> self.current = self.final}
+      {match_n (cpn (C_Black) (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) (C_CPL (C_Black))) self.current
+      -> match_n (C_CPL (C_Red)) self.final}
+      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) self.current
+      -> match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.final}
+      {match_n (cpn (C_Red) (C_CPL (C_Black)) (C_CPL (C_Red))) self.current
+      -> match_n (cpn (C_Red) (C_CPL (C_Red)) (C_CPL (C_Black))) self.final}
+      {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) self.current -> match_n (C_CPL (C_Red)) self.final}
+      (! return {result}) ]
+  
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'14 [@inline:trivial] (_1: tuple'0) = inv _1.f0'0 /\ inv'0 _1.f1'0
+  predicate inv'11 [@inline:trivial] (_1: tuple'0) = inv _1.f0'0 /\ inv'0 _1.f1'0
   
-  meta "rewrite_def" predicate inv'14
+  meta "rewrite_def" predicate inv'11
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec delete_max_rec (self: MutBorrow.t t_Tree) (return (x: tuple'0)) =
-    {[@expl:delete_max_rec 'self' type invariant] inv'13 self}
+    {[@expl:delete_max_rec 'self' type invariant] inv'10 self}
     {[@expl:delete_max_rec requires #0] internal_invariant'0 self.current}
     {[@expl:delete_max_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
@@ -4432,89 +4409,89 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
             [ &node <- { node with current = _ret.final } ] s1)
       | s1 = rotate_right {_19} (fun (_ret: ()) -> [ &_16 <- _ret ] s2)
       | s2 = bb8 ]
-    | bb8 = any
-      [ br0 -> {node.current.t_Node__right.t_Tree__node = C_None} (! bb9)
-      | br1 (x0: t_Node) -> {node.current.t_Node__right.t_Tree__node = C_Some x0} (! bb15) ]
-    | bb15 = s0 [ s0 = is_red {node.current.t_Node__right} (fun (_ret: bool) -> [ &_30 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = any [ br0 -> {_30 = false} (! bb18) | br1 -> {_30} (! bb26) ]
+    | bb8 = s0 [ s0 = is_red {node.current.t_Node__right} (fun (_ret: bool) -> [ &_21 <- _ret ] s1) | s1 = bb9 ]
+    | bb9 = any [ br0 -> {_21 = false} (! bb11) | br1 -> {_21} (! bb24) ]
+    | bb11 = s0
+      [ s0 = [ &_31 <- node.current.t_Node__right.t_Tree__node ] s1
+      | s1 = any [ br0 -> {_31 = C_None} (! bb18) | br1 (x0: t_Node) -> {_31 = C_Some x0} (! bb17) ] ]
     | bb18 = s0
-      [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'1) -> [ &_35 <- _ret ] s1)
-      | s1 = bb19 ]
-    | bb19 = s0 [ s0 = unwrap'0 {_35} (fun (_ret: t_Node) -> [ &_34 <- _ret ] s1) | s1 = bb20 ]
-    | bb20 = s0 [ s0 = is_red {_34.t_Node__left} (fun (_ret: bool) -> [ &_32 <- _ret ] s1) | s1 = bb21 ]
-    | bb21 = any [ br0 -> {_32 = false} (! bb23) | br1 -> {_32} (! bb26) ]
-    | bb23 = s0
-      [ s0 = {inv'3 node.current}
-        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_39 <- _ret ] -{inv'3 _ret.final}-
-            [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = move_red_right {_39} (fun (_ret: MutBorrow.t t_Node) -> [ &_38 <- _ret ] s2)
-      | s2 = bb24 ]
-    | bb24 = s0
-      [ s0 = {inv'3 _38.current}
-        MutBorrow.borrow_final <t_Node> {_38.current} {MutBorrow.get_id _38}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_37 <- _ret ] -{inv'3 _ret.final}-
-            [ &_38 <- { _38 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'0 node}- s3
-      | s3 = [ &node <- _37 ] s4
-      | s4 = {[@expl:type invariant] inv'8 _38} s5
-      | s5 = -{resolve'0 _38}- s6
-      | s6 = bb26 ]
-    | bb26 = s0
-      [ s0 = {inv'1 node.current.t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
-          (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_41 <- _ret ] -{inv'1 _ret.final}-
-            [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
-      | s1 = delete_max_rec {_41} (fun (_ret: tuple'0) -> [ &r <- _ret ] s2)
-      | s2 = bb27 ]
-    | bb27 = s0
-      [ s0 = {inv'3 node.current}
-        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_43 <- _ret ] -{inv'3 _ret.final}-
-            [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = balance {_43} (fun (_ret: ()) -> [ &_42 <- _ret ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'0 node}- s2
-      | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'1 self}- s4
-      | s4 = [ &_0 <- r ] s5
-      | s5 = bb31 ]
-    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb10 ]
-    | bb10 = s0
-      [ s0 = {inv'2 self.current.t_Tree__node}
+      | s2 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_26 <- _ret ] -{inv'2 _ret.final}-
-            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
-      | s1 = {inv'2 _26.current}
-        MutBorrow.borrow_final <t_Option> {_26.current} {MutBorrow.get_id _26}
+            [ &_27 <- _ret ] -{inv'2 _ret.final}-
+            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s3)
+      | s3 = {inv'2 _27.current}
+        MutBorrow.borrow_final <t_Option> {_27.current} {MutBorrow.get_id _27}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_25 <- _ret ] -{inv'2 _ret.final}-
-            [ &_26 <- { _26 with current = _ret.final } ] s2)
-      | s2 = take {_25} (fun (_ret: t_Option) -> [ &_24 <- _ret ] s3)
-      | s3 = bb11 ]
-    | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _26} s1
-      | s1 = -{resolve'3 _26}- s2
-      | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'1 self}- s4
-      | s4 = unwrap'1 {_24} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
+            [ &_26 <- _ret ] -{inv'2 _ret.final}-
+            [ &_27 <- { _27 with current = _ret.final } ] s4)
+      | s4 = take {_26} (fun (_ret: t_Option) -> [ &_25 <- _ret ] s5)
       | s5 = bb12 ]
     | bb12 = s0
+      [ s0 = {[@expl:type invariant] inv'5 _27} s1
+      | s1 = -{resolve'2 _27}- s2
+      | s2 = {[@expl:type invariant] inv'10 self} s3
+      | s3 = -{resolve'3 self}- s4
+      | s4 = unwrap'0 {_25} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
+      | s5 = bb13 ]
+    | bb13 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
       | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
       | s3 = -{resolve'9 node'0.t_Node__left}- s4
       | s4 = [ &_0 <- { f0'0 = node'0.t_Node__key; f1'0 = node'0.t_Node__val } ] s5
-      | s5 = bb31 ]
-    | bb31 = return {_0} ]
+      | s5 = bb29 ]
+    | bb17 = s0
+      [ s0 = v_Some {_31} (fun (r0: t_Node) -> [ &right <- r0 ] s1)
+      | s1 = is_red {right.t_Node__left} (fun (_ret: bool) -> [ &_33 <- _ret ] s2)
+      | s2 = bb19 ]
+    | bb19 = any [ br0 -> {_33 = false} (! bb21) | br1 -> {_33} (! bb24) ]
+    | bb21 = s0
+      [ s0 = {inv'3 node.current}
+        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_37 <- _ret ] -{inv'3 _ret.final}-
+            [ &node <- { node with current = _ret.final } ] s1)
+      | s1 = move_red_right {_37} (fun (_ret: MutBorrow.t t_Node) -> [ &_36 <- _ret ] s2)
+      | s2 = bb22 ]
+    | bb22 = s0
+      [ s0 = {inv'3 _36.current}
+        MutBorrow.borrow_final <t_Node> {_36.current} {MutBorrow.get_id _36}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_35 <- _ret ] -{inv'3 _ret.final}-
+            [ &_36 <- { _36 with current = _ret.final } ] s1)
+      | s1 = {[@expl:type invariant] inv'8 node} s2
+      | s2 = -{resolve'0 node}- s3
+      | s3 = [ &node <- _35 ] s4
+      | s4 = {[@expl:type invariant] inv'8 _36} s5
+      | s5 = -{resolve'0 _36}- s6
+      | s6 = bb24 ]
+    | bb24 = s0
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
+          (fun (_ret: MutBorrow.t t_Tree) ->
+            [ &_39 <- _ret ] -{inv'1 _ret.final}-
+            [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
+      | s1 = delete_max_rec {_39} (fun (_ret: tuple'0) -> [ &r <- _ret ] s2)
+      | s2 = bb25 ]
+    | bb25 = s0
+      [ s0 = {inv'3 node.current}
+        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_41 <- _ret ] -{inv'3 _ret.final}-
+            [ &node <- { node with current = _ret.final } ] s1)
+      | s1 = balance {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s2)
+      | s2 = bb26 ]
+    | bb26 = s0
+      [ s0 = {[@expl:type invariant] inv'8 node} s1
+      | s1 = -{resolve'0 node}- s2
+      | s2 = {[@expl:type invariant] inv'10 self} s3
+      | s3 = -{resolve'3 self}- s4
+      | s4 = [ &_0 <- r ] s5
+      | s5 = bb29 ]
+    | bb29 = return {_0} ]
     [ & _0: tuple'0 = Any.any_l ()
     | & self: MutBorrow.t t_Tree = self
     | & node: MutBorrow.t t_Node = Any.any_l ()
@@ -4525,22 +4502,22 @@ module M_red_black_tree__qyi3529752165842986389__delete_max_rec (* Tree<K, V> *)
     | & _16: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _19: MutBorrow.t t_Node = Any.any_l ()
+    | & _21: bool = Any.any_l ()
     | & node'0: t_Node = Any.any_l ()
-    | & _24: t_Option = Any.any_l ()
-    | & _25: MutBorrow.t t_Option = Any.any_l ()
+    | & _25: t_Option = Any.any_l ()
     | & _26: MutBorrow.t t_Option = Any.any_l ()
-    | & _30: bool = Any.any_l ()
-    | & _32: bool = Any.any_l ()
-    | & _34: t_Node = Any.any_l ()
-    | & _35: t_Option'1 = Any.any_l ()
+    | & _27: MutBorrow.t t_Option = Any.any_l ()
+    | & right: t_Node = Any.any_l ()
+    | & _31: t_Option = Any.any_l ()
+    | & _33: bool = Any.any_l ()
+    | & _35: MutBorrow.t t_Node = Any.any_l ()
+    | & _36: MutBorrow.t t_Node = Any.any_l ()
     | & _37: MutBorrow.t t_Node = Any.any_l ()
-    | & _38: MutBorrow.t t_Node = Any.any_l ()
-    | & _39: MutBorrow.t t_Node = Any.any_l ()
     | & r: tuple'0 = Any.any_l ()
-    | & _41: MutBorrow.t t_Tree = Any.any_l ()
-    | & _42: () = Any.any_l ()
-    | & _43: MutBorrow.t t_Node = Any.any_l () ])
-    [ return (result: tuple'0) -> {[@expl:delete_max_rec result type invariant] inv'14 result}
+    | & _39: MutBorrow.t t_Tree = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: MutBorrow.t t_Node = Any.any_l () ])
+    [ return (result: tuple'0) -> {[@expl:delete_max_rec result type invariant] inv'11 result}
       {[@expl:delete_max_rec ensures #0] internal_invariant'0 self.final}
       {[@expl:delete_max_rec ensures #1] height self.current = height self.final}
       {[@expl:delete_max_rec ensures #2] has_mapping self.current (deep_model result.f0'0) result.f1'0}
@@ -4676,42 +4653,95 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'9 self}
     any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 t_Node
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
-  predicate invariant''4 [@inline:trivial] (self: t_Option) = inv'2 self
+  meta "rewrite_def" predicate resolve'0
+  
+  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  meta "rewrite_def" predicate postcondition_once
+  
+  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  meta "rewrite_def" predicate postcondition_mut
+  
+  function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
+  
+  axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+  
+  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv
+  
+  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  
+  function hist_inv_refl (self: ()) : ()
+  
+  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  
+  function postcondition_mut_hist_inv (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
+  
+  axiom postcondition_mut_hist_inv_spec:
+    forall self: (), args: (), res_state: (), res: t_Option. postcondition_mut self args res_state res
+      -> hist_inv self res_state
+  
+  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
+  
+  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
+    let () = args in result = C_None /\ inv'2 result
+  
+  meta "rewrite_def" predicate postcondition
+  
+  function fn_once (self: ()) (args: ()) (res: t_Option) : ()
+  
+  axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
+      = (postcondition self args res /\ resolve'1 self)
+  
+  function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
+  
+  axiom fn_mut_spec: forall self: (), args: (), res_state: (), res: t_Option. postcondition_mut self args res_state res
+      = (postcondition self args res /\ self = res_state)
+  
+  let rec default (return (x: t_Option)) = any
+    [ return (result: t_Option) -> {inv'2 result} {result = C_None} (! return {result}) ]
+  
+  let rec take (dest: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'dest' type invariant] inv'5 dest}
+    any
+    [ return (result: t_Option) -> {inv'2 result}
+      {result = dest.current}
+      {postcondition () () dest.final}
+      (! return {result}) ]
+  
+  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'2
+  
+  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'10 [@inline:trivial] (_1: t_Option) = invariant''4 _1
+  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''4 _1
   
   meta "rewrite_def" predicate inv'10
   
-  predicate invariant''5 [@inline:trivial] (self: t_Node) = inv'4 self
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate invariant''5
+  meta "rewrite_def" predicate resolve'3
   
-  predicate inv'11 [@inline:trivial] (_1: t_Node) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'11
-  
-  predicate inv'12 (_1: t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'11 a_0
-        end
-  
-  let rec as_ref (self_: t_Option) (return (x: t_Option'1)) = {[@expl:as_ref 'self_' type invariant] inv'10 self_}
-    any
-    [ return (result: t_Option'1) -> {inv'12 result}
-      {self_ = C_None -> result = C_None'1}
-      {self_ = C_None \/ (exists r: t_Node. result = C_Some'1 r /\ self_ = C_Some r)}
-      (! return {result}) ]
-  
-  let rec unwrap'0 (self_: t_Option'1) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'12 self_}
-    {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return (result: t_Node) -> {inv'11 result} {C_Some'1 result = self_} (! return {result}) ]
+  let rec unwrap'0 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
+    {[@expl:unwrap requires] self_ <> C_None}
+    any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -4723,6 +4753,50 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> has_mapping left k v
       \/ has_mapping right k v \/ k = deep_model key /\ v = val'
       end
+  
+  predicate resolve'4 (_1: t_V)
+  
+  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
+  
+  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping self.t_Node__left k v
+    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
+  
+  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
+        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
+  
+  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
+  
+  predicate resolve'7 (_1: t_K)
+  
+  predicate resolve'8 (_1: t_Node)
+  
+  predicate resolve'9 (_1: t_Tree)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
+      = (resolve'6 x
+      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
+  
+  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
+  
+  meta "rewrite_def" predicate resolve'10
+  
+  predicate resolve'11 (_1: t_Option)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
+      = match x with
+        | C_None -> true
+        | C_Some x0 -> resolve'10 x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
+      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
+  
+  type tuple = { f0: t_K; f1: t_V }
+  
+  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
+    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
   type t_Ordering = C_Less | C_Equal | C_Greater
   
@@ -4839,7 +4913,9 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   function height'0 (self: t_Node) : int = match self.t_Node__color with
       | C_Red -> height self.t_Node__left
@@ -4848,13 +4924,6 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
   
   axiom height_spec'0: forall self: t_Node. forall node: t_Node. self = node
         -> height'0 self = height { t_Tree__node = C_Some node }
-  
-  predicate has_mapping'0 (self: t_Node) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping self.t_Node__left k v
-    \/ has_mapping self.t_Node__right k v \/ k = deep_model self.t_Node__key /\ v = self.t_Node__val
-  
-  axiom has_mapping_spec: forall self: t_Node, k: t_DeepModelTy, v: t_V. forall node: t_Node. self = node
-        -> has_mapping'0 self k v = has_mapping { t_Tree__node = C_Some node } k v
   
   let rec move_red_left (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
     {[@expl:move_red_left 'self' type invariant] inv'8 self}
@@ -4882,12 +4951,6 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       -> color_invariant'0 self.final}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  type tuple = { f0: t_K; f1: t_V }
-  
   predicate same_mappings (self: t_Node) (o: t_Node) =
     forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v = has_mapping'0 o k v
   
@@ -4914,135 +4977,18 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
       {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) self.current -> match_n (C_CPL (C_Red)) self.final}
       (! return {result}) ]
   
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'13 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
-  
-  meta "rewrite_def" predicate inv'13
-  
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'1
-  
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
-    let () = args in result = C_None /\ inv'2 result
-  
-  meta "rewrite_def" predicate postcondition_once
-  
-  predicate resolve'2 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
-    let () = args in result = C_None /\ inv'2 result
-  
-  meta "rewrite_def" predicate postcondition_mut
-  
-  function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
-  
-  axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
-  
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv
-  
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
-  
-  function hist_inv_refl (self: ()) : ()
-  
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
-  
-  function postcondition_mut_hist_inv (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
-  
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: (), res_state: (), res: t_Option. postcondition_mut self args res_state res
-      -> hist_inv self res_state
-  
-  function fn_hist_inv (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
-  
-  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
-    let () = args in result = C_None /\ inv'2 result
-  
-  meta "rewrite_def" predicate postcondition
-  
-  function fn_once (self: ()) (args: ()) (res: t_Option) : ()
-  
-  axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once self args res
-      = (postcondition self args res /\ resolve'2 self)
-  
-  function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
-  
-  axiom fn_mut_spec: forall self: (), args: (), res_state: (), res: t_Option. postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
-  
-  let rec default (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {inv'2 result} {result = C_None} (! return {result}) ]
-  
-  let rec take (dest: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'dest' type invariant] inv'5 dest}
-    any
-    [ return (result: t_Option) -> {inv'2 result}
-      {result = dest.current}
-      {postcondition () () dest.final}
-      (! return {result}) ]
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'3
-  
-  let rec unwrap'1 (self_: t_Option) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'2 self_}
-    {[@expl:unwrap requires] self_ <> C_None}
-    any [ return (result: t_Node) -> {inv'4 result} {C_Some result = self_} (! return {result}) ]
-  
-  predicate resolve'4 (_1: t_V)
-  
-  predicate resolve'5 (self: t_Tree) = forall k: t_DeepModelTy, v: t_V. has_mapping self k v -> resolve'4 v
-  
-  predicate resolve'6 (self: t_Node) = forall k: t_DeepModelTy, v: t_V. has_mapping'0 self k v -> resolve'4 v
-  
-  predicate resolve'7 (_1: t_K)
-  
-  predicate resolve'8 (_1: t_Node)
-  
-  predicate resolve'9 (_1: t_Tree)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Node [resolve'8 x]. resolve'8 x
-      = (resolve'6 x
-      /\ resolve'9 x.t_Node__left /\ resolve'7 x.t_Node__key /\ resolve'4 x.t_Node__val /\ resolve'9 x.t_Node__right)
-  
-  predicate resolve'10 [@inline:trivial] (_1: t_Node) = resolve'8 _1
-  
-  meta "rewrite_def" predicate resolve'10
-  
-  predicate resolve'11 (_1: t_Option)
-  
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'11 x]. resolve'11 x
-      = match x with
-        | C_None -> true
-        | C_Some x0 -> resolve'10 x0
-        end
-  
-  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
-      = (resolve'5 x /\ resolve'11 x.t_Tree__node)
-  
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'14 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  predicate inv'11 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
   
-  meta "rewrite_def" predicate inv'14
+  meta "rewrite_def" predicate inv'11
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec delete_min_rec (self: MutBorrow.t t_Tree) (return (x: tuple)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv'13 self}
+    {[@expl:delete_min_rec 'self' type invariant] inv'10 self}
     {[@expl:delete_min_rec requires #0] internal_invariant'0 self.current}
     {[@expl:delete_min_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
@@ -5067,89 +5013,90 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv'6 _13} s1
       | s1 = -{resolve _13}- s2
-      | s2 = any
-        [ br0 -> {node.current.t_Node__left.t_Tree__node = C_None} (! bb4)
-        | br1 (x0: t_Node) -> {node.current.t_Node__left.t_Tree__node = C_Some x0} (! bb10) ] ]
-    | bb10 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_26 <- _ret ] s1) | s1 = bb11 ]
-    | bb11 = any [ br0 -> {_26 = false} (! bb13) | br1 -> {_26} (! bb21) ]
+      | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s3)
+      | s3 = bb4 ]
+    | bb4 = any [ br0 -> {_17 = false} (! bb6) | br1 -> {_17} (! bb19) ]
+    | bb6 = s0
+      [ s0 = [ &_27 <- node.current.t_Node__left.t_Tree__node ] s1
+      | s1 = any [ br0 -> {_27 = C_None} (! bb13) | br1 (x0: t_Node) -> {_27 = C_Some x0} (! bb12) ] ]
     | bb13 = s0
-      [ s0 = as_ref {node.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'1) -> [ &_31 <- _ret ] s1)
-      | s1 = bb14 ]
-    | bb14 = s0 [ s0 = unwrap'0 {_31} (fun (_ret: t_Node) -> [ &_30 <- _ret ] s1) | s1 = bb15 ]
-    | bb15 = s0 [ s0 = is_red {_30.t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = any [ br0 -> {_28 = false} (! bb18) | br1 -> {_28} (! bb21) ]
-    | bb18 = s0
-      [ s0 = {inv'3 node.current}
-        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_35 <- _ret ] -{inv'3 _ret.final}-
-            [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = move_red_left {_35} (fun (_ret: MutBorrow.t t_Node) -> [ &_34 <- _ret ] s2)
-      | s2 = bb19 ]
-    | bb19 = s0
-      [ s0 = {inv'3 _34.current}
-        MutBorrow.borrow_final <t_Node> {_34.current} {MutBorrow.get_id _34}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_33 <- _ret ] -{inv'3 _ret.final}-
-            [ &_34 <- { _34 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv'8 node} s2
-      | s2 = -{resolve'0 node}- s3
-      | s3 = [ &node <- _33 ] s4
-      | s4 = {[@expl:type invariant] inv'8 _34} s5
-      | s5 = -{resolve'0 _34}- s6
-      | s6 = bb21 ]
-    | bb21 = s0
-      [ s0 = {inv'1 node.current.t_Node__left}
-        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
-          (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_37 <- _ret ] -{inv'1 _ret.final}-
-            [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
-      | s1 = delete_min_rec {_37} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
-      | s2 = bb22 ]
-    | bb22 = s0
-      [ s0 = {inv'3 node.current}
-        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
-          (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_39 <- _ret ] -{inv'3 _ret.final}-
-            [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = balance {_39} (fun (_ret: ()) -> [ &_38 <- _ret ] s2)
-      | s2 = bb23 ]
-    | bb23 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'0 node}- s2
-      | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'1 self}- s4
-      | s4 = [ &_0 <- r ] s5
-      | s5 = bb26 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv'2 self.current.t_Tree__node}
+      | s2 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_22 <- _ret ] -{inv'2 _ret.final}-
-            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
-      | s1 = {inv'2 _22.current}
-        MutBorrow.borrow_final <t_Option> {_22.current} {MutBorrow.get_id _22}
+            [ &_23 <- _ret ] -{inv'2 _ret.final}-
+            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s3)
+      | s3 = {inv'2 _23.current}
+        MutBorrow.borrow_final <t_Option> {_23.current} {MutBorrow.get_id _23}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_21 <- _ret ] -{inv'2 _ret.final}-
-            [ &_22 <- { _22 with current = _ret.final } ] s2)
-      | s2 = take {_21} (fun (_ret: t_Option) -> [ &_20 <- _ret ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _22} s1
-      | s1 = -{resolve'3 _22}- s2
-      | s2 = {[@expl:type invariant] inv'13 self} s3
-      | s3 = -{resolve'1 self}- s4
-      | s4 = unwrap'1 {_20} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
+            [ &_22 <- _ret ] -{inv'2 _ret.final}-
+            [ &_23 <- { _23 with current = _ret.final } ] s4)
+      | s4 = take {_22} (fun (_ret: t_Option) -> [ &_21 <- _ret ] s5)
       | s5 = bb7 ]
     | bb7 = s0
+      [ s0 = {[@expl:type invariant] inv'5 _23} s1
+      | s1 = -{resolve'2 _23}- s2
+      | s2 = {[@expl:type invariant] inv'10 self} s3
+      | s3 = -{resolve'3 self}- s4
+      | s4 = unwrap'0 {_21} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
+      | s5 = bb8 ]
+    | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
       | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
       | s3 = -{resolve'9 node'0.t_Node__left}- s4
       | s4 = [ &_0 <- { f0 = node'0.t_Node__key; f1 = node'0.t_Node__val } ] s5
-      | s5 = bb26 ]
-    | bb26 = return {_0} ]
+      | s5 = bb24 ]
+    | bb12 = s0
+      [ s0 = v_Some {_27} (fun (r0: t_Node) -> [ &left <- r0 ] s1)
+      | s1 = is_red {left.t_Node__left} (fun (_ret: bool) -> [ &_29 <- _ret ] s2)
+      | s2 = bb14 ]
+    | bb14 = any [ br0 -> {_29 = false} (! bb16) | br1 -> {_29} (! bb19) ]
+    | bb16 = s0
+      [ s0 = {inv'3 node.current}
+        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_33 <- _ret ] -{inv'3 _ret.final}-
+            [ &node <- { node with current = _ret.final } ] s1)
+      | s1 = move_red_left {_33} (fun (_ret: MutBorrow.t t_Node) -> [ &_32 <- _ret ] s2)
+      | s2 = bb17 ]
+    | bb17 = s0
+      [ s0 = {inv'3 _32.current}
+        MutBorrow.borrow_final <t_Node> {_32.current} {MutBorrow.get_id _32}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_31 <- _ret ] -{inv'3 _ret.final}-
+            [ &_32 <- { _32 with current = _ret.final } ] s1)
+      | s1 = {[@expl:type invariant] inv'8 node} s2
+      | s2 = -{resolve'0 node}- s3
+      | s3 = [ &node <- _31 ] s4
+      | s4 = {[@expl:type invariant] inv'8 _32} s5
+      | s5 = -{resolve'0 _32}- s6
+      | s6 = bb19 ]
+    | bb19 = s0
+      [ s0 = {inv'1 node.current.t_Node__left}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
+          (fun (_ret: MutBorrow.t t_Tree) ->
+            [ &_35 <- _ret ] -{inv'1 _ret.final}-
+            [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
+      | s1 = delete_min_rec {_35} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
+      | s2 = bb20 ]
+    | bb20 = s0
+      [ s0 = {inv'3 node.current}
+        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_37 <- _ret ] -{inv'3 _ret.final}-
+            [ &node <- { node with current = _ret.final } ] s1)
+      | s1 = balance {_37} (fun (_ret: ()) -> [ &_36 <- _ret ] s2)
+      | s2 = bb21 ]
+    | bb21 = s0
+      [ s0 = {[@expl:type invariant] inv'8 node} s1
+      | s1 = -{resolve'0 node}- s2
+      | s2 = {[@expl:type invariant] inv'10 self} s3
+      | s3 = -{resolve'3 self}- s4
+      | s4 = [ &_0 <- r ] s5
+      | s5 = bb24 ]
+    | bb24 = return {_0} ]
     [ & _0: tuple = Any.any_l ()
     | & self: MutBorrow.t t_Tree = self
     | & node: MutBorrow.t t_Node = Any.any_l ()
@@ -5157,22 +5104,22 @@ module M_red_black_tree__qyi3529752165842986389__delete_min_rec (* Tree<K, V> *)
     | & _13: MutBorrow.t t_Node = Any.any_l ()
     | & _14: t_Option'0 = Any.any_l ()
     | & _15: MutBorrow.t t_Option = Any.any_l ()
+    | & _17: bool = Any.any_l ()
     | & node'0: t_Node = Any.any_l ()
-    | & _20: t_Option = Any.any_l ()
-    | & _21: MutBorrow.t t_Option = Any.any_l ()
+    | & _21: t_Option = Any.any_l ()
     | & _22: MutBorrow.t t_Option = Any.any_l ()
-    | & _26: bool = Any.any_l ()
-    | & _28: bool = Any.any_l ()
-    | & _30: t_Node = Any.any_l ()
-    | & _31: t_Option'1 = Any.any_l ()
+    | & _23: MutBorrow.t t_Option = Any.any_l ()
+    | & left: t_Node = Any.any_l ()
+    | & _27: t_Option = Any.any_l ()
+    | & _29: bool = Any.any_l ()
+    | & _31: MutBorrow.t t_Node = Any.any_l ()
+    | & _32: MutBorrow.t t_Node = Any.any_l ()
     | & _33: MutBorrow.t t_Node = Any.any_l ()
-    | & _34: MutBorrow.t t_Node = Any.any_l ()
-    | & _35: MutBorrow.t t_Node = Any.any_l ()
     | & r: tuple = Any.any_l ()
-    | & _37: MutBorrow.t t_Tree = Any.any_l ()
-    | & _38: () = Any.any_l ()
-    | & _39: MutBorrow.t t_Node = Any.any_l () ])
-    [ return (result: tuple) -> {[@expl:delete_min_rec result type invariant] inv'14 result}
+    | & _35: MutBorrow.t t_Tree = Any.any_l ()
+    | & _36: () = Any.any_l ()
+    | & _37: MutBorrow.t t_Node = Any.any_l () ])
+    [ return (result: tuple) -> {[@expl:delete_min_rec result type invariant] inv'11 result}
       {[@expl:delete_min_rec ensures #0] internal_invariant'0 self.final}
       {[@expl:delete_min_rec ensures #1] height self.current = height self.final}
       {[@expl:delete_min_rec ensures #2] has_mapping self.current (deep_model result.f0) result.f1}
@@ -5473,29 +5420,180 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   type t_Option'1 = C_None'1 | C_Some'1 tuple'1
   
-  predicate invariant''5 [@inline:trivial] (self: t_Option) = inv'2 self
-  
-  meta "rewrite_def" predicate invariant''5
-  
-  predicate inv'11 [@inline:trivial] (_1: t_Option) = invariant''5 _1
-  
-  meta "rewrite_def" predicate inv'11
-  
-  let rec is_none (self_: t_Option) (return (x: bool)) = {[@expl:is_none 'self_' type invariant] inv'11 self_}
-    any [ return (result: bool) -> {result = (self_ = C_None)} (! return {result}) ]
-  
   predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
+  
+  predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
+  
+  meta "rewrite_def" predicate invariant''5
+  
+  predicate inv'11 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
+  
+  meta "rewrite_def" predicate inv'11
+  
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'1
+  
+  type t_Option'2 = C_None'2 | C_Some'2 t_Node
+  
+  predicate invariant''6 [@inline:trivial] (self: t_Option) = inv'2 self
+  
+  meta "rewrite_def" predicate invariant''6
+  
+  predicate inv'12 [@inline:trivial] (_1: t_Option) = invariant''6 _1
+  
+  meta "rewrite_def" predicate inv'12
+  
+  predicate invariant''7 [@inline:trivial] (self: t_Node) = inv'4 self
+  
+  meta "rewrite_def" predicate invariant''7
+  
+  predicate inv'13 [@inline:trivial] (_1: t_Node) = invariant''7 _1
+  
+  meta "rewrite_def" predicate inv'13
+  
+  predicate inv'14 (_1: t_Option'2)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
+      = match x with
+        | C_None'2 -> true
+        | C_Some'2 a_0 -> inv'13 a_0
+        end
+  
+  let rec as_ref (self_: t_Option) (return (x: t_Option'2)) = {[@expl:as_ref 'self_' type invariant] inv'12 self_}
+    any
+    [ return (result: t_Option'2) -> {inv'14 result}
+      {self_ = C_None -> result = C_None'2}
+      {self_ = C_None \/ (exists r: t_Node. result = C_Some'2 r /\ self_ = C_Some r)}
+      (! return {result}) ]
+  
+  type t_Option'3 = C_None'3 | C_Some'3 ()
+  
+  type t_ControlFlow = C_Continue t_Node | C_Break t_Option'3
+  
+  predicate inv'15 [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv'15
+  
+  predicate inv'16 (_1: t_Option'3)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'3 [inv'16 x]. inv'16 x
+      = match x with
+        | C_None'3 -> true
+        | C_Some'3 a_0 -> inv'15 a_0
+        end
+  
+  predicate inv'17 (_1: t_ControlFlow)
+  
+  axiom inv_axiom'5 [@rewrite]: forall x: t_ControlFlow [inv'17 x]. inv'17 x
+      = match x with
+        | C_Continue a_0 -> inv'13 a_0
+        | C_Break a_0 -> inv'16 a_0
+        end
+  
+  let rec branch (self_: t_Option'2) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'14 self_}
+    any
+    [ return (result: t_ControlFlow) -> {inv'17 result}
+      {match self_ with
+        | C_Some'2 v -> result = C_Continue v
+        | C_None'2 -> result = C_Break (C_None'3)
+        end}
+      (! return {result}) ]
+  
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option'3)) = any
+    [ good (field_0: t_Option'3) -> {C_Break field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Option'3 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
+  
+  predicate inv'18 [@inline:trivial] (_1: tuple'1) = inv _1.f0'1 /\ inv'0 _1.f1'1
+  
+  meta "rewrite_def" predicate inv'18
+  
+  predicate inv'19 (_1: t_Option'1)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'1 [inv'19 x]. inv'19 x
+      = match x with
+        | C_None'1 -> true
+        | C_Some'1 a_0 -> inv'18 a_0
+        end
+  
+  let rec from_residual (residual: t_Option'3) (return (x: t_Option'1)) =
+    {[@expl:from_residual 'residual' type invariant] inv'16 residual}
+    any [ return (result: t_Option'1) -> {inv'19 result} {result = C_None'1} (! return {result}) ]
+  
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: t_Node)) = any
+    [ good (field_0: t_Node) -> {C_Continue field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Node [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input} (! {false} any) ]
+  
+  type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
+  
+  predicate color_invariant_here (self: t_Node) =
+    color self.t_Node__right = C_Black /\ (self.t_Node__color = C_Black \/ color self.t_Node__left = C_Black)
+  
+  predicate color_invariant (self: t_Tree) =
+    match self with
+      | {t_Tree__node = C_None} -> true
+      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
+      /\ color_invariant left /\ color_invariant right
+      end
+  
+  predicate color_invariant'0 (self: t_Node) =
+    color_invariant_here self /\ color_invariant self.t_Node__left /\ color_invariant self.t_Node__right
+  
+  predicate match_t (self: t_CP) (tree: t_Tree) =
+    match self with
+      | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
+      | C_CPN color'0 l r -> match tree.t_Tree__node with
+        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+        | C_None -> false
+        end
+      end
+  
+  predicate match_n (self: t_CP) (node: t_Node) =
+    match self with
+      | C_CPL color'0 -> node.t_Node__color = color'0 /\ color_invariant'0 node
+      | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
+      end
+  
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
+  
+  let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
+    {[@expl:move_red_right 'self' type invariant] inv'8 self}
+    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
+    {[@expl:move_red_right requires #1] internal_invariant self.current}
+    {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
+    any
+    [ return (result: MutBorrow.t t_Node) -> {inv'8 result}
+      {internal_invariant result.current}
+      {internal_invariant result.final
+        /\ height'0 result.current = height'0 result.final
+        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
+      -> internal_invariant self.final}
+      {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
+      {result.current.t_Node__key = self.current.t_Node__key}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
+        -> has_mapping'0 result.current k v}
+      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
+        = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
+      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
+      \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
+      {color_invariant'0 result.final
+        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
+      -> color_invariant'0 self.final}
+      (! return {result}) ]
   
   predicate postcondition_once'0 [@inline:trivial] (self: ()) (args: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
   
   meta "rewrite_def" predicate postcondition_once'0
   
-  predicate resolve'1 [@inline:trivial] (_1: ()) = true
+  predicate resolve'2 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve'2
   
   predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option) =
     let () = args in result = C_None /\ inv'2 result
@@ -5505,7 +5603,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   function fn_mut_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_mut_once_spec: forall self: (), args: (), res: t_Option. postcondition_once'0 self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'1 res_state)
+      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'2 res_state)
   
   predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
   
@@ -5537,7 +5635,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   function fn_once (self: ()) (args: ()) (res: t_Option) : ()
   
   axiom fn_once_spec: forall self: (), args: (), res: t_Option. postcondition_once'0 self args res
-      = (postcondition self args res /\ resolve'1 self)
+      = (postcondition self args res /\ resolve'2 self)
   
   function fn_mut (self: ()) (args: ()) (res_state: ()) (res: t_Option) : ()
   
@@ -5554,19 +5652,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {postcondition () () dest.final}
       (! return {result}) ]
   
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'2
-  
-  predicate invariant''6 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
-  
-  meta "rewrite_def" predicate invariant''6
-  
-  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''6 _1
-  
-  meta "rewrite_def" predicate inv'12
-  
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'3
   
@@ -5605,106 +5691,19 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree [resolve'9 x]. resolve'9 x
       = (resolve'5 x /\ resolve'11 x.t_Tree__node)
   
-  type t_Option'2 = C_None'2 | C_Some'2 t_Node
-  
-  predicate invariant''7 [@inline:trivial] (self: t_Node) = inv'4 self
-  
-  meta "rewrite_def" predicate invariant''7
-  
-  predicate inv'13 [@inline:trivial] (_1: t_Node) = invariant''7 _1
-  
-  meta "rewrite_def" predicate inv'13
-  
-  predicate inv'14 (_1: t_Option'2)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
-      = match x with
-        | C_None'2 -> true
-        | C_Some'2 a_0 -> inv'13 a_0
-        end
-  
-  let rec as_ref (self_: t_Option) (return (x: t_Option'2)) = {[@expl:as_ref 'self_' type invariant] inv'11 self_}
-    any
-    [ return (result: t_Option'2) -> {inv'14 result}
-      {self_ = C_None -> result = C_None'2}
-      {self_ = C_None \/ (exists r: t_Node. result = C_Some'2 r /\ self_ = C_Some r)}
-      (! return {result}) ]
-  
-  let rec unwrap'1 (self_: t_Option'2) (return (x: t_Node)) = {[@expl:unwrap 'self_' type invariant] inv'14 self_}
-    {[@expl:unwrap requires] self_ <> C_None'2}
-    any [ return (result: t_Node) -> {inv'13 result} {C_Some'2 result = self_} (! return {result}) ]
-  
-  type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
-  
-  predicate color_invariant_here (self: t_Node) =
-    color self.t_Node__right = C_Black /\ (self.t_Node__color = C_Black \/ color self.t_Node__left = C_Black)
-  
-  predicate color_invariant (self: t_Tree) =
-    match self with
-      | {t_Tree__node = C_None} -> true
-      | {t_Tree__node = C_Some ({t_Node__left = left; t_Node__right = right} as node)} -> color_invariant_here node
-      /\ color_invariant left /\ color_invariant right
-      end
-  
-  predicate color_invariant'0 (self: t_Node) =
-    color_invariant_here self /\ color_invariant self.t_Node__left /\ color_invariant self.t_Node__right
-  
-  predicate match_t (self: t_CP) (tree: t_Tree) =
-    match self with
-      | C_CPL color'0 -> color tree = color'0 /\ color_invariant tree
-      | C_CPN color'0 l r -> match tree.t_Tree__node with
-        | C_Some node -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
-        | C_None -> false
-        end
-      end
-  
-  predicate match_n (self: t_CP) (node: t_Node) =
-    match self with
-      | C_CPL color'0 -> node.t_Node__color = color'0 /\ color_invariant'0 node
-      | C_CPN color'0 l r -> node.t_Node__color = color'0 /\ match_t l node.t_Node__left /\ match_t r node.t_Node__right
-      end
-  
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
-  
-  let rec move_red_right (self: MutBorrow.t t_Node) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:move_red_right 'self' type invariant] inv'8 self}
-    {[@expl:move_red_right requires #0] self.current.t_Node__left.t_Tree__node <> C_None}
-    {[@expl:move_red_right requires #1] internal_invariant self.current}
-    {[@expl:move_red_right requires #2] match_n (cpn (C_Red) (C_CPL (C_Black)) (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Black)))) self.current}
-    any
-    [ return (result: MutBorrow.t t_Node) -> {inv'8 result}
-      {internal_invariant result.current}
-      {internal_invariant result.final
-        /\ height'0 result.current = height'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.final k v -> has_mapping'0 result.current k v)
-      -> internal_invariant self.final}
-      {height'0 result.current = height'0 result.final -> height'0 self.current = height'0 self.final}
-      {result.current.t_Node__key = self.current.t_Node__key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 result.current k v -> has_mapping'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.current k v /\ le_log (deep_model self.current.t_Node__key) k
-        -> has_mapping'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping'0 self.final k v
-        = (has_mapping'0 result.final k v \/ has_mapping'0 self.current k v /\ not has_mapping'0 result.current k v)}
-      {match_n (cpn (C_Black) (C_CPL (C_Black)) (C_CPL (C_Red))) result.current
-      \/ match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) result.current}
-      {color_invariant'0 result.final
-        /\ (color result.current.t_Node__left = C_Black -> result.final.t_Node__color = C_Black)
-      -> color_invariant'0 self.final}
-      (! return {result}) ]
+  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
+    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
   predicate internal_invariant'0 (self: t_Tree) = bst_invariant self /\ height_invariant self
   
-  predicate inv'15 [@inline:trivial] (_1: tuple'1) = inv _1.f0'1 /\ inv'0 _1.f1'1
-  
-  meta "rewrite_def" predicate inv'15
-  
   let rec delete_min_rec (self: MutBorrow.t t_Tree) (return (x: tuple'1)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv'12 self}
+    {[@expl:delete_min_rec 'self' type invariant] inv'11 self}
     {[@expl:delete_min_rec requires #0] internal_invariant'0 self.current}
     {[@expl:delete_min_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     any
-    [ return (result: tuple'1) -> {inv'15 result}
+    [ return (result: tuple'1) -> {inv'18 result}
       {internal_invariant'0 self.final}
       {height self.current = height self.final}
       {has_mapping self.current (deep_model result.f0'1) result.f1'1}
@@ -5715,42 +5714,42 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {color self.current = C_Black -> color self.final = C_Black}
       (! return {result}) ]
   
-  type t_Option'3 = C_None'3 | C_Some'3 t_V
+  type t_Option'4 = C_None'4 | C_Some'4 t_V
   
-  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) : Map.map t_DeepModelTy t_Option'3 =
+  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'4) : Map.map t_DeepModelTy t_Option'4 =
     match self with
       | {t_Tree__node = C_None} -> accu
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in model_acc right accu2
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'4 val') in model_acc right accu2
       end
   
-  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'3 = model_acc self (Const.const (C_None'3))
+  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'4 = model_acc self (Const.const (C_None'4))
   
-  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) (k: t_DeepModelTy) : () =
+  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'4) (k: t_DeepModelTy) : () =
     match self with
       | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in model_acc_has_mapping right accu2 k
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'4 val') in model_acc_has_mapping right accu2 k
       end
   
   axiom model_acc_has_mapping_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'3, k: t_DeepModelTy. Map.get (model_acc self accu) k
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'4, k: t_DeepModelTy. Map.get (model_acc self accu) k
         = Map.get accu k
-      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'3 v /\ has_mapping self k v)
+      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'4 v /\ has_mapping self k v)
   
-  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) (k: t_DeepModelTy) : () =
+  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'4) (k: t_DeepModelTy) : () =
     match self with
       | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'4 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
       end
   
   axiom has_mapping_model_acc_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'3, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'3 v)
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'4, k: t_DeepModelTy. bst_invariant self
+      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'4 v)
   
   function has_mapping_model (self: t_Tree) (k: t_DeepModelTy) : () =
-    let _ = model_acc_has_mapping self (Const.const (C_None'3)) k in has_mapping_model_acc self (Const.const (C_None'3)) k
+    let _ = model_acc_has_mapping self (Const.const (C_None'4)) k in has_mapping_model_acc self (Const.const (C_None'4)) k
   
   axiom has_mapping_model_spec: forall self: t_Tree, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'3 v))
+      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'4 v))
   
   function has_mapping_inj (self: t_Tree) (k: t_DeepModelTy) (v1: t_V) (v2: t_V) : () = has_mapping_model self k
   
@@ -5761,12 +5760,12 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''8
   
-  predicate inv'16 [@inline:trivial] (_1: MutBorrow.t t_K) = invariant''8 _1
+  predicate inv'20 [@inline:trivial] (_1: MutBorrow.t t_K) = invariant''8 _1
   
-  meta "rewrite_def" predicate inv'16
+  meta "rewrite_def" predicate inv'20
   
-  let rec swap (x: MutBorrow.t t_K) (y: MutBorrow.t t_K) (return (x'0: ())) = {[@expl:swap 'x' type invariant] inv'16 x}
-    {[@expl:swap 'y' type invariant] inv'16 y}
+  let rec swap (x: MutBorrow.t t_K) (y: MutBorrow.t t_K) (return (x'0: ())) = {[@expl:swap 'x' type invariant] inv'20 x}
+    {[@expl:swap 'y' type invariant] inv'20 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
   predicate resolve'12 [@inline:trivial] (_1: MutBorrow.t t_K) = _1.final = _1.current
@@ -5777,13 +5776,13 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate invariant''9
   
-  predicate inv'17 [@inline:trivial] (_1: MutBorrow.t t_V) = invariant''9 _1
+  predicate inv'21 [@inline:trivial] (_1: MutBorrow.t t_V) = invariant''9 _1
   
-  meta "rewrite_def" predicate inv'17
+  meta "rewrite_def" predicate inv'21
   
   let rec swap'0 (x: MutBorrow.t t_V) (y: MutBorrow.t t_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv'17 x}
-    {[@expl:swap 'y' type invariant] inv'17 y}
+    {[@expl:swap 'x' type invariant] inv'21 x}
+    {[@expl:swap 'y' type invariant] inv'21 y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
   predicate resolve'13 [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
@@ -5839,14 +5838,6 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {match_n (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Red))) self.current -> match_n (C_CPL (C_Red)) self.final}
       (! return {result}) ]
   
-  predicate inv'18 (_1: t_Option'1)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'1 [inv'18 x]. inv'18 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'15 a_0
-        end
-  
   function deep_model'0 [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model self
   
   meta "rewrite_def" function deep_model'0
@@ -5856,7 +5847,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
   meta "select_lsinst" "all"
   
   let rec delete_rec (self: MutBorrow.t t_Tree) (key: t_K) (return (x: t_Option'1)) =
-    {[@expl:delete_rec 'self' type invariant] inv'12 self}
+    {[@expl:delete_rec 'self' type invariant] inv'11 self}
     {[@expl:delete_rec 'key' type invariant] inv'9 key}
     {[@expl:delete_rec requires #0] internal_invariant'0 self.current}
     {[@expl:delete_rec requires #1] match_t (C_CPL (C_Red)) self.current
@@ -5866,311 +5857,350 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       [ s0 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_mut <t_Option> {self.current.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_16 <- _ret ] -{inv'2 _ret.final}-
+            [ &_15 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
-      | s1 = as_mut {_16} (fun (_ret: t_Option'0) -> [ &_15 <- _ret ] s2)
+      | s1 = as_mut {_15} (fun (_ret: t_Option'0) -> [ &_14 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = unwrap {_15} (fun (_ret: MutBorrow.t t_Node) -> [ &_14 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = unwrap {_14} (fun (_ret: MutBorrow.t t_Node) -> [ &_13 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = {inv'4 _14.current}
-        MutBorrow.borrow_final <t_Node> {_14.current} {MutBorrow.get_id _14}
+      [ s0 = {inv'4 _13.current}
+        MutBorrow.borrow_final <t_Node> {_13.current} {MutBorrow.get_id _13}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_13 <- _ret ] -{inv'4 _ret.final}-
-            [ &_14 <- { _14 with current = _ret.final } ] s1)
-      | s1 = as_mut'0 {_13} (fun (_ret: MutBorrow.t t_Node) -> [ &node <- _ret ] s2)
+            [ &_12 <- _ret ] -{inv'4 _ret.final}-
+            [ &_13 <- { _13 with current = _ret.final } ] s1)
+      | s1 = as_mut'0 {_12} (fun (_ret: MutBorrow.t t_Node) -> [ &node <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'6 _14} s1
-      | s1 = -{resolve _14}- s2
-      | s2 = [ &_21 <- node.current.t_Node__key ] s3
-      | s3 = cmp {key} {_21} (fun (_ret: t_Ordering) -> [ &_18 <- _ret ] s4)
+      [ s0 = {[@expl:type invariant] inv'6 _13} s1
+      | s1 = -{resolve _13}- s2
+      | s2 = [ &_20 <- node.current.t_Node__key ] s3
+      | s3 = cmp {key} {_20} (fun (_ret: t_Ordering) -> [ &_17 <- _ret ] s4)
       | s4 = bb4 ]
-    | bb4 = any [ br0 -> {_18 = C_Less} (! bb7) | br1 -> {_18 = C_Equal} (! bb5) | br2 -> {_18 = C_Greater} (! bb5) ]
-    | bb5 = s0
-      [ s0 = [ &ord <- _18 ] s1
-      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_42 <- _ret ] s2)
-      | s2 = bb26 ]
-    | bb26 = any [ br0 -> {_42 = false} (! bb33) | br1 -> {_42} (! bb27) ]
-    | bb27 = s0
+    | bb4 = any [ br0 -> {_17 = C_Less} (! bb13) | br1 -> {_17 = C_Equal} (! bb12) | br2 -> {_17 = C_Greater} (! bb12) ]
+    | bb12 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_43 <- _ret ] s1) | s1 = bb31 ]
+    | bb31 = any [ br0 -> {_43 = false} (! bb7) | br1 -> {_43} (! bb32) ]
+    | bb32 = s0
       [ s0 = {inv'3 node.current}
         MutBorrow.borrow_mut <t_Node> {node.current}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_45 <- _ret ] -{inv'3 _ret.final}-
+            [ &_46 <- _ret ] -{inv'3 _ret.final}-
             [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = rotate_right {_45} (fun (_ret: ()) -> [ &_44 <- _ret ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0
+      | s1 = rotate_right {_46} (fun (_ret: ()) -> [ &_45 <- _ret ] s2)
+      | s2 = bb34 ]
+    | bb34 = s0
       [ s0 = {inv'1 node.current.t_Node__right}
         MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
             [ &_47 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
-      | s1 = delete_rec {_47} {key} (fun (_ret: t_Option'1) -> [ &_46 <- _ret ] s2)
-      | s2 = bb30 ]
-    | bb30 = s0 [ s0 = [ &r <- _46 ] s1 | s1 = bb69 ]
-    | bb33 = s0
-      [ s0 = is_none {node.current.t_Node__right.t_Tree__node} (fun (_ret: bool) -> [ &_50 <- _ret ] s1) | s1 = bb34 ]
-    | bb34 = any [ br0 -> {_50 = false} (! bb44) | br1 -> {_50} (! bb35) ]
-    | bb35 = s0
+      | s1 = delete_rec {_47} {key} (fun (_ret: t_Option'1) -> [ &r <- _ret ] s2)
+      | s2 = bb68 ]
+    | bb7 = any [ br0 -> {_17 = C_Less} (! bb8) | br1 -> {_17 = C_Equal} (! bb11) | br2 -> {_17 = C_Greater} (! bb10) ]
+    | bb8 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'0 node}- s2
-      | s2 = any
-        [ br0 -> {ord = C_Less} (! bb38) | br1 -> {ord = C_Equal} (! bb38) | br2 -> {ord = C_Greater} (! bb36) ] ]
-    | bb38 = s0
-      [ s0 = {inv'2 self.current.t_Tree__node}
+      | s2 = {[@expl:type invariant] inv'11 self} s3
+      | s3 = -{resolve'1 self}- s4
+      | s4 = {false} any ]
+    | bb10 = s0
+      [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_86 <- _ret ] s1)
+      | s1 = bb55 ]
+    | bb55 = s0 [ s0 = branch {_86} (fun (_ret: t_ControlFlow) -> [ &_85 <- _ret ] s1) | s1 = bb56 ]
+    | bb56 = any
+      [ br0 (x0: t_Node) -> {_85 = C_Continue x0} (! bb59) | br1 (x0: t_Option'3) -> {_85 = C_Break x0} (! bb58) ]
+    | bb58 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb60 ]
+    | bb60 = s0
+      [ s0 = v_Break {_85} (fun (r0: t_Option'3) -> [ &residual'0 <- r0 ] s1)
+      | s1 = {[@expl:type invariant] inv'11 self} s2
+      | s2 = -{resolve'1 self}- s3
+      | s3 = from_residual {residual'0} (fun (_ret: t_Option'1) -> [ &_0 <- _ret ] s4)
+      | s4 = bb73 ]
+    | bb59 = s0
+      [ s0 = v_Continue {_85} (fun (r0: t_Node) -> [ &val''0 <- r0 ] s1)
+      | s1 = [ &_84 <- val''0 ] s2
+      | s2 = is_red {_84.t_Node__left} (fun (_ret: bool) -> [ &_82 <- _ret ] s3)
+      | s3 = bb62 ]
+    | bb62 = any [ br0 -> {_82 = false} (! bb64) | br1 -> {_82} (! bb66) ]
+    | bb64 = s0
+      [ s0 = {inv'3 node.current}
+        MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_95 <- _ret ] -{inv'3 _ret.final}-
+            [ &node <- { node with current = _ret.final } ] s1)
+      | s1 = move_red_right {_95} (fun (_ret: MutBorrow.t t_Node) -> [ &_94 <- _ret ] s2)
+      | s2 = bb65 ]
+    | bb65 = s0
+      [ s0 = {inv'3 _94.current}
+        MutBorrow.borrow_final <t_Node> {_94.current} {MutBorrow.get_id _94}
+          (fun (_ret: MutBorrow.t t_Node) ->
+            [ &_93 <- _ret ] -{inv'3 _ret.final}-
+            [ &_94 <- { _94 with current = _ret.final } ] s1)
+      | s1 = {[@expl:type invariant] inv'8 node} s2
+      | s2 = -{resolve'0 node}- s3
+      | s3 = [ &node <- _93 ] s4
+      | s4 = {[@expl:type invariant] inv'8 _94} s5
+      | s5 = -{resolve'0 _94}- s6
+      | s6 = bb66 ]
+    | bb66 = s0
+      [ s0 = {inv'1 node.current.t_Node__right}
+        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
+          (fun (_ret: MutBorrow.t t_Tree) ->
+            [ &_96 <- _ret ] -{inv'1 _ret.final}-
+            [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
+      | s1 = delete_rec {_96} {key} (fun (_ret: t_Option'1) -> [ &r <- _ret ] s2)
+      | s2 = bb68 ]
+    | bb11 = s0
+      [ s0 = [ &_58 <- node.current.t_Node__right.t_Tree__node ] s1
+      | s1 = any [ br0 -> {_58 = C_None} (! bb43) | br1 (x0: t_Node) -> {_58 = C_Some x0} (! bb42) ] ]
+    | bb43 = s0
+      [ s0 = {[@expl:type invariant] inv'8 node} s1
+      | s1 = -{resolve'0 node}- s2
+      | s2 = {inv'2 self.current.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Tree__node} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_59 <- _ret ] -{inv'2 _ret.final}-
-            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s1)
-      | s1 = {inv'2 _59.current}
-        MutBorrow.borrow_final <t_Option> {_59.current} {MutBorrow.get_id _59}
+            [ &_53 <- _ret ] -{inv'2 _ret.final}-
+            [ &self <- { self with current = { t_Tree__node = _ret.final } } ] s3)
+      | s3 = {inv'2 _53.current}
+        MutBorrow.borrow_final <t_Option> {_53.current} {MutBorrow.get_id _53}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_58 <- _ret ] -{inv'2 _ret.final}-
-            [ &_59 <- { _59 with current = _ret.final } ] s2)
-      | s2 = take {_58} (fun (_ret: t_Option) -> [ &_57 <- _ret ] s3)
-      | s3 = bb39 ]
-    | bb39 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _59} s1
-      | s1 = -{resolve'2 _59}- s2
-      | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'3 self}- s4
-      | s4 = unwrap'0 {_57} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
-      | s5 = bb40 ]
-    | bb40 = s0
+            [ &_52 <- _ret ] -{inv'2 _ret.final}-
+            [ &_53 <- { _53 with current = _ret.final } ] s4)
+      | s4 = take {_52} (fun (_ret: t_Option) -> [ &_51 <- _ret ] s5)
+      | s5 = bb36 ]
+    | bb36 = s0
+      [ s0 = {[@expl:type invariant] inv'5 _53} s1
+      | s1 = -{resolve'3 _53}- s2
+      | s2 = {[@expl:type invariant] inv'11 self} s3
+      | s3 = -{resolve'1 self}- s4
+      | s4 = unwrap'0 {_51} (fun (_ret: t_Node) -> [ &node'0 <- _ret ] s5)
+      | s5 = bb37 ]
+    | bb37 = s0
       [ s0 = {[@expl:type invariant] inv'1 node'0.t_Node__right} s1
       | s1 = -{resolve'9 node'0.t_Node__right}- s2
       | s2 = {[@expl:type invariant] inv'1 node'0.t_Node__left} s3
       | s3 = -{resolve'9 node'0.t_Node__left}- s4
-      | s4 = [ &_60 <- { f0'1 = node'0.t_Node__key; f1'1 = node'0.t_Node__val } ] s5
-      | s5 = bb42 ]
-    | bb42 = s0 [ s0 = [ &_0 <- C_Some'1 _60 ] s1 | s1 = bb76 ]
-    | bb36 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve'3 self}- s2 | s2 = bb37 ]
-    | bb37 = s0 [ s0 = [ &_0 <- C_None'1 ] s1 | s1 = bb76 ]
-    | bb44 = s0
-      [ s0 = as_ref {node.current.t_Node__right.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_67 <- _ret ] s1)
-      | s1 = bb45 ]
-    | bb45 = s0 [ s0 = unwrap'1 {_67} (fun (_ret: t_Node) -> [ &_66 <- _ret ] s1) | s1 = bb46 ]
-    | bb46 = s0 [ s0 = is_red {_66.t_Node__left} (fun (_ret: bool) -> [ &_64 <- _ret ] s1) | s1 = bb47 ]
-    | bb47 = any [ br0 -> {_64 = false} (! bb49) | br1 -> {_64} (! bb51) ]
-    | bb49 = s0
+      | s4 = [ &_54 <- { f0'1 = node'0.t_Node__key; f1'1 = node'0.t_Node__val } ] s5
+      | s5 = bb39 ]
+    | bb39 = s0 [ s0 = [ &_0 <- C_Some'1 _54 ] s1 | s1 = bb73 ]
+    | bb42 = s0
+      [ s0 = v_Some {_58} (fun (r0: t_Node) -> [ &right <- r0 ] s1)
+      | s1 = is_red {right.t_Node__left} (fun (_ret: bool) -> [ &_61 <- _ret ] s2)
+      | s2 = bb44 ]
+    | bb44 = any [ br0 -> {_61 = false} (! bb46) | br1 -> {_61} (! bb48) ]
+    | bb46 = s0
       [ s0 = {inv'3 node.current}
         MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_71 <- _ret ] -{inv'3 _ret.final}-
+            [ &_65 <- _ret ] -{inv'3 _ret.final}-
             [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = move_red_right {_71} (fun (_ret: MutBorrow.t t_Node) -> [ &_70 <- _ret ] s2)
-      | s2 = bb50 ]
-    | bb50 = s0
-      [ s0 = {inv'3 _70.current}
-        MutBorrow.borrow_final <t_Node> {_70.current} {MutBorrow.get_id _70}
+      | s1 = move_red_right {_65} (fun (_ret: MutBorrow.t t_Node) -> [ &_64 <- _ret ] s2)
+      | s2 = bb47 ]
+    | bb47 = s0
+      [ s0 = {inv'3 _64.current}
+        MutBorrow.borrow_final <t_Node> {_64.current} {MutBorrow.get_id _64}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_69 <- _ret ] -{inv'3 _ret.final}-
-            [ &_70 <- { _70 with current = _ret.final } ] s1)
+            [ &_63 <- _ret ] -{inv'3 _ret.final}-
+            [ &_64 <- { _64 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
       | s2 = -{resolve'0 node}- s3
-      | s3 = [ &node <- _69 ] s4
-      | s4 = {[@expl:type invariant] inv'8 _70} s5
-      | s5 = -{resolve'0 _70}- s6
-      | s6 = bb51 ]
-    | bb51 = any
-      [ br0 -> {ord = C_Less} (! bb63) | br1 -> {ord = C_Equal} (! bb53) | br2 -> {ord = C_Greater} (! bb63) ]
-    | bb63 = s0
+      | s3 = [ &node <- _63 ] s4
+      | s4 = {[@expl:type invariant] inv'8 _64} s5
+      | s5 = -{resolve'0 _64}- s6
+      | s6 = bb48 ]
+    | bb48 = s0
       [ s0 = {inv'1 node.current.t_Node__right}
         MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_90 <- _ret ] -{inv'1 _ret.final}-
+            [ &_67 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
-      | s1 = delete_rec {_90} {key} (fun (_ret: t_Option'1) -> [ &_89 <- _ret ] s2)
-      | s2 = bb65 ]
-    | bb65 = s0 [ s0 = [ &r <- _89 ] s1 | s1 = bb69 ]
-    | bb53 = s0
-      [ s0 = {inv'1 node.current.t_Node__right}
-        MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__right}
-          (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_74 <- _ret ] -{inv'1 _ret.final}-
-            [ &node <- { node with current = { node.current with t_Node__right = _ret.final } } ] s1)
-      | s1 = delete_min_rec {_74} (fun (_ret: tuple'1) -> [ &kv <- _ret ] s2)
-      | s2 = bb54 ]
-    | bb54 = s0 [ s0 = [ &_75 <- () ] s1 | s1 = bb55 ]
-    | bb55 = s0
+      | s1 = delete_min_rec {_67} (fun (_ret: tuple'1) -> [ &kv <- _ret ] s2)
+      | s2 = bb49 ]
+    | bb49 = s0 [ s0 = [ &_68 <- () ] s1 | s1 = bb50 ]
+    | bb50 = s0
       [ s0 = {inv node.current.t_Node__key}
         MutBorrow.borrow_mut <t_K> {node.current.t_Node__key}
           (fun (_ret: MutBorrow.t t_K) ->
-            [ &_79 <- _ret ] -{inv _ret.final}-
+            [ &_72 <- _ret ] -{inv _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__key = _ret.final } } ] s1)
       | s1 = {inv kv.f0'1}
         MutBorrow.borrow_mut <t_K> {kv.f0'1}
           (fun (_ret: MutBorrow.t t_K) ->
-            [ &_81 <- _ret ] -{inv _ret.final}-
+            [ &_74 <- _ret ] -{inv _ret.final}-
             [ &kv <- { kv with f0'1 = _ret.final } ] s2)
-      | s2 = {inv _79.current}
-        MutBorrow.borrow_final <t_K> {_79.current} {MutBorrow.get_id _79}
+      | s2 = {inv _72.current}
+        MutBorrow.borrow_final <t_K> {_72.current} {MutBorrow.get_id _72}
           (fun (_ret: MutBorrow.t t_K) ->
-            [ &_78 <- _ret ] -{inv _ret.final}-
-            [ &_79 <- { _79 with current = _ret.final } ] s3)
-      | s3 = {inv _81.current}
-        MutBorrow.borrow_final <t_K> {_81.current} {MutBorrow.get_id _81}
+            [ &_71 <- _ret ] -{inv _ret.final}-
+            [ &_72 <- { _72 with current = _ret.final } ] s3)
+      | s3 = {inv _74.current}
+        MutBorrow.borrow_final <t_K> {_74.current} {MutBorrow.get_id _74}
           (fun (_ret: MutBorrow.t t_K) ->
-            [ &_80 <- _ret ] -{inv _ret.final}-
-            [ &_81 <- { _81 with current = _ret.final } ] s4)
-      | s4 = swap {_78} {_80} (fun (_ret: ()) -> [ &_77 <- _ret ] s5)
-      | s5 = bb56 ]
-    | bb56 = s0
-      [ s0 = {[@expl:type invariant] inv'16 _81} s1
-      | s1 = -{resolve'12 _81}- s2
-      | s2 = {[@expl:type invariant] inv'16 _79} s3
-      | s3 = -{resolve'12 _79}- s4
+            [ &_73 <- _ret ] -{inv _ret.final}-
+            [ &_74 <- { _74 with current = _ret.final } ] s4)
+      | s4 = swap {_71} {_73} (fun (_ret: ()) -> [ &_70 <- _ret ] s5)
+      | s5 = bb51 ]
+    | bb51 = s0
+      [ s0 = {[@expl:type invariant] inv'20 _74} s1
+      | s1 = -{resolve'12 _74}- s2
+      | s2 = {[@expl:type invariant] inv'20 _72} s3
+      | s3 = -{resolve'12 _72}- s4
       | s4 = {inv'0 node.current.t_Node__val}
         MutBorrow.borrow_mut <t_V> {node.current.t_Node__val}
           (fun (_ret: MutBorrow.t t_V) ->
-            [ &_84 <- _ret ] -{inv'0 _ret.final}-
+            [ &_77 <- _ret ] -{inv'0 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__val = _ret.final } } ] s5)
       | s5 = {inv'0 kv.f1'1}
         MutBorrow.borrow_mut <t_V> {kv.f1'1}
           (fun (_ret: MutBorrow.t t_V) ->
-            [ &_86 <- _ret ] -{inv'0 _ret.final}-
+            [ &_79 <- _ret ] -{inv'0 _ret.final}-
             [ &kv <- { kv with f1'1 = _ret.final } ] s6)
-      | s6 = {inv'0 _84.current}
-        MutBorrow.borrow_final <t_V> {_84.current} {MutBorrow.get_id _84}
+      | s6 = {inv'0 _77.current}
+        MutBorrow.borrow_final <t_V> {_77.current} {MutBorrow.get_id _77}
           (fun (_ret: MutBorrow.t t_V) ->
-            [ &_83 <- _ret ] -{inv'0 _ret.final}-
-            [ &_84 <- { _84 with current = _ret.final } ] s7)
-      | s7 = {inv'0 _86.current}
-        MutBorrow.borrow_final <t_V> {_86.current} {MutBorrow.get_id _86}
+            [ &_76 <- _ret ] -{inv'0 _ret.final}-
+            [ &_77 <- { _77 with current = _ret.final } ] s7)
+      | s7 = {inv'0 _79.current}
+        MutBorrow.borrow_final <t_V> {_79.current} {MutBorrow.get_id _79}
           (fun (_ret: MutBorrow.t t_V) ->
-            [ &_85 <- _ret ] -{inv'0 _ret.final}-
-            [ &_86 <- { _86 with current = _ret.final } ] s8)
-      | s8 = swap'0 {_83} {_85} (fun (_ret: ()) -> [ &_82 <- _ret ] s9)
-      | s9 = bb57 ]
-    | bb57 = s0
-      [ s0 = {[@expl:type invariant] inv'17 _86} s1
-      | s1 = -{resolve'13 _86}- s2
-      | s2 = {[@expl:type invariant] inv'17 _84} s3
-      | s3 = -{resolve'13 _84}- s4
-      | s4 = [ &_87 <- C_Some'1 kv ] s5
-      | s5 = bb59 ]
-    | bb59 = s0 [ s0 = [ &r <- _87 ] s1 | s1 = bb69 ]
-    | bb7 = s0
-      [ s0 = is_none {node.current.t_Node__left.t_Tree__node} (fun (_ret: bool) -> [ &_24 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = any [ br0 -> {_24 = false} (! bb10) | br1 -> {_24} (! bb9) ]
-    | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'8 node} s1
-      | s1 = -{resolve'0 node}- s2
-      | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'3 self}- s4
-      | s4 = [ &_0 <- C_None'1 ] s5
-      | s5 = bb76 ]
-    | bb10 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb11 ]
-    | bb11 = any [ br0 -> {_28 = false} (! bb13) | br1 -> {_28} (! bb21) ]
-    | bb13 = s0
-      [ s0 = as_ref {node.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_33 <- _ret ] s1)
-      | s1 = bb14 ]
-    | bb14 = s0 [ s0 = unwrap'1 {_33} (fun (_ret: t_Node) -> [ &_32 <- _ret ] s1) | s1 = bb15 ]
-    | bb15 = s0 [ s0 = is_red {_32.t_Node__left} (fun (_ret: bool) -> [ &_30 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = any [ br0 -> {_30 = false} (! bb18) | br1 -> {_30} (! bb21) ]
-    | bb18 = s0
+            [ &_78 <- _ret ] -{inv'0 _ret.final}-
+            [ &_79 <- { _79 with current = _ret.final } ] s8)
+      | s8 = swap'0 {_76} {_78} (fun (_ret: ()) -> [ &_75 <- _ret ] s9)
+      | s9 = bb52 ]
+    | bb52 = s0
+      [ s0 = {[@expl:type invariant] inv'21 _79} s1
+      | s1 = -{resolve'13 _79}- s2
+      | s2 = {[@expl:type invariant] inv'21 _77} s3
+      | s3 = -{resolve'13 _77}- s4
+      | s4 = [ &r <- C_Some'1 kv ] s5
+      | s5 = bb68 ]
+    | bb13 = s0 [ s0 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_25 <- _ret ] s1) | s1 = bb14 ]
+    | bb14 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb29) ]
+    | bb16 = s0
+      [ s0 = as_ref {node.current.t_Node__left.t_Tree__node} (fun (_ret: t_Option'2) -> [ &_31 <- _ret ] s1)
+      | s1 = bb17 ]
+    | bb17 = s0 [ s0 = branch {_31} (fun (_ret: t_ControlFlow) -> [ &_30 <- _ret ] s1) | s1 = bb18 ]
+    | bb18 = any
+      [ br0 (x0: t_Node) -> {_30 = C_Continue x0} (! bb21) | br1 (x0: t_Option'3) -> {_30 = C_Break x0} (! bb20) ]
+    | bb20 = s0 [ s0 = {[@expl:type invariant] inv'8 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb22 ]
+    | bb22 = s0
+      [ s0 = v_Break {_30} (fun (r0: t_Option'3) -> [ &residual <- r0 ] s1)
+      | s1 = {[@expl:type invariant] inv'11 self} s2
+      | s2 = -{resolve'1 self}- s3
+      | s3 = from_residual {residual} (fun (_ret: t_Option'1) -> [ &_0 <- _ret ] s4)
+      | s4 = bb73 ]
+    | bb21 = s0
+      [ s0 = v_Continue {_30} (fun (r0: t_Node) -> [ &val' <- r0 ] s1)
+      | s1 = [ &_29 <- val' ] s2
+      | s2 = is_red {_29.t_Node__left} (fun (_ret: bool) -> [ &_27 <- _ret ] s3)
+      | s3 = bb24 ]
+    | bb24 = any [ br0 -> {_27 = false} (! bb26) | br1 -> {_27} (! bb29) ]
+    | bb26 = s0
       [ s0 = {inv'3 node.current}
         MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_37 <- _ret ] -{inv'3 _ret.final}-
+            [ &_40 <- _ret ] -{inv'3 _ret.final}-
             [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = move_red_left {_37} (fun (_ret: MutBorrow.t t_Node) -> [ &_36 <- _ret ] s2)
-      | s2 = bb19 ]
-    | bb19 = s0
-      [ s0 = {inv'3 _36.current}
-        MutBorrow.borrow_final <t_Node> {_36.current} {MutBorrow.get_id _36}
+      | s1 = move_red_left {_40} (fun (_ret: MutBorrow.t t_Node) -> [ &_39 <- _ret ] s2)
+      | s2 = bb27 ]
+    | bb27 = s0
+      [ s0 = {inv'3 _39.current}
+        MutBorrow.borrow_final <t_Node> {_39.current} {MutBorrow.get_id _39}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_35 <- _ret ] -{inv'3 _ret.final}-
-            [ &_36 <- { _36 with current = _ret.final } ] s1)
+            [ &_38 <- _ret ] -{inv'3 _ret.final}-
+            [ &_39 <- { _39 with current = _ret.final } ] s1)
       | s1 = {[@expl:type invariant] inv'8 node} s2
       | s2 = -{resolve'0 node}- s3
-      | s3 = [ &node <- _35 ] s4
-      | s4 = {[@expl:type invariant] inv'8 _36} s5
-      | s5 = -{resolve'0 _36}- s6
-      | s6 = bb21 ]
-    | bb21 = s0
+      | s3 = [ &node <- _38 ] s4
+      | s4 = {[@expl:type invariant] inv'8 _39} s5
+      | s5 = -{resolve'0 _39}- s6
+      | s6 = bb29 ]
+    | bb29 = s0
       [ s0 = {inv'1 node.current.t_Node__left}
         MutBorrow.borrow_mut <t_Tree> {node.current.t_Node__left}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_39 <- _ret ] -{inv'1 _ret.final}-
+            [ &_41 <- _ret ] -{inv'1 _ret.final}-
             [ &node <- { node with current = { node.current with t_Node__left = _ret.final } } ] s1)
-      | s1 = delete_rec {_39} {key} (fun (_ret: t_Option'1) -> [ &_38 <- _ret ] s2)
-      | s2 = bb23 ]
-    | bb23 = s0 [ s0 = [ &r <- _38 ] s1 | s1 = bb69 ]
-    | bb69 = s0
+      | s1 = delete_rec {_41} {key} (fun (_ret: t_Option'1) -> [ &r <- _ret ] s2)
+      | s2 = bb68 ]
+    | bb68 = s0
       [ s0 = {inv'3 node.current}
         MutBorrow.borrow_final <t_Node> {node.current} {MutBorrow.get_id node}
           (fun (_ret: MutBorrow.t t_Node) ->
-            [ &_93 <- _ret ] -{inv'3 _ret.final}-
+            [ &_99 <- _ret ] -{inv'3 _ret.final}-
             [ &node <- { node with current = _ret.final } ] s1)
-      | s1 = balance {_93} (fun (_ret: ()) -> [ &_92 <- _ret ] s2)
-      | s2 = bb70 ]
-    | bb70 = s0
+      | s1 = balance {_99} (fun (_ret: ()) -> [ &_98 <- _ret ] s2)
+      | s2 = bb69 ]
+    | bb69 = s0
       [ s0 = {[@expl:type invariant] inv'8 node} s1
       | s1 = -{resolve'0 node}- s2
-      | s2 = {[@expl:type invariant] inv'12 self} s3
-      | s3 = -{resolve'3 self}- s4
+      | s2 = {[@expl:type invariant] inv'11 self} s3
+      | s3 = -{resolve'1 self}- s4
       | s4 = [ &_0 <- r ] s5
-      | s5 = bb76 ]
-    | bb76 = return {_0} ]
+      | s5 = bb73 ]
+    | bb73 = return {_0} ]
     [ & _0: t_Option'1 = Any.any_l ()
     | & self: MutBorrow.t t_Tree = self
     | & key: t_K = key
-    | & r: t_Option'1 = Any.any_l ()
     | & node: MutBorrow.t t_Node = Any.any_l ()
+    | & _12: MutBorrow.t t_Node = Any.any_l ()
     | & _13: MutBorrow.t t_Node = Any.any_l ()
-    | & _14: MutBorrow.t t_Node = Any.any_l ()
-    | & _15: t_Option'0 = Any.any_l ()
-    | & _16: MutBorrow.t t_Option = Any.any_l ()
-    | & _18: t_Ordering = Any.any_l ()
-    | & _21: t_K = Any.any_l ()
-    | & _24: bool = Any.any_l ()
-    | & _28: bool = Any.any_l ()
-    | & _30: bool = Any.any_l ()
-    | & _32: t_Node = Any.any_l ()
-    | & _33: t_Option'2 = Any.any_l ()
-    | & _35: MutBorrow.t t_Node = Any.any_l ()
-    | & _36: MutBorrow.t t_Node = Any.any_l ()
-    | & _37: MutBorrow.t t_Node = Any.any_l ()
-    | & _38: t_Option'1 = Any.any_l ()
-    | & _39: MutBorrow.t t_Tree = Any.any_l ()
-    | & ord: t_Ordering = Any.any_l ()
-    | & _42: bool = Any.any_l ()
-    | & _44: () = Any.any_l ()
-    | & _45: MutBorrow.t t_Node = Any.any_l ()
-    | & _46: t_Option'1 = Any.any_l ()
+    | & _14: t_Option'0 = Any.any_l ()
+    | & _15: MutBorrow.t t_Option = Any.any_l ()
+    | & r: t_Option'1 = Any.any_l ()
+    | & _17: t_Ordering = Any.any_l ()
+    | & _20: t_K = Any.any_l ()
+    | & _25: bool = Any.any_l ()
+    | & _27: bool = Any.any_l ()
+    | & _29: t_Node = Any.any_l ()
+    | & _30: t_ControlFlow = Any.any_l ()
+    | & _31: t_Option'2 = Any.any_l ()
+    | & residual: t_Option'3 = Any.any_l ()
+    | & val': t_Node = Any.any_l ()
+    | & _38: MutBorrow.t t_Node = Any.any_l ()
+    | & _39: MutBorrow.t t_Node = Any.any_l ()
+    | & _40: MutBorrow.t t_Node = Any.any_l ()
+    | & _41: MutBorrow.t t_Tree = Any.any_l ()
+    | & _43: bool = Any.any_l ()
+    | & _45: () = Any.any_l ()
+    | & _46: MutBorrow.t t_Node = Any.any_l ()
     | & _47: MutBorrow.t t_Tree = Any.any_l ()
-    | & _50: bool = Any.any_l ()
     | & node'0: t_Node = Any.any_l ()
-    | & _57: t_Option = Any.any_l ()
-    | & _58: MutBorrow.t t_Option = Any.any_l ()
-    | & _59: MutBorrow.t t_Option = Any.any_l ()
-    | & _60: tuple'1 = Any.any_l ()
-    | & _64: bool = Any.any_l ()
-    | & _66: t_Node = Any.any_l ()
-    | & _67: t_Option'2 = Any.any_l ()
-    | & _69: MutBorrow.t t_Node = Any.any_l ()
-    | & _70: MutBorrow.t t_Node = Any.any_l ()
-    | & _71: MutBorrow.t t_Node = Any.any_l ()
+    | & _51: t_Option = Any.any_l ()
+    | & _52: MutBorrow.t t_Option = Any.any_l ()
+    | & _53: MutBorrow.t t_Option = Any.any_l ()
+    | & _54: tuple'1 = Any.any_l ()
+    | & right: t_Node = Any.any_l ()
+    | & _58: t_Option = Any.any_l ()
+    | & _61: bool = Any.any_l ()
+    | & _63: MutBorrow.t t_Node = Any.any_l ()
+    | & _64: MutBorrow.t t_Node = Any.any_l ()
+    | & _65: MutBorrow.t t_Node = Any.any_l ()
     | & kv: tuple'1 = Any.any_l ()
-    | & _74: MutBorrow.t t_Tree = Any.any_l ()
+    | & _67: MutBorrow.t t_Tree = Any.any_l ()
+    | & _68: () = Any.any_l ()
+    | & _70: () = Any.any_l ()
+    | & _71: MutBorrow.t t_K = Any.any_l ()
+    | & _72: MutBorrow.t t_K = Any.any_l ()
+    | & _73: MutBorrow.t t_K = Any.any_l ()
+    | & _74: MutBorrow.t t_K = Any.any_l ()
     | & _75: () = Any.any_l ()
-    | & _77: () = Any.any_l ()
-    | & _78: MutBorrow.t t_K = Any.any_l ()
-    | & _79: MutBorrow.t t_K = Any.any_l ()
-    | & _80: MutBorrow.t t_K = Any.any_l ()
-    | & _81: MutBorrow.t t_K = Any.any_l ()
-    | & _82: () = Any.any_l ()
-    | & _83: MutBorrow.t t_V = Any.any_l ()
-    | & _84: MutBorrow.t t_V = Any.any_l ()
-    | & _85: MutBorrow.t t_V = Any.any_l ()
-    | & _86: MutBorrow.t t_V = Any.any_l ()
-    | & _87: t_Option'1 = Any.any_l ()
-    | & _89: t_Option'1 = Any.any_l ()
-    | & _90: MutBorrow.t t_Tree = Any.any_l ()
-    | & _92: () = Any.any_l ()
-    | & _93: MutBorrow.t t_Node = Any.any_l () ])
-    [ return (result: t_Option'1) -> {[@expl:delete_rec result type invariant] inv'18 result}
+    | & _76: MutBorrow.t t_V = Any.any_l ()
+    | & _77: MutBorrow.t t_V = Any.any_l ()
+    | & _78: MutBorrow.t t_V = Any.any_l ()
+    | & _79: MutBorrow.t t_V = Any.any_l ()
+    | & _82: bool = Any.any_l ()
+    | & _84: t_Node = Any.any_l ()
+    | & _85: t_ControlFlow = Any.any_l ()
+    | & _86: t_Option'2 = Any.any_l ()
+    | & residual'0: t_Option'3 = Any.any_l ()
+    | & val''0: t_Node = Any.any_l ()
+    | & _93: MutBorrow.t t_Node = Any.any_l ()
+    | & _94: MutBorrow.t t_Node = Any.any_l ()
+    | & _95: MutBorrow.t t_Node = Any.any_l ()
+    | & _96: MutBorrow.t t_Tree = Any.any_l ()
+    | & _98: () = Any.any_l ()
+    | & _99: MutBorrow.t t_Node = Any.any_l () ])
+    [ return (result: t_Option'1) -> {[@expl:delete_rec result type invariant] inv'19 result}
       {[@expl:delete_rec ensures #0] internal_invariant'0 self.final}
       {[@expl:delete_rec ensures #1] height self.current = height self.final}
       {[@expl:delete_rec ensures #2] match result with
@@ -6183,7 +6213,7 @@ module M_red_black_tree__qyi3529752165842986389__delete_rec (* Tree<K, V> *)
       {[@expl:delete_rec ensures #5] color self.current = C_Black -> color self.final = C_Black}
       (! return {result}) ]
 end
-module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi7670249875066633436__resolve_coherence (* <Map<K, V> as creusot_contracts::resolve::Resolve> *)
   use map.Map
   use map.Const
   
@@ -6561,10 +6591,10 @@ module M_red_black_tree__qyi1722927563742988856__new (* Map<K, V> *)
       (! return {result}) ]
 end
 module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
-  use creusot.prelude.MutBorrow
-  use mach.int.Int
   use map.Map
   use map.Const
+  use creusot.prelude.MutBorrow
+  use mach.int.Int
   use creusot.prelude.Any
   
   type t_Color = C_Red | C_Black
@@ -6581,43 +6611,6 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
     t_Node__right: t_Tree }
   with t_Option = C_None | C_Some t_Node
   with t_Tree = { t_Tree__node: t_Option }
-  
-  type t_Map = { t_Map__0: t_Tree }
-  
-  predicate inv (_1: t_K)
-  
-  predicate inv'0 (_1: t_V)
-  
-  predicate inv'1 (_1: t_Node)
-  
-  predicate inv'2 (_1: t_Tree)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
-      = (inv'2 x.t_Node__left /\ inv x.t_Node__key /\ inv'0 x.t_Node__val /\ inv'2 x.t_Node__right)
-  
-  predicate invariant' (self: t_Node) = inv'1 self
-  
-  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
-  
-  meta "rewrite_def" predicate inv'3
-  
-  predicate inv'4 (_1: t_Option)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
-      = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'3 a_0
-        end
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
-  
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'2 self.current /\ inv'2 self.final
-  
-  meta "rewrite_def" predicate invariant''0
-  
-  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''0 _1
-  
-  meta "rewrite_def" predicate inv'5
   
   type t_DeepModelTy
   
@@ -6690,6 +6683,80 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
       /\ bst_invariant left /\ bst_invariant right
       end
   
+  type t_Option'0 = C_None'0 | C_Some'0 t_V
+  
+  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'0) : Map.map t_DeepModelTy t_Option'0 =
+    match self with
+      | {t_Tree__node = C_None} -> accu
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'0 val') in model_acc right accu2
+      end
+  
+  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'0 = model_acc self (Const.const (C_None'0))
+  
+  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'0) (k: t_DeepModelTy) : () =
+    match self with
+      | {t_Tree__node = C_None} -> ()
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'0 val') in model_acc_has_mapping right accu2 k
+      end
+  
+  axiom model_acc_has_mapping_spec:
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'0, k: t_DeepModelTy. Map.get (model_acc self accu) k
+        = Map.get accu k
+      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'0 v /\ has_mapping self k v)
+  
+  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'0) (k: t_DeepModelTy) : () =
+    match self with
+      | {t_Tree__node = C_None} -> ()
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'0 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
+      end
+  
+  axiom has_mapping_model_acc_spec:
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'0, k: t_DeepModelTy. bst_invariant self
+      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'0 v)
+  
+  function has_mapping_model (self: t_Tree) (k: t_DeepModelTy) : () =
+    let _ = model_acc_has_mapping self (Const.const (C_None'0)) k in has_mapping_model_acc self (Const.const (C_None'0)) k
+  
+  axiom has_mapping_model_spec: forall self: t_Tree, k: t_DeepModelTy. bst_invariant self
+      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'0 v))
+  
+  type t_Map = { t_Map__0: t_Tree }
+  
+  predicate inv (_1: t_K)
+  
+  predicate inv'0 (_1: t_V)
+  
+  predicate inv'1 (_1: t_Node)
+  
+  predicate inv'2 (_1: t_Tree)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Node [inv'1 x]. inv'1 x
+      = (inv'2 x.t_Node__left /\ inv x.t_Node__key /\ inv'0 x.t_Node__val /\ inv'2 x.t_Node__right)
+  
+  predicate invariant' (self: t_Node) = inv'1 self
+  
+  predicate inv'3 [@inline:trivial] (_1: t_Node) = invariant' _1
+  
+  meta "rewrite_def" predicate inv'3
+  
+  predicate inv'4 (_1: t_Option)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+      = match x with
+        | C_None -> true
+        | C_Some a_0 -> inv'3 a_0
+        end
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree [inv'2 x]. inv'2 x = inv'4 x.t_Tree__node
+  
+  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'2 self.current /\ inv'2 self.final
+  
+  meta "rewrite_def" predicate invariant''0
+  
+  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''0 _1
+  
+  meta "rewrite_def" predicate inv'5
+  
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
       | {t_Tree__node = C_Some {t_Node__left = left; t_Node__color = C_Red}} -> height left
@@ -6735,7 +6802,9 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
         end
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  
+  meta "rewrite_def" function cpn
   
   let rec insert_rec (self: MutBorrow.t t_Tree) (key: t_K) (val': t_V) (return (x: ())) =
     {[@expl:insert_rec 'self' type invariant] inv'5 self}
@@ -6752,7 +6821,7 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
       {forall k: t_DeepModelTy, v: t_V. k = deep_model key \/ has_mapping self.current k v = has_mapping self.final k v}
       (! return {result}) ]
   
-  type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_Node)
+  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_Node)
   
   predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'4 self.current /\ inv'4 self.final
   
@@ -6770,28 +6839,28 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   
   meta "rewrite_def" predicate inv'7
   
-  predicate inv'8 (_1: t_Option'0)
+  predicate inv'8 (_1: t_Option'1)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'1 [inv'8 x]. inv'8 x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'7 a_0
+        | C_None'1 -> true
+        | C_Some'1 a_0 -> inv'7 a_0
         end
   
-  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'0)) =
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) =
     {[@expl:as_mut 'self_' type invariant] inv'6 self_}
     any
-    [ return (result: t_Option'0) -> {inv'8 result}
-      {self_.current = C_None -> result = C_None'0 /\ self_.final = C_None}
+    [ return (result: t_Option'1) -> {inv'8 result}
+      {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
       {self_.current = C_None
-      \/ (exists r: MutBorrow.t t_Node. result = C_Some'0 r
+      \/ (exists r: MutBorrow.t t_Node. result = C_Some'1 r
         /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
       (! return {result}) ]
   
-  let rec unwrap (self_: t_Option'0) (return (x: MutBorrow.t t_Node)) =
+  let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_Node)) =
     {[@expl:unwrap 'self_' type invariant] inv'8 self_}
-    {[@expl:unwrap requires] self_ <> C_None'0}
-    any [ return (result: MutBorrow.t t_Node) -> {inv'7 result} {C_Some'0 result = self_} (! return {result}) ]
+    {[@expl:unwrap requires] self_ <> C_None'1}
+    any [ return (result: MutBorrow.t t_Node) -> {inv'7 result} {C_Some'1 result = self_} (! return {result}) ]
   
   predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
@@ -6816,44 +6885,7 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
   
   meta "rewrite_def" predicate resolve'0
   
-  type t_Option'1 = C_None'1 | C_Some'1 t_V
-  
-  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'1) : Map.map t_DeepModelTy t_Option'1 =
-    match self with
-      | {t_Tree__node = C_None} -> accu
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'1 val') in model_acc right accu2
-      end
-  
-  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'1 = model_acc self (Const.const (C_None'1))
-  
-  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'1) (k: t_DeepModelTy) : () =
-    match self with
-      | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'1 val') in model_acc_has_mapping right accu2 k
-      end
-  
-  axiom model_acc_has_mapping_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'1, k: t_DeepModelTy. Map.get (model_acc self accu) k
-        = Map.get accu k
-      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'1 v /\ has_mapping self k v)
-  
-  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'1) (k: t_DeepModelTy) : () =
-    match self with
-      | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'1 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
-      end
-  
-  axiom has_mapping_model_acc_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'1, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'1 v)
-  
-  function has_mapping_model (self: t_Tree) (k: t_DeepModelTy) : () =
-    let _ = model_acc_has_mapping self (Const.const (C_None'1)) k in has_mapping_model_acc self (Const.const (C_None'1)) k
-  
-  axiom has_mapping_model_spec: forall self: t_Tree, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'1 v))
-  
-  function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'1 = view self.t_Map__0
+  function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'0 = view self.t_Map__0
   
   meta "compute_max_steps" 1000000
   
@@ -6864,47 +6896,47 @@ module M_red_black_tree__qyi1722927563742988856__insert (* Map<K, V> *)
     {[@expl:insert 'key' type invariant] inv key}
     {[@expl:insert 'val' type invariant] inv'0 val'}
     (! bb0
-    [ bb0 = s0
+    [ bb0 = s0 [ s0 = [ &_5 <- () ] s1 | s1 = bb1 ]
+    | bb1 = s0
       [ s0 = {inv'2 self.current.t_Map__0}
         MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_6 <- _ret ] -{inv'2 _ret.final}-
+            [ &_8 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
-      | s1 = insert_rec {_6} {key} {val'} (fun (_ret: ()) -> [ &_5 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_9 <- C_Black ] s1
+      | s1 = insert_rec {_8} {key} {val'} (fun (_ret: ()) -> [ &_7 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = [ &_11 <- C_Black ] s1
       | s1 = {inv'4 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_12 <- _ret ] -{inv'4 _ret.final}-
+            [ &_14 <- _ret ] -{inv'4 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s2)
-      | s2 = as_mut {_12} (fun (_ret: t_Option'0) -> [ &_11 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = s0 [ s0 = unwrap {_11} (fun (_ret: MutBorrow.t t_Node) -> [ &_10 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = [ &_10 <- { _10 with current = { _10.current with t_Node__color = _9 } } ] s1
-      | s1 = {[@expl:type invariant] inv'7 _10} s2
-      | s2 = -{resolve _10}- s3
+      | s2 = as_mut {_14} (fun (_ret: t_Option'1) -> [ &_13 <- _ret ] s3)
+      | s3 = bb3 ]
+    | bb3 = s0 [ s0 = unwrap {_13} (fun (_ret: MutBorrow.t t_Node) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0
+      [ s0 = [ &_12 <- { _12 with current = { _12.current with t_Node__color = _11 } } ] s1
+      | s1 = {[@expl:type invariant] inv'7 _12} s2
+      | s2 = -{resolve _12}- s3
       | s3 = {[@expl:type invariant] inv'10 self} s4
       | s4 = -{resolve'0 self}- s5
-      | s5 = [ &_13 <- () ] s6
-      | s6 = bb6 ]
+      | s5 = bb6 ]
     | bb6 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
     | & key: t_K = key
     | & val': t_V = val'
     | & _5: () = Any.any_l ()
-    | & _6: MutBorrow.t t_Tree = Any.any_l ()
-    | & _9: t_Color = Any.any_l ()
-    | & _10: MutBorrow.t t_Node = Any.any_l ()
-    | & _11: t_Option'0 = Any.any_l ()
-    | & _12: MutBorrow.t t_Option = Any.any_l ()
-    | & _13: () = Any.any_l () ])
+    | & _7: () = Any.any_l ()
+    | & _8: MutBorrow.t t_Tree = Any.any_l ()
+    | & _11: t_Color = Any.any_l ()
+    | & _12: MutBorrow.t t_Node = Any.any_l ()
+    | & _13: t_Option'1 = Any.any_l ()
+    | & _14: MutBorrow.t t_Option = Any.any_l () ])
     [ return (result: ()) -> {[@expl:insert ensures] view'0 self.final
-      = Map.set (view'0 self.current) (deep_model key) (C_Some'1 val')}
+      = Map.set (view'0 self.current) (deep_model key) (C_Some'0 val')}
       (! return {result}) ]
 end
 module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
@@ -6958,6 +6990,8 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
         | C_Some a_0 -> inv'4 a_0
         end
   
+  type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_Node)
+  
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''0
@@ -6966,9 +7000,68 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
+  
+  meta "rewrite_def" predicate inv'6
+  
+  predicate inv'7 (_1: t_Option'0)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'0 [inv'7 x]. inv'7 x
+      = match x with
+        | C_None'0 -> true
+        | C_Some'0 a_0 -> inv'6 a_0
+        end
+  
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'0)) =
+    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
+    any
+    [ return (result: t_Option'0) -> {inv'7 result}
+      {self_.current = C_None -> result = C_None'0 /\ self_.final = C_None}
+      {self_.current = C_None
+      \/ (exists r: MutBorrow.t t_Node. result = C_Some'0 r
+        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
+      (! return {result}) ]
+  
+  type t_Option'1 = C_None'1 | C_Some'1 ()
+  
+  type t_ControlFlow = C_Continue (MutBorrow.t t_Node) | C_Break t_Option'1
+  
+  predicate inv'8 [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv'8
+  
+  predicate inv'9 (_1: t_Option'1)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'9 x]. inv'9 x
+      = match x with
+        | C_None'1 -> true
+        | C_Some'1 a_0 -> inv'8 a_0
+        end
+  
+  predicate inv'10 (_1: t_ControlFlow)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_ControlFlow [inv'10 x]. inv'10 x
+      = match x with
+        | C_Continue a_0 -> inv'6 a_0
+        | C_Break a_0 -> inv'9 a_0
+        end
+  
+  let rec branch (self_: t_Option'0) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'7 self_}
+    any
+    [ return (result: t_ControlFlow) -> {inv'10 result}
+      {match self_ with
+        | C_Some'0 v -> result = C_Continue v
+        | C_None'0 -> result = C_Break (C_None'1)
+        end}
+      (! return {result}) ]
+  
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option'1)) = any
+    [ good (field_0: t_Option'1) -> {C_Break field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Option'1 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
   
   type t_DeepModelTy
   
@@ -7075,63 +7168,73 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
       /\ color_invariant left /\ color_invariant right
       end
   
-  predicate invariant''1 (self: t_Map) =
+  predicate invariant''2 (self: t_Map) =
     internal_invariant self.t_Map__0 /\ color_invariant self.t_Map__0 /\ color self.t_Map__0 = C_Black
   
-  predicate inv'6 (_1: t_Map)
+  predicate inv'11 (_1: t_Map)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Map [inv'11 x]. inv'11 x = (invariant''2 x /\ inv'1 x.t_Map__0)
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
-  
-  meta "rewrite_def" predicate inv'7
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  type tuple = { f0: t_K; f1: t_V }
-  
-  type t_Option'0 = C_None'0 | C_Some'0 tuple
-  
-  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
-    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
-  
-  predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'1 self
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''3 _1
   
-  meta "rewrite_def" predicate inv'8
+  meta "rewrite_def" predicate inv'12
   
-  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
-    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
+  meta "rewrite_def" predicate resolve
+  
+  type tuple = { f0: t_K; f1: t_V }
+  
+  type t_Option'2 = C_None'2 | C_Some'2 tuple
+  
+  predicate inv'13 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  
+  meta "rewrite_def" predicate inv'13
+  
+  predicate inv'14 (_1: t_Option'2)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
+      = match x with
+        | C_None'2 -> true
+        | C_Some'2 a_0 -> inv'13 a_0
+        end
+  
+  let rec from_residual (residual: t_Option'1) (return (x: t_Option'2)) =
+    {[@expl:from_residual 'residual' type invariant] inv'9 residual}
+    any [ return (result: t_Option'2) -> {inv'14 result} {result = C_None'2} (! return {result}) ]
+  
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: MutBorrow.t t_Node)) = any
+    [ good (field_0: MutBorrow.t t_Node) -> {C_Continue field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: MutBorrow.t t_Node [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input}
+      (! {false}
+      any) ]
+  
+  predicate invariant''4 [@inline:trivial] (self: t_Tree) = inv'1 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
+  predicate inv'15 [@inline:trivial] (_1: t_Tree) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'9
+  meta "rewrite_def" predicate inv'15
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'15 self}
+    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
+  predicate inv'16 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  meta "rewrite_def" predicate inv'10
+  meta "rewrite_def" predicate inv'16
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -7144,19 +7247,17 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
         end
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'11 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
-  
-  meta "rewrite_def" predicate inv'11
+  meta "rewrite_def" function cpn
   
   let rec delete_max_rec (self: MutBorrow.t t_Tree) (return (x: tuple)) =
-    {[@expl:delete_max_rec 'self' type invariant] inv'10 self}
+    {[@expl:delete_max_rec 'self' type invariant] inv'16 self}
     {[@expl:delete_max_rec requires #0] internal_invariant self.current}
     {[@expl:delete_max_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     any
-    [ return (result: tuple) -> {inv'11 result}
+    [ return (result: tuple) -> {inv'13 result}
       {internal_invariant self.final}
       {height self.current = height self.final}
       {has_mapping self.current (deep_model result.f0) result.f1}
@@ -7167,176 +7268,144 @@ module M_red_black_tree__qyi1722927563742988856__delete_max (* Map<K, V> *)
       {color self.current = C_Black -> color self.final = C_Black}
       (! return {result}) ]
   
-  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_Node)
+  let rec unwrap (self_: t_Option'0) (return (x: MutBorrow.t t_Node)) =
+    {[@expl:unwrap 'self_' type invariant] inv'7 self_}
+    {[@expl:unwrap requires] self_ <> C_None'0}
+    any [ return (result: MutBorrow.t t_Node) -> {inv'6 result} {C_Some'0 result = self_} (! return {result}) ]
   
-  predicate inv'12 (_1: t_Option'1)
+  type t_Option'3 = C_None'3 | C_Some'3 t_V
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'12 x]. inv'12 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'9 a_0
-        end
-  
-  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) =
-    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
-    any
-    [ return (result: t_Option'1) -> {inv'12 result}
-      {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
-      {self_.current = C_None
-      \/ (exists r: MutBorrow.t t_Node. result = C_Some'1 r
-        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return {result}) ]
-  
-  let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:unwrap 'self_' type invariant] inv'12 self_}
-    {[@expl:unwrap requires] self_ <> C_None'1}
-    any [ return (result: MutBorrow.t t_Node) -> {inv'9 result} {C_Some'1 result = self_} (! return {result}) ]
-  
-  type t_Option'2 = C_None'2 | C_Some'2 t_V
-  
-  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'2) : Map.map t_DeepModelTy t_Option'2 =
+  function model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) : Map.map t_DeepModelTy t_Option'3 =
     match self with
       | {t_Tree__node = C_None} -> accu
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'2 val') in model_acc right accu2
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in model_acc right accu2
       end
   
-  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'2 = model_acc self (Const.const (C_None'2))
+  function view (self: t_Tree) : Map.map t_DeepModelTy t_Option'3 = model_acc self (Const.const (C_None'3))
   
-  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'2) (k: t_DeepModelTy) : () =
+  function model_acc_has_mapping (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) (k: t_DeepModelTy) : () =
     match self with
       | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'2 val') in model_acc_has_mapping right accu2 k
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = model_acc_has_mapping left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in model_acc_has_mapping right accu2 k
       end
   
   axiom model_acc_has_mapping_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'2, k: t_DeepModelTy. Map.get (model_acc self accu) k
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'3, k: t_DeepModelTy. Map.get (model_acc self accu) k
         = Map.get accu k
-      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'2 v /\ has_mapping self k v)
+      \/ (exists v: t_V. Map.get (model_acc self accu) k = C_Some'3 v /\ has_mapping self k v)
   
-  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'2) (k: t_DeepModelTy) : () =
+  function has_mapping_model_acc (self: t_Tree) (accu: Map.map t_DeepModelTy t_Option'3) (k: t_DeepModelTy) : () =
     match self with
       | {t_Tree__node = C_None} -> ()
-      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'2 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
+      | {t_Tree__node = C_Some {t_Node__left = left; t_Node__key = key; t_Node__val = val'; t_Node__right = right}} -> let _ = has_mapping_model_acc left accu k in let accu1 = model_acc left accu in let accu2 = Map.set accu1 (deep_model key) (C_Some'3 val') in let _ = has_mapping_model_acc right accu2 k in model_acc_has_mapping right accu2 k
       end
   
   axiom has_mapping_model_acc_spec:
-    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'2, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'2 v)
+    forall self: t_Tree, accu: Map.map t_DeepModelTy t_Option'3, k: t_DeepModelTy. bst_invariant self
+      -> (forall v: t_V. has_mapping self k v -> Map.get (model_acc self accu) k = C_Some'3 v)
   
   function has_mapping_model (self: t_Tree) (k: t_DeepModelTy) : () =
-    let _ = model_acc_has_mapping self (Const.const (C_None'2)) k in has_mapping_model_acc self (Const.const (C_None'2)) k
+    let _ = model_acc_has_mapping self (Const.const (C_None'3)) k in has_mapping_model_acc self (Const.const (C_None'3)) k
   
   axiom has_mapping_model_spec: forall self: t_Tree, k: t_DeepModelTy. bst_invariant self
-      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'2 v))
+      -> (forall v: t_V. has_mapping self k v = (Map.get (view self) k = C_Some'3 v))
   
-  predicate inv'13 (_1: t_Option'0)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'0 [inv'13 x]. inv'13 x
-      = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'11 a_0
-        end
-  
-  function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'2 = view self.t_Map__0
+  function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'3 = view self.t_Map__0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec delete_max (self: MutBorrow.t t_Map) (return (x: t_Option'0)) =
-    {[@expl:delete_max 'self' type invariant] inv'7 self}
+  let rec delete_max (self: MutBorrow.t t_Map) (return (x: t_Option'2)) =
+    {[@expl:delete_max 'self' type invariant] inv'12 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_4 <- _ret ] -{inv'2 _ret.final}-
+            [ &_6 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
-      | s1 = any [ br0 -> {_4.current = C_None} (! bb7) | br1 (x0: t_Node) -> {_4.current = C_Some x0} (! bb2) ] ]
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _4} s1
-      | s1 = -{resolve _4}- s2
-      | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'0 self}- s4
-      | s4 = [ &_0 <- C_None'0 ] s5
-      | s5 = bb18 ]
-    | bb2 = s0
-      [ s0 = v_Some {_4.current}
-          (fun (r0: t_Node) ->
-            {inv'4 r0}
-            MutBorrow.borrow_final <t_Node> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
-              (fun (_ret: MutBorrow.t t_Node) ->
-                [ &node <- _ret ] -{inv'4 _ret.final}-
-                [ &_4 <- { _4 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_7 <- _ret ] s2)
-      | s2 = bb3 ]
-    | bb3 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ]
-    | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'1 node}- s2
-      | s2 = {[@expl:type invariant] inv'5 _4} s3
-      | s3 = -{resolve _4}- s4
-      | s4 = bb6 ]
-    | bb5 = s0
-      [ s0 = [ &_9 <- C_Red ] s1
-      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _9 } } ] s2
-      | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'1 node}- s4
-      | s4 = {[@expl:type invariant] inv'5 _4} s5
-      | s5 = -{resolve _4}- s6
-      | s6 = bb6 ]
+      | s1 = as_mut {_6} (fun (_ret: t_Option'0) -> [ &_5 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0 [ s0 = branch {_5} (fun (_ret: t_ControlFlow) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = any
+      [ br0 (x0: MutBorrow.t t_Node) -> {_4 = C_Continue x0} (! bb5)
+      | br1 (x0: t_Option'1) -> {_4 = C_Break x0} (! bb6) ]
     | bb6 = s0
+      [ s0 = v_Break {_4} (fun (r0: t_Option'1) -> [ &residual <- r0 ] s1)
+      | s1 = {[@expl:type invariant] inv'12 self} s2
+      | s2 = -{resolve self}- s3
+      | s3 = from_residual {residual} (fun (_ret: t_Option'2) -> [ &_0 <- _ret ] s4)
+      | s4 = bb22 ]
+    | bb5 = s0
+      [ s0 = v_Continue {_4} (fun (r0: MutBorrow.t t_Node) -> [ &val' <- r0 ] s1)
+      | s1 = [ &node <- val' ] s2
+      | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_13 <- _ret ] s3)
+      | s3 = bb8 ]
+    | bb8 = any [ br0 -> {_13 = false} (! bb10) | br1 -> {_13} (! bb9) ]
+    | bb9 = s0 [ s0 = {[@expl:type invariant] inv'6 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb11 ]
+    | bb10 = s0
+      [ s0 = [ &_15 <- C_Red ] s1
+      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _15 } } ] s2
+      | s2 = {[@expl:type invariant] inv'6 node} s3
+      | s3 = -{resolve'0 node}- s4
+      | s4 = bb11 ]
+    | bb11 = s0
       [ s0 = {inv'1 self.current.t_Map__0}
         MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_12 <- _ret ] -{inv'1 _ret.final}-
+            [ &_17 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
-      | s1 = delete_max_rec {_12} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
-      | s2 = bb8 ]
-    | bb8 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_14 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = any [ br0 -> {_14 = false} (! bb13) | br1 -> {_14} (! bb10) ]
-    | bb10 = s0
-      [ s0 = [ &_16 <- C_Black ] s1
+      | s1 = delete_max_rec {_17} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
+      | s2 = bb12 ]
+    | bb12 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb13 ]
+    | bb13 = any [ br0 -> {_19 = false} (! bb17) | br1 -> {_19} (! bb14) ]
+    | bb14 = s0
+      [ s0 = [ &_21 <- C_Black ] s1
       | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_19 <- _ret ] -{inv'2 _ret.final}-
+            [ &_24 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s2)
-      | s2 = as_mut {_19} (fun (_ret: t_Option'1) -> [ &_18 <- _ret ] s3)
-      | s3 = bb11 ]
-    | bb11 = s0 [ s0 = unwrap {_18} (fun (_ret: MutBorrow.t t_Node) -> [ &_17 <- _ret ] s1) | s1 = bb12 ]
-    | bb12 = s0
-      [ s0 = [ &_17 <- { _17 with current = { _17.current with t_Node__color = _16 } } ] s1
-      | s1 = {[@expl:type invariant] inv'9 _17} s2
-      | s2 = -{resolve'1 _17}- s3
-      | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'0 self}- s5
-      | s5 = bb14 ]
-    | bb13 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb14 ]
-    | bb14 = s0 [ s0 = [ &_20 <- () ] s1 | s1 = bb15 ]
-    | bb15 = s0 [ s0 = [ &_0 <- C_Some'0 r ] s1 | s1 = bb18 ]
-    | bb18 = return {_0} ]
-    [ & _0: t_Option'0 = Any.any_l ()
+      | s2 = as_mut {_24} (fun (_ret: t_Option'0) -> [ &_23 <- _ret ] s3)
+      | s3 = bb15 ]
+    | bb15 = s0 [ s0 = unwrap {_23} (fun (_ret: MutBorrow.t t_Node) -> [ &_22 <- _ret ] s1) | s1 = bb16 ]
+    | bb16 = s0
+      [ s0 = [ &_22 <- { _22 with current = { _22.current with t_Node__color = _21 } } ] s1
+      | s1 = {[@expl:type invariant] inv'6 _22} s2
+      | s2 = -{resolve'0 _22}- s3
+      | s3 = {[@expl:type invariant] inv'12 self} s4
+      | s4 = -{resolve self}- s5
+      | s5 = bb18 ]
+    | bb17 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve self}- s2 | s2 = bb18 ]
+    | bb18 = s0 [ s0 = [ &_25 <- () ] s1 | s1 = bb19 ]
+    | bb19 = s0 [ s0 = [ &_0 <- C_Some'2 r ] s1 | s1 = bb22 ]
+    | bb22 = return {_0} ]
+    [ & _0: t_Option'2 = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
-    | & _4: MutBorrow.t t_Option = Any.any_l ()
     | & node: MutBorrow.t t_Node = Any.any_l ()
-    | & _7: bool = Any.any_l ()
-    | & _9: t_Color = Any.any_l ()
+    | & _4: t_ControlFlow = Any.any_l ()
+    | & _5: t_Option'0 = Any.any_l ()
+    | & _6: MutBorrow.t t_Option = Any.any_l ()
+    | & residual: t_Option'1 = Any.any_l ()
+    | & val': MutBorrow.t t_Node = Any.any_l ()
+    | & _13: bool = Any.any_l ()
+    | & _15: t_Color = Any.any_l ()
     | & r: tuple = Any.any_l ()
-    | & _12: MutBorrow.t t_Tree = Any.any_l ()
-    | & _14: bool = Any.any_l ()
-    | & _16: t_Color = Any.any_l ()
-    | & _17: MutBorrow.t t_Node = Any.any_l ()
-    | & _18: t_Option'1 = Any.any_l ()
-    | & _19: MutBorrow.t t_Option = Any.any_l ()
-    | & _20: () = Any.any_l () ])
-    [ return (result: t_Option'0) -> {[@expl:delete_max result type invariant] inv'13 result}
+    | & _17: MutBorrow.t t_Tree = Any.any_l ()
+    | & _19: bool = Any.any_l ()
+    | & _21: t_Color = Any.any_l ()
+    | & _22: MutBorrow.t t_Node = Any.any_l ()
+    | & _23: t_Option'0 = Any.any_l ()
+    | & _24: MutBorrow.t t_Option = Any.any_l ()
+    | & _25: () = Any.any_l () ])
+    [ return (result: t_Option'2) -> {[@expl:delete_max result type invariant] inv'14 result}
       {[@expl:delete_max ensures] match result with
-        | C_Some'0 {f0 = k; f1 = v} -> Map.get (view'0 self.current) (deep_model k) = C_Some'2 v
-        /\ (forall k2: t_DeepModelTy. Map.get (view'0 self.current) k2 = C_None'2 \/ le_log k2 (deep_model k))
-        /\ view'0 self.final = Map.set (view'0 self.current) (deep_model k) (C_None'2)
-        | C_None'0 -> view'0 self.final = view'0 self.current /\ view'0 self.current = Const.const (C_None'2)
+        | C_Some'2 {f0 = k; f1 = v} -> Map.get (view'0 self.current) (deep_model k) = C_Some'3 v
+        /\ (forall k2: t_DeepModelTy. Map.get (view'0 self.current) k2 = C_None'3 \/ le_log k2 (deep_model k))
+        /\ view'0 self.final = Map.set (view'0 self.current) (deep_model k) (C_None'3)
+        | C_None'2 -> view'0 self.final = view'0 self.current /\ view'0 self.current = Const.const (C_None'3)
         end}
       (! return {result}) ]
 end
@@ -7499,6 +7568,8 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
         | C_Some a_0 -> inv'4 a_0
         end
   
+  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_Node)
+  
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''0
@@ -7507,9 +7578,68 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
+  
+  meta "rewrite_def" predicate inv'6
+  
+  predicate inv'7 (_1: t_Option'1)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'1 [inv'7 x]. inv'7 x
+      = match x with
+        | C_None'1 -> true
+        | C_Some'1 a_0 -> inv'6 a_0
+        end
+  
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) =
+    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
+    any
+    [ return (result: t_Option'1) -> {inv'7 result}
+      {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
+      {self_.current = C_None
+      \/ (exists r: MutBorrow.t t_Node. result = C_Some'1 r
+        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
+      (! return {result}) ]
+  
+  type t_Option'2 = C_None'2 | C_Some'2 ()
+  
+  type t_ControlFlow = C_Continue (MutBorrow.t t_Node) | C_Break t_Option'2
+  
+  predicate inv'8 [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv'8
+  
+  predicate inv'9 (_1: t_Option'2)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'9 x]. inv'9 x
+      = match x with
+        | C_None'2 -> true
+        | C_Some'2 a_0 -> inv'8 a_0
+        end
+  
+  predicate inv'10 (_1: t_ControlFlow)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_ControlFlow [inv'10 x]. inv'10 x
+      = match x with
+        | C_Continue a_0 -> inv'6 a_0
+        | C_Break a_0 -> inv'9 a_0
+        end
+  
+  let rec branch (self_: t_Option'1) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'7 self_}
+    any
+    [ return (result: t_ControlFlow) -> {inv'10 result}
+      {match self_ with
+        | C_Some'1 v -> result = C_Continue v
+        | C_None'1 -> result = C_Break (C_None'2)
+        end}
+      (! return {result}) ]
+  
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option'2)) = any
+    [ good (field_0: t_Option'2) -> {C_Break field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Option'2 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
@@ -7545,63 +7675,73 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
       /\ color_invariant left /\ color_invariant right
       end
   
-  predicate invariant''1 (self: t_Map) =
+  predicate invariant''2 (self: t_Map) =
     internal_invariant self.t_Map__0 /\ color_invariant self.t_Map__0 /\ color self.t_Map__0 = C_Black
   
-  predicate inv'6 (_1: t_Map)
+  predicate inv'11 (_1: t_Map)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Map [inv'11 x]. inv'11 x = (invariant''2 x /\ inv'1 x.t_Map__0)
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
-  
-  meta "rewrite_def" predicate inv'7
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  type tuple = { f0: t_K; f1: t_V }
-  
-  type t_Option'1 = C_None'1 | C_Some'1 tuple
-  
-  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
-    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
-  
-  predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'1 self
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''3 _1
   
-  meta "rewrite_def" predicate inv'8
+  meta "rewrite_def" predicate inv'12
   
-  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
-    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
+  meta "rewrite_def" predicate resolve
+  
+  type tuple = { f0: t_K; f1: t_V }
+  
+  type t_Option'3 = C_None'3 | C_Some'3 tuple
+  
+  predicate inv'13 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  
+  meta "rewrite_def" predicate inv'13
+  
+  predicate inv'14 (_1: t_Option'3)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'3 [inv'14 x]. inv'14 x
+      = match x with
+        | C_None'3 -> true
+        | C_Some'3 a_0 -> inv'13 a_0
+        end
+  
+  let rec from_residual (residual: t_Option'2) (return (x: t_Option'3)) =
+    {[@expl:from_residual 'residual' type invariant] inv'9 residual}
+    any [ return (result: t_Option'3) -> {inv'14 result} {result = C_None'3} (! return {result}) ]
+  
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: MutBorrow.t t_Node)) = any
+    [ good (field_0: MutBorrow.t t_Node) -> {C_Continue field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: MutBorrow.t t_Node [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input}
+      (! {false}
+      any) ]
+  
+  predicate invariant''4 [@inline:trivial] (self: t_Tree) = inv'1 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
+  predicate inv'15 [@inline:trivial] (_1: t_Tree) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'9
+  meta "rewrite_def" predicate inv'15
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'15 self}
+    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
+  predicate inv'16 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  meta "rewrite_def" predicate inv'10
+  meta "rewrite_def" predicate inv'16
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -7614,19 +7754,17 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
         end
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'11 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
-  
-  meta "rewrite_def" predicate inv'11
+  meta "rewrite_def" function cpn
   
   let rec delete_min_rec (self: MutBorrow.t t_Tree) (return (x: tuple)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv'10 self}
+    {[@expl:delete_min_rec 'self' type invariant] inv'16 self}
     {[@expl:delete_min_rec requires #0] internal_invariant self.current}
     {[@expl:delete_min_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     any
-    [ return (result: tuple) -> {inv'11 result}
+    [ return (result: tuple) -> {inv'13 result}
       {internal_invariant self.final}
       {height self.current = height self.final}
       {has_mapping self.current (deep_model result.f0) result.f1}
@@ -7637,38 +7775,10 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
       {color self.current = C_Black -> color self.final = C_Black}
       (! return {result}) ]
   
-  type t_Option'2 = C_None'2 | C_Some'2 (MutBorrow.t t_Node)
-  
-  predicate inv'12 (_1: t_Option'2)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'12 x]. inv'12 x
-      = match x with
-        | C_None'2 -> true
-        | C_Some'2 a_0 -> inv'9 a_0
-        end
-  
-  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'2)) =
-    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
-    any
-    [ return (result: t_Option'2) -> {inv'12 result}
-      {self_.current = C_None -> result = C_None'2 /\ self_.final = C_None}
-      {self_.current = C_None
-      \/ (exists r: MutBorrow.t t_Node. result = C_Some'2 r
-        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return {result}) ]
-  
-  let rec unwrap (self_: t_Option'2) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:unwrap 'self_' type invariant] inv'12 self_}
-    {[@expl:unwrap requires] self_ <> C_None'2}
-    any [ return (result: MutBorrow.t t_Node) -> {inv'9 result} {C_Some'2 result = self_} (! return {result}) ]
-  
-  predicate inv'13 (_1: t_Option'1)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'11 a_0
-        end
+  let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_Node)) =
+    {[@expl:unwrap 'self_' type invariant] inv'7 self_}
+    {[@expl:unwrap requires] self_ <> C_None'1}
+    any [ return (result: MutBorrow.t t_Node) -> {inv'6 result} {C_Some'1 result = self_} (! return {result}) ]
   
   function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'0 = view self.t_Map__0
   
@@ -7676,100 +7786,96 @@ module M_red_black_tree__qyi1722927563742988856__delete_min (* Map<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let rec delete_min (self: MutBorrow.t t_Map) (return (x: t_Option'1)) =
-    {[@expl:delete_min 'self' type invariant] inv'7 self}
+  let rec delete_min (self: MutBorrow.t t_Map) (return (x: t_Option'3)) =
+    {[@expl:delete_min 'self' type invariant] inv'12 self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_3 <- () ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_6 <- _ret ] -{inv'2 _ret.final}-
+            [ &_8 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
-      | s1 = any [ br0 -> {_6.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_6.current = C_Some x0} (! bb3) ] ]
-    | bb8 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _6} s1
-      | s1 = -{resolve _6}- s2
-      | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'0 self}- s4
-      | s4 = [ &_0 <- C_None'1 ] s5
-      | s5 = bb18 ]
-    | bb3 = s0
-      [ s0 = v_Some {_6.current}
-          (fun (r0: t_Node) ->
-            {inv'4 r0}
-            MutBorrow.borrow_final <t_Node> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _6) 1}
-              (fun (_ret: MutBorrow.t t_Node) ->
-                [ &node <- _ret ] -{inv'4 _ret.final}-
-                [ &_6 <- { _6 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_9 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = any [ br0 -> {_9 = false} (! bb6) | br1 -> {_9} (! bb5) ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'1 node}- s2
-      | s2 = {[@expl:type invariant] inv'5 _6} s3
-      | s3 = -{resolve _6}- s4
-      | s4 = bb7 ]
-    | bb6 = s0
-      [ s0 = [ &_11 <- C_Red ] s1
-      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _11 } } ] s2
-      | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'1 node}- s4
-      | s4 = {[@expl:type invariant] inv'5 _6} s5
-      | s5 = -{resolve _6}- s6
-      | s6 = bb7 ]
+      | s1 = as_mut {_8} (fun (_ret: t_Option'1) -> [ &_7 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0 [ s0 = branch {_7} (fun (_ret: t_ControlFlow) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = any
+      [ br0 (x0: MutBorrow.t t_Node) -> {_6 = C_Continue x0} (! bb6)
+      | br1 (x0: t_Option'2) -> {_6 = C_Break x0} (! bb7) ]
     | bb7 = s0
+      [ s0 = v_Break {_6} (fun (r0: t_Option'2) -> [ &residual <- r0 ] s1)
+      | s1 = {[@expl:type invariant] inv'12 self} s2
+      | s2 = -{resolve self}- s3
+      | s3 = from_residual {residual} (fun (_ret: t_Option'3) -> [ &_0 <- _ret ] s4)
+      | s4 = bb22 ]
+    | bb6 = s0
+      [ s0 = v_Continue {_6} (fun (r0: MutBorrow.t t_Node) -> [ &val' <- r0 ] s1)
+      | s1 = [ &node <- val' ] s2
+      | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_15 <- _ret ] s3)
+      | s3 = bb9 ]
+    | bb9 = any [ br0 -> {_15 = false} (! bb11) | br1 -> {_15} (! bb10) ]
+    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'6 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb12 ]
+    | bb11 = s0
+      [ s0 = [ &_17 <- C_Red ] s1
+      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _17 } } ] s2
+      | s2 = {[@expl:type invariant] inv'6 node} s3
+      | s3 = -{resolve'0 node}- s4
+      | s4 = bb12 ]
+    | bb12 = s0
       [ s0 = {inv'1 self.current.t_Map__0}
         MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_14 <- _ret ] -{inv'1 _ret.final}-
+            [ &_19 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
-      | s1 = delete_min_rec {_14} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
-      | s2 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_16 <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb11) ]
-    | bb11 = s0
-      [ s0 = [ &_18 <- C_Black ] s1
+      | s1 = delete_min_rec {_19} (fun (_ret: tuple) -> [ &r <- _ret ] s2)
+      | s2 = bb13 ]
+    | bb13 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_21 <- _ret ] s1) | s1 = bb14 ]
+    | bb14 = any [ br0 -> {_21 = false} (! bb18) | br1 -> {_21} (! bb15) ]
+    | bb15 = s0
+      [ s0 = [ &_23 <- C_Black ] s1
       | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_21 <- _ret ] -{inv'2 _ret.final}-
+            [ &_26 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s2)
-      | s2 = as_mut {_21} (fun (_ret: t_Option'2) -> [ &_20 <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0 [ s0 = unwrap {_20} (fun (_ret: MutBorrow.t t_Node) -> [ &_19 <- _ret ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = [ &_19 <- { _19 with current = { _19.current with t_Node__color = _18 } } ] s1
-      | s1 = {[@expl:type invariant] inv'9 _19} s2
-      | s2 = -{resolve'1 _19}- s3
-      | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'0 self}- s5
-      | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
-    | bb15 = s0 [ s0 = [ &_0 <- C_Some'1 r ] s1 | s1 = bb18 ]
-    | bb18 = return {_0} ]
-    [ & _0: t_Option'1 = Any.any_l ()
+      | s2 = as_mut {_26} (fun (_ret: t_Option'1) -> [ &_25 <- _ret ] s3)
+      | s3 = bb16 ]
+    | bb16 = s0 [ s0 = unwrap {_25} (fun (_ret: MutBorrow.t t_Node) -> [ &_24 <- _ret ] s1) | s1 = bb17 ]
+    | bb17 = s0
+      [ s0 = [ &_24 <- { _24 with current = { _24.current with t_Node__color = _23 } } ] s1
+      | s1 = {[@expl:type invariant] inv'6 _24} s2
+      | s2 = -{resolve'0 _24}- s3
+      | s3 = {[@expl:type invariant] inv'12 self} s4
+      | s4 = -{resolve self}- s5
+      | s5 = bb19 ]
+    | bb18 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve self}- s2 | s2 = bb19 ]
+    | bb19 = s0 [ s0 = [ &_0 <- C_Some'3 r ] s1 | s1 = bb22 ]
+    | bb22 = return {_0} ]
+    [ & _0: t_Option'3 = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
     | & _3: () = Any.any_l ()
-    | & _6: MutBorrow.t t_Option = Any.any_l ()
     | & node: MutBorrow.t t_Node = Any.any_l ()
-    | & _9: bool = Any.any_l ()
-    | & _11: t_Color = Any.any_l ()
+    | & _6: t_ControlFlow = Any.any_l ()
+    | & _7: t_Option'1 = Any.any_l ()
+    | & _8: MutBorrow.t t_Option = Any.any_l ()
+    | & residual: t_Option'2 = Any.any_l ()
+    | & val': MutBorrow.t t_Node = Any.any_l ()
+    | & _15: bool = Any.any_l ()
+    | & _17: t_Color = Any.any_l ()
     | & r: tuple = Any.any_l ()
-    | & _14: MutBorrow.t t_Tree = Any.any_l ()
-    | & _16: bool = Any.any_l ()
-    | & _18: t_Color = Any.any_l ()
-    | & _19: MutBorrow.t t_Node = Any.any_l ()
-    | & _20: t_Option'2 = Any.any_l ()
-    | & _21: MutBorrow.t t_Option = Any.any_l () ])
-    [ return (result: t_Option'1) -> {[@expl:delete_min result type invariant] inv'13 result}
+    | & _19: MutBorrow.t t_Tree = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & _23: t_Color = Any.any_l ()
+    | & _24: MutBorrow.t t_Node = Any.any_l ()
+    | & _25: t_Option'1 = Any.any_l ()
+    | & _26: MutBorrow.t t_Option = Any.any_l () ])
+    [ return (result: t_Option'3) -> {[@expl:delete_min result type invariant] inv'14 result}
       {[@expl:delete_min ensures] match result with
-        | C_Some'1 {f0 = k; f1 = v} -> Map.get (view'0 self.current) (deep_model k) = C_Some'0 v
+        | C_Some'3 {f0 = k; f1 = v} -> Map.get (view'0 self.current) (deep_model k) = C_Some'0 v
         /\ (forall k2: t_DeepModelTy. Map.get (view'0 self.current) k2 = C_None'0 \/ le_log (deep_model k) k2)
         /\ view'0 self.final = Map.set (view'0 self.current) (deep_model k) (C_None'0)
-        | C_None'1 -> view'0 self.final = view'0 self.current /\ view'0 self.current = Const.const (C_None'0)
+        | C_None'3 -> view'0 self.final = view'0 self.current /\ view'0 self.current = Const.const (C_None'0)
         end}
       (! return {result}) ]
 end
@@ -7932,6 +8038,8 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
         | C_Some a_0 -> inv'4 a_0
         end
   
+  type t_Option'1 = C_None'1 | C_Some'1 (MutBorrow.t t_Node)
+  
   predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'2 self.current /\ inv'2 self.final
   
   meta "rewrite_def" predicate invariant''0
@@ -7940,9 +8048,68 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   meta "rewrite_def" predicate inv'5
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate invariant''1
+  
+  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''1 _1
+  
+  meta "rewrite_def" predicate inv'6
+  
+  predicate inv'7 (_1: t_Option'1)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Option'1 [inv'7 x]. inv'7 x
+      = match x with
+        | C_None'1 -> true
+        | C_Some'1 a_0 -> inv'6 a_0
+        end
+  
+  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'1)) =
+    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
+    any
+    [ return (result: t_Option'1) -> {inv'7 result}
+      {self_.current = C_None -> result = C_None'1 /\ self_.final = C_None}
+      {self_.current = C_None
+      \/ (exists r: MutBorrow.t t_Node. result = C_Some'1 r
+        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
+      (! return {result}) ]
+  
+  type t_Option'2 = C_None'2 | C_Some'2 ()
+  
+  type t_ControlFlow = C_Continue (MutBorrow.t t_Node) | C_Break t_Option'2
+  
+  predicate inv'8 [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv'8
+  
+  predicate inv'9 (_1: t_Option'2)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'2 [inv'9 x]. inv'9 x
+      = match x with
+        | C_None'2 -> true
+        | C_Some'2 a_0 -> inv'8 a_0
+        end
+  
+  predicate inv'10 (_1: t_ControlFlow)
+  
+  axiom inv_axiom'4 [@rewrite]: forall x: t_ControlFlow [inv'10 x]. inv'10 x
+      = match x with
+        | C_Continue a_0 -> inv'6 a_0
+        | C_Break a_0 -> inv'9 a_0
+        end
+  
+  let rec branch (self_: t_Option'1) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'7 self_}
+    any
+    [ return (result: t_ControlFlow) -> {inv'10 result}
+      {match self_ with
+        | C_Some'1 v -> result = C_Continue v
+        | C_None'1 -> result = C_Break (C_None'2)
+        end}
+      (! return {result}) ]
+  
+  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option'2)) = any
+    [ good (field_0: t_Option'2) -> {C_Break field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: t_Option'2 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
   
   function height (self: t_Tree) : int = match self with
       | {t_Tree__node = C_None} -> 0
@@ -7978,71 +8145,81 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
       /\ color_invariant left /\ color_invariant right
       end
   
-  predicate invariant''1 (self: t_Map) =
+  predicate invariant''2 (self: t_Map) =
     internal_invariant self.t_Map__0 /\ color_invariant self.t_Map__0 /\ color self.t_Map__0 = C_Black
   
-  predicate inv'6 (_1: t_Map)
+  predicate inv'11 (_1: t_Map)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Map [inv'6 x]. inv'6 x = (invariant''1 x /\ inv'1 x.t_Map__0)
+  axiom inv_axiom'5 [@rewrite]: forall x: t_Map [inv'11 x]. inv'11 x = (invariant''2 x /\ inv'1 x.t_Map__0)
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'6 self.current /\ inv'6 self.final
-  
-  meta "rewrite_def" predicate invariant''2
-  
-  predicate inv'7 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
-  
-  meta "rewrite_def" predicate inv'7
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  type tuple = { f0: t_K; f1: t_V }
-  
-  type t_Option'1 = C_None'1 | C_Some'1 tuple
-  
-  let rec v_Some (input: t_Option) (ret (field_0: t_Node)) = any
-    [ good (field_0: t_Node) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Node [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
-  
-  predicate invariant''3 [@inline:trivial] (self: t_Tree) = inv'1 self
+  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'11 self.current /\ inv'11 self.final
   
   meta "rewrite_def" predicate invariant''3
   
-  predicate inv'8 [@inline:trivial] (_1: t_Tree) = invariant''3 _1
+  predicate inv'12 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''3 _1
   
-  meta "rewrite_def" predicate inv'8
+  meta "rewrite_def" predicate inv'12
   
-  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'8 self}
-    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
+  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_Node) = inv'4 self.current /\ inv'4 self.final
+  meta "rewrite_def" predicate resolve
+  
+  type tuple = { f0: t_K; f1: t_V }
+  
+  type t_Option'3 = C_None'3 | C_Some'3 tuple
+  
+  predicate inv'13 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  
+  meta "rewrite_def" predicate inv'13
+  
+  predicate inv'14 (_1: t_Option'3)
+  
+  axiom inv_axiom'6 [@rewrite]: forall x: t_Option'3 [inv'14 x]. inv'14 x
+      = match x with
+        | C_None'3 -> true
+        | C_Some'3 a_0 -> inv'13 a_0
+        end
+  
+  let rec from_residual (residual: t_Option'2) (return (x: t_Option'3)) =
+    {[@expl:from_residual 'residual' type invariant] inv'9 residual}
+    any [ return (result: t_Option'3) -> {inv'14 result} {result = C_None'3} (! return {result}) ]
+  
+  let rec v_Continue (input: t_ControlFlow) (ret (field_0: MutBorrow.t t_Node)) = any
+    [ good (field_0: MutBorrow.t t_Node) -> {C_Continue field_0 = input} (! ret {field_0})
+    | bad -> {forall field_0: MutBorrow.t t_Node [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input}
+      (! {false}
+      any) ]
+  
+  predicate invariant''4 [@inline:trivial] (self: t_Tree) = inv'1 self
   
   meta "rewrite_def" predicate invariant''4
   
-  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Node) = invariant''4 _1
+  predicate inv'15 [@inline:trivial] (_1: t_Tree) = invariant''4 _1
   
-  meta "rewrite_def" predicate inv'9
+  meta "rewrite_def" predicate inv'15
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  let rec is_red (self: t_Tree) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv'15 self}
+    any [ return (result: bool) -> {result = (color self = C_Red)} (! return {result}) ]
   
-  meta "rewrite_def" predicate resolve'1
+  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve'0
   
   predicate invariant''5 [@inline:trivial] (self: MutBorrow.t t_Tree) = inv'1 self.current /\ inv'1 self.final
   
   meta "rewrite_def" predicate invariant''5
   
-  predicate inv'10 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
+  predicate inv'16 [@inline:trivial] (_1: MutBorrow.t t_Tree) = invariant''5 _1
   
-  meta "rewrite_def" predicate inv'10
+  meta "rewrite_def" predicate inv'16
   
   predicate invariant''6 [@inline:trivial] (self: t_K) = inv self
   
   meta "rewrite_def" predicate invariant''6
   
-  predicate inv'11 [@inline:trivial] (_1: t_K) = invariant''6 _1
+  predicate inv'17 [@inline:trivial] (_1: t_K) = invariant''6 _1
   
-  meta "rewrite_def" predicate inv'11
+  meta "rewrite_def" predicate inv'17
   
   type t_CP = C_CPL t_Color | C_CPN t_Color t_CP t_CP
   
@@ -8055,37 +8232,27 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
         end
       end
   
-  function cpn (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
+  function cpn [@inline:trivial] (c: t_Color) (l: t_CP) (r: t_CP) : t_CP = C_CPN c l r
   
-  predicate inv'12 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
-  
-  meta "rewrite_def" predicate inv'12
-  
-  predicate inv'13 (_1: t_Option'1)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option'1 [inv'13 x]. inv'13 x
-      = match x with
-        | C_None'1 -> true
-        | C_Some'1 a_0 -> inv'12 a_0
-        end
+  meta "rewrite_def" function cpn
   
   function deep_model'0 [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model self
   
   meta "rewrite_def" function deep_model'0
   
-  let rec delete_rec (self: MutBorrow.t t_Tree) (key: t_K) (return (x: t_Option'1)) =
-    {[@expl:delete_rec 'self' type invariant] inv'10 self}
-    {[@expl:delete_rec 'key' type invariant] inv'11 key}
+  let rec delete_rec (self: MutBorrow.t t_Tree) (key: t_K) (return (x: t_Option'3)) =
+    {[@expl:delete_rec 'self' type invariant] inv'16 self}
+    {[@expl:delete_rec 'key' type invariant] inv'17 key}
     {[@expl:delete_rec requires #0] internal_invariant self.current}
     {[@expl:delete_rec requires #1] match_t (C_CPL (C_Red)) self.current
     \/ match_t (cpn (C_Black) (C_CPL (C_Red)) (C_CPL (C_Black))) self.current}
     any
-    [ return (result: t_Option'1) -> {inv'13 result}
+    [ return (result: t_Option'3) -> {inv'14 result}
       {internal_invariant self.final}
       {height self.current = height self.final}
       {match result with
-        | C_None'1 -> forall v: t_V. not has_mapping self.current (deep_model'0 key) v
-        | C_Some'1 {f0 = k; f1 = v} -> deep_model'0 key = deep_model k /\ has_mapping self.current (deep_model k) v
+        | C_None'3 -> forall v: t_V. not has_mapping self.current (deep_model'0 key) v
+        | C_Some'3 {f0 = k; f1 = v} -> deep_model'0 key = deep_model k /\ has_mapping self.current (deep_model k) v
         end}
       {forall k: t_DeepModelTy, v: t_V. has_mapping self.final k v
         = (deep_model'0 key <> k /\ has_mapping self.current k v)}
@@ -8093,30 +8260,10 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
       {color self.current = C_Black -> color self.final = C_Black}
       (! return {result}) ]
   
-  type t_Option'2 = C_None'2 | C_Some'2 (MutBorrow.t t_Node)
-  
-  predicate inv'14 (_1: t_Option'2)
-  
-  axiom inv_axiom'4 [@rewrite]: forall x: t_Option'2 [inv'14 x]. inv'14 x
-      = match x with
-        | C_None'2 -> true
-        | C_Some'2 a_0 -> inv'9 a_0
-        end
-  
-  let rec as_mut (self_: MutBorrow.t t_Option) (return (x: t_Option'2)) =
-    {[@expl:as_mut 'self_' type invariant] inv'5 self_}
-    any
-    [ return (result: t_Option'2) -> {inv'14 result}
-      {self_.current = C_None -> result = C_None'2 /\ self_.final = C_None}
-      {self_.current = C_None
-      \/ (exists r: MutBorrow.t t_Node. result = C_Some'2 r
-        /\ self_.current = C_Some (r.current) /\ self_.final = C_Some (r.final))}
-      (! return {result}) ]
-  
-  let rec unwrap (self_: t_Option'2) (return (x: MutBorrow.t t_Node)) =
-    {[@expl:unwrap 'self_' type invariant] inv'14 self_}
-    {[@expl:unwrap requires] self_ <> C_None'2}
-    any [ return (result: MutBorrow.t t_Node) -> {inv'9 result} {C_Some'2 result = self_} (! return {result}) ]
+  let rec unwrap (self_: t_Option'1) (return (x: MutBorrow.t t_Node)) =
+    {[@expl:unwrap 'self_' type invariant] inv'7 self_}
+    {[@expl:unwrap requires] self_ <> C_None'1}
+    any [ return (result: MutBorrow.t t_Node) -> {inv'6 result} {C_Some'1 result = self_} (! return {result}) ]
   
   function view'0 (self: t_Map) : Map.map t_DeepModelTy t_Option'0 = view self.t_Map__0
   
@@ -8124,101 +8271,97 @@ module M_red_black_tree__qyi1722927563742988856__delete (* Map<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let rec delete (self: MutBorrow.t t_Map) (key: t_K) (return (x: t_Option'1)) =
-    {[@expl:delete 'self' type invariant] inv'7 self}
-    {[@expl:delete 'key' type invariant] inv'11 key}
+  let rec delete (self: MutBorrow.t t_Map) (key: t_K) (return (x: t_Option'3)) =
+    {[@expl:delete 'self' type invariant] inv'12 self}
+    {[@expl:delete 'key' type invariant] inv'17 key}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_5 <- () ] s1 | s1 = bb1 ]
     | bb1 = s0
       [ s0 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_mut <t_Option> {self.current.t_Map__0.t_Tree__node}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_8 <- _ret ] -{inv'2 _ret.final}-
+            [ &_10 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s1)
-      | s1 = any [ br0 -> {_8.current = C_None} (! bb8) | br1 (x0: t_Node) -> {_8.current = C_Some x0} (! bb3) ] ]
-    | bb8 = s0
-      [ s0 = {[@expl:type invariant] inv'5 _8} s1
-      | s1 = -{resolve _8}- s2
-      | s2 = {[@expl:type invariant] inv'7 self} s3
-      | s3 = -{resolve'0 self}- s4
-      | s4 = [ &_0 <- C_None'1 ] s5
-      | s5 = bb17 ]
-    | bb3 = s0
-      [ s0 = v_Some {_8.current}
-          (fun (r0: t_Node) ->
-            {inv'4 r0}
-            MutBorrow.borrow_final <t_Node> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _8) 1}
-              (fun (_ret: MutBorrow.t t_Node) ->
-                [ &node <- _ret ] -{inv'4 _ret.final}-
-                [ &_8 <- { _8 with current = C_Some _ret.final } ] s1))
-      | s1 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_11 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = any [ br0 -> {_11 = false} (! bb6) | br1 -> {_11} (! bb5) ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'9 node} s1
-      | s1 = -{resolve'1 node}- s2
-      | s2 = {[@expl:type invariant] inv'5 _8} s3
-      | s3 = -{resolve _8}- s4
-      | s4 = bb7 ]
-    | bb6 = s0
-      [ s0 = [ &_13 <- C_Red ] s1
-      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _13 } } ] s2
-      | s2 = {[@expl:type invariant] inv'9 node} s3
-      | s3 = -{resolve'1 node}- s4
-      | s4 = {[@expl:type invariant] inv'5 _8} s5
-      | s5 = -{resolve _8}- s6
-      | s6 = bb7 ]
+      | s1 = as_mut {_10} (fun (_ret: t_Option'1) -> [ &_9 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0 [ s0 = branch {_9} (fun (_ret: t_ControlFlow) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = any
+      [ br0 (x0: MutBorrow.t t_Node) -> {_8 = C_Continue x0} (! bb6)
+      | br1 (x0: t_Option'2) -> {_8 = C_Break x0} (! bb7) ]
     | bb7 = s0
+      [ s0 = v_Break {_8} (fun (r0: t_Option'2) -> [ &residual <- r0 ] s1)
+      | s1 = {[@expl:type invariant] inv'12 self} s2
+      | s2 = -{resolve self}- s3
+      | s3 = from_residual {residual} (fun (_ret: t_Option'3) -> [ &_0 <- _ret ] s4)
+      | s4 = bb21 ]
+    | bb6 = s0
+      [ s0 = v_Continue {_8} (fun (r0: MutBorrow.t t_Node) -> [ &val' <- r0 ] s1)
+      | s1 = [ &node <- val' ] s2
+      | s2 = is_red {node.current.t_Node__left} (fun (_ret: bool) -> [ &_17 <- _ret ] s3)
+      | s3 = bb9 ]
+    | bb9 = any [ br0 -> {_17 = false} (! bb11) | br1 -> {_17} (! bb10) ]
+    | bb10 = s0 [ s0 = {[@expl:type invariant] inv'6 node} s1 | s1 = -{resolve'0 node}- s2 | s2 = bb12 ]
+    | bb11 = s0
+      [ s0 = [ &_19 <- C_Red ] s1
+      | s1 = [ &node <- { node with current = { node.current with t_Node__color = _19 } } ] s2
+      | s2 = {[@expl:type invariant] inv'6 node} s3
+      | s3 = -{resolve'0 node}- s4
+      | s4 = bb12 ]
+    | bb12 = s0
       [ s0 = {inv'1 self.current.t_Map__0}
         MutBorrow.borrow_mut <t_Tree> {self.current.t_Map__0}
           (fun (_ret: MutBorrow.t t_Tree) ->
-            [ &_16 <- _ret ] -{inv'1 _ret.final}-
+            [ &_21 <- _ret ] -{inv'1 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = _ret.final } } ] s1)
-      | s1 = delete_rec {_16} {key} (fun (_ret: t_Option'1) -> [ &r <- _ret ] s2)
-      | s2 = bb9 ]
-    | bb9 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_19 <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = any [ br0 -> {_19 = false} (! bb14) | br1 -> {_19} (! bb11) ]
-    | bb11 = s0
-      [ s0 = [ &_21 <- C_Black ] s1
+      | s1 = delete_rec {_21} {key} (fun (_ret: t_Option'3) -> [ &r <- _ret ] s2)
+      | s2 = bb13 ]
+    | bb13 = s0 [ s0 = is_red {self.current.t_Map__0} (fun (_ret: bool) -> [ &_24 <- _ret ] s1) | s1 = bb14 ]
+    | bb14 = any [ br0 -> {_24 = false} (! bb18) | br1 -> {_24} (! bb15) ]
+    | bb15 = s0
+      [ s0 = [ &_26 <- C_Black ] s1
       | s1 = {inv'2 self.current.t_Map__0.t_Tree__node}
         MutBorrow.borrow_final <t_Option> {self.current.t_Map__0.t_Tree__node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_24 <- _ret ] -{inv'2 _ret.final}-
+            [ &_29 <- _ret ] -{inv'2 _ret.final}-
             [ &self <- { self with current = { t_Map__0 = { t_Tree__node = _ret.final } } } ] s2)
-      | s2 = as_mut {_24} (fun (_ret: t_Option'2) -> [ &_23 <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0 [ s0 = unwrap {_23} (fun (_ret: MutBorrow.t t_Node) -> [ &_22 <- _ret ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = [ &_22 <- { _22 with current = { _22.current with t_Node__color = _21 } } ] s1
-      | s1 = {[@expl:type invariant] inv'9 _22} s2
-      | s2 = -{resolve'1 _22}- s3
-      | s3 = {[@expl:type invariant] inv'7 self} s4
-      | s4 = -{resolve'0 self}- s5
-      | s5 = bb15 ]
-    | bb14 = s0 [ s0 = {[@expl:type invariant] inv'7 self} s1 | s1 = -{resolve'0 self}- s2 | s2 = bb15 ]
-    | bb15 = s0 [ s0 = [ &_0 <- r ] s1 | s1 = bb17 ]
-    | bb17 = return {_0} ]
-    [ & _0: t_Option'1 = Any.any_l ()
+      | s2 = as_mut {_29} (fun (_ret: t_Option'1) -> [ &_28 <- _ret ] s3)
+      | s3 = bb16 ]
+    | bb16 = s0 [ s0 = unwrap {_28} (fun (_ret: MutBorrow.t t_Node) -> [ &_27 <- _ret ] s1) | s1 = bb17 ]
+    | bb17 = s0
+      [ s0 = [ &_27 <- { _27 with current = { _27.current with t_Node__color = _26 } } ] s1
+      | s1 = {[@expl:type invariant] inv'6 _27} s2
+      | s2 = -{resolve'0 _27}- s3
+      | s3 = {[@expl:type invariant] inv'12 self} s4
+      | s4 = -{resolve self}- s5
+      | s5 = bb19 ]
+    | bb18 = s0 [ s0 = {[@expl:type invariant] inv'12 self} s1 | s1 = -{resolve self}- s2 | s2 = bb19 ]
+    | bb19 = s0 [ s0 = [ &_0 <- r ] s1 | s1 = bb21 ]
+    | bb21 = return {_0} ]
+    [ & _0: t_Option'3 = Any.any_l ()
     | & self: MutBorrow.t t_Map = self
     | & key: t_K = key
     | & _5: () = Any.any_l ()
-    | & _8: MutBorrow.t t_Option = Any.any_l ()
     | & node: MutBorrow.t t_Node = Any.any_l ()
-    | & _11: bool = Any.any_l ()
-    | & _13: t_Color = Any.any_l ()
-    | & r: t_Option'1 = Any.any_l ()
-    | & _16: MutBorrow.t t_Tree = Any.any_l ()
-    | & _19: bool = Any.any_l ()
-    | & _21: t_Color = Any.any_l ()
-    | & _22: MutBorrow.t t_Node = Any.any_l ()
-    | & _23: t_Option'2 = Any.any_l ()
-    | & _24: MutBorrow.t t_Option = Any.any_l () ])
-    [ return (result: t_Option'1) -> {[@expl:delete result type invariant] inv'13 result}
+    | & _8: t_ControlFlow = Any.any_l ()
+    | & _9: t_Option'1 = Any.any_l ()
+    | & _10: MutBorrow.t t_Option = Any.any_l ()
+    | & residual: t_Option'2 = Any.any_l ()
+    | & val': MutBorrow.t t_Node = Any.any_l ()
+    | & _17: bool = Any.any_l ()
+    | & _19: t_Color = Any.any_l ()
+    | & r: t_Option'3 = Any.any_l ()
+    | & _21: MutBorrow.t t_Tree = Any.any_l ()
+    | & _24: bool = Any.any_l ()
+    | & _26: t_Color = Any.any_l ()
+    | & _27: MutBorrow.t t_Node = Any.any_l ()
+    | & _28: t_Option'1 = Any.any_l ()
+    | & _29: MutBorrow.t t_Option = Any.any_l () ])
+    [ return (result: t_Option'3) -> {[@expl:delete result type invariant] inv'14 result}
       {[@expl:delete ensures #0] match result with
-        | C_Some'1 {f0 = k; f1 = v} -> deep_model k = deep_model'0 key
+        | C_Some'3 {f0 = k; f1 = v} -> deep_model k = deep_model'0 key
         /\ Map.get (view'0 self.current) (deep_model'0 key) = C_Some'0 v
-        | C_None'1 -> Map.get (view'0 self.current) (deep_model'0 key) = C_None'0
+        | C_None'3 -> Map.get (view'0 self.current) (deep_model'0 key) = C_None'0
         end}
       {[@expl:delete ensures #1] view'0 self.final = Map.set (view'0 self.current) (deep_model'0 key) (C_None'0)}
       (! return {result}) ]
@@ -9012,7 +9155,7 @@ module M_red_black_tree__qyi1722927563742988856__get_mut (* Map<K, V> *)
         end}
       (! return {result}) ]
 end
-module M_red_black_tree__qyi8412372133095258695__resolve_coherence__refines (* <Tree<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi8412372133095258695__resolve_coherence__refines (* <Tree<K, V> as creusot_contracts::resolve::Resolve> *)
   type t_Color = C_Red | C_Black
   
   type t_K
@@ -9113,7 +9256,7 @@ module M_red_black_tree__qyi8412372133095258695__resolve_coherence__refines (* <
   goal refines: forall self: t_Tree. structural_resolve self /\ inv'2 self
       -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
-module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* <Node<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* <Node<K, V> as creusot_contracts::resolve::Resolve> *)
   type t_Color = C_Red | C_Black
   
   type t_K
@@ -9215,7 +9358,7 @@ module M_red_black_tree__qyi17767811206440054577__resolve_coherence__refines (* 
   goal refines: forall self: t_Node. structural_resolve self /\ inv'1 self
       -> structural_resolve self /\ (forall result: (). resolve'1 self -> resolve'1 self)
 end
-module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <Map<K, V> as creusot_contracts::Resolve> *)
+module M_red_black_tree__qyi7670249875066633436__resolve_coherence__refines (* <Map<K, V> as creusot_contracts::resolve::Resolve> *)
   use mach.int.Int
   use map.Map
   use map.Const

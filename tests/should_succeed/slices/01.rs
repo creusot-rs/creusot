@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(10 < a@.len())]
 pub fn index_slice(a: &[u32]) -> u32 {

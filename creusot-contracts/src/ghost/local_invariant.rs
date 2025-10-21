@@ -10,10 +10,10 @@
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_contracts::{
+//! #     cell::{PermCell, PermCellOwn},
 //! #     ghost::local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
 //! #     logic::Id,
-//! #     cell::{PermCell, PermCellOwn},
-//! #     *,
+//! #     prelude::*,
 //! # };
 //! declare_namespace! { PERMCELL }
 //!
@@ -54,15 +54,15 @@
 //! For now, [`Tokens`] must be explicitely passed to [`open`](LocalInvariant::open).
 //! We plan to relax this limitation at some point.
 
-use crate::{logic::Set, *};
-use ::std::cell::UnsafeCell;
+use crate::{logic::Set, prelude::*};
+use std::{cell::UnsafeCell, marker::PhantomData};
 
 /// Declare a new namespace.
 ///
 /// # Example
 ///
 /// ```rust
-/// use creusot_contracts::{*, ghost::local_invariant::{declare_namespace, Namespace}, logic::Set};
+/// use creusot_contracts::{ghost::local_invariant::{declare_namespace, Namespace}, logic::Set, prelude::*};
 /// declare_namespace! { A }
 ///
 /// #[requires(ns.contains(A()))]
@@ -98,7 +98,7 @@ pub struct Namespace(());
 /// To help passing it into functions, it may be [reborrowed](Self::reborrow),
 /// similarly to a normal borrow.
 #[opaque]
-pub struct Tokens<'a>(::std::marker::PhantomData<&'a ()>);
+pub struct Tokens<'a>(PhantomData<&'a ()>);
 
 impl Tokens<'_> {
     /// Get the underlying set of namespaces of this token.
@@ -124,7 +124,7 @@ impl Tokens<'_> {
     ///
     /// # Example
     /// ```
-    /// # use creusot_contracts::{*, ghost::local_invariant::Tokens};
+    /// # use creusot_contracts::{ghost::local_invariant::Tokens, prelude::*};
     /// fn foo(tokens: Ghost<Tokens>) {}
     /// fn bar(tokens: Ghost<Tokens>) {}
     /// fn baz(mut tokens: Ghost<Tokens>) {
@@ -136,7 +136,7 @@ impl Tokens<'_> {
     #[ensures(result == *self && ^self == *self)]
     #[check(ghost)]
     pub fn reborrow<'a>(&'a mut self) -> Tokens<'a> {
-        Tokens(::std::marker::PhantomData)
+        Tokens(PhantomData)
     }
 
     /// Split the tokens in two, so that it can be used to access independant invariants.
@@ -144,7 +144,7 @@ impl Tokens<'_> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, ghost::local_invariant::{declare_namespace, Tokens}};
+    /// # use creusot_contracts::{ghost::local_invariant::{declare_namespace, Tokens}, prelude::*};
     /// declare_namespace! { FOO }
     /// declare_namespace! { BAR }
     ///
@@ -173,7 +173,7 @@ impl Tokens<'_> {
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
-        (Tokens(::std::marker::PhantomData), Tokens(::std::marker::PhantomData))
+        (Tokens(PhantomData), Tokens(PhantomData))
     }
 
     #[logic(open)]
@@ -237,7 +237,7 @@ impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
 
 impl<'a, T> LocalInvariantExt<'a> for Ghost<&'a T>
 where
-    T: ::std::ops::Deref,
+    T: std::ops::Deref,
     Ghost<&'a T::Target>: LocalInvariantExt<'a>,
 {
     type Inner = <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::Inner;

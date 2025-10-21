@@ -1,9 +1,9 @@
 use crate::{
     ghost::Plain,
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
-    std::ops::{Add, Div, Mul, Neg, Rem, Sub},
-    *,
+    prelude::*,
 };
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 /// An unbounded, mathematical integer.
 ///
@@ -13,7 +13,7 @@ use crate::{
 ///
 /// Note that in pearlite, all integer literals are of type `Int`:
 /// ```
-/// # use creusot_contracts::*;
+/// # use creusot_contracts::prelude::*;
 /// let x = 1i32;
 /// //             ↓ need to use the view operator to convert `i32` to `Int`
 /// proof_assert!(x@ == 1);
@@ -44,7 +44,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(3.pow(4) == 729);
     /// ```
     #[logic]
@@ -59,7 +59,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(pow2(4) == 16);
     /// ```
     #[logic]
@@ -74,7 +74,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(10.max(2) == 10);
     /// ```
     #[logic]
@@ -89,7 +89,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(10.max(2) == 2);
     /// ```
     #[logic]
@@ -104,7 +104,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(10.div_euclid(3) == 3);
     /// ```
     #[logic]
@@ -119,7 +119,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     ///  proof_assert!(10.rem_euclid(3) == 1);
     /// ```
     #[logic]
@@ -134,7 +134,7 @@ impl Int {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// proof_assert!(10.abs_diff(3) == 7);
     /// proof_assert!(3.abs_diff(10) == 7);
     /// proof_assert!((-5).abs_diff(5) == 10);
@@ -216,7 +216,7 @@ impl Int {
     /// You should not have to use this method directly: instead, use the `int` suffix
     /// inside of a `ghost` block:
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let x: Ghost<Int> = ghost!(1int);
     /// ghost! {
     ///     let y: Int = 2int;
