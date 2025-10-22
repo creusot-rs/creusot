@@ -6,7 +6,7 @@
 use proc_macro2::{Delimiter, Group, Literal, TokenStream, TokenTree};
 use quote::quote_spanned;
 
-/// Change `xxxint` into `*::creusot_contracts::Int::new(xxx)`.
+/// Change `xxxint` into `*::creusot_contracts::logic::Int::new(xxx)`.
 pub(crate) fn ghost_preprocess(tokens: TokenStream) -> TokenStream {
     tokens
         .into_iter()
@@ -24,7 +24,7 @@ pub(crate) fn ghost_preprocess(tokens: TokenStream) -> TokenStream {
                     lit.set_span(span);
                     let mut group = Group::new(
                         Delimiter::None,
-                        quote_spanned!(span => ::creusot_contracts::Ghost::into_inner(::creusot_contracts::Int::new(#lit))).into(),
+                        quote_spanned!(span => ::creusot_contracts::ghost::Ghost::into_inner(::creusot_contracts::logic::Int::new(#lit))).into(),
                     );
                     group.set_span(literal.span());
                     TokenTree::Group(group)

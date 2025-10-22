@@ -1,4 +1,4 @@
-use crate::{std::iter::Fuse, *};
+use crate::{prelude::*, std::iter::Fuse};
 
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
@@ -16,7 +16,7 @@ impl<I: Iterator> Invariant for Fuse<I> {
     }
 }
 
-impl<I: Iterator> Iterator for Fuse<I> {
+impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -49,7 +49,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
+pub trait FusedIterator: std::iter::FusedIterator + IteratorSpec {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
@@ -57,7 +57,7 @@ pub trait FusedIterator: ::std::iter::FusedIterator + Iterator {
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
-impl<I: Iterator> FusedIterator for Fuse<I> {
+impl<I: IteratorSpec> FusedIterator for Fuse<I> {
     #[logic(open, law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]

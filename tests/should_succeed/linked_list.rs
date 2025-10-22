@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, *};
+use creusot_contracts::{ghost::PtrOwn, logic::Mapping, prelude::*};
 
 struct Cell<T> {
     v: T,
@@ -45,7 +45,7 @@ impl<T> View for List<T> {
 }
 
 #[logic]
-pub fn seq_map<T, U>(s: Seq<T>, f: logic::Mapping<T, U>) -> Seq<U> {
+pub fn seq_map<T, U>(s: Seq<T>, f: Mapping<T, U>) -> Seq<U> {
     Seq::create(s.len(), |i| f.get(s[i]))
 }
 

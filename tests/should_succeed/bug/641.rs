@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic, maintains};
+use creusot_contracts::prelude::*;
 
 #[logic(open)]
 pub fn test_law() {}

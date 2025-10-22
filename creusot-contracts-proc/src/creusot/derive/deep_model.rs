@@ -47,11 +47,11 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let expanded = quote! {
         #ty
 
-        impl #impl_generics ::creusot_contracts::DeepModel for #name #ty_generics #where_clause {
+        impl #impl_generics ::creusot_contracts::model::DeepModel for #name #ty_generics #where_clause {
             type DeepModelTy = #deep_model_ty_name #ty_generics;
 
-            #[::creusot_contracts::logic(#open)]
-            fn deep_model(self) -> Self::DeepModelTy {
+            #[::creusot_contracts::macros::logic(#open)]
+            fn deep_model(self) -> <Self as ::creusot_contracts::model::DeepModel>::DeepModelTy {
                 #eq
             }
         }
@@ -76,7 +76,7 @@ fn parse_deep_model_ty_attr(m: Meta) -> syn::Result<Path> {
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(::creusot_contracts::DeepModel));
+            type_param.bounds.push(parse_quote!(::creusot_contracts::model::DeepModel));
         }
     }
     generics
@@ -90,7 +90,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                    #vis #name: < #ty as ::creusot_contracts::DeepModel> :: DeepModelTy
+                    #vis #name: < #ty as ::creusot_contracts::model::DeepModel> :: DeepModelTy
                 }
             });
             quote! {
@@ -102,7 +102,7 @@ fn deep_model_ty_fields(fields: &Fields) -> TokenStream {
                 let ty = &f.ty;
                 let vis = &f.vis;
                 quote_spanned! {f.span()=>
-                   #vis < #ty as ::creusot_contracts::DeepModel> :: DeepModelTy
+                   #vis < #ty as ::creusot_contracts::model::DeepModel> :: DeepModelTy
                 }
             });
             quote! {
@@ -147,7 +147,7 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> syn::Result<T
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
                     quote_spanned! {f.span()=>
-                        #name: ::creusot_contracts::DeepModel::deep_model(self.#name)
+                        #name: ::creusot_contracts::model::DeepModel::deep_model(self.#name)
                     }
                 });
                 Ok(quote! {
@@ -158,7 +158,7 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> syn::Result<T
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
                     quote_spanned! {f.span()=>
-                        ::creusot_contracts::DeepModel::deep_model(self.#index)
+                        ::creusot_contracts::model::DeepModel::deep_model(self.#index)
                     }
                 });
                 Ok(quote! {

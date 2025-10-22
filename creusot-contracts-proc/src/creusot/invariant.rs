@@ -229,7 +229,7 @@ fn desugar_for(
         Invariant {
             kind: ForInvariant,
             span: for_span,
-            term: parse_quote_spanned! {for_span=> ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
+            term: parse_quote_spanned! {for_span=> ::creusot_contracts::std::iter::IteratorSpec::produces(#iter_old.inner(), #produced.inner(), #it) },
         },
     );
 

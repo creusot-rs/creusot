@@ -1,6 +1,6 @@
-use crate::{std::iter::Empty, *};
+use crate::{prelude::*, std::iter::Empty};
 
-impl<T> Iterator for Empty<T> {
+impl<T> IteratorSpec for Empty<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         resolve(self)

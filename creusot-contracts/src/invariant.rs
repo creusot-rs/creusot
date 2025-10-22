@@ -1,9 +1,9 @@
 //! Type invariants
 
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::*;
-use ::std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut};
 
 /// A user-defined _type invariant_.
 ///
@@ -12,7 +12,7 @@ use ::std::ops::{Deref, DerefMut};
 /// # Example
 ///
 /// ```rust
-/// # use creusot_contracts::*;
+/// # use creusot_contracts::prelude::*;
 /// struct SumTo10 {
 ///     a: i32,
 ///     b: i32,
@@ -58,7 +58,7 @@ use ::std::ops::{Deref, DerefMut};
 ///
 /// Invariant pre- and postconditions are not added to logical functions:
 /// ```
-/// # use creusot_contracts::*;
+/// # use creusot_contracts::prelude::*;
 /// # struct SumTo10 { a: i32, b: i32 }
 /// # impl Invariant for SumTo10 {
 /// # #[logic(open)] fn invariant(self) -> bool { pearlite!{self.a@ + self.b@ == 10} }
@@ -120,7 +120,7 @@ pub trait InhabitedInvariant: Invariant {
 /// # Example
 ///
 /// ```
-/// # use creusot_contracts::{*, invariant::{InhabitedInvariant, Subset}};
+/// # use creusot_contracts::{invariant::{InhabitedInvariant, Subset}, prelude::*};
 /// struct Pair(i32);
 /// impl Invariant for Pair {
 ///     #[logic] fn invariant(self) -> bool { self.0 % 2 == 0 }
@@ -179,7 +179,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, invariant::Subset};
+    /// # use creusot_contracts::{invariant::Subset, prelude::*};
     /// #[requires(x == y@)]
     /// fn foo<T: InhabitedInvariant>(x: T, y: Subset<T>) {
     ///     let x = Subset::new(x);
@@ -198,7 +198,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, invariant::{InhabitedInvariant, Subset}};
+    /// # use creusot_contracts::{invariant::{InhabitedInvariant, Subset}, prelude::*};
     /// // Use the `Pair` type defined in `Subset`'s documentation
     /// # struct Pair(i32);
     /// # impl Invariant for Pair {
@@ -222,7 +222,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, invariant::{InhabitedInvariant, Subset}};
+    /// # use creusot_contracts::{invariant::{InhabitedInvariant, Subset}, prelude::*};
     /// // Use the `Pair` type defined in `Subset`'s documentation
     /// # struct Pair(i32);
     /// # impl Invariant for Pair {

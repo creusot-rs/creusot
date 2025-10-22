@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
+    prelude::*,
     std::mem::{align_of_logic, size_of_logic},
-    *,
 };
 
 pub fn f() {

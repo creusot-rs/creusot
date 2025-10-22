@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(x@ == 100_000)]
 pub fn test_fnmut(mut x: u32) {

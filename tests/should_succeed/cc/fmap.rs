@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::FMap, *};
+use creusot_contracts::{logic::FMap, prelude::*};
 
 #[ensures(*result == 2usize)]
 pub fn resolves() -> Ghost<usize> {

@@ -1,7 +1,7 @@
 #![feature(min_specialization)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub enum OwnResult<T, E> {
     Ok(T),

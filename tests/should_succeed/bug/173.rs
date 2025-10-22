@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // #[requires(0 < n@ && n@ < 10000)]
 // fn knapsack01_dyn<Name>(n: usize) {

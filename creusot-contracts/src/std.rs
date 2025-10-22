@@ -1,9 +1,7 @@
 //! Specifications for the `std` crate
-pub use ::std::*;
-
-pub mod array;
-pub mod borrow;
-pub mod boxed;
+mod array;
+mod borrow;
+mod boxed;
 pub mod cell;
 pub mod clone;
 pub mod collections {
@@ -31,7 +29,7 @@ pub mod rc;
 pub mod result;
 pub mod slice;
 pub mod string;
-pub mod sync;
+mod sync;
 pub mod time;
 mod tuples;
 pub mod vec;

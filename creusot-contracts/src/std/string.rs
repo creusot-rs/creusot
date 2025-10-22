@@ -1,5 +1,5 @@
-use crate::*;
-use ::std::ops::Deref;
+use crate::prelude::*;
+use std::ops::Deref;
 
 impl View for str {
     type ViewTy = Seq<char>;

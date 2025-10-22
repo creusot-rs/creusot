@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Mapping, *};
+use creusot_contracts::{logic::Mapping, prelude::*};
 
 #[logic(open)]
 pub fn make_mapping() -> Mapping<(Int, Int), bool> {

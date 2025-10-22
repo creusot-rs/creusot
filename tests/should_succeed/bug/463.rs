@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 pub fn test() {
     let c = {
         #[requires(x@ < 1000)]

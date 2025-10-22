@@ -1,7 +1,6 @@
 // This is an other implementation of fmap_view, but using the View RA directly instead of Auth.
 
 extern crate creusot_contracts;
-use ::std::marker::PhantomData;
 use creusot_contracts::{
     ghost::resource::Resource,
     logic::{
@@ -12,8 +11,9 @@ use creusot_contracts::{
             view::{View as ViewRA, ViewRel, ViewUpdateInsert},
         },
     },
-    *,
+    prelude::*,
 };
+use std::marker::PhantomData;
 
 /// The relation used to relate an [`Authority`] with a [`Fragment`].
 pub struct MapRelation<K, V>(PhantomData<(K, V)>);

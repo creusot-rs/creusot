@@ -3,7 +3,7 @@
 //! This contains types and traits that are meant to be used in logical code.
 
 #![cfg_attr(not(creusot), allow(unused_imports))]
-use crate::*;
+use crate::prelude::*;
 
 mod fmap;
 pub mod fset;
@@ -18,6 +18,7 @@ pub mod seq;
 mod set;
 mod well_founded;
 
+// TODO: do not alias these names. decide either to re-export them, or use a submodule.
 pub use self::{
     fmap::FMap, fset::FSet, id::Id, int::Int, mapping::Mapping, ord::OrdLogic, seq::Seq, set::Set,
     well_founded::WellFounded,

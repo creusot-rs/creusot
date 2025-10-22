@@ -1,5 +1,5 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::{logic::Seq, prelude::*};
 
 pub trait Iterator {
     type Item;

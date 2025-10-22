@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 
 use ::std::{rc::Rc, sync::Arc};
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub fn rc() {
     let rc = Rc::new(1);

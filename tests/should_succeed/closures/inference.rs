@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(f.precondition((1i32,)))]
 #[ensures(f.postcondition((1i32,), result))]

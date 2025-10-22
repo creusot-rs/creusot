@@ -1,5 +1,5 @@
-use crate::*;
-use ::std::borrow::Borrow;
+use crate::prelude::*;
+use std::borrow::Borrow;
 
 // "In particular Eq, Ord and Hash must be equivalent for borrowed and owned values:
 // x.borrow() == y.borrow() should give the same result as x == y."

@@ -1,5 +1,5 @@
 //! Marker trait for [`#[check(ghost)]`][check#checkghost] functions
-use crate::*;
+use crate::prelude::*;
 
 mod private {
     /// Sealer for [`FnGhost`].
@@ -36,7 +36,7 @@ impl<F: Clone> Clone for FnGhostWrapper<F> {
 impl<F: Copy> Copy for FnGhostWrapper<F> {}
 
 #[cfg(creusot)]
-impl<I: ::std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnGhostWrapper<F> {
+impl<I: std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnGhostWrapper<F> {
     type Output = F::Output;
 
     #[trusted]
@@ -48,7 +48,7 @@ impl<I: ::std::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnGhostWrapper<F> {
     }
 }
 #[cfg(creusot)]
-impl<I: ::std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnGhostWrapper<F> {
+impl<I: std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnGhostWrapper<F> {
     #[trusted]
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition_mut(args, ^self, result))]
@@ -58,7 +58,7 @@ impl<I: ::std::marker::Tuple, F: FnMut<I>> FnMut<I> for FnGhostWrapper<F> {
     }
 }
 #[cfg(creusot)]
-impl<I: ::std::marker::Tuple, F: Fn<I>> Fn<I> for FnGhostWrapper<F> {
+impl<I: std::marker::Tuple, F: Fn<I>> Fn<I> for FnGhostWrapper<F> {
     #[trusted]
     #[requires((*self).precondition(args))]
     #[ensures((*self).postcondition(args, result))]

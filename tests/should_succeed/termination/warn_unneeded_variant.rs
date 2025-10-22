@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[variant(x)]
 pub fn variant_is_not_checked(x: u32) {

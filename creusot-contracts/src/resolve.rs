@@ -1,5 +1,5 @@
 //! Resolve mutable borrows
-use crate::*;
+use crate::prelude::*;
 
 /// This logical function is assumed as soon as a value leaves its scope. It states that the
 /// propheties of every mutable borrow appearing in it parameter is eaqual to its current value.

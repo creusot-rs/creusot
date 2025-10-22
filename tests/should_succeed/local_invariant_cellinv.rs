@@ -5,7 +5,7 @@ use creusot_contracts::{
         LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
     },
     logic::Id,
-    *,
+    prelude::*,
 };
 
 declare_namespace! { PERMCELL }

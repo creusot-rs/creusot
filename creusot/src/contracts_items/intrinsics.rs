@@ -53,7 +53,7 @@ macro_rules! contracts_items {
             if no_items {
                 tcx.dcx().struct_span_fatal(DUMMY_SP,
                     "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so."
-                ).with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::*;`").emit()
+                ).with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::prelude::*;`").emit()
             } else if !missing_items.is_empty() {
                 let mut message =
                     String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");

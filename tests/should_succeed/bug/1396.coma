@@ -563,13 +563,13 @@ module M_1396__foo3
     [ good (field_0: Int32.t) -> {C_Some field_0 = input} (! ret {field_0})
     | bad -> {forall field_0: Int32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
   
-  type closure1 = { c0: MutBorrow.t (MutBorrow.t Int32.t) }
+  type closure1 = { c0: MutBorrow.t Int32.t }
   
   predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'0
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
+  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve'1
   
@@ -583,10 +583,9 @@ module M_1396__foo3
   
   let rec closure1 [@coma:extspec] (self: MutBorrow.t closure1) (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = Int32.add {self.current.c0.current.current} {(1: Int32.t)}
+      [ s0 = Int32.add {self.current.c0.current} {(1: Int32.t)}
           (fun (_ret: Int32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = { self.current.c0.current with current = _ret } } } } ]
-            s1)
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
       | s1 = -{resolve'0 self}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure1 = self ]
   
@@ -635,10 +634,6 @@ module M_1396__foo3
   let rec apply_mut (f: closure1) (return (x: ())) = {[@expl:apply_mut requires] precondition f ()}
     any [ return (result: ()) -> {exists g: closure1. postcondition_mut f () g () /\ resolve'2 g} (! return {result}) ]
   
-  predicate resolve'3 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'3
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -656,9 +651,11 @@ module M_1396__foo3
       | s2 = into_iter {_7} (fun (_ret: t_Range) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb5 ]
+    | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
+    | bb4 = s0 [ s0 = [ &old_5_0 <- r ] s1 | s1 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:for invariant] inv'0 produced}
+      [ bb5 = {[@expl:mut invariant] old_5_0.final = r.final}
+        {[@expl:for invariant] inv'0 produced}
         {[@expl:for invariant] inv iter}
         {[@expl:for invariant] produces iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
@@ -681,12 +678,12 @@ module M_1396__foo3
           | s2 = bb12 ]
         | bb12 = s0
           [ s0 = [ &produced <- _25 ] s1
-          | s1 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {r}
-              (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_29 <- _ret ] [ &r <- _ret.final ] s2)
+          | s1 = MutBorrow.borrow_mut <Int32.t> {r.current}
+              (fun (_ret: MutBorrow.t Int32.t) -> [ &_29 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
           | s2 = [ &_28 <- { c0 = _29 } ] s3
           | s3 = apply_mut {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
           | s4 = bb5 ] ] ]
-    | bb10 = s0 [ s0 = -{resolve'3 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
+    | bb10 = s0 [ s0 = -{resolve'1 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & r: MutBorrow.t Int32.t = Any.any_l ()
@@ -703,7 +700,8 @@ module M_1396__foo3
     | & _25: Seq.seq Int32.t = Any.any_l ()
     | & _27: () = Any.any_l ()
     | & _28: closure1 = Any.any_l ()
-    | & _29: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _29: MutBorrow.t Int32.t = Any.any_l ()
+    | & old_5_0: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_1396__foo4
   use creusot.int.Int32

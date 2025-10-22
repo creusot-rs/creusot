@@ -1,7 +1,7 @@
 #![feature(box_patterns)]
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 use std::mem::replace;
 
 pub enum List<T> {

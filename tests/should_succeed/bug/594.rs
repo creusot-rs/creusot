@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[logic(open)]
 pub fn test_logic((x, _): (u32, u32)) -> u32 {

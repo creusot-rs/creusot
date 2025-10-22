@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Id, *};
+use creusot_contracts::{logic::Id, prelude::*};
 
 // This tests showcases specialization of purity attribute when calling trait implementations.
 

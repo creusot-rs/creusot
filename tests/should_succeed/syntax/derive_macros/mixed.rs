@@ -1,8 +1,8 @@
 #![feature(min_specialization)]
 extern crate creusot_contracts;
 use creusot_contracts::{
+    prelude::*,
     std::{clone::Clone, cmp::PartialEq},
-    *,
 };
 
 #[derive(Clone, PartialEq)]

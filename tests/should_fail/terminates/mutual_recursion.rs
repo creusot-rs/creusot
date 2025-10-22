@@ -1,6 +1,6 @@
 #![allow(unused)]
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 mod m {
     #[super::check(terminates)]

@@ -5,7 +5,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{
     invariant::{Invariant, inv},
     logic::Mapping,
-    *,
+    prelude::*,
 };
 
 mod common;

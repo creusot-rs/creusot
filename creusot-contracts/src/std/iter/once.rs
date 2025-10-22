@@ -1,4 +1,4 @@
-use crate::{std::iter::Once, *};
+use crate::{prelude::*, std::iter::Once};
 
 impl<T> View for Once<T> {
     type ViewTy = Option<T>;
@@ -9,7 +9,7 @@ impl<T> View for Once<T> {
     }
 }
 
-impl<T> Iterator for Once<T> {
+impl<T> IteratorSpec for Once<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && resolve(self) }

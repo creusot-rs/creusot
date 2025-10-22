@@ -1,8 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 mod m {
-    use creusot_contracts::*;
+    use creusot_contracts::prelude::*;
 
     pub struct S<A, B> {
         pub a: A,
@@ -19,7 +19,7 @@ mod m {
 }
 use m::*;
 
-#[ensures(resolve(x.a) ==> resolve::resolve(x))]
+#[ensures(resolve(x.a) ==> resolve(x))]
 pub fn f<A, B>(x: S<A, B>) -> A {
     x.a
 }

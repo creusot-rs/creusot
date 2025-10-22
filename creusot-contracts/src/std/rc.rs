@@ -1,7 +1,7 @@
-use crate::*;
+use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use ::std::alloc::Allocator;
-use ::std::{ops::Deref, rc::Rc};
+use std::alloc::Allocator;
+use std::{ops::Deref, rc::Rc};
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {

@@ -1,4 +1,5 @@
-use crate::{invariant::*, std::iter::Zip, *};
+use crate::{invariant::*, prelude::*};
+use std::iter::Zip;
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
     #[logic]
@@ -27,7 +28,7 @@ impl<A: Iterator, B: Iterator> Invariant for Zip<A, B> {
     }
 }
 
-impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
+impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {

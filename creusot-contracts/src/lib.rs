@@ -4,7 +4,7 @@
 //! to have a glob import:
 //!
 //! ```
-//! use creusot_contracts::*;
+//! use creusot_contracts::prelude::*;
 //! ```
 //!
 //! # Writing specifications
@@ -12,7 +12,7 @@
 //! To start writing specification, use the [`requires`] and [`ensures`] macros:
 //!
 //! ```
-//! use creusot_contracts::*;
+//! use creusot_contracts::prelude::*;
 //!
 //! #[requires(x < i32::MAX)]
 //! #[ensures(result@ == x@ + 1)]
@@ -40,7 +40,7 @@
 //!
 //! 5. [`cell`][mod@cell]: Interior mutability
 //!
-//! 6. [`prelude`][mod@prelude]: What you get from `use creusot_contracts::*;`
+//! 6. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
 #![cfg_attr(
     feature = "nightly",
     allow(incomplete_features, internal_features),
@@ -66,6 +66,7 @@
         edition_panic,
         new_range_api,
         range_bounds_is_empty,
+        decl_macro
     )
 )]
 
@@ -84,7 +85,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[requires(x@ == 1)]
     /// fn foo(x: i32) {}
     /// ```
@@ -98,7 +99,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[ensures(result@ == 1)]
     /// fn foo() -> i32 { 1 }
     /// ```
@@ -112,7 +113,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let mut x = 1;
     /// let s = snapshot!(x);
     /// x = 2;
@@ -125,7 +126,7 @@ pub mod macros {
     /// they carry no ownership. This means that code like this is perfectly fine:
     ///
     /// ```
-    /// # use creusot_contracts::{*, vec};
+    /// # use creusot_contracts::prelude::*;
     /// let v: Vec<i32> = vec![1, 2];
     /// let s = snapshot!(v);
     /// assert!(v[0] == 1); // ok, `s` does not have ownership of `v`
@@ -152,7 +153,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let x = 1;
     /// let mut g = ghost!(Seq::new()); // g is a zero-sized variable at runtime
     /// ghost! {
@@ -172,7 +173,7 @@ pub mod macros {
     /// Checking modes are specified as arguments:
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[check(terminates)]
     /// fn foo() { /* */ }
     ///
@@ -240,7 +241,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```ignore
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let mut v = Vec::new();
     /// #[invariant(v@.len() == produced.len())]
     /// #[invariant(forall<j> 0 <= j && j < produced.len() ==> v@[j]@ == j)]
@@ -272,7 +273,7 @@ pub mod macros {
     ///
     /// ```
     /// mod inner {
-    ///     use creusot_contracts::*;
+    ///     use creusot_contracts::prelude::*;
     ///     #[logic]
     ///     #[ensures(result == x + 1)]
     ///     pub(super) fn foo(x: Int) -> Int {
@@ -295,7 +296,7 @@ pub mod macros {
     /// If you wish to use the `^` operator on mutable borrows to get the final value, you need to
     /// specify that the function is _prophetic_, like so:
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[logic(prophetic)]
     /// fn uses_prophecies(x: &mut Int) -> Int {
     ///     pearlite! { if ^x == 0 { 0 } else { 1 } }
@@ -328,7 +329,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{*, vec};
+    /// # use creusot_contracts::prelude::*;
     /// let x = 1;
     /// let v = vec![x, 2];
     /// let s = snapshot!(v);
@@ -342,7 +343,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[opaque]
     /// struct Opaque(()); // This will is an abstract type
     ///
@@ -360,7 +361,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[trusted] // this is too hard to prove :(
     /// #[ensures(result@ == 1)]
     /// fn foo() -> i32 {
@@ -384,7 +385,7 @@ pub mod macros {
     ///
     /// - Recursive logical function:
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[logic]
     /// #[variant(x)]
     /// #[requires(x >= 0)]
@@ -398,7 +399,7 @@ pub mod macros {
     /// ```
     /// - Loop variant:
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[check(terminates)]
     /// #[ensures(result == x)]
     /// fn inneficient_identity(mut x: i32) -> i32 {
@@ -423,7 +424,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[logic]
     /// fn all_ones(s: Seq<Int>) -> bool {
     ///     // Allow access to `forall` and `==>` among other things
@@ -466,7 +467,7 @@ pub mod macros {
     /// # Usage
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[erasure(f)]
     /// fn g(x: usize, i: Ghost<Int>) { /* ... */ }
     ///
@@ -487,7 +488,7 @@ pub mod macros {
     /// that the annotated function body matches the original one.
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// extern_spec! {
     ///   #[erasure]
     ///   fn some_external_function() { /* ... */ }
@@ -523,19 +524,19 @@ mod base_prelude {
         model::{DeepModel, View},
         resolve::Resolve,
         snapshot::Snapshot,
-        std::{
-            // Shadow std::prelude by our version.
-            // For Clone, Default and PartialEq, this is important for the derive macro.
-            // If the user write the glob pattern "use creusot_contracts::*", then
-            // rustc will either shadow the old identifier or complain about the
-            // ambiguity (ex: for the derive macros Clone and PartialEq, a glob
-            // pattern is not enough to force rustc to use our version, but at least
-            // we get an error message).
-            clone::Clone,
-            cmp::PartialEq,
-            default::Default,
-            iter::{FromIterator, Iterator},
-        },
+        std::iter::{DoubleEndedIteratorSpec, FromIteratorSpec, IteratorSpec},
+    };
+
+    pub use crate::std::{
+        // Shadow std::prelude by our version of derive macros.
+        // If the user write the glob pattern "use creusot_contracts::prelude::*",
+        // then rustc will either shadow the old identifier or complain about
+        // the ambiguity (ex: for the derive macros Clone and PartialEq, a glob
+        // pattern is not enough to force rustc to use our version, but at least
+        // we get an error message).
+        clone::Clone,
+        cmp::PartialEq,
+        default::Default,
     };
 
     // Export extension traits anonymously
@@ -549,14 +550,12 @@ mod base_prelude {
     };
 
     #[cfg(creusot)]
-    pub use crate::{invariant::inv, resolve::resolve};
+    pub use crate::{invariant::inv, logic::seq::seq, resolve::resolve};
 }
 /// Re-exports available under the `creusot_contracts` namespace
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
 }
-
-pub use prelude::*;
 
 /// Creusot-friendly replacement of `vec!`
 ///

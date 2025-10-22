@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, *};
+use creusot_contracts::{ghost::PtrOwn, prelude::*};
 
 pub fn foo() {
     let (p1, mut own1) = PtrOwn::new(1i32);

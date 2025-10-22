@@ -1,6 +1,7 @@
 //! Definition for using orderings in pearlite.
 
-use crate::{std::cmp::Ordering, *};
+use crate::prelude::*;
+use std::cmp::Ordering;
 
 /// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in pearlite.
 ///
@@ -98,8 +99,8 @@ pub trait OrdLogic {
 ///
 /// Simply use this macro in the trait impl:
 /// ```
-/// # use creusot_contracts::{logic::ord::{OrdLogic, ord_laws_impl}, *};
-/// use ::std::cmp::Ordering;
+/// # use creusot_contracts::{logic::ord::{OrdLogic, ord_laws_impl}, prelude::*};
+/// use std::cmp::Ordering;
 /// struct MyInt(Int);
 ///
 /// impl OrdLogic for MyInt {
@@ -120,44 +121,44 @@ pub trait OrdLogic {
 #[macro_export]
 macro_rules! ord_laws_impl {
     () => {
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
         fn cmp_le_log(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
         fn cmp_lt_log(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
         fn cmp_ge_log(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
         fn cmp_gt_log(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures(x.cmp_log(x) == Ordering::Equal)]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures(x.cmp_log(x) == Ordering::Equal)]
         fn refl(x: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::requires(x.cmp_log(y) == o)]
-        #[::creusot_contracts::requires(y.cmp_log(z) == o)]
-        #[::creusot_contracts::ensures(x.cmp_log(z) == o)]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::requires(x.cmp_log(y) == o)]
+        #[::creusot_contracts::macros::requires(y.cmp_log(z) == o)]
+        #[::creusot_contracts::macros::ensures(x.cmp_log(z) == o)]
         fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::requires(x.cmp_log(y) == Ordering::Less)]
-        #[::creusot_contracts::ensures(y.cmp_log(x) == Ordering::Greater)]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::requires(x.cmp_log(y) == Ordering::Less)]
+        #[::creusot_contracts::macros::ensures(y.cmp_log(x) == Ordering::Greater)]
         fn antisym1(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::requires(x.cmp_log(y) == Ordering::Greater)]
-        #[::creusot_contracts::ensures(y.cmp_log(x) == Ordering::Less)]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::requires(x.cmp_log(y) == Ordering::Greater)]
+        #[::creusot_contracts::macros::ensures(y.cmp_log(x) == Ordering::Less)]
         fn antisym2(x: Self, y: Self) {}
 
-        #[::creusot_contracts::logic(open(self), law)]
-        #[::creusot_contracts::ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+        #[::creusot_contracts::macros::logic(open(self), law)]
+        #[::creusot_contracts::macros::ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
         fn eq_cmp(x: Self, y: Self) {}
     };
 }

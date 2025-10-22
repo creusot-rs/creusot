@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub fn unsound() {
     let mut x: Snapshot<bool> = snapshot! { true };

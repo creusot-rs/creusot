@@ -1,7 +1,7 @@
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{std::ops::*, *};
-use ::std::iter::Map;
+use std::iter::Map;
 
 pub trait MapExt<I, F> {
     #[logic]
@@ -36,7 +36,7 @@ impl<I, F> Resolve for Map<I, F> {
     fn resolve_coherence(self) {}
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
+impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     #[logic(prophetic)]
     #[ensures(result ==> inv(self.iter()) && inv(self.func()))]
     fn invariant(self) -> bool {
@@ -49,7 +49,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     }
 }
 
-impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
+impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -88,11 +88,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 }
 
 #[logic(open, prophetic)]
-pub fn next_precondition<I, B, F>(iter: I, func: F) -> bool
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> B,
-{
+pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
         forall<e: I::Item, i: I>
             #[trigger(iter.produces(Seq::singleton(e), i))]
@@ -102,11 +98,7 @@ where
 }
 
 #[logic(open, prophetic)]
-pub fn preservation<I, B, F>(iter: I, func: F) -> bool
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> B,
-{
+pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
             #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
@@ -119,11 +111,7 @@ where
 }
 
 #[logic(open, prophetic)]
-pub fn reinitialize<I, B, F>() -> bool
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> B,
-{
+pub fn reinitialize<I: IteratorSpec, B, F: FnMut(I::Item) -> B>() -> bool {
     pearlite! {
         forall<iter: &mut I, func: F>
             iter.completed() ==> next_precondition(^iter, func) && preservation(^iter, func)

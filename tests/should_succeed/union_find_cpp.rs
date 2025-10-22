@@ -8,7 +8,7 @@ mod implementation {
         ghost::PtrOwn,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
-        *,
+        prelude::*,
     };
 
     pub struct Elem<T>(*const Node<T>);

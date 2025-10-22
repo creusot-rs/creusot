@@ -4,7 +4,10 @@ extern crate creusot_contracts;
 
 #[cfg(creusot)]
 use creusot_contracts::resolve::structural_resolve;
-use creusot_contracts::{Clone, logic::Mapping, *};
+use creusot_contracts::{
+    logic::Mapping,
+    prelude::{Clone, *},
+};
 use std::cmp::Ordering::*;
 
 #[derive(Clone, Copy)]
@@ -67,14 +70,13 @@ impl<K: DeepModel, V> Tree<K, V> {
             }
         }
     }
+}
 
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Tree<K, V> {
     #[logic]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) == Some(v))]
-    fn has_mapping_model_acc(self, accu: <Self as View>::ViewTy, k: K::DeepModelTy)
-    where
-        K::DeepModelTy: OrdLogic,
-    {
+    fn has_mapping_model_acc(self, accu: <Self as View>::ViewTy, k: K::DeepModelTy) {
         match self {
             Tree { node: None } => (),
             Tree { node: Some(box Node { left, key, val, right, .. }) } => {
@@ -90,10 +92,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[requires(self.bst_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) == (self@.get(k) == Some(v)))]
-    fn has_mapping_model(self, k: K::DeepModelTy)
-    where
-        K::DeepModelTy: OrdLogic,
-    {
+    fn has_mapping_model(self, k: K::DeepModelTy) {
         self.model_acc_has_mapping(Mapping::cst(None), k);
         self.has_mapping_model_acc(Mapping::cst(None), k)
     }
@@ -103,10 +102,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[requires(self.has_mapping(k, v1))]
     #[requires(self.has_mapping(k, v2))]
     #[ensures(v1 == v2)]
-    fn has_mapping_inj(self, k: K::DeepModelTy, v1: V, v2: V)
-    where
-        K::DeepModelTy: OrdLogic,
-    {
+    fn has_mapping_inj(self, k: K::DeepModelTy, v1: V, v2: V) {
         self.has_mapping_model(k)
     }
 }
@@ -171,10 +167,7 @@ impl<K: DeepModel, V> Resolve for Node<K, V> {
 
 /*******************************  The BST invariant ***************************/
 
-impl<K: DeepModel, V> Node<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Node<K, V> {
     #[logic]
     fn bst_invariant_here(self) -> bool {
         pearlite! {
@@ -189,10 +182,7 @@ where
     }
 }
 
-impl<K: DeepModel, V> Tree<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Tree<K, V> {
     #[logic]
     fn bst_invariant(self) -> bool {
         match self {
@@ -212,7 +202,7 @@ enum CP {
 }
 use CP::*;
 
-#[logic]
+#[logic(inline)]
 fn cpn(c: Color, l: CP, r: CP) -> CP {
     CPN(c, Box::new(l), Box::new(r))
 }
@@ -322,20 +312,14 @@ impl<K: DeepModel, V> Node<K, V> {
 
 /*************************  Conjunction of invariants  ************************/
 
-impl<K: DeepModel, V> Tree<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Tree<K, V> {
     #[logic]
     fn internal_invariant(self) -> bool {
         self.bst_invariant() && self.height_invariant()
     }
 }
 
-impl<K: DeepModel, V> Node<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Node<K, V> {
     #[logic]
     // TODO
     // This might be made a proper type invariant, but move_red_left/move_red_right need to be
@@ -358,10 +342,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     }
 }
 
-impl<K: DeepModel, V> Node<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Node<K, V> {
     #[requires((*self).internal_invariant())]
     #[requires((*self).left.color() == Red)]
     #[ensures((*self).same_mappings(^self))]
@@ -545,10 +526,7 @@ where
     }
 }
 
-impl<K: DeepModel + Ord, V> Tree<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic> + Ord, V> Tree<K, V> {
     #[requires((*self).internal_invariant())]
     #[requires((*self).color_invariant())]
     #[ensures((^self).internal_invariant())]
@@ -594,12 +572,14 @@ where
         if node.left.is_red() {
             node.rotate_right()
         }
-        if let None = node.right.node {
-            let node = std::mem::take(&mut self.node).unwrap();
-            return (node.key, node.val);
-        }
-        if !node.right.is_red() && !node.right.node.as_ref().unwrap().left.is_red() {
-            node = node.move_red_right();
+        if !node.right.is_red() {
+            let Some(right) = &node.right.node else {
+                let node = std::mem::take(&mut self.node).unwrap();
+                return (node.key, node.val);
+            };
+            if !right.left.is_red() {
+                node = node.move_red_right();
+            }
         }
         let r = node.right.delete_max_rec();
         node.balance();
@@ -618,12 +598,14 @@ where
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_min_rec(&mut self) -> (K, V) {
         let mut node = self.node.as_mut().unwrap().as_mut();
-        if let None = node.left.node {
-            let node = std::mem::take(&mut self.node).unwrap();
-            return (node.key, node.val);
-        }
-        if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
-            node = node.move_red_left();
+        if !node.left.is_red() {
+            let Some(left) = &node.left.node else {
+                let node = std::mem::take(&mut self.node).unwrap();
+                return (node.key, node.val);
+            };
+            if !left.left.is_red() {
+                node = node.move_red_left();
+            }
         }
         let r = node.left.delete_min_rec();
         node.balance();
@@ -642,45 +624,39 @@ where
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
-        let r;
         let mut node = self.node.as_mut().unwrap().as_mut();
-        match key.cmp(&node.key) {
+        let r = match key.cmp(&node.key) {
             Less => {
-                if node.left.node.is_none() {
-                    return None;
-                }
-                if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
+                if !node.left.is_red() && !node.left.node.as_ref()?.left.is_red() {
                     node = node.move_red_left();
                 }
-                r = node.left.delete_rec(key)
+                node.left.delete_rec(key)
             }
-            ord => {
-                if node.left.is_red() {
-                    node.rotate_right();
-                    r = node.right.delete_rec(key)
-                } else {
-                    if node.right.node.is_none() {
-                        if let Greater = ord {
-                            return None;
-                        }
-                        let node = std::mem::take(&mut self.node).unwrap();
-                        return Some((node.key, node.val));
-                    }
-                    if !node.right.node.as_ref().unwrap().left.is_red() {
-                        node = node.move_red_right();
-                    }
-                    if let Equal = ord {
-                        let mut kv = node.right.delete_min_rec();
-                        snapshot! { Self::has_mapping_inj };
-                        std::mem::swap(&mut node.key, &mut kv.0);
-                        std::mem::swap(&mut node.val, &mut kv.1);
-                        r = Some(kv)
-                    } else {
-                        r = node.right.delete_rec(key)
-                    }
+            _ if node.left.is_red() => {
+                node.rotate_right();
+                node.right.delete_rec(key)
+            }
+            Equal => {
+                let Some(right) = &node.right.node else {
+                    let node = std::mem::take(&mut self.node).unwrap();
+                    return Some((node.key, node.val));
+                };
+                if !right.left.is_red() {
+                    node = node.move_red_right();
                 }
+                let mut kv = node.right.delete_min_rec();
+                snapshot! { Self::has_mapping_inj };
+                std::mem::swap(&mut node.key, &mut kv.0);
+                std::mem::swap(&mut node.val, &mut kv.1);
+                Some(kv)
             }
-        }
+            Greater => {
+                if !node.right.node.as_ref()?.left.is_red() {
+                    node = node.move_red_right();
+                }
+                node.right.delete_rec(key)
+            }
+        };
         node.balance();
         r
     }
@@ -699,20 +675,14 @@ impl<K: DeepModel, V> View for Map<K, V> {
     }
 }
 
-impl<K: DeepModel, V> Invariant for Map<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Invariant for Map<K, V> {
     #[logic]
     fn invariant(self) -> bool {
         self.0.internal_invariant() && self.0.color_invariant() && self.0.color() == Black
     }
 }
 
-impl<K: DeepModel, V> Resolve for Map<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Resolve for Map<K, V> {
     #[logic(open, prophetic)]
     fn resolve(self) -> bool {
         pearlite! { forall<k: K::DeepModelTy> resolve(self@.get(k)) }
@@ -726,10 +696,7 @@ where
     }
 }
 
-impl<K: DeepModel + Ord, V> Map<K, V>
-where
-    K::DeepModelTy: OrdLogic,
-{
+impl<K: DeepModel<DeepModelTy: OrdLogic> + Ord, V> Map<K, V> {
     #[ensures(result@ == Mapping::cst(None))]
     pub fn new() -> Self {
         Map(Tree { node: None })
@@ -737,9 +704,10 @@ where
 
     #[ensures((^self)@ == self@.set(key.deep_model(), Some(val)))]
     pub fn insert(&mut self, key: K, val: V) {
-        self.0.insert_rec(key, val);
-        self.0.node.as_mut().unwrap().color = Black;
         snapshot! { Tree::<K, V>::has_mapping_model };
+
+        self.0.insert_rec(key, val);
+        self.0.node.as_mut().unwrap().color = Black
     }
 
     #[ensures(match result {
@@ -749,12 +717,9 @@ where
         None => (^self)@ == self@ && self@ == Mapping::cst(None)
     })]
     pub fn delete_max(&mut self) -> Option<(K, V)> {
-        if let Some(node) = &mut self.0.node {
-            if !node.left.is_red() {
-                node.color = Red;
-            }
-        } else {
-            return None;
+        let node = self.0.node.as_mut()?;
+        if !node.left.is_red() {
+            node.color = Red;
         }
         let r = self.0.delete_max_rec();
         if self.0.is_red() {
@@ -773,13 +738,9 @@ where
     })]
     pub fn delete_min(&mut self) -> Option<(K, V)> {
         snapshot! { Tree::<K, V>::has_mapping_model };
-
-        if let Some(node) = &mut self.0.node {
-            if !node.left.is_red() {
-                node.color = Red;
-            }
-        } else {
-            return None;
+        let node = self.0.node.as_mut()?;
+        if !node.left.is_red() {
+            node.color = Red;
         }
         let r = self.0.delete_min_rec();
         if self.0.is_red() {
@@ -796,13 +757,9 @@ where
     #[ensures((^self)@ == self@.set(key.deep_model(), None))]
     pub fn delete(&mut self, key: &K) -> Option<(K, V)> {
         snapshot! { Tree::<K, V>::has_mapping_model };
-
-        if let Some(node) = &mut self.0.node {
-            if !node.left.is_red() {
-                node.color = Red;
-            }
-        } else {
-            return None;
+        let node = self.0.node.as_mut()?;
+        if !node.left.is_red() {
+            node.color = Red;
         }
         let r = self.0.delete_rec(key);
         if self.0.is_red() {

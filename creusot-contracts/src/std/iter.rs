@@ -1,5 +1,5 @@
-use crate::*;
-pub use ::std::iter::*;
+use crate::prelude::*;
+use std::iter::*;
 
 mod cloned;
 mod copied;
@@ -31,7 +31,7 @@ pub use skip::SkipExt;
 pub use take::TakeExt;
 pub use zip::ZipExt;
 
-pub trait Iterator: ::std::iter::Iterator {
+pub trait IteratorSpec: Iterator {
     #[logic(prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
@@ -64,12 +64,12 @@ pub trait Iterator: ::std::iter::Iterator {
     }
 }
 
-pub trait FromIterator<A>: ::std::iter::FromIterator<A> {
+pub trait FromIteratorSpec<A>: FromIterator<A> {
     #[logic]
     fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
 }
 
-pub trait DoubleEndedIterator: ::std::iter::DoubleEndedIterator + Iterator {
+pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
@@ -88,7 +88,7 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self: Iterator {
+                where Self: IteratorSpec {
 
                 #[ensures(match result {
                     None => self.completed(),
@@ -168,16 +168,16 @@ extern_spec! {
                 #[ensures(exists<done: &mut Self_, prod>
                     resolve(^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
-                    where Self: Sized, B: FromIterator<Self::Item>;
+                    where Self: Sized, B: FromIteratorSpec<Self::Item>;
 
                 #[check(ghost)]
                 #[ensures(result.iter() == self)]
                 fn rev(self) -> Rev<Self>
-                    where Self: Sized + DoubleEndedIterator;
+                    where Self: Sized + DoubleEndedIteratorSpec;
             }
 
             trait FromIterator<A>
-                where Self: FromIterator<A> {
+                where Self: FromIteratorSpec<A> {
 
                 #[requires(T::into_iter.precondition((iter,)))]
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
@@ -185,7 +185,7 @@ extern_spec! {
                             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
                             Self_::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
-                    where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: Iterator;
+                    where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: IteratorSpec;
             }
 
             #[check(ghost)]
@@ -200,7 +200,7 @@ extern_spec! {
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
 
             trait DoubleEndedIterator
-                where Self: DoubleEndedIterator {
+                where Self: DoubleEndedIteratorSpec {
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
@@ -217,7 +217,7 @@ extern_spec! {
     }
 }
 
-impl<I: Iterator + ?Sized> Iterator for &mut I {
+impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { (*self).produces(visited, *o) && ^self == ^o }

@@ -1,5 +1,4 @@
-use crate::{ghost::Plain, *};
-pub use ::std::char::*;
+use crate::{ghost::Plain, prelude::*};
 
 impl View for char {
     type ViewTy = Int;

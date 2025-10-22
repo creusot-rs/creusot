@@ -12,7 +12,7 @@ mod b {
     pub struct O(pub u32);
 
     pub mod c {
-        pub struct T(pub ::a::T);
+        pub struct T(pub crate::a::T);
 
         #[allow(dead_code)]
         pub struct U(super::O);

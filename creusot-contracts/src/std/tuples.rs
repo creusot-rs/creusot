@@ -1,4 +1,4 @@
-use crate::*;
+use crate::prelude::*;
 
 impl DeepModel for () {
     type DeepModelTy = ();

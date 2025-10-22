@@ -8,7 +8,7 @@ mod implementation {
         ghost::PtrOwn,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
-        *,
+        prelude::*,
     };
 
     pub struct Element<T>(*const Node<T>);
@@ -339,7 +339,7 @@ mod implementation {
     }
 }
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 use implementation::*;
 
 pub fn example() {

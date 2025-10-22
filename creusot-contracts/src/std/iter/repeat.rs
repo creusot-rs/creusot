@@ -1,4 +1,4 @@
-use crate::{std::iter::Repeat, *};
+use crate::{prelude::*, std::iter::Repeat};
 
 impl<T> View for Repeat<T> {
     type ViewTy = T;
@@ -9,7 +9,7 @@ impl<T> View for Repeat<T> {
     }
 }
 
-impl<T: Clone> Iterator for Repeat<T> {
+impl<T: Clone> IteratorSpec for Repeat<T> {
     #[logic(open)]
     fn completed(&mut self) -> bool {
         pearlite! { false }

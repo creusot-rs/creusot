@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[warn(let_underscore_drop)]
 #[requires(f.precondition(()))]

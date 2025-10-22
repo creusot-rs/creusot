@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // Prove that this function implements the sum of the first n natural numbers.
 // Hint: there exists a closed form of this sum

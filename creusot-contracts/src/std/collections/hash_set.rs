@@ -1,9 +1,9 @@
 use crate::{
     logic::FSet,
-    std::iter::{FromIterator, Iterator},
-    *,
+    prelude::*,
+    std::iter::{FromIteratorSpec, IteratorSpec},
 };
-use ::std::{borrow::Borrow, collections::hash_set::*, hash::*};
+use std::{borrow::Borrow, collections::hash_set::*, hash::*};
 
 impl<T: DeepModel, S> View for HashSet<T, S> {
     type ViewTy = FSet<T::DeepModelTy>;
@@ -96,7 +96,7 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
 }
 
-impl<T: DeepModel> Iterator for IntoIter<T> {
+impl<T: DeepModel> IteratorSpec for IntoIter<T> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
@@ -129,7 +129,7 @@ impl<'a, T: DeepModel> View for Iter<'a, T> {
     }
 }
 
-impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
+impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
@@ -153,7 +153,7 @@ impl<'a, T: DeepModel> Iterator for Iter<'a, T> {
     }
 }
 
-impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIterator<T> for HashSet<T, S> {
+impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIteratorSpec<T> for HashSet<T, S> {
     #[logic(open)]
     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { forall<x: T::DeepModelTy> res@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1) }
@@ -178,7 +178,7 @@ impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
     }
 }
 
-impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a, T, S> {
+impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection<'a, T, S> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
@@ -202,7 +202,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Intersection<'a,
     }
 }
 
-impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> Iterator for Difference<'a, T, S> {
+impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'a, T, S> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)

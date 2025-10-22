@@ -1,6 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, std::iter::Take, *};
+use crate::{invariant::*, prelude::*};
+use std::iter::Take;
 
 pub trait TakeExt<I> {
     #[logic]
@@ -52,7 +53,7 @@ impl<I> Resolve for Take<I> {
     fn resolve_coherence(self) {}
 }
 
-impl<I: Iterator> Iterator for Take<I> {
+impl<I: IteratorSpec> IteratorSpec for Take<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {

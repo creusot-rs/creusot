@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, prelude::*};
 
 #[logic]
 pub fn logic() -> bool {
@@ -19,7 +19,7 @@ pub fn logic_pearlite() -> bool {
 pub fn use_logic_pearlite() {}
 
 pub mod nested {
-    use creusot_contracts::*;
+    use creusot_contracts::prelude::*;
 
     #[logic(open)]
     pub fn nested() -> bool {

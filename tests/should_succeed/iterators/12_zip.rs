@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::{logic::Seq, prelude::*};
 
 mod common;
 use common::Iterator;

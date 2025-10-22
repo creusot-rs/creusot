@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::logic::{Mapping, such_that, unreachable};
-use crate::*;
+use crate::prelude::*;
 
 /// Instances of this trait are types which are allowed as variants of recursive definitions.
 pub trait WellFounded: Sized {
@@ -16,7 +16,7 @@ pub trait WellFounded: Sized {
     /// easy to prove:
     ///
     /// ```
-    /// # use creusot_contracts::{*, well_founded::WellFounded};
+    /// # use creusot_contracts::{prelude::*, well_founded::WellFounded};
     /// struct MyInt(Int);
     /// impl WellFounded for MyInt {
     ///     #[logic(open, inline)]

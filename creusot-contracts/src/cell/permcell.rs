@@ -5,8 +5,8 @@
 
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{Ghost, logic::Id, *};
-use ::std::{cell::UnsafeCell, marker::PhantomData};
+use crate::{logic::Id, prelude::*};
+use std::{cell::UnsafeCell, marker::PhantomData};
 
 /// Cell with ghost permissions
 ///
@@ -56,7 +56,7 @@ impl<T: Sized> Invariant for PermCellOwn<T> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { invariant::inv(self.val()) }
+        pearlite! { inv(self.val()) }
     }
 }
 

@@ -1,7 +1,7 @@
 // WHY3PROVE
 #![feature(min_specialization)]
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 pub trait T {
     fn x(self);

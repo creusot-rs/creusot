@@ -1,6 +1,6 @@
 // Test that we can build verified code without enabling unstable features
 
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 // Test that `ensures` removes loop invariants
 #[ensures(true)]

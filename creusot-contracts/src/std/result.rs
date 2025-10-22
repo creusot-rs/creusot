@@ -1,6 +1,5 @@
-use crate::*;
-
-use ::std::fmt::Debug;
+use crate::prelude::*;
+use std::fmt::Debug;
 
 impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
     type DeepModelTy = Result<T::DeepModelTy, E::DeepModelTy>;

@@ -18,7 +18,7 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     quote! {
         impl #impl_generics ::std::default::Default for #name #ty_generics #where_clause {
-            #[::creusot_contracts::ensures(#body_spec)]
+            #[::creusot_contracts::macros::ensures(#body_spec)]
             fn default() -> Self {
                 #body_code
             }

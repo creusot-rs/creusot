@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, logic::ops::IndexLogic, std::iter::Iterator, *};
-use ::std::array::*;
+use crate::{invariant::*, logic::ops::IndexLogic, prelude::*};
+use std::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
     #[logic(open, prophetic)]
@@ -75,7 +75,7 @@ impl<T, const N: usize> View for IntoIter<T, N> {
     }
 }
 
-impl<T, const N: usize> Iterator for IntoIter<T, N> {
+impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }

@@ -4,7 +4,7 @@ extern crate creusot_contracts;
 // less visible than we are opaque.
 
 pub mod x {
-    use creusot_contracts::*;
+    use creusot_contracts::prelude::*;
 
     #[logic]
     fn priv_symbol() -> bool {

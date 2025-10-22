@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, std::iter::Enumerate, *};
+use crate::{invariant::*, prelude::*, std::iter::Enumerate};
 
 pub trait EnumerateExt<I> {
     #[logic]
@@ -35,7 +35,7 @@ impl<I> Resolve for Enumerate<I> {
     fn resolve_coherence(self) {}
 }
 
-impl<I: Iterator> Invariant for Enumerate<I> {
+impl<I: IteratorSpec> Invariant for Enumerate<I> {
     #[logic(prophetic)]
     #[ensures(result ==> inv(self.iter()))]
     fn invariant(self) -> bool {
@@ -50,10 +50,7 @@ impl<I: Iterator> Invariant for Enumerate<I> {
     }
 }
 
-impl<I> Iterator for Enumerate<I>
-where
-    I: Iterator,
-{
+impl<I: IteratorSpec> IteratorSpec for Enumerate<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {

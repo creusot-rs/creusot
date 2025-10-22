@@ -3,7 +3,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
     logic::{Int, Mapping},
-    *,
+    prelude::*,
 };
 
 struct T {

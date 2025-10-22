@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{
     cell::{PermCell, PermCellOwn},
     ghost::PtrOwn,
-    *,
+    prelude::*,
 };
 
 pub fn unknown_permcell_permission(cell: &PermCell<i32>, perm: Ghost<&PermCellOwn<i32>>) {

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(result == r)]
 pub fn reborrow_id<T>(r: &mut T) -> &mut T {
@@ -187,7 +187,7 @@ pub fn place_mention_no_gen<T>(x: &mut Option<T>) {
 pub fn shallow_borrow_no_gen(x: &mut Option<i32>) {
     let _r = &mut *x;
     // x / *x is shallow borrowed here
-    match x {
+    match *x {
         Some(ref inner) if *inner == 2 => {
             proof_assert!(_r == x);
         }

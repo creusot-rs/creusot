@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::ops::*, *};
+use creusot_contracts::prelude::*;
 
 pub fn multi_use<T>(x: &T) {
     let c = #[requires(x == x)]

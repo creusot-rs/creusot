@@ -1,4 +1,4 @@
-use crate::{logic::ra::RA, *};
+use crate::{logic::ra::RA, prelude::*};
 
 /// The 'agreement' Resource Algebra.
 ///

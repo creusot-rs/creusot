@@ -19,7 +19,7 @@ use crate::{
             fmap::FMapInsertLocalUpdate,
         },
     },
-    *,
+    prelude::*,
 };
 
 /// Inner value for [`Resource`] and [`Fragment`].
@@ -48,7 +48,7 @@ impl<K, V> Invariant for Fragment<K, V> {
     }
 }
 
-impl<K, V> crate::View for Authority<K, V> {
+impl<K, V> View for Authority<K, V> {
     type ViewTy = FMap<K, V>;
 
     /// Get the authoritative version of the map.
@@ -57,7 +57,7 @@ impl<K, V> crate::View for Authority<K, V> {
         self.0.view().auth().unwrap_logic().map(|(_, x): (K, Ag<V>)| x.0)
     }
 }
-impl<K, V> crate::View for Fragment<K, V> {
+impl<K, V> View for Fragment<K, V> {
     type ViewTy = (K, V);
 
     /// Get the fragment of the map represented by this resource.

@@ -381,8 +381,8 @@ fn maintains_impl(attr: TS1, body: TS1) -> syn::Result<TS1> {
     let post_toks = maintains_tokens(&maintains, false);
     let body = TokenStream::from(body);
     Ok(quote! {
-      #[::creusot_contracts::requires(#pre_toks)]
-      #[::creusot_contracts::ensures(#post_toks)]
+      #[::creusot_contracts::macros::requires(#pre_toks)]
+      #[::creusot_contracts::macros::ensures(#post_toks)]
       #body
     }
     .into())

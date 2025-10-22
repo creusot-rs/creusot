@@ -1,9 +1,7 @@
-use crate::*;
+use crate::prelude::*;
 mod arithmetic;
 
-pub use self::arithmetic::{
-    AddLogic, DivLogic, MulLogic, NegLogic, NthBitLogic, RemLogic, SubLogic,
-};
+pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, NthBitLogic, RemLogic, SubLogic};
 
 /// Used for indexing operations (`container[index]`) in pearlite.
 #[diagnostic::on_unimplemented(

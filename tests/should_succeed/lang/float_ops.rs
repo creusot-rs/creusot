@@ -2,7 +2,7 @@
 // FIXME: all this should work...
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[ensures(result == false)]
 pub fn eq() -> bool {

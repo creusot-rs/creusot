@@ -1,5 +1,5 @@
-use crate::{logic::Mapping, std::ops::*, *};
-use ::std::iter::FilterMap;
+use crate::{logic::Mapping, prelude::*, std::ops::*};
+use std::iter::FilterMap;
 
 pub trait FilterMapExt<I, F> {
     #[logic]
@@ -60,11 +60,7 @@ pub fn precise<A, B, F: FnMut(A) -> Option<B>>(f1: F) -> bool {
     pearlite! { forall<f2: F, i> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b))) && f1.postcondition_mut((i,), f2, None)) }
 }
 
-impl<I, B, F> Iterator for FilterMap<I, F>
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> Option<B>,
-{
+impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for FilterMap<I, F> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {

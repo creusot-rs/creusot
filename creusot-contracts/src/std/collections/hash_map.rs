@@ -1,9 +1,9 @@
 use crate::{
     logic::FMap,
-    std::iter::{FromIterator, Iterator},
-    *,
+    prelude::*,
+    std::iter::{FromIteratorSpec, IteratorSpec},
 };
-use ::std::{
+use std::{
     collections::hash_map::*,
     default::Default,
     hash::{BuildHasher, Hash},
@@ -62,8 +62,8 @@ impl<K: DeepModel, V> View for IntoIter<K, V> {
     }
 }
 
-impl<K: DeepModel, V> Iterator for IntoIter<K, V> {
-    #[logic(open, prophetic)]
+impl<K: DeepModel, V> IteratorSpec for IntoIter<K, V> {
+    #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -108,8 +108,8 @@ impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
     }
 }
 
-impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V> {
-    #[logic(open, prophetic)]
+impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
+    #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // `self@` equals the union of `visited` (viewed as a finite map) and `o@`
         pearlite! {
@@ -154,8 +154,8 @@ impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
     }
 }
 
-impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
-    #[logic(open, prophetic)]
+impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
+    #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
@@ -191,7 +191,7 @@ impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V> {
     }
 }
 
-impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIterator<(K, V)>
+impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIteratorSpec<(K, V)>
     for HashMap<K, V, S>
 {
     #[logic(open)]

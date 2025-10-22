@@ -1,10 +1,12 @@
 #[cfg(creusot)]
 use crate::logic::such_that;
-use crate::{logic::Mapping, *};
-use ::std::cmp::Ordering;
+use crate::{
+    logic::{Mapping, ord::ord_laws_impl},
+    prelude::*,
+};
 #[cfg(creusot)]
-use ::std::marker::Destruct;
-pub use ::std::option::*;
+use std::marker::Destruct;
+use std::{cmp::Ordering, option::*};
 
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
@@ -212,9 +214,7 @@ extern_spec! {
                     None => result == None,
                     Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
                 })]
-                fn map<U, F>(self, f: F) -> Option<U>
-                where
-                    F: FnOnce(T) -> U {
+                fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Option<U> {
                     match self {
                         Some(t) => Some(f(t)),
                         None => None,
@@ -230,9 +230,7 @@ extern_spec! {
                     None => true,
                     Some(t) => f.postcondition_once((&t,), ()),
                 })]
-                fn inspect<F>(self, f: F) -> Option<T>
-                where
-                    F: FnOnce(&T) {
+                fn inspect<F: FnOnce(&T)>(self, f: F) -> Option<T> {
                     match self {
                         None => None,
                         Some(t) => { f(&t); Some(t) }
@@ -247,9 +245,7 @@ extern_spec! {
                     None => result == default,
                     Some(t) => f.postcondition_once((t,), result)
                 })]
-                fn map_or<U, F>(self, default: U, f: F) -> U
-                where
-                    F: FnOnce(T) -> U {
+                fn map_or<U, F: FnOnce(T) -> U>(self, default: U, f: F) -> U {
                     match self {
                         None => default,
                         Some(t) => f(t),
@@ -264,10 +260,7 @@ extern_spec! {
                     None => default.postcondition_once((), result),
                     Some(t) => f.postcondition_once((t,), result),
                 })]
-                fn map_or_else<U, D, F>(self, default: D, f: F) -> U
-                where
-                    D: FnOnce() -> U,
-                    F: FnOnce(T) -> U {
+                fn map_or_else<U, D: FnOnce() -> U, F: FnOnce(T) -> U>(self, default: D, f: F) -> U {
                     match self {
                         None => default(),
                         Some(t) => f(t),
@@ -291,9 +284,7 @@ extern_spec! {
                     None => exists<r> result == Err(r) && err.postcondition_once((), r),
                     Some(t) => result == Ok(t),
                 })]
-                fn ok_or_else<E, F>(self, err: F) -> Result<T, E>
-                where
-                    F: FnOnce() -> E {
+                fn ok_or_else<E, F: FnOnce() -> E>(self, err: F) -> Result<T, E> {
                     match self {
                         None => Err(err()),
                         Some(t) => Ok(t),
@@ -318,9 +309,7 @@ extern_spec! {
                     None => result == None,
                     Some(t) => f.postcondition_once((t,), result),
                 })]
-                fn and_then<U, F>(self, f: F) -> Option<U>
-                where
-                    F: FnOnce(T) -> Option<U> {
+                fn and_then<U, F: FnOnce(T) -> Option<U>>(self, f: F) -> Option<U> {
                     match self {
                         None => None,
                         Some(t) => f(t),
@@ -338,9 +327,7 @@ extern_spec! {
                         Some(r) => predicate.postcondition_once((&t,), true) && r == t,
                     },
                 })]
-                fn filter<P>(self, predicate: P) -> Option<T>
-                where
-                    P: FnOnce(&T) -> bool {
+                fn filter<P: FnOnce(&T) -> bool>(self, predicate: P) -> Option<T> {
                     match self {
                         None => None,
                         Some(t) => if predicate(&t) { Some(t) } else { None }
@@ -362,9 +349,7 @@ extern_spec! {
                     None => f.postcondition_once((), result),
                     Some(t) => result == Some(t),
                 })]
-                fn or_else<F>(self, f: F) -> Option<T>
-                where
-                    F: FnOnce() -> Option<T> {
+                fn or_else<F: FnOnce() -> Option<T>>(self, f: F) -> Option<T> {
                     match self {
                         None => f(),
                         Some(t) => Some(t),
@@ -420,9 +405,7 @@ extern_spec! {
                     None => f.postcondition_once((), *result) && ^self == Some(^result),
                     Some(_) => *self == Some(*result) && ^self == Some(^result),
                 })]
-                fn get_or_insert_with<F>(&mut self, f: F) -> &mut T
-                where
-                    F: FnOnce() -> T {
+                fn get_or_insert_with<F: FnOnce() -> T>(&mut self, f: F) -> &mut T {
                     match self {
                         None => { *self = Some(f()); self.as_mut().unwrap() }
                         Some(t) => t,
@@ -449,9 +432,7 @@ extern_spec! {
                                 ^self == Some(^b) && result == None
                             }
                 })]
-                fn take_if<P>(&mut self, predicate: P) -> Option<T>
-                where
-                    P: FnOnce(&mut T) -> bool {
+                fn take_if<P: FnOnce(&mut T) -> bool>(&mut self, predicate: P) -> Option<T> {
                     match self {
                         None => None,
                         Some(t) => if predicate(t) { self.take() } else { None },
@@ -500,7 +481,8 @@ extern_spec! {
                 })]
                 fn copied(self) -> Option<T>
                 where
-                    T: Copy {
+                    T: Copy
+                {
                     match self {
                         None => None,
                         Some(t) => Some(*t),
@@ -514,7 +496,8 @@ extern_spec! {
                 })]
                 fn cloned(self) -> Option<T>
                 where
-                    T: Clone {
+                    T: Clone
+                {
                     match self {
                         None => None,
                         Some(t) => Some(t.clone()),
@@ -530,7 +513,8 @@ extern_spec! {
                 })]
                 fn copied(self) -> Option<T>
                 where
-                    T: Copy {
+                    T: Copy
+                {
                     match self {
                         None => None,
                         Some(t) => Some(*t),
@@ -544,7 +528,8 @@ extern_spec! {
                 })]
                 fn cloned(self) -> Option<T>
                 where
-                    T: Clone {
+                    T: Clone
+                {
                     match self {
                         None => None,
                         Some(t) => Some(t.clone()),
@@ -631,7 +616,7 @@ impl<T> View for IntoIter<T> {
     }
 }
 
-impl<T> Iterator for IntoIter<T> {
+impl<T> IteratorSpec for IntoIter<T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && resolve(self) }
@@ -665,7 +650,7 @@ impl<'a, T> View for Iter<'a, T> {
     }
 }
 
-impl<T> Iterator for Iter<'_, T> {
+impl<T> IteratorSpec for Iter<'_, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && resolve(self) }
@@ -699,7 +684,7 @@ impl<'a, T> View for IterMut<'a, T> {
     }
 }
 
-impl<T> Iterator for IterMut<'_, T> {
+impl<T> IteratorSpec for IterMut<'_, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! { (*self)@ == None && resolve(self) }

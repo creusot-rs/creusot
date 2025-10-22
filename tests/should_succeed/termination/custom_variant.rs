@@ -1,7 +1,7 @@
 // UISKIP WHY3SKIP
 use creusot_contracts::{
     logic::{Mapping, WellFounded},
-    *,
+    prelude::*,
 };
 
 /// Variant that decreases both components.

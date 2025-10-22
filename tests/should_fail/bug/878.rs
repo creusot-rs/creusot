@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::{vec, *};
+use creusot_contracts::{prelude::*, vec};
 
 pub fn test() {
     let mut v = vec![1, 2, 2, 3];

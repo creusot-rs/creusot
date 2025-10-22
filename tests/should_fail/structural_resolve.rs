@@ -1,6 +1,6 @@
 #![feature(min_specialization)]
 extern crate creusot_contracts;
-use creusot_contracts::{resolve::structural_resolve, *};
+use creusot_contracts::{prelude::*, resolve::structural_resolve};
 
 pub struct False;
 

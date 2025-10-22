@@ -3,8 +3,9 @@ use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
-    *,
+    prelude::*,
 };
+use std::marker::PhantomData;
 
 /// A type of sequence usable in pearlite and `ghost!` blocks.
 ///
@@ -14,7 +15,7 @@ use crate::{
 /// accessed via its [view](crate::View) (The `@` operator).
 ///
 /// ```rust,creusot
-/// # use creusot_contracts::*;
+/// # use creusot_contracts::prelude::*;
 /// #[logic]
 /// fn get_model<T>(v: Vec<T>) -> Seq<T> {
 ///     pearlite!(v@)
@@ -37,7 +38,7 @@ use crate::{
 ///
 /// This type is designed for this use-case, with no restriction on the capacity.
 #[builtin("seq.Seq.seq")]
-pub struct Seq<T>(std::marker::PhantomData<T>);
+pub struct Seq<T>(PhantomData<T>);
 
 /// Logical definitions
 impl<T> Seq<T> {
@@ -55,7 +56,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(Seq::create(5, |i| i + 1));
     /// proof_assert!(s.len() == 5);
     /// proof_assert!(forall<i> 0 <= i && i < 5 ==> s[i] == i + 1);
@@ -85,7 +86,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(Seq::singleton(2));
     /// proof_assert!(s.index_logic_unsized(0) == 2);
     /// proof_assert!(s[0] == 2); // prefer this
@@ -104,7 +105,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let subs = snapshot! {
     ///     let s: Seq<Int> = Seq::create(10, |i| i);
     ///     s.subsequence(2, 5)
@@ -125,7 +126,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(Seq::singleton(42));
     /// proof_assert!(s.len() == 1);
     /// proof_assert!(s[0] == 42);
@@ -144,7 +145,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(seq![5, 10, 15]);
     /// proof_assert!(s.tail() == seq![10, 15]);
     /// proof_assert!(s.tail().tail() == Seq::singleton(15));
@@ -168,7 +169,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(seq![5, 10, 15]);
     /// proof_assert!(s.pop_back() == seq![5, 10]);
     /// proof_assert!(s.pop_back().pop_back() == Seq::singleton(5));
@@ -184,7 +185,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// #[requires(v@.len() > 0)]
     /// fn f<T>(v: Vec<T>) { /* ... */ }
     /// ```
@@ -201,7 +202,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(Seq::create(2, |_| 0));
     /// let s2 = snapshot!(s.set(1, 3));
     /// proof_assert!(s2[0] == 0);
@@ -273,7 +274,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s1 = snapshot!(Seq::singleton(1));
     /// let s2 = snapshot!(Seq::create(2, |i| i));
     /// let s = snapshot!(s1.concat(s2));
@@ -315,7 +316,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::*;
+    /// # use creusot_contracts::prelude::*;
     /// let s = snapshot!(Seq::create(3, |i| i));
     /// let s2 = snapshot!(s.reverse());
     /// proof_assert!(s2[0] == 2);
@@ -435,7 +436,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```rust,creusot
-    /// use creusot_contracts::{proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     /// let ghost_seq = Seq::<i32>::new();
     /// proof_assert!(seq == Seq::create());
     /// ```
@@ -453,7 +454,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -476,7 +477,7 @@ impl<T> Seq<T> {
     /// # Example
     ///
     /// ```rust,creusot
-    /// use creusot_contracts::*;
+    /// use creusot_contracts::prelude::*;
     /// #[check(ghost)]
     /// #[requires(s.len() == 0)]
     /// pub fn foo(mut s: Seq<i32>) {
@@ -499,7 +500,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -521,7 +522,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -543,7 +544,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, Int, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -571,7 +572,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, Int, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     ///
@@ -602,7 +603,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -628,7 +629,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -654,7 +655,7 @@ impl<T> Seq<T> {
     ///
     /// # Example
     /// ```rust,creusot
-    /// use creusot_contracts::{ghost, proof_assert, Seq};
+    /// use creusot_contracts::prelude::*;
     ///
     /// let mut s = Seq::new();
     /// ghost! {
@@ -682,7 +683,7 @@ impl<T> Seq<T> {
     }
 }
 
-impl<T> ::std::ops::Index<Int> for Seq<T> {
+impl<T> std::ops::Index<Int> for Seq<T> {
     type Output = T;
 
     #[check(ghost)]
@@ -692,7 +693,7 @@ impl<T> ::std::ops::Index<Int> for Seq<T> {
         self.get_ghost(index).unwrap()
     }
 }
-impl<T> ::std::ops::IndexMut<Int> for Seq<T> {
+impl<T> std::ops::IndexMut<Int> for Seq<T> {
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
     #[ensures((*self).len() == (^self).len())]
@@ -703,7 +704,7 @@ impl<T> ::std::ops::IndexMut<Int> for Seq<T> {
     }
 }
 
-impl<T> ::std::ops::Index<(Int, Int)> for Seq<T> {
+impl<T> std::ops::Index<(Int, Int)> for Seq<T> {
     type Output = (T, T);
 
     #[trusted]
@@ -716,7 +717,7 @@ impl<T> ::std::ops::Index<(Int, Int)> for Seq<T> {
     }
 }
 
-impl<T> ::std::ops::IndexMut<(Int, Int)> for Seq<T> {
+impl<T> std::ops::IndexMut<(Int, Int)> for Seq<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(0 <= index.0 && index.0 < self.len() && 0 <= index.1 && index.1 < self.len())]
@@ -776,7 +777,7 @@ impl<T> IntoIterator for Seq<T> {
 ///
 /// To use it in a `for` loop, a variant must be declared:
 /// ```rust,creusot
-/// # use creusot_contracts::*;
+/// # use creusot_contracts::prelude::*;
 /// # #[requires(true)]
 /// fn iter_on_seq<T>(s: Seq<T>) {
 ///     let len = snapshot!(s.len());
@@ -798,7 +799,7 @@ impl<T> View for SeqIter<T> {
     }
 }
 
-impl<T> ::std::iter::Iterator for SeqIter<T> {
+impl<T> Iterator for SeqIter<T> {
     type Item = T;
 
     #[check(ghost)]
@@ -811,7 +812,7 @@ impl<T> ::std::iter::Iterator for SeqIter<T> {
     }
 }
 
-impl<T> crate::Iterator for SeqIter<T> {
+impl<T> IteratorSpec for SeqIter<T> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
@@ -864,7 +865,7 @@ impl<T> View for SeqIterRef<'_, T> {
     }
 }
 
-impl<'a, T> ::std::iter::Iterator for SeqIterRef<'a, T> {
+impl<'a, T> Iterator for SeqIterRef<'a, T> {
     type Item = &'a T;
 
     #[check(ghost)]
@@ -885,7 +886,7 @@ impl<'a, T> ::std::iter::Iterator for SeqIterRef<'a, T> {
         }
     }
 }
-impl<'a, T> crate::Iterator for SeqIterRef<'a, T> {
+impl<'a, T> IteratorSpec for SeqIterRef<'a, T> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<&'a T>, o: Self) -> bool {
         let visited: Seq<T> = visited.to_owned_seq();
@@ -906,20 +907,6 @@ impl<'a, T> crate::Iterator for SeqIterRef<'a, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-}
-
-#[logic(open)]
-#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> Seq::singleton(x).flat_map(f) == f.get(x))]
-pub fn flat_map_singleton<A, B>() {}
-
-#[logic(open)]
-#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> xs.push_back(x).flat_map(f) == xs.flat_map(f).concat(f.get(x)))]
-#[variant(xs.len())]
-pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
-    if xs.len() > 0 {
-        flat_map_push_back::<A, B>(xs.tail());
-        proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
-    }
 }
 
 impl<T> Resolve for Seq<T> {
@@ -952,6 +939,24 @@ impl<T> Resolve for SeqIter<T> {
 /// A sequence literal `seq![a, b, c]`.
 #[macro_export]
 macro_rules! seq {
-    ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$($items),+]) };
+    ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$(creusot_contracts::macros::pearlite!($items)),+]) };
     () => { Seq::empty() };
+}
+pub use seq;
+
+// Some properties
+// TODO : use parameters instead of quantification, and mode to impl block
+
+#[logic(open)]
+#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> Seq::singleton(x).flat_map(f) == f.get(x))]
+pub fn flat_map_singleton<A, B>() {}
+
+#[logic(open)]
+#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> xs.push_back(x).flat_map(f) == xs.flat_map(f).concat(f.get(x)))]
+#[variant(xs.len())]
+pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
+    if xs.len() > 0 {
+        flat_map_push_back::<A, B>(xs.tail());
+        proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
+    }
 }

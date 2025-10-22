@@ -1,6 +1,6 @@
 // TACTIC +inline_goal
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, std::iter::*, *};
+use creusot_contracts::{logic::Int, prelude::*};
 
 #[requires(slice@.len() < 1000)]
 #[ensures(result@ == slice@.len())]
@@ -33,7 +33,7 @@ pub fn all_zero(v: &mut Vec<usize>) {
     }
 }
 
-pub fn skip_take<I: Iterator>(iter: I, n: usize) {
+pub fn skip_take<I: IteratorSpec>(iter: I, n: usize) {
     let res = iter.take(n).skip(n).next();
 
     proof_assert! { res == None };

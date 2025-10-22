@@ -291,7 +291,7 @@ fn run_creusot(
         })
         .collect();
 
-    cmd.args(&["-Zno-codegen", "--crate-type=lib"]);
+    cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_contracts={}", paths.rlib.display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());

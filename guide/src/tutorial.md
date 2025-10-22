@@ -37,7 +37,7 @@ The last file, `src/lib.rs`, is what we will be editing in this tutorial.
 Open `src/lib.rs`. It contains an example function with a *contract*:
 
 ```rust
-use creusot_contracts::*;
+use creusot_contracts::prelude::*;
 
 #[requires(x@ < i64::MAX@)]
 #[ensures(result@ == x@ + 1)]
