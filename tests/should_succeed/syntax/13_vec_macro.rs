@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::{prelude::*, vec};
+use creusot_contracts::prelude::{vec, *};
 
 pub fn x() {
     let v0: Vec<u32> = vec![];

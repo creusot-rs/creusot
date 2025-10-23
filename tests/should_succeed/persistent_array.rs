@@ -295,7 +295,10 @@ pub mod implementation {
     }
 }
 
-use creusot_contracts::{ghost::local_invariant::Tokens, prelude::*, vec};
+use creusot_contracts::{
+    ghost::local_invariant::Tokens,
+    prelude::{vec, *},
+};
 use implementation::PersistentArray;
 
 #[requires(tokens.contains(implementation::PARRAY()))]

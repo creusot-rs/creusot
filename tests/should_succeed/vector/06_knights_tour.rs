@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::{prelude::*, std::clone::Clone, vec};
+use creusot_contracts::{
+    prelude::{vec, *},
+    std::clone::Clone,
+};
 
 #[derive(Copy, Clone)]
 struct Point {

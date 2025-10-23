@@ -126,7 +126,7 @@ pub mod macros {
     /// they carry no ownership. This means that code like this is perfectly fine:
     ///
     /// ```
-    /// # use creusot_contracts::prelude::*;
+    /// # use creusot_contracts::prelude::{vec, *};
     /// let v: Vec<i32> = vec![1, 2];
     /// let s = snapshot!(v);
     /// assert!(v[0] == 1); // ok, `s` does not have ownership of `v`
@@ -329,7 +329,7 @@ pub mod macros {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::prelude::*;
+    /// # use creusot_contracts::prelude::{vec, *};
     /// let x = 1;
     /// let v = vec![x, 2];
     /// let s = snapshot!(v);
@@ -528,7 +528,7 @@ mod base_prelude {
     };
 
     pub use crate::std::{
-        // Shadow std::prelude by our version of derive macros.
+        // Shadow std::prelude by our version of derive macros and of vec!.
         // If the user write the glob pattern "use creusot_contracts::prelude::*",
         // then rustc will either shadow the old identifier or complain about
         // the ambiguity (ex: for the derive macros Clone and PartialEq, a glob
@@ -537,6 +537,7 @@ mod base_prelude {
         clone::Clone,
         cmp::PartialEq,
         default::Default,
+        vec::vec,
     };
 
     // Export extension traits anonymously
@@ -555,23 +556,4 @@ mod base_prelude {
 /// Re-exports available under the `creusot_contracts` namespace
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
-}
-
-/// Creusot-friendly replacement of `vec!`
-///
-/// The std vec macro uses special magic to construct the array argument
-/// to `Box::new` directly on the heap. Because the generated MIR is hard
-/// to translate, we provide a custom `vec!` macro which does not do this.
-#[macro_export]
-macro_rules! vec {
-    () => (
-        ::std::vec::Vec::new()
-    );
-    ($elem:expr; $n:expr) => (
-        ::std::vec::from_elem($elem, $n)
-    );
-    ($($x:expr),*) => (
-        <[_]>::into_vec(::std::boxed::Box::new([$($x),*]))
-    );
-    ($($x:expr,)*) => (vec![$($x),*])
 }

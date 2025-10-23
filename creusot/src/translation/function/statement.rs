@@ -13,8 +13,8 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_middle::{
     mir::{
-        BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-        StatementKind,
+        BorrowKind::*, CastKind, Location, NullOp, Operand::*, Place, Rvalue, SourceInfo,
+        Statement, StatementKind,
     },
     ty::{ConstKind, Ty, TyKind, UintTy, adjustment::PointerCoercion},
 };
@@ -200,13 +200,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
+            Rvalue::NullaryOp(NullOp::SizeOf, _) => self
+                .ctx
+                .fatal_error(si.span, format!("MIR code used Rvalue SizeOf: {rvalue:?}"))
+                .with_note("If you are trying to use the vec! macro, you should use the version provided by creusot-contracts.").emit(),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::WrapUnsafeBinder(_, _) => self.ctx.crash_and_error(
                 si.span,
-                format!("MIR code used an unsupported Rvalue {:?}", rvalue),
+                format!("MIR code used an unsupported Rvalue {rvalue:?}"),
             ),
         };
 

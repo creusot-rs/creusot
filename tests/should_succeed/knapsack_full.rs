@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{prelude::*, vec};
+use creusot_contracts::prelude::{vec, *};
 
 pub struct Item<Name> {
     pub name: Name,
