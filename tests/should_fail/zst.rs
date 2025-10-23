@@ -1,6 +1,9 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, prelude::*, vec};
+use creusot_contracts::{
+    ghost::PtrOwn,
+    prelude::{vec, *},
+};
 
 pub fn zst_pointers_may_be_equal() {
     let mut v0: Vec<()> = vec![()];
