@@ -1,4 +1,4 @@
-module M_01__index_slice
+module M_index_slice
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt32
@@ -26,7 +26,7 @@ module M_01__index_slice
     | & _4: UInt64.t = Any.any_l ()
     | & _5: bool = Any.any_l () ]) [ return (result: UInt32.t) -> (! return {result}) ]
 end
-module M_01__index_mut_slice
+module M_index_mut_slice
   use creusot.int.UInt64
   use creusot.prelude.Opaque
   use creusot.slice.Slice64
@@ -35,14 +35,14 @@ module M_01__index_mut_slice
   use creusot.prelude.Any
   use seq.Seq
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_slice_u32
   
-  function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
+  function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_slice_u32
   
   meta "compute_max_steps" 1000000
   
@@ -62,7 +62,7 @@ module M_01__index_mut_slice
     | bb1 = s0
       [ s0 = Slice64.set <UInt32.t> {a.current} {_4} {(3: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s1)
-      | s1 = -{resolve a}- s2
+      | s1 = -{resolve_ref_slice_u32 a}- s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a
@@ -70,10 +70,10 @@ module M_01__index_mut_slice
     | & _5: Opaque.ptr = Any.any_l ()
     | & _6: UInt64.t = Any.any_l ()
     | & _7: bool = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:index_mut_slice ensures] UInt32.t'int (index_logic a.final 2) = 3}
+    [ return (result: ()) -> {[@expl:index_mut_slice ensures] UInt32.t'int (index_slice_u32 a.final 2) = 3}
       (! return {result}) ]
 end
-module M_01__slice_first
+module M_slice_first
   use creusot.slice.Slice64
   use creusot.int.UInt64
   use seq.Seq
@@ -82,69 +82,71 @@ module M_01__slice_first
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' (self: t_T) = inv self
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_T_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_T
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_T
   
-  predicate invariant''1 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
   
-  predicate inv'2 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''1 _1
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant''2 [@inline:trivial] (self: Slice64.slice t_T) = inv'2 self
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_slice_T
   
-  predicate inv'3 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''2 _1
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_ref_slice_T
   
-  let rec len (self_: Slice64.slice t_T) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
+  let rec len_T (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
+    {[@expl:len 'self_' type invariant] inv_ref_slice_T self_}
     any [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_ref_T = None | Some t_T
   
-  predicate invariant''3 [@inline:trivial] (self: t_T) = inv self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'4 [@inline:trivial] (_1: t_T) = invariant''3 _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate inv'5 (_1: t_Option)
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'5 x]. inv'5 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'4 a_0
+        | None -> true
+        | Some f0 -> inv_ref_T f0
         end
   
-  function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec slice_first (a: Slice64.slice t_T) (return (x: t_Option)) = {[@expl:slice_first 'a' type invariant] inv'3 a}
+  let rec slice_first_T (a: Slice64.slice t_T) (return (x: t_Option_ref_T)) =
+    {[@expl:slice_first 'a' type invariant] inv_ref_slice_T a}
     (! bb0
-    [ bb0 = s0 [ s0 = len {a} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = len_T {a} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_3 <- UInt64.gt _4 (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb2) ] ]
     | bb2 = s0
@@ -154,10 +156,10 @@ module M_01__slice_first
       | s3 = {[@expl:index in bounds] _10} s4
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = Slice64.get <t_T> {a} {_8} (fun (r: t_T) -> [ &_7 <- r ] s1) | s1 = [ &_0 <- C_Some _7 ] s2 | s2 = bb5 ]
-    | bb4 = s0 [ s0 = [ &_0 <- C_None ] s1 | s1 = bb5 ]
+      [ s0 = Slice64.get <t_T> {a} {_8} (fun (r: t_T) -> [ &_7 <- r ] s1) | s1 = [ &_0 <- Some _7 ] s2 | s2 = bb5 ]
+    | bb4 = s0 [ s0 = [ &_0 <- None ] s1 | s1 = bb5 ]
     | bb5 = return {_0} ]
-    [ & _0: t_Option = Any.any_l ()
+    [ & _0: t_Option_ref_T = Any.any_l ()
     | & a: Slice64.slice t_T = a
     | & _3: bool = Any.any_l ()
     | & _4: UInt64.t = Any.any_l ()
@@ -165,10 +167,10 @@ module M_01__slice_first
     | & _8: UInt64.t = Any.any_l ()
     | & _9: UInt64.t = Any.any_l ()
     | & _10: bool = Any.any_l () ])
-    [ return (result: t_Option) -> {[@expl:slice_first result type invariant] inv'5 result}
+    [ return (result: t_Option_ref_T) -> {[@expl:slice_first result type invariant] inv_Option_ref_T result}
       {[@expl:slice_first ensures] match result with
-        | C_Some v -> v = index_logic a 0
-        | C_None -> Seq.length (Slice64.view a) = 0
+        | Some v -> v = index_slice_T a 0
+        | None -> Seq.length (Slice64.view a) = 0
         end}
       (! return {result}) ]
 end

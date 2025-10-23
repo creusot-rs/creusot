@@ -1,13 +1,13 @@
-module M_one_side_update__f
+module M_f
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_MyInt = { t_MyInt__0: UInt64.t }
+  type t_MyInt = { f0: UInt64.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
+  predicate resolve_ref_MyInt [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_MyInt
   
   meta "compute_max_steps" 1000000
   
@@ -15,15 +15,15 @@ module M_one_side_update__f
   
   let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- { t_MyInt__0 = (10: UInt64.t) } ] s1
+      [ s0 = [ &a <- { f0 = (10: UInt64.t) } ] s1
       | s1 = MutBorrow.borrow_mut <t_MyInt> {a}
           (fun (_ret: MutBorrow.t t_MyInt) -> [ &b <- _ret ] [ &a <- _ret.final ] s2)
       | s2 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ] ]
-    | bb1 = s0 [ s0 = -{resolve b}- s1 | s1 = bb3 ]
+    | bb1 = s0 [ s0 = -{resolve_ref_MyInt b}- s1 | s1 = bb3 ]
     | bb2 = s0
-      [ s0 = [ &_6 <- { t_MyInt__0 = (5: UInt64.t) } ] s1
+      [ s0 = [ &_6 <- { f0 = (5: UInt64.t) } ] s1
       | s1 = [ &b <- { b with current = _6 } ] s2
-      | s2 = -{resolve b}- s3
+      | s2 = -{resolve_ref_MyInt b}- s3
       | s3 = bb3 ]
     | bb3 = return {_0} ]
     [ & _0: () = Any.any_l ()

@@ -1,4 +1,4 @@
-module M_03_as_slice_of_cells__splits_up
+module M_splits_up
   use creusot.int.UInt32
   use mach.int.Int
   use map.Map
@@ -7,65 +7,65 @@ module M_03_as_slice_of_cells__splits_up
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_PredCell
+  type t_PredCell_slice_u32
   
-  type t_PredCell'0
+  type t_PredCell_u32
   
-  predicate index_logic [@inline:trivial] (self: Map.map (Slice64.slice UInt32.t) bool) (a: Slice64.slice UInt32.t) =
+  predicate index_Mapping_slice_u32_bool [@inline:trivial] (self: Map.map (Slice64.slice UInt32.t) bool) (a: Slice64.slice UInt32.t) =
     Map.get self a
   
-  meta "rewrite_def" predicate index_logic
+  meta "rewrite_def" predicate index_Mapping_slice_u32_bool
   
-  function view (self: t_PredCell) : Map.map (Slice64.slice UInt32.t) bool
+  function view_PredCell_slice_u32 (self: t_PredCell_slice_u32) : Map.map (Slice64.slice UInt32.t) bool
   
-  predicate index_logic'0 [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = Map.get self a
+  predicate index_Mapping_u32_bool [@inline:trivial] (self: Map.map UInt32.t bool) (a: UInt32.t) = Map.get self a
   
-  meta "rewrite_def" predicate index_logic'0
+  meta "rewrite_def" predicate index_Mapping_u32_bool
   
-  function index_logic'1 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
+  function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic'1
+  meta "rewrite_def" function index_slice_u32
   
-  function view'0 (self: t_PredCell'0) : Map.map UInt32.t bool
+  function view_PredCell_u32 (self: t_PredCell_u32) : Map.map UInt32.t bool
   
-  function index_logic'2 [@inline:trivial] (self: Slice64.slice t_PredCell'0) (ix: int) : t_PredCell'0 =
+  function index_slice_PredCell_u32 [@inline:trivial] (self: Slice64.slice t_PredCell_u32) (ix: int) : t_PredCell_u32 =
     Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic'2
+  meta "rewrite_def" function index_slice_PredCell_u32
   
-  let rec as_slice_of_cells (self: t_PredCell) (_pred: Seq.seq (Map.map UInt32.t bool))
-    (return (x: Slice64.slice t_PredCell'0)) =
-    {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_logic (view self) s
+  let rec as_slice_of_cells_u32 (self: t_PredCell_slice_u32) (_pred: Seq.seq (Map.map UInt32.t bool))
+    (return (x: Slice64.slice t_PredCell_u32)) =
+    {[@expl:as_slice_of_cells requires] forall s: Slice64.slice UInt32.t. index_Mapping_slice_u32_bool (view_PredCell_slice_u32 self) s
       = (Seq.length _pred = Seq.length (Slice64.view s)
       /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
-        -> index_logic'0 (Seq.get _pred i) (index_logic'1 s i)))}
+        -> index_Mapping_u32_bool (Seq.get _pred i) (index_slice_u32 s i)))}
     any
-    [ return (result: Slice64.slice t_PredCell'0) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
-        -> view'0 (index_logic'2 result i) = Seq.get _pred i}
+    [ return (result: Slice64.slice t_PredCell_u32) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
+        -> view_PredCell_u32 (index_slice_PredCell_u32 result i) = Seq.get _pred i}
       {Seq.length (Slice64.view result) = Seq.length _pred}
       (! return {result}) ]
   
-  let rec get (self: t_PredCell'0) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {index_logic'0 (view'0 self) result} (! return {result}) ]
+  let rec get_u32 (self: t_PredCell_u32) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {index_Mapping_u32_bool (view_PredCell_u32 self) result} (! return {result}) ]
   
-  type tuple = { f0: UInt32.t; f1: UInt32.t }
+  type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec splits_up (cell: t_PredCell) (return (x: tuple)) =
-    {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_logic (view cell) s
+  let rec splits_up (cell: t_PredCell_slice_u32) (return (x: tup2_u32_u32)) =
+    {[@expl:splits_up requires] forall s: Slice64.slice UInt32.t. index_Mapping_slice_u32_bool (view_PredCell_slice_u32 cell) s
       = (Seq.length (Slice64.view s) = 2
-      /\ Int.mod (UInt32.t'int (index_logic'1 s 0)) 2 = 0 /\ Int.mod (UInt32.t'int (index_logic'1 s 1)) 2 = 1)}
+      /\ Int.mod (UInt32.t'int (index_slice_u32 s 0)) 2 = 0 /\ Int.mod (UInt32.t'int (index_slice_u32 s 1)) 2 = 1)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &snapshot <- let pred0 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2
         = 0 in let pred1 = fun (z: UInt32.t) -> Int.mod (UInt32.t'int z) 2 = 1 in Seq.create 2 [|pred0;pred1|] ] s1
       | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = as_slice_of_cells {cell} {snapshot} (fun (_ret: Slice64.slice t_PredCell'0) -> [ &slice <- _ret ] s1)
+      [ s0 = as_slice_of_cells_u32 {cell} {snapshot} (fun (_ret: Slice64.slice t_PredCell_u32) -> [ &slice <- _ret ] s1)
       | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &_11 <- (0: UInt64.t) ] s1
@@ -74,8 +74,8 @@ module M_03_as_slice_of_cells__splits_up
       | s3 = {[@expl:index in bounds] _13} s4
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = Slice64.get <t_PredCell'0> {slice} {_11}
-          (fun (r: t_PredCell'0) -> get {r} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1))
+      [ s0 = Slice64.get <t_PredCell_u32> {slice} {_11}
+          (fun (r: t_PredCell_u32) -> get_u32 {r} (fun (_ret: UInt32.t) -> [ &_9 <- _ret ] s1))
       | s1 = bb4 ]
     | bb4 = s0
       [ s0 = [ &_16 <- (1: UInt64.t) ] s1
@@ -84,14 +84,14 @@ module M_03_as_slice_of_cells__splits_up
       | s3 = {[@expl:index in bounds] _18} s4
       | s4 = bb5 ]
     | bb5 = s0
-      [ s0 = Slice64.get <t_PredCell'0> {slice} {_16}
-          (fun (r: t_PredCell'0) -> get {r} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s1))
+      [ s0 = Slice64.get <t_PredCell_u32> {slice} {_16}
+          (fun (r: t_PredCell_u32) -> get_u32 {r} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s1))
       | s1 = bb6 ]
     | bb6 = s0 [ s0 = [ &_0 <- { f0 = _9; f1 = _14 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: tuple = Any.any_l ()
-    | & cell: t_PredCell = cell
+    [ & _0: tup2_u32_u32 = Any.any_l ()
+    | & cell: t_PredCell_slice_u32 = cell
     | & snapshot: Seq.seq (Map.map UInt32.t bool) = Any.any_l ()
-    | & slice: Slice64.slice t_PredCell'0 = Any.any_l ()
+    | & slice: Slice64.slice t_PredCell_u32 = Any.any_l ()
     | & _9: UInt32.t = Any.any_l ()
     | & _11: UInt64.t = Any.any_l ()
     | & _12: UInt64.t = Any.any_l ()
@@ -100,7 +100,7 @@ module M_03_as_slice_of_cells__splits_up
     | & _16: UInt64.t = Any.any_l ()
     | & _17: UInt64.t = Any.any_l ()
     | & _18: bool = Any.any_l () ])
-    [ return (result: tuple) -> {[@expl:splits_up ensures] Int.mod (UInt32.t'int result.f0) 2 = 0
+    [ return (result: tup2_u32_u32) -> {[@expl:splits_up ensures] Int.mod (UInt32.t'int result.f0) 2 = 0
       /\ Int.mod (UInt32.t'int result.f1) 2 = 1}
       (! return {result}) ]
 end

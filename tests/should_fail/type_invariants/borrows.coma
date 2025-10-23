@@ -1,14 +1,14 @@
-module M_borrows__qyi5649894289181344863__new (* NonZero *)
+module M_impl_NonZero__new (* NonZero *)
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
   meta "compute_max_steps" 1000000
   
@@ -16,78 +16,78 @@ module M_borrows__qyi5649894289181344863__new (* NonZero *)
   
   let rec new (n: Int32.t) (return (x: t_NonZero)) = {[@expl:new requires] Int32.to_int n <> 0}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- { t_NonZero__0 = n } ] s1 | s1 = return {_0} ] ]
+    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = n } ] s1 | s1 = return {_0} ] ]
     [ & _0: t_NonZero = Any.any_l () | & n: Int32.t = n ])
-    [ return (result: t_NonZero) -> {[@expl:new result type invariant] inv result}
-      {[@expl:new ensures] result.t_NonZero__0 = n}
+    [ return (result: t_NonZero) -> {[@expl:new result type invariant] inv_NonZero result}
+      {[@expl:new ensures] result.f0 = n}
       (! return {result}) ]
 end
-module M_borrows__qyi5649894289181344863__inner_mut (* NonZero *)
+module M_impl_NonZero__inner_mut (* NonZero *)
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec inner_mut (self: MutBorrow.t t_NonZero) (return (x: MutBorrow.t Int32.t)) =
-    {[@expl:inner_mut 'self' type invariant] inv'0 self}
+    {[@expl:inner_mut 'self' type invariant] inv_ref_NonZero self}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Int32.t> {self.current.t_NonZero__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = MutBorrow.borrow_final <Int32.t> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_5 <- _ret ] [ &self <- { self with current = { t_NonZero__0 = _ret.final } } ] s1)
+            [ &_5 <- _ret ] [ &self <- { self with current = { f0 = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s2)
-      | s2 = -{resolve _5}- s3
+      | s2 = -{resolve_ref_i32 _5}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = {[@expl:type invariant] inv'0 self} s6
-      | s6 = -{resolve'0 self}- s7
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = {[@expl:type invariant] inv_ref_NonZero self} s6
+      | s6 = -{resolve_ref_NonZero self}- s7
       | s7 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
     | & self: MutBorrow.t t_NonZero = self
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _5: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return (result: MutBorrow.t Int32.t) -> {[@expl:inner_mut ensures #0] Int32.to_int self.current.t_NonZero__0
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:inner_mut ensures #0] Int32.to_int self.current.f0
       = Int32.to_int result.current}
-      {[@expl:inner_mut ensures #1] Int32.to_int self.final.t_NonZero__0 = Int32.to_int result.final}
+      {[@expl:inner_mut ensures #1] Int32.to_int self.final.f0 = Int32.to_int result.final}
       (! return {result}) ]
 end
-module M_borrows__simple
+module M_simple
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -95,48 +95,48 @@ module M_borrows__simple
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec simple (x: MutBorrow.t t_NonZero) (return (x'0: ())) = {[@expl:simple 'x' type invariant] inv'0 x}
-    {[@expl:simple requires #0] Int32.to_int x.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:simple requires #1] Int32.to_int x.current.t_NonZero__0 <> - 1}
+  let rec simple (x: MutBorrow.t t_NonZero) (return (x'0: ())) = {[@expl:simple 'x' type invariant] inv_ref_NonZero x}
+    {[@expl:simple requires #0] Int32.to_int x.current.f0 < Int32.to_int const_MAX}
+    {[@expl:simple requires #1] Int32.to_int x.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Int32.t> {x.current.t_NonZero__0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
-          (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_6 <- _ret ] [ &x <- { x with current = { t_NonZero__0 = _ret.final } } ] s1)
+      [ s0 = MutBorrow.borrow_final <Int32.t> {x.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &x <- { x with current = { f0 = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s2)
       | s2 = inc {_5} (fun (_ret: ()) -> [ &_4 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _6}- s1
-      | s1 = {[@expl:type invariant] inv'0 x} s2
-      | s2 = -{resolve'0 x}- s3
+      [ s0 = -{resolve_ref_i32 _6}- s1
+      | s1 = {[@expl:type invariant] inv_ref_NonZero x} s2
+      | s2 = -{resolve_ref_NonZero x}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: MutBorrow.t t_NonZero = x
@@ -144,33 +144,34 @@ module M_borrows__simple
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__hard
+module M_hard
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
   let rec inner_mut (self: MutBorrow.t t_NonZero) (return (x: MutBorrow.t Int32.t)) =
-    {[@expl:inner_mut 'self' type invariant] inv'0 self}
+    {[@expl:inner_mut 'self' type invariant] inv_ref_NonZero self}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {Int32.to_int self.current.t_NonZero__0 = Int32.to_int result.current}
-      {Int32.to_int self.final.t_NonZero__0 = Int32.to_int result.final}
+    [ return (result: MutBorrow.t Int32.t) -> {Int32.to_int self.current.f0 = Int32.to_int result.current}
+      {Int32.to_int self.final.f0 = Int32.to_int result.final}
       (! return {result}) ]
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
@@ -179,27 +180,27 @@ module M_borrows__hard
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hard (x: MutBorrow.t t_NonZero) (return (x'0: ())) = {[@expl:hard 'x' type invariant] inv'0 x}
-    {[@expl:hard requires #0] Int32.to_int x.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:hard requires #1] Int32.to_int x.current.t_NonZero__0 <> - 1}
+  let rec hard (x: MutBorrow.t t_NonZero) (return (x'0: ())) = {[@expl:hard 'x' type invariant] inv_ref_NonZero x}
+    {[@expl:hard requires #0] Int32.to_int x.current.f0 < Int32.to_int const_MAX}
+    {[@expl:hard requires #1] Int32.to_int x.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv x.current}
+      [ s0 = {inv_NonZero x.current}
         MutBorrow.borrow_final <t_NonZero> {x.current} {MutBorrow.get_id x}
           (fun (_ret: MutBorrow.t t_NonZero) ->
-            [ &_7 <- _ret ] -{inv _ret.final}-
+            [ &_7 <- _ret ] -{inv_NonZero _ret.final}-
             [ &x <- { x with current = _ret.final } ] s1)
       | s1 = inner_mut {_7} (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] s2)
       | s2 = bb1 ]
@@ -209,9 +210,9 @@ module M_borrows__hard
       | s1 = inc {_5} (fun (_ret: ()) -> [ &_4 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = -{resolve _6}- s1
-      | s1 = {[@expl:type invariant] inv'0 x} s2
-      | s2 = -{resolve'0 x}- s3
+      [ s0 = -{resolve_ref_i32 _6}- s1
+      | s1 = {[@expl:type invariant] inv_ref_NonZero x} s2
+      | s2 = -{resolve_ref_NonZero x}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: MutBorrow.t t_NonZero = x
@@ -220,21 +221,21 @@ module M_borrows__hard
     | & _6: MutBorrow.t Int32.t = Any.any_l ()
     | & _7: MutBorrow.t t_NonZero = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__tuple
+module M_tuple
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
-  type tuple = { f0: t_NonZero; f1: MutBorrow.t t_NonZero }
+  type tup2_NonZero_ref_NonZero = { f0'0: t_NonZero; f1'0: MutBorrow.t t_NonZero }
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -242,75 +243,78 @@ module M_borrows__tuple
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  predicate inv_tup2_NonZero_ref_NonZero [@inline:trivial] (_1: tup2_NonZero_ref_NonZero) =
+    inv_NonZero _1.f0'0 /\ inv_ref_NonZero _1.f1'0
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_tup2_NonZero_ref_NonZero
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
-  predicate resolve'1 [@inline:trivial] (_1: tuple) = resolve'0 _1.f1
+  predicate resolve_tup2_NonZero_ref_NonZero [@inline:trivial] (_1: tup2_NonZero_ref_NonZero) =
+    resolve_ref_NonZero _1.f1'0
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_tup2_NonZero_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec tuple (x: tuple) (return (x'0: ())) = {[@expl:tuple 'x' type invariant] inv'1 x}
-    {[@expl:tuple requires #0] Int32.to_int x.f1.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:tuple requires #1] Int32.to_int x.f1.current.t_NonZero__0 <> - 1}
+  let rec tuple (x: tup2_NonZero_ref_NonZero) (return (x'0: ())) =
+    {[@expl:tuple 'x' type invariant] inv_tup2_NonZero_ref_NonZero x}
+    {[@expl:tuple requires #0] Int32.to_int x.f1'0.current.f0 < Int32.to_int const_MAX}
+    {[@expl:tuple requires #1] Int32.to_int x.f1'0.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv x.f0} s1
-      | s1 = [ &x <- { x with f0 = { t_NonZero__0 = (0: Int32.t) } } ] s2
-      | s2 = MutBorrow.borrow_final <Int32.t> {x.f1.current.t_NonZero__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x.f1) 1}
+      [ s0 = {[@expl:type invariant] inv_NonZero x.f0'0} s1
+      | s1 = [ &x <- { x with f0'0 = { f0 = (0: Int32.t) } } ] s2
+      | s2 = MutBorrow.borrow_final <Int32.t> {x.f1'0.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x.f1'0) 1}
           (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_6 <- _ret ] [ &x <- { x with f1 = { x.f1 with current = { t_NonZero__0 = _ret.final } } } ] s3)
+            [ &_6 <- _ret ] [ &x <- { x with f1'0 = { x.f1'0 with current = { f0 = _ret.final } } } ] s3)
       | s3 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s4)
       | s4 = inc {_5} (fun (_ret: ()) -> [ &_4 <- _ret ] s5)
       | s5 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _6}- s1
-      | s1 = {[@expl:type invariant] inv'1 x} s2
-      | s2 = -{resolve'1 x}- s3
+      [ s0 = -{resolve_ref_i32 _6}- s1
+      | s1 = {[@expl:type invariant] inv_tup2_NonZero_ref_NonZero x} s2
+      | s2 = -{resolve_tup2_NonZero_ref_NonZero x}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & x: tuple = x
+    | & x: tup2_NonZero_ref_NonZero = x
     | & _4: () = Any.any_l ()
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__partial_move
+module M_partial_move
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  type tuple = { f0: t_NonZero; f1: MutBorrow.t t_NonZero }
+  type tup2_NonZero_ref_NonZero = { f0'0: t_NonZero; f1'0: MutBorrow.t t_NonZero }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -318,73 +322,75 @@ module M_borrows__partial_move
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
-  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  predicate inv_tup2_NonZero_ref_NonZero [@inline:trivial] (_1: tup2_NonZero_ref_NonZero) =
+    inv_NonZero _1.f0'0 /\ inv_ref_NonZero _1.f1'0
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_tup2_NonZero_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec partial_move (x: tuple) (return (x'0: ())) = {[@expl:partial_move 'x' type invariant] inv'1 x}
-    {[@expl:partial_move requires #0] Int32.to_int x.f1.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:partial_move requires #1] Int32.to_int x.f1.current.t_NonZero__0 <> - 1}
+  let rec partial_move (x: tup2_NonZero_ref_NonZero) (return (x'0: ())) =
+    {[@expl:partial_move 'x' type invariant] inv_tup2_NonZero_ref_NonZero x}
+    {[@expl:partial_move requires #0] Int32.to_int x.f1'0.current.f0 < Int32.to_int const_MAX}
+    {[@expl:partial_move requires #1] Int32.to_int x.f1'0.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- x.f0 ] s1
-      | s1 = {[@expl:type invariant] inv a} s2
-      | s2 = MutBorrow.borrow_final <Int32.t> {x.f1.current.t_NonZero__0}
-          {MutBorrow.inherit_id (MutBorrow.get_id x.f1) 1}
+      [ s0 = [ &a <- x.f0'0 ] s1
+      | s1 = {[@expl:type invariant] inv_NonZero a} s2
+      | s2 = MutBorrow.borrow_final <Int32.t> {x.f1'0.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x.f1'0) 1}
           (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_7 <- _ret ] [ &x <- { x with f1 = { x.f1 with current = { t_NonZero__0 = _ret.final } } } ] s3)
+            [ &_7 <- _ret ] [ &x <- { x with f1'0 = { x.f1'0 with current = { f0 = _ret.final } } } ] s3)
       | s3 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s4)
       | s4 = inc {_6} (fun (_ret: ()) -> [ &_5 <- _ret ] s5)
       | s5 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _7}- s1
-      | s1 = {[@expl:type invariant] inv'0 x.f1} s2
-      | s2 = -{resolve'0 x.f1}- s3
-      | s3 = [ &a <- { t_NonZero__0 = (0: Int32.t) } ] s4
+      [ s0 = -{resolve_ref_i32 _7}- s1
+      | s1 = {[@expl:type invariant] inv_ref_NonZero x.f1'0} s2
+      | s2 = -{resolve_ref_NonZero x.f1'0}- s3
+      | s3 = [ &a <- { f0 = (0: Int32.t) } ] s4
       | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & x: tuple = x
+    | & x: tup2_NonZero_ref_NonZero = x
     | & a: t_NonZero = Any.any_l ()
     | & _5: () = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l ()
     | & _7: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__destruct
+module M_destruct
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  type tuple = { f0: t_NonZero; f1: MutBorrow.t t_NonZero }
+  type tup2_NonZero_ref_NonZero = { f0'0: t_NonZero; f1'0: MutBorrow.t t_NonZero }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -392,84 +398,87 @@ module M_borrows__destruct
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
-  predicate inv'1 [@inline:trivial] (_1: tuple) = inv _1.f0 /\ inv'0 _1.f1
+  predicate inv_tup2_NonZero_ref_NonZero [@inline:trivial] (_1: tup2_NonZero_ref_NonZero) =
+    inv_NonZero _1.f0'0 /\ inv_ref_NonZero _1.f1'0
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_tup2_NonZero_ref_NonZero
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec destruct (x: tuple) (return (x'0: ())) = {[@expl:destruct 'x' type invariant] inv'1 x}
-    {[@expl:destruct requires #0] Int32.to_int x.f1.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:destruct requires #1] Int32.to_int x.f1.current.t_NonZero__0 <> - 1}
+  let rec destruct (x: tup2_NonZero_ref_NonZero) (return (x'0: ())) =
+    {[@expl:destruct 'x' type invariant] inv_tup2_NonZero_ref_NonZero x}
+    {[@expl:destruct requires #0] Int32.to_int x.f1'0.current.f0 < Int32.to_int const_MAX}
+    {[@expl:destruct requires #1] Int32.to_int x.f1'0.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &a <- x.f0 ] s1
-      | s1 = {[@expl:type invariant] inv a} s2
-      | s2 = [ &b <- x.f1 ] s3
-      | s3 = [ &a <- { t_NonZero__0 = (0: Int32.t) } ] s4
-      | s4 = MutBorrow.borrow_final <Int32.t> {b.current.t_NonZero__0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
-          (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_8 <- _ret ] [ &b <- { b with current = { t_NonZero__0 = _ret.final } } ] s5)
+      [ s0 = [ &a <- x.f0'0 ] s1
+      | s1 = {[@expl:type invariant] inv_NonZero a} s2
+      | s2 = [ &b <- x.f1'0 ] s3
+      | s3 = [ &a <- { f0 = (0: Int32.t) } ] s4
+      | s4 = MutBorrow.borrow_final <Int32.t> {b.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_8 <- _ret ] [ &b <- { b with current = { f0 = _ret.final } } ] s5)
       | s5 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s6)
       | s6 = inc {_7} (fun (_ret: ()) -> [ &_6 <- _ret ] s7)
       | s7 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _8}- s1
-      | s1 = {[@expl:type invariant] inv'0 b} s2
-      | s2 = -{resolve'0 b}- s3
+      [ s0 = -{resolve_ref_i32 _8}- s1
+      | s1 = {[@expl:type invariant] inv_ref_NonZero b} s2
+      | s2 = -{resolve_ref_NonZero b}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & x: tuple = x
+    | & x: tup2_NonZero_ref_NonZero = x
     | & a: t_NonZero = Any.any_l ()
     | & b: MutBorrow.t t_NonZero = Any.any_l ()
     | & _6: () = Any.any_l ()
     | & _7: MutBorrow.t Int32.t = Any.any_l ()
     | & _8: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__frozen_dead
+module M_frozen_dead
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_NonZero = { t_NonZero__0: Int32.t }
+  type t_NonZero = { f0: Int32.t }
   
-  predicate invariant' (self: t_NonZero) = Int32.to_int self.t_NonZero__0 <> 0
+  predicate invariant_NonZero (self: t_NonZero) = Int32.to_int self.f0 <> 0
   
-  predicate inv (_1: t_NonZero)
+  predicate inv_NonZero (_1: t_NonZero)
   
-  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_NonZero [inv_NonZero x]. inv_NonZero x = invariant_NonZero x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_NonZero) = inv self.current /\ inv self.final
+  predicate invariant_ref_NonZero [@inline:trivial] (self: MutBorrow.t t_NonZero) =
+    inv_NonZero self.current /\ inv_NonZero self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_NonZero
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant''0 _1
+  predicate inv_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = invariant_ref_NonZero _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_NonZero
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
+  predicate resolve_ref_NonZero [@inline:trivial] (_1: MutBorrow.t t_NonZero) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_NonZero
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -477,42 +486,41 @@ module M_borrows__frozen_dead
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec frozen_dead (x: MutBorrow.t t_NonZero) (y: MutBorrow.t t_NonZero) (return (x'0: ())) =
-    {[@expl:frozen_dead 'x' type invariant] inv'0 x}
-    {[@expl:frozen_dead 'y' type invariant] inv'0 y}
-    {[@expl:frozen_dead requires #0] Int32.to_int x.current.t_NonZero__0 < Int32.to_int const_MAX}
-    {[@expl:frozen_dead requires #1] Int32.to_int x.current.t_NonZero__0 <> - 1}
+    {[@expl:frozen_dead 'x' type invariant] inv_ref_NonZero x}
+    {[@expl:frozen_dead 'y' type invariant] inv_ref_NonZero y}
+    {[@expl:frozen_dead requires #0] Int32.to_int x.current.f0 < Int32.to_int const_MAX}
+    {[@expl:frozen_dead requires #1] Int32.to_int x.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Int32.t> {x.current.t_NonZero__0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
-          (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_a <- _ret ] [ &x <- { x with current = { t_NonZero__0 = _ret.final } } ] s1)
-      | s1 = {inv y.current}
+      [ s0 = MutBorrow.borrow_final <Int32.t> {x.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
+          (fun (_ret: MutBorrow.t Int32.t) -> [ &_a <- _ret ] [ &x <- { x with current = { f0 = _ret.final } } ] s1)
+      | s1 = {inv_NonZero y.current}
         MutBorrow.borrow_final <t_NonZero> {y.current} {MutBorrow.get_id y}
           (fun (_ret: MutBorrow.t t_NonZero) ->
-            [ &_6 <- _ret ] -{inv _ret.final}-
+            [ &_6 <- _ret ] -{inv_NonZero _ret.final}-
             [ &y <- { y with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv'0 x} s3
-      | s3 = -{resolve x}- s4
+      | s2 = {[@expl:type invariant] inv_ref_NonZero x} s3
+      | s3 = -{resolve_ref_NonZero x}- s4
       | s4 = [ &x <- _6 ] s5
-      | s5 = {[@expl:type invariant] inv'0 x} s6
-      | s6 = -{resolve x}- s7
+      | s5 = {[@expl:type invariant] inv_ref_NonZero x} s6
+      | s6 = -{resolve_ref_NonZero x}- s7
       | s7 = MutBorrow.borrow_final <Int32.t> {_a.current} {MutBorrow.get_id _a}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_8 <- _ret ] [ &_a <- { _a with current = _ret.final } ] s8)
       | s8 = inc {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s9)
       | s9 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve'0 _a}- s1
-      | s1 = {[@expl:type invariant] inv'0 y} s2
-      | s2 = -{resolve y}- s3
+      [ s0 = -{resolve_ref_i32 _a}- s1
+      | s1 = {[@expl:type invariant] inv_ref_NonZero y} s2
+      | s2 = -{resolve_ref_NonZero y}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & x: MutBorrow.t t_NonZero = x
@@ -522,13 +530,13 @@ module M_borrows__frozen_dead
     | & _7: () = Any.any_l ()
     | & _8: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__qyi5556307355051076399__foo (* SumTo10 *)
+module M_impl_SumTo10__foo (* SumTo10 *)
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_SumTo10 = { t_SumTo10__a: Int32.t; t_SumTo10__b: Int32.t }
+  type t_SumTo10 = { a: Int32.t; b: Int32.t }
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -536,9 +544,9 @@ module M_borrows__qyi5556307355051076399__foo (* SumTo10 *)
     < Int32.to_int const_MAX}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current + 1} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   constant const_MIN: Int32.t = (-2147483648: Int32.t)
   
@@ -546,54 +554,53 @@ module M_borrows__qyi5556307355051076399__foo (* SumTo10 *)
     > Int32.to_int const_MIN}
     any [ return (result: ()) -> {Int32.to_int x.final = Int32.to_int x.current - 1} (! return {result}) ]
   
-  predicate invariant' (self: t_SumTo10) = Int32.to_int self.t_SumTo10__a + Int32.to_int self.t_SumTo10__b = 10
+  predicate invariant_SumTo10 (self: t_SumTo10) = Int32.to_int self.a + Int32.to_int self.b = 10
   
-  predicate inv (_1: t_SumTo10)
+  predicate inv_SumTo10 (_1: t_SumTo10)
   
-  axiom inv_axiom [@rewrite]: forall x: t_SumTo10 [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_SumTo10 [inv_SumTo10 x]. inv_SumTo10 x = invariant_SumTo10 x
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_SumTo10) = inv self.current /\ inv self.final
+  predicate invariant_ref_SumTo10 [@inline:trivial] (self: MutBorrow.t t_SumTo10) =
+    inv_SumTo10 self.current /\ inv_SumTo10 self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_SumTo10
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant''0 _1
+  predicate inv_ref_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant_ref_SumTo10 _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_SumTo10
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = _1.final = _1.current
+  predicate resolve_ref_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_SumTo10
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec foo (self: MutBorrow.t t_SumTo10) (return (x: ())) = {[@expl:foo 'self' type invariant] inv'0 self}
-    {[@expl:foo requires] Int32.to_int self.current.t_SumTo10__a < Int32.to_int const_MAX}
+  let rec foo (self: MutBorrow.t t_SumTo10) (return (x: ())) = {[@expl:foo 'self' type invariant] inv_ref_SumTo10 self}
+    {[@expl:foo requires] Int32.to_int self.current.a < Int32.to_int const_MAX}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Int32.t> {self.current.t_SumTo10__a}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = MutBorrow.borrow_final <Int32.t> {self.current.a} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_5 <- _ret ] [ &self <- { self with current = { self.current with t_SumTo10__a = _ret.final } } ] s1)
+            [ &_5 <- _ret ] [ &self <- { self with current = { self.current with a = _ret.final } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_4 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s2)
       | s2 = inc {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _5}- s1
-      | s1 = MutBorrow.borrow_final <Int32.t> {self.current.t_SumTo10__b}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+      [ s0 = -{resolve_ref_i32 _5}- s1
+      | s1 = MutBorrow.borrow_final <Int32.t> {self.current.b} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t Int32.t) ->
-            [ &_8 <- _ret ] [ &self <- { self with current = { self.current with t_SumTo10__b = _ret.final } } ] s2)
+            [ &_8 <- _ret ] [ &self <- { self with current = { self.current with b = _ret.final } } ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s3)
       | s3 = dec {_7} (fun (_ret: ()) -> [ &_6 <- _ret ] s4)
       | s4 = bb2 ]
     | bb2 = s0
-      [ s0 = -{resolve _8}- s1
-      | s1 = {[@expl:type invariant] inv'0 self} s2
-      | s2 = -{resolve'0 self}- s3
+      [ s0 = -{resolve_ref_i32 _8}- s1
+      | s1 = {[@expl:type invariant] inv_ref_SumTo10 self} s2
+      | s2 = -{resolve_ref_SumTo10 self}- s3
       | s3 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & self: MutBorrow.t t_SumTo10 = self
@@ -604,15 +611,15 @@ module M_borrows__qyi5556307355051076399__foo (* SumTo10 *)
     | & _7: MutBorrow.t Int32.t = Any.any_l ()
     | & _8: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_borrows__inc
+module M_inc
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use mach.int.Int
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   constant const_MAX: Int32.t = (2147483647: Int32.t)
   
@@ -625,20 +632,20 @@ module M_borrows__inc
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {x.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- { x with current = _ret } ] s1)
-      | s1 = -{resolve x}- s2
+      | s1 = -{resolve_ref_i32 x}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: MutBorrow.t Int32.t = x ])
     [ return (result: ()) -> {[@expl:inc ensures] Int32.to_int x.final = Int32.to_int x.current + 1}
       (! return {result}) ]
 end
-module M_borrows__dec
+module M_dec
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use mach.int.Int
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   constant const_MIN: Int32.t = (-2147483648: Int32.t)
   
@@ -651,7 +658,7 @@ module M_borrows__dec
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.sub {x.current} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- { x with current = _ret } ] s1)
-      | s1 = -{resolve x}- s2
+      | s1 = -{resolve_ref_i32 x}- s2
       | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: MutBorrow.t Int32.t = x ])
     [ return (result: ()) -> {[@expl:dec ensures] Int32.to_int x.final = Int32.to_int x.current - 1}
       (! return {result}) ]

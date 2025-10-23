@@ -1,257 +1,275 @@
-module M_761__try_option
+module M_try_option
   use creusot.prelude.Any
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Option'0 = C_None'0 | C_Some'0 ()
+  type t_Option_Infallible = None'0 | Some'0 ()
   
-  type t_ControlFlow = C_Continue t_T | C_Break t_Option'0
+  type t_ControlFlow_Option_Infallible_T = Continue t_T | Break t_Option_Infallible
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate inv'0 (_1: t_Option)
+  predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
+        | None -> true
+        | Some f0 -> inv_T f0
         end
   
-  predicate inv'1 [@inline:trivial] (_1: ()) = false
+  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Infallible
   
-  predicate inv'2 (_1: t_Option'0)
+  predicate inv_Option_Infallible (_1: t_Option_Infallible)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'2 x]. inv'2 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Infallible [inv_Option_Infallible x]. inv_Option_Infallible x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'1 a_0
+        | None'0 -> true
+        | Some'0 f0 -> inv_Infallible f0
         end
   
-  predicate inv'3 (_1: t_ControlFlow)
+  predicate inv_ControlFlow_Option_Infallible_T (_1: t_ControlFlow_Option_Infallible_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_ControlFlow [inv'3 x]. inv'3 x
+  axiom inv_axiom'1 [@rewrite]:
+    forall x: t_ControlFlow_Option_Infallible_T [inv_ControlFlow_Option_Infallible_T x]. inv_ControlFlow_Option_Infallible_T x
       = match x with
-        | C_Continue a_0 -> inv a_0
-        | C_Break a_0 -> inv'2 a_0
+        | Continue f0 -> inv_T f0
+        | Break f0 -> inv_Option_Infallible f0
         end
   
-  let rec branch (self_: t_Option) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'0 self_}
+  let rec branch_Option_T (self_: t_Option_T) (return (x: t_ControlFlow_Option_Infallible_T)) =
+    {[@expl:branch 'self_' type invariant] inv_Option_T self_}
     any
-    [ return (result: t_ControlFlow) -> {inv'3 result}
+    [ return (result: t_ControlFlow_Option_Infallible_T) -> {inv_ControlFlow_Option_Infallible_T result}
       {match self_ with
-        | C_Some v -> result = C_Continue v
-        | C_None -> result = C_Break (C_None'0)
+        | Some v -> result = Continue v
+        | None -> result = Break (None'0)
         end}
       (! return {result}) ]
   
-  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Option'0)) = any
-    [ good (field_0: t_Option'0) -> {C_Break field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Option'0 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
+  let rec elim_Break (input: t_ControlFlow_Option_Infallible_T) (ret (f0: t_Option_Infallible)) = any
+    [ good (f0: t_Option_Infallible) -> {Break f0 = input} (! ret {f0})
+    | bad -> {forall f0: t_Option_Infallible [Break f0: t_ControlFlow_Option_Infallible_T]. Break f0 <> input}
+      (! {false}
+      any) ]
   
-  let rec from_residual (residual: t_Option'0) (return (x: t_Option)) =
-    {[@expl:from_residual 'residual' type invariant] inv'2 residual}
-    any [ return (result: t_Option) -> {inv'0 result} {result = C_None} (! return {result}) ]
+  let rec from_residual_Option_T (residual: t_Option_Infallible) (return (x: t_Option_T)) =
+    {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+    any [ return (result: t_Option_T) -> {inv_Option_T result} {result = None} (! return {result}) ]
   
-  let rec v_Continue (input: t_ControlFlow) (ret (field_0: t_T)) = any
-    [ good (field_0: t_T) -> {C_Continue field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_T [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input} (! {false} any) ]
+  let rec elim_Continue (input: t_ControlFlow_Option_Infallible_T) (ret (f0: t_T)) = any
+    [ good (f0: t_T) -> {Continue f0 = input} (! ret {f0})
+    | bad -> {forall f0: t_T [Continue f0: t_ControlFlow_Option_Infallible_T]. Continue f0 <> input} (! {false} any) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec try_option (x: t_Option) (return (x'0: t_Option)) = {[@expl:try_option 'x' type invariant] inv'0 x}
+  let rec try_option_T (x: t_Option_T) (return (x'0: t_Option_T)) =
+    {[@expl:try_option 'x' type invariant] inv_Option_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = branch {x} (fun (_ret: t_ControlFlow) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 (x0: t_T) -> {_4 = C_Continue x0} (! bb4) | br1 (x0: t_Option'0) -> {_4 = C_Break x0} (! bb5) ]
+    [ bb0 = s0
+      [ s0 = branch_Option_T {x} (fun (_ret: t_ControlFlow_Option_Infallible_T) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = any
+      [ br0 (x0: t_T) -> {_4 = Continue x0} (! bb4) | br1 (x0: t_Option_Infallible) -> {_4 = Break x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Break {_4} (fun (r0: t_Option'0) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual {residual} (fun (_ret: t_Option) -> [ &_0 <- _ret ] s2)
+      [ s0 = elim_Break {_4} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s1)
+      | s1 = from_residual_Option_T {residual} (fun (_ret: t_Option_T) -> [ &_0 <- _ret ] s2)
       | s2 = bb11 ]
-    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_0 <- C_Some val' ] s1 | s1 = bb11 ]
+    | bb4 = s0 [ s0 = elim_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = [ &_0 <- Some val' ] s1 | s1 = bb11 ]
     | bb11 = return {_0} ]
-    [ & _0: t_Option = Any.any_l ()
-    | & x: t_Option = x
-    | & _4: t_ControlFlow = Any.any_l ()
-    | & residual: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option_T = Any.any_l ()
+    | & x: t_Option_T = x
+    | & _4: t_ControlFlow_Option_Infallible_T = Any.any_l ()
+    | & residual: t_Option_Infallible = Any.any_l ()
     | & val': t_T = Any.any_l () ])
-    [ return (result: t_Option) -> {[@expl:try_option result type invariant] inv'0 result}
+    [ return (result: t_Option_T) -> {[@expl:try_option result type invariant] inv_Option_T result}
       {[@expl:try_option ensures] result = x}
       (! return {result}) ]
 end
-module M_761__try_result
+module M_try_result
   use creusot.prelude.Any
   
   type t_T
   
   type t_E
   
-  type t_Result = C_Ok t_T | C_Err t_E
+  type t_Result_T_E = Ok t_T | Err t_E
   
-  type t_Result'0 = C_Ok'0 () | C_Err'0 t_E
+  type t_Result_Infallible_E = Ok'0 () | Err'0 t_E
   
-  type t_ControlFlow = C_Continue t_T | C_Break t_Result'0
+  type t_ControlFlow_Result_Infallible_E_T = Continue t_T | Break t_Result_Infallible_E
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate inv'0 (_1: t_E)
+  predicate inv_E (_1: t_E)
   
-  predicate inv'1 (_1: t_Result)
+  predicate inv_Result_T_E (_1: t_Result_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Result [inv'1 x]. inv'1 x
+  axiom inv_axiom [@rewrite]: forall x: t_Result_T_E [inv_Result_T_E x]. inv_Result_T_E x
       = match x with
-        | C_Ok a_0 -> inv a_0
-        | C_Err a_0 -> inv'0 a_0
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
         end
   
-  predicate inv'2 [@inline:trivial] (_1: ()) = false
+  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_Infallible
   
-  predicate inv'3 (_1: t_Result'0)
+  predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Result'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Result_Infallible_E [inv_Result_Infallible_E x]. inv_Result_Infallible_E x
       = match x with
-        | C_Ok'0 a_0 -> inv'2 a_0
-        | C_Err'0 a_0 -> inv'0 a_0
+        | Ok'0 f0 -> inv_Infallible f0
+        | Err'0 f0 -> inv_E f0
         end
   
-  predicate inv'4 (_1: t_ControlFlow)
+  predicate inv_ControlFlow_Result_Infallible_E_T (_1: t_ControlFlow_Result_Infallible_E_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_ControlFlow [inv'4 x]. inv'4 x
+  axiom inv_axiom'1 [@rewrite]:
+    forall x: t_ControlFlow_Result_Infallible_E_T [inv_ControlFlow_Result_Infallible_E_T x]. inv_ControlFlow_Result_Infallible_E_T x
       = match x with
-        | C_Continue a_0 -> inv a_0
-        | C_Break a_0 -> inv'3 a_0
+        | Continue f0 -> inv_T f0
+        | Break f0 -> inv_Result_Infallible_E f0
         end
   
-  let rec branch (self_: t_Result) (return (x: t_ControlFlow)) = {[@expl:branch 'self_' type invariant] inv'1 self_}
+  let rec branch_Result_T_E (self_: t_Result_T_E) (return (x: t_ControlFlow_Result_Infallible_E_T)) =
+    {[@expl:branch 'self_' type invariant] inv_Result_T_E self_}
     any
-    [ return (result: t_ControlFlow) -> {inv'4 result}
+    [ return (result: t_ControlFlow_Result_Infallible_E_T) -> {inv_ControlFlow_Result_Infallible_E_T result}
       {match self_ with
-        | C_Ok v -> result = C_Continue v
-        | C_Err e -> result = C_Break (C_Err'0 e)
+        | Ok v -> result = Continue v
+        | Err e -> result = Break (Err'0 e)
         end}
       (! return {result}) ]
   
-  let rec v_Break (input: t_ControlFlow) (ret (field_0: t_Result'0)) = any
-    [ good (field_0: t_Result'0) -> {C_Break field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Result'0 [C_Break field_0: t_ControlFlow]. C_Break field_0 <> input} (! {false} any) ]
+  let rec elim_Break (input: t_ControlFlow_Result_Infallible_E_T) (ret (f0: t_Result_Infallible_E)) = any
+    [ good (f0: t_Result_Infallible_E) -> {Break f0 = input} (! ret {f0})
+    | bad -> {forall f0: t_Result_Infallible_E [Break f0: t_ControlFlow_Result_Infallible_E_T]. Break f0 <> input}
+      (! {false}
+      any) ]
   
-  type tuple = { f0: t_Result; f1: t_Result'0 }
+  type tup2_Result_T_E_Result_Infallible_E = { f0: t_Result_T_E; f1: t_Result_Infallible_E }
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
-    let self_ = args in result = self_ /\ inv'0 result
+  predicate postcondition_once_from [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
+    let self_ = args in result = self_ /\ inv_E result
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_from
   
-  predicate resolve [@inline:trivial] (_1: ()) = true
+  predicate resolve_from [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_from
   
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: t_E) (result_state: ()) (result: t_E) =
-    let self_ = args in result = self_ /\ inv'0 result
+  predicate postcondition_mut_from [@inline:trivial] (self: ()) (args: t_E) (result_state: ()) (result: t_E) =
+    let self_ = args in result = self_ /\ inv_E result
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_from
   
-  function fn_mut_once (self: ()) (args: t_E) (res: t_E) : ()
+  function fn_mut_once_from (self: ()) (args: t_E) (res: t_E) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_E, res: t_E. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_from_spec: forall self: (), args: t_E, res: t_E. postcondition_once_from self args res
+      = (exists res_state: (). postcondition_mut_from self args res_state res /\ resolve_from res_state)
   
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  predicate hist_inv_from [@inline:trivial] (self: ()) (result_state: ()) = true
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_from
   
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  function hist_inv_trans_from (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_from_spec: forall self: (), b: (), c: (). hist_inv_from self b
+      -> hist_inv_from b c -> hist_inv_from self c
   
-  function hist_inv_refl (self: ()) : ()
+  function hist_inv_refl_from (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  axiom hist_inv_refl_from_spec: forall self: (). hist_inv_from self self
   
-  function postcondition_mut_hist_inv (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
+  function postcondition_mut_hist_inv_from (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_from_spec:
+    forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut_from self args res_state res
+      -> hist_inv_from self res_state
   
-  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  function fn_hist_inv_from (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_from_spec: forall self: (), res_state: (). hist_inv_from self res_state = (self = res_state)
   
-  predicate postcondition [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
-    let self_ = args in result = self_ /\ inv'0 result
+  predicate postcondition_from [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
+    let self_ = args in result = self_ /\ inv_E result
   
-  meta "rewrite_def" predicate postcondition
+  meta "rewrite_def" predicate postcondition_from
   
-  function fn_once (self: ()) (args: t_E) (res: t_E) : ()
+  function fn_once_from (self: ()) (args: t_E) (res: t_E) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_E, res: t_E. postcondition_once self args res
-      = (postcondition self args res /\ resolve self)
+  axiom fn_once_from_spec: forall self: (), args: t_E, res: t_E. postcondition_once_from self args res
+      = (postcondition_from self args res /\ resolve_from self)
   
-  function fn_mut (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
+  function fn_mut_from (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
-  axiom fn_mut_spec: forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_from_spec:
+    forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut_from self args res_state res
+      = (postcondition_from self args res /\ self = res_state)
   
-  let rec from (self_: t_E) (return (x: t_E)) = {[@expl:from 'self_' type invariant] inv'0 self_}
-    any [ return (result: t_E) -> {inv'0 result} {result = self_} (! return {result}) ]
+  let rec from_E (self_: t_E) (return (x: t_E)) = {[@expl:from 'self_' type invariant] inv_E self_}
+    any [ return (result: t_E) -> {inv_E result} {result = self_} (! return {result}) ]
   
-  let rec from_residual (residual: t_Result'0) (return (x: t_Result)) =
-    {[@expl:from_residual 'residual' type invariant] inv'3 residual}
+  let rec from_residual_Result_T_E (residual: t_Result_Infallible_E) (return (x: t_Result_T_E)) =
+    {[@expl:from_residual 'residual' type invariant] inv_Result_Infallible_E residual}
     any
-    [ return (result: t_Result) -> {inv'1 result}
+    [ return (result: t_Result_T_E) -> {inv_Result_T_E result}
       {match { f0 = result; f1 = residual } with
-        | {f0 = C_Err result'0; f1 = C_Err'0 residual'0} -> postcondition () residual'0 result'0
+        | {f0 = Err result'0; f1 = Err'0 residual'0} -> postcondition_from () residual'0 result'0
         | _ -> false
         end}
       (! return {result}) ]
   
-  let rec v_Continue (input: t_ControlFlow) (ret (field_0: t_T)) = any
-    [ good (field_0: t_T) -> {C_Continue field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_T [C_Continue field_0: t_ControlFlow]. C_Continue field_0 <> input} (! {false} any) ]
+  let rec elim_Continue (input: t_ControlFlow_Result_Infallible_E_T) (ret (f0'0: t_T)) = any
+    [ good (f0'0: t_T) -> {Continue f0'0 = input} (! ret {f0'0})
+    | bad -> {forall f0'0: t_T [Continue f0'0: t_ControlFlow_Result_Infallible_E_T]. Continue f0'0 <> input}
+      (! {false}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec try_result (x: t_Result) (return (x'0: t_Result)) = {[@expl:try_result 'x' type invariant] inv'1 x}
+  let rec try_result_T (x: t_Result_T_E) (return (x'0: t_Result_T_E)) =
+    {[@expl:try_result 'x' type invariant] inv_Result_T_E x}
     (! bb0
-    [ bb0 = s0 [ s0 = branch {x} (fun (_ret: t_ControlFlow) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 (x0: t_T) -> {_4 = C_Continue x0} (! bb4) | br1 (x0: t_Result'0) -> {_4 = C_Break x0} (! bb5) ]
+    [ bb0 = s0
+      [ s0 = branch_Result_T_E {x} (fun (_ret: t_ControlFlow_Result_Infallible_E_T) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = any
+      [ br0 (x0: t_T) -> {_4 = Continue x0} (! bb4) | br1 (x0: t_Result_Infallible_E) -> {_4 = Break x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Break {_4} (fun (r0: t_Result'0) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual {residual} (fun (_ret: t_Result) -> [ &_0 <- _ret ] s2)
+      [ s0 = elim_Break {_4} (fun (r0: t_Result_Infallible_E) -> [ &residual <- r0 ] s1)
+      | s1 = from_residual_Result_T_E {residual} (fun (_ret: t_Result_T_E) -> [ &_0 <- _ret ] s2)
       | s2 = bb12 ]
-    | bb4 = s0 [ s0 = v_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_0 <- C_Ok val' ] s1 | s1 = bb12 ]
+    | bb4 = s0 [ s0 = elim_Continue {_4} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
+    | bb7 = s0 [ s0 = [ &_0 <- Ok val' ] s1 | s1 = bb12 ]
     | bb12 = return {_0} ]
-    [ & _0: t_Result = Any.any_l ()
-    | & x: t_Result = x
-    | & _4: t_ControlFlow = Any.any_l ()
-    | & residual: t_Result'0 = Any.any_l ()
+    [ & _0: t_Result_T_E = Any.any_l ()
+    | & x: t_Result_T_E = x
+    | & _4: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()
+    | & residual: t_Result_Infallible_E = Any.any_l ()
     | & val': t_T = Any.any_l () ])
-    [ return (result: t_Result) -> {[@expl:try_result result type invariant] inv'1 result}
+    [ return (result: t_Result_T_E) -> {[@expl:try_result result type invariant] inv_Result_T_E result}
       {[@expl:try_result ensures] result = x}
       (! return {result}) ]
 end
-module M_761__elim_empty
-  predicate inv [@inline:trivial] (_1: ()) = false
+module M_elim_empty
+  predicate inv_Empty [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv
+  meta "rewrite_def" predicate inv_Empty
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec elim_empty (x: ()) (return (x'0: ())) = {[@expl:elim_empty 'x' type invariant] inv x}
+  let rec elim_empty (x: ()) (return (x'0: ())) = {[@expl:elim_empty 'x' type invariant] inv_Empty x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv x} s1 | s1 = {false} any ] ] [ & x: () = x ])
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_Empty x} s1 | s1 = {false} any ] ] [ & x: () = x ])
     [ return (result: ()) -> (! return {result}) ]
 end

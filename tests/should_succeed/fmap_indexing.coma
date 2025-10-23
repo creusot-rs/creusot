@@ -1,85 +1,87 @@
-module M_fmap_indexing__foo
+module M_foo
   use mach.int.Int
   use map.Map
   use map.Const
   use creusot.prelude.Any
   
-  type t_FMap
+  type t_FMap_Int_Int
   
-  function len (self: t_FMap) : int
+  function len_Int (self: t_FMap_Int_Int) : int
   
-  axiom len_spec: forall self: t_FMap. len self >= 0
+  axiom len_Int_spec: forall self: t_FMap_Int_Int. len_Int self >= 0
   
-  type t_Option = C_None | C_Some int
+  type t_Option_Int = None | Some int
   
-  function view (self: t_FMap) : Map.map int t_Option
+  function view_FMap_Int_Int (self: t_FMap_Int_Int) : Map.map int t_Option_Int
   
-  constant empty : t_FMap
+  constant empty_Int : t_FMap_Int_Int
   
-  axiom empty_spec: len empty = 0
+  axiom empty_Int_spec: len_Int empty_Int = 0
   
-  axiom empty_spec'0: view empty = Const.const (C_None)
+  axiom empty_Int_spec'0: view_FMap_Int_Int empty_Int = Const.const (None)
   
-  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option = Map.get (view self) k
+  function get_Int [@inline:trivial] (self: t_FMap_Int_Int) (k: int) : t_Option_Int = Map.get (view_FMap_Int_Int self) k
   
-  meta "rewrite_def" function get
+  meta "rewrite_def" function get_Int
   
-  predicate contains [@inline:trivial] (self: t_FMap) (k: int) = get self k <> C_None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Int) (k: int) = get_Int self k <> None
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_Int
   
-  function insert (self: t_FMap) (k: int) (v: int) : t_FMap
+  function insert_Int (self: t_FMap_Int_Int) (k: int) (v: int) : t_FMap_Int_Int
   
-  axiom insert_spec: forall self: t_FMap, k: int, v: int. view (insert self k v) = Map.set (view self) k (C_Some v)
+  axiom insert_Int_spec: forall self: t_FMap_Int_Int, k: int, v: int. view_FMap_Int_Int (insert_Int self k v)
+      = Map.set (view_FMap_Int_Int self) k (Some v)
   
-  axiom insert_spec'0: forall self: t_FMap, k: int, v: int. len (insert self k v)
-      = (if contains self k then len self else len self + 1)
+  axiom insert_Int_spec'0: forall self: t_FMap_Int_Int, k: int, v: int. len_Int (insert_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate index_logic [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
   
-  meta "rewrite_def" predicate index_logic
+  meta "rewrite_def" predicate index_Mapping_Int_bool
   
-  function such_that (p: Map.map int bool) : int
+  function such_that_Int (p: Map.map int bool) : int
   
-  axiom such_that_spec: forall p: Map.map int bool. (exists x: int. index_logic p x) -> index_logic p (such_that p)
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
   
-  function unwrap_logic (self: t_Option) : int = match self with
-      | C_Some x -> x
-      | C_None -> such_that (fun (__0: int) -> true)
+  function unwrap_Option_Int (self: t_Option_Int) : int = match self with
+      | Some x -> x
+      | None -> such_that_Int (fun (__0: int) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: int) : int = unwrap_logic (get self k)
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Int) (k: int) : int = unwrap_Option_Int (get_Int self k)
   
-  meta "rewrite_def" function lookup
+  meta "rewrite_def" function lookup_Int
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: int) : int = lookup self key
+  function index_FMap_Int_Int [@inline:trivial] (self: t_FMap_Int_Int) (key: int) : int = lookup_Int self key
   
-  meta "rewrite_def" function index_logic'0
+  meta "rewrite_def" function index_FMap_Int_Int
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec foo (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &map <- empty ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_3 <- insert map 1 3 ] s1 | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &map <- empty_Int ] s1 | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_3 <- insert_Int map 1 3 ] s1 | s1 = bb2 ]
     | bb2 = s0
       [ s0 = [ &map <- _3 ] s1
-      | s1 = {[@expl:assertion] index_logic'0 map 1 = 3} s2
-      | s2 = [ &_7 <- insert map 2 42 ] s3
+      | s1 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3} s2
+      | s2 = [ &_7 <- insert_Int map 2 42 ] s3
       | s3 = bb3 ]
     | bb3 = s0
       [ s0 = [ &map <- _7 ] s1
-      | s1 = {[@expl:assertion] index_logic'0 map 1 = 3 /\ index_logic'0 map 2 = 42} s2
-      | s2 = [ &_11 <- insert map 1 4 ] s3
+      | s1 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3 /\ index_FMap_Int_Int map 2 = 42} s2
+      | s2 = [ &_11 <- insert_Int map 1 4 ] s3
       | s3 = bb4 ]
     | bb4 = s0
       [ s0 = [ &map <- _11 ] s1
-      | s1 = {[@expl:assertion] index_logic'0 map 1 = 4 /\ index_logic'0 map 2 = 42} s2
+      | s1 = {[@expl:assertion] index_FMap_Int_Int map 1 = 4 /\ index_FMap_Int_Int map 2 = 42} s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & map: t_FMap = Any.any_l ()
-    | & _3: t_FMap = Any.any_l ()
-    | & _7: t_FMap = Any.any_l ()
-    | & _11: t_FMap = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & map: t_FMap_Int_Int = Any.any_l ()
+    | & _3: t_FMap_Int_Int = Any.any_l ()
+    | & _7: t_FMap_Int_Int = Any.any_l ()
+    | & _11: t_FMap_Int_Int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

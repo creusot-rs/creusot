@@ -1,4 +1,4 @@
-module M_fmap__resolves
+module M_resolves
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use map.Map
@@ -7,158 +7,189 @@ module M_fmap__resolves
   use seq.Seq
   use creusot.prelude.Any
   
-  type t_FMap
+  type t_FMap_ref_usize_ref_usize
   
-  type t_Option = C_None | C_Some (MutBorrow.t UInt64.t)
+  type t_Option_ref_usize = None | Some (MutBorrow.t UInt64.t)
   
-  function view (self: t_FMap) : Map.map (MutBorrow.t UInt64.t) t_Option
+  function view_FMap_ref_usize_ref_usize (self: t_FMap_ref_usize_ref_usize) : Map.map (MutBorrow.t UInt64.t) t_Option_ref_usize
   
-  function get [@inline:trivial] (self: t_FMap) (k: MutBorrow.t UInt64.t) : t_Option = Map.get (view self) k
+  function get_ref_usize [@inline:trivial] (self: t_FMap_ref_usize_ref_usize) (k: MutBorrow.t UInt64.t) : t_Option_ref_usize
+   = Map.get (view_FMap_ref_usize_ref_usize self) k
   
-  meta "rewrite_def" function get
+  meta "rewrite_def" function get_ref_usize
   
-  predicate ext_eq (self: t_FMap) (other: t_FMap) = forall k: MutBorrow.t UInt64.t. get self k = get other k
+  predicate ext_eq_ref_usize (self: t_FMap_ref_usize_ref_usize) (other: t_FMap_ref_usize_ref_usize) =
+    forall k: MutBorrow.t UInt64.t. get_ref_usize self k = get_ref_usize other k
   
-  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ext_eq self other = (self = other)
+  axiom ext_eq_ref_usize_spec:
+    forall self: t_FMap_ref_usize_ref_usize, other: t_FMap_ref_usize_ref_usize. ext_eq_ref_usize self other
+      = (self = other)
   
-  function len (self: t_FMap) : int
+  function len_ref_usize (self: t_FMap_ref_usize_ref_usize) : int
   
-  axiom len_spec: forall self: t_FMap. len self >= 0
+  axiom len_ref_usize_spec: forall self: t_FMap_ref_usize_ref_usize. len_ref_usize self >= 0
   
-  constant empty : t_FMap
+  constant empty_ref_usize : t_FMap_ref_usize_ref_usize
   
-  axiom empty_spec: len empty = 0
+  axiom empty_ref_usize_spec: len_ref_usize empty_ref_usize = 0
   
-  axiom empty_spec'0: view empty = Const.const (C_None)
+  axiom empty_ref_usize_spec'0: view_FMap_ref_usize_ref_usize empty_ref_usize = Const.const (None)
   
-  predicate is_empty (self: t_FMap) = ext_eq self empty
+  predicate is_empty_ref_usize (self: t_FMap_ref_usize_ref_usize) = ext_eq_ref_usize self empty_ref_usize
   
-  let rec new (return (x: t_FMap)) = any [ return (result: t_FMap) -> {is_empty result} (! return {result}) ]
+  let rec new_ref_usize (return (x: t_FMap_ref_usize_ref_usize)) = any
+    [ return (result: t_FMap_ref_usize_ref_usize) -> {is_empty_ref_usize result} (! return {result}) ]
   
-  let rec into_inner (self: t_FMap) (return (x: t_FMap)) = any
-    [ return (result: t_FMap) -> {result = self} (! return {result}) ]
+  let rec into_inner_FMap_ref_usize_ref_usize (self: t_FMap_ref_usize_ref_usize)
+    (return (x: t_FMap_ref_usize_ref_usize)) = any
+    [ return (result: t_FMap_ref_usize_ref_usize) -> {result = self} (! return {result}) ]
   
-  predicate contains [@inline:trivial] (self: t_FMap) (k: MutBorrow.t UInt64.t) = get self k <> C_None
+  predicate contains_ref_usize [@inline:trivial] (self: t_FMap_ref_usize_ref_usize) (k: MutBorrow.t UInt64.t) =
+    get_ref_usize self k <> None
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_ref_usize
   
-  function insert (self: t_FMap) (k: MutBorrow.t UInt64.t) (v: MutBorrow.t UInt64.t) : t_FMap
+  function insert_ref_usize (self: t_FMap_ref_usize_ref_usize) (k: MutBorrow.t UInt64.t) (v: MutBorrow.t UInt64.t) : t_FMap_ref_usize_ref_usize
   
-  axiom insert_spec: forall self: t_FMap, k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. view (insert self k v)
-      = Map.set (view self) k (C_Some v)
+  axiom insert_ref_usize_spec:
+    forall self: t_FMap_ref_usize_ref_usize, k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. view_FMap_ref_usize_ref_usize (insert_ref_usize self k v)
+      = Map.set (view_FMap_ref_usize_ref_usize self) k (Some v)
   
-  axiom insert_spec'0: forall self: t_FMap, k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. len (insert self k v)
-      = (if contains self k then len self else len self + 1)
+  axiom insert_ref_usize_spec'0:
+    forall self: t_FMap_ref_usize_ref_usize, k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. len_ref_usize (insert_ref_usize self k v)
+      = (if contains_ref_usize self k then len_ref_usize self else len_ref_usize self + 1)
   
-  let rec insert_ghost (self: MutBorrow.t t_FMap) (key: MutBorrow.t UInt64.t) (value: MutBorrow.t UInt64.t)
-    (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {self.final = insert self.current key value}
-      {result = get self.current key}
+  let rec insert_ghost_ref_usize (self: MutBorrow.t t_FMap_ref_usize_ref_usize) (key: MutBorrow.t UInt64.t)
+    (value: MutBorrow.t UInt64.t) (return (x: t_Option_ref_usize)) = any
+    [ return (result: t_Option_ref_usize) -> {self.final = insert_ref_usize self.current key value}
+      {result = get_ref_usize self.current key}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_usize
   
-  predicate resolve'0 (_1: t_Option)
+  predicate resolve_Option_ref_usize (_1: t_Option_ref_usize)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option [resolve'0 x]. resolve'0 x
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_ref_usize [resolve_Option_ref_usize x]. resolve_Option_ref_usize x
       = match x with
-        | C_None -> true
-        | C_Some x0 -> resolve x0
+        | None -> true
+        | Some x0 -> resolve_ref_usize x0
         end
   
-  type t_FMapIter
+  type t_FMapIter_ref_usize_ref_usize
   
-  predicate inv (_1: t_FMapIter)
+  predicate inv_FMapIter_ref_usize_ref_usize (_1: t_FMapIter_ref_usize_ref_usize)
   
-  function view'0 (self: t_FMapIter) : t_FMap
+  function view_FMapIter_ref_usize_ref_usize (self: t_FMapIter_ref_usize_ref_usize) : t_FMap_ref_usize_ref_usize
   
-  let rec into_iter (self: t_FMap) (return (x: t_FMapIter)) = any
-    [ return (result: t_FMapIter) -> {inv result} {view'0 result = self} (! return {result}) ]
+  let rec into_iter_FMap_ref_usize_ref_usize (self: t_FMap_ref_usize_ref_usize)
+    (return (x: t_FMapIter_ref_usize_ref_usize)) = any
+    [ return (result: t_FMapIter_ref_usize_ref_usize) -> {inv_FMapIter_ref_usize_ref_usize result}
+      {view_FMapIter_ref_usize_ref_usize result = self}
+      (! return {result}) ]
   
-  type tuple = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
+  type tup2_ref_usize_ref_usize = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_Int
   
-  function fin [@inline:trivial] (self: MutBorrow.t UInt64.t) : UInt64.t = self.final
+  function fin_Snapshot_ref_usize [@inline:trivial] (self: MutBorrow.t UInt64.t) : UInt64.t = self.final
   
-  meta "rewrite_def" function fin
+  meta "rewrite_def" function fin_Snapshot_ref_usize
   
-  type t_Option'0 = C_None'0 | C_Some'0 tuple
+  type t_Option_tup2_ref_usize_ref_usize = None'0 | Some'0 tup2_ref_usize_ref_usize
   
-  function get'0 (self: Seq.seq tuple) (ix: int) : t_Option'0 = if 0 <= ix /\ ix < Seq.length self then
-      C_Some'0 (Seq.get self ix)
-    else
-      C_None'0
+  function get_tup2_ref_usize_ref_usize (self: Seq.seq tup2_ref_usize_ref_usize) (ix: int) : t_Option_tup2_ref_usize_ref_usize
+   = if 0 <= ix /\ ix < Seq.length self then Some'0 (Seq.get self ix) else None'0
   
-  
-  predicate produces (self: t_FMapIter) (visited: Seq.seq tuple) (o: t_FMapIter) =
+  predicate produces_FMapIter_ref_usize_ref_usize (self: t_FMapIter_ref_usize_ref_usize) (visited: Seq.seq tup2_ref_usize_ref_usize) (o: t_FMapIter_ref_usize_ref_usize) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
         -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t, i: int. get'0 visited i = C_Some'0 { f0 = k; f1 = v }
-        -> not contains (view'0 o) k /\ get (view'0 self) k = C_Some v)
-    /\ len (view'0 self) = Seq.length visited + len (view'0 o)
+    /\ (forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t, i: int. get_tup2_ref_usize_ref_usize visited i
+          = Some'0 { f0 = k; f1 = v }
+        -> not contains_ref_usize (view_FMapIter_ref_usize_ref_usize o) k
+        /\ get_ref_usize (view_FMapIter_ref_usize_ref_usize self) k = Some v)
+    /\ len_ref_usize (view_FMapIter_ref_usize_ref_usize self)
+      = Seq.length visited + len_ref_usize (view_FMapIter_ref_usize_ref_usize o)
     /\ (forall k: MutBorrow.t UInt64.t. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get (view'0 o) k = get (view'0 self) k)
+      -> get_ref_usize (view_FMapIter_ref_usize_ref_usize o) k
+      = get_ref_usize (view_FMapIter_ref_usize_ref_usize self) k)
   
-  function produces_trans (a: t_FMapIter) (ab: Seq.seq tuple) (b: t_FMapIter) (bc: Seq.seq tuple) (c: t_FMapIter) : ()
+  function produces_trans_FMapIter_ref_usize_ref_usize (a: t_FMapIter_ref_usize_ref_usize) (ab: Seq.seq tup2_ref_usize_ref_usize) (b: t_FMapIter_ref_usize_ref_usize) (bc: Seq.seq tup2_ref_usize_ref_usize) (c: t_FMapIter_ref_usize_ref_usize) : ()
   
-  axiom produces_trans_spec:
-    forall a: t_FMapIter, ab: Seq.seq tuple, b: t_FMapIter, bc: Seq.seq tuple, c: t_FMapIter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_FMapIter_ref_usize_ref_usize_spec:
+    forall a: t_FMapIter_ref_usize_ref_usize, ab: Seq.seq tup2_ref_usize_ref_usize, b: t_FMapIter_ref_usize_ref_usize, bc: Seq.seq tup2_ref_usize_ref_usize, c: t_FMapIter_ref_usize_ref_usize. produces_FMapIter_ref_usize_ref_usize a ab b
+      -> produces_FMapIter_ref_usize_ref_usize b bc c -> produces_FMapIter_ref_usize_ref_usize a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_FMapIter) : ()
+  function produces_refl_FMapIter_ref_usize_ref_usize (self: t_FMapIter_ref_usize_ref_usize) : ()
   
-  axiom produces_refl_spec: forall self: t_FMapIter. produces self (Seq.empty: Seq.seq tuple) self
+  axiom produces_refl_FMapIter_ref_usize_ref_usize_spec:
+    forall self: t_FMapIter_ref_usize_ref_usize. produces_FMapIter_ref_usize_ref_usize self (Seq.empty: Seq.seq tup2_ref_usize_ref_usize) self
   
-  predicate inv'0 [@inline:trivial] (_1: Seq.seq tuple) = true
+  predicate inv_Seq_tup2_ref_usize_ref_usize [@inline:trivial] (_1: Seq.seq tup2_ref_usize_ref_usize) = true
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Seq_tup2_ref_usize_ref_usize
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_FMapIter) = inv self.current /\ inv self.final
+  predicate invariant_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    inv_FMapIter_ref_usize_ref_usize self.current /\ inv_FMapIter_ref_usize_ref_usize self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_FMapIter_ref_usize_ref_usize
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = invariant' _1
+  predicate inv_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (_1: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    invariant_ref_FMapIter_ref_usize_ref_usize _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_FMapIter_ref_usize_ref_usize
   
-  predicate completed (self: MutBorrow.t t_FMapIter) = is_empty (view'0 self.current)
+  predicate completed_FMapIter_ref_usize_ref_usize (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    is_empty_ref_usize (view_FMapIter_ref_usize_ref_usize self.current)
   
-  let rec next (self: MutBorrow.t t_FMapIter) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'1 self}
+  let rec next_FMapIter_ref_usize_ref_usize (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize)
+    (return (x: t_Option_tup2_ref_usize_ref_usize)) =
+    {[@expl:next 'self' type invariant] inv_ref_FMapIter_ref_usize_ref_usize self}
     any
-    [ return (result: t_Option'0) -> {match result with
-        | C_None'0 -> completed self
-        | C_Some'0 {f0 = k; f1 = v} -> produces self.current (Seq.singleton { f0 = k; f1 = v }) self.final
-        /\ view'0 self.current = insert (view'0 self.final) k v
+    [ return (result: t_Option_tup2_ref_usize_ref_usize) -> {match result with
+        | None'0 -> completed_FMapIter_ref_usize_ref_usize self
+        | Some'0 {f0 = k; f1 = v} -> produces_FMapIter_ref_usize_ref_usize self.current (Seq.singleton { f0 = k;
+                                                                                                         f1 = v }) self.final
+        /\ view_FMapIter_ref_usize_ref_usize self.current
+        = insert_ref_usize (view_FMapIter_ref_usize_ref_usize self.final) k v
         end}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_FMapIter) = _1.final = _1.current
+  predicate resolve_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (_1: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_FMapIter_ref_usize_ref_usize
   
-  let rec v_Some (input: t_Option'0) (ret (field_0: tuple)) = any
-    [ good (field_0: tuple) -> {C_Some'0 field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: tuple [C_Some'0 field_0: t_Option'0]. C_Some'0 field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_tup2_ref_usize_ref_usize) (ret (f0'0: tup2_ref_usize_ref_usize)) = any
+    [ good (f0'0: tup2_ref_usize_ref_usize) -> {Some'0 f0'0 = input} (! ret {f0'0})
+    | bad -> {forall f0'0: tup2_ref_usize_ref_usize [Some'0 f0'0: t_Option_tup2_ref_usize_ref_usize]. Some'0 f0'0
+        <> input}
+      (! {false}
+      any) ]
   
-  predicate resolve'2 (self: t_FMap) =
-    forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. get self k = C_Some v -> resolve k /\ resolve v
+  predicate resolve_FMap_ref_usize_ref_usize (self: t_FMap_ref_usize_ref_usize) =
+    forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. get_ref_usize self k = Some v
+      -> resolve_ref_usize k /\ resolve_ref_usize v
   
-  predicate resolve'3 (_1: t_FMap)
+  predicate resolve_FMap_ref_usize_ref_usize'0 (_1: t_FMap_ref_usize_ref_usize)
   
-  axiom resolve_axiom'0: forall x: t_FMap [resolve'3 x]. resolve'3 x -> resolve'2 x
+  axiom resolve_axiom'0:
+    forall x: t_FMap_ref_usize_ref_usize [resolve_FMap_ref_usize_ref_usize'0 x]. resolve_FMap_ref_usize_ref_usize'0 x
+      -> resolve_FMap_ref_usize_ref_usize x
   
-  predicate resolve'4 (self: t_FMapIter) = resolve'3 (view'0 self)
+  predicate resolve_FMapIter_ref_usize_ref_usize (self: t_FMapIter_ref_usize_ref_usize) =
+    resolve_FMap_ref_usize_ref_usize'0 (view_FMapIter_ref_usize_ref_usize self)
   
-  predicate resolve'5 (_1: t_FMapIter)
+  predicate resolve_FMapIter_ref_usize_ref_usize'0 (_1: t_FMapIter_ref_usize_ref_usize)
   
-  axiom resolve_axiom'1: forall x: t_FMapIter [resolve'5 x]. resolve'5 x -> resolve'4 x
+  axiom resolve_axiom'1:
+    forall x: t_FMapIter_ref_usize_ref_usize [resolve_FMapIter_ref_usize_ref_usize'0 x]. resolve_FMapIter_ref_usize_ref_usize'0 x
+      -> resolve_FMapIter_ref_usize_ref_usize x
   
-  let rec new'0 (x: UInt64.t) (return (x'0: UInt64.t)) = any
+  let rec new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
     [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -169,9 +200,11 @@ module M_fmap__resolves
     [ bb0 = s0
       [ s0 = [ &k <- (0: UInt64.t) ] s1
       | s1 = [ &v <- (0: UInt64.t) ] s2
-      | s2 = new (fun (_ret: t_FMap) -> [ &_6 <- _ret ] s3)
+      | s2 = new_ref_usize (fun (_ret: t_FMap_ref_usize_ref_usize) -> [ &_6 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = into_inner {_6} (fun (_ret: t_FMap) -> [ &s <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0
+      [ s0 = into_inner_FMap_ref_usize_ref_usize {_6} (fun (_ret: t_FMap_ref_usize_ref_usize) -> [ &s <- _ret ] s1)
+      | s1 = bb2 ]
     | bb2 = s0
       [ s0 = MutBorrow.borrow_mut <UInt64.t> {k}
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &bor_k <- _ret ] [ &k <- _ret.final ] s1)
@@ -181,40 +214,47 @@ module M_fmap__resolves
       | s3 = bb3 ]
     | bb3 = s0 [ s0 = [ &snap_v <- bor_v ] s1 | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_FMap> {s}
-          (fun (_ret: MutBorrow.t t_FMap) -> [ &_14 <- _ret ] [ &s <- _ret.final ] s1)
-      | s1 = insert_ghost {_14} {bor_k} {bor_v} (fun (_ret: t_Option) -> [ &_13 <- _ret ] s2)
-      | s2 = -{resolve'0 _13}- s3
+      [ s0 = MutBorrow.borrow_mut <t_FMap_ref_usize_ref_usize> {s}
+          (fun (_ret: MutBorrow.t t_FMap_ref_usize_ref_usize) -> [ &_14 <- _ret ] [ &s <- _ret.final ] s1)
+      | s1 = insert_ghost_ref_usize {_14} {bor_k} {bor_v} (fun (_ret: t_Option_ref_usize) -> [ &_13 <- _ret ] s2)
+      | s2 = -{resolve_Option_ref_usize _13}- s3
       | s3 = bb5 ]
-    | bb5 = s0 [ s0 = into_iter {s} (fun (_ret: t_FMapIter) -> [ &iter <- _ret ] s1) | s1 = bb6 ]
+    | bb5 = s0
+      [ s0 = into_iter_FMap_ref_usize_ref_usize {s} (fun (_ret: t_FMapIter_ref_usize_ref_usize) -> [ &iter <- _ret ] s1)
+      | s1 = bb6 ]
     | bb6 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq tuple ] s1 | s1 = bb9 ]
+    | bb7 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq tup2_ref_usize_ref_usize ] s1 | s1 = bb9 ]
     | bb9 = bb9invariant
-      [ bb9 = {[@expl:loop variant] well_founded_relation variant_old_bb9 (1 - Seq.length produced)} bb9invariant
-      | bb9invariant = {[@expl:for invariant] inv'0 produced}
-        {[@expl:for invariant] inv iter}
-        {[@expl:for invariant] produces iter_old produced iter}
+      [ bb9 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb9 (1 - Seq.length produced)} bb9invariant
+      | bb9invariant = {[@expl:for invariant] inv_Seq_tup2_ref_usize_ref_usize produced}
+        {[@expl:for invariant] inv_FMapIter_ref_usize_ref_usize iter}
+        {[@expl:for invariant] produces_FMapIter_ref_usize_ref_usize iter_old produced iter}
         {[@expl:loop invariant #0] Seq.length produced <= 1}
-        {[@expl:loop invariant #1] Seq.length produced = 0 \/ fin snap_k = (1: UInt64.t) /\ fin snap_v = (1: UInt64.t)}
+        {[@expl:loop invariant #1] Seq.length produced = 0
+        \/ fin_Snapshot_ref_usize snap_k = (1: UInt64.t) /\ fin_Snapshot_ref_usize snap_v = (1: UInt64.t)}
         (! [ &variant_old_bb9 <- 1 - Seq.length produced ] s0)
         [ s0 = bb10 ]
         [ bb10 = s0
-          [ s0 = {inv iter}
-            MutBorrow.borrow_mut <t_FMapIter> {iter}
-              (fun (_ret: MutBorrow.t t_FMapIter) -> [ &_34 <- _ret ] -{inv _ret.final}- [ &iter <- _ret.final ] s1)
-          | s1 = {inv _34.current}
-            MutBorrow.borrow_final <t_FMapIter> {_34.current} {MutBorrow.get_id _34}
-              (fun (_ret: MutBorrow.t t_FMapIter) ->
-                [ &_33 <- _ret ] -{inv _ret.final}-
+          [ s0 = {inv_FMapIter_ref_usize_ref_usize iter}
+            MutBorrow.borrow_mut <t_FMapIter_ref_usize_ref_usize> {iter}
+              (fun (_ret: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
+                [ &_34 <- _ret ] -{inv_FMapIter_ref_usize_ref_usize _ret.final}-
+                [ &iter <- _ret.final ] s1)
+          | s1 = {inv_FMapIter_ref_usize_ref_usize _34.current}
+            MutBorrow.borrow_final <t_FMapIter_ref_usize_ref_usize> {_34.current} {MutBorrow.get_id _34}
+              (fun (_ret: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
+                [ &_33 <- _ret ] -{inv_FMapIter_ref_usize_ref_usize _ret.final}-
                 [ &_34 <- { _34 with current = _ret.final } ] s2)
-          | s2 = next {_33} (fun (_ret: t_Option'0) -> [ &_32 <- _ret ] s3)
+          | s2 = next_FMapIter_ref_usize_ref_usize {_33}
+              (fun (_ret: t_Option_tup2_ref_usize_ref_usize) -> [ &_32 <- _ret ] s3)
           | s3 = bb11 ]
         | bb11 = s0
-          [ s0 = {[@expl:type invariant] inv'1 _34} s1
-          | s1 = -{resolve'1 _34}- s2
-          | s2 = any [ br0 -> {_32 = C_None'0} (! bb14) | br1 (x0: tuple) -> {_32 = C_Some'0 x0} (! bb15) ] ]
+          [ s0 = {[@expl:type invariant] inv_ref_FMapIter_ref_usize_ref_usize _34} s1
+          | s1 = -{resolve_ref_FMapIter_ref_usize_ref_usize _34}- s2
+          | s2 = any
+            [ br0 -> {_32 = None'0} (! bb14) | br1 (x0: tup2_ref_usize_ref_usize) -> {_32 = Some'0 x0} (! bb15) ] ]
         | bb15 = s0
-          [ s0 = v_Some {_32} (fun (r0: tuple) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_32} (fun (r0: tup2_ref_usize_ref_usize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_37 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb16 ]
         | bb16 = s0
@@ -222,37 +262,37 @@ module M_fmap__resolves
           | s1 = [ &k2 <- __creusot_proc_iter_elem.f0 ] s2
           | s2 = [ &v2 <- __creusot_proc_iter_elem.f1 ] s3
           | s3 = [ &k2 <- { k2 with current = (1: UInt64.t) } ] s4
-          | s4 = -{resolve k2}- s5
+          | s4 = -{resolve_ref_usize k2}- s5
           | s5 = [ &v2 <- { v2 with current = (1: UInt64.t) } ] s6
-          | s6 = -{resolve v2}- s7
+          | s6 = -{resolve_ref_usize v2}- s7
           | s7 = bb9 ] ] ]
     | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv iter} s1
-      | s1 = -{resolve'5 iter}- s2
+      [ s0 = {[@expl:type invariant] inv_FMapIter_ref_usize_ref_usize iter} s1
+      | s1 = -{resolve_FMapIter_ref_usize_ref_usize'0 iter}- s2
       | s2 = UInt64.add {k} {v} (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s3)
-      | s3 = new'0 {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
+      | s3 = new_usize {_2} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
       | s4 = bb17 ]
     | bb17 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()
     | & k: UInt64.t = Any.any_l ()
     | & v: UInt64.t = Any.any_l ()
-    | & s: t_FMap = Any.any_l ()
-    | & _6: t_FMap = Any.any_l ()
+    | & s: t_FMap_ref_usize_ref_usize = Any.any_l ()
+    | & _6: t_FMap_ref_usize_ref_usize = Any.any_l ()
     | & bor_k: MutBorrow.t UInt64.t = Any.any_l ()
     | & bor_v: MutBorrow.t UInt64.t = Any.any_l ()
     | & snap_k: MutBorrow.t UInt64.t = Any.any_l ()
     | & snap_v: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _13: t_Option = Any.any_l ()
-    | & _14: MutBorrow.t t_FMap = Any.any_l ()
-    | & iter: t_FMapIter = Any.any_l ()
-    | & iter_old: t_FMapIter = Any.any_l ()
-    | & produced: Seq.seq tuple = Any.any_l ()
-    | & _32: t_Option'0 = Any.any_l ()
-    | & _33: MutBorrow.t t_FMapIter = Any.any_l ()
-    | & _34: MutBorrow.t t_FMapIter = Any.any_l ()
-    | & __creusot_proc_iter_elem: tuple = Any.any_l ()
-    | & _37: Seq.seq tuple = Any.any_l ()
+    | & _13: t_Option_ref_usize = Any.any_l ()
+    | & _14: MutBorrow.t t_FMap_ref_usize_ref_usize = Any.any_l ()
+    | & iter: t_FMapIter_ref_usize_ref_usize = Any.any_l ()
+    | & iter_old: t_FMapIter_ref_usize_ref_usize = Any.any_l ()
+    | & produced: Seq.seq tup2_ref_usize_ref_usize = Any.any_l ()
+    | & _32: t_Option_tup2_ref_usize_ref_usize = Any.any_l ()
+    | & _33: MutBorrow.t t_FMapIter_ref_usize_ref_usize = Any.any_l ()
+    | & _34: MutBorrow.t t_FMapIter_ref_usize_ref_usize = Any.any_l ()
+    | & __creusot_proc_iter_elem: tup2_ref_usize_ref_usize = Any.any_l ()
+    | & _37: Seq.seq tup2_ref_usize_ref_usize = Any.any_l ()
     | & k2: MutBorrow.t UInt64.t = Any.any_l ()
     | & v2: MutBorrow.t UInt64.t = Any.any_l ()
     | & variant_old_bb9: int = Any.any_l () ])

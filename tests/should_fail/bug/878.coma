@@ -1,4 +1,4 @@
-module M_878__test
+module M_test
   use creusot.slice.Slice64
   use creusot.int.Int32
   use seq.Seq
@@ -6,20 +6,23 @@ module M_878__test
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_i32_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq Int32.t
+  function view_Vec_i32_Global (self: t_Vec_i32_Global) : Seq.seq Int32.t
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_i32_Global_spec: forall self: t_Vec_i32_Global. Seq.length (view_Vec_i32_Global self)
+      <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
+  function view_Box_slice_i32_Global [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t =
+    Slice64.view self
   
-  meta "rewrite_def" function view'0
+  meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let rec into_vec (self_: Slice64.slice Int32.t) (return (x: t_Vec)) = any
-    [ return (result: t_Vec) -> {view result = view'0 self_} (! return {result}) ]
+  let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+    [ return (result: t_Vec_i32_Global) -> {view_Vec_i32_Global result = view_Box_slice_i32_Global self_}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -34,12 +37,12 @@ module M_878__test
           /\ Seq.get __arr_temp.Slice64.elts 3 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
           [ &_4 <- __arr_temp ] s1) ]
       | s1 = bb2 ]
-    | bb2 = s0 [ s0 = into_vec {_4} (fun (_ret: t_Vec) -> [ &v <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = into_vec_i32 {_4} (fun (_ret: t_Vec_i32_Global) -> [ &v <- _ret ] s1) | s1 = bb3 ]
     | bb3 = {false} any ]
-    [ & _0: () = Any.any_l () | & v: t_Vec = Any.any_l () | & _4: Slice64.array Int32.t = Any.any_l () ])
+    [ & _0: () = Any.any_l () | & v: t_Vec_i32_Global = Any.any_l () | & _4: Slice64.array Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_878__test2
+module M_test2
   use creusot.int.UInt32
   use creusot.slice.Slice64
   use seq.Seq
@@ -47,62 +50,66 @@ module M_878__test2
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_S = { t_S__0: UInt32.t }
+  type t_S = { f0: UInt32.t }
   
-  type t_Vec
+  type t_Vec_S_Global
   
-  predicate invariant' (self: t_S) = self.t_S__0 = (0: UInt32.t)
+  predicate invariant_S (self: t_S) = self.f0 = (0: UInt32.t)
   
-  predicate inv (_1: t_S)
+  predicate inv_S (_1: t_S)
   
-  axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_S [inv_S x]. inv_S x = invariant_S x
   
-  predicate invariant''0 (self: t_S) = inv self
+  predicate invariant_Box_S_Global (self: t_S) = inv_S self
   
-  predicate inv'0 [@inline:trivial] (_1: t_S) = invariant''0 _1
+  predicate inv_Box_S_Global [@inline:trivial] (_1: t_S) = invariant_Box_S_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_S_Global
   
-  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_S) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_S [@inline:trivial] (self: Seq.seq t_S) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_S_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant_Seq_S
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_S) = invariant''1 _1
+  predicate inv_Seq_S [@inline:trivial] (_1: Seq.seq t_S) = invariant_Seq_S _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_S
   
-  predicate invariant''2 (self: Slice64.slice t_S) = inv'1 (Slice64.view self)
+  predicate invariant_slice_S (self: Slice64.slice t_S) = inv_Seq_S (Slice64.view self)
   
-  predicate inv'2 [@inline:trivial] (_1: Slice64.slice t_S) = invariant''2 _1
+  predicate inv_slice_S [@inline:trivial] (_1: Slice64.slice t_S) = invariant_slice_S _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_slice_S
   
-  predicate invariant''3 (self: Slice64.slice t_S) = inv'2 self
+  predicate invariant_Box_slice_S_Global (self: Slice64.slice t_S) = inv_slice_S self
   
-  predicate inv'3 [@inline:trivial] (_1: Slice64.slice t_S) = invariant''3 _1
+  predicate inv_Box_slice_S_Global [@inline:trivial] (_1: Slice64.slice t_S) = invariant_Box_slice_S_Global _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_Box_slice_S_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_S
+  function view_Vec_S_Global (self: t_Vec_S_Global) : Seq.seq t_S
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_S_Global_spec: forall self: t_Vec_S_Global. Seq.length (view_Vec_S_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''4 (self: t_Vec) = inv'1 (view self)
+  predicate invariant_Vec_S_Global (self: t_Vec_S_Global) = inv_Seq_S (view_Vec_S_Global self)
   
-  predicate inv'4 (_1: t_Vec)
+  predicate inv_Vec_S_Global (_1: t_Vec_S_Global)
   
-  axiom inv_axiom'0: forall x: t_Vec [inv'4 x]. inv'4 x -> invariant''4 x
+  axiom inv_axiom'0: forall x: t_Vec_S_Global [inv_Vec_S_Global x]. inv_Vec_S_Global x -> invariant_Vec_S_Global x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice t_S) : Seq.seq t_S = Slice64.view self
+  function view_Box_slice_S_Global [@inline:trivial] (self: Slice64.slice t_S) : Seq.seq t_S = Slice64.view self
   
-  meta "rewrite_def" function view'0
+  meta "rewrite_def" function view_Box_slice_S_Global
   
-  let rec into_vec (self_: Slice64.slice t_S) (return (x: t_Vec)) =
-    {[@expl:into_vec 'self_' type invariant] inv'3 self_}
-    any [ return (result: t_Vec) -> {inv'4 result} {view result = view'0 self_} (! return {result}) ]
+  let rec into_vec_S (self_: Slice64.slice t_S) (return (x: t_Vec_S_Global)) =
+    {[@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
+    any
+    [ return (result: t_Vec_S_Global) -> {inv_Vec_S_Global result}
+      {view_Vec_S_Global result = view_Box_slice_S_Global self_}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -110,22 +117,22 @@ module M_878__test2
   
   let rec test2 (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- { t_S__0 = (0: UInt32.t) } ] s1
+      [ s0 = [ &_5 <- { f0 = (0: UInt32.t) } ] s1
       | s1 = any
         [ any_ (__arr_temp: Slice64.array t_S) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_4 <- __arr_temp ] s2) ]
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = into_vec {_4} (fun (_ret: t_Vec) -> [ &v <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv'4 v} s1 | s1 = {false} any ] ]
+    | bb2 = s0 [ s0 = into_vec_S {_4} (fun (_ret: t_Vec_S_Global) -> [ &v <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = {[@expl:type invariant] inv_Vec_S_Global v} s1 | s1 = {false} any ] ]
     [ & _0: () = Any.any_l ()
-    | & v: t_Vec = Any.any_l ()
+    | & v: t_Vec_S_Global = Any.any_l ()
     | & _4: Slice64.array t_S = Any.any_l ()
     | & _5: t_S = Any.any_l ()
     | & b: bool = Any.any_l ()
     | & _7: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_878__test3
+module M_test3
   use creusot.int.UInt32
   use creusot.slice.Slice64
   use seq.Seq
@@ -133,62 +140,66 @@ module M_878__test3
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_S = { t_S__0: UInt32.t }
+  type t_S = { f0: UInt32.t }
   
-  type t_Vec
+  type t_Vec_S_Global
   
-  predicate invariant' (self: t_S) = self.t_S__0 = (0: UInt32.t)
+  predicate invariant_S (self: t_S) = self.f0 = (0: UInt32.t)
   
-  predicate inv (_1: t_S)
+  predicate inv_S (_1: t_S)
   
-  axiom inv_axiom [@rewrite]: forall x: t_S [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_S [inv_S x]. inv_S x = invariant_S x
   
-  predicate invariant''0 (self: t_S) = inv self
+  predicate invariant_Box_S_Global (self: t_S) = inv_S self
   
-  predicate inv'0 [@inline:trivial] (_1: t_S) = invariant''0 _1
+  predicate inv_Box_S_Global [@inline:trivial] (_1: t_S) = invariant_Box_S_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_S_Global
   
-  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_S) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_S [@inline:trivial] (self: Seq.seq t_S) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_S_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant_Seq_S
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_S) = invariant''1 _1
+  predicate inv_Seq_S [@inline:trivial] (_1: Seq.seq t_S) = invariant_Seq_S _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_S
   
-  predicate invariant''2 (self: Slice64.slice t_S) = inv'1 (Slice64.view self)
+  predicate invariant_slice_S (self: Slice64.slice t_S) = inv_Seq_S (Slice64.view self)
   
-  predicate inv'2 [@inline:trivial] (_1: Slice64.slice t_S) = invariant''2 _1
+  predicate inv_slice_S [@inline:trivial] (_1: Slice64.slice t_S) = invariant_slice_S _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_slice_S
   
-  predicate invariant''3 (self: Slice64.slice t_S) = inv'2 self
+  predicate invariant_Box_slice_S_Global (self: Slice64.slice t_S) = inv_slice_S self
   
-  predicate inv'3 [@inline:trivial] (_1: Slice64.slice t_S) = invariant''3 _1
+  predicate inv_Box_slice_S_Global [@inline:trivial] (_1: Slice64.slice t_S) = invariant_Box_slice_S_Global _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_Box_slice_S_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_S
+  function view_Vec_S_Global (self: t_Vec_S_Global) : Seq.seq t_S
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_S_Global_spec: forall self: t_Vec_S_Global. Seq.length (view_Vec_S_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''4 (self: t_Vec) = inv'1 (view self)
+  predicate invariant_Vec_S_Global (self: t_Vec_S_Global) = inv_Seq_S (view_Vec_S_Global self)
   
-  predicate inv'4 (_1: t_Vec)
+  predicate inv_Vec_S_Global (_1: t_Vec_S_Global)
   
-  axiom inv_axiom'0: forall x: t_Vec [inv'4 x]. inv'4 x -> invariant''4 x
+  axiom inv_axiom'0: forall x: t_Vec_S_Global [inv_Vec_S_Global x]. inv_Vec_S_Global x -> invariant_Vec_S_Global x
   
-  function view'0 [@inline:trivial] (self: Slice64.slice t_S) : Seq.seq t_S = Slice64.view self
+  function view_Box_slice_S_Global [@inline:trivial] (self: Slice64.slice t_S) : Seq.seq t_S = Slice64.view self
   
-  meta "rewrite_def" function view'0
+  meta "rewrite_def" function view_Box_slice_S_Global
   
-  let rec into_vec (self_: Slice64.slice t_S) (return (x: t_Vec)) =
-    {[@expl:into_vec 'self_' type invariant] inv'3 self_}
-    any [ return (result: t_Vec) -> {inv'4 result} {view result = view'0 self_} (! return {result}) ]
+  let rec into_vec_S (self_: Slice64.slice t_S) (return (x: t_Vec_S_Global)) =
+    {[@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
+    any
+    [ return (result: t_Vec_S_Global) -> {inv_Vec_S_Global result}
+      {view_Vec_S_Global result = view_Box_slice_S_Global self_}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -196,20 +207,20 @@ module M_878__test3
   
   let rec test3 (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- { t_S__0 = (0: UInt32.t) } ] s1
+      [ s0 = [ &_5 <- { f0 = (0: UInt32.t) } ] s1
       | s1 = any
         [ any_ (__arr_temp: Slice64.array t_S) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_4 <- __arr_temp ] s2) ]
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = into_vec {_4} (fun (_ret: t_Vec) -> [ &v <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = into_vec_S {_4} (fun (_ret: t_Vec_S_Global) -> [ &v <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv'4 v} s1
-      | s1 = {[@expl:assertion] (Seq.get (view v) 0).t_S__0 = (0: UInt32.t)} s2
+      [ s0 = {[@expl:type invariant] inv_Vec_S_Global v} s1
+      | s1 = {[@expl:assertion] (Seq.get (view_Vec_S_Global v) 0).f0 = (0: UInt32.t)} s2
       | s2 = bb4 ]
     | bb4 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & v: t_Vec = Any.any_l ()
+    | & v: t_Vec_S_Global = Any.any_l ()
     | & _4: Slice64.array t_S = Any.any_l ()
     | & _5: t_S = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

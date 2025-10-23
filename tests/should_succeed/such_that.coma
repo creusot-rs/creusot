@@ -1,36 +1,37 @@
-module M_such_that__foo
+module M_foo
   use map.Map
   use mach.int.Int
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate index_logic [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
   
-  meta "rewrite_def" predicate index_logic
+  meta "rewrite_def" predicate index_Mapping_Int_bool
   
-  function such_that (p: Map.map int bool) : int
+  function such_that_Int (p: Map.map int bool) : int
   
-  axiom such_that_spec: forall p: Map.map int bool. (exists x: int. index_logic p x) -> index_logic p (such_that p)
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
   
   let rec even (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {Int.mod (Int32.to_int result) 2 = 0} (! return {result}) ]
   
-  function index_logic'0 [@inline:trivial] (self: Map.map int int) (a: int) : int = Map.get self a
+  function index_Mapping_Int_Int [@inline:trivial] (self: Map.map int int) (a: int) : int = Map.get self a
   
-  meta "rewrite_def" function index_logic'0
+  meta "rewrite_def" function index_Mapping_Int_Int
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec foo (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &x <- such_that (fun (x'1: int) -> x'1 + 1 = 42) ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &x <- such_that_Int (fun (x'1: int) -> x'1 + 1 = 42) ] s1 | s1 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:assertion] x = 41} s1 | s1 = even (fun (_ret: Int32.t) -> [ &y <- _ret ] s2) | s2 = bb2 ]
     | bb2 = s0 [ s0 = [ &mapping <- fun (x'1: int) -> x'1 + Int32.to_int y ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &predicate' <- fun (x'1: int) -> index_logic'0 mapping x'1 + 1 = 0 ] s1 | s1 = bb4 ]
+    | bb3 = s0 [ s0 = [ &predicate' <- fun (x'1: int) -> index_Mapping_Int_Int mapping x'1 + 1 = 0 ] s1 | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = {[@expl:assertion] index_logic predicate' (- Int32.to_int y - 1)} s1
-      | s1 = [ &x'0 <- such_that predicate' ] s2
+      [ s0 = {[@expl:assertion] index_Mapping_Int_bool predicate' (- Int32.to_int y - 1)} s1
+      | s1 = [ &x'0 <- such_that_Int predicate' ] s2
       | s2 = bb5 ]
     | bb5 = s0 [ s0 = {[@expl:assertion] x'0 + Int32.to_int y + 1 = 0} s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -40,7 +41,7 @@ module M_such_that__foo
     | & predicate': Map.map int bool = Any.any_l ()
     | & x'0: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_such_that__even
+module M_even
   use creusot.int.Int32
   use creusot.prelude.Any
   use mach.int.Int

@@ -1,144 +1,146 @@
-module M_07_fuse__qyi15189554860034455533__next (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.prelude.Any
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate inv'0 (_1: t_Option)
+  predicate inv_Option_I (_1: t_Option_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_I [inv_Option_I x]. inv_Option_I x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
+        | None -> true
+        | Some f0 -> inv_I f0
         end
   
-  let rec v_Some (input: t_Option) (ret (field_0: t_I)) = any
-    [ good (field_0: t_I) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_I [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_I) (ret (f0: t_I)) = any
+    [ good (f0: t_I) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: t_I [Some f0: t_Option_I]. Some f0 <> input} (! {false} any) ]
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_Item
+  type t_Option_Item = None'0 | Some'0 t_Item
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_I) = inv self.current /\ inv self.final
+  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_I
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
+  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_I
   
-  predicate precondition (self: ()) (args: MutBorrow.t t_I)
+  predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
-  axiom precondition_fndef: forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'1 self)
-      -> precondition () args
+  axiom precondition_fndef:
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+      -> precondition_next () args
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv'2 (_1: t_Item)
+  predicate inv_Item (_1: t_Item)
   
-  predicate inv'3 (_1: t_Option'0)
+  predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'3 x]. inv'3 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'2 a_0
+        | None'0 -> true
+        | Some'0 f0 -> inv_Item f0
         end
   
-  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option'0)
+  predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option'0 [postcondition_once () args res]. postcondition_once () args res
+    forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
       -> (let self = args in match res with
-          | C_None'0 -> completed self
-          | C_Some'0 v -> produces self.current (Seq.singleton v) self.final
+          | None'0 -> completed_I self
+          | Some'0 v -> produces_I self.current (Seq.singleton v) self.final
           end
-      /\ inv'3 res)
+      /\ inv_Option_Item res)
   
-  let rec next (self: MutBorrow.t t_I) (return (x: t_Option'0)) = {[@expl:next requires] precondition () self}
-    any [ return (result: t_Option'0) -> {postcondition_once () self result} (! return {result}) ]
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
+  predicate resolve_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_I
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Option) = inv'0 self.current /\ inv'0 self.final
+  predicate invariant_ref_Option_I [@inline:trivial] (self: MutBorrow.t t_Option_I) =
+    inv_Option_I self.current /\ inv_Option_I self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_Option_I
   
-  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant''0 _1
+  predicate inv_ref_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = invariant_ref_Option_I _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_Option_I
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate resolve_ref_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Option_I
   
-  predicate inv'5 (_1: t_Fuse)
+  predicate inv_Fuse_I (_1: t_Fuse_I)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Fuse [inv'5 x]. inv'5 x = inv'0 x.t_Fuse__iter
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x = inv_Option_I x.iter
   
-  predicate invariant''1 [@inline:trivial] (self: MutBorrow.t t_Fuse) = inv'5 self.current /\ inv'5 self.final
+  predicate invariant_ref_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
+    inv_Fuse_I self.current /\ inv_Fuse_I self.final
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant_ref_Fuse_I
   
-  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_Fuse) = invariant''1 _1
+  predicate inv_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_ref_Fuse_I _1
   
-  meta "rewrite_def" predicate inv'6
+  meta "rewrite_def" predicate inv_ref_Fuse_I
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_Fuse) = _1.final = _1.current
+  predicate resolve_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_Fuse_I
   
-  predicate resolve'2 (_1: t_Item)
+  predicate resolve_Item (_1: t_Item)
   
-  predicate resolve'3 (_1: t_Option'0)
+  predicate resolve_Option_Item (_1: t_Option_Item)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option'0 [resolve'3 x]. resolve'3 x
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_Item [resolve_Option_Item x]. resolve_Option_Item x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 x0 -> resolve'2 x0
+        | None'0 -> true
+        | Some'0 x0 -> resolve_Item x0
         end
   
-  predicate resolve'4 (_1: t_I)
+  predicate resolve_I (_1: t_I)
   
-  predicate resolve'5 (_1: t_Option)
+  predicate resolve_Option_I (_1: t_Option_I)
   
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option [resolve'5 x]. resolve'5 x
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_I [resolve_Option_I x]. resolve_Option_I x
       = match x with
-        | C_None -> true
-        | C_Some x0 -> resolve'4 x0
+        | None -> true
+        | Some x0 -> resolve_I x0
         end
   
-  predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (self.current.t_Fuse__iter = C_None
-      \/ (exists it: MutBorrow.t t_I. completed it /\ self.current.t_Fuse__iter = C_Some (it.current)))
-    /\ self.final.t_Fuse__iter = C_None
+  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
+    /\ self.final.iter = None
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
@@ -146,102 +148,103 @@ module M_07_fuse__qyi15189554860034455533__next (* <Fuse<I> as common::Iterator>
   
   meta "select_lsinst" "all"
   
-  let rec next'0 (self: MutBorrow.t t_Fuse) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'6 self}
+  let rec next_Fuse_I (self: MutBorrow.t t_Fuse_I) (return (x: t_Option_Item)) =
+    {[@expl:next 'self' type invariant] inv_ref_Fuse_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 self.current.t_Fuse__iter}
-        MutBorrow.borrow_mut <t_Option> {self.current.t_Fuse__iter}
-          (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_3 <- _ret ] -{inv'0 _ret.final}-
-            [ &self <- { self with current = { t_Fuse__iter = _ret.final } } ] s1)
-      | s1 = any [ br0 -> {_3.current = C_None} (! bb2) | br1 (x0: t_I) -> {_3.current = C_Some x0} (! bb3) ] ]
+      [ s0 = {inv_Option_I self.current.iter}
+        MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
+          (fun (_ret: MutBorrow.t t_Option_I) ->
+            [ &_3 <- _ret ] -{inv_Option_I _ret.final}-
+            [ &self <- { self with current = { iter = _ret.final } } ] s1)
+      | s1 = any [ br0 -> {_3.current = None} (! bb2) | br1 (x0: t_I) -> {_3.current = Some x0} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = v_Some {_3.current}
+      [ s0 = elim_Some {_3.current}
           (fun (r0: t_I) ->
-            {inv r0}
+            {inv_I r0}
             MutBorrow.borrow_final <t_I> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _3) 1}
               (fun (_ret: MutBorrow.t t_I) ->
-                [ &iter <- _ret ] -{inv _ret.final}-
-                [ &_3 <- { _3 with current = C_Some _ret.final } ] s1))
-      | s1 = {inv iter.current}
-        MutBorrow.borrow_final <t_I> {iter.current} {MutBorrow.get_id iter}
+                [ &iter'0 <- _ret ] -{inv_I _ret.final}-
+                [ &_3 <- { _3 with current = Some _ret.final } ] s1))
+      | s1 = {inv_I iter'0.current}
+        MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
           (fun (_ret: MutBorrow.t t_I) ->
-            [ &_7 <- _ret ] -{inv _ret.final}-
-            [ &iter <- { iter with current = _ret.final } ] s2)
-      | s2 = next {_7} (fun (_ret: t_Option'0) -> [ &_6 <- _ret ] s3)
+            [ &_7 <- _ret ] -{inv_I _ret.final}-
+            [ &iter'0 <- { iter'0 with current = _ret.final } ] s2)
+      | s2 = next_I {_7} (fun (_ret: t_Option_Item) -> [ &_6 <- _ret ] s3)
       | s3 = bb5 ]
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv'1 iter} s1
-      | s1 = -{resolve iter}- s2
-      | s2 = {[@expl:type invariant] inv'4 _3} s3
-      | s3 = -{resolve'0 _3}- s4
-      | s4 = any [ br0 -> {_6 = C_None'0} (! bb7) | br1 (x0: t_Item) -> {_6 = C_Some'0 x0} (! bb6) ] ]
+      [ s0 = {[@expl:type invariant] inv_ref_I iter'0} s1
+      | s1 = -{resolve_ref_I iter'0}- s2
+      | s2 = {[@expl:type invariant] inv_ref_Option_I _3} s3
+      | s3 = -{resolve_ref_Option_I _3}- s4
+      | s4 = any [ br0 -> {_6 = None'0} (! bb7) | br1 (x0: t_Item) -> {_6 = Some'0 x0} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv'6 self} s1
-      | s1 = -{resolve'1 self}- s2
+      [ s0 = {[@expl:type invariant] inv_ref_Fuse_I self} s1
+      | s1 = -{resolve_ref_Fuse_I self}- s2
       | s2 = [ &x <- _6 ] s3
       | s3 = [ &_0 <- x ] s4
       | s4 = bb15 ]
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv'3 _6} s1 | s1 = -{resolve'3 _6}- s2 | s2 = bb8 ]
-    | bb8 = s0 [ s0 = [ &_9 <- C_None ] s1 | s1 = bb9 ]
+    | bb7 = s0 [ s0 = {[@expl:type invariant] inv_Option_Item _6} s1 | s1 = -{resolve_Option_Item _6}- s2 | s2 = bb8 ]
+    | bb8 = s0 [ s0 = [ &_9 <- None ] s1 | s1 = bb9 ]
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv'0 self.current.t_Fuse__iter} s1
-      | s1 = -{resolve'5 self.current.t_Fuse__iter}- s2
-      | s2 = [ &self <- { self with current = { t_Fuse__iter = _9 } } ] s3
-      | s3 = {[@expl:type invariant] inv'6 self} s4
-      | s4 = -{resolve'1 self}- s5
+      [ s0 = {[@expl:type invariant] inv_Option_I self.current.iter} s1
+      | s1 = -{resolve_Option_I self.current.iter}- s2
+      | s2 = [ &self <- { self with current = { iter = _9 } } ] s3
+      | s3 = {[@expl:type invariant] inv_ref_Fuse_I self} s4
+      | s4 = -{resolve_ref_Fuse_I self}- s5
       | s5 = bb11 ]
-    | bb11 = s0 [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = bb15 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'4 _3} s1 | s1 = -{resolve'0 _3}- s2 | s2 = bb4 ]
+    | bb11 = s0 [ s0 = [ &_0 <- None'0 ] s1 | s1 = bb15 ]
+    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_ref_Option_I _3} s1 | s1 = -{resolve_ref_Option_I _3}- s2 | s2 = bb4 ]
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv'6 self} s1
-      | s1 = -{resolve'1 self}- s2
-      | s2 = [ &_0 <- C_None'0 ] s3
+      [ s0 = {[@expl:type invariant] inv_ref_Fuse_I self} s1
+      | s1 = -{resolve_ref_Fuse_I self}- s2
+      | s2 = [ &_0 <- None'0 ] s3
       | s3 = bb15 ]
     | bb15 = return {_0} ]
-    [ & _0: t_Option'0 = Any.any_l ()
-    | & self: MutBorrow.t t_Fuse = self
-    | & _3: MutBorrow.t t_Option = Any.any_l ()
-    | & iter: MutBorrow.t t_I = Any.any_l ()
-    | & _6: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option_Item = Any.any_l ()
+    | & self: MutBorrow.t t_Fuse_I = self
+    | & _3: MutBorrow.t t_Option_I = Any.any_l ()
+    | & iter'0: MutBorrow.t t_I = Any.any_l ()
+    | & _6: t_Option_Item = Any.any_l ()
     | & _7: MutBorrow.t t_I = Any.any_l ()
-    | & _9: t_Option = Any.any_l ()
-    | & x: t_Option'0 = Any.any_l () ])
-    [ return (result: t_Option'0) -> {[@expl:next result type invariant] inv'3 result}
+    | & _9: t_Option_I = Any.any_l ()
+    | & x: t_Option_Item = Any.any_l () ])
+    [ return (result: t_Option_Item) -> {[@expl:next result type invariant] inv_Option_Item result}
       {[@expl:next ensures] match result with
-        | C_None'0 -> completed'0 self
-        | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+        | None'0 -> completed_Fuse_I self
+        | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
-module M_07_fuse__qyi15189554860034455533__produces_refl (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__produces_refl (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
@@ -249,40 +252,40 @@ module M_07_fuse__qyi15189554860034455533__produces_refl (* <Fuse<I> as common::
   
   meta "select_lsinst" "all"
   
-  constant self : t_Fuse
+  constant self : t_Fuse_I
   
-  function produces_refl'0 (self: t_Fuse) : ()
+  function produces_refl_Fuse_I (self: t_Fuse_I) : ()
   
-  goal vc_produces_refl: [@expl:produces_refl ensures] produces'0 self (Seq.empty: Seq.seq t_Item) self
+  goal vc_produces_refl_Fuse_I: [@expl:produces_refl ensures] produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
 end
-module M_07_fuse__qyi15189554860034455533__produces_trans (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__produces_trans (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
@@ -290,113 +293,113 @@ module M_07_fuse__qyi15189554860034455533__produces_trans (* <Fuse<I> as common:
   
   meta "select_lsinst" "all"
   
-  constant a : t_Fuse
+  constant a : t_Fuse_I
   
   constant ab : Seq.seq t_Item
   
-  constant b : t_Fuse
+  constant b : t_Fuse_I
   
   constant bc : Seq.seq t_Item
   
-  constant c : t_Fuse
+  constant c : t_Fuse_I
   
-  function produces_trans'0 (a: t_Fuse) (ab: Seq.seq t_Item) (b: t_Fuse) (bc: Seq.seq t_Item) (c: t_Fuse) : ()
+  function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
   
-  goal vc_produces_trans: produces'0 a ab b
-    -> produces'0 b bc c -> ([@expl:produces_trans ensures] produces'0 a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Fuse_I: produces_Fuse_I a ab b
+    -> produces_Fuse_I b bc c -> ([@expl:produces_trans ensures] produces_Fuse_I a (Seq.(++) ab bc) c)
 end
-module M_07_fuse__qyi9200450106079471696__is_fused (* <Fuse<I> as FusedIterator> *)
+module M_impl_FusedIterator_for_Fuse_I__is_fused (* <Fuse<I> as FusedIterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
-  function produces_trans'0 (a: t_Fuse) (ab: Seq.seq t_Item) (b: t_Fuse) (bc: Seq.seq t_Item) (c: t_Fuse) : () = ()
+  function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
+   = ()
   
-  axiom produces_trans_spec'0:
-    forall a: t_Fuse, ab: Seq.seq t_Item, b: t_Fuse, bc: Seq.seq t_Item, c: t_Fuse. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Fuse_I_spec:
+    forall a: t_Fuse_I, ab: Seq.seq t_Item, b: t_Fuse_I, bc: Seq.seq t_Item, c: t_Fuse_I. produces_Fuse_I a ab b
+      -> produces_Fuse_I b bc c -> produces_Fuse_I a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Fuse) : () = ()
+  function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
   
-  axiom produces_refl_spec'0: forall self: t_Fuse. produces'0 self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (self.current.t_Fuse__iter = C_None
-      \/ (exists it: MutBorrow.t t_I. completed it /\ self.current.t_Fuse__iter = C_Some (it.current)))
-    /\ self.final.t_Fuse__iter = C_None
+  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
+    /\ self.final.iter = None
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : MutBorrow.t t_Fuse
+  constant self : MutBorrow.t t_Fuse_I
   
   constant steps : Seq.seq t_Item
   
-  constant next : t_Fuse
+  constant next : t_Fuse_I
   
-  function is_fused (self: MutBorrow.t t_Fuse) (steps: Seq.seq t_Item) (next: t_Fuse) : ()
+  function is_fused_Fuse_I (self: MutBorrow.t t_Fuse_I) (steps: Seq.seq t_Item) (next: t_Fuse_I) : ()
   
-  goal vc_is_fused: completed'0 self
-    -> produces'0 self.final steps next -> ([@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
+  goal vc_is_fused_Fuse_I: completed_Fuse_I self
+    -> produces_Fuse_I self.final steps next -> ([@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
 end
-module M_07_fuse__qyi15189554860034455533__produces_trans__refines (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__produces_trans__refines (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
@@ -405,40 +408,40 @@ module M_07_fuse__qyi15189554860034455533__produces_trans__refines (* <Fuse<I> a
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Fuse. forall ab: Seq.seq t_Item. forall b: t_Fuse. forall bc: Seq.seq t_Item. forall c: t_Fuse. produces'0 b bc c
-                /\ produces'0 a ab b
-              -> produces'0 b bc c
-              /\ produces'0 a ab b
-              /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
+    forall a: t_Fuse_I. forall ab: Seq.seq t_Item. forall b: t_Fuse_I. forall bc: Seq.seq t_Item. forall c: t_Fuse_I. produces_Fuse_I b bc c
+                /\ produces_Fuse_I a ab b
+              -> produces_Fuse_I b bc c
+              /\ produces_Fuse_I a ab b
+              /\ (forall result: (). produces_Fuse_I a (Seq.(++) ab bc) c -> produces_Fuse_I a (Seq.(++) ab bc) c)
 end
-module M_07_fuse__qyi15189554860034455533__produces_refl__refines (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__produces_refl__refines (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
@@ -446,156 +449,156 @@ module M_07_fuse__qyi15189554860034455533__produces_refl__refines (* <Fuse<I> as
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Fuse. forall result: (). produces'0 self (Seq.empty: Seq.seq t_Item) self
-        -> produces'0 self (Seq.empty: Seq.seq t_Item) self
+  goal refines: forall self: t_Fuse_I. forall result: (). produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
+        -> produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
 end
-module M_07_fuse__qyi15189554860034455533__next__refines (* <Fuse<I> as common::Iterator> *)
+module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate inv'0 (_1: t_Option)
+  predicate inv_Option_I (_1: t_Option_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_I [inv_Option_I x]. inv_Option_I x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
+        | None -> true
+        | Some f0 -> inv_I f0
         end
   
-  predicate inv'1 (_1: t_Fuse)
+  predicate inv_Fuse_I (_1: t_Fuse_I)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Fuse [inv'1 x]. inv'1 x = inv'0 x.t_Fuse__iter
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x = inv_Option_I x.iter
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Fuse) = inv'1 self.current /\ inv'1 self.final
+  predicate invariant_ref_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
+    inv_Fuse_I self.current /\ inv_Fuse_I self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Fuse_I
   
-  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Fuse) = invariant' _1
+  predicate inv_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_ref_Fuse_I _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_ref_Fuse_I
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_Item
+  type t_Option_Item = None'0 | Some'0 t_Item
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (self.current.t_Fuse__iter = C_None
-      \/ (exists it: MutBorrow.t t_I. completed it /\ self.current.t_Fuse__iter = C_Some (it.current)))
-    /\ self.final.t_Fuse__iter = C_None
+  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
+    /\ self.final.iter = None
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
-  predicate inv'3 (_1: t_Item)
+  predicate inv_Item (_1: t_Item)
   
-  predicate inv'4 (_1: t_Option'0)
+  predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'4 x]. inv'4 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'3 a_0
+        | None'0 -> true
+        | Some'0 f0 -> inv_Item f0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Fuse. inv'2 self
-      -> inv'2 self
-      /\ (forall result: t_Option'0. match result with
-              | C_None'0 -> completed'0 self
-              | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+  goal refines: forall self: MutBorrow.t t_Fuse_I. inv_ref_Fuse_I self
+      -> inv_ref_Fuse_I self
+      /\ (forall result: t_Option_Item. match result with
+              | None'0 -> completed_Fuse_I self
+              | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
               end
-          /\ inv'4 result
+          /\ inv_Option_Item result
         -> match result with
-            | C_None'0 -> completed'0 self
-            | C_Some'0 v -> produces'0 self.current (Seq.singleton v) self.final
+            | None'0 -> completed_Fuse_I self
+            | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
             end
-        /\ inv'4 result)
+        /\ inv_Option_Item result)
 end
-module M_07_fuse__qyi9200450106079471696__is_fused__refines (* <Fuse<I> as FusedIterator> *)
+module M_impl_FusedIterator_for_Fuse_I__is_fused__refines (* <Fuse<I> as FusedIterator> *)
   use seq.Seq
   use creusot.prelude.MutBorrow
   
   type t_I
   
-  type t_Option = C_None | C_Some t_I
+  type t_Option_I = None | Some t_I
   
-  type t_Fuse = { t_Fuse__iter: t_Option }
+  type t_Fuse_I = { iter: t_Option_I }
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces'0 (self: t_Fuse) (prod: Seq.seq t_Item) (other: t_Fuse) =
-    match self.t_Fuse__iter with
-      | C_None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.t_Fuse__iter = self.t_Fuse__iter
-      | C_Some i -> match other.t_Fuse__iter with
-        | C_Some i2 -> produces i prod i2
-        | C_None -> false
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
         end
       end
   
-  function produces_trans'0 (a: t_Fuse) (ab: Seq.seq t_Item) (b: t_Fuse) (bc: Seq.seq t_Item) (c: t_Fuse) : () = ()
+  function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
+   = ()
   
-  axiom produces_trans_spec'0:
-    forall a: t_Fuse, ab: Seq.seq t_Item, b: t_Fuse, bc: Seq.seq t_Item, c: t_Fuse. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Fuse_I_spec:
+    forall a: t_Fuse_I, ab: Seq.seq t_Item, b: t_Fuse_I, bc: Seq.seq t_Item, c: t_Fuse_I. produces_Fuse_I a ab b
+      -> produces_Fuse_I b bc c -> produces_Fuse_I a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Fuse) : () = ()
+  function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
   
-  axiom produces_refl_spec'0: forall self: t_Fuse. produces'0 self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate completed'0 (self: MutBorrow.t t_Fuse) =
-    (self.current.t_Fuse__iter = C_None
-      \/ (exists it: MutBorrow.t t_I. completed it /\ self.current.t_Fuse__iter = C_Some (it.current)))
-    /\ self.final.t_Fuse__iter = C_None
+  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
+    /\ self.final.iter = None
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: MutBorrow.t t_Fuse. forall steps: Seq.seq t_Item. forall next: t_Fuse. produces'0 self.final steps next
-            /\ completed'0 self
-          -> produces'0 self.final steps next
-          /\ completed'0 self
+    forall self: MutBorrow.t t_Fuse_I. forall steps: Seq.seq t_Item. forall next: t_Fuse_I. produces_Fuse_I self.final steps next
+            /\ completed_Fuse_I self
+          -> produces_Fuse_I self.final steps next
+          /\ completed_Fuse_I self
           /\ (forall result: (). steps = (Seq.empty: Seq.seq t_Item) -> steps = (Seq.empty: Seq.seq t_Item))
 end

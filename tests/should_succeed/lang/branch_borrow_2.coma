@@ -1,11 +1,11 @@
-module M_branch_borrow_2__f
+module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   meta "compute_max_steps" 1000000
   
@@ -27,27 +27,27 @@ module M_branch_borrow_2__f
         | br1 -> {(3: Int32.t) = (2: Int32.t)} (! bb3)
         | default -> (! bb1) ] ]
     | bb1 = s0
-      [ s0 = -{resolve y}- s1
-      | s1 = -{resolve x}- s2
+      [ s0 = -{resolve_ref_i32 y}- s1
+      | s1 = -{resolve_ref_i32 x}- s2
       | s2 = [ &z <- { z with current = (8: Int32.t) } ] s3
       | s3 = MutBorrow.borrow_final <Int32.t> {z.current} {MutBorrow.get_id z}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_12 <- _ret ] [ &z <- { z with current = _ret.final } ] s4)
       | s4 = [ &w <- _12 ] s5
       | s5 = bb6 ]
-    | bb3 = s0 [ s0 = -{resolve z}- s1 | s1 = -{resolve x}- s2 | s2 = bb4 ]
+    | bb3 = s0 [ s0 = -{resolve_ref_i32 z}- s1 | s1 = -{resolve_ref_i32 x}- s2 | s2 = bb4 ]
     | bb4 = s0
       [ s0 = [ &y <- { y with current = (7: Int32.t) } ] s1
       | s1 = MutBorrow.borrow_final <Int32.t> {y.current} {MutBorrow.get_id y}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_11 <- _ret ] [ &y <- { y with current = _ret.final } ] s2)
       | s2 = [ &w <- _11 ] s3
       | s3 = bb6 ]
-    | bb2 = s0 [ s0 = -{resolve z}- s1 | s1 = -{resolve y}- s2 | s2 = bb5 ]
+    | bb2 = s0 [ s0 = -{resolve_ref_i32 z}- s1 | s1 = -{resolve_ref_i32 y}- s2 | s2 = bb5 ]
     | bb5 = s0 [ s0 = [ &x <- { x with current = (6: Int32.t) } ] s1 | s1 = [ &w <- x ] s2 | s2 = bb6 ]
     | bb6 = s0
       [ s0 = [ &w <- { w with current = (5: Int32.t) } ] s1
-      | s1 = -{resolve w}- s2
-      | s2 = -{resolve z}- s3
-      | s3 = -{resolve y}- s4
+      | s1 = -{resolve_ref_i32 w}- s2
+      | s2 = -{resolve_ref_i32 z}- s3
+      | s3 = -{resolve_ref_i32 y}- s4
       | s4 = [ &_14 <- c = (5: Int32.t) ] s5
       | s5 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
     | bb7 = return {_0}
@@ -64,22 +64,22 @@ module M_branch_borrow_2__f
     | & _12: MutBorrow.t Int32.t = Any.any_l ()
     | & _14: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_branch_borrow_2__g
+module M_g
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_MyInt = { t_MyInt__0: UInt64.t }
+  type t_MyInt = { f0: UInt64.t }
   
-  type tuple = { f0: t_MyInt; f1: t_MyInt }
+  type tup2_MyInt_MyInt = { f0'0: t_MyInt; f1'0: t_MyInt }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
+  predicate resolve_ref_MyInt [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_MyInt
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve_ref_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_tup2_MyInt_MyInt
   
   meta "compute_max_steps" 1000000
   
@@ -87,36 +87,37 @@ module M_branch_borrow_2__g
   
   let rec g (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_2 <- { t_MyInt__0 = (10: UInt64.t) } ] s1
-      | s1 = [ &_3 <- { t_MyInt__0 = (5: UInt64.t) } ] s2
-      | s2 = [ &a <- { f0 = _2; f1 = _3 } ] s3
-      | s3 = MutBorrow.borrow_mut <tuple> {a} (fun (_ret: MutBorrow.t tuple) -> [ &b <- _ret ] [ &a <- _ret.final ] s4)
-      | s4 = MutBorrow.borrow_final <t_MyInt> {b.current.f1} {MutBorrow.inherit_id (MutBorrow.get_id b) 2}
+      [ s0 = [ &_2 <- { f0 = (10: UInt64.t) } ] s1
+      | s1 = [ &_3 <- { f0 = (5: UInt64.t) } ] s2
+      | s2 = [ &a <- { f0'0 = _2; f1'0 = _3 } ] s3
+      | s3 = MutBorrow.borrow_mut <tup2_MyInt_MyInt> {a}
+          (fun (_ret: MutBorrow.t tup2_MyInt_MyInt) -> [ &b <- _ret ] [ &a <- _ret.final ] s4)
+      | s4 = MutBorrow.borrow_final <t_MyInt> {b.current.f1'0} {MutBorrow.inherit_id (MutBorrow.get_id b) 2}
           (fun (_ret: MutBorrow.t t_MyInt) ->
-            [ &c <- _ret ] [ &b <- { b with current = { b.current with f1 = _ret.final } } ] s5)
-      | s5 = MutBorrow.borrow_final <t_MyInt> {b.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
+            [ &c <- _ret ] [ &b <- { b with current = { b.current with f1'0 = _ret.final } } ] s5)
+      | s5 = MutBorrow.borrow_final <t_MyInt> {b.current.f0'0} {MutBorrow.inherit_id (MutBorrow.get_id b) 1}
           (fun (_ret: MutBorrow.t t_MyInt) ->
-            [ &d <- _ret ] [ &b <- { b with current = { b.current with f0 = _ret.final } } ] s6)
-      | s6 = -{resolve c}- s7
-      | s7 = -{resolve d}- s8
-      | s8 = -{resolve'0 b}- s9
+            [ &d <- _ret ] [ &b <- { b with current = { b.current with f0'0 = _ret.final } } ] s6)
+      | s6 = -{resolve_ref_MyInt c}- s7
+      | s7 = -{resolve_ref_MyInt d}- s8
+      | s8 = -{resolve_ref_tup2_MyInt_MyInt b}- s9
       | s9 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & a: tuple = Any.any_l ()
+    | & a: tup2_MyInt_MyInt = Any.any_l ()
     | & _2: t_MyInt = Any.any_l ()
     | & _3: t_MyInt = Any.any_l ()
-    | & b: MutBorrow.t tuple = Any.any_l ()
+    | & b: MutBorrow.t tup2_MyInt_MyInt = Any.any_l ()
     | & c: MutBorrow.t t_MyInt = Any.any_l ()
     | & d: MutBorrow.t t_MyInt = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_branch_borrow_2__h
+module M_h
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   meta "compute_max_steps" 1000000
   
@@ -132,15 +133,18 @@ module M_branch_borrow_2__h
           (fun (_ret: MutBorrow.t Int32.t) -> [ &y <- _ret ] [ &b <- _ret.final ] s4)
       | s4 = any [ br0 -> {false} (! bb2) | br1 -> {true} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = -{resolve y}- s1 | s1 = [ &x <- { x with current = (5: Int32.t) } ] s2 | s2 = [ &w <- x ] s3 | s3 = bb3 ]
+      [ s0 = -{resolve_ref_i32 y}- s1
+      | s1 = [ &x <- { x with current = (5: Int32.t) } ] s2
+      | s2 = [ &w <- x ] s3
+      | s3 = bb3 ]
     | bb2 = s0
-      [ s0 = -{resolve x}- s1
+      [ s0 = -{resolve_ref_i32 x}- s1
       | s1 = [ &y <- { y with current = (6: Int32.t) } ] s2
       | s2 = MutBorrow.borrow_final <Int32.t> {y.current} {MutBorrow.get_id y}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_9 <- _ret ] [ &y <- { y with current = _ret.final } ] s3)
       | s3 = [ &w <- _9 ] s4
       | s4 = bb3 ]
-    | bb3 = s0 [ s0 = -{resolve w}- s1 | s1 = -{resolve y}- s2 | s2 = return {_0} ] ]
+    | bb3 = s0 [ s0 = -{resolve_ref_i32 w}- s1 | s1 = -{resolve_ref_i32 y}- s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()

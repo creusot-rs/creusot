@@ -1,11 +1,11 @@
-module M_prophecy__f
+module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   meta "compute_max_steps" 1000000
   
@@ -17,7 +17,7 @@ module M_prophecy__f
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &y <- _ret ] [ &x <- _ret.final ] s2)
       | s2 = [ &y <- { y with current = (5: Int32.t) } ] s3
-      | s3 = -{resolve y}- s4
+      | s3 = -{resolve_ref_i32 y}- s4
       | s4 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: Int32.t = Any.any_l () | & y: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

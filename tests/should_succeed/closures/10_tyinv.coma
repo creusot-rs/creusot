@@ -1,112 +1,115 @@
-module M_10_tyinv__f
+module M_f
   use creusot.int.UInt32
   use creusot.prelude.Any
   
   type t_T
   
-  type t_Zero = { t_Zero__0: UInt32.t; t_Zero__1: t_T }
+  type t_Zero_T = { f0: UInt32.t; f1: t_T }
   
-  predicate invariant' (self: t_Zero) = UInt32.t'int self.t_Zero__0 = 0
+  predicate invariant_Zero_T (self: t_Zero_T) = UInt32.t'int self.f0 = 0
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate inv'0 (_1: t_Zero)
+  predicate inv_Zero_T (_1: t_Zero_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zero [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Zero__1)
+  axiom inv_axiom [@rewrite]: forall x: t_Zero_T [inv_Zero_T x]. inv_Zero_T x = (invariant_Zero_T x /\ inv_T x.f1)
   
-  predicate resolve (_1: t_T)
+  predicate resolve_T (_1: t_T)
   
-  predicate resolve'0 (_1: t_Zero)
+  predicate resolve_Zero_T (_1: t_Zero_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Zero [resolve'0 x]. resolve'0 x = resolve x.t_Zero__1
+  axiom resolve_axiom [@rewrite]: forall x: t_Zero_T [resolve_Zero_T x]. resolve_Zero_T x = resolve_T x.f1
   
-  type closure0 = { c0: t_Zero; c1: t_Zero }
+  type closure0 = { c0: t_Zero_T; c1: t_Zero_T }
   
-  type closure1 = { c0'0: t_Zero }
+  type closure1 = { c0'0: t_Zero_T }
   
-  predicate invariant''0 [@inline:trivial] (self: t_Zero) = inv'0 self
+  predicate invariant_ref_Zero_T [@inline:trivial] (self: t_Zero_T) = inv_Zero_T self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_Zero_T
   
-  predicate inv'1 [@inline:trivial] (_1: t_Zero) = invariant''0 _1
+  predicate inv_ref_Zero_T [@inline:trivial] (_1: t_Zero_T) = invariant_ref_Zero_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_Zero_T
   
-  predicate inv'2 [@inline:trivial] (_1: closure1) = let {c0'0 = x0} = _1 in inv'1 x0
+  predicate inv_closure1 [@inline:trivial] (_1: closure1) = let {c0'0 = x0} = _1 in inv_ref_Zero_T x0
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_closure1
   
-  predicate invariant''1 [@inline:trivial] (self: closure1) = inv'2 self
+  predicate invariant_ref_closure1 [@inline:trivial] (self: closure1) = inv_closure1 self
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant_ref_closure1
   
-  predicate inv'3 [@inline:trivial] (_1: closure1) = invariant''1 _1
+  predicate inv_ref_closure1 [@inline:trivial] (_1: closure1) = invariant_ref_closure1 _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_ref_closure1
   
-  let rec closure1 (self: closure1) (return (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'3 self}
+  let rec closure1 (self: closure1) (return (x: UInt32.t)) =
+    {[@expl:closure 'self' type invariant] inv_ref_closure1 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] UInt32.t'int self.c0'0.t_Zero__0 = 0} s1
+      [ s0 = {[@expl:assertion] UInt32.t'int self.c0'0.f0 = 0} s1
       | s1 = [ &_5 <- self.c0'0 ] s2
-      | s2 = [ &res <- _5.t_Zero__0 ] s3
+      | s2 = [ &res <- _5.f0 ] s3
       | s3 = [ &_0 <- res ] s4
       | s4 = return {_0} ] ]
     [ & _0: UInt32.t = Any.any_l ()
     | & self: closure1 = self
     | & res: UInt32.t = Any.any_l ()
-    | & _5: t_Zero = Any.any_l () ])
+    | & _5: t_Zero_T = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
-  predicate inv'4 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1} = _1 in inv'1 x0 /\ inv'1 x1
+  predicate inv_closure0 [@inline:trivial] (_1: closure0) =
+    let {c0 = x0; c1 = x1} = _1 in inv_ref_Zero_T x0 /\ inv_ref_Zero_T x1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_closure0
   
-  predicate invariant''2 [@inline:trivial] (self: closure0) = inv'4 self
+  predicate invariant_ref_closure0 [@inline:trivial] (self: closure0) = inv_closure0 self
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_closure0
   
-  predicate inv'5 [@inline:trivial] (_1: closure0) = invariant''2 _1
+  predicate inv_ref_closure0 [@inline:trivial] (_1: closure0) = invariant_ref_closure0 _1
   
-  meta "rewrite_def" predicate inv'5
+  meta "rewrite_def" predicate inv_ref_closure0
   
-  let rec closure0 (self: closure0) (return (x: UInt32.t)) = {[@expl:closure 'self' type invariant] inv'5 self}
+  let rec closure0 (self: closure0) (return (x: UInt32.t)) =
+    {[@expl:closure 'self' type invariant] inv_ref_closure0 self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] UInt32.t'int self.c0.t_Zero__0 = 0} s1
+      [ s0 = {[@expl:assertion] UInt32.t'int self.c0.f0 = 0} s1
       | s1 = [ &clos2 <- { c0'0 = self.c1 } ] s2
       | s2 = closure1 {clos2} (fun (_ret: UInt32.t) -> [ &_7 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = [ &_10 <- self.c0 ] s1 | s1 = [ &res <- _10.t_Zero__0 ] s2 | s2 = [ &_0 <- res ] s3 | s3 = return {_0} ] ]
+      [ s0 = [ &_10 <- self.c0 ] s1 | s1 = [ &res <- _10.f0 ] s2 | s2 = [ &_0 <- res ] s3 | s3 = return {_0} ] ]
     [ & _0: UInt32.t = Any.any_l ()
     | & self: closure0 = self
     | & res: UInt32.t = Any.any_l ()
     | & clos2: closure1 = Any.any_l ()
     | & _7: UInt32.t = Any.any_l ()
     | & _9: () = Any.any_l ()
-    | & _10: t_Zero = Any.any_l () ])
+    | & _10: t_Zero_T = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f (x: t_Zero) (y: t_Zero) (return (x'0: ())) = {[@expl:f 'x' type invariant] inv'0 x}
-    {[@expl:f 'y' type invariant] inv'0 y}
+  let rec f_T (x: t_Zero_T) (y: t_Zero_T) (return (x'0: ())) = {[@expl:f 'x' type invariant] inv_Zero_T x}
+    {[@expl:f 'y' type invariant] inv_Zero_T y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv'0 x} s1
-      | s1 = -{resolve'0 x}- s2
-      | s2 = {[@expl:type invariant] inv'0 y} s3
-      | s3 = -{resolve'0 y}- s4
+      [ s0 = {[@expl:type invariant] inv_Zero_T x} s1
+      | s1 = -{resolve_Zero_T x}- s2
+      | s2 = {[@expl:type invariant] inv_Zero_T y} s3
+      | s3 = -{resolve_Zero_T y}- s4
       | s4 = [ &clos <- { c0 = x; c1 = y } ] s5
       | s5 = closure0 {clos} (fun (_ret: UInt32.t) -> [ &_6 <- _ret ] s6)
       | s6 = bb3 ]
     | bb3 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x: t_Zero = x
-    | & y: t_Zero = y
+    | & x: t_Zero_T = x
+    | & y: t_Zero_T = y
     | & clos: closure0 = Any.any_l ()
     | & _6: UInt32.t = Any.any_l ()
     | & _8: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]

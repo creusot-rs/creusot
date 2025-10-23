@@ -1,56 +1,56 @@
-module M_incorrect_variant__incorrect_recursion
+module M_incorrect_recursion
   use creusot.int.Int32
   use creusot.prelude.Bool
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      C_Less
+  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int32.t) (y: Int32.t) : ()
+  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
   
-  function antisym2 (x: Int32.t) (y: Int32.t) : ()
+  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
   
-  function antisym1 (x: Int32.t) (y: Int32.t) : ()
+  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
   
-  function trans (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
+      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
   
-  function refl (x: Int32.t) : ()
+  function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_spec: forall x: Int32.t. cmp_log x x = C_Equal
+  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
   
-  function cmp_gt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
   
-  function cmp_ge_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
   
-  function cmp_lt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
   
-  function cmp_le_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
   
-  predicate well_founded_relation [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
+  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_i32
   
   meta "compute_max_steps" 1000000
   
@@ -99,15 +99,15 @@ module M_incorrect_variant__incorrect_recursion
     | & _14: Int32.t = Any.any_l ()
     | & _16: Int32.t = Any.any_l () ]
     [ incorrect_recursion (x: Int32.t) (_ret (_r: ())) ->
-    {[@expl:function variant] well_founded_relation function_variant x}
+    {[@expl:function variant] well_founded_relation_i32 function_variant x}
       incorrect_recursion {x} (_ret) ] [ function_variant: Int32.t = x ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_incorrect_variant__incorrect_recursion_logic
+module M_incorrect_recursion_logic
   use mach.int.Int
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_Int
   
   meta "compute_max_steps" 1000000
   
@@ -115,75 +115,75 @@ module M_incorrect_variant__incorrect_recursion_logic
   
   constant x : int
   
-  function incorrect_recursion_logic (x: int) : int
+  function incorrect_recursion (x: int) : int
   
-  goal vc_incorrect_recursion_logic: if x = 0 then
+  goal vc_incorrect_recursion: if x = 0 then
       [@expl:incorrect_recursion_logic ensures] 0 = 0
     else
       if Int.mod x 2 = 0 then
-        well_founded_relation x (x + 1)
-        /\ (incorrect_recursion_logic (x + 1) = 0
-        -> ([@expl:incorrect_recursion_logic ensures] incorrect_recursion_logic (x + 1) = 0))
+        well_founded_relation_Int x (x + 1)
+        /\ (incorrect_recursion (x + 1) = 0
+        -> ([@expl:incorrect_recursion_logic ensures] incorrect_recursion (x + 1) = 0))
       else
-        well_founded_relation x (x - 1)
-        /\ (incorrect_recursion_logic (x - 1) = 0
-        -> ([@expl:incorrect_recursion_logic ensures] incorrect_recursion_logic (x - 1) = 0))
+        well_founded_relation_Int x (x - 1)
+        /\ (incorrect_recursion (x - 1) = 0
+        -> ([@expl:incorrect_recursion_logic ensures] incorrect_recursion (x - 1) = 0))
     
 
 end
-module M_incorrect_variant__incorrect_loop_variant
+module M_incorrect_loop_variant
   use creusot.int.Int32
   use creusot.prelude.Bool
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      C_Less
+  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int32.t) (y: Int32.t) : ()
+  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
   
-  function antisym2 (x: Int32.t) (y: Int32.t) : ()
+  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
   
-  function antisym1 (x: Int32.t) (y: Int32.t) : ()
+  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
   
-  function trans (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
+      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
   
-  function refl (x: Int32.t) : ()
+  function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_spec: forall x: Int32.t. cmp_log x x = C_Equal
+  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
   
-  function cmp_gt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
   
-  function cmp_ge_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
   
-  function cmp_lt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
   
-  function cmp_le_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
   
-  predicate well_founded_relation [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
+  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_i32
   
   meta "compute_max_steps" 1000000
   
@@ -192,7 +192,7 @@ module M_incorrect_variant__incorrect_loop_variant
   let rec incorrect_loop_variant (x: Int32.t) (return (x'0: ())) = (! bb0
     [ bb0 = bb1
     | bb1 = bb1invariant
-      [ bb1 = {[@expl:loop variant] well_founded_relation variant_old_bb1 x} bb1invariant
+      [ bb1 = {[@expl:loop variant] well_founded_relation_i32 variant_old_bb1 x} bb1invariant
       | bb1invariant = (! [ &variant_old_bb1 <- x ] s0
         [ s0 = bb2 ])
         [ bb2 = s0

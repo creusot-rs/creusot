@@ -1,4 +1,4 @@
-module M_collections__roundtrip_hashmap_into_iter
+module M_roundtrip_hashmap_into_iter
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
@@ -6,338 +6,389 @@ module M_collections__roundtrip_hashmap_into_iter
   use map.Const
   use creusot.prelude.Any
   
-  type t_HashMap
+  type t_HashMap_K_V_RandomState
   
-  type t_IntoIter
+  type t_IntoIter_K_V
   
-  predicate inv (_1: t_HashMap)
+  predicate inv_HashMap_K_V_RandomState (_1: t_HashMap_K_V_RandomState)
   
-  predicate inv'0 (_1: t_IntoIter)
+  predicate inv_IntoIter_K_V (_1: t_IntoIter_K_V)
   
-  type t_FMap
+  type t_FMap_DeepModelTy_V
   
-  function view (self: t_HashMap) : t_FMap
+  function view_HashMap_K_V_RandomState (self: t_HashMap_K_V_RandomState) : t_FMap_DeepModelTy_V
   
-  function view'0 (self: t_IntoIter) : t_FMap
+  function view_IntoIter_K_V (self: t_IntoIter_K_V) : t_FMap_DeepModelTy_V
   
-  let rec into_iter (self_: t_HashMap) (return (x: t_IntoIter)) = {[@expl:into_iter 'self_' type invariant] inv self_}
-    any [ return (result: t_IntoIter) -> {inv'0 result} {view self_ = view'0 result} (! return {result}) ]
-  
-  predicate resolve (_1: t_IntoIter)
-  
-  type t_K
-  
-  type t_V
-  
-  type tuple = { f0: t_K; f1: t_V }
-  
-  function len (self: t_FMap) : int
-  
-  axiom len_spec: forall self: t_FMap. len self >= 0
-  
-  predicate contains (self: Seq.seq tuple) (x: tuple) =
-    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  type t_DeepModelTy
-  
-  type t_Option = C_None | C_Some t_V
-  
-  function view'1 (self: t_FMap) : Map.map t_DeepModelTy t_Option
-  
-  function get [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option = Map.get (view'1 self) k
-  
-  meta "rewrite_def" function get
-  
-  function deep_model (self: t_K) : t_DeepModelTy
-  
-  predicate produces [@inline:trivial] (self: t_IntoIter) (visited: Seq.seq tuple) (o: t_IntoIter) =
-    len (view'0 self) = Seq.length visited + len (view'0 o)
-    /\ (forall k: t_K, v: t_V. contains visited { f0 = k; f1 = v }
-        -> get (view'0 self) (deep_model k) = C_Some v /\ get (view'0 o) (deep_model k) = C_None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 o) k = C_Some v
-        -> get (view'0 self) k = C_Some v
-        /\ not (exists k2: t_K, v2: t_V. deep_model k2 = k /\ contains visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 self) k = C_Some v
-        -> (exists k1: t_K. deep_model k1 = k /\ contains visited { f0 = k1; f1 = v }) \/ get (view'0 o) k = C_Some v)
-    /\ (forall i1: int, i2: int. 0 <= i1
-        /\ i1 < Seq.length visited
-        /\ 0 <= i2 /\ i2 < Seq.length visited /\ deep_model (Seq.get visited i1).f0 = deep_model (Seq.get visited i2).f0
-      -> i1 = i2)
-  
-  meta "rewrite_def" predicate produces
-  
-  function produces_trans (a: t_IntoIter) (ab: Seq.seq tuple) (b: t_IntoIter) (bc: Seq.seq tuple) (c: t_IntoIter) : () =
-    ()
-  
-  axiom produces_trans_spec:
-    forall a: t_IntoIter, ab: Seq.seq tuple, b: t_IntoIter, bc: Seq.seq tuple, c: t_IntoIter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
-  
-  function produces_refl (self: t_IntoIter) : () = ()
-  
-  axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq tuple) self
-  
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve'0
-  
-  predicate ext_eq (self: t_FMap) (other: t_FMap) = forall k: t_DeepModelTy. get self k = get other k
-  
-  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ext_eq self other = (self = other)
-  
-  constant empty : t_FMap
-  
-  axiom empty_spec: len empty = 0
-  
-  axiom empty_spec'0: view'1 empty = Const.const (C_None)
-  
-  predicate is_empty (self: t_FMap) = ext_eq self empty
-  
-  predicate completed (self: MutBorrow.t t_IntoIter) = resolve'0 self /\ is_empty (view'0 self.current)
-  
-  predicate from_iter_post (prod: Seq.seq tuple) (res: t_HashMap) =
-    forall k: t_DeepModelTy, v: t_V. (get (view res) k = C_Some v)
-      = (exists i: int, k1: t_K. 0 <= i
-        /\ i < Seq.length prod
-        /\ deep_model k1 = k
-        /\ Seq.get prod i = { f0 = k1; f1 = v }
-        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model (Seq.get prod j).f0 <> k))
-  
-  let rec collect (self_: t_IntoIter) (return (x: t_HashMap)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
+  let rec into_iter_HashMap_K_V_RandomState (self_: t_HashMap_K_V_RandomState) (return (x: t_IntoIter_K_V)) =
+    {[@expl:into_iter 'self_' type invariant] inv_HashMap_K_V_RandomState self_}
     any
-    [ return (result: t_HashMap) -> {inv result}
-      {exists done': MutBorrow.t t_IntoIter, prod: Seq.seq tuple. resolve done'.final
-        /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_IntoIter_K_V) -> {inv_IntoIter_K_V result}
+      {view_HashMap_K_V_RandomState self_ = view_IntoIter_K_V result}
       (! return {result}) ]
   
-  predicate contains'0 [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) = get self k <> C_None
-  
-  meta "rewrite_def" predicate contains'0
-  
-  predicate index_logic [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
-  
-  meta "rewrite_def" predicate index_logic
-  
-  function such_that (p: Map.map t_V bool) : t_V
-  
-  axiom such_that_spec: forall p: Map.map t_V bool. (exists x: t_V. index_logic p x) -> index_logic p (such_that p)
-  
-  function unwrap_logic (self: t_Option) : t_V = match self with
-      | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_V) -> true)
-      end
-  
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V = unwrap_logic (get self k)
-  
-  meta "rewrite_def" function lookup
-  
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V = lookup self key
-  
-  meta "rewrite_def" function index_logic'0
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec roundtrip_hashmap_into_iter (xs: t_HashMap) (return (x: t_HashMap)) =
-    {[@expl:roundtrip_hashmap_into_iter 'xs' type invariant] inv xs}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &xs_snap <- xs ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = into_iter {xs} (fun (_ret: t_IntoIter) -> [ &it <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &it0 <- it ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = collect {it} (fun (_ret: t_HashMap) -> [ &r <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = {[@expl:assertion] exists prod: Seq.seq tuple, it1: MutBorrow.t t_IntoIter. completed it1
-          /\ produces it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: t_V. (get (view r) k = C_Some v)
-            = (exists k1: t_K. deep_model k1 = k /\ contains prod { f0 = k1; f1 = v }))}
-        s1
-      | s1 = {[@expl:assertion] forall k: t_DeepModelTy. contains'0 (view r) k = contains'0 (view xs_snap) k} s2
-      | s2 = {[@expl:assertion] forall k: t_DeepModelTy. index_logic'0 (view r) k = index_logic'0 (view xs_snap) k} s3
-      | s3 = {[@expl:assertion] ext_eq (view r) (view xs_snap)} s4
-      | s4 = [ &_0 <- r ] s5
-      | s5 = bb7 ]
-    | bb7 = return {_0} ]
-    [ & _0: t_HashMap = Any.any_l ()
-    | & xs: t_HashMap = xs
-    | & xs_snap: t_HashMap = Any.any_l ()
-    | & it: t_IntoIter = Any.any_l ()
-    | & it0: t_IntoIter = Any.any_l ()
-    | & r: t_HashMap = Any.any_l () ])
-    [ return (result: t_HashMap) -> {[@expl:roundtrip_hashmap_into_iter result type invariant] inv result}
-      {[@expl:roundtrip_hashmap_into_iter ensures] view result = view xs}
-      (! return {result}) ]
-end
-module M_collections__roundtrip_hashmap_iter
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use mach.int.Int
-  use map.Map
-  use map.Const
-  use creusot.prelude.Any
-  
-  type t_HashMap
-  
-  type t_Iter
-  
-  predicate inv (_1: t_HashMap)
-  
-  predicate invariant' [@inline:trivial] (self: t_HashMap) = inv self
-  
-  meta "rewrite_def" predicate invariant'
-  
-  predicate inv'0 [@inline:trivial] (_1: t_HashMap) = invariant' _1
-  
-  meta "rewrite_def" predicate inv'0
-  
-  predicate inv'1 (_1: t_Iter)
-  
-  type t_FMap
-  
-  function view (self: t_HashMap) : t_FMap
-  
-  function view'0 (self: t_Iter) : t_FMap
-  
-  let rec iter (self_: t_HashMap) (return (x: t_Iter)) = {[@expl:iter 'self_' type invariant] inv'0 self_}
-    any [ return (result: t_Iter) -> {inv'1 result} {view self_ = view'0 result} (! return {result}) ]
-  
-  type t_HashMap'0
-  
-  predicate inv'2 (_1: t_HashMap'0)
-  
-  predicate resolve (_1: t_Iter)
+  predicate resolve_IntoIter_K_V (_1: t_IntoIter_K_V)
   
   type t_K
   
   type t_V
   
-  type tuple = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0: t_K; f1: t_V }
   
-  function len (self: t_FMap) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_V) : int
   
-  axiom len_spec: forall self: t_FMap. len self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
   
-  predicate contains (self: Seq.seq tuple) (x: tuple) =
+  predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   type t_DeepModelTy
   
-  type t_Option = C_None | C_Some t_V
+  type t_Option_V = None | Some t_V
   
-  function view'1 (self: t_FMap) : Map.map t_DeepModelTy t_Option
+  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
-  function get [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option = Map.get (view'1 self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+    Map.get (view_FMap_DeepModelTy_V self) k
   
-  meta "rewrite_def" function get
+  meta "rewrite_def" function get_DeepModelTy
   
-  function deep_model (self: t_K) : t_DeepModelTy
+  function deep_model_K (self: t_K) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model self
-  
-  meta "rewrite_def" function deep_model'0
-  
-  predicate produces [@inline:trivial] (self: t_Iter) (visited: Seq.seq tuple) (o: t_Iter) =
-    len (view'0 self) = Seq.length visited + len (view'0 o)
-    /\ (forall k: t_K, v: t_V. contains visited { f0 = k; f1 = v }
-        -> get (view'0 self) (deep_model'0 k) = C_Some v /\ get (view'0 o) (deep_model'0 k) = C_None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 o) k = C_Some v
-        -> get (view'0 self) k = C_Some v
-        /\ not (exists k2: t_K, v2: t_V. deep_model'0 k2 = k /\ contains visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get (view'0 self) k = C_Some v
-        -> (exists k2: t_K. deep_model'0 k2 = k /\ contains visited { f0 = k2; f1 = v }) \/ get (view'0 o) k = C_Some v)
+  predicate produces_IntoIter_K_V [@inline:trivial] (self: t_IntoIter_K_V) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V) =
+    len_DeepModelTy (view_IntoIter_K_V self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V o)
+    /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
+        -> get_DeepModelTy (view_IntoIter_K_V self) (deep_model_K k) = Some v
+        /\ get_DeepModelTy (view_IntoIter_K_V o) (deep_model_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V o) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
+        \/ get_DeepModelTy (view_IntoIter_K_V o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
-        /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1).f0 = deep_model'0 (Seq.get visited i2).f0
+        /\ i2 < Seq.length visited /\ deep_model_K (Seq.get visited i1).f0 = deep_model_K (Seq.get visited i2).f0
       -> i1 = i2)
   
-  meta "rewrite_def" predicate produces
+  meta "rewrite_def" predicate produces_IntoIter_K_V
   
-  function produces_trans (a: t_Iter) (ab: Seq.seq tuple) (b: t_Iter) (bc: Seq.seq tuple) (c: t_Iter) : () = ()
+  function produces_trans_IntoIter_K_V (a: t_IntoIter_K_V) (ab: Seq.seq tup2_K_V) (b: t_IntoIter_K_V) (bc: Seq.seq tup2_K_V) (c: t_IntoIter_K_V) : ()
+   = ()
   
-  axiom produces_trans_spec:
-    forall a: t_Iter, ab: Seq.seq tuple, b: t_Iter, bc: Seq.seq tuple, c: t_Iter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_IntoIter_K_V_spec:
+    forall a: t_IntoIter_K_V, ab: Seq.seq tup2_K_V, b: t_IntoIter_K_V, bc: Seq.seq tup2_K_V, c: t_IntoIter_K_V. produces_IntoIter_K_V a ab b
+      -> produces_IntoIter_K_V b bc c -> produces_IntoIter_K_V a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Iter) : () = ()
+  function produces_refl_IntoIter_K_V (self: t_IntoIter_K_V) : () = ()
   
-  axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq tuple) self
+  axiom produces_refl_IntoIter_K_V_spec:
+    forall self: t_IntoIter_K_V. produces_IntoIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Iter) = _1.final = _1.current
+  predicate resolve_ref_IntoIter_K_V [@inline:trivial] (_1: MutBorrow.t t_IntoIter_K_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_IntoIter_K_V
   
-  predicate ext_eq (self: t_FMap) (other: t_FMap) = forall k: t_DeepModelTy. get self k = get other k
+  predicate ext_eq_DeepModelTy (self: t_FMap_DeepModelTy_V) (other: t_FMap_DeepModelTy_V) =
+    forall k: t_DeepModelTy. get_DeepModelTy self k = get_DeepModelTy other k
   
-  axiom ext_eq_spec: forall self: t_FMap, other: t_FMap. ext_eq self other = (self = other)
+  axiom ext_eq_DeepModelTy_spec:
+    forall self: t_FMap_DeepModelTy_V, other: t_FMap_DeepModelTy_V. ext_eq_DeepModelTy self other = (self = other)
   
-  constant empty : t_FMap
+  constant empty_DeepModelTy : t_FMap_DeepModelTy_V
   
-  axiom empty_spec: len empty = 0
+  axiom empty_DeepModelTy_spec: len_DeepModelTy empty_DeepModelTy = 0
   
-  axiom empty_spec'0: view'1 empty = Const.const (C_None)
+  axiom empty_DeepModelTy_spec'0: view_FMap_DeepModelTy_V empty_DeepModelTy = Const.const (None)
   
-  predicate is_empty (self: t_FMap) = ext_eq self empty
+  predicate is_empty_DeepModelTy (self: t_FMap_DeepModelTy_V) = ext_eq_DeepModelTy self empty_DeepModelTy
   
-  predicate completed (self: MutBorrow.t t_Iter) = resolve'0 self /\ is_empty (view'0 self.current)
+  predicate completed_IntoIter_K_V (self: MutBorrow.t t_IntoIter_K_V) =
+    resolve_ref_IntoIter_K_V self /\ is_empty_DeepModelTy (view_IntoIter_K_V self.current)
   
-  type t_FMap'0
-  
-  type t_Option'0 = C_None'0 | C_Some'0 t_V
-  
-  function view'2 (self: t_FMap'0) : Map.map t_DeepModelTy t_Option'0
-  
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : t_Option'0 = Map.get (view'2 self) k
-  
-  meta "rewrite_def" function get'0
-  
-  function view'3 (self: t_HashMap'0) : t_FMap'0
-  
-  predicate from_iter_post (prod: Seq.seq tuple) (res: t_HashMap'0) =
-    forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 res) k = C_Some'0 v)
+  predicate from_iter_post_HashMap_K_V_RandomState (prod: Seq.seq tup2_K_V) (res: t_HashMap_K_V_RandomState) =
+    forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState res) k = Some v)
       = (exists i: int, k1: t_K. 0 <= i
         /\ i < Seq.length prod
-        /\ deep_model'0 k1 = k
+        /\ deep_model_K k1 = k
         /\ Seq.get prod i = { f0 = k1; f1 = v }
-        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model'0 (Seq.get prod j).f0 <> k))
+        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))
   
-  let rec collect (self_: t_Iter) (return (x: t_HashMap'0)) = {[@expl:collect 'self_' type invariant] inv'1 self_}
+  let rec collect_IntoIter_K_V (self_: t_IntoIter_K_V) (return (x: t_HashMap_K_V_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_IntoIter_K_V self_}
     any
-    [ return (result: t_HashMap'0) -> {inv'2 result}
-      {exists done': MutBorrow.t t_Iter, prod: Seq.seq tuple. resolve done'.final
-        /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashMap_K_V_RandomState) -> {inv_HashMap_K_V_RandomState result}
+      {exists done': MutBorrow.t t_IntoIter_K_V, prod: Seq.seq tup2_K_V. resolve_IntoIter_K_V done'.final
+        /\ completed_IntoIter_K_V done'
+        /\ produces_IntoIter_K_V self_ prod done'.current /\ from_iter_post_HashMap_K_V_RandomState prod result}
+      (! return {result}) ]
+  
+  predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
+    get_DeepModelTy self k <> None
+  
+  meta "rewrite_def" predicate contains_DeepModelTy
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
+      end
+  
+  function lookup_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_V =
+    unwrap_Option_V (get_DeepModelTy self k)
+  
+  meta "rewrite_def" function lookup_DeepModelTy
+  
+  function index_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) (key: t_DeepModelTy) : t_V =
+    lookup_DeepModelTy self key
+  
+  meta "rewrite_def" function index_FMap_DeepModelTy_V
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec roundtrip_hashmap_into_iter_K (xs: t_HashMap_K_V_RandomState) (return (x: t_HashMap_K_V_RandomState)) =
+    {[@expl:roundtrip_hashmap_into_iter 'xs' type invariant] inv_HashMap_K_V_RandomState xs}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &xs_snap <- xs ] s1 | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = into_iter_HashMap_K_V_RandomState {xs} (fun (_ret: t_IntoIter_K_V) -> [ &it <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = [ &it0 <- it ] s1 | s1 = bb3 ]
+    | bb3 = s0
+      [ s0 = collect_IntoIter_K_V {it} (fun (_ret: t_HashMap_K_V_RandomState) -> [ &r <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0
+      [ s0 =
+        {[@expl:assertion] exists prod: Seq.seq tup2_K_V, it1: MutBorrow.t t_IntoIter_K_V. completed_IntoIter_K_V it1
+          /\ produces_IntoIter_K_V it0 prod it1.current
+          /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState r) k = Some v)
+            = (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V prod { f0 = k1; f1 = v }))}
+        s1
+      | s1 = {[@expl:assertion] forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState r) k
+          = contains_DeepModelTy (view_HashMap_K_V_RandomState xs_snap) k}
+        s2
+      | s2 = {[@expl:assertion] forall k: t_DeepModelTy. index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState r) k
+          = index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState xs_snap) k}
+        s3
+      | s3 =
+        {[@expl:assertion] ext_eq_DeepModelTy (view_HashMap_K_V_RandomState r) (view_HashMap_K_V_RandomState xs_snap)}
+        s4
+      | s4 = [ &_0 <- r ] s5
+      | s5 = bb7 ]
+    | bb7 = return {_0} ]
+    [ & _0: t_HashMap_K_V_RandomState = Any.any_l ()
+    | & xs: t_HashMap_K_V_RandomState = xs
+    | & xs_snap: t_HashMap_K_V_RandomState = Any.any_l ()
+    | & it: t_IntoIter_K_V = Any.any_l ()
+    | & it0: t_IntoIter_K_V = Any.any_l ()
+    | & r: t_HashMap_K_V_RandomState = Any.any_l () ])
+    [ return (result: t_HashMap_K_V_RandomState) ->
+    {[@expl:roundtrip_hashmap_into_iter result type invariant] inv_HashMap_K_V_RandomState result}
+      {[@expl:roundtrip_hashmap_into_iter ensures] view_HashMap_K_V_RandomState result
+      = view_HashMap_K_V_RandomState xs}
+      (! return {result}) ]
+end
+module M_roundtrip_hashmap_iter
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use mach.int.Int
+  use map.Map
+  use map.Const
+  use creusot.prelude.Any
+  
+  type t_HashMap_K_V_RandomState
+  
+  type t_Iter_K_V
+  
+  predicate inv_HashMap_K_V_RandomState (_1: t_HashMap_K_V_RandomState)
+  
+  predicate invariant_ref_HashMap_K_V_RandomState [@inline:trivial] (self: t_HashMap_K_V_RandomState) =
+    inv_HashMap_K_V_RandomState self
+  
+  meta "rewrite_def" predicate invariant_ref_HashMap_K_V_RandomState
+  
+  predicate inv_ref_HashMap_K_V_RandomState [@inline:trivial] (_1: t_HashMap_K_V_RandomState) =
+    invariant_ref_HashMap_K_V_RandomState _1
+  
+  meta "rewrite_def" predicate inv_ref_HashMap_K_V_RandomState
+  
+  predicate inv_Iter_K_V (_1: t_Iter_K_V)
+  
+  type t_FMap_DeepModelTy_V
+  
+  function view_HashMap_K_V_RandomState (self: t_HashMap_K_V_RandomState) : t_FMap_DeepModelTy_V
+  
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_DeepModelTy_V
+  
+  let rec iter_K (self_: t_HashMap_K_V_RandomState) (return (x: t_Iter_K_V)) =
+    {[@expl:iter 'self_' type invariant] inv_ref_HashMap_K_V_RandomState self_}
+    any
+    [ return (result: t_Iter_K_V) -> {inv_Iter_K_V result}
+      {view_HashMap_K_V_RandomState self_ = view_Iter_K_V result}
+      (! return {result}) ]
+  
+  type t_HashMap_ref_K_ref_V_RandomState
+  
+  predicate inv_HashMap_ref_K_ref_V_RandomState (_1: t_HashMap_ref_K_ref_V_RandomState)
+  
+  predicate resolve_Iter_K_V (_1: t_Iter_K_V)
+  
+  type t_K
+  
+  type t_V
+  
+  type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+  
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_V) : int
+  
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
+  
+  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  type t_DeepModelTy
+  
+  type t_Option_V = None | Some t_V
+  
+  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+    Map.get (view_FMap_DeepModelTy_V self) k
+  
+  meta "rewrite_def" function get_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
+  
+  meta "rewrite_def" function deep_model_ref_K
+  
+  predicate produces_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_Iter_K_V) =
+    len_DeepModelTy (view_Iter_K_V self) = Seq.length visited + len_DeepModelTy (view_Iter_K_V o)
+    /\ (forall k: t_K, v: t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+        -> get_DeepModelTy (view_Iter_K_V self) (deep_model_ref_K k) = Some v
+        /\ get_DeepModelTy (view_Iter_K_V o) (deep_model_ref_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V o) k = Some v
+        -> get_DeepModelTy (view_Iter_K_V self) k = Some v
+        /\ not (exists k2: t_K, v2: t_V. deep_model_ref_K k2 = k
+          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V self) k = Some v
+        -> (exists k2: t_K. deep_model_ref_K k2 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v })
+        \/ get_DeepModelTy (view_Iter_K_V o) k = Some v)
+    /\ (forall i1: int, i2: int. 0 <= i1
+        /\ i1 < Seq.length visited
+        /\ 0 <= i2
+        /\ i2 < Seq.length visited
+        /\ deep_model_ref_K (Seq.get visited i1).f0 = deep_model_ref_K (Seq.get visited i2).f0 -> i1 = i2)
+  
+  meta "rewrite_def" predicate produces_Iter_K_V
+  
+  function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_Iter_K_V) : ()
+   = ()
+  
+  axiom produces_trans_Iter_K_V_spec:
+    forall a: t_Iter_K_V, ab: Seq.seq tup2_ref_K_ref_V, b: t_Iter_K_V, bc: Seq.seq tup2_ref_K_ref_V, c: t_Iter_K_V. produces_Iter_K_V a ab b
+      -> produces_Iter_K_V b bc c -> produces_Iter_K_V a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_K_V (self: t_Iter_K_V) : () = ()
+  
+  axiom produces_refl_Iter_K_V_spec:
+    forall self: t_Iter_K_V. produces_Iter_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
+  
+  predicate resolve_ref_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_Iter_K_V
+  
+  predicate ext_eq_DeepModelTy (self: t_FMap_DeepModelTy_V) (other: t_FMap_DeepModelTy_V) =
+    forall k: t_DeepModelTy. get_DeepModelTy self k = get_DeepModelTy other k
+  
+  axiom ext_eq_DeepModelTy_spec:
+    forall self: t_FMap_DeepModelTy_V, other: t_FMap_DeepModelTy_V. ext_eq_DeepModelTy self other = (self = other)
+  
+  constant empty_DeepModelTy : t_FMap_DeepModelTy_V
+  
+  axiom empty_DeepModelTy_spec: len_DeepModelTy empty_DeepModelTy = 0
+  
+  axiom empty_DeepModelTy_spec'0: view_FMap_DeepModelTy_V empty_DeepModelTy = Const.const (None)
+  
+  predicate is_empty_DeepModelTy (self: t_FMap_DeepModelTy_V) = ext_eq_DeepModelTy self empty_DeepModelTy
+  
+  predicate completed_Iter_K_V (self: MutBorrow.t t_Iter_K_V) =
+    resolve_ref_Iter_K_V self /\ is_empty_DeepModelTy (view_Iter_K_V self.current)
+  
+  type t_FMap_DeepModelTy_ref_V
+  
+  type t_Option_ref_V = None'0 | Some'0 t_V
+  
+  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
+  
+  function get_DeepModelTy'0 [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
+    Map.get (view_FMap_DeepModelTy_ref_V self) k
+  
+  meta "rewrite_def" function get_DeepModelTy'0
+  
+  function view_HashMap_ref_K_ref_V_RandomState (self: t_HashMap_ref_K_ref_V_RandomState) : t_FMap_DeepModelTy_ref_V
+  
+  predicate from_iter_post_HashMap_ref_K_ref_V_RandomState (prod: Seq.seq tup2_ref_K_ref_V) (res: t_HashMap_ref_K_ref_V_RandomState) =
+    forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState res) k = Some'0 v)
+      = (exists i: int, k1: t_K. 0 <= i
+        /\ i < Seq.length prod
+        /\ deep_model_ref_K k1 = k
+        /\ Seq.get prod i = { f0 = k1; f1 = v }
+        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))
+  
+  let rec collect_Iter_K_V (self_: t_Iter_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_Iter_K_V self_}
+    any
+    [ return (result: t_HashMap_ref_K_ref_V_RandomState) -> {inv_HashMap_ref_K_ref_V_RandomState result}
+      {exists done': MutBorrow.t t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V. resolve_Iter_K_V done'.final
+        /\ completed_Iter_K_V done'
+        /\ produces_Iter_K_V self_ prod done'.current /\ from_iter_post_HashMap_ref_K_ref_V_RandomState prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec roundtrip_hashmap_iter (xs: t_HashMap) (return (x: t_HashMap'0)) =
-    {[@expl:roundtrip_hashmap_iter 'xs' type invariant] inv'0 xs}
+  let rec roundtrip_hashmap_iter_K (xs: t_HashMap_K_V_RandomState) (return (x: t_HashMap_ref_K_ref_V_RandomState)) =
+    {[@expl:roundtrip_hashmap_iter 'xs' type invariant] inv_ref_HashMap_K_V_RandomState xs}
     (! bb0
-    [ bb0 = s0 [ s0 = iter {xs} (fun (_ret: t_Iter) -> [ &it <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = iter_K {xs} (fun (_ret: t_Iter_K_V) -> [ &it <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = [ &it0 <- it ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = collect {it} (fun (_ret: t_HashMap'0) -> [ &r <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0
+      [ s0 = collect_Iter_K_V {it} (fun (_ret: t_HashMap_ref_K_ref_V_RandomState) -> [ &r <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:assertion] exists prod: Seq.seq tuple, it1: MutBorrow.t t_Iter. completed it1
-          /\ produces it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 r) k = C_Some'0 v)
-            = (exists k1: t_K. deep_model'0 k1 = k /\ contains prod { f0 = k1; f1 = v }))}
+      [ s0 =
+        {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_ref_V, it1: MutBorrow.t t_Iter_K_V. completed_Iter_K_V it1
+          /\ produces_Iter_K_V it0 prod it1.current
+          /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState r) k = Some'0 v)
+            = (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V prod { f0 = k1; f1 = v }))}
         s1
       | s1 = [ &_0 <- r ] s2
       | s2 = bb4 ]
     | bb4 = return {_0} ]
-    [ & _0: t_HashMap'0 = Any.any_l ()
-    | & xs: t_HashMap = xs
-    | & it: t_Iter = Any.any_l ()
-    | & it0: t_Iter = Any.any_l ()
-    | & r: t_HashMap'0 = Any.any_l () ])
-    [ return (result: t_HashMap'0) -> {[@expl:roundtrip_hashmap_iter result type invariant] inv'2 result}
-      {[@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get'0 (view'3 result) k = C_Some'0 v)
-        = (get (view xs) k = C_Some v)}
+    [ & _0: t_HashMap_ref_K_ref_V_RandomState = Any.any_l ()
+    | & xs: t_HashMap_K_V_RandomState = xs
+    | & it: t_Iter_K_V = Any.any_l ()
+    | & it0: t_Iter_K_V = Any.any_l ()
+    | & r: t_HashMap_ref_K_ref_V_RandomState = Any.any_l () ])
+    [ return (result: t_HashMap_ref_K_ref_V_RandomState) ->
+    {[@expl:roundtrip_hashmap_iter result type invariant] inv_HashMap_ref_K_ref_V_RandomState result}
+      {[@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
+          = Some'0 v)
+        = (get_DeepModelTy (view_HashMap_K_V_RandomState xs) k = Some v)}
       (! return {result}) ]
 end
-module M_collections__roundtrip_hashmap_iter_mut
+module M_roundtrip_hashmap_iter_mut
   use creusot.prelude.MutBorrow
   use map.Map
   use seq.Seq
@@ -345,805 +396,964 @@ module M_collections__roundtrip_hashmap_iter_mut
   use map.Const
   use creusot.prelude.Any
   
-  type t_HashMap
+  type t_HashMap_K_V_RandomState
   
-  predicate inv (_1: t_HashMap)
+  predicate inv_HashMap_K_V_RandomState (_1: t_HashMap_K_V_RandomState)
   
-  type t_IterMut
+  type t_IterMut_K_V
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_HashMap) = inv self.current /\ inv self.final
+  predicate invariant_ref_HashMap_K_V_RandomState [@inline:trivial] (self: MutBorrow.t t_HashMap_K_V_RandomState) =
+    inv_HashMap_K_V_RandomState self.current /\ inv_HashMap_K_V_RandomState self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_HashMap_K_V_RandomState
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_HashMap) = invariant' _1
+  predicate inv_ref_HashMap_K_V_RandomState [@inline:trivial] (_1: MutBorrow.t t_HashMap_K_V_RandomState) =
+    invariant_ref_HashMap_K_V_RandomState _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_HashMap_K_V_RandomState
   
-  predicate inv'1 (_1: t_IterMut)
+  predicate inv_IterMut_K_V (_1: t_IterMut_K_V)
   
-  type t_FMap
+  type t_FMap_DeepModelTy_V
   
   type t_DeepModelTy
   
   type t_V
   
-  type t_Option = C_None | C_Some t_V
+  type t_Option_V = None | Some t_V
   
-  function view (self: t_FMap) : Map.map t_DeepModelTy t_Option
+  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
-  function get [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_Option = Map.get (view self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+    Map.get (view_FMap_DeepModelTy_V self) k
   
-  meta "rewrite_def" function get
+  meta "rewrite_def" function get_DeepModelTy
   
-  predicate contains [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) = get self k <> C_None
+  predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
+    get_DeepModelTy self k <> None
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_DeepModelTy
   
-  function view'0 (self: t_HashMap) : t_FMap
+  function view_HashMap_K_V_RandomState (self: t_HashMap_K_V_RandomState) : t_FMap_DeepModelTy_V
   
-  type t_FMap'0
+  type t_FMap_DeepModelTy_ref_V
   
-  type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_V)
+  type t_Option_ref_V = None'0 | Some'0 (MutBorrow.t t_V)
   
-  function view'1 (self: t_FMap'0) : Map.map t_DeepModelTy t_Option'0
+  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
   
-  function get'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : t_Option'0 = Map.get (view'1 self) k
+  function get_DeepModelTy'0 [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
+    Map.get (view_FMap_DeepModelTy_ref_V self) k
   
-  meta "rewrite_def" function get'0
+  meta "rewrite_def" function get_DeepModelTy'0
   
-  predicate contains'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) = get'0 self k <> C_None'0
+  predicate contains_DeepModelTy'0 [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) =
+    get_DeepModelTy'0 self k <> None'0
   
-  meta "rewrite_def" predicate contains'0
+  meta "rewrite_def" predicate contains_DeepModelTy'0
   
-  function view'2 (self: t_IterMut) : t_FMap'0
+  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_ref_V
   
-  predicate index_logic [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
   
-  meta "rewrite_def" predicate index_logic
+  meta "rewrite_def" predicate index_Mapping_V_bool
   
-  function such_that (p: Map.map t_V bool) : t_V
+  function such_that_V (p: Map.map t_V bool) : t_V
   
-  axiom such_that_spec: forall p: Map.map t_V bool. (exists x: t_V. index_logic p x) -> index_logic p (such_that p)
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
   
-  function unwrap_logic (self: t_Option) : t_V = match self with
-      | C_Some x -> x
-      | C_None -> such_that (fun (__0: t_V) -> true)
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
       end
   
-  function lookup [@inline:trivial] (self: t_FMap) (k: t_DeepModelTy) : t_V = unwrap_logic (get self k)
+  function lookup_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_V =
+    unwrap_Option_V (get_DeepModelTy self k)
   
-  meta "rewrite_def" function lookup
+  meta "rewrite_def" function lookup_DeepModelTy
   
-  function index_logic'0 [@inline:trivial] (self: t_FMap) (key: t_DeepModelTy) : t_V = lookup self key
+  function index_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) (key: t_DeepModelTy) : t_V =
+    lookup_DeepModelTy self key
   
-  meta "rewrite_def" function index_logic'0
+  meta "rewrite_def" function index_FMap_DeepModelTy_V
   
-  predicate index_logic'1 [@inline:trivial] (self: Map.map (MutBorrow.t t_V) bool) (a: MutBorrow.t t_V) = Map.get self a
+  predicate index_Mapping_ref_V_bool [@inline:trivial] (self: Map.map (MutBorrow.t t_V) bool) (a: MutBorrow.t t_V) =
+    Map.get self a
   
-  meta "rewrite_def" predicate index_logic'1
+  meta "rewrite_def" predicate index_Mapping_ref_V_bool
   
-  function such_that'0 (p: Map.map (MutBorrow.t t_V) bool) : MutBorrow.t t_V
+  function such_that_ref_V (p: Map.map (MutBorrow.t t_V) bool) : MutBorrow.t t_V
   
-  axiom such_that_spec'0: forall p: Map.map (MutBorrow.t t_V) bool. (exists x: MutBorrow.t t_V. index_logic'1 p x)
-      -> index_logic'1 p (such_that'0 p)
+  axiom such_that_ref_V_spec:
+    forall p: Map.map (MutBorrow.t t_V) bool. (exists x: MutBorrow.t t_V. index_Mapping_ref_V_bool p x)
+      -> index_Mapping_ref_V_bool p (such_that_ref_V p)
   
-  function unwrap_logic'0 (self: t_Option'0) : MutBorrow.t t_V = match self with
-      | C_Some'0 x -> x
-      | C_None'0 -> such_that'0 (fun (__0: MutBorrow.t t_V) -> true)
+  function unwrap_Option_ref_V (self: t_Option_ref_V) : MutBorrow.t t_V = match self with
+      | Some'0 x -> x
+      | None'0 -> such_that_ref_V (fun (__0: MutBorrow.t t_V) -> true)
       end
   
-  function lookup'0 [@inline:trivial] (self: t_FMap'0) (k: t_DeepModelTy) : MutBorrow.t t_V =
-    unwrap_logic'0 (get'0 self k)
+  function lookup_DeepModelTy'0 [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : MutBorrow.t t_V
+   = unwrap_Option_ref_V (get_DeepModelTy'0 self k)
   
-  meta "rewrite_def" function lookup'0
+  meta "rewrite_def" function lookup_DeepModelTy'0
   
-  function index_logic'2 [@inline:trivial] (self: t_FMap'0) (key: t_DeepModelTy) : MutBorrow.t t_V = lookup'0 self key
+  function index_FMap_DeepModelTy_ref_V [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (key: t_DeepModelTy) : MutBorrow.t t_V
+   = lookup_DeepModelTy'0 self key
   
-  meta "rewrite_def" function index_logic'2
+  meta "rewrite_def" function index_FMap_DeepModelTy_ref_V
   
-  let rec iter_mut (self_: MutBorrow.t t_HashMap) (return (x: t_IterMut)) =
-    {[@expl:iter_mut 'self_' type invariant] inv'0 self_}
+  let rec iter_mut_K (self_: MutBorrow.t t_HashMap_K_V_RandomState) (return (x: t_IterMut_K_V)) =
+    {[@expl:iter_mut 'self_' type invariant] inv_ref_HashMap_K_V_RandomState self_}
     any
-    [ return (result: t_IterMut) -> {inv'1 result}
-      {forall k: t_DeepModelTy. contains (view'0 self_.current) k = contains (view'0 self_.final) k}
-      {forall k: t_DeepModelTy. contains (view'0 self_.current) k = contains'0 (view'2 result) k}
-      {forall k: t_DeepModelTy. contains (view'0 self_.current) k
-        -> index_logic'0 (view'0 self_.current) k = (index_logic'2 (view'2 result) k).current
-        /\ index_logic'0 (view'0 self_.final) k = (index_logic'2 (view'2 result) k).final}
+    [ return (result: t_IterMut_K_V) -> {inv_IterMut_K_V result}
+      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+        = contains_DeepModelTy (view_HashMap_K_V_RandomState self_.final) k}
+      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+        = contains_DeepModelTy'0 (view_IterMut_K_V result) k}
+      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+        -> index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState self_.current) k
+          = (index_FMap_DeepModelTy_ref_V (view_IterMut_K_V result) k).current
+        /\ index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState self_.final) k
+        = (index_FMap_DeepModelTy_ref_V (view_IterMut_K_V result) k).final}
       (! return {result}) ]
   
-  type t_HashMap'0
+  type t_HashMap_ref_K_ref_V_RandomState
   
-  predicate inv'2 (_1: t_HashMap'0)
+  predicate inv_HashMap_ref_K_ref_V_RandomState (_1: t_HashMap_ref_K_ref_V_RandomState)
   
-  predicate resolve (_1: t_IterMut)
+  predicate resolve_IterMut_K_V (_1: t_IterMut_K_V)
   
   type t_K
   
-  type tuple = { f0: t_K; f1: MutBorrow.t t_V }
+  type tup2_ref_K_ref_V = { f0: t_K; f1: MutBorrow.t t_V }
   
-  function len (self: t_FMap'0) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) : int
   
-  axiom len_spec: forall self: t_FMap'0. len self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_ref_V. len_DeepModelTy self >= 0
   
-  predicate contains'1 (self: Seq.seq tuple) (x: tuple) =
+  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  function deep_model (self: t_K) : t_DeepModelTy
+  function deep_model_K (self: t_K) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model self
+  function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
   
-  meta "rewrite_def" function deep_model'0
+  meta "rewrite_def" function deep_model_ref_K
   
-  predicate produces [@inline:trivial] (self: t_IterMut) (visited: Seq.seq tuple) (o: t_IterMut) =
-    len (view'2 self) = Seq.length visited + len (view'2 o)
-    /\ (forall k: t_K, v: MutBorrow.t t_V. contains'1 visited { f0 = k; f1 = v }
-        -> get'0 (view'2 self) (deep_model k) = C_Some'0 v /\ get'0 (view'2 o) (deep_model k) = C_None'0)
-    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get'0 (view'2 o) k = C_Some'0 v
-        -> get'0 (view'2 self) k = C_Some'0 v
-        /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model'0 k2 = k /\ contains'1 visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get'0 (view'2 self) k = C_Some'0 v
-        -> (exists k1: t_K. deep_model'0 k1 = k /\ contains'1 visited { f0 = k1; f1 = v })
-        \/ get'0 (view'2 o) k = C_Some'0 v)
+  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_IterMut_K_V) =
+    len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
+    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+        -> get_DeepModelTy'0 (view_IterMut_K_V self) (deep_model_K k) = Some'0 v
+        /\ get_DeepModelTy'0 (view_IterMut_K_V o) (deep_model_K k) = None'0)
+    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'0 v
+        -> get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'0 v
+        /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
+          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'0 v
+        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k1; f1 = v })
+        \/ get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'0 v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
-        /\ i2 < Seq.length visited /\ deep_model'0 (Seq.get visited i1).f0 = deep_model'0 (Seq.get visited i2).f0
-      -> i1 = i2)
+        /\ i2 < Seq.length visited
+        /\ deep_model_ref_K (Seq.get visited i1).f0 = deep_model_ref_K (Seq.get visited i2).f0 -> i1 = i2)
   
-  meta "rewrite_def" predicate produces
+  meta "rewrite_def" predicate produces_IterMut_K_V
   
-  function produces_trans (a: t_IterMut) (ab: Seq.seq tuple) (b: t_IterMut) (bc: Seq.seq tuple) (c: t_IterMut) : () = ()
+  function produces_trans_IterMut_K_V (a: t_IterMut_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_IterMut_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_IterMut_K_V) : ()
+   = ()
   
-  axiom produces_trans_spec:
-    forall a: t_IterMut, ab: Seq.seq tuple, b: t_IterMut, bc: Seq.seq tuple, c: t_IterMut. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_IterMut_K_V_spec:
+    forall a: t_IterMut_K_V, ab: Seq.seq tup2_ref_K_ref_V, b: t_IterMut_K_V, bc: Seq.seq tup2_ref_K_ref_V, c: t_IterMut_K_V. produces_IterMut_K_V a ab b
+      -> produces_IterMut_K_V b bc c -> produces_IterMut_K_V a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_IterMut) : () = ()
+  function produces_refl_IterMut_K_V (self: t_IterMut_K_V) : () = ()
   
-  axiom produces_refl_spec: forall self: t_IterMut. produces self (Seq.empty: Seq.seq tuple) self
+  axiom produces_refl_IterMut_K_V_spec:
+    forall self: t_IterMut_K_V. produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IterMut) = _1.final = _1.current
+  predicate resolve_ref_IterMut_K_V [@inline:trivial] (_1: MutBorrow.t t_IterMut_K_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_IterMut_K_V
   
-  predicate ext_eq (self: t_FMap'0) (other: t_FMap'0) = forall k: t_DeepModelTy. get'0 self k = get'0 other k
+  predicate ext_eq_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) (other: t_FMap_DeepModelTy_ref_V) =
+    forall k: t_DeepModelTy. get_DeepModelTy'0 self k = get_DeepModelTy'0 other k
   
-  axiom ext_eq_spec: forall self: t_FMap'0, other: t_FMap'0. ext_eq self other = (self = other)
+  axiom ext_eq_DeepModelTy_spec:
+    forall self: t_FMap_DeepModelTy_ref_V, other: t_FMap_DeepModelTy_ref_V. ext_eq_DeepModelTy self other
+      = (self = other)
   
-  constant empty : t_FMap'0
+  constant empty_DeepModelTy : t_FMap_DeepModelTy_ref_V
   
-  axiom empty_spec: len empty = 0
+  axiom empty_DeepModelTy_spec: len_DeepModelTy empty_DeepModelTy = 0
   
-  axiom empty_spec'0: view'1 empty = Const.const (C_None'0)
+  axiom empty_DeepModelTy_spec'0: view_FMap_DeepModelTy_ref_V empty_DeepModelTy = Const.const (None'0)
   
-  predicate is_empty (self: t_FMap'0) = ext_eq self empty
+  predicate is_empty_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) = ext_eq_DeepModelTy self empty_DeepModelTy
   
-  predicate completed (self: MutBorrow.t t_IterMut) = resolve'0 self /\ is_empty (view'2 self.current)
+  predicate completed_IterMut_K_V (self: MutBorrow.t t_IterMut_K_V) =
+    resolve_ref_IterMut_K_V self /\ is_empty_DeepModelTy (view_IterMut_K_V self.current)
   
-  function view'3 (self: t_HashMap'0) : t_FMap'0
+  function view_HashMap_ref_K_ref_V_RandomState (self: t_HashMap_ref_K_ref_V_RandomState) : t_FMap_DeepModelTy_ref_V
   
-  predicate from_iter_post (prod: Seq.seq tuple) (res: t_HashMap'0) =
-    forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'3 res) k = C_Some'0 v)
+  predicate from_iter_post_HashMap_ref_K_ref_V_RandomState (prod: Seq.seq tup2_ref_K_ref_V) (res: t_HashMap_ref_K_ref_V_RandomState) =
+    forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState res) k
+        = Some'0 v)
       = (exists i: int, k1: t_K. 0 <= i
         /\ i < Seq.length prod
-        /\ deep_model'0 k1 = k
+        /\ deep_model_ref_K k1 = k
         /\ Seq.get prod i = { f0 = k1; f1 = v }
-        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model'0 (Seq.get prod j).f0 <> k))
+        /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))
   
-  let rec collect (self_: t_IterMut) (return (x: t_HashMap'0)) = {[@expl:collect 'self_' type invariant] inv'1 self_}
+  let rec collect_IterMut_K_V (self_: t_IterMut_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_IterMut_K_V self_}
     any
-    [ return (result: t_HashMap'0) -> {inv'2 result}
-      {exists done': MutBorrow.t t_IterMut, prod: Seq.seq tuple. resolve done'.final
-        /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashMap_ref_K_ref_V_RandomState) -> {inv_HashMap_ref_K_ref_V_RandomState result}
+      {exists done': MutBorrow.t t_IterMut_K_V, prod: Seq.seq tup2_ref_K_ref_V. resolve_IterMut_K_V done'.final
+        /\ completed_IterMut_K_V done'
+        /\ produces_IterMut_K_V self_ prod done'.current /\ from_iter_post_HashMap_ref_K_ref_V_RandomState prod result}
       (! return {result}) ]
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t t_HashMap) = _1.final = _1.current
+  predicate resolve_ref_HashMap_K_V_RandomState [@inline:trivial] (_1: MutBorrow.t t_HashMap_K_V_RandomState) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_HashMap_K_V_RandomState
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec roundtrip_hashmap_iter_mut (xs: MutBorrow.t t_HashMap) (return (x: t_HashMap'0)) =
-    {[@expl:roundtrip_hashmap_iter_mut 'xs' type invariant] inv'0 xs}
+  let rec roundtrip_hashmap_iter_mut_K (xs: MutBorrow.t t_HashMap_K_V_RandomState)
+    (return (x: t_HashMap_ref_K_ref_V_RandomState)) =
+    {[@expl:roundtrip_hashmap_iter_mut 'xs' type invariant] inv_ref_HashMap_K_V_RandomState xs}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv xs.current}
-        MutBorrow.borrow_final <t_HashMap> {xs.current} {MutBorrow.get_id xs}
-          (fun (_ret: MutBorrow.t t_HashMap) ->
-            [ &_6 <- _ret ] -{inv _ret.final}-
+      [ s0 = {inv_HashMap_K_V_RandomState xs.current}
+        MutBorrow.borrow_final <t_HashMap_K_V_RandomState> {xs.current} {MutBorrow.get_id xs}
+          (fun (_ret: MutBorrow.t t_HashMap_K_V_RandomState) ->
+            [ &_6 <- _ret ] -{inv_HashMap_K_V_RandomState _ret.final}-
             [ &xs <- { xs with current = _ret.final } ] s1)
-      | s1 = iter_mut {_6} (fun (_ret: t_IterMut) -> [ &it <- _ret ] s2)
+      | s1 = iter_mut_K {_6} (fun (_ret: t_IterMut_K_V) -> [ &it <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &it0 <- it ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = collect {it} (fun (_ret: t_HashMap'0) -> [ &r <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0
+      [ s0 = collect_IterMut_K_V {it} (fun (_ret: t_HashMap_ref_K_ref_V_RandomState) -> [ &r <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:assertion] exists prod: Seq.seq tuple, it1: MutBorrow.t t_IterMut. completed it1
-          /\ produces it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get'0 (view'3 r) k = C_Some'0 v)
-            = (exists k1: t_K. deep_model'0 k1 = k /\ contains'1 prod { f0 = k1; f1 = v }))}
+      [ s0 =
+        {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_ref_V, it1: MutBorrow.t t_IterMut_K_V. completed_IterMut_K_V it1
+          /\ produces_IterMut_K_V it0 prod it1.current
+          /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState r) k
+              = Some'0 v)
+            = (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V prod { f0 = k1; f1 = v }))}
         s1
       | s1 = [ &_0 <- r ] s2
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'0 xs} s1 | s1 = -{resolve'1 xs}- s2 | s2 = return {_0} ] ]
-    [ & _0: t_HashMap'0 = Any.any_l ()
-    | & xs: MutBorrow.t t_HashMap = xs
-    | & it: t_IterMut = Any.any_l ()
-    | & _6: MutBorrow.t t_HashMap = Any.any_l ()
-    | & it0: t_IterMut = Any.any_l ()
-    | & r: t_HashMap'0 = Any.any_l () ])
-    [ return (result: t_HashMap'0) -> {[@expl:roundtrip_hashmap_iter_mut result type invariant] inv'2 result}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get'0 (view'3 result) k
-          = C_Some'0 v -> get (view'0 xs.current) k = C_Some (v.current) /\ get (view'0 xs.final) k = C_Some (v.final)}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get (view'0 xs.current) k
-          = C_Some v -> contains'0 (view'3 result) k /\ (index_logic'2 (view'3 result) k).current = v}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get (view'0 xs.final) k = C_Some v
-        -> contains'0 (view'3 result) k /\ (index_logic'2 (view'3 result) k).final = v}
+    | bb4 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_HashMap_K_V_RandomState xs} s1
+      | s1 = -{resolve_ref_HashMap_K_V_RandomState xs}- s2
+      | s2 = return {_0} ] ]
+    [ & _0: t_HashMap_ref_K_ref_V_RandomState = Any.any_l ()
+    | & xs: MutBorrow.t t_HashMap_K_V_RandomState = xs
+    | & it: t_IterMut_K_V = Any.any_l ()
+    | & _6: MutBorrow.t t_HashMap_K_V_RandomState = Any.any_l ()
+    | & it0: t_IterMut_K_V = Any.any_l ()
+    | & r: t_HashMap_ref_K_ref_V_RandomState = Any.any_l () ])
+    [ return (result: t_HashMap_ref_K_ref_V_RandomState) ->
+    {[@expl:roundtrip_hashmap_iter_mut result type invariant] inv_HashMap_ref_K_ref_V_RandomState result}
+      {[@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
+          = Some'0 v
+        -> get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k = Some (v.current)
+        /\ get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k = Some (v.final)}
+      {[@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k
+          = Some v
+        -> contains_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
+        /\ (index_FMap_DeepModelTy_ref_V (view_HashMap_ref_K_ref_V_RandomState result) k).current = v}
+      {[@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k
+          = Some v
+        -> contains_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
+        /\ (index_FMap_DeepModelTy_ref_V (view_HashMap_ref_K_ref_V_RandomState result) k).final = v}
       (! return {result}) ]
 end
-module M_collections__roundtrip_hashset_into_iter
+module M_roundtrip_hashset_into_iter
   use set.Fset
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_HashSet
+  type t_HashSet_T_RandomState
   
-  type t_IntoIter
+  type t_IntoIter_T
   
-  predicate inv (_1: t_HashSet)
+  predicate inv_HashSet_T_RandomState (_1: t_HashSet_T_RandomState)
   
-  predicate inv'0 (_1: t_IntoIter)
+  predicate inv_IntoIter_T (_1: t_IntoIter_T)
   
   type t_DeepModelTy
   
-  function view (self: t_HashSet) : Fset.fset t_DeepModelTy
+  function view_HashSet_T_RandomState (self: t_HashSet_T_RandomState) : Fset.fset t_DeepModelTy
   
-  function view'0 (self: t_IntoIter) : Fset.fset t_DeepModelTy
+  function view_IntoIter_T (self: t_IntoIter_T) : Fset.fset t_DeepModelTy
   
-  let rec into_iter (self_: t_HashSet) (return (x: t_IntoIter)) = {[@expl:into_iter 'self_' type invariant] inv self_}
-    any [ return (result: t_IntoIter) -> {inv'0 result} {view self_ = view'0 result} (! return {result}) ]
+  let rec into_iter_HashSet_T_RandomState (self_: t_HashSet_T_RandomState) (return (x: t_IntoIter_T)) =
+    {[@expl:into_iter 'self_' type invariant] inv_HashSet_T_RandomState self_}
+    any
+    [ return (result: t_IntoIter_T) -> {inv_IntoIter_T result}
+      {view_HashSet_T_RandomState self_ = view_IntoIter_T result}
+      (! return {result}) ]
   
-  predicate resolve (_1: t_IntoIter)
+  predicate resolve_IntoIter_T (_1: t_IntoIter_T)
   
   type t_T
   
-  predicate contains [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_DeepModelTy
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  predicate contains'0 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces (start: t_IntoIter) (visited: Seq.seq t_T) (end': t_IntoIter) =
-    Fset.cardinal (view'0 start) = Seq.length visited + Fset.cardinal (view'0 end')
-    /\ (forall x: t_DeepModelTy. contains (view'0 start) x
-        -> (exists x1: t_T. deep_model x1 = x /\ contains'0 visited x1) \/ contains (view'0 end') x)
-    /\ (forall x: t_T. contains'0 visited x
-        -> contains (view'0 start) (deep_model x) /\ not contains (view'0 end') (deep_model x))
-    /\ (forall x: t_DeepModelTy. contains (view'0 end') x
-        -> contains (view'0 start) x /\ not (exists x1: t_T. deep_model x1 = x /\ contains'0 visited x1))
+  predicate set_produces_T (start: t_IntoIter_T) (visited: Seq.seq t_T) (end': t_IntoIter_T) =
+    Fset.cardinal (view_IntoIter_T start) = Seq.length visited + Fset.cardinal (view_IntoIter_T end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T start) x
+        -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
+        \/ contains_DeepModelTy (view_IntoIter_T end') x)
+    /\ (forall x: t_T. contains_T visited x
+        -> contains_DeepModelTy (view_IntoIter_T start) (deep_model_T x)
+        /\ not contains_DeepModelTy (view_IntoIter_T end') (deep_model_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T end') x
+        -> contains_DeepModelTy (view_IntoIter_T start) x
+        /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
-        /\ 0 <= j /\ j < Seq.length visited /\ deep_model (Seq.get visited i) = deep_model (Seq.get visited j) -> i = j)
+        /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
+      -> i = j)
   
-  constant concat_contains: () = ()
+  constant concat_contains_T: () = ()
   
-  axiom concat_contains_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains'0 (Seq.(++) a b) x
-        = contains'0 a x
-      \/ contains'0 b x
+  axiom concat_contains_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a b) x
+        = contains_T a x
+      \/ contains_T b x
   
-  function set_produces_trans (a: t_IntoIter) (ab: Seq.seq t_T) (b: t_IntoIter) (bc: Seq.seq t_T) (c: t_IntoIter) : () =
-    let _ = concat_contains in ()
+  function set_produces_trans_T (a: t_IntoIter_T) (ab: Seq.seq t_T) (b: t_IntoIter_T) (bc: Seq.seq t_T) (c: t_IntoIter_T) : ()
+   = let _ = concat_contains_T in ()
   
-  axiom set_produces_trans_spec:
-    forall a: t_IntoIter, ab: Seq.seq t_T, b: t_IntoIter, bc: Seq.seq t_T, c: t_IntoIter. set_produces a ab b
-      -> set_produces b bc c -> set_produces a (Seq.(++) ab bc) c
+  axiom set_produces_trans_T_spec:
+    forall a: t_IntoIter_T, ab: Seq.seq t_T, b: t_IntoIter_T, bc: Seq.seq t_T, c: t_IntoIter_T. set_produces_T a ab b
+      -> set_produces_T b bc c -> set_produces_T a (Seq.(++) ab bc) c
   
-  predicate produces (self: t_IntoIter) (visited: Seq.seq t_T) (o: t_IntoIter) = set_produces self visited o
+  predicate produces_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+    set_produces_T self visited o
   
-  function produces_trans (a: t_IntoIter) (ab: Seq.seq t_T) (b: t_IntoIter) (bc: Seq.seq t_T) (c: t_IntoIter) : () =
-    let _ = set_produces_trans a ab b bc c in ()
+  function produces_trans_IntoIter_T (a: t_IntoIter_T) (ab: Seq.seq t_T) (b: t_IntoIter_T) (bc: Seq.seq t_T) (c: t_IntoIter_T) : ()
+   = let _ = set_produces_trans_T a ab b bc c in ()
   
-  axiom produces_trans_spec:
-    forall a: t_IntoIter, ab: Seq.seq t_T, b: t_IntoIter, bc: Seq.seq t_T, c: t_IntoIter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_IntoIter_T_spec:
+    forall a: t_IntoIter_T, ab: Seq.seq t_T, b: t_IntoIter_T, bc: Seq.seq t_T, c: t_IntoIter_T. produces_IntoIter_T a ab b
+      -> produces_IntoIter_T b bc c -> produces_IntoIter_T a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_IntoIter) : () = ()
+  function produces_refl_IntoIter_T (self: t_IntoIter_T) : () = ()
   
-  axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_IntoIter_T_spec: forall self: t_IntoIter_T. produces_IntoIter_T self (Seq.empty: Seq.seq t_T) self
   
-  predicate completed (self: MutBorrow.t t_IntoIter) = Fset.is_empty (view'0 self.current)
+  predicate completed_IntoIter_T (self: MutBorrow.t t_IntoIter_T) = Fset.is_empty (view_IntoIter_T self.current)
   
-  predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet) =
-    forall x: t_DeepModelTy. contains (view res) x = (exists x1: t_T. deep_model x1 = x /\ contains'0 prod x1)
+  predicate from_iter_post_HashSet_T_RandomState (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState res) x
+      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
   
-  let rec collect (self_: t_IntoIter) (return (x: t_HashSet)) = {[@expl:collect 'self_' type invariant] inv'0 self_}
+  let rec collect_IntoIter_T (self_: t_IntoIter_T) (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_IntoIter_T self_}
     any
-    [ return (result: t_HashSet) -> {inv result}
-      {exists done': MutBorrow.t t_IntoIter, prod: Seq.seq t_T. resolve done'.final
-        /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
+      {exists done': MutBorrow.t t_IntoIter_T, prod: Seq.seq t_T. resolve_IntoIter_T done'.final
+        /\ completed_IntoIter_T done'
+        /\ produces_IntoIter_T self_ prod done'.current /\ from_iter_post_HashSet_T_RandomState prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec roundtrip_hashset_into_iter (xs: t_HashSet) (return (x: t_HashSet)) =
-    {[@expl:roundtrip_hashset_into_iter 'xs' type invariant] inv xs}
+  let rec roundtrip_hashset_into_iter_T (xs: t_HashSet_T_RandomState) (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:roundtrip_hashset_into_iter 'xs' type invariant] inv_HashSet_T_RandomState xs}
     (! bb0
-    [ bb0 = s0 [ s0 = into_iter {xs} (fun (_ret: t_IntoIter) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = collect {_3} (fun (_ret: t_HashSet) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: t_HashSet = Any.any_l () | & xs: t_HashSet = xs | & _3: t_IntoIter = Any.any_l () ])
-    [ return (result: t_HashSet) -> {[@expl:roundtrip_hashset_into_iter result type invariant] inv result}
-      {[@expl:roundtrip_hashset_into_iter ensures] view result = view xs}
+    [ bb0 = s0 [ s0 = into_iter_HashSet_T_RandomState {xs} (fun (_ret: t_IntoIter_T) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = collect_IntoIter_T {_3} (fun (_ret: t_HashSet_T_RandomState) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = return {_0} ]
+    [ & _0: t_HashSet_T_RandomState = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState = xs
+    | & _3: t_IntoIter_T = Any.any_l () ])
+    [ return (result: t_HashSet_T_RandomState) ->
+    {[@expl:roundtrip_hashset_into_iter result type invariant] inv_HashSet_T_RandomState result}
+      {[@expl:roundtrip_hashset_into_iter ensures] view_HashSet_T_RandomState result = view_HashSet_T_RandomState xs}
       (! return {result}) ]
 end
-module M_collections__roundtrip_hashset_iter
+module M_roundtrip_hashset_iter
   use set.Fset
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_HashSet
+  type t_HashSet_T_RandomState
   
-  type t_Iter
+  type t_Iter_T
   
-  predicate inv (_1: t_HashSet)
+  predicate inv_HashSet_T_RandomState (_1: t_HashSet_T_RandomState)
   
-  predicate invariant' [@inline:trivial] (self: t_HashSet) = inv self
+  predicate invariant_ref_HashSet_T_RandomState [@inline:trivial] (self: t_HashSet_T_RandomState) =
+    inv_HashSet_T_RandomState self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState
   
-  predicate inv'0 [@inline:trivial] (_1: t_HashSet) = invariant' _1
+  predicate inv_ref_HashSet_T_RandomState [@inline:trivial] (_1: t_HashSet_T_RandomState) =
+    invariant_ref_HashSet_T_RandomState _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState
   
-  predicate inv'1 (_1: t_Iter)
+  predicate inv_Iter_T (_1: t_Iter_T)
   
   type t_DeepModelTy
   
-  function view (self: t_HashSet) : Fset.fset t_DeepModelTy
+  function view_HashSet_T_RandomState (self: t_HashSet_T_RandomState) : Fset.fset t_DeepModelTy
   
-  function view'0 (self: t_Iter) : Fset.fset t_DeepModelTy
+  function view_Iter_T (self: t_Iter_T) : Fset.fset t_DeepModelTy
   
-  let rec iter (self_: t_HashSet) (return (x: t_Iter)) = {[@expl:iter 'self_' type invariant] inv'0 self_}
-    any [ return (result: t_Iter) -> {inv'1 result} {view self_ = view'0 result} (! return {result}) ]
+  let rec iter_T (self_: t_HashSet_T_RandomState) (return (x: t_Iter_T)) =
+    {[@expl:iter 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
+    any
+    [ return (result: t_Iter_T) -> {inv_Iter_T result}
+      {view_HashSet_T_RandomState self_ = view_Iter_T result}
+      (! return {result}) ]
   
-  type t_HashSet'0
+  type t_HashSet_ref_T_RandomState
   
-  predicate inv'2 (_1: t_HashSet'0)
+  predicate inv_HashSet_ref_T_RandomState (_1: t_HashSet_ref_T_RandomState)
   
-  predicate resolve (_1: t_Iter)
+  predicate resolve_Iter_T (_1: t_Iter_T)
   
   type t_T
   
-  predicate contains [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_DeepModelTy
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
-  meta "rewrite_def" function deep_model'0
+  meta "rewrite_def" function deep_model_ref_T
   
-  predicate contains'0 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces (start: t_Iter) (visited: Seq.seq t_T) (end': t_Iter) =
-    Fset.cardinal (view'0 start) = Seq.length visited + Fset.cardinal (view'0 end')
-    /\ (forall x: t_DeepModelTy. contains (view'0 start) x
-        -> (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1) \/ contains (view'0 end') x)
-    /\ (forall x: t_T. contains'0 visited x
-        -> contains (view'0 start) (deep_model'0 x) /\ not contains (view'0 end') (deep_model'0 x))
-    /\ (forall x: t_DeepModelTy. contains (view'0 end') x
-        -> contains (view'0 start) x /\ not (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1))
+  predicate set_produces_ref_T (start: t_Iter_T) (visited: Seq.seq t_T) (end': t_Iter_T) =
+    Fset.cardinal (view_Iter_T start) = Seq.length visited + Fset.cardinal (view_Iter_T end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Iter_T start) x
+        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+        \/ contains_DeepModelTy (view_Iter_T end') x)
+    /\ (forall x: t_T. contains_ref_T visited x
+        -> contains_DeepModelTy (view_Iter_T start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Iter_T end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Iter_T end') x
+        -> contains_DeepModelTy (view_Iter_T start) x
+        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
-        /\ 0 <= j /\ j < Seq.length visited /\ deep_model'0 (Seq.get visited i) = deep_model'0 (Seq.get visited j)
+        /\ 0 <= j
+        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  constant concat_contains: () = ()
+  constant concat_contains_ref_T: () = ()
   
-  axiom concat_contains_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains'0 (Seq.(++) a b) x
-        = contains'0 a x
-      \/ contains'0 b x
+  axiom concat_contains_ref_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_ref_T (Seq.(++) a b) x
+        = contains_ref_T a x
+      \/ contains_ref_T b x
   
-  function set_produces_trans (a: t_Iter) (ab: Seq.seq t_T) (b: t_Iter) (bc: Seq.seq t_T) (c: t_Iter) : () =
-    let _ = concat_contains in ()
+  function set_produces_trans_ref_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () =
+    let _ = concat_contains_ref_T in ()
   
-  axiom set_produces_trans_spec:
-    forall a: t_Iter, ab: Seq.seq t_T, b: t_Iter, bc: Seq.seq t_T, c: t_Iter. set_produces a ab b
-      -> set_produces b bc c -> set_produces a (Seq.(++) ab bc) c
+  axiom set_produces_trans_ref_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. set_produces_ref_T a ab b
+      -> set_produces_ref_T b bc c -> set_produces_ref_T a (Seq.(++) ab bc) c
   
-  predicate produces (self: t_Iter) (visited: Seq.seq t_T) (o: t_Iter) = set_produces self visited o
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) = set_produces_ref_T self visited o
   
-  function produces_trans (a: t_Iter) (ab: Seq.seq t_T) (b: t_Iter) (bc: Seq.seq t_T) (c: t_Iter) : () =
-    let _ = set_produces_trans a ab b bc c in ()
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () =
+    let _ = set_produces_trans_ref_T a ab b bc c in ()
   
-  axiom produces_trans_spec: forall a: t_Iter, ab: Seq.seq t_T, b: t_Iter, bc: Seq.seq t_T, c: t_Iter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Iter) : () = ()
+  function produces_refl_Iter_T (self: t_Iter_T) : () = ()
   
-  axiom produces_refl_spec: forall self: t_Iter. produces self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
   
-  predicate completed (self: MutBorrow.t t_Iter) = Fset.is_empty (view'0 self.current)
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) = Fset.is_empty (view_Iter_T self.current)
   
-  function view'1 (self: t_HashSet'0) : Fset.fset t_DeepModelTy
+  function view_HashSet_ref_T_RandomState (self: t_HashSet_ref_T_RandomState) : Fset.fset t_DeepModelTy
   
-  predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet'0) =
-    forall x: t_DeepModelTy. contains (view'1 res) x = (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 prod x1)
+  predicate from_iter_post_HashSet_ref_T_RandomState (prod: Seq.seq t_T) (res: t_HashSet_ref_T_RandomState) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_ref_T_RandomState res) x
+      = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)
   
-  let rec collect (self_: t_Iter) (return (x: t_HashSet'0)) = {[@expl:collect 'self_' type invariant] inv'1 self_}
+  let rec collect_Iter_T (self_: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_Iter_T self_}
     any
-    [ return (result: t_HashSet'0) -> {inv'2 result}
-      {exists done': MutBorrow.t t_Iter, prod: Seq.seq t_T. resolve done'.final
-        /\ completed done' /\ produces self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashSet_ref_T_RandomState) -> {inv_HashSet_ref_T_RandomState result}
+      {exists done': MutBorrow.t t_Iter_T, prod: Seq.seq t_T. resolve_Iter_T done'.final
+        /\ completed_Iter_T done'
+        /\ produces_Iter_T self_ prod done'.current /\ from_iter_post_HashSet_ref_T_RandomState prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec roundtrip_hashset_iter (xs: t_HashSet) (return (x: t_HashSet'0)) =
-    {[@expl:roundtrip_hashset_iter 'xs' type invariant] inv'0 xs}
+  let rec roundtrip_hashset_iter_T (xs: t_HashSet_T_RandomState) (return (x: t_HashSet_ref_T_RandomState)) =
+    {[@expl:roundtrip_hashset_iter 'xs' type invariant] inv_ref_HashSet_T_RandomState xs}
     (! bb0
-    [ bb0 = s0 [ s0 = iter {xs} (fun (_ret: t_Iter) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = collect {_3} (fun (_ret: t_HashSet'0) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: t_HashSet'0 = Any.any_l () | & xs: t_HashSet = xs | & _3: t_Iter = Any.any_l () ])
-    [ return (result: t_HashSet'0) -> {[@expl:roundtrip_hashset_iter result type invariant] inv'2 result}
-      {[@expl:roundtrip_hashset_iter ensures] view'1 result = view xs}
+    [ bb0 = s0 [ s0 = iter_T {xs} (fun (_ret: t_Iter_T) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = collect_Iter_T {_3} (fun (_ret: t_HashSet_ref_T_RandomState) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = return {_0} ]
+    [ & _0: t_HashSet_ref_T_RandomState = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState = xs
+    | & _3: t_Iter_T = Any.any_l () ])
+    [ return (result: t_HashSet_ref_T_RandomState) ->
+    {[@expl:roundtrip_hashset_iter result type invariant] inv_HashSet_ref_T_RandomState result}
+      {[@expl:roundtrip_hashset_iter ensures] view_HashSet_ref_T_RandomState result = view_HashSet_T_RandomState xs}
       (! return {result}) ]
 end
-module M_collections__hashset_intersection
+module M_hashset_intersection
   use set.Fset
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_HashSet
+  type t_HashSet_T_RandomState
   
-  type t_Intersection
+  type t_Intersection_T_RandomState
   
-  predicate inv (_1: t_HashSet)
+  predicate inv_HashSet_T_RandomState (_1: t_HashSet_T_RandomState)
   
-  predicate invariant' [@inline:trivial] (self: t_HashSet) = inv self
+  predicate invariant_ref_HashSet_T_RandomState [@inline:trivial] (self: t_HashSet_T_RandomState) =
+    inv_HashSet_T_RandomState self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState
   
-  predicate inv'0 [@inline:trivial] (_1: t_HashSet) = invariant' _1
+  predicate inv_ref_HashSet_T_RandomState [@inline:trivial] (_1: t_HashSet_T_RandomState) =
+    invariant_ref_HashSet_T_RandomState _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState
   
-  predicate inv'1 (_1: t_Intersection)
+  predicate inv_Intersection_T_RandomState (_1: t_Intersection_T_RandomState)
   
   type t_DeepModelTy
   
-  function view (self: t_Intersection) : Fset.fset t_DeepModelTy
+  function view_Intersection_T_RandomState (self: t_Intersection_T_RandomState) : Fset.fset t_DeepModelTy
   
-  function view'0 (self: t_HashSet) : Fset.fset t_DeepModelTy
+  function view_HashSet_T_RandomState (self: t_HashSet_T_RandomState) : Fset.fset t_DeepModelTy
   
-  let rec intersection (self_: t_HashSet) (other: t_HashSet) (return (x: t_Intersection)) =
-    {[@expl:intersection 'self_' type invariant] inv'0 self_}
-    {[@expl:intersection 'other' type invariant] inv'0 other}
+  let rec intersection_T (self_: t_HashSet_T_RandomState) (other: t_HashSet_T_RandomState)
+    (return (x: t_Intersection_T_RandomState)) =
+    {[@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
+    {[@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState other}
     any
-    [ return (result: t_Intersection) -> {inv'1 result}
-      {view result = Fset.inter (view'0 self_) (view'0 other)}
+    [ return (result: t_Intersection_T_RandomState) -> {inv_Intersection_T_RandomState result}
+      {view_Intersection_T_RandomState result
+      = Fset.inter (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other)}
       (! return {result}) ]
   
-  type t_Copied
+  type t_Copied_Intersection_T_RandomState
   
-  function iter (self: t_Copied) : t_Intersection
+  function iter_Copied_Intersection_T_RandomState (self: t_Copied_Intersection_T_RandomState) : t_Intersection_T_RandomState
   
-  predicate invariant''0 [@inline:trivial] (self: t_Copied) = inv'1 (iter self)
+  predicate invariant_Copied_Intersection_T_RandomState [@inline:trivial] (self: t_Copied_Intersection_T_RandomState) =
+    inv_Intersection_T_RandomState (iter_Copied_Intersection_T_RandomState self)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Copied_Intersection_T_RandomState
   
-  predicate inv'2 (_1: t_Copied)
+  predicate inv_Copied_Intersection_T_RandomState (_1: t_Copied_Intersection_T_RandomState)
   
-  axiom inv_axiom: forall x: t_Copied [inv'2 x]. inv'2 x -> invariant''0 x
+  axiom inv_axiom:
+    forall x: t_Copied_Intersection_T_RandomState [inv_Copied_Intersection_T_RandomState x]. inv_Copied_Intersection_T_RandomState x
+      -> invariant_Copied_Intersection_T_RandomState x
   
-  let rec copied (self_: t_Intersection) (return (x: t_Copied)) = {[@expl:copied 'self_' type invariant] inv'1 self_}
-    any [ return (result: t_Copied) -> {inv'2 result} {iter result = self_} (! return {result}) ]
+  let rec copied_Intersection_T_RandomState (self_: t_Intersection_T_RandomState)
+    (return (x: t_Copied_Intersection_T_RandomState)) =
+    {[@expl:copied 'self_' type invariant] inv_Intersection_T_RandomState self_}
+    any
+    [ return (result: t_Copied_Intersection_T_RandomState) -> {inv_Copied_Intersection_T_RandomState result}
+      {iter_Copied_Intersection_T_RandomState result = self_}
+      (! return {result}) ]
   
-  predicate resolve (_1: t_Intersection)
+  predicate resolve_Intersection_T_RandomState (_1: t_Intersection_T_RandomState)
   
-  predicate resolve'0 [@inline:trivial] (self: t_Copied) = resolve (iter self)
+  predicate resolve_Copied_Intersection_T_RandomState [@inline:trivial] (self: t_Copied_Intersection_T_RandomState) =
+    resolve_Intersection_T_RandomState (iter_Copied_Intersection_T_RandomState self)
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_Copied_Intersection_T_RandomState
   
-  predicate resolve'1 (_1: t_Copied)
+  predicate resolve_Copied_Intersection_T_RandomState'0 (_1: t_Copied_Intersection_T_RandomState)
   
-  axiom resolve_axiom: forall x: t_Copied [resolve'1 x]. resolve'1 x -> resolve'0 x
+  axiom resolve_axiom:
+    forall x: t_Copied_Intersection_T_RandomState [resolve_Copied_Intersection_T_RandomState'0 x]. resolve_Copied_Intersection_T_RandomState'0 x
+      -> resolve_Copied_Intersection_T_RandomState x
   
   type t_T
   
-  predicate contains [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_DeepModelTy
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
-  meta "rewrite_def" function deep_model'0
+  meta "rewrite_def" function deep_model_ref_T
   
-  predicate contains'0 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces (start: t_Intersection) (visited: Seq.seq t_T) (end': t_Intersection) =
-    Fset.cardinal (view start) = Seq.length visited + Fset.cardinal (view end')
-    /\ (forall x: t_DeepModelTy. contains (view start) x
-        -> (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1) \/ contains (view end') x)
-    /\ (forall x: t_T. contains'0 visited x
-        -> contains (view start) (deep_model'0 x) /\ not contains (view end') (deep_model'0 x))
-    /\ (forall x: t_DeepModelTy. contains (view end') x
-        -> contains (view start) x /\ not (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1))
+  predicate set_produces_ref_T (start: t_Intersection_T_RandomState) (visited: Seq.seq t_T) (end': t_Intersection_T_RandomState) =
+    Fset.cardinal (view_Intersection_T_RandomState start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_RandomState end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState start) x
+        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+        \/ contains_DeepModelTy (view_Intersection_T_RandomState end') x)
+    /\ (forall x: t_T. contains_ref_T visited x
+        -> contains_DeepModelTy (view_Intersection_T_RandomState start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_RandomState end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState end') x
+        -> contains_DeepModelTy (view_Intersection_T_RandomState start) x
+        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
-        /\ 0 <= j /\ j < Seq.length visited /\ deep_model'0 (Seq.get visited i) = deep_model'0 (Seq.get visited j)
+        /\ 0 <= j
+        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  constant concat_contains: () = ()
+  constant concat_contains_ref_T: () = ()
   
-  axiom concat_contains_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains'0 (Seq.(++) a b) x
-        = contains'0 a x
-      \/ contains'0 b x
+  axiom concat_contains_ref_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_ref_T (Seq.(++) a b) x
+        = contains_ref_T a x
+      \/ contains_ref_T b x
   
-  function set_produces_trans (a: t_Intersection) (ab: Seq.seq t_T) (b: t_Intersection) (bc: Seq.seq t_T) (c: t_Intersection) : ()
-   = let _ = concat_contains in ()
+  function set_produces_trans_ref_T (a: t_Intersection_T_RandomState) (ab: Seq.seq t_T) (b: t_Intersection_T_RandomState) (bc: Seq.seq t_T) (c: t_Intersection_T_RandomState) : ()
+   = let _ = concat_contains_ref_T in ()
   
-  axiom set_produces_trans_spec:
-    forall a: t_Intersection, ab: Seq.seq t_T, b: t_Intersection, bc: Seq.seq t_T, c: t_Intersection. set_produces a ab b
-      -> set_produces b bc c -> set_produces a (Seq.(++) ab bc) c
+  axiom set_produces_trans_ref_T_spec:
+    forall a: t_Intersection_T_RandomState, ab: Seq.seq t_T, b: t_Intersection_T_RandomState, bc: Seq.seq t_T, c: t_Intersection_T_RandomState. set_produces_ref_T a ab b
+      -> set_produces_ref_T b bc c -> set_produces_ref_T a (Seq.(++) ab bc) c
   
-  predicate produces (self: t_Intersection) (visited: Seq.seq t_T) (o: t_Intersection) = set_produces self visited o
+  predicate produces_Intersection_T_RandomState (self: t_Intersection_T_RandomState) (visited: Seq.seq t_T) (o: t_Intersection_T_RandomState) =
+    set_produces_ref_T self visited o
   
-  function produces_trans (a: t_Intersection) (ab: Seq.seq t_T) (b: t_Intersection) (bc: Seq.seq t_T) (c: t_Intersection) : ()
-   = let _ = set_produces_trans a ab b bc c in ()
+  function produces_trans_Intersection_T_RandomState (a: t_Intersection_T_RandomState) (ab: Seq.seq t_T) (b: t_Intersection_T_RandomState) (bc: Seq.seq t_T) (c: t_Intersection_T_RandomState) : ()
+   = let _ = set_produces_trans_ref_T a ab b bc c in ()
   
-  axiom produces_trans_spec:
-    forall a: t_Intersection, ab: Seq.seq t_T, b: t_Intersection, bc: Seq.seq t_T, c: t_Intersection. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Intersection_T_RandomState_spec:
+    forall a: t_Intersection_T_RandomState, ab: Seq.seq t_T, b: t_Intersection_T_RandomState, bc: Seq.seq t_T, c: t_Intersection_T_RandomState. produces_Intersection_T_RandomState a ab b
+      -> produces_Intersection_T_RandomState b bc c -> produces_Intersection_T_RandomState a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Intersection) : () = ()
+  function produces_refl_Intersection_T_RandomState (self: t_Intersection_T_RandomState) : () = ()
   
-  axiom produces_refl_spec: forall self: t_Intersection. produces self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Intersection_T_RandomState_spec:
+    forall self: t_Intersection_T_RandomState. produces_Intersection_T_RandomState self (Seq.empty: Seq.seq t_T) self
   
-  predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
-    exists s: Seq.seq t_T. produces (iter self) s (iter o)
+  predicate produces_Copied_Intersection_T_RandomState (self: t_Copied_Intersection_T_RandomState) (visited: Seq.seq t_T) (o: t_Copied_Intersection_T_RandomState) =
+    exists s: Seq.seq t_T. produces_Intersection_T_RandomState (iter_Copied_Intersection_T_RandomState self) s (iter_Copied_Intersection_T_RandomState o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
   
-  function produces_trans'0 (a: t_Copied) (ab: Seq.seq t_T) (b: t_Copied) (bc: Seq.seq t_T) (c: t_Copied) : ()
+  function produces_trans_Copied_Intersection_T_RandomState (a: t_Copied_Intersection_T_RandomState) (ab: Seq.seq t_T) (b: t_Copied_Intersection_T_RandomState) (bc: Seq.seq t_T) (c: t_Copied_Intersection_T_RandomState) : ()
   
-  axiom produces_trans_spec'0:
-    forall a: t_Copied, ab: Seq.seq t_T, b: t_Copied, bc: Seq.seq t_T, c: t_Copied. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Copied_Intersection_T_RandomState_spec:
+    forall a: t_Copied_Intersection_T_RandomState, ab: Seq.seq t_T, b: t_Copied_Intersection_T_RandomState, bc: Seq.seq t_T, c: t_Copied_Intersection_T_RandomState. produces_Copied_Intersection_T_RandomState a ab b
+      -> produces_Copied_Intersection_T_RandomState b bc c
+      -> produces_Copied_Intersection_T_RandomState a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Copied) : ()
+  function produces_refl_Copied_Intersection_T_RandomState (self: t_Copied_Intersection_T_RandomState) : ()
   
-  axiom produces_refl_spec'0: forall self: t_Copied. produces'0 self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Copied_Intersection_T_RandomState_spec:
+    forall self: t_Copied_Intersection_T_RandomState. produces_Copied_Intersection_T_RandomState self (Seq.empty: Seq.seq t_T) self
   
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Intersection) = _1.final = _1.current
+  predicate resolve_ref_Intersection_T_RandomState [@inline:trivial] (_1: MutBorrow.t t_Intersection_T_RandomState) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve_ref_Intersection_T_RandomState
   
-  predicate completed (self: MutBorrow.t t_Intersection) = resolve'2 self /\ Fset.is_empty (view self.current)
+  predicate completed_Intersection_T_RandomState (self: MutBorrow.t t_Intersection_T_RandomState) =
+    resolve_ref_Intersection_T_RandomState self /\ Fset.is_empty (view_Intersection_T_RandomState self.current)
   
-  predicate completed'0 (self: MutBorrow.t t_Copied) =
-    exists inner: MutBorrow.t t_Intersection. inner.current = iter self.current
-      /\ inner.final = iter self.final /\ completed inner
+  predicate completed_Copied_Intersection_T_RandomState (self: MutBorrow.t t_Copied_Intersection_T_RandomState) =
+    exists inner: MutBorrow.t t_Intersection_T_RandomState. inner.current
+        = iter_Copied_Intersection_T_RandomState self.current
+      /\ inner.final = iter_Copied_Intersection_T_RandomState self.final /\ completed_Intersection_T_RandomState inner
   
-  predicate contains'1 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet) =
-    forall x: t_DeepModelTy. contains (view'0 res) x = (exists x1: t_T. deep_model x1 = x /\ contains'1 prod x1)
+  predicate from_iter_post_HashSet_T_RandomState (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState res) x
+      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
   
-  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = {[@expl:collect 'self_' type invariant] inv'2 self_}
+  let rec collect_Copied_Intersection_T_RandomState (self_: t_Copied_Intersection_T_RandomState)
+    (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_Copied_Intersection_T_RandomState self_}
     any
-    [ return (result: t_HashSet) -> {inv result}
-      {exists done': MutBorrow.t t_Copied, prod: Seq.seq t_T. resolve'1 done'.final
-        /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
+      {exists done': MutBorrow.t t_Copied_Intersection_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Intersection_T_RandomState'0 done'.final
+        /\ completed_Copied_Intersection_T_RandomState done'
+        /\ produces_Copied_Intersection_T_RandomState self_ prod done'.current
+        /\ from_iter_post_HashSet_T_RandomState prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hashset_intersection (xs: t_HashSet) (ys: t_HashSet) (return (x: t_HashSet)) =
-    {[@expl:hashset_intersection 'xs' type invariant] inv'0 xs}
-    {[@expl:hashset_intersection 'ys' type invariant] inv'0 ys}
+  let rec hashset_intersection_T (xs: t_HashSet_T_RandomState) (ys: t_HashSet_T_RandomState)
+    (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState xs}
+    {[@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState ys}
     (! bb0
-    [ bb0 = s0 [ s0 = intersection {xs} {ys} (fun (_ret: t_Intersection) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = copied {_5} (fun (_ret: t_Copied) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = collect {_4} (fun (_ret: t_HashSet) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
+    [ bb0 = s0
+      [ s0 = intersection_T {xs} {ys} (fun (_ret: t_Intersection_T_RandomState) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = copied_Intersection_T_RandomState {_5}
+          (fun (_ret: t_Copied_Intersection_T_RandomState) -> [ &_4 <- _ret ] s1)
+      | s1 = bb2 ]
+    | bb2 = s0
+      [ s0 = collect_Copied_Intersection_T_RandomState {_4} (fun (_ret: t_HashSet_T_RandomState) -> [ &_0 <- _ret ] s1)
+      | s1 = bb3 ]
     | bb3 = return {_0} ]
-    [ & _0: t_HashSet = Any.any_l ()
-    | & xs: t_HashSet = xs
-    | & ys: t_HashSet = ys
-    | & _4: t_Copied = Any.any_l ()
-    | & _5: t_Intersection = Any.any_l () ])
-    [ return (result: t_HashSet) -> {[@expl:hashset_intersection result type invariant] inv result}
-      {[@expl:hashset_intersection ensures] view'0 result = Fset.inter (view'0 xs) (view'0 ys)}
+    [ & _0: t_HashSet_T_RandomState = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState = xs
+    | & ys: t_HashSet_T_RandomState = ys
+    | & _4: t_Copied_Intersection_T_RandomState = Any.any_l ()
+    | & _5: t_Intersection_T_RandomState = Any.any_l () ])
+    [ return (result: t_HashSet_T_RandomState) ->
+    {[@expl:hashset_intersection result type invariant] inv_HashSet_T_RandomState result}
+      {[@expl:hashset_intersection ensures] view_HashSet_T_RandomState result
+      = Fset.inter (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys)}
       (! return {result}) ]
 end
-module M_collections__hashset_difference
+module M_hashset_difference
   use set.Fset
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_HashSet
+  type t_HashSet_T_RandomState
   
-  type t_Difference
+  type t_Difference_T_RandomState
   
-  predicate inv (_1: t_HashSet)
+  predicate inv_HashSet_T_RandomState (_1: t_HashSet_T_RandomState)
   
-  predicate invariant' [@inline:trivial] (self: t_HashSet) = inv self
+  predicate invariant_ref_HashSet_T_RandomState [@inline:trivial] (self: t_HashSet_T_RandomState) =
+    inv_HashSet_T_RandomState self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState
   
-  predicate inv'0 [@inline:trivial] (_1: t_HashSet) = invariant' _1
+  predicate inv_ref_HashSet_T_RandomState [@inline:trivial] (_1: t_HashSet_T_RandomState) =
+    invariant_ref_HashSet_T_RandomState _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState
   
-  predicate inv'1 (_1: t_Difference)
+  predicate inv_Difference_T_RandomState (_1: t_Difference_T_RandomState)
   
   type t_DeepModelTy
   
-  function view (self: t_Difference) : Fset.fset t_DeepModelTy
+  function view_Difference_T_RandomState (self: t_Difference_T_RandomState) : Fset.fset t_DeepModelTy
   
-  function view'0 (self: t_HashSet) : Fset.fset t_DeepModelTy
+  function view_HashSet_T_RandomState (self: t_HashSet_T_RandomState) : Fset.fset t_DeepModelTy
   
-  let rec difference (self_: t_HashSet) (other: t_HashSet) (return (x: t_Difference)) =
-    {[@expl:difference 'self_' type invariant] inv'0 self_}
-    {[@expl:difference 'other' type invariant] inv'0 other}
+  let rec difference_T (self_: t_HashSet_T_RandomState) (other: t_HashSet_T_RandomState)
+    (return (x: t_Difference_T_RandomState)) =
+    {[@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
+    {[@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState other}
     any
-    [ return (result: t_Difference) -> {inv'1 result}
-      {view result = Fset.diff (view'0 self_) (view'0 other)}
+    [ return (result: t_Difference_T_RandomState) -> {inv_Difference_T_RandomState result}
+      {view_Difference_T_RandomState result
+      = Fset.diff (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other)}
       (! return {result}) ]
   
-  type t_Copied
+  type t_Copied_Difference_T_RandomState
   
-  function iter (self: t_Copied) : t_Difference
+  function iter_Copied_Difference_T_RandomState (self: t_Copied_Difference_T_RandomState) : t_Difference_T_RandomState
   
-  predicate invariant''0 [@inline:trivial] (self: t_Copied) = inv'1 (iter self)
+  predicate invariant_Copied_Difference_T_RandomState [@inline:trivial] (self: t_Copied_Difference_T_RandomState) =
+    inv_Difference_T_RandomState (iter_Copied_Difference_T_RandomState self)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Copied_Difference_T_RandomState
   
-  predicate inv'2 (_1: t_Copied)
+  predicate inv_Copied_Difference_T_RandomState (_1: t_Copied_Difference_T_RandomState)
   
-  axiom inv_axiom: forall x: t_Copied [inv'2 x]. inv'2 x -> invariant''0 x
+  axiom inv_axiom:
+    forall x: t_Copied_Difference_T_RandomState [inv_Copied_Difference_T_RandomState x]. inv_Copied_Difference_T_RandomState x
+      -> invariant_Copied_Difference_T_RandomState x
   
-  let rec copied (self_: t_Difference) (return (x: t_Copied)) = {[@expl:copied 'self_' type invariant] inv'1 self_}
-    any [ return (result: t_Copied) -> {inv'2 result} {iter result = self_} (! return {result}) ]
+  let rec copied_Difference_T_RandomState (self_: t_Difference_T_RandomState)
+    (return (x: t_Copied_Difference_T_RandomState)) =
+    {[@expl:copied 'self_' type invariant] inv_Difference_T_RandomState self_}
+    any
+    [ return (result: t_Copied_Difference_T_RandomState) -> {inv_Copied_Difference_T_RandomState result}
+      {iter_Copied_Difference_T_RandomState result = self_}
+      (! return {result}) ]
   
-  predicate resolve (_1: t_Difference)
+  predicate resolve_Difference_T_RandomState (_1: t_Difference_T_RandomState)
   
-  predicate resolve'0 [@inline:trivial] (self: t_Copied) = resolve (iter self)
+  predicate resolve_Copied_Difference_T_RandomState [@inline:trivial] (self: t_Copied_Difference_T_RandomState) =
+    resolve_Difference_T_RandomState (iter_Copied_Difference_T_RandomState self)
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_Copied_Difference_T_RandomState
   
-  predicate resolve'1 (_1: t_Copied)
+  predicate resolve_Copied_Difference_T_RandomState'0 (_1: t_Copied_Difference_T_RandomState)
   
-  axiom resolve_axiom: forall x: t_Copied [resolve'1 x]. resolve'1 x -> resolve'0 x
+  axiom resolve_axiom:
+    forall x: t_Copied_Difference_T_RandomState [resolve_Copied_Difference_T_RandomState'0 x]. resolve_Copied_Difference_T_RandomState'0 x
+      -> resolve_Copied_Difference_T_RandomState x
   
   type t_T
   
-  predicate contains [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_DeepModelTy
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
-  meta "rewrite_def" function deep_model'0
+  meta "rewrite_def" function deep_model_ref_T
   
-  predicate contains'0 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces (start: t_Difference) (visited: Seq.seq t_T) (end': t_Difference) =
-    Fset.cardinal (view start) = Seq.length visited + Fset.cardinal (view end')
-    /\ (forall x: t_DeepModelTy. contains (view start) x
-        -> (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1) \/ contains (view end') x)
-    /\ (forall x: t_T. contains'0 visited x
-        -> contains (view start) (deep_model'0 x) /\ not contains (view end') (deep_model'0 x))
-    /\ (forall x: t_DeepModelTy. contains (view end') x
-        -> contains (view start) x /\ not (exists x1: t_T. deep_model'0 x1 = x /\ contains'0 visited x1))
+  predicate set_produces_ref_T (start: t_Difference_T_RandomState) (visited: Seq.seq t_T) (end': t_Difference_T_RandomState) =
+    Fset.cardinal (view_Difference_T_RandomState start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_RandomState end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState start) x
+        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+        \/ contains_DeepModelTy (view_Difference_T_RandomState end') x)
+    /\ (forall x: t_T. contains_ref_T visited x
+        -> contains_DeepModelTy (view_Difference_T_RandomState start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_RandomState end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState end') x
+        -> contains_DeepModelTy (view_Difference_T_RandomState start) x
+        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
-        /\ 0 <= j /\ j < Seq.length visited /\ deep_model'0 (Seq.get visited i) = deep_model'0 (Seq.get visited j)
+        /\ 0 <= j
+        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  constant concat_contains: () = ()
+  constant concat_contains_ref_T: () = ()
   
-  axiom concat_contains_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains'0 (Seq.(++) a b) x
-        = contains'0 a x
-      \/ contains'0 b x
+  axiom concat_contains_ref_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_ref_T (Seq.(++) a b) x
+        = contains_ref_T a x
+      \/ contains_ref_T b x
   
-  function set_produces_trans (a: t_Difference) (ab: Seq.seq t_T) (b: t_Difference) (bc: Seq.seq t_T) (c: t_Difference) : ()
-   = let _ = concat_contains in ()
+  function set_produces_trans_ref_T (a: t_Difference_T_RandomState) (ab: Seq.seq t_T) (b: t_Difference_T_RandomState) (bc: Seq.seq t_T) (c: t_Difference_T_RandomState) : ()
+   = let _ = concat_contains_ref_T in ()
   
-  axiom set_produces_trans_spec:
-    forall a: t_Difference, ab: Seq.seq t_T, b: t_Difference, bc: Seq.seq t_T, c: t_Difference. set_produces a ab b
-      -> set_produces b bc c -> set_produces a (Seq.(++) ab bc) c
+  axiom set_produces_trans_ref_T_spec:
+    forall a: t_Difference_T_RandomState, ab: Seq.seq t_T, b: t_Difference_T_RandomState, bc: Seq.seq t_T, c: t_Difference_T_RandomState. set_produces_ref_T a ab b
+      -> set_produces_ref_T b bc c -> set_produces_ref_T a (Seq.(++) ab bc) c
   
-  predicate produces (self: t_Difference) (visited: Seq.seq t_T) (o: t_Difference) = set_produces self visited o
+  predicate produces_Difference_T_RandomState (self: t_Difference_T_RandomState) (visited: Seq.seq t_T) (o: t_Difference_T_RandomState) =
+    set_produces_ref_T self visited o
   
-  function produces_trans (a: t_Difference) (ab: Seq.seq t_T) (b: t_Difference) (bc: Seq.seq t_T) (c: t_Difference) : ()
-   = let _ = set_produces_trans a ab b bc c in ()
+  function produces_trans_Difference_T_RandomState (a: t_Difference_T_RandomState) (ab: Seq.seq t_T) (b: t_Difference_T_RandomState) (bc: Seq.seq t_T) (c: t_Difference_T_RandomState) : ()
+   = let _ = set_produces_trans_ref_T a ab b bc c in ()
   
-  axiom produces_trans_spec:
-    forall a: t_Difference, ab: Seq.seq t_T, b: t_Difference, bc: Seq.seq t_T, c: t_Difference. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Difference_T_RandomState_spec:
+    forall a: t_Difference_T_RandomState, ab: Seq.seq t_T, b: t_Difference_T_RandomState, bc: Seq.seq t_T, c: t_Difference_T_RandomState. produces_Difference_T_RandomState a ab b
+      -> produces_Difference_T_RandomState b bc c -> produces_Difference_T_RandomState a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Difference) : () = ()
+  function produces_refl_Difference_T_RandomState (self: t_Difference_T_RandomState) : () = ()
   
-  axiom produces_refl_spec: forall self: t_Difference. produces self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Difference_T_RandomState_spec:
+    forall self: t_Difference_T_RandomState. produces_Difference_T_RandomState self (Seq.empty: Seq.seq t_T) self
   
-  predicate produces'0 (self: t_Copied) (visited: Seq.seq t_T) (o: t_Copied) =
-    exists s: Seq.seq t_T. produces (iter self) s (iter o)
+  predicate produces_Copied_Difference_T_RandomState (self: t_Copied_Difference_T_RandomState) (visited: Seq.seq t_T) (o: t_Copied_Difference_T_RandomState) =
+    exists s: Seq.seq t_T. produces_Difference_T_RandomState (iter_Copied_Difference_T_RandomState self) s (iter_Copied_Difference_T_RandomState o)
       /\ Seq.length visited = Seq.length s
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
   
-  function produces_trans'0 (a: t_Copied) (ab: Seq.seq t_T) (b: t_Copied) (bc: Seq.seq t_T) (c: t_Copied) : ()
+  function produces_trans_Copied_Difference_T_RandomState (a: t_Copied_Difference_T_RandomState) (ab: Seq.seq t_T) (b: t_Copied_Difference_T_RandomState) (bc: Seq.seq t_T) (c: t_Copied_Difference_T_RandomState) : ()
   
-  axiom produces_trans_spec'0:
-    forall a: t_Copied, ab: Seq.seq t_T, b: t_Copied, bc: Seq.seq t_T, c: t_Copied. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Copied_Difference_T_RandomState_spec:
+    forall a: t_Copied_Difference_T_RandomState, ab: Seq.seq t_T, b: t_Copied_Difference_T_RandomState, bc: Seq.seq t_T, c: t_Copied_Difference_T_RandomState. produces_Copied_Difference_T_RandomState a ab b
+      -> produces_Copied_Difference_T_RandomState b bc c
+      -> produces_Copied_Difference_T_RandomState a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Copied) : ()
+  function produces_refl_Copied_Difference_T_RandomState (self: t_Copied_Difference_T_RandomState) : ()
   
-  axiom produces_refl_spec'0: forall self: t_Copied. produces'0 self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Copied_Difference_T_RandomState_spec:
+    forall self: t_Copied_Difference_T_RandomState. produces_Copied_Difference_T_RandomState self (Seq.empty: Seq.seq t_T) self
   
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_Difference) = _1.final = _1.current
+  predicate resolve_ref_Difference_T_RandomState [@inline:trivial] (_1: MutBorrow.t t_Difference_T_RandomState) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve_ref_Difference_T_RandomState
   
-  predicate completed (self: MutBorrow.t t_Difference) = resolve'2 self /\ Fset.is_empty (view self.current)
+  predicate completed_Difference_T_RandomState (self: MutBorrow.t t_Difference_T_RandomState) =
+    resolve_ref_Difference_T_RandomState self /\ Fset.is_empty (view_Difference_T_RandomState self.current)
   
-  predicate completed'0 (self: MutBorrow.t t_Copied) =
-    exists inner: MutBorrow.t t_Difference. inner.current = iter self.current
-      /\ inner.final = iter self.final /\ completed inner
+  predicate completed_Copied_Difference_T_RandomState (self: MutBorrow.t t_Copied_Difference_T_RandomState) =
+    exists inner: MutBorrow.t t_Difference_T_RandomState. inner.current
+        = iter_Copied_Difference_T_RandomState self.current
+      /\ inner.final = iter_Copied_Difference_T_RandomState self.final /\ completed_Difference_T_RandomState inner
   
-  predicate contains'1 (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate from_iter_post (prod: Seq.seq t_T) (res: t_HashSet) =
-    forall x: t_DeepModelTy. contains (view'0 res) x = (exists x1: t_T. deep_model x1 = x /\ contains'1 prod x1)
+  predicate from_iter_post_HashSet_T_RandomState (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState res) x
+      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
   
-  let rec collect (self_: t_Copied) (return (x: t_HashSet)) = {[@expl:collect 'self_' type invariant] inv'2 self_}
+  let rec collect_Copied_Difference_T_RandomState (self_: t_Copied_Difference_T_RandomState)
+    (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:collect 'self_' type invariant] inv_Copied_Difference_T_RandomState self_}
     any
-    [ return (result: t_HashSet) -> {inv result}
-      {exists done': MutBorrow.t t_Copied, prod: Seq.seq t_T. resolve'1 done'.final
-        /\ completed'0 done' /\ produces'0 self_ prod done'.current /\ from_iter_post prod result}
+    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
+      {exists done': MutBorrow.t t_Copied_Difference_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Difference_T_RandomState'0 done'.final
+        /\ completed_Copied_Difference_T_RandomState done'
+        /\ produces_Copied_Difference_T_RandomState self_ prod done'.current
+        /\ from_iter_post_HashSet_T_RandomState prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hashset_difference (xs: t_HashSet) (ys: t_HashSet) (return (x: t_HashSet)) =
-    {[@expl:hashset_difference 'xs' type invariant] inv'0 xs}
-    {[@expl:hashset_difference 'ys' type invariant] inv'0 ys}
+  let rec hashset_difference_T (xs: t_HashSet_T_RandomState) (ys: t_HashSet_T_RandomState)
+    (return (x: t_HashSet_T_RandomState)) =
+    {[@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState xs}
+    {[@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState ys}
     (! bb0
-    [ bb0 = s0 [ s0 = difference {xs} {ys} (fun (_ret: t_Difference) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = copied {_5} (fun (_ret: t_Copied) -> [ &_4 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = collect {_4} (fun (_ret: t_HashSet) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
+    [ bb0 = s0 [ s0 = difference_T {xs} {ys} (fun (_ret: t_Difference_T_RandomState) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = copied_Difference_T_RandomState {_5} (fun (_ret: t_Copied_Difference_T_RandomState) -> [ &_4 <- _ret ] s1)
+      | s1 = bb2 ]
+    | bb2 = s0
+      [ s0 = collect_Copied_Difference_T_RandomState {_4} (fun (_ret: t_HashSet_T_RandomState) -> [ &_0 <- _ret ] s1)
+      | s1 = bb3 ]
     | bb3 = return {_0} ]
-    [ & _0: t_HashSet = Any.any_l ()
-    | & xs: t_HashSet = xs
-    | & ys: t_HashSet = ys
-    | & _4: t_Copied = Any.any_l ()
-    | & _5: t_Difference = Any.any_l () ])
-    [ return (result: t_HashSet) -> {[@expl:hashset_difference result type invariant] inv result}
-      {[@expl:hashset_difference ensures] view'0 result = Fset.diff (view'0 xs) (view'0 ys)}
+    [ & _0: t_HashSet_T_RandomState = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState = xs
+    | & ys: t_HashSet_T_RandomState = ys
+    | & _4: t_Copied_Difference_T_RandomState = Any.any_l ()
+    | & _5: t_Difference_T_RandomState = Any.any_l () ])
+    [ return (result: t_HashSet_T_RandomState) ->
+    {[@expl:hashset_difference result type invariant] inv_HashSet_T_RandomState result}
+      {[@expl:hashset_difference ensures] view_HashSet_T_RandomState result
+      = Fset.diff (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys)}
       (! return {result}) ]
 end

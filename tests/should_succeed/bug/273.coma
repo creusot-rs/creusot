@@ -1,11 +1,11 @@
-module M_273__ex
+module M_ex
   use creusot.prelude.Any
   
-  type t_Option = C_None | C_Some bool
+  type t_Option_bool = None | Some bool
   
-  let rec v_Some (input: t_Option) (ret (field_0: bool)) = any
-    [ good (field_0: bool) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: bool [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_bool) (ret (f0: bool)) = any
+    [ good (f0: bool) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: bool [Some f0: t_Option_bool]. Some f0 <> input} (! {false} any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -13,9 +13,9 @@ module M_273__ex
   
   let rec ex (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_1 <- C_Some true ] s1
-      | s1 = any [ br0 -> {_1 = C_None} (! bb4) | br1 (x0: bool) -> {_1 = C_Some x0} (! bb2) ] ]
-    | bb2 = s0 [ s0 = v_Some {_1} (fun (r0: bool) -> [ &b <- r0 ] s1) | s1 = {[@expl:assertion] b} s2 | s2 = bb4 ]
-    | bb4 = return {_0} ] [ & _0: () = Any.any_l () | & _1: t_Option = Any.any_l () | & b: bool = Any.any_l () ])
+      [ s0 = [ &_1 <- Some true ] s1
+      | s1 = any [ br0 -> {_1 = None} (! bb4) | br1 (x0: bool) -> {_1 = Some x0} (! bb2) ] ]
+    | bb2 = s0 [ s0 = elim_Some {_1} (fun (r0: bool) -> [ &b <- r0 ] s1) | s1 = {[@expl:assertion] b} s2 | s2 = bb4 ]
+    | bb4 = return {_0} ] [ & _0: () = Any.any_l () | & _1: t_Option_bool = Any.any_l () | & b: bool = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

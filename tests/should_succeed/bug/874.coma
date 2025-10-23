@@ -1,4 +1,4 @@
-module M_874__can_extend
+module M_can_extend
   use creusot.slice.Slice64
   use creusot.int.Int32
   use seq.Seq
@@ -7,134 +7,148 @@ module M_874__can_extend
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_i32_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq Int32.t
+  function view_Vec_i32_Global (self: t_Vec_i32_Global) : Seq.seq Int32.t
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_i32_Global_spec: forall self: t_Vec_i32_Global. Seq.length (view_Vec_i32_Global self)
+      <= UInt64.t'int const_MAX
   
-  function view'0 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t = Slice64.view self
+  function view_Box_slice_i32_Global [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t =
+    Slice64.view self
   
-  meta "rewrite_def" function view'0
+  meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let rec into_vec (self_: Slice64.slice Int32.t) (return (x: t_Vec)) = any
-    [ return (result: t_Vec) -> {view result = view'0 self_} (! return {result}) ]
+  let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+    [ return (result: t_Vec_i32_Global) -> {view_Vec_i32_Global result = view_Box_slice_i32_Global self_}
+      (! return {result}) ]
   
-  predicate precondition [@inline:trivial] (self: ()) (args: t_Vec) = let self_ = args in true
+  predicate precondition_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) = let self_ = args in true
   
-  meta "rewrite_def" predicate precondition
+  meta "rewrite_def" predicate precondition_into_iter
   
-  type t_IntoIter
+  type t_IntoIter_i32_Global
   
-  predicate inv (_1: t_IntoIter)
+  predicate inv_IntoIter_i32_Global (_1: t_IntoIter_i32_Global)
   
-  function view'1 (self: t_IntoIter) : Seq.seq Int32.t
+  function view_IntoIter_i32_Global (self: t_IntoIter_i32_Global) : Seq.seq Int32.t
   
-  let rec into_iter (self_: t_Vec) (return (x: t_IntoIter)) = any
-    [ return (result: t_IntoIter) -> {inv result} {view self_ = view'1 result} (! return {result}) ]
+  let rec into_iter_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: t_IntoIter_i32_Global)) = any
+    [ return (result: t_IntoIter_i32_Global) -> {inv_IntoIter_i32_Global result}
+      {view_Vec_i32_Global self_ = view_IntoIter_i32_Global result}
+      (! return {result}) ]
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_IntoIter) = inv self.current /\ inv self.final
+  predicate invariant_ref_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
+    inv_IntoIter_i32_Global self.current /\ inv_IntoIter_i32_Global self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_IntoIter_i32_Global
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = invariant' _1
+  predicate inv_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+    invariant_ref_IntoIter_i32_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_IntoIter_i32_Global
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_i32
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: t_Vec) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+  predicate postcondition_once_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
+    let self_ = args in view_Vec_i32_Global self_ = view_IntoIter_i32_Global result /\ inv_IntoIter_i32_Global result
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_into_iter
   
-  predicate resolve [@inline:trivial] (_1: ()) = true
+  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_into_iter
   
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: t_Vec) (result_state: ()) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+  predicate postcondition_mut_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result_state: ()) (result: t_IntoIter_i32_Global) =
+    let self_ = args in view_Vec_i32_Global self_ = view_IntoIter_i32_Global result /\ inv_IntoIter_i32_Global result
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_into_iter
   
-  function fn_mut_once (self: ()) (args: t_Vec) (res: t_IntoIter) : ()
+  function fn_mut_once_into_iter (self: ()) (args: t_Vec_i32_Global) (res: t_IntoIter_i32_Global) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: t_Vec, res: t_IntoIter. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_into_iter_spec:
+    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global. postcondition_once_into_iter self args res
+      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
   
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  predicate hist_inv_into_iter [@inline:trivial] (self: ()) (result_state: ()) = true
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_into_iter
   
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_into_iter_spec: forall self: (), b: (), c: (). hist_inv_into_iter self b
+      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
   
-  function hist_inv_refl (self: ()) : ()
+  function hist_inv_refl_into_iter (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  axiom hist_inv_refl_into_iter_spec: forall self: (). hist_inv_into_iter self self
   
-  function postcondition_mut_hist_inv (self: ()) (args: t_Vec) (res_state: ()) (res: t_IntoIter) : ()
+  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Vec_i32_Global) (res_state: ()) (res: t_IntoIter_i32_Global) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: t_Vec, res_state: (), res: t_IntoIter. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_into_iter_spec:
+    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global. postcondition_mut_into_iter self args res_state res
+      -> hist_inv_into_iter self res_state
   
-  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_into_iter_spec: forall self: (), res_state: (). hist_inv_into_iter self res_state
+      = (self = res_state)
   
-  predicate postcondition [@inline:trivial] (self: ()) (args: t_Vec) (result: t_IntoIter) =
-    let self_ = args in view self_ = view'1 result /\ inv result
+  predicate postcondition_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
+    let self_ = args in view_Vec_i32_Global self_ = view_IntoIter_i32_Global result /\ inv_IntoIter_i32_Global result
   
-  meta "rewrite_def" predicate postcondition
+  meta "rewrite_def" predicate postcondition_into_iter
   
-  function fn_once (self: ()) (args: t_Vec) (res: t_IntoIter) : ()
+  function fn_once_into_iter (self: ()) (args: t_Vec_i32_Global) (res: t_IntoIter_i32_Global) : ()
   
-  axiom fn_once_spec: forall self: (), args: t_Vec, res: t_IntoIter. postcondition_once self args res
-      = (postcondition self args res /\ resolve self)
+  axiom fn_once_into_iter_spec:
+    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global. postcondition_once_into_iter self args res
+      = (postcondition_into_iter self args res /\ resolve_into_iter self)
   
-  function fn_mut (self: ()) (args: t_Vec) (res_state: ()) (res: t_IntoIter) : ()
+  function fn_mut_into_iter (self: ()) (args: t_Vec_i32_Global) (res_state: ()) (res: t_IntoIter_i32_Global) : ()
   
-  axiom fn_mut_spec:
-    forall self: (), args: t_Vec, res_state: (), res: t_IntoIter. postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_into_iter_spec:
+    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global. postcondition_mut_into_iter self args res_state res
+      = (postcondition_into_iter self args res /\ self = res_state)
   
-  predicate produces (self: t_IntoIter) (visited: Seq.seq Int32.t) (rhs: t_IntoIter) =
-    view'1 self = Seq.(++) visited (view'1 rhs)
+  predicate produces_IntoIter_i32_Global (self: t_IntoIter_i32_Global) (visited: Seq.seq Int32.t) (rhs: t_IntoIter_i32_Global) =
+    view_IntoIter_i32_Global self = Seq.(++) visited (view_IntoIter_i32_Global rhs)
   
-  function produces_trans (a: t_IntoIter) (ab: Seq.seq Int32.t) (b: t_IntoIter) (bc: Seq.seq Int32.t) (c: t_IntoIter) : ()
+  function produces_trans_IntoIter_i32_Global (a: t_IntoIter_i32_Global) (ab: Seq.seq Int32.t) (b: t_IntoIter_i32_Global) (bc: Seq.seq Int32.t) (c: t_IntoIter_i32_Global) : ()
    = ()
   
-  axiom produces_trans_spec:
-    forall a: t_IntoIter, ab: Seq.seq Int32.t, b: t_IntoIter, bc: Seq.seq Int32.t, c: t_IntoIter. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_IntoIter_i32_Global_spec:
+    forall a: t_IntoIter_i32_Global, ab: Seq.seq Int32.t, b: t_IntoIter_i32_Global, bc: Seq.seq Int32.t, c: t_IntoIter_i32_Global. produces_IntoIter_i32_Global a ab b
+      -> produces_IntoIter_i32_Global b bc c -> produces_IntoIter_i32_Global a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_IntoIter) : () = ()
+  function produces_refl_IntoIter_i32_Global (self: t_IntoIter_i32_Global) : () = ()
   
-  axiom produces_refl_spec: forall self: t_IntoIter. produces self (Seq.empty: Seq.seq Int32.t) self
+  axiom produces_refl_IntoIter_i32_Global_spec:
+    forall self: t_IntoIter_i32_Global. produces_IntoIter_i32_Global self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_IntoIter) = _1.final = _1.current
+  predicate resolve_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_IntoIter_i32_Global
   
-  predicate completed (self: MutBorrow.t t_IntoIter) =
-    resolve'0 self /\ view'1 self.current = (Seq.empty: Seq.seq Int32.t)
+  predicate completed_IntoIter_i32_Global (self: MutBorrow.t t_IntoIter_i32_Global) =
+    resolve_ref_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
   
-  let rec extend (self_: MutBorrow.t t_Vec) (iter: t_Vec) (return (x: ())) =
-    {[@expl:extend requires] precondition () iter}
+  let rec extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
+    {[@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
-    {exists start_: t_IntoIter, done': MutBorrow.t t_IntoIter, prod: Seq.seq Int32.t. inv start_
-        /\ inv'0 done'
-        /\ inv'1 prod
-        /\ postcondition () iter start_
-        /\ completed done'
-        /\ produces start_ prod done'.current /\ view self_.final = Seq.(++) (view self_.current) prod}
+    {exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
+        /\ inv_ref_IntoIter_i32_Global done'
+        /\ inv_Seq_i32 prod
+        /\ postcondition_into_iter () iter start_
+        /\ completed_IntoIter_i32_Global done'
+        /\ produces_IntoIter_i32_Global start_ prod done'.current
+        /\ view_Vec_i32_Global self_.final = Seq.(++) (view_Vec_i32_Global self_.current) prod}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -149,7 +163,7 @@ module M_874__can_extend
           /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
           [ &_4 <- __arr_temp ] s1) ]
       | s1 = bb2 ]
-    | bb2 = s0 [ s0 = into_vec {_4} (fun (_ret: t_Vec) -> [ &v <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = into_vec_i32 {_4} (fun (_ret: t_Vec_i32_Global) -> [ &v <- _ret ] s1) | s1 = bb3 ]
     | bb3 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (4: Int32.t)
@@ -157,11 +171,11 @@ module M_874__can_extend
           /\ Seq.get __arr_temp.Slice64.elts 2 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
           [ &_8 <- __arr_temp ] s1) ]
       | s1 = bb5 ]
-    | bb5 = s0 [ s0 = into_vec {_8} (fun (_ret: t_Vec) -> [ &w <- _ret ] s1) | s1 = bb6 ]
+    | bb5 = s0 [ s0 = into_vec_i32 {_8} (fun (_ret: t_Vec_i32_Global) -> [ &w <- _ret ] s1) | s1 = bb6 ]
     | bb6 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Vec> {v}
-          (fun (_ret: MutBorrow.t t_Vec) -> [ &_10 <- _ret ] [ &v <- _ret.final ] s1)
-      | s1 = extend {_10} {w} (fun (_ret: ()) -> [ &_9 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v}
+          (fun (_ret: MutBorrow.t t_Vec_i32_Global) -> [ &_10 <- _ret ] [ &v <- _ret.final ] s1)
+      | s1 = extend_Vec_i32_Global {_10} {w} (fun (_ret: ()) -> [ &_9 <- _ret ] s2)
       | s2 = bb7 ]
     | bb7 = s0
       [ s0 = any
@@ -173,16 +187,16 @@ module M_874__can_extend
           /\ Seq.get __arr_temp.Slice64.elts 5 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
           [ &_15 <- __arr_temp ] s1) ]
       | s1 = bb9 ]
-    | bb9 = s0 [ s0 = into_vec {_15} (fun (_ret: t_Vec) -> [ &z <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = {[@expl:assertion] Seq.(==) (view z) (view v)} s1 | s1 = bb13 ]
+    | bb9 = s0 [ s0 = into_vec_i32 {_15} (fun (_ret: t_Vec_i32_Global) -> [ &z <- _ret ] s1) | s1 = bb10 ]
+    | bb10 = s0 [ s0 = {[@expl:assertion] Seq.(==) (view_Vec_i32_Global z) (view_Vec_i32_Global v)} s1 | s1 = bb13 ]
     | bb13 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & v: t_Vec = Any.any_l ()
+    | & v: t_Vec_i32_Global = Any.any_l ()
     | & _4: Slice64.array Int32.t = Any.any_l ()
-    | & w: t_Vec = Any.any_l ()
+    | & w: t_Vec_i32_Global = Any.any_l ()
     | & _8: Slice64.array Int32.t = Any.any_l ()
     | & _9: () = Any.any_l ()
-    | & _10: MutBorrow.t t_Vec = Any.any_l ()
-    | & z: t_Vec = Any.any_l ()
+    | & _10: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
+    | & z: t_Vec_i32_Global = Any.any_l ()
     | & _15: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

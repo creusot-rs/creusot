@@ -1,9 +1,9 @@
-module M_02_fib__fib
+module M_fib
   use mach.int.Int
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_Int
   
   meta "compute_max_steps" 1000000
   
@@ -16,10 +16,10 @@ module M_02_fib__fib
   goal vc_fib: if i <= 0 then
       true
     else
-      if i = 1 then true else well_founded_relation i (i - 1) /\ well_founded_relation i (i - 2)
+      if i = 1 then true else well_founded_relation_Int i (i - 1) /\ well_founded_relation_Int i (i - 2)
 
 end
-module M_02_fib__lemma_fib_bound
+module M_lemma_fib_bound
   use mach.int.Int
   use bv.Pow2int
   
@@ -27,9 +27,9 @@ module M_02_fib__lemma_fib_bound
   
   axiom fib_def: forall i: int. fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_Int
   
   meta "compute_max_steps" 1000000
   
@@ -46,15 +46,15 @@ module M_02_fib__lemma_fib_bound
       if i = 1 then
         [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
       else
-        (([@expl:lemma_fib_bound requires] 0 <= i - 2) /\ well_founded_relation i (i - 2))
+        (([@expl:lemma_fib_bound requires] 0 <= i - 2) /\ well_founded_relation_Int i (i - 2))
         /\ (fib (i - 2) <= Pow2int.pow2 (i - 2)
         -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] 0 <= i - 1)
-          /\ well_founded_relation i (i - 1))
+          /\ well_founded_relation_Int i (i - 1))
         /\ (fib (i - 1) <= Pow2int.pow2 (i - 1) -> ([@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
     
     )
 end
-module M_02_fib__fib_memo
+module M_fib_memo
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
@@ -62,45 +62,54 @@ module M_02_fib__fib_memo
   use bv.Pow2int
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_PredCell_Option_usize_Global
   
-  type t_FibCache = { t_FibCache__0: t_Vec }
+  type t_FibCache = { f0: t_Vec_PredCell_Option_usize_Global }
   
-  type t_PredCell
+  type t_PredCell_Option_usize
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell_Option_usize) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds
+  meta "rewrite_def" predicate in_bounds_usize
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_PredCell
+  function view_Vec_PredCell_Option_usize_Global (self: t_Vec_PredCell_Option_usize_Global) : Seq.seq t_PredCell_Option_usize
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_PredCell_Option_usize_Global_spec:
+    forall self: t_Vec_PredCell_Option_usize_Global. Seq.length (view_Vec_PredCell_Option_usize_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell) (out: t_PredCell) =
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PredCell_Option_usize) (out: t_PredCell_Option_usize) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value
+  meta "rewrite_def" predicate has_value_usize
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_PredCell)) =
-    {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return (result: t_PredCell) -> {has_value ix (view self_) result} (! return {result}) ]
+  let rec index_Vec_PredCell_Option_usize_Global (self_: t_Vec_PredCell_Option_usize_Global) (ix: UInt64.t)
+    (return (x: t_PredCell_Option_usize)) =
+    {[@expl:index requires] in_bounds_usize ix (view_Vec_PredCell_Option_usize_Global self_)}
+    any
+    [ return (result: t_PredCell_Option_usize) ->
+    {has_value_usize ix (view_Vec_PredCell_Option_usize_Global self_) result}
+      (! return {result}) ]
   
-  type t_Option = C_None | C_Some UInt64.t
+  type t_Option_usize = None | Some UInt64.t
   
-  predicate index_logic [@inline:trivial] (self: Map.map t_Option bool) (a: t_Option) = Map.get self a
+  predicate index_Mapping_Option_usize_bool [@inline:trivial] (self: Map.map t_Option_usize bool) (a: t_Option_usize) =
+    Map.get self a
   
-  meta "rewrite_def" predicate index_logic
+  meta "rewrite_def" predicate index_Mapping_Option_usize_bool
   
-  function view'0 (self: t_PredCell) : Map.map t_Option bool
+  function view_PredCell_Option_usize (self: t_PredCell_Option_usize) : Map.map t_Option_usize bool
   
-  let rec get (self: t_PredCell) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {index_logic (view'0 self) result} (! return {result}) ]
+  let rec get_Option_usize (self: t_PredCell_Option_usize) (return (x: t_Option_usize)) = any
+    [ return (result: t_Option_usize) -> {index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) result}
+      (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
-    [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_usize) (ret (f0'0: UInt64.t)) = any
+    [ good (f0'0: UInt64.t) -> {Some f0'0 = input} (! ret {f0'0})
+    | bad -> {forall f0'0: UInt64.t [Some f0'0: t_Option_usize]. Some f0'0 <> input} (! {false} any) ]
   
   function fib (i: int) : int
   
@@ -114,42 +123,46 @@ module M_02_fib__fib_memo
   
   axiom lemma_fib_bound_spec: forall i: int. 0 <= i -> fib i <= Pow2int.pow2 i
   
-  let rec set (self: t_PredCell) (v: t_Option) (return (x: ())) = {[@expl:set requires] index_logic (view'0 self) v}
+  let rec set_Option_usize (self: t_PredCell_Option_usize) (v: t_Option_usize) (return (x: ())) =
+    {[@expl:set requires] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) v}
     any [ return (result: ()) -> (! return {result}) ]
   
-  predicate invariant' (self: t_FibCache) =
-    forall i: int. 0 <= i /\ i < Seq.length (view self.t_FibCache__0)
-      -> (forall x: t_Option. index_logic (view'0 (Seq.get (view self.t_FibCache__0) i)) x
+  predicate invariant_FibCache (self: t_FibCache) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_PredCell_Option_usize_Global self.f0)
+      -> (forall x: t_Option_usize. index_Mapping_Option_usize_bool (view_PredCell_Option_usize (Seq.get (view_Vec_PredCell_Option_usize_Global self.f0) i)) x
         = match x with
-          | C_None -> true
-          | C_Some v -> UInt64.t'int v = fib i
+          | None -> true
+          | Some v -> UInt64.t'int v = fib i
           end)
   
-  predicate inv (_1: t_FibCache)
+  predicate inv_FibCache (_1: t_FibCache)
   
-  axiom inv_axiom [@rewrite]: forall x: t_FibCache [inv x]. inv x = invariant' x
+  axiom inv_axiom [@rewrite]: forall x: t_FibCache [inv_FibCache x]. inv_FibCache x = invariant_FibCache x
   
-  predicate invariant''0 [@inline:trivial] (self: t_FibCache) = inv self
+  predicate invariant_ref_FibCache [@inline:trivial] (self: t_FibCache) = inv_FibCache self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_FibCache
   
-  predicate inv'0 [@inline:trivial] (_1: t_FibCache) = invariant''0 _1
+  predicate inv_ref_FibCache [@inline:trivial] (_1: t_FibCache) = invariant_ref_FibCache _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_FibCache
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec fib_memo (mem: t_FibCache) (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@expl:fib_memo 'mem' type invariant] inv'0 mem}
-    {[@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view mem.t_FibCache__0)}
+    {[@expl:fib_memo 'mem' type invariant] inv_ref_FibCache mem}
+    {[@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view_Vec_PredCell_Option_usize_Global mem.f0)}
     {[@expl:fib_memo requires #1] UInt64.t'int i <= 63}
     (! bb0
-    [ bb0 = s0 [ s0 = index {mem.t_FibCache__0} {i} (fun (_ret: t_PredCell) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = get {_8} (fun (_ret: t_Option) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = any [ br0 -> {_6 = C_None} (! bb5) | br1 (x0: UInt64.t) -> {_6 = C_Some x0} (! bb6) ]
-    | bb6 = s0 [ s0 = v_Some {_6} (fun (r0: UInt64.t) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- v ] s2 | s2 = bb18 ]
+    [ bb0 = s0
+      [ s0 = index_Vec_PredCell_Option_usize_Global {mem.f0} {i}
+          (fun (_ret: t_PredCell_Option_usize) -> [ &_8 <- _ret ] s1)
+      | s1 = bb1 ]
+    | bb1 = s0 [ s0 = get_Option_usize {_8} (fun (_ret: t_Option_usize) -> [ &_6 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = any [ br0 -> {_6 = None} (! bb5) | br1 (x0: UInt64.t) -> {_6 = Some x0} (! bb6) ]
+    | bb6 = s0 [ s0 = elim_Some {_6} (fun (r0: UInt64.t) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- v ] s2 | s2 = bb18 ]
     | bb5 = s0
       [ s0 = [ &_14 <- i = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
     | bb7 = s0 [ s0 = [ &fib_i <- (0: UInt64.t) ] s1 | s1 = bb15 ]
@@ -168,17 +181,20 @@ module M_02_fib__fib_memo
     | bb13 = s0 [ s0 = UInt64.add {_20} {_24} (fun (_ret: UInt64.t) -> [ &fib_i <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
       [ s0 = {[@expl:assertion] UInt64.t'int fib_i = fib (UInt64.t'int i)} s1
-      | s1 = index {mem.t_FibCache__0} {i} (fun (_ret: t_PredCell) -> [ &_32 <- _ret ] s2)
+      | s1 = index_Vec_PredCell_Option_usize_Global {mem.f0} {i}
+          (fun (_ret: t_PredCell_Option_usize) -> [ &_32 <- _ret ] s2)
       | s2 = bb16 ]
     | bb16 = s0
-      [ s0 = [ &_35 <- C_Some fib_i ] s1 | s1 = set {_32} {_35} (fun (_ret: ()) -> [ &_30 <- _ret ] s2) | s2 = bb17 ]
+      [ s0 = [ &_35 <- Some fib_i ] s1
+      | s1 = set_Option_usize {_32} {_35} (fun (_ret: ()) -> [ &_30 <- _ret ] s2)
+      | s2 = bb17 ]
     | bb17 = s0 [ s0 = [ &_0 <- fib_i ] s1 | s1 = bb18 ]
     | bb18 = return {_0} ]
     [ & _0: UInt64.t = Any.any_l ()
     | & mem: t_FibCache = mem
     | & i: UInt64.t = i
-    | & _6: t_Option = Any.any_l ()
-    | & _8: t_PredCell = Any.any_l ()
+    | & _6: t_Option_usize = Any.any_l ()
+    | & _8: t_PredCell_Option_usize = Any.any_l ()
     | & v: UInt64.t = Any.any_l ()
     | & fib_i: UInt64.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
@@ -189,8 +205,8 @@ module M_02_fib__fib_memo
     | & _24: UInt64.t = Any.any_l ()
     | & _26: UInt64.t = Any.any_l ()
     | & _30: () = Any.any_l ()
-    | & _32: t_PredCell = Any.any_l ()
-    | & _35: t_Option = Any.any_l () ])
+    | & _32: t_PredCell_Option_usize = Any.any_l ()
+    | & _35: t_Option_usize = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
       (! return {result}) ]
 end

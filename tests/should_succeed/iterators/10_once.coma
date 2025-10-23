@@ -1,235 +1,248 @@
-module M_10_once__qyi13094531909677028354__produces_refl (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__produces_refl (* <Once<T> as common::Iterator> *)
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Once
+  constant self : t_Once_T
   
-  function produces_refl (self: t_Once) : ()
+  function produces_refl_Once_T (self: t_Once_T) : ()
   
-  goal vc_produces_refl: [@expl:produces_refl ensures] produces self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Once_T: [@expl:produces_refl ensures] produces_Once_T self (Seq.empty: Seq.seq t_T) self
 end
-module M_10_once__qyi13094531909677028354__produces_trans (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__produces_trans (* <Once<T> as common::Iterator> *)
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_Once
+  constant a : t_Once_T
   
   constant ab : Seq.seq t_T
   
-  constant b : t_Once
+  constant b : t_Once_T
   
   constant bc : Seq.seq t_T
   
-  constant c : t_Once
+  constant c : t_Once_T
   
-  function produces_trans (a: t_Once) (ab: Seq.seq t_T) (b: t_Once) (bc: Seq.seq t_T) (c: t_Once) : ()
+  function produces_trans_Once_T (a: t_Once_T) (ab: Seq.seq t_T) (b: t_Once_T) (bc: Seq.seq t_T) (c: t_Once_T) : ()
   
-  goal vc_produces_trans: produces a ab b
-    -> produces b bc c -> ([@expl:produces_trans ensures] produces a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Once_T: produces_Once_T a ab b
+    -> produces_Once_T b bc c -> ([@expl:produces_trans ensures] produces_Once_T a (Seq.(++) ab bc) c)
 end
-module M_10_once__qyi13094531909677028354__next (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate inv'0 (_1: t_Option)
+  predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
+        | None -> true
+        | Some f0'0 -> inv_T f0'0
         end
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Option) = inv'0 self.current /\ inv'0 self.final
+  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+    inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Option_T
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Option) = invariant' _1
+  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_Option_T
   
-  let rec take (self_: MutBorrow.t t_Option) (return (x: t_Option)) = {[@expl:take 'self_' type invariant] inv'1 self_}
+  let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+    {[@expl:take 'self_' type invariant] inv_ref_Option_T self_}
     any
-    [ return (result: t_Option) -> {inv'0 result} {result = self_.current /\ self_.final = C_None} (! return {result}) ]
+    [ return (result: t_Option_T) -> {inv_Option_T result}
+      {result = self_.current /\ self_.final = None}
+      (! return {result}) ]
   
-  predicate inv'2 (_1: t_Once)
+  predicate inv_Once_T (_1: t_Once_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'2 x]. inv'2 x = inv'0 x.t_Once__0
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Once_T [inv_Once_T x]. inv_Once_T x = inv_Option_T x.f0
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Once) = inv'2 self.current /\ inv'2 self.final
+  predicate invariant_ref_Once_T [@inline:trivial] (self: MutBorrow.t t_Once_T) =
+    inv_Once_T self.current /\ inv_Once_T self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_Once_T
   
-  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t t_Once) = invariant''0 _1
+  predicate inv_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = invariant_ref_Once_T _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_ref_Once_T
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Once) = _1.final = _1.current
+  predicate resolve_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Once_T
   
-  predicate completed (self: MutBorrow.t t_Once) = self.current = { t_Once__0 = C_None } /\ resolve self
+  predicate completed_Once_T (self: MutBorrow.t t_Once_T) = self.current = { f0 = None } /\ resolve_ref_Once_T self
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next (self: MutBorrow.t t_Once) (return (x: t_Option)) = {[@expl:next 'self' type invariant] inv'3 self}
+  let rec next_Once_T (self: MutBorrow.t t_Once_T) (return (x: t_Option_T)) =
+    {[@expl:next 'self' type invariant] inv_ref_Once_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'0 self.current.t_Once__0}
-        MutBorrow.borrow_final <t_Option> {self.current.t_Once__0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_ret: MutBorrow.t t_Option) ->
-            [ &_3 <- _ret ] -{inv'0 _ret.final}-
-            [ &self <- { self with current = { t_Once__0 = _ret.final } } ] s1)
-      | s1 = take {_3} (fun (_ret: t_Option) -> [ &_0 <- _ret ] s2)
+      [ s0 = {inv_Option_T self.current.f0}
+        MutBorrow.borrow_final <t_Option_T> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_ret: MutBorrow.t t_Option_T) ->
+            [ &_3 <- _ret ] -{inv_Option_T _ret.final}-
+            [ &self <- { self with current = { f0 = _ret.final } } ] s1)
+      | s1 = take_T {_3} (fun (_ret: t_Option_T) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv'3 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
-    [ & _0: t_Option = Any.any_l () | & self: MutBorrow.t t_Once = self | & _3: MutBorrow.t t_Option = Any.any_l () ])
-    [ return (result: t_Option) -> {[@expl:next result type invariant] inv'0 result}
+    | bb1 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_Once_T self} s1
+      | s1 = -{resolve_ref_Once_T self}- s2
+      | s2 = return {_0} ] ]
+    [ & _0: t_Option_T = Any.any_l ()
+    | & self: MutBorrow.t t_Once_T = self
+    | & _3: MutBorrow.t t_Option_T = Any.any_l () ])
+    [ return (result: t_Option_T) -> {[@expl:next result type invariant] inv_Option_T result}
       {[@expl:next ensures] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
+        | None -> completed_Once_T self
+        | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
-module M_10_once__qyi13094531909677028354__next__refines (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__next__refines (* <Once<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate inv'0 (_1: t_Option)
+  predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'0 x]. inv'0 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv a_0
+        | None -> true
+        | Some f0'0 -> inv_T f0'0
         end
   
-  predicate inv'1 (_1: t_Once)
+  predicate inv_Once_T (_1: t_Once_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Once [inv'1 x]. inv'1 x = inv'0 x.t_Once__0
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Once_T [inv_Once_T x]. inv_Once_T x = inv_Option_T x.f0
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Once) = inv'1 self.current /\ inv'1 self.final
+  predicate invariant_ref_Once_T [@inline:trivial] (self: MutBorrow.t t_Once_T) =
+    inv_Once_T self.current /\ inv_Once_T self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Once_T
   
-  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Once) = invariant' _1
+  predicate inv_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = invariant_ref_Once_T _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_ref_Once_T
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Once) = _1.final = _1.current
+  predicate resolve_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Once_T
   
-  predicate completed (self: MutBorrow.t t_Once) = self.current = { t_Once__0 = C_None } /\ resolve self
+  predicate completed_Once_T (self: MutBorrow.t t_Once_T) = self.current = { f0 = None } /\ resolve_ref_Once_T self
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Once. inv'2 self
-      -> inv'2 self
-      /\ (forall result: t_Option. match result with
-              | C_None -> completed self
-              | C_Some v -> produces self.current (Seq.singleton v) self.final
+  goal refines: forall self: MutBorrow.t t_Once_T. inv_ref_Once_T self
+      -> inv_ref_Once_T self
+      /\ (forall result: t_Option_T. match result with
+              | None -> completed_Once_T self
+              | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
               end
-          /\ inv'0 result
+          /\ inv_Option_T result
         -> match result with
-            | C_None -> completed self
-            | C_Some v -> produces self.current (Seq.singleton v) self.final
+            | None -> completed_Once_T self
+            | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
             end
-        /\ inv'0 result)
+        /\ inv_Option_T result)
 end
-module M_10_once__qyi13094531909677028354__produces_refl__refines (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__produces_refl__refines (* <Once<T> as common::Iterator> *)
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Once. forall result: (). produces self (Seq.empty: Seq.seq t_T) self
-        -> produces self (Seq.empty: Seq.seq t_T) self
+  goal refines: forall self: t_Once_T. forall result: (). produces_Once_T self (Seq.empty: Seq.seq t_T) self
+        -> produces_Once_T self (Seq.empty: Seq.seq t_T) self
 end
-module M_10_once__qyi13094531909677028354__produces_trans__refines (* <Once<T> as common::Iterator> *)
+module M_impl_Iterator_for_Once_T__produces_trans__refines (* <Once<T> as common::Iterator> *)
   use seq.Seq
   
   type t_T
   
-  type t_Option = C_None | C_Some t_T
+  type t_Option_T = None | Some t_T
   
-  type t_Once = { t_Once__0: t_Option }
+  type t_Once_T = { f0: t_Option_T }
   
-  predicate produces (self: t_Once) (visited: Seq.seq t_T) (o: t_Once) =
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { t_Once__0 = C_Some e } /\ visited = Seq.singleton e /\ o = { t_Once__0 = C_None })
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Once. forall ab: Seq.seq t_T. forall b: t_Once. forall bc: Seq.seq t_T. forall c: t_Once. produces b bc c
-                /\ produces a ab b
-              -> produces b bc c
-              /\ produces a ab b /\ (forall result: (). produces a (Seq.(++) ab bc) c -> produces a (Seq.(++) ab bc) c)
+    forall a: t_Once_T. forall ab: Seq.seq t_T. forall b: t_Once_T. forall bc: Seq.seq t_T. forall c: t_Once_T. produces_Once_T b bc c
+                /\ produces_Once_T a ab b
+              -> produces_Once_T b bc c
+              /\ produces_Once_T a ab b
+              /\ (forall result: (). produces_Once_T a (Seq.(++) ab bc) c -> produces_Once_T a (Seq.(++) ab bc) c)
 end

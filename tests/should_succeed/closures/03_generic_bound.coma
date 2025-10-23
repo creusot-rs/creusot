@@ -1,85 +1,86 @@
-module M_03_generic_bound__closure_param
+module M_closure_param
   use creusot.int.UInt32
   use creusot.prelude.Any
   
   type t_F
   
-  predicate inv (_1: t_F)
+  predicate inv_F (_1: t_F)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate invariant' [@inline:trivial] (self: t_F) = inv self
+  predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_F
   
-  predicate inv'0 [@inline:trivial] (_1: t_F) = invariant' _1
+  predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_F
   
-  predicate precondition (self: t_F) (args: UInt32.t)
+  predicate precondition_F (self: t_F) (args: UInt32.t)
   
-  predicate postcondition_once (self: t_F) (args: UInt32.t) (result: ())
+  predicate postcondition_once_F (self: t_F) (args: UInt32.t) (result: ())
   
-  predicate postcondition_mut (self: t_F) (args: UInt32.t) (result_state: t_F) (result: ())
+  predicate postcondition_mut_F (self: t_F) (args: UInt32.t) (result_state: t_F) (result: ())
   
-  function fn_mut_once (self: t_F) (args: UInt32.t) (res: ()) : ()
+  function fn_mut_once_F (self: t_F) (args: UInt32.t) (res: ()) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: UInt32.t, res: (). postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec: forall self: t_F, args: UInt32.t, res: (). postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  function fn_hist_inv (self: t_F) (res_state: t_F) : ()
+  function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_spec: forall self: t_F, res_state: t_F. hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
   
-  predicate postcondition (self: t_F) (args: UInt32.t) (result: ())
+  predicate postcondition_F (self: t_F) (args: UInt32.t) (result: ())
   
-  function fn_once (self: t_F) (args: UInt32.t) (res: ()) : ()
+  function fn_once_F (self: t_F) (args: UInt32.t) (res: ()) : ()
   
-  axiom fn_once_spec: forall self: t_F, args: UInt32.t, res: (). postcondition_once self args res
-      = (postcondition self args res /\ resolve self)
+  axiom fn_once_F_spec: forall self: t_F, args: UInt32.t, res: (). postcondition_once_F self args res
+      = (postcondition_F self args res /\ resolve_F self)
   
-  function fn_mut (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
+  function fn_mut_F (self: t_F) (args: UInt32.t) (res_state: t_F) (res: ()) : ()
   
-  axiom fn_mut_spec:
-    forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_F_spec:
+    forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut_F self args res_state res
+      = (postcondition_F self args res /\ self = res_state)
   
-  let rec call (self_: t_F) (arg: UInt32.t) (return (x: ())) = {[@expl:call 'self_' type invariant] inv'0 self_}
-    {[@expl:call requires] precondition self_ arg}
-    any [ return (result: ()) -> {postcondition self_ arg result} (! return {result}) ]
+  let rec call_F (self_: t_F) (arg: UInt32.t) (return (x: ())) = {[@expl:call 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call requires] precondition_F self_ arg}
+    any [ return (result: ()) -> {postcondition_F self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_param (f: t_F) (return (x: ())) = {[@expl:closure_param 'f' type invariant] inv f}
+  let rec closure_param_F (f: t_F) (return (x: ())) = {[@expl:closure_param 'f' type invariant] inv_F f}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv f} s1
-      | s1 = -{resolve f}- s2
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
       | s2 = [ &_3 <- (0: UInt32.t) ] s3
-      | s3 = call {f} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s4)
+      | s3 = call_F {f} {_3} (fun (_ret: ()) -> [ &_0 <- _ret ] s4)
       | s4 = bb2 ]
     | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & f: t_F = f | & _3: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_03_generic_bound__caller
+module M_caller
   use creusot.prelude.Any
   use creusot.int.UInt32
   
@@ -90,14 +91,15 @@ module M_03_generic_bound__caller
   
   meta "rewrite_def" predicate closure0'post'return
   
-  let rec closure_param (f: ()) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  let rec closure_param_closure0 (f: ()) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec caller (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_1 <- () ] s1 | s1 = closure_param {_1} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
+    [ bb0 = s0
+      [ s0 = [ &_1 <- () ] s1 | s1 = closure_param_closure0 {_1} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
     | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & _1: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

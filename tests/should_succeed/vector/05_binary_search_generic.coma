@@ -1,260 +1,280 @@
-module M_05_binary_search_generic__binary_search
+module M_binary_search
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_T_Global
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' (self: t_T) = inv self
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_T_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_T
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_T
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_T
+  function view_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_T
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_T_Global_spec: forall self: t_Vec_T_Global. Seq.length (view_Vec_T_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
+  predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
   
-  predicate inv'2 (_1: t_Vec)
+  predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
   
-  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
+  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
   
-  predicate invariant''2 [@inline:trivial] (self: t_Vec) = inv'2 self
+  predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) = inv_Vec_T_Global self
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_Vec_T_Global
   
-  predicate inv'3 [@inline:trivial] (_1: t_Vec) = invariant''2 _1
+  predicate inv_ref_Vec_T_Global [@inline:trivial] (_1: t_Vec_T_Global) = invariant_ref_Vec_T_Global _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let rec len (self_: t_Vec) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'3 self_}
-    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+  let rec len_T (self_: t_Vec_T_Global) (return (x: UInt64.t)) =
+    {[@expl:len 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_T_Global self_)} (! return {result}) ]
   
-  predicate resolve (_1: t_T)
+  predicate resolve_T (_1: t_T)
   
-  type t_Result = C_Ok UInt64.t | C_Err UInt64.t
+  type t_Result_usize_usize = Ok UInt64.t | Err UInt64.t
   
   type t_DeepModelTy
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
   
-  function eq_cmp (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom eq_cmp_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
   
-  function antisym2 (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom antisym2_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
+      -> cmp_log_DeepModelTy y x = Less
   
-  function antisym1 (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom antisym1_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
+      -> cmp_log_DeepModelTy y x = Greater
   
-  function trans (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_DeepModelTy_spec:
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
+      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
   
-  function refl (x: t_DeepModelTy) : ()
+  function refl_DeepModelTy (x: t_DeepModelTy) : ()
   
-  axiom refl_spec: forall x: t_DeepModelTy. cmp_log x x = C_Equal
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
   
-  predicate gt_log (self: t_DeepModelTy) (o: t_DeepModelTy)
+  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_gt_log (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_gt_log_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Greater)
   
-  predicate ge_log (self: t_DeepModelTy) (o: t_DeepModelTy)
+  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_ge_log (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_ge_log_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Less)
   
-  predicate lt_log (self: t_DeepModelTy) (o: t_DeepModelTy)
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_lt_log (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_lt_log_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Less)
   
-  predicate le_log (self: t_DeepModelTy) (o: t_DeepModelTy)
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_le_log (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_le_log_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Greater)
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_T = Seq.get (view self) ix
+  function index_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) (ix: int) : t_T =
+    Seq.get (view_Vec_T_Global self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_Vec_T_Global
   
-  function deep_model'0 (self: t_Vec) : Seq.seq t_DeepModelTy
+  function deep_model_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_DeepModelTy
   
-  axiom deep_model_spec: forall self: t_Vec. Seq.length (view self) = Seq.length (deep_model'0 self)
+  axiom deep_model_Vec_T_Global_spec: forall self: t_Vec_T_Global. Seq.length (view_Vec_T_Global self)
+      = Seq.length (deep_model_Vec_T_Global self)
   
-  axiom deep_model_spec'0: forall self: t_Vec. forall i: int. 0 <= i /\ i < Seq.length (view self)
-        -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
+  axiom deep_model_Vec_T_Global_spec'0: forall self: t_Vec_T_Global. forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_T_Global self)
+        -> Seq.get (deep_model_Vec_T_Global self) i = deep_model_T (index_Vec_T_Global self i)
   
-  function deep_model'1 [@inline:trivial] (self: t_Vec) : Seq.seq t_DeepModelTy = deep_model'0 self
+  function deep_model_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) : Seq.seq t_DeepModelTy =
+    deep_model_Vec_T_Global self
   
-  meta "rewrite_def" function deep_model'1
+  meta "rewrite_def" function deep_model_ref_Vec_T_Global
   
-  function cmp_log'0 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec'0: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log'0 x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Greater -> cmp_log'0 y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Less -> cmp_log'0 y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans'0 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec'0: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log'0 x y = o
-      -> cmp_log'0 y z = o -> cmp_log'0 x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl'0 (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec'0: forall x: UInt64.t. cmp_log'0 x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log'0 x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log'0 x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log'0 x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log'0 x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds
+  meta "rewrite_def" predicate in_bounds_usize
   
-  predicate invariant''3 [@inline:trivial] (self: t_T) = inv self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'4 [@inline:trivial] (_1: t_T) = invariant''3 _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value
+  meta "rewrite_def" predicate has_value_usize
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: t_T)) = {[@expl:index 'self_' type invariant] inv'3 self_}
-    {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return (result: t_T) -> {inv'4 result} {has_value ix (view self_) result} (! return {result}) ]
+  let rec index_Vec_T_Global'0 (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
+    {[@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_)}
+    any
+    [ return (result: t_T) -> {inv_ref_T result}
+      {has_value_usize ix (view_Vec_T_Global self_) result}
+      (! return {result}) ]
   
-  type tuple = { f0: t_T; f1: t_T }
+  type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
   
-  predicate precondition (self: ()) (args: tuple)
+  predicate precondition_gt (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tuple [precondition () args]. (let {f0 = self_; f1 = other} = args in inv'4 other /\ inv'4 self_)
-      -> precondition () args
+    forall args: tup2_ref_T_ref_T [precondition_gt () args]. (let {f0 = self_; f1 = other} = args in inv_ref_T other
+        /\ inv_ref_T self_) -> precondition_gt () args
   
-  function deep_model'2 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
-  meta "rewrite_def" function deep_model'2
+  meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_once (self: ()) (args: tuple) (result: bool)
+  predicate postcondition_once_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
-      -> (let {f0 = self_; f1 = other} = args in res = gt_log (deep_model'2 self_) (deep_model'2 other))
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_gt () args res]. postcondition_once_gt () args res
+      -> (let {f0 = self_; f1 = other} = args in res
+      = gt_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
   
-  let rec gt (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:gt requires] precondition () { f0 = self_;
-                                                                                                   f1 = other }}
-    any [ return (result: bool) -> {postcondition_once () { f0 = self_; f1 = other } result} (! return {result}) ]
+  let rec gt_T (self_: t_T) (other: t_T) (return (x: bool)) = {[@expl:gt requires] precondition_gt () { f0 = self_;
+                                                                                                        f1 = other }}
+    any [ return (result: bool) -> {postcondition_once_gt () { f0 = self_; f1 = other } result} (! return {result}) ]
   
-  predicate precondition'0 (self: ()) (args: tuple)
+  predicate precondition_cmp (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef'0:
-    forall args: tuple [precondition'0 () args]. (let {f0 = self_; f1 = rhs} = args in inv'4 rhs /\ inv'4 self_)
-      -> precondition'0 () args
+    forall args: tup2_ref_T_ref_T [precondition_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T rhs
+        /\ inv_ref_T self_) -> precondition_cmp () args
   
-  predicate postcondition_once'0 (self: ()) (args: tuple) (result: t_Ordering)
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering)
   
   axiom postcondition_fndef'0:
-    forall args: tuple, res: t_Ordering [postcondition_once'0 () args res]. postcondition_once'0 () args res
-      -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log (deep_model self_) (deep_model rhs))
+    forall args: tup2_ref_T_ref_T, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+      -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_T self_) (deep_model_T rhs))
   
-  let rec cmp (self_: t_T) (rhs: t_T) (return (x: t_Ordering)) = {[@expl:cmp requires] precondition'0 () { f0 = self_;
-                                                                                                           f1 = rhs }}
-    any [ return (result: t_Ordering) -> {postcondition_once'0 () { f0 = self_; f1 = rhs } result} (! return {result}) ]
+  let rec cmp_T (self_: t_T) (rhs: t_T) (return (x: t_Ordering)) =
+    {[@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}
+    any
+    [ return (result: t_Ordering) -> {postcondition_once_cmp () { f0 = self_; f1 = rhs } result} (! return {result}) ]
   
-  predicate sorted_range (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =
-    forall i: int, j: int. l <= i /\ i <= j /\ j < u -> le_log (Seq.get s i) (Seq.get s j)
+  predicate sorted_range_DeepModelTy (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =
+    forall i: int, j: int. l <= i /\ i <= j /\ j < u -> le_log_DeepModelTy (Seq.get s i) (Seq.get s j)
   
-  predicate sorted (s: Seq.seq t_DeepModelTy) = sorted_range s 0 (Seq.length s)
+  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec binary_search (arr: t_Vec) (elem: t_T) (return (x: t_Result)) =
-    {[@expl:binary_search 'arr' type invariant] inv'3 arr}
-    {[@expl:binary_search 'elem' type invariant] inv elem}
-    {[@expl:binary_search requires #0] Seq.length (view arr) <= UInt64.t'int const_MAX}
-    {[@expl:binary_search requires #1] sorted (deep_model'1 arr)}
+  let rec binary_search_T (arr: t_Vec_T_Global) (elem: t_T) (return (x: t_Result_usize_usize)) =
+    {[@expl:binary_search 'arr' type invariant] inv_ref_Vec_T_Global arr}
+    {[@expl:binary_search 'elem' type invariant] inv_T elem}
+    {[@expl:binary_search requires #0] Seq.length (view_Vec_T_Global arr) <= UInt64.t'int const_MAX}
+    {[@expl:binary_search requires #1] sorted_DeepModelTy (deep_model_ref_Vec_T_Global arr)}
     (! bb0
-    [ bb0 = s0 [ s0 = len {arr} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = len_T {arr} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_9 <- _10 = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv elem} s1
-      | s1 = -{resolve elem}- s2
-      | s2 = [ &_0 <- C_Err (0: UInt64.t) ] s3
+      [ s0 = {[@expl:type invariant] inv_T elem} s1
+      | s1 = -{resolve_T elem}- s2
+      | s2 = [ &_0 <- Err (0: UInt64.t) ] s3
       | s3 = bb24 ]
-    | bb3 = s0 [ s0 = len {arr} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s1) | s1 = bb4 ]
+    | bb3 = s0 [ s0 = len_T {arr} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = [ &base <- (0: UInt64.t) ] s1 | s1 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
-        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view arr)}
+        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view_Vec_T_Global arr)}
         {[@expl:loop invariant #1] forall i: UInt64.t. UInt64.lt i base
-          -> le_log (Seq.get (deep_model'1 arr) (UInt64.t'int i)) (deep_model elem)}
+          -> le_log_DeepModelTy (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i)) (deep_model_T elem)}
         {[@expl:loop invariant #2] forall i: UInt64.t. UInt64.t'int base + UInt64.t'int size <= UInt64.t'int i
-            /\ UInt64.t'int i < Seq.length (view arr)
-          -> lt_log (deep_model elem) (Seq.get (deep_model'1 arr) (UInt64.t'int i))}
+            /\ UInt64.t'int i < Seq.length (view_Vec_T_Global arr)
+          -> lt_log_DeepModelTy (deep_model_T elem) (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i))}
         (! s0)
         [ s0 = bb6 ]
         [ bb6 = s0
@@ -265,9 +285,9 @@ module M_05_binary_search_generic__binary_search
         | bb8 = s0
           [ s0 = UInt64.div {size} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &half <- _ret ] s1)
           | s1 = UInt64.add {base} {half} (fun (_ret: UInt64.t) -> [ &mid <- _ret ] s2)
-          | s2 = index {arr} {mid} (fun (_ret: t_T) -> [ &_33 <- _ret ] s3)
+          | s2 = index_Vec_T_Global'0 {arr} {mid} (fun (_ret: t_T) -> [ &_33 <- _ret ] s3)
           | s3 = bb9 ]
-        | bb9 = s0 [ s0 = gt {_33} {elem} (fun (_ret: bool) -> [ &_31 <- _ret ] s1) | s1 = bb10 ]
+        | bb9 = s0 [ s0 = gt_T {_33} {elem} (fun (_ret: bool) -> [ &_31 <- _ret ] s1) | s1 = bb10 ]
         | bb10 = any [ br0 -> {_31 = false} (! bb12) | br1 -> {_31} (! bb11) ]
         | bb11 = s0 [ s0 = [ &_30 <- base ] s1 | s1 = bb13 ]
         | bb12 = s0 [ s0 = [ &_30 <- mid ] s1 | s1 = bb13 ]
@@ -275,25 +295,24 @@ module M_05_binary_search_generic__binary_search
           [ s0 = [ &base <- _30 ] s1
           | s1 = UInt64.sub {size} {half} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s2)
           | s2 = bb5 ] ] ]
-    | bb14 = s0 [ s0 = index {arr} {base} (fun (_ret: t_T) -> [ &_40 <- _ret ] s1) | s1 = bb15 ]
+    | bb14 = s0 [ s0 = index_Vec_T_Global'0 {arr} {base} (fun (_ret: t_T) -> [ &_40 <- _ret ] s1) | s1 = bb15 ]
     | bb15 = s0
-      [ s0 = [ &cmp'0 <- _40 ] s1
-      | s1 = {[@expl:type invariant] inv elem} s2
-      | s2 = -{resolve elem}- s3
+      [ s0 = [ &cmp <- _40 ] s1
+      | s1 = {[@expl:type invariant] inv_T elem} s2
+      | s2 = -{resolve_T elem}- s3
       | s3 = [ &_46 <- elem ] s4
-      | s4 = cmp {cmp'0} {_46} (fun (_ret: t_Ordering) -> [ &_43 <- _ret ] s5)
+      | s4 = cmp_T {cmp} {_46} (fun (_ret: t_Ordering) -> [ &_43 <- _ret ] s5)
       | s5 = bb16 ]
-    | bb16 = any
-      [ br0 -> {_43 = C_Less} (! bb21) | br1 -> {_43 = C_Equal} (! bb22) | br2 -> {_43 = C_Greater} (! bb20) ]
-    | bb20 = s0 [ s0 = [ &_0 <- C_Err base ] s1 | s1 = bb24 ]
-    | bb22 = s0 [ s0 = [ &_0 <- C_Ok base ] s1 | s1 = bb24 ]
+    | bb16 = any [ br0 -> {_43 = Less} (! bb21) | br1 -> {_43 = Equal} (! bb22) | br2 -> {_43 = Greater} (! bb20) ]
+    | bb20 = s0 [ s0 = [ &_0 <- Err base ] s1 | s1 = bb24 ]
+    | bb22 = s0 [ s0 = [ &_0 <- Ok base ] s1 | s1 = bb24 ]
     | bb21 = s0
       [ s0 = UInt64.add {base} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_49 <- _ret ] s1)
-      | s1 = [ &_0 <- C_Err _49 ] s2
+      | s1 = [ &_0 <- Err _49 ] s2
       | s2 = bb24 ]
     | bb24 = return {_0} ]
-    [ & _0: t_Result = Any.any_l ()
-    | & arr: t_Vec = arr
+    [ & _0: t_Result_usize_usize = Any.any_l ()
+    | & arr: t_Vec_T_Global = arr
     | & elem: t_T = elem
     | & _9: bool = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
@@ -306,18 +325,18 @@ module M_05_binary_search_generic__binary_search
     | & _30: UInt64.t = Any.any_l ()
     | & _31: bool = Any.any_l ()
     | & _33: t_T = Any.any_l ()
-    | & cmp'0: t_T = Any.any_l ()
+    | & cmp: t_T = Any.any_l ()
     | & _40: t_T = Any.any_l ()
     | & _43: t_Ordering = Any.any_l ()
     | & _46: t_T = Any.any_l ()
     | & _49: UInt64.t = Any.any_l () ])
-    [ return (result: t_Result) -> {[@expl:binary_search ensures #0] forall x: UInt64.t. result = C_Ok x
-        -> Seq.get (deep_model'1 arr) (UInt64.t'int x) = deep_model elem}
-      {[@expl:binary_search ensures #1] forall x: UInt64.t. result = C_Err x
+    [ return (result: t_Result_usize_usize) -> {[@expl:binary_search ensures #0] forall x: UInt64.t. result = Ok x
+        -> Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int x) = deep_model_T elem}
+      {[@expl:binary_search ensures #1] forall x: UInt64.t. result = Err x
         -> (forall i: UInt64.t. UInt64.lt i x
-          -> le_log (Seq.get (deep_model'1 arr) (UInt64.t'int i)) (deep_model elem))}
-      {[@expl:binary_search ensures #2] forall x: UInt64.t. result = C_Err x
-        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < Seq.length (view arr)
-          -> lt_log (deep_model elem) (Seq.get (deep_model'1 arr) (UInt64.t'int i)))}
+          -> le_log_DeepModelTy (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i)) (deep_model_T elem))}
+      {[@expl:binary_search ensures #2] forall x: UInt64.t. result = Err x
+        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < Seq.length (view_Vec_T_Global arr)
+          -> lt_log_DeepModelTy (deep_model_T elem) (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i)))}
       (! return {result}) ]
 end

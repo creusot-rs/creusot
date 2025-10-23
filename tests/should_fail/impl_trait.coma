@@ -1,15 +1,15 @@
-module M_impl_trait__qyi16477135280894462799__a (* <() as MyTrait> *)
+module M_impl_MyTrait_for_unit__a (* <() as MyTrait> *)
   use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec a (self: ()) (return (x: bool)) = (! bb0
+  let rec a_unit (self: ()) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:a ensures] result} (! return {result}) ]
 end
-module M_impl_trait__returns_iterator
+module M_returns_iterator
   use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
@@ -19,51 +19,52 @@ module M_impl_trait__returns_iterator
   let rec returns_iterator (return (x: ())) = (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_impl_trait__main
+module M_main
   use creusot.prelude.Any
   
-  type opaque0
+  type opaque
   
-  predicate inv (_1: opaque0)
+  predicate inv_opaque (_1: opaque)
   
-  let rec returns_iterator (return (x: opaque0)) = any [ return (result: opaque0) -> {inv result} (! return {result}) ]
+  let rec returns_iterator (return (x: opaque)) = any
+    [ return (result: opaque) -> {inv_opaque result} (! return {result}) ]
   
-  predicate resolve (_1: opaque0)
+  predicate resolve_opaque (_1: opaque)
   
-  predicate invariant' [@inline:trivial] (self: opaque0) = inv self
+  predicate invariant_ref_opaque [@inline:trivial] (self: opaque) = inv_opaque self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_opaque
   
-  predicate inv'0 [@inline:trivial] (_1: opaque0) = invariant' _1
+  predicate inv_ref_opaque [@inline:trivial] (_1: opaque) = invariant_ref_opaque _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_opaque
   
-  predicate precondition (self: ()) (args: opaque0)
+  predicate precondition_a (self: ()) (args: opaque)
   
-  axiom precondition_fndef: forall args: opaque0 [precondition () args]. (let self = args in inv'0 self)
-      -> precondition () args
+  axiom precondition_fndef: forall args: opaque [precondition_a () args]. (let self = args in inv_ref_opaque self)
+      -> precondition_a () args
   
-  predicate postcondition_once (self: ()) (args: opaque0) (result: bool)
+  predicate postcondition_once_a (self: ()) (args: opaque) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: opaque0, res: bool [postcondition_once () args res]. postcondition_once () args res
+    forall args: opaque, res: bool [postcondition_once_a () args res]. postcondition_once_a () args res
       -> (let self = args in true)
   
-  let rec a (self: opaque0) (return (x: bool)) = {[@expl:a requires] precondition () self}
-    any [ return (result: bool) -> {postcondition_once () self result} (! return {result}) ]
+  let rec a_opaque (self: opaque) (return (x: bool)) = {[@expl:a requires] precondition_a () self}
+    any [ return (result: bool) -> {postcondition_once_a () self result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec main (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = returns_iterator (fun (_ret: opaque0) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = returns_iterator (fun (_ret: opaque) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv _4} s1
-      | s1 = -{resolve _4}- s2
-      | s2 = a {_4} (fun (_ret: bool) -> [ &x <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv_opaque _4} s1
+      | s1 = -{resolve_opaque _4}- s2
+      | s2 = a_opaque {_4} (fun (_ret: bool) -> [ &x <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0 [ s0 = {[@expl:assertion] x} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque0 = Any.any_l () ])
+    [ & _0: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
     [ return (result: ()) -> {[@expl:main ensures] true} (! return {result}) ]
 end

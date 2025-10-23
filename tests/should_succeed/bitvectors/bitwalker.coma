@@ -1,52 +1,52 @@
-module M_bitwalker__peek_bit_u8
+module M_peek_bit_u8
   use creusot.int.UInt64
   use creusot.int.UInt8
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
@@ -68,7 +68,7 @@ module M_bitwalker__peek_bit_u8
     | & _5: UInt64.t = Any.any_l ()
     | & _7: UInt8.t = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]
 end
-module M_bitwalker__peek_bit_array8
+module M_peek_bit_array8
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
@@ -76,71 +76,72 @@ module M_bitwalker__peek_bit_array8
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Option = C_None | C_Some UInt8.t
+  type t_Option_ref_u8 = None | Some UInt8.t
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds
+  meta "rewrite_def" predicate in_bounds_usize
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) (out: UInt8.t) =
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) (out: UInt8.t) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value
+  meta "rewrite_def" predicate has_value_usize
   
-  let rec get (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {in_bounds ix (Slice64.view self_)
-      -> (exists r: UInt8.t. result = C_Some r /\ has_value ix (Slice64.view self_) r)}
-      {in_bounds ix (Slice64.view self_) \/ result = C_None}
+  let rec get_u8 (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option_ref_u8)) = any
+    [ return (result: t_Option_ref_u8) -> {in_bounds_usize ix (Slice64.view self_)
+      -> (exists r: UInt8.t. result = Some r /\ has_value_usize ix (Slice64.view self_) r)}
+      {in_bounds_usize ix (Slice64.view self_) \/ result = None}
       (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: UInt8.t)) = any
-    [ good (field_0: UInt8.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: UInt8.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_ref_u8) (ret (f0: UInt8.t)) = any
+    [ good (f0: UInt8.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: UInt8.t [Some f0: t_Option_ref_u8]. Some f0 <> input} (! {false} any) ]
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec peek_bit_u8 (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
     {[@expl:peek_bit_u8 requires] UInt64.lt left (8: UInt64.t)}
@@ -157,11 +158,11 @@ module M_bitwalker__peek_bit_array8
       [ s0 = [ &_8 <- (8: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _8} s2 | s2 = bb1 ]
     | bb1 = s0
       [ s0 = UInt64.div {left} {(8: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_6 <- _ret ] s1)
-      | s1 = get {addr} {_6} (fun (_ret: t_Option) -> [ &_4 <- _ret ] s2)
+      | s1 = get_u8 {addr} {_6} (fun (_ret: t_Option_ref_u8) -> [ &_4 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = any [ br0 -> {_4 = C_None} (! bb5) | br1 (x0: UInt8.t) -> {_4 = C_Some x0} (! bb6) ]
+    | bb2 = any [ br0 -> {_4 = None} (! bb5) | br1 (x0: UInt8.t) -> {_4 = Some x0} (! bb6) ]
     | bb6 = s0
-      [ s0 = v_Some {_4} (fun (r0: UInt8.t) -> [ &v <- r0 ] s1)
+      [ s0 = elim_Some {_4} (fun (r0: UInt8.t) -> [ &v <- r0 ] s1)
       | s1 = [ &_14 <- (8: UInt64.t) = (0: UInt64.t) ] s2
       | s2 = {[@expl:remainder by zero] not _14} s3
       | s3 = bb7 ]
@@ -176,61 +177,61 @@ module M_bitwalker__peek_bit_array8
     [ & _0: bool = Any.any_l ()
     | & addr: Slice64.slice UInt8.t = addr
     | & left: UInt64.t = left
-    | & _4: t_Option = Any.any_l ()
+    | & _4: t_Option_ref_u8 = Any.any_l ()
     | & _6: UInt64.t = Any.any_l ()
     | & _8: bool = Any.any_l ()
     | & v: UInt8.t = Any.any_l ()
     | & _12: UInt64.t = Any.any_l ()
     | & _14: bool = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]
 end
-module M_bitwalker__poke_bit_64
+module M_poke_bit_64
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
@@ -254,7 +255,7 @@ module M_bitwalker__poke_bit_64
     | & _6: UInt64.t = Any.any_l ()
     | & _14: UInt64.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_bitwalker__peek
+module M_peek
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
@@ -262,57 +263,57 @@ module M_bitwalker__peek
   use mach.int.Int
   use creusot.prelude.Any
   
-  let rec len (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+  let rec len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
   let rec peek_bit_array8 (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
     {[@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
     any [ return (result: bool) -> (! return {result}) ]
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec poke_bit_64 (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
     {[@expl:poke_bit_64 requires] UInt64.lt left (64: UInt64.t)}
@@ -329,7 +330,7 @@ module M_bitwalker__peek
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {start} {length} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1)
-      | s1 = len {addr} (fun (_ret: UInt64.t) -> [ &_14 <- _ret ] s2)
+      | s1 = len_u8 {addr} (fun (_ret: UInt64.t) -> [ &_14 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = UInt64.mul {(8: UInt64.t)} {_14} (fun (_ret: UInt64.t) -> [ &_13 <- _ret ] s1)
@@ -371,54 +372,54 @@ module M_bitwalker__peek
     | & _31: UInt64.t = Any.any_l ()
     | & _32: UInt64.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_bitwalker__peek_64bit
+module M_peek_64bit
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
@@ -440,55 +441,55 @@ module M_bitwalker__peek_64bit
     | & _5: UInt64.t = Any.any_l ()
     | & _7: UInt64.t = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]
 end
-module M_bitwalker__poke_8bit
+module M_poke_8bit
   use creusot.int.UInt64
   use creusot.int.UInt8
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
@@ -512,7 +513,7 @@ module M_bitwalker__poke_8bit
     | & _6: UInt64.t = Any.any_l ()
     | & _14: UInt8.t = Any.any_l () ]) [ return (result: UInt8.t) -> (! return {result}) ]
 end
-module M_bitwalker__poke_8bit_array
+module M_poke_8bit_array
   use creusot.int.UInt64
   use creusot.prelude.Opaque
   use creusot.slice.Slice64
@@ -522,58 +523,58 @@ module M_bitwalker__poke_8bit_array
   use seq.Seq
   use mach.int.Int
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec poke_8bit (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
     {[@expl:poke_8bit requires] UInt64.lt left (8: UInt64.t)}
     any [ return (result: UInt8.t) -> (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_slice_u8
   
   meta "compute_max_steps" 1000000
   
@@ -613,7 +614,7 @@ module M_bitwalker__poke_8bit_array
     | bb5 = s0
       [ s0 = Slice64.set <UInt8.t> {addr.current} {_20} {_12}
           (fun (r: Slice64.slice UInt8.t) -> [ &addr <- { addr with current = r } ] s1)
-      | s1 = -{resolve addr}- s2
+      | s1 = -{resolve_ref_slice_u8 addr}- s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & addr: MutBorrow.t (Slice64.slice UInt8.t) = addr
@@ -636,7 +637,7 @@ module M_bitwalker__poke_8bit_array
       = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
 end
-module M_bitwalker__poke
+module M_poke
   use creusot.slice.Slice64
   use creusot.int.UInt8
   use creusot.int.UInt64
@@ -646,57 +647,57 @@ module M_bitwalker__poke
   use mach.int.Int
   use creusot.prelude.Any
   
-  let rec len (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+  let rec len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_slice_u8
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec peek_64bit (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
     {[@expl:peek_64bit requires] UInt64.lt left (64: UInt64.t)}
@@ -717,16 +718,16 @@ module M_bitwalker__poke
     {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = len {addr.current} (fun (_ret: UInt64.t) -> [ &ghost_len <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = len_u8 {addr.current} (fun (_ret: UInt64.t) -> [ &ghost_len <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = UInt64.add {start} {length} (fun (_ret: UInt64.t) -> [ &_14 <- _ret ] s1)
-      | s1 = len {addr.current} (fun (_ret: UInt64.t) -> [ &_18 <- _ret ] s2)
+      | s1 = len_u8 {addr.current} (fun (_ret: UInt64.t) -> [ &_18 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
       [ s0 = UInt64.mul {(8: UInt64.t)} {_18} (fun (_ret: UInt64.t) -> [ &_17 <- _ret ] s1)
       | s1 = [ &_13 <- UInt64.gt _14 _17 ] s2
       | s2 = any [ br0 -> {_13 = false} (! bb4) | br1 -> {_13} (! bb3) ] ]
-    | bb3 = s0 [ s0 = -{resolve addr}- s1 | s1 = [ &_0 <- (-1: Int8.t) ] s2 | s2 = bb16 ]
+    | bb3 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_0 <- (-1: Int8.t) ] s2 | s2 = bb16 ]
     | bb4 = s0
       [ s0 = [ &_22 <- UInt64.lt length (64: UInt64.t) ] s1
       | s1 = any [ br0 -> {_22 = false} (! bb9) | br1 -> {_22} (! bb5) ] ]
@@ -734,7 +735,7 @@ module M_bitwalker__poke
       [ s0 = UInt64.shl {(1: UInt64.t)} {UInt64.t'int length} (fun (_ret: UInt64.t) -> [ &_26 <- _ret ] s1)
       | s1 = [ &_24 <- UInt64.ge value _26 ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb9) | br1 -> {_24} (! bb7) ] ]
-    | bb7 = s0 [ s0 = -{resolve addr}- s1 | s1 = [ &_0 <- (-2: Int8.t) ] s2 | s2 = bb16 ]
+    | bb7 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_0 <- (-2: Int8.t) ] s2 | s2 = bb16 ]
     | bb9 = s0
       [ s0 = UInt64.sub {(64: UInt64.t)} {length} (fun (_ret: UInt64.t) -> [ &lstart <- _ret ] s1)
       | s1 = [ &i <- (0: UInt64.t) ] s2
@@ -765,7 +766,7 @@ module M_bitwalker__poke
           [ s0 = {[@expl:assertion] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len} s1
           | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s2)
           | s2 = bb10 ] ] ]
-    | bb15 = s0 [ s0 = -{resolve addr}- s1 | s1 = [ &_0 <- (0: Int8.t) ] s2 | s2 = bb16 ]
+    | bb15 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_0 <- (0: Int8.t) ] s2 | s2 = bb16 ]
     | bb16 = return {_0} ]
     [ & _0: Int8.t = Any.any_l ()
     | & start: UInt64.t = start
@@ -793,7 +794,7 @@ module M_bitwalker__poke
       = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
 end
-module M_bitwalker__peekthenpoke
+module M_peekthenpoke
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
@@ -803,50 +804,50 @@ module M_bitwalker__peekthenpoke
   use creusot.int.Int8
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
     {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
@@ -862,9 +863,9 @@ module M_bitwalker__peekthenpoke
     [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_slice_u8
   
   meta "compute_max_steps" 1000000
   
@@ -883,7 +884,7 @@ module M_bitwalker__peekthenpoke
             [ &_14 <- _ret ] [ &addr <- { addr with current = _ret.final } ] s1)
       | s1 = poke {start} {length} {_14} {value} (fun (_ret: Int8.t) -> [ &res <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve addr}- s1 | s1 = [ &_0 <- res ] s2 | s2 = return {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_0 <- res ] s2 | s2 = return {_0} ] ]
     [ & _0: Int8.t = Any.any_l ()
     | & start: UInt64.t = start
     | & length: UInt64.t = length
@@ -892,7 +893,7 @@ module M_bitwalker__peekthenpoke
     | & res: Int8.t = Any.any_l ()
     | & _14: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l () ]) [ return (result: Int8.t) -> (! return {result}) ]
 end
-module M_bitwalker__pokethenpeek
+module M_pokethenpeek
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt8
@@ -902,50 +903,50 @@ module M_bitwalker__pokethenpeek
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
     (return (x: Int8.t)) = {[@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
@@ -955,9 +956,9 @@ module M_bitwalker__pokethenpeek
     [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_slice_u8
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
     {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
@@ -983,7 +984,7 @@ module M_bitwalker__pokethenpeek
       | s1 = poke {start} {length} {_11} {value} (fun (_ret: Int8.t) -> [ &_res <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve addr}- s1
+      [ s0 = -{resolve_ref_slice_u8 addr}- s1
       | s1 = peek {start} {length} {addr.current} (fun (_ret: UInt64.t) -> [ &peek_result <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0 [ s0 = [ &_0 <- peek_result ] s1 | s1 = return {_0} ] ]

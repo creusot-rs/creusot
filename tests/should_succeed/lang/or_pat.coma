@@ -1,21 +1,21 @@
-module M_or_pat__f
+module M_f
   use creusot.int.Int32
   
-  type t_Option = C_None | C_Some Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
-  type tuple = { f0: t_Option; f1: t_Option }
+  type tup2_Option_i32_Option_i32 = { f0: t_Option_i32; f1: t_Option_i32 }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant x : tuple
+  constant x : tup2_Option_i32_Option_i32
   
-  function f (x: tuple) : Int32.t
+  function f (x: tup2_Option_i32_Option_i32) : Int32.t
   
   goal vc_f: match x with
-      | {f0 = C_Some x'0; f1 = C_None} | {f0 = C_None; f1 = C_Some x'0} -> [@expl:f ensures] x
-        = { f0 = C_None; f1 = C_None } -> x'0 = (1: Int32.t)
-      | _ -> [@expl:f ensures] x = { f0 = C_None; f1 = C_None } -> (1: Int32.t) = (1: Int32.t)
+      | {f0 = Some x'0; f1 = None} | {f0 = None; f1 = Some x'0} -> [@expl:f ensures] x = { f0 = None; f1 = None }
+      -> x'0 = (1: Int32.t)
+      | _ -> [@expl:f ensures] x = { f0 = None; f1 = None } -> (1: Int32.t) = (1: Int32.t)
       end
 end
