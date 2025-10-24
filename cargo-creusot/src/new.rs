@@ -130,7 +130,7 @@ pub fn init(args: InitArgs) -> Result<()> {
 }
 
 pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
-    let paths = creusot_paths()?;
+    let paths = creusot_paths();
     let cargo_toml = Path::new("Cargo.toml");
     if cargo_toml.exists() {
         patch_dep(cargo_toml)?;
@@ -152,7 +152,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
             parent_cargo_toml.display()
         );
     } else {
-        let why3find_json = paths.config_dir.join("why3find.json");
+        let why3find_json = paths.why3find_json();
         copy(&why3find_json, "why3find.json");
     }
     Ok(())
