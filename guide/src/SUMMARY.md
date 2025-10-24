@@ -2,6 +2,7 @@
 
 - [Quickstart](./quickstart.md)
   - [Editor configuration](./quickstart/editor_config.md)
+- [Installation](./installation.md)
 - [Tutorial](./tutorial.md)
 - [Basic concepts](./basic_concepts.md)
   - [`requires` and `ensures`](basic_concepts/requires_ensures.md)
@@ -27,4 +28,3 @@
 - [Erasure check](./erasure.md)
 - [Known limitations](limitations.md)
 - [Command-line interface](./command_line_interface.md)
-- [Configuration](./configuration.md)
