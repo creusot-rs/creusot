@@ -1,12 +1,12 @@
-module M_inc_some_2_tree__qyi9454558703362393917__lemma_sum_nonneg (* Tree *)
+module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   use creusot.int.UInt32
   use mach.int.Int
   
-  type t_Tree = C_Node t_Tree UInt32.t t_Tree | C_Leaf
+  type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
   function sum (self: t_Tree) : int = match self with
-      | C_Node tl a tr -> sum tl + UInt32.t'int a + sum tr
-      | C_Leaf -> 0
+      | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
+      | Leaf -> 0
       end
   
   meta "compute_max_steps" 1000000
@@ -18,36 +18,33 @@ module M_inc_some_2_tree__qyi9454558703362393917__lemma_sum_nonneg (* Tree *)
   function lemma_sum_nonneg (self: t_Tree) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | C_Node tl _ tr -> sum tl >= 0
+      | Node tl _ tr -> sum tl >= 0
       -> (let _ = lemma_sum_nonneg tl in sum tr >= 0
       -> (let _ = lemma_sum_nonneg tr in [@expl:lemma_sum_nonneg ensures] sum self >= 0))
-      | C_Leaf -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Leaf -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
-module M_inc_some_2_tree__qyi9454558703362393917__sum_x (* Tree *)
+module M_impl_Tree__sum_x (* Tree *)
   use creusot.int.UInt32
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Tree = C_Node t_Tree UInt32.t t_Tree | C_Leaf
+  type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
-  let rec v_Node (input: t_Tree) (ret (field_0: t_Tree) (field_1: UInt32.t) (field_2: t_Tree)) = any
-    [ good (field_0: t_Tree) (field_1: UInt32.t) (field_2: t_Tree) -> {C_Node field_0 field_1 field_2 = input}
-      (! ret {field_0} {field_1} {field_2})
-    | bad ->
-    {forall field_0: t_Tree, field_1: UInt32.t, field_2: t_Tree [C_Node field_0 field_1 field_2: t_Tree]. C_Node field_0 field_1 field_2
-        <> input}
+  let rec elim_Node (input: t_Tree) (ret (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+    [ good (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = input} (! ret {f0} {f1} {f2})
+    | bad -> {forall f0: t_Tree, f1: UInt32.t, f2: t_Tree [Node f0 f1 f2: t_Tree]. Node f0 f1 f2 <> input}
       (! {false}
       any) ]
   
   function sum (self: t_Tree) : int = match self with
-      | C_Node tl a tr -> sum tl + UInt32.t'int a + sum tr
-      | C_Leaf -> 0
+      | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
+      | Leaf -> 0
       end
   
   function lemma_sum_nonneg (self: t_Tree) : () = match self with
-      | C_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
-      | C_Leaf -> ()
+      | Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
+      | Leaf -> ()
       end
   
   axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
@@ -59,13 +56,12 @@ module M_inc_some_2_tree__qyi9454558703362393917__sum_x (* Tree *)
   let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
     (! bb0
     [ bb0 = any
-      [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self = C_Node x0 x1 x2} (! bb4)
-      | br1 -> {self = C_Leaf} (! bb3) ]
+      [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self = Node x0 x1 x2} (! bb4) | br1 -> {self = Leaf} (! bb3) ]
     | bb3 = s0 [ s0 = [ &_0 <- (0: UInt32.t) ] s1 | s1 = bb7 ]
     | bb4 = s0
-      [ s0 = v_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tl <- r0 ] s1)
-      | s1 = v_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &a <- r1 ] s2)
-      | s2 = v_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tr <- r2 ] s3)
+      [ s0 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tl <- r0 ] s1)
+      | s1 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &a <- r1 ] s2)
+      | s2 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tr <- r2 ] s3)
       | s3 = {[@expl:assertion] let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in true} s4
       | s4 = sum_x {tl} (fun (_ret: UInt32.t) -> [ &_11 <- _ret ] s5)
       | s5 = bb5 ]
@@ -85,77 +81,74 @@ module M_inc_some_2_tree__qyi9454558703362393917__sum_x (* Tree *)
     | & _14: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
 end
-module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
+module M_impl_Tree__take_some_rest (* Tree *)
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Tree = C_Node t_Tree UInt32.t t_Tree | C_Leaf
+  type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve_ref_Tree [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Tree
   
-  let rec v_Node (input: t_Tree) (ret (field_0: t_Tree) (field_1: UInt32.t) (field_2: t_Tree)) = any
-    [ good (field_0: t_Tree) (field_1: UInt32.t) (field_2: t_Tree) -> {C_Node field_0 field_1 field_2 = input}
-      (! ret {field_0} {field_1} {field_2})
-    | bad ->
-    {forall field_0: t_Tree, field_1: UInt32.t, field_2: t_Tree [C_Node field_0 field_1 field_2: t_Tree]. C_Node field_0 field_1 field_2
-        <> input}
+  let rec elim_Node (input: t_Tree) (ret (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+    [ good (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = input} (! ret {f0} {f1} {f2})
+    | bad -> {forall f0: t_Tree, f1: UInt32.t, f2: t_Tree [Node f0 f1 f2: t_Tree]. Node f0 f1 f2 <> input}
       (! {false}
       any) ]
   
   function sum (self: t_Tree) : int = match self with
-      | C_Node tl a tr -> sum tl + UInt32.t'int a + sum tr
-      | C_Leaf -> 0
+      | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
+      | Leaf -> 0
       end
   
   function lemma_sum_nonneg (self: t_Tree) : () = match self with
-      | C_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
-      | C_Leaf -> ()
+      | Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
+      | Leaf -> ()
       end
   
   axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
   
   let rec random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve_ref_Box_Tree_Global [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Box_Tree_Global
   
-  type tuple = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_Tree }
+  type tup2_ref_u32_ref_Tree = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_Tree }
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_u32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take_some_rest (self: MutBorrow.t t_Tree) (return (x: tuple)) = (! bb0
+  let rec take_some_rest (self: MutBorrow.t t_Tree) (return (x: tup2_ref_u32_ref_Tree)) = (! bb0
     [ bb0 = any
-      [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self.current = C_Node x0 x1 x2} (! bb4)
-      | br1 -> {self.current = C_Leaf} (! bb3) ]
-    | bb3 = s0 [ s0 = -{resolve self}- s1 | s1 = bb19 ]
+      [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self.current = Node x0 x1 x2} (! bb4)
+      | br1 -> {self.current = Leaf} (! bb3) ]
+    | bb3 = s0 [ s0 = -{resolve_ref_Tree self}- s1 | s1 = bb19 ]
     | bb19 = bb19 [ bb19 = (! bb19) ]
     | bb4 = s0
-      [ s0 = v_Node {self.current}
+      [ s0 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <t_Tree> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
               (fun (_ret: MutBorrow.t t_Tree) ->
-                [ &mtl <- _ret ] [ &self <- { self with current = C_Node _ret.final r1 r2 } ] s1))
-      | s1 = v_Node {self.current}
+                [ &mtl <- _ret ] [ &self <- { self with current = Node _ret.final r1 r2 } ] s1))
+      | s1 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <UInt32.t> {r1} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
               (fun (_ret: MutBorrow.t UInt32.t) ->
-                [ &ma <- _ret ] [ &self <- { self with current = C_Node r0 _ret.final r2 } ] s2))
-      | s2 = v_Node {self.current}
+                [ &ma <- _ret ] [ &self <- { self with current = Node r0 _ret.final r2 } ] s2))
+      | s2 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <t_Tree> {r2} {MutBorrow.inherit_id (MutBorrow.get_id self) 3}
               (fun (_ret: MutBorrow.t t_Tree) ->
-                [ &mtr <- _ret ] [ &self <- { self with current = C_Node r0 r1 _ret.final } ] s3))
+                [ &mtr <- _ret ] [ &self <- { self with current = Node r0 r1 _ret.final } ] s3))
       | s3 = {[@expl:assertion] let _ = lemma_sum_nonneg mtl.current in let _ = lemma_sum_nonneg mtr.current in true} s4
       | s4 = random (fun (_ret: bool) -> [ &_11 <- _ret ] s5)
       | s5 = bb5 ]
@@ -167,15 +160,15 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
       | s2 = bb7 ]
     | bb7 = any [ br0 -> {_15 = false} (! bb9) | br1 -> {_15} (! bb8) ]
     | bb8 = s0
-      [ s0 = -{resolve'0 mtr}- s1
+      [ s0 = -{resolve_ref_Box_Tree_Global mtr}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtl.current} {MutBorrow.get_id mtl}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_16 <- _ret ] [ &mtl <- { mtl with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <t_Tree> {_16.current} {MutBorrow.get_id _16}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_14 <- _ret ] [ &_16 <- { _16 with current = _ret.final } ] s3)
-      | s3 = -{resolve _16}- s4
+      | s3 = -{resolve_ref_Tree _16}- s4
       | s4 = bb10 ]
     | bb9 = s0
-      [ s0 = -{resolve'0 mtl}- s1
+      [ s0 = -{resolve_ref_Box_Tree_Global mtl}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtr.current} {MutBorrow.get_id mtr}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_14 <- _ret ] [ &mtr <- { mtr with current = _ret.final } ] s2)
       | s2 = bb10 ]
@@ -183,29 +176,29 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
       [ s0 = MutBorrow.borrow_final <t_Tree> {_14.current} {MutBorrow.get_id _14}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_13 <- _ret ] [ &_14 <- { _14 with current = _ret.final } ] s1)
       | s1 = [ &_0 <- { f0 = _12; f1 = _13 } ] s2
-      | s2 = -{resolve _14}- s3
+      | s2 = -{resolve_ref_Tree _14}- s3
       | s3 = bb18 ]
-    | bb11 = s0 [ s0 = -{resolve'1 ma}- s1 | s1 = random (fun (_ret: bool) -> [ &_17 <- _ret ] s2) | s2 = bb12 ]
+    | bb11 = s0 [ s0 = -{resolve_ref_u32 ma}- s1 | s1 = random (fun (_ret: bool) -> [ &_17 <- _ret ] s2) | s2 = bb12 ]
     | bb12 = any [ br0 -> {_17 = false} (! bb15) | br1 -> {_17} (! bb13) ]
     | bb13 = s0
-      [ s0 = -{resolve'0 mtr}- s1
+      [ s0 = -{resolve_ref_Box_Tree_Global mtr}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtl.current} {MutBorrow.get_id mtl}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_18 <- _ret ] [ &mtl <- { mtl with current = _ret.final } ] s2)
-      | s2 = take_some_rest {_18} (fun (_ret: tuple) -> [ &_0 <- _ret ] s3)
+      | s2 = take_some_rest {_18} (fun (_ret: tup2_ref_u32_ref_Tree) -> [ &_0 <- _ret ] s3)
       | s3 = bb18 ]
     | bb15 = s0
-      [ s0 = -{resolve'0 mtl}- s1
+      [ s0 = -{resolve_ref_Box_Tree_Global mtl}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtr.current} {MutBorrow.get_id mtr}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_19 <- _ret ] [ &mtr <- { mtr with current = _ret.final } ] s2)
-      | s2 = take_some_rest {_19} (fun (_ret: tuple) -> [ &_0 <- _ret ] s3)
+      | s2 = take_some_rest {_19} (fun (_ret: tup2_ref_u32_ref_Tree) -> [ &_0 <- _ret ] s3)
       | s3 = bb18 ]
     | bb18 = s0
-      [ s0 = -{resolve'0 mtr}- s1
-      | s1 = -{resolve'1 ma}- s2
-      | s2 = -{resolve'0 mtl}- s3
-      | s3 = -{resolve self}- s4
+      [ s0 = -{resolve_ref_Box_Tree_Global mtr}- s1
+      | s1 = -{resolve_ref_u32 ma}- s2
+      | s2 = -{resolve_ref_Box_Tree_Global mtl}- s3
+      | s3 = -{resolve_ref_Tree self}- s4
       | s4 = return {_0} ] ]
-    [ & _0: tuple = Any.any_l ()
+    [ & _0: tup2_ref_u32_ref_Tree = Any.any_l ()
     | & self: MutBorrow.t t_Tree = self
     | & mtl: MutBorrow.t t_Tree = Any.any_l ()
     | & ma: MutBorrow.t UInt32.t = Any.any_l ()
@@ -219,44 +212,44 @@ module M_inc_some_2_tree__qyi9454558703362393917__take_some_rest (* Tree *)
     | & _17: bool = Any.any_l ()
     | & _18: MutBorrow.t t_Tree = Any.any_l ()
     | & _19: MutBorrow.t t_Tree = Any.any_l () ])
-    [ return (result: tuple) -> {[@expl:take_some_rest ensures #0] sum self.final - sum self.current
+    [ return (result: tup2_ref_u32_ref_Tree) -> {[@expl:take_some_rest ensures #0] sum self.final - sum self.current
       = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
       {[@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current}
       {[@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current}
       (! return {result}) ]
 end
-module M_inc_some_2_tree__inc_some_2_tree
+module M_inc_some_2_tree
   use creusot.int.UInt32
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Tree = C_Node t_Tree UInt32.t t_Tree | C_Leaf
+  type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
   function sum (self: t_Tree) : int = match self with
-      | C_Node tl a tr -> sum tl + UInt32.t'int a + sum tr
-      | C_Leaf -> 0
+      | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
+      | Leaf -> 0
       end
   
   let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
     any [ return (result: UInt32.t) -> {UInt32.t'int result = sum self} (! return {result}) ]
   
-  type tuple = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_Tree }
+  type tup2_ref_u32_ref_Tree = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_Tree }
   
-  let rec take_some_rest (self: MutBorrow.t t_Tree) (return (x: tuple)) = any
-    [ return (result: tuple) -> {sum self.final - sum self.current
+  let rec take_some_rest (self: MutBorrow.t t_Tree) (return (x: tup2_ref_u32_ref_Tree)) = any
+    [ return (result: tup2_ref_u32_ref_Tree) -> {sum self.final - sum self.current
       = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
       {UInt32.t'int result.f0.current <= sum self.current}
       {sum result.f1.current <= sum self.current}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve_ref_Tree [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Tree
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_u32
   
   meta "compute_max_steps" 1000000
   
@@ -269,23 +262,23 @@ module M_inc_some_2_tree__inc_some_2_tree
     | bb1 = s0
       [ s0 = MutBorrow.borrow_mut <t_Tree> {t}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_10 <- _ret ] [ &t <- _ret.final ] s1)
-      | s1 = take_some_rest {_10} (fun (_ret: tuple) -> [ &_9 <- _ret ] s2)
+      | s1 = take_some_rest {_10} (fun (_ret: tup2_ref_u32_ref_Tree) -> [ &_9 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
       [ s0 = [ &ma <- _9.f0 ] s1
       | s1 = [ &mt <- _9.f1 ] s2
       | s2 = MutBorrow.borrow_final <t_Tree> {mt.current} {MutBorrow.get_id mt}
           (fun (_ret: MutBorrow.t t_Tree) -> [ &_13 <- _ret ] [ &mt <- { mt with current = _ret.final } ] s3)
-      | s3 = take_some_rest {_13} (fun (_ret: tuple) -> [ &_12 <- _ret ] s4)
+      | s3 = take_some_rest {_13} (fun (_ret: tup2_ref_u32_ref_Tree) -> [ &_12 <- _ret ] s4)
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = -{resolve _12.f1}- s1
+      [ s0 = -{resolve_ref_Tree _12.f1}- s1
       | s1 = [ &mb <- _12.f0 ] s2
       | s2 = UInt32.add {ma.current} {j} (fun (_ret: UInt32.t) -> [ &ma <- { ma with current = _ret } ] s3)
-      | s3 = -{resolve'0 ma}- s4
+      | s3 = -{resolve_ref_u32 ma}- s4
       | s4 = UInt32.add {mb.current} {k} (fun (_ret: UInt32.t) -> [ &mb <- { mb with current = _ret } ] s5)
-      | s5 = -{resolve'0 mb}- s6
-      | s6 = -{resolve mt}- s7
+      | s5 = -{resolve_ref_u32 mb}- s6
+      | s6 = -{resolve_ref_Tree mt}- s7
       | s7 = sum_x {t} (fun (_ret: UInt32.t) -> [ &_18 <- _ret ] s8)
       | s8 = bb4 ]
     | bb4 = s0
@@ -302,10 +295,10 @@ module M_inc_some_2_tree__inc_some_2_tree
     | & sum0: UInt32.t = Any.any_l ()
     | & ma: MutBorrow.t UInt32.t = Any.any_l ()
     | & mt: MutBorrow.t t_Tree = Any.any_l ()
-    | & _9: tuple = Any.any_l ()
+    | & _9: tup2_ref_u32_ref_Tree = Any.any_l ()
     | & _10: MutBorrow.t t_Tree = Any.any_l ()
     | & mb: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _12: tuple = Any.any_l ()
+    | & _12: tup2_ref_u32_ref_Tree = Any.any_l ()
     | & _13: MutBorrow.t t_Tree = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: UInt32.t = Any.any_l ()

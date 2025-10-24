@@ -1,4 +1,4 @@
-module M_06_map_precond__qyi13778860181180212516__produces_refl (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__produces_refl (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -9,84 +9,85 @@ module M_06_map_precond__qyi13778860181180212516__produces_refl (* <Map<I, F> as
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Map
+  constant self : t_Map_I_F
   
-  function produces_refl'0 (self: t_Map) : ()
+  function produces_refl_Map_I_F (self: t_Map_I_F) : ()
   
-  goal vc_produces_refl: [@expl:produces_refl ensures] produces'0 self (Seq.empty: Seq.seq t_B) self
+  goal vc_produces_refl_Map_I_F: [@expl:produces_refl ensures] produces_Map_I_F self (Seq.empty: Seq.seq t_B) self
 end
-module M_06_map_precond__qyi13778860181180212516__produces_trans (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__produces_trans (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -97,93 +98,94 @@ module M_06_map_precond__qyi13778860181180212516__produces_trans (* <Map<I, F> a
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_Map
+  constant a : t_Map_I_F
   
   constant ab : Seq.seq t_B
   
-  constant b : t_Map
+  constant b : t_Map_I_F
   
   constant bc : Seq.seq t_B
   
-  constant c : t_Map
+  constant c : t_Map_I_F
   
-  function produces_trans'0 (a: t_Map) (ab: Seq.seq t_B) (b: t_Map) (bc: Seq.seq t_B) (c: t_Map) : ()
+  function produces_trans_Map_I_F (a: t_Map_I_F) (ab: Seq.seq t_B) (b: t_Map_I_F) (bc: Seq.seq t_B) (c: t_Map_I_F) : ()
   
-  goal vc_produces_trans: produces'0 a ab b
-    -> produces'0 b bc c -> ([@expl:produces_trans ensures] produces'0 a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Map_I_F: produces_Map_I_F a ab b
+    -> produces_Map_I_F b bc c -> ([@expl:produces_trans ensures] produces_Map_I_F a (Seq.(++) ab bc) c)
 end
-module M_06_map_precond__qyi13778860181180212516__next (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -195,300 +197,302 @@ module M_06_map_precond__qyi13778860181180212516__next (* <Map<I, F> as common::
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  type t_Option = C_None | C_Some t_Item
+  type t_Option_Item = None | Some t_Item
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_I) = inv self.current /\ inv self.final
+  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_I
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_I) = invariant' _1
+  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_I
   
-  predicate precondition (self: ()) (args: MutBorrow.t t_I)
+  predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
-  axiom precondition_fndef: forall args: MutBorrow.t t_I [precondition () args]. (let self = args in inv'0 self)
-      -> precondition () args
+  axiom precondition_fndef:
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+      -> precondition_next () args
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv'1 (_1: t_Item)
+  predicate inv_Item (_1: t_Item)
   
-  predicate inv'2 (_1: t_Option)
+  predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'2 x]. inv'2 x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'1 a_0
+        | None -> true
+        | Some f0 -> inv_Item f0
         end
   
-  predicate postcondition_once (self: ()) (args: MutBorrow.t t_I) (result: t_Option)
+  predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option [postcondition_once () args res]. postcondition_once () args res
+    forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
       -> (let self = args in match res with
-          | C_None -> completed self
-          | C_Some v -> produces self.current (Seq.singleton v) self.final
+          | None -> completed_I self
+          | Some v -> produces_I self.current (Seq.singleton v) self.final
           end
-      /\ inv'2 res)
+      /\ inv_Option_Item res)
   
-  let rec next (self: MutBorrow.t t_I) (return (x: t_Option)) = {[@expl:next requires] precondition () self}
-    any [ return (result: t_Option) -> {postcondition_once () self result} (! return {result}) ]
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: t_Item)) = any
-    [ good (field_0: t_Item) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: t_Item [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_Item) (ret (f0: t_Item)) = any
+    [ good (f0: t_Item) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: t_Item [Some f0: t_Option_Item]. Some f0 <> input} (! {false} any) ]
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate precondition'0 (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate inv'3 (_1: t_F)
+  predicate inv_F (_1: t_F)
   
   type t_B
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_F) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_F
   
-  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_F) = invariant''0 _1
+  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_F
   
-  predicate inv'5 [@inline:trivial] (_1: tuple) = inv'1 _1.f0
+  predicate inv_tup2_Item_Snapshot_Seq_Item [@inline:trivial] (_1: tup2_Item_Snapshot_Seq_Item) = inv_Item _1.f0
   
-  meta "rewrite_def" predicate inv'5
+  meta "rewrite_def" predicate inv_tup2_Item_Snapshot_Seq_Item
   
-  predicate inv'6 (_1: t_B)
+  predicate inv_B (_1: t_B)
   
-  predicate postcondition_once'0 (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once'0 self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  let rec call_mut (self_: MutBorrow.t t_F) (arg: tuple) (return (x: t_B)) =
-    {[@expl:call_mut 'self_' type invariant] inv'4 self_}
-    {[@expl:call_mut 'arg' type invariant] inv'5 arg}
-    {[@expl:call_mut requires] precondition'0 self_.current arg}
+  let rec call_mut_F (self_: MutBorrow.t t_F) (arg: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
+    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'arg' type invariant] inv_tup2_Item_Snapshot_Seq_Item arg}
+    {[@expl:call_mut requires] precondition_F self_.current arg}
     any
-    [ return (result: t_B) -> {inv'6 result}
-      {postcondition_mut self_.current arg self_.final result}
+    [ return (result: t_B) -> {inv_B result}
+      {postcondition_mut_F self_.current arg self_.final result}
       (! return {result}) ]
   
-  predicate next_precondition (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition'0 func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall e: t_Item, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation (iter: t_I) (func: t_F) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition'0 f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition'0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: t_F. completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                       f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition'0 f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition'0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
+                                                                                                                                                                             f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. produced
-        = (Seq.empty: Seq.seq t_Item) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: t_F, produced'0: Seq.seq t_Item. produced'0
+        = (Seq.empty: Seq.seq t_Item) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant''1 (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_F (self: t_Map_I_F) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
-  predicate inv'7 (_1: t_Map)
+  predicate inv_Map_I_F (_1: t_Map_I_F)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Map [inv'7 x]. inv'7 x
-      = (invariant''1 x /\ inv x.t_Map__iter /\ inv'3 x.t_Map__func)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x
+      = (invariant_Map_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'7 self.current /\ inv'7 self.final
+  predicate invariant_ref_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
+    inv_Map_I_F self.current /\ inv_Map_I_F self.final
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_Map_I_F
   
-  predicate inv'8 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''2 _1
+  predicate inv_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_ref_Map_I_F _1
   
-  meta "rewrite_def" predicate inv'8
+  meta "rewrite_def" predicate inv_ref_Map_I_F
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Map) = _1.final = _1.current
+  predicate resolve_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Map_I_F
   
-  function produces_one_invariant (self: t_Map) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter: t_I) : () = ()
+  function produces_one_invariant_I (self: t_Map_I_F) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter'0: t_I) : () = ()
   
-  axiom produces_one_invariant_spec:
-    forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. invariant''1 self
-      -> produces self.t_Map__iter (Seq.singleton e) iter
-      -> f.current = self.t_Map__func
-      -> postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final r
-      -> preservation_inv iter f.final (Seq.snoc self.t_Map__produced e)
+  axiom produces_one_invariant_I_spec:
+    forall self: t_Map_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. invariant_Map_I_F self
+      -> produces_I self.iter (Seq.singleton e) iter'0
+      -> f.current = self.func
+      -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
+      -> preservation_inv_I iter'0 f.final (Seq.snoc self.produced e)
   
-  axiom produces_one_invariant_spec'0:
-    forall self: t_Map, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter: t_I. invariant''1 self
-      -> produces self.t_Map__iter (Seq.singleton e) iter
-      -> f.current = self.t_Map__func
-      -> postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final r
-      -> next_precondition iter f.final (Seq.snoc self.t_Map__produced e)
+  axiom produces_one_invariant_I_spec'0:
+    forall self: t_Map_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. invariant_Map_I_F self
+      -> produces_I self.iter (Seq.singleton e) iter'0
+      -> f.current = self.func
+      -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
+      -> next_precondition_I iter'0 f.final (Seq.snoc self.produced e)
   
-  type t_Option'0 = C_None'0 | C_Some'0 t_B
+  type t_Option_B = None'0 | Some'0 t_B
   
-  predicate inv'9 (_1: t_Option'0)
+  predicate inv_Option_B (_1: t_Option_B)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option'0 [inv'9 x]. inv'9 x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'6 a_0
+        | None'0 -> true
+        | Some'0 f0'0 -> inv_B f0'0
         end
   
-  predicate completed'0 (self: MutBorrow.t t_Map) =
-    self.final.t_Map__produced = (Seq.empty: Seq.seq t_Item)
-    /\ completed (MutBorrow.borrow_logic self.current.t_Map__iter self.final.t_Map__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
-    /\ self.current.t_Map__func = self.final.t_Map__func
+  predicate completed_Map_I_F (self: MutBorrow.t t_Map_I_F) =
+    self.final.produced = (Seq.empty: Seq.seq t_Item)
+    /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
+    /\ self.current.func = self.final.func
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition'0 (Seq.get fs i).current { f0 = Seq.get s i;
-                                                     f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
-  predicate produces_one (self: t_Map) (visited: t_B) (succ: t_Map) =
-    exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current { f0 = e;
-                                                                        f1 = self.t_Map__produced } f.final visited]. f.current
-        = self.t_Map__func
-      /\ f.final = succ.t_Map__func
-      /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-      /\ succ.t_Map__produced = Seq.snoc self.t_Map__produced e
-      /\ precondition'0 f.current { f0 = e; f1 = self.t_Map__produced }
-      /\ postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final visited
+  predicate produces_one_I (self: t_Map_I_F) (visited: t_B) (succ: t_Map_I_F) =
+    exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut_F f.current { f0 = e;
+                                                                          f1 = self.produced } f.final visited]. f.current
+        = self.func
+      /\ f.final = succ.func
+      /\ produces_I self.iter (Seq.singleton e) succ.iter
+      /\ succ.produced = Seq.snoc self.produced e
+      /\ precondition_F f.current { f0 = e; f1 = self.produced }
+      /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited
   
-  axiom produces_one_spec: forall self: t_Map, visited: t_B, succ: t_Map. produces_one self visited succ
-      = produces'0 self (Seq.singleton visited) succ
+  axiom produces_one_I_spec: forall self: t_Map_I_F, visited: t_B, succ: t_Map_I_F. produces_one_I self visited succ
+      = produces_Map_I_F self (Seq.singleton visited) succ
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next'0 (self: MutBorrow.t t_Map) (return (x: t_Option'0)) = {[@expl:next 'self' type invariant] inv'8 self}
+  let rec next_Map_I_F (self: MutBorrow.t t_Map_I_F) (return (x: t_Option_B)) =
+    {[@expl:next 'self' type invariant] inv_ref_Map_I_F self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv self.current.t_Map__iter}
-        MutBorrow.borrow_final <t_I> {self.current.t_Map__iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = {inv_I self.current.iter}
+        MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_ret: MutBorrow.t t_I) ->
-            [ &_4 <- _ret ] -{inv _ret.final}-
-            [ &self <- { self with current = { self.current with t_Map__iter = _ret.final } } ] s1)
-      | s1 = next {_4} (fun (_ret: t_Option) -> [ &_3 <- _ret ] s2)
+            [ &_4 <- _ret ] -{inv_I _ret.final}-
+            [ &self <- { self with current = { self.current with iter = _ret.final } } ] s1)
+      | s1 = next_I {_4} (fun (_ret: t_Option_Item) -> [ &_3 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = any [ br0 -> {_3 = C_None} (! bb4) | br1 (x0: t_Item) -> {_3 = C_Some x0} (! bb5) ]
+    | bb1 = any [ br0 -> {_3 = None} (! bb4) | br1 (x0: t_Item) -> {_3 = Some x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Some {_3} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
-      | s1 = {[@expl:assertion] precondition'0 self.current.t_Map__func { f0 = v; f1 = self.current.t_Map__produced }}
-        s2
-      | s2 = [ &produced <- Seq.snoc self.current.t_Map__produced v ] s3
+      [ s0 = elim_Some {_3} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
+      | s1 = {[@expl:assertion] precondition_F self.current.func { f0 = v; f1 = self.current.produced }} s2
+      | s2 = [ &produced'0 <- Seq.snoc self.current.produced v ] s3
       | s3 = bb6 ]
     | bb6 = s0
-      [ s0 = {inv'3 self.current.t_Map__func}
-        MutBorrow.borrow_final <t_F> {self.current.t_Map__func} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+      [ s0 = {inv_F self.current.func}
+        MutBorrow.borrow_final <t_F> {self.current.func} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_ret: MutBorrow.t t_F) ->
-            [ &_12 <- _ret ] -{inv'3 _ret.final}-
-            [ &self <- { self with current = { self.current with t_Map__func = _ret.final } } ] s1)
-      | s1 = [ &_13 <- { f0 = v; f1 = self.current.t_Map__produced } ] s2
-      | s2 = call_mut {_12} {_13} (fun (_ret: t_B) -> [ &r <- _ret ] s3)
+            [ &_12 <- _ret ] -{inv_F _ret.final}-
+            [ &self <- { self with current = { self.current with func = _ret.final } } ] s1)
+      | s1 = [ &_13 <- { f0 = v; f1 = self.current.produced } ] s2
+      | s2 = call_mut_F {_12} {_13} (fun (_ret: t_B) -> [ &r <- _ret ] s3)
       | s3 = bb8 ]
     | bb8 = s0
-      [ s0 = [ &self <- { self with current = { self.current with t_Map__produced = produced } } ] s1
-      | s1 = {[@expl:type invariant] inv'8 self} s2
-      | s2 = -{resolve'0 self}- s3
+      [ s0 = [ &self <- { self with current = { self.current with produced = produced'0 } } ] s1
+      | s1 = {[@expl:type invariant] inv_ref_Map_I_F self} s2
+      | s2 = -{resolve_ref_Map_I_F self}- s3
       | s3 = [ &_17 <- () ] s4
       | s4 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_0 <- C_Some'0 r ] s1 | s1 = bb15 ]
+    | bb9 = s0 [ s0 = [ &_0 <- Some'0 r ] s1 | s1 = bb15 ]
     | bb4 = s0 [ s0 = [ &_20 <- Seq.empty: Seq.seq t_Item ] s1 | s1 = bb13 ]
     | bb13 = s0
-      [ s0 = [ &self <- { self with current = { self.current with t_Map__produced = _20 } } ] s1
-      | s1 = {[@expl:type invariant] inv'8 self} s2
-      | s2 = -{resolve'0 self}- s3
-      | s3 = [ &_0 <- C_None'0 ] s4
+      [ s0 = [ &self <- { self with current = { self.current with produced = _20 } } ] s1
+      | s1 = {[@expl:type invariant] inv_ref_Map_I_F self} s2
+      | s2 = -{resolve_ref_Map_I_F self}- s3
+      | s3 = [ &_0 <- None'0 ] s4
       | s4 = bb15 ]
     | bb15 = return {_0} ]
-    [ & _0: t_Option'0 = Any.any_l ()
-    | & self: MutBorrow.t t_Map = self
-    | & _3: t_Option = Any.any_l ()
+    [ & _0: t_Option_B = Any.any_l ()
+    | & self: MutBorrow.t t_Map_I_F = self
+    | & _3: t_Option_Item = Any.any_l ()
     | & _4: MutBorrow.t t_I = Any.any_l ()
     | & v: t_Item = Any.any_l ()
-    | & produced: Seq.seq t_Item = Any.any_l ()
+    | & produced'0: Seq.seq t_Item = Any.any_l ()
     | & r: t_B = Any.any_l ()
     | & _12: MutBorrow.t t_F = Any.any_l ()
-    | & _13: tuple = Any.any_l ()
+    | & _13: tup2_Item_Snapshot_Seq_Item = Any.any_l ()
     | & _17: () = Any.any_l ()
     | & _20: Seq.seq t_Item = Any.any_l () ])
-    [ return (result: t_Option'0) -> {[@expl:next result type invariant] inv'9 result}
+    [ return (result: t_Option_B) -> {[@expl:next result type invariant] inv_Option_B result}
       {[@expl:next ensures] match result with
-        | C_None'0 -> completed'0 self
-        | C_Some'0 v -> produces_one self.current v self.final
+        | None'0 -> completed_Map_I_F self
+        | Some'0 v -> produces_one_I self.current v self.final
         end}
       (! return {result}) ]
 end
-module M_06_map_precond__qyi10069788794515621353__preservation_inv (* Map<I, F> *)
+module M_impl_Map_I_F__preservation_inv (* Map<I, F> *)
   use seq.Seq
   use creusot.prelude.MutBorrow
   
@@ -498,56 +502,58 @@ module M_06_map_precond__qyi10069788794515621353__preservation_inv (* Map<I, F> 
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
   type t_B
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate preservation (iter: t_I) (func: t_F) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter: t_I) (func: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func f.current
+      -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
   meta "compute_max_steps" 1000000
   
@@ -559,18 +565,18 @@ module M_06_map_precond__qyi10069788794515621353__preservation_inv (* Map<I, F> 
   
   constant produced : Seq.seq t_Item
   
-  predicate preservation_inv (iter: t_I) (func: t_F) (produced: Seq.seq t_Item)
+  predicate preservation_inv_I (iter: t_I) (func: t_F) (produced: Seq.seq t_Item)
   
-  goal vc_preservation_inv: [@expl:preservation_inv ensures] produced = (Seq.empty: Seq.seq t_Item)
-    -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                           f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-        -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-        -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-        -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-        -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 })
-    = preservation iter func
+  goal vc_preservation_inv_I: [@expl:preservation_inv ensures] produced = (Seq.empty: Seq.seq t_Item)
+    -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
+                                                                                                                                                                               f1 = Seq.(++) produced s } f.final b]. hist_inv_F func f.current
+        -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
+        -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced s }
+        -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
+        -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 })
+    = preservation_I iter func
 end
-module M_06_map_precond__qyi10069788794515621353__produces_one_invariant (* Map<I, F> *)
+module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
   use seq.Seq
   use creusot.prelude.MutBorrow
   
@@ -580,90 +586,91 @@ module M_06_map_precond__qyi10069788794515621353__produces_one_invariant (* Map<
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate next_precondition (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall e: t_Item, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate preservation (iter: t_I) (func: t_F) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: t_F. completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                       f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
+                                                                                                                                                                             f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. produced
-        = (Seq.empty: Seq.seq t_Item) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: t_F, produced'0: Seq.seq t_Item. produced'0
+        = (Seq.empty: Seq.seq t_Item) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_F (self: t_Map_I_F) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Map
+  constant self : t_Map_I_F
   
   constant e : t_Item
   
@@ -671,20 +678,20 @@ module M_06_map_precond__qyi10069788794515621353__produces_one_invariant (* Map<
   
   constant f : MutBorrow.t t_F
   
-  constant iter : t_I
+  constant iter'0 : t_I
   
-  function produces_one_invariant (self: t_Map) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter: t_I) : ()
+  function produces_one_invariant_I (self: t_Map_I_F) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter'0: t_I) : ()
   
-  goal vc_produces_one_invariant: invariant' self
-    -> produces self.t_Map__iter (Seq.singleton e) iter
-    -> f.current = self.t_Map__func
-    -> postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final r
-    -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-        -> produces self.t_Map__iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
-    && ([@expl:produces_one_invariant ensures #0] preservation_inv iter f.final (Seq.snoc self.t_Map__produced e))
-    && ([@expl:produces_one_invariant ensures #1] next_precondition iter f.final (Seq.snoc self.t_Map__produced e))
+  goal vc_produces_one_invariant_I: invariant_Map_I_F self
+    -> produces_I self.iter (Seq.singleton e) iter'0
+    -> f.current = self.func
+    -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
+    -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+        -> produces_I self.iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
+    && ([@expl:produces_one_invariant ensures #0] preservation_inv_I iter'0 f.final (Seq.snoc self.produced e))
+    && ([@expl:produces_one_invariant ensures #1] next_precondition_I iter'0 f.final (Seq.snoc self.produced e))
 end
-module M_06_map_precond__qyi10069788794515621353__produces_one (* Map<I, F> *)
+module M_impl_Map_I_F__produces_one (* Map<I, F> *)
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -695,106 +702,109 @@ module M_06_map_precond__qyi10069788794515621353__produces_one (* Map<I, F> *)
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
-  function produces_trans'0 (a: t_Map) (ab: Seq.seq t_B) (b: t_Map) (bc: Seq.seq t_B) (c: t_Map) : () = ()
+  function produces_trans_Map_I_F (a: t_Map_I_F) (ab: Seq.seq t_B) (b: t_Map_I_F) (bc: Seq.seq t_B) (c: t_Map_I_F) : ()
+   = ()
   
-  axiom produces_trans_spec'0: forall a: t_Map, ab: Seq.seq t_B, b: t_Map, bc: Seq.seq t_B, c: t_Map. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Map_I_F_spec:
+    forall a: t_Map_I_F, ab: Seq.seq t_B, b: t_Map_I_F, bc: Seq.seq t_B, c: t_Map_I_F. produces_Map_I_F a ab b
+      -> produces_Map_I_F b bc c -> produces_Map_I_F a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Map) : () = ()
+  function produces_refl_Map_I_F (self: t_Map_I_F) : () = ()
   
-  axiom produces_refl_spec'0: forall self: t_Map. produces'0 self (Seq.empty: Seq.seq t_B) self
+  axiom produces_refl_Map_I_F_spec: forall self: t_Map_I_F. produces_Map_I_F self (Seq.empty: Seq.seq t_B) self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Map
+  constant self : t_Map_I_F
   
   constant visited : t_B
   
-  constant succ : t_Map
+  constant succ : t_Map_I_F
   
-  predicate produces_one (self: t_Map) (visited: t_B) (succ: t_Map)
+  predicate produces_one_I (self: t_Map_I_F) (visited: t_B) (succ: t_Map_I_F)
   
-  goal vc_produces_one:
-    [@expl:produces_one ensures] (exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current { f0 = e;
-                                                                                                      f1 = self.t_Map__produced } f.final visited]. f.current
-          = self.t_Map__func
-        /\ f.final = succ.t_Map__func
-        /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.snoc self.t_Map__produced e
-        /\ precondition f.current { f0 = e; f1 = self.t_Map__produced }
-        /\ postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final visited)
-    = produces'0 self (Seq.singleton visited) succ
+  goal vc_produces_one_I:
+    [@expl:produces_one ensures] (exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut_F f.current { f0 = e;
+                                                                                                        f1 = self.produced } f.final visited]. f.current
+          = self.func
+        /\ f.final = succ.func
+        /\ produces_I self.iter (Seq.singleton e) succ.iter
+        /\ succ.produced = Seq.snoc self.produced e
+        /\ precondition_F f.current { f0 = e; f1 = self.produced }
+        /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited)
+    = produces_Map_I_F self (Seq.singleton visited) succ
 end
-module M_06_map_precond__map
+module M_map
   use seq.Seq
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
@@ -803,296 +813,306 @@ module M_06_map_precond__map
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
   type t_F
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate inv'0 (_1: t_F)
+  predicate inv_F (_1: t_F)
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate next_precondition (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall e: t_Item, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   type t_B
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate preservation (iter: t_I) (func: t_F) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: t_F. completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                       f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
+                                                                                                                                                                             f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. produced
-        = (Seq.empty: Seq.seq t_Item) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: t_F, produced'0: Seq.seq t_Item. produced'0
+        = (Seq.empty: Seq.seq t_Item) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_F (self: t_Map_I_F) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
-  predicate inv'1 (_1: t_Map)
+  predicate inv_Map_I_F (_1: t_Map_I_F)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-      = (invariant' x /\ inv x.t_Map__iter /\ inv'0 x.t_Map__func)
+  axiom inv_axiom [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x
+      = (invariant_Map_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec map (iter: t_I) (func: t_F) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv iter}
-    {[@expl:map 'func' type invariant] inv'0 func}
-    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces iter (Seq.singleton e) i2
-      -> precondition func { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
-    {[@expl:map requires #1] reinitialize}
-    {[@expl:map requires #2] preservation iter func}
+  let rec map_I (iter'0: t_I) (func'0: t_F) (return (x: t_Map_I_F)) = {[@expl:map 'iter' type invariant] inv_I iter'0}
+    {[@expl:map 'func' type invariant] inv_F func'0}
+    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+      -> precondition_F func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
+    {[@expl:map requires #1] reinitialize_I}
+    {[@expl:map requires #2] preservation_I iter'0 func'0}
     (! bb0
     [ bb0 = bb1
     | bb1 = s0 [ s0 = [ &_9 <- Seq.empty: Seq.seq t_Item ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_0 <- { t_Map__iter = iter; t_Map__func = func; t_Map__produced = _9 } ] s1 | s1 = bb6 ]
+    | bb2 = s0 [ s0 = [ &_0 <- { iter = iter'0; func = func'0; produced = _9 } ] s1 | s1 = bb6 ]
     | bb6 = return {_0} ]
-    [ & _0: t_Map = Any.any_l () | & iter: t_I = iter | & func: t_F = func | & _9: Seq.seq t_Item = Any.any_l () ])
-    [ return (result: t_Map) -> {[@expl:map result type invariant] inv'1 result}
-      {[@expl:map ensures] result
-      = { t_Map__iter = iter; t_Map__func = func; t_Map__produced = Seq.empty: Seq.seq t_Item }}
+    [ & _0: t_Map_I_F = Any.any_l ()
+    | & iter'0: t_I = iter'0
+    | & func'0: t_F = func'0
+    | & _9: Seq.seq t_Item = Any.any_l () ])
+    [ return (result: t_Map_I_F) -> {[@expl:map result type invariant] inv_Map_I_F result}
+      {[@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
       (! return {result}) ]
 end
-module M_06_map_precond__identity
+module M_identity
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.prelude.Any
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_closure0
   
   type t_I
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate inv (_1: t_Item)
+  predicate inv_Item (_1: t_Item)
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate resolve'0 [@inline:trivial] (_1: ()) = true
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  predicate hist_inv_closure0 [@inline:trivial] (self: ()) (result_state: ()) = true
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_closure0
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: t_Item) (_1: Seq.seq t_Item) (return (x'0: t_Item)) = bb0
-    [ bb0 = s0 [ s0 = -{resolve self}- s1 | s1 = [ &_0 <- x ] s2 | s2 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = -{resolve_ref_closure0 self}- s1 | s1 = [ &_0 <- x ] s2 | s2 = bb1 ] | bb1 = return {_0} ]
     [ & _0: t_Item = Any.any_l () | & self: MutBorrow.t () = self | & x: t_Item = x ]
   
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: tuple) (result: t_Item) =
+  predicate postcondition_once_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result: t_Item) =
     let {f0 = x; f1 = _1} = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
-        /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv self e
+        /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self e
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: t_Item) =
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result_state: ()) (result: t_Item) =
     let {f0 = x; f1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return bor_self x _1 result /\ hist_inv self result_state
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self result_state
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
-  function fn_mut_once (self: ()) (args: tuple) (res: t_Item) : ()
+  function fn_mut_once_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (res: t_Item) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: tuple, res: t_Item. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
+  axiom fn_mut_once_closure0_spec:
+    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res: t_Item. postcondition_once_closure0 self args res
+      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_closure0_spec: forall self: (), b: (), c: (). hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
-  function hist_inv_refl (self: ()) : ()
+  function hist_inv_refl_closure0 (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  axiom hist_inv_refl_closure0_spec: forall self: (). hist_inv_closure0 self self
   
-  function postcondition_mut_hist_inv (self: ()) (args: tuple) (res_state: ()) (res: t_Item) : ()
+  function postcondition_mut_hist_inv_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (res_state: ()) (res: t_Item) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: tuple, res_state: (), res: t_Item. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res_state: (), res: t_Item. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: (); t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_closure0 = { iter: t_I; func: (); produced: Seq.seq t_Item }
   
-  predicate inv'0 (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate precondition [@inline:trivial] (self: ()) (args: tuple) =
+  predicate precondition_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) =
     let {f0 = x; f1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
   
-  meta "rewrite_def" predicate precondition
+  meta "rewrite_def" predicate precondition_closure0
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate next_precondition (iter: t_I) (func: ()) (produced: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: ()) (produced'0: Seq.seq t_Item) =
+    forall e: t_Item, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation (iter: t_I) (func: ()) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: ()) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I. hist_inv_closure0 func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: (). completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: (). completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: ()) (produced: Seq.seq t_Item) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                         f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: ()) (produced'0: Seq.seq t_Item) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
+                                                                                                                                                                                      f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: (), produced: Seq.seq t_Item. produced
-        = (Seq.empty: Seq.seq t_Item) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: (), produced'0: Seq.seq t_Item. produced'0
+        = (Seq.empty: Seq.seq t_Item) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_closure0 (self: t_Map_I_closure0) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
-  predicate inv'1 (_1: t_Map)
+  predicate inv_Map_I_closure0 (_1: t_Map_I_closure0)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x = (invariant' x /\ inv'0 x.t_Map__iter)
+  axiom inv_axiom [@rewrite]: forall x: t_Map_I_closure0 [inv_Map_I_closure0 x]. inv_Map_I_closure0 x
+      = (invariant_Map_I_closure0 x /\ inv_I x.iter)
   
-  let rec map (iter: t_I) (func: ()) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv'0 iter}
-    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces iter (Seq.singleton e) i2
-      -> precondition func { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
-    {[@expl:map requires #1] reinitialize}
-    {[@expl:map requires #2] preservation iter func}
+  let rec map_I (iter'0: t_I) (func'0: ()) (return (x: t_Map_I_closure0)) =
+    {[@expl:map 'iter' type invariant] inv_I iter'0}
+    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
+    {[@expl:map requires #1] reinitialize_I}
+    {[@expl:map requires #2] preservation_I iter'0 func'0}
     any
-    [ return (result: t_Map) -> {inv'1 result}
-      {result = { t_Map__iter = iter; t_Map__func = func; t_Map__produced = Seq.empty: Seq.seq t_Item }}
+    [ return (result: t_Map_I_closure0) -> {inv_Map_I_closure0 result}
+      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
       (! return {result}) ]
   
-  predicate resolve'1 (_1: t_I)
+  predicate resolve_I (_1: t_I)
   
-  predicate resolve'2 (_1: t_Map)
+  predicate resolve_Map_I_closure0 (_1: t_Map_I_closure0)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Map [resolve'2 x]. resolve'2 x = resolve'1 x.t_Map__iter
+  axiom resolve_axiom [@rewrite]: forall x: t_Map_I_closure0 [resolve_Map_I_closure0 x]. resolve_Map_I_closure0 x
+      = resolve_I x.iter
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec identity (iter: t_I) (return (x: ())) = {[@expl:identity 'iter' type invariant] inv'0 iter}
+  let rec identity_I (iter'0: t_I) (return (x: ())) = {[@expl:identity 'iter' type invariant] inv_I iter'0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- () ] s1
-      | s1 = map {iter} {_4} (fun (_ret: t_Map) -> [ &_2 <- _ret ] s2)
-      | s2 = {[@expl:type invariant] inv'1 _2} s3
-      | s3 = -{resolve'2 _2}- s4
+      | s1 = map_I {iter'0} {_4} (fun (_ret: t_Map_I_closure0) -> [ &_2 <- _ret ] s2)
+      | s2 = {[@expl:type invariant] inv_Map_I_closure0 _2} s3
+      | s3 = -{resolve_Map_I_closure0 _2}- s4
       | s4 = bb3 ]
     | bb3 = return {_0} ]
-    [ & _0: () = Any.any_l () | & iter: t_I = iter | & _2: t_Map = Any.any_l () | & _4: () = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    [ & _0: () = Any.any_l ()
+    | & iter'0: t_I = iter'0
+    | & _2: t_Map_I_closure0 = Any.any_l ()
+    | & _4: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_06_map_precond__increment
+module M_increment
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use creusot.prelude.Any
   use seq.Seq
   use mach.int.Int
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_closure0
   
-  type tuple = { f0: UInt32.t; f1: Seq.seq UInt32.t }
+  type tup2_u32_Snapshot_Seq_u32 = { f0: UInt32.t; f1: Seq.seq UInt32.t }
   
-  predicate resolve'0 [@inline:trivial] (_1: ()) = true
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  predicate hist_inv_closure0 [@inline:trivial] (self: ()) (result_state: ()) = true
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_closure0
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: UInt32.t) (_1: Seq.seq UInt32.t)
     (return (x'0: UInt32.t)) = bb0
     [ bb0 = s0
-      [ s0 = -{resolve self}- s1
+      [ s0 = -{resolve_ref_closure0 self}- s1
       | s1 = UInt32.add {x} {(1: UInt32.t)} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s2)
       | s2 = return {_0} ] ] [ & _0: UInt32.t = Any.any_l () | & self: MutBorrow.t () = self | & x: UInt32.t = x ]
   
@@ -1100,213 +1120,226 @@ module M_06_map_precond__increment
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: tuple) (result: UInt32.t) =
+  predicate postcondition_once_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
     let {f0 = x; f1 = _1} = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
-        /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv self e
+        /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self e
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: tuple) (result_state: ()) (result: UInt32.t) =
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result_state: ()) (result: UInt32.t) =
     let {f0 = x; f1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return bor_self x _1 result /\ hist_inv self result_state
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self result_state
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
-  function fn_mut_once (self: ()) (args: tuple) (res: UInt32.t) : ()
+  function fn_mut_once_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (res: UInt32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: (), args: tuple, res: UInt32.t. postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve'0 res_state)
+  axiom fn_mut_once_closure0_spec:
+    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t. postcondition_once_closure0 self args res
+      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_closure0_spec: forall self: (), b: (), c: (). hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
-  function hist_inv_refl (self: ()) : ()
+  function hist_inv_refl_closure0 (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  axiom hist_inv_refl_closure0_spec: forall self: (). hist_inv_closure0 self self
   
-  function postcondition_mut_hist_inv (self: ()) (args: tuple) (res_state: ()) (res: UInt32.t) : ()
+  function postcondition_mut_hist_inv_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (res_state: ()) (res: UInt32.t) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: tuple, res_state: (), res: UInt32.t. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res_state: (), res: UInt32.t. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
   
   type t_U
   
-  type t_Map = { t_Map__iter: t_U; t_Map__func: (); t_Map__produced: Seq.seq UInt32.t }
+  type t_Map_U_closure0 = { iter: t_U; func: (); produced: Seq.seq UInt32.t }
   
-  predicate inv (_1: t_U)
+  predicate inv_U (_1: t_U)
   
-  predicate produces (self: t_U) (visited: Seq.seq UInt32.t) (o: t_U)
+  predicate produces_U (self: t_U) (visited: Seq.seq UInt32.t) (o: t_U)
   
-  function produces_trans (a: t_U) (ab: Seq.seq UInt32.t) (b: t_U) (bc: Seq.seq UInt32.t) (c: t_U) : ()
+  function produces_trans_U (a: t_U) (ab: Seq.seq UInt32.t) (b: t_U) (bc: Seq.seq UInt32.t) (c: t_U) : ()
   
-  axiom produces_trans_spec: forall a: t_U, ab: Seq.seq UInt32.t, b: t_U, bc: Seq.seq UInt32.t, c: t_U. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_U_spec:
+    forall a: t_U, ab: Seq.seq UInt32.t, b: t_U, bc: Seq.seq UInt32.t, c: t_U. produces_U a ab b
+      -> produces_U b bc c -> produces_U a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_U) : ()
+  function produces_refl_U (self: t_U) : ()
   
-  axiom produces_refl_spec: forall self: t_U. produces self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_U_spec: forall self: t_U. produces_U self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate precondition [@inline:trivial] (self: ()) (args: tuple) =
+  predicate precondition_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) =
     let {f0 = x; f1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
   
-  meta "rewrite_def" predicate precondition
+  meta "rewrite_def" predicate precondition_closure0
   
-  predicate completed (self: MutBorrow.t t_U)
+  predicate completed_U (self: MutBorrow.t t_U)
   
-  predicate next_precondition (iter: t_U) (func: ()) (produced: Seq.seq UInt32.t) =
-    forall e: UInt32.t, i: t_U [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_U (iter'0: t_U) (func'0: ()) (produced'0: Seq.seq UInt32.t) =
+    forall e: UInt32.t, i: t_U [produces_U iter'0 (Seq.singleton e) i]. produces_U iter'0 (Seq.singleton e) i
+      -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation (iter: t_U) (func: ()) =
-    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_U (iter'0: t_U) (func'0: ()) =
+    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U. hist_inv_closure0 func'0 f.current
+      -> produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_U, func: (). completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq UInt32.t) /\ preservation iter.final func
+  predicate reinitialize_U =
+    forall iter'0: MutBorrow.t t_U, func'0: (). completed_U iter'0
+      -> next_precondition_U iter'0.final func'0 (Seq.empty: Seq.seq UInt32.t) /\ preservation_U iter'0.final func'0
   
-  predicate preservation_inv (iter: t_U) (func: ()) (produced: Seq.seq UInt32.t) =
-    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                                 f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_U (iter'0: t_U) (func'0: ()) (produced'0: Seq.seq UInt32.t) =
+    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U [produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
+                                                                                                                                                                                              f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
+      -> produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_U, func: (), produced: Seq.seq UInt32.t. produced
-        = (Seq.empty: Seq.seq UInt32.t) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_U_spec: forall iter'0: t_U, func'0: (), produced'0: Seq.seq UInt32.t. produced'0
+        = (Seq.empty: Seq.seq UInt32.t) -> preservation_inv_U iter'0 func'0 produced'0 = preservation_U iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_U_closure0 (self: t_Map_U_closure0) =
+    reinitialize_U
+    /\ preservation_inv_U self.iter self.func self.produced /\ next_precondition_U self.iter self.func self.produced
   
-  predicate inv'0 (_1: t_Map)
+  predicate inv_Map_U_closure0 (_1: t_Map_U_closure0)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Map__iter)
+  axiom inv_axiom [@rewrite]: forall x: t_Map_U_closure0 [inv_Map_U_closure0 x]. inv_Map_U_closure0 x
+      = (invariant_Map_U_closure0 x /\ inv_U x.iter)
   
-  let rec map (iter: t_U) (func: ()) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv iter}
-    {[@expl:map requires #0] forall e: UInt32.t, i2: t_U. produces iter (Seq.singleton e) i2
-      -> precondition func { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
-    {[@expl:map requires #1] reinitialize}
-    {[@expl:map requires #2] preservation iter func}
+  let rec map_U (iter'0: t_U) (func'0: ()) (return (x: t_Map_U_closure0)) =
+    {[@expl:map 'iter' type invariant] inv_U iter'0}
+    {[@expl:map requires #0] forall e: UInt32.t, i2: t_U. produces_U iter'0 (Seq.singleton e) i2
+      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
+    {[@expl:map requires #1] reinitialize_U}
+    {[@expl:map requires #2] preservation_U iter'0 func'0}
     any
-    [ return (result: t_Map) -> {inv'0 result}
-      {result = { t_Map__iter = iter; t_Map__func = func; t_Map__produced = Seq.empty: Seq.seq UInt32.t }}
+    [ return (result: t_Map_U_closure0) -> {inv_Map_U_closure0 result}
+      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t }}
       (! return {result}) ]
   
-  predicate resolve'1 (_1: t_U)
+  predicate resolve_U (_1: t_U)
   
-  predicate resolve'2 (_1: t_Map)
+  predicate resolve_Map_U_closure0 (_1: t_Map_U_closure0)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Map [resolve'2 x]. resolve'2 x = resolve'1 x.t_Map__iter
+  axiom resolve_axiom [@rewrite]: forall x: t_Map_U_closure0 [resolve_Map_U_closure0 x]. resolve_Map_U_closure0 x
+      = resolve_U x.iter
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq UInt32.t) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_U_closure0 [@inline:trivial] (self: t_Map_U_closure0) (visited: Seq.seq UInt32.t) (succ: t_Map_U_closure0) =
+    hist_inv_closure0 self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq UInt32.t [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq UInt32.t [produces_U self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_U self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_closure0 self.func (Seq.get fs i).current
+          /\ precondition_closure0 (Seq.get fs i).current { f0 = Seq.get s i;
+                                                            f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_closure0 (Seq.get fs i).current { f0 = Seq.get s i;
+                                                                 f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_U_closure0
   
-  function produces_trans'0 (a: t_Map) (ab: Seq.seq UInt32.t) (b: t_Map) (bc: Seq.seq UInt32.t) (c: t_Map) : () = ()
+  function produces_trans_Map_U_closure0 (a: t_Map_U_closure0) (ab: Seq.seq UInt32.t) (b: t_Map_U_closure0) (bc: Seq.seq UInt32.t) (c: t_Map_U_closure0) : ()
+   = ()
   
-  axiom produces_trans_spec'0:
-    forall a: t_Map, ab: Seq.seq UInt32.t, b: t_Map, bc: Seq.seq UInt32.t, c: t_Map. produces'0 a ab b
-      -> produces'0 b bc c -> produces'0 a (Seq.(++) ab bc) c
+  axiom produces_trans_Map_U_closure0_spec:
+    forall a: t_Map_U_closure0, ab: Seq.seq UInt32.t, b: t_Map_U_closure0, bc: Seq.seq UInt32.t, c: t_Map_U_closure0. produces_Map_U_closure0 a ab b
+      -> produces_Map_U_closure0 b bc c -> produces_Map_U_closure0 a (Seq.(++) ab bc) c
   
-  function produces_refl'0 (self: t_Map) : () = ()
+  function produces_refl_Map_U_closure0 (self: t_Map_U_closure0) : () = ()
   
-  axiom produces_refl_spec'0: forall self: t_Map. produces'0 self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_Map_U_closure0_spec:
+    forall self: t_Map_U_closure0. produces_Map_U_closure0 self (Seq.empty: Seq.seq UInt32.t) self
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
-      C_Less
+  function cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
+  function eq_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log_u32 x y = Equal)
   
-  function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
+  function antisym2_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
   
-  function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
+  function antisym1_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
   
-  function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
+  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log_u32 x y = o
+      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
   
-  function refl (x: UInt32.t) : ()
+  function refl_u32 (x: UInt32.t) : ()
   
-  axiom refl_spec: forall x: UInt32.t. cmp_log x x = C_Equal
+  axiom refl_u32_spec: forall x: UInt32.t. cmp_log_u32 x x = Equal
   
-  function cmp_gt_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log_u32 x y = Greater)
   
-  function cmp_ge_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log_u32 x y <> Less)
   
-  function cmp_lt_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log_u32 x y = Less)
   
-  function cmp_le_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec increment (iter: t_U) (return (x: ())) = {[@expl:increment 'iter' type invariant] inv iter}
-    {[@expl:increment requires #0] forall done': MutBorrow.t t_U. completed done'
-      -> (forall next: t_U, steps: Seq.seq UInt32.t. produces done'.final steps next
+  let rec increment_U (iter'0: t_U) (return (x: ())) = {[@expl:increment 'iter' type invariant] inv_U iter'0}
+    {[@expl:increment requires #0] forall done': MutBorrow.t t_U. completed_U done'
+      -> (forall next: t_U, steps: Seq.seq UInt32.t. produces_U done'.final steps next
         -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next)}
-    {[@expl:increment requires #1] forall prod: Seq.seq UInt32.t, fin: t_U. produces iter prod fin
+    {[@expl:increment requires #1] forall prod: Seq.seq UInt32.t, fin: t_U. produces_U iter'0 prod fin
       -> (forall x: int. 0 <= x /\ x < Seq.length prod -> UInt32.le (Seq.get prod x) (10: UInt32.t))}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- () ] s1 | s1 = map {iter} {_6} (fun (_ret: t_Map) -> [ &i <- _ret ] s2) | s2 = bb1 ]
+    [ bb0 = s0
+      [ s0 = [ &_6 <- () ] s1
+      | s1 = map_U {iter'0} {_6} (fun (_ret: t_Map_U_closure0) -> [ &i <- _ret ] s2)
+      | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'0 i} s1
-      | s1 = -{resolve'2 i}- s2
-      | s2 = {[@expl:assertion] forall prod: Seq.seq UInt32.t, fin: t_Map. produces'0 i prod fin
+      [ s0 = {[@expl:type invariant] inv_Map_U_closure0 i} s1
+      | s1 = -{resolve_Map_U_closure0 i}- s2
+      | s2 = {[@expl:assertion] forall prod: Seq.seq UInt32.t, fin: t_Map_U_closure0. produces_Map_U_closure0 i prod fin
           -> (forall x: int. 0 <= x /\ x < Seq.length prod -> UInt32.le (Seq.get prod x) (11: UInt32.t))}
         s3
       | s3 = bb3 ]
     | bb3 = return {_0} ]
-    [ & _0: () = Any.any_l () | & iter: t_U = iter | & i: t_Map = Any.any_l () | & _6: () = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    [ & _0: () = Any.any_l ()
+    | & iter'0: t_U = iter'0
+    | & i: t_Map_U_closure0 = Any.any_l ()
+    | & _6: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_06_map_precond__counter
+module M_counter
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -1316,23 +1349,24 @@ module M_06_map_precond__counter
   
   type closure0 = { c0: MutBorrow.t UInt64.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_closure0
   
-  type tuple = { f0: UInt32.t; f1: Seq.seq UInt32.t }
+  type tup2_u32_Snapshot_Seq_u32 = { f0: UInt32.t; f1: Seq.seq UInt32.t }
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_usize
   
-  predicate resolve'1 [@inline:trivial] (_1: closure0) = resolve'0 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_usize _1.c0
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
+  predicate hist_inv_closure0 [@inline:trivial] (self: closure0) (result_state: closure0) =
+    result_state.c0.final = self.c0.final
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_closure0
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt32.t) (_prod: Seq.seq UInt32.t)
     (return (x'0: UInt32.t)) = bb0
@@ -1341,7 +1375,7 @@ module M_06_map_precond__counter
       | s1 = UInt64.add {self.current.c0.current} {(1: UInt64.t)}
           (fun (_ret: UInt64.t) ->
             [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s2)
-      | s2 = -{resolve self}- s3
+      | s2 = -{resolve_ref_closure0 self}- s3
       | s3 = [ &_0 <- x ] s4
       | s4 = return {_0} ] ]
     [ & _0: UInt32.t = Any.any_l ()
@@ -1353,116 +1387,120 @@ module M_06_map_precond__counter
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once [@inline:trivial] (self: closure0) (args: tuple) (result: UInt32.t) =
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
     let {f0 = x; f1 = _prod} = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
             = self
-          /\ bor_self.final = e /\ closure0'post'return bor_self x _prod result /\ hist_inv self e)
-      /\ resolve'1 e
+          /\ bor_self.final = e /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut [@inline:trivial] (self: closure0) (args: tuple) (result_state: closure0) (result: UInt32.t) =
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result_state: closure0) (result: UInt32.t) =
     let {f0 = x; f1 = _prod} = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return bor_self x _prod result /\ hist_inv self result_state
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self result_state
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
-  function fn_mut_once (self: closure0) (args: tuple) (res: UInt32.t) : ()
+  function fn_mut_once_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (res: UInt32.t) : ()
   
-  axiom fn_mut_once_spec: forall self: closure0, args: tuple, res: UInt32.t. postcondition_once self args res
-      = (exists res_state: closure0. postcondition_mut self args res_state res /\ resolve'1 res_state)
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t. postcondition_once_closure0 self args res
+      = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
-  function hist_inv_trans (self: closure0) (b: closure0) (c: closure0) : ()
+  function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
   
-  axiom hist_inv_trans_spec: forall self: closure0, b: closure0, c: closure0. hist_inv self b
-      -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_closure0_spec: forall self: closure0, b: closure0, c: closure0. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
-  function hist_inv_refl (self: closure0) : ()
+  function hist_inv_refl_closure0 (self: closure0) : ()
   
-  axiom hist_inv_refl_spec: forall self: closure0. hist_inv self self
+  axiom hist_inv_refl_closure0_spec: forall self: closure0. hist_inv_closure0 self self
   
-  function postcondition_mut_hist_inv (self: closure0) (args: tuple) (res_state: closure0) (res: UInt32.t) : ()
+  function postcondition_mut_hist_inv_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (res_state: closure0) (res: UInt32.t) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: closure0, args: tuple, res_state: closure0, res: UInt32.t. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res_state: closure0, res: UInt32.t. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
   
   type t_I
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: closure0; t_Map__produced: Seq.seq UInt32.t }
+  type t_Map_I_closure0 = { iter: t_I; func: closure0; produced: Seq.seq UInt32.t }
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate produces (self: t_I) (visited: Seq.seq UInt32.t) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq UInt32.t) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq UInt32.t) (b: t_I) (bc: Seq.seq UInt32.t) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq UInt32.t) (b: t_I) (bc: Seq.seq UInt32.t) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq UInt32.t, b: t_I, bc: Seq.seq UInt32.t, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec:
+    forall a: t_I, ab: Seq.seq UInt32.t, b: t_I, bc: Seq.seq UInt32.t, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate precondition [@inline:trivial] (self: closure0) (args: tuple) =
+  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) =
     let {f0 = x; f1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x _prod
   
-  meta "rewrite_def" predicate precondition
+  meta "rewrite_def" predicate precondition_closure0
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate next_precondition (iter: t_I) (func: closure0) (produced: Seq.seq UInt32.t) =
-    forall e: UInt32.t, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: closure0) (produced'0: Seq.seq UInt32.t) =
+    forall e: UInt32.t, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation (iter: t_I) (func: closure0) =
-    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: closure0) =
+    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I. hist_inv_closure0 func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: closure0. completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq UInt32.t) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: closure0. completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq UInt32.t) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: closure0) (produced: Seq.seq UInt32.t) =
-    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                                       f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: closure0) (produced'0: Seq.seq UInt32.t) =
+    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
+                                                                                                                                                                                                    f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: closure0, produced: Seq.seq UInt32.t. produced
-        = (Seq.empty: Seq.seq UInt32.t) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: closure0, produced'0: Seq.seq UInt32.t. produced'0
+        = (Seq.empty: Seq.seq UInt32.t) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_closure0 (self: t_Map_I_closure0) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
-  predicate inv'0 (_1: t_Map)
+  predicate inv_Map_I_closure0 (_1: t_Map_I_closure0)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'0 x]. inv'0 x = (invariant' x /\ inv x.t_Map__iter)
+  axiom inv_axiom [@rewrite]: forall x: t_Map_I_closure0 [inv_Map_I_closure0 x]. inv_Map_I_closure0 x
+      = (invariant_Map_I_closure0 x /\ inv_I x.iter)
   
-  let rec map (iter: t_I) (func: closure0) (return (x: t_Map)) = {[@expl:map 'iter' type invariant] inv iter}
-    {[@expl:map requires #0] forall e: UInt32.t, i2: t_I. produces iter (Seq.singleton e) i2
-      -> precondition func { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
-    {[@expl:map requires #1] reinitialize}
-    {[@expl:map requires #2] preservation iter func}
+  let rec map_I (iter'0: t_I) (func'0: closure0) (return (x: t_Map_I_closure0)) =
+    {[@expl:map 'iter' type invariant] inv_I iter'0}
+    {[@expl:map requires #0] forall e: UInt32.t, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
+    {[@expl:map requires #1] reinitialize_I}
+    {[@expl:map requires #2] preservation_I iter'0 func'0}
     any
-    [ return (result: t_Map) -> {inv'0 result}
-      {result = { t_Map__iter = iter; t_Map__func = func; t_Map__produced = Seq.empty: Seq.seq UInt32.t }}
+    [ return (result: t_Map_I_closure0) -> {inv_Map_I_closure0 result}
+      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t }}
       (! return {result}) ]
   
-  predicate resolve'2 (_1: t_I)
+  predicate resolve_I (_1: t_I)
   
-  predicate resolve'3 (_1: t_Map)
+  predicate resolve_Map_I_closure0 (_1: t_Map_I_closure0)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Map [resolve'3 x]. resolve'3 x
-      = (resolve'2 x.t_Map__iter /\ resolve'1 x.t_Map__func)
+  axiom resolve_axiom [@rewrite]: forall x: t_Map_I_closure0 [resolve_Map_I_closure0 x]. resolve_Map_I_closure0 x
+      = (resolve_I x.iter /\ resolve_closure0 x.func)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1470,11 +1508,11 @@ module M_06_map_precond__counter
   
   meta "select_lsinst" "all"
   
-  let rec counter (iter: t_I) (return (x: ())) = {[@expl:counter 'iter' type invariant] inv iter}
-    {[@expl:counter requires #0] forall done': MutBorrow.t t_I. completed done'
-      -> (forall next: t_I, steps: Seq.seq UInt32.t. produces done'.final steps next
+  let rec counter_I (iter'0: t_I) (return (x: ())) = {[@expl:counter 'iter' type invariant] inv_I iter'0}
+    {[@expl:counter requires #0] forall done': MutBorrow.t t_I. completed_I done'
+      -> (forall next: t_I, steps: Seq.seq UInt32.t. produces_I done'.final steps next
         -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next)}
-    {[@expl:counter requires #1] forall prod: Seq.seq UInt32.t, fin: t_I. produces iter prod fin
+    {[@expl:counter requires #1] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter'0 prod fin
       -> Seq.length prod <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0
@@ -1482,19 +1520,19 @@ module M_06_map_precond__counter
       | s1 = MutBorrow.borrow_mut <UInt64.t> {cnt}
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &_8 <- _ret ] [ &cnt <- _ret.final ] s2)
       | s2 = [ &_7 <- { c0 = _8 } ] s3
-      | s3 = map {iter} {_7} (fun (_ret: t_Map) -> [ &_5 <- _ret ] s4)
-      | s4 = {[@expl:type invariant] inv'0 _5} s5
-      | s5 = -{resolve'3 _5}- s6
+      | s3 = map_I {iter'0} {_7} (fun (_ret: t_Map_I_closure0) -> [ &_5 <- _ret ] s4)
+      | s4 = {[@expl:type invariant] inv_Map_I_closure0 _5} s5
+      | s5 = -{resolve_Map_I_closure0 _5}- s6
       | s6 = bb3 ]
     | bb3 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & iter: t_I = iter
+    | & iter'0: t_I = iter'0
     | & cnt: UInt64.t = Any.any_l ()
-    | & _5: t_Map = Any.any_l ()
+    | & _5: t_Map_I_closure0 = Any.any_l ()
     | & _7: closure0 = Any.any_l ()
     | & _8: MutBorrow.t UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_06_map_precond__qyi13778860181180212516__next__refines (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
@@ -1505,171 +1543,172 @@ module M_06_map_precond__qyi13778860181180212516__next__refines (* <Map<I, F> as
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
-  predicate completed (self: MutBorrow.t t_I)
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate next_precondition (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I [produces iter (Seq.singleton e) i]. produces iter (Seq.singleton e) i
-      -> precondition func { f0 = e; f1 = produced }
+  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall e: t_Item, i: t_I [produces_I iter'0 (Seq.singleton e) i]. produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   type t_B
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate preservation (iter: t_I) (func: t_F) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = s }
-      -> postcondition_mut f.current { f0 = e1; f1 = s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize =
-    forall iter: MutBorrow.t t_I, func: t_F. completed iter
-      -> next_precondition iter.final func (Seq.empty: Seq.seq t_Item) /\ preservation iter.final func
+  predicate reinitialize_I =
+    forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
+      -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
   
-  predicate preservation_inv (iter: t_I) (func: t_F) (produced: Seq.seq t_Item) =
-    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut f.current { f0 = e1;
-                                                                                                                                                                       f1 = Seq.(++) produced s } f.final b]. hist_inv func f.current
-      -> produces iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition f.current { f0 = e1; f1 = Seq.(++) produced s }
-      -> postcondition_mut f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
-      -> precondition f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 }
+  predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+    forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
+                                                                                                                                                                             f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
+      -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
+      -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
+      -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
-  axiom preservation_inv_spec: forall iter: t_I, func: t_F, produced: Seq.seq t_Item. produced
-        = (Seq.empty: Seq.seq t_Item) -> preservation_inv iter func produced = preservation iter func
+  axiom preservation_inv_I_spec: forall iter'0: t_I, func'0: t_F, produced'0: Seq.seq t_Item. produced'0
+        = (Seq.empty: Seq.seq t_Item) -> preservation_inv_I iter'0 func'0 produced'0 = preservation_I iter'0 func'0
   
-  predicate invariant' (self: t_Map) =
-    reinitialize
-    /\ preservation_inv self.t_Map__iter self.t_Map__func self.t_Map__produced
-    /\ next_precondition self.t_Map__iter self.t_Map__func self.t_Map__produced
+  predicate invariant_Map_I_F (self: t_Map_I_F) =
+    reinitialize_I
+    /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
-  predicate inv (_1: t_I)
+  predicate inv_I (_1: t_I)
   
-  predicate inv'0 (_1: t_F)
+  predicate inv_F (_1: t_F)
   
-  predicate inv'1 (_1: t_Map)
+  predicate inv_Map_I_F (_1: t_Map_I_F)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map [inv'1 x]. inv'1 x
-      = (invariant' x /\ inv x.t_Map__iter /\ inv'0 x.t_Map__func)
+  axiom inv_axiom [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x
+      = (invariant_Map_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant''0 [@inline:trivial] (self: MutBorrow.t t_Map) = inv'1 self.current /\ inv'1 self.final
+  predicate invariant_ref_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
+    inv_Map_I_F self.current /\ inv_Map_I_F self.final
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_Map_I_F
   
-  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_Map) = invariant''0 _1
+  predicate inv_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_ref_Map_I_F _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_ref_Map_I_F
   
-  type t_Option = C_None | C_Some t_B
+  type t_Option_B = None | Some t_B
   
-  predicate completed'0 (self: MutBorrow.t t_Map) =
-    self.final.t_Map__produced = (Seq.empty: Seq.seq t_Item)
-    /\ completed (MutBorrow.borrow_logic self.current.t_Map__iter self.final.t_Map__iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
-    /\ self.current.t_Map__func = self.final.t_Map__func
+  predicate completed_Map_I_F (self: MutBorrow.t t_Map_I_F) =
+    self.final.produced = (Seq.empty: Seq.seq t_Item)
+    /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
+    /\ self.current.func = self.final.func
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
-  predicate produces_one (self: t_Map) (visited: t_B) (succ: t_Map) =
-    exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut f.current { f0 = e;
-                                                                        f1 = self.t_Map__produced } f.final visited]. f.current
-        = self.t_Map__func
-      /\ f.final = succ.t_Map__func
-      /\ produces self.t_Map__iter (Seq.singleton e) succ.t_Map__iter
-      /\ succ.t_Map__produced = Seq.snoc self.t_Map__produced e
-      /\ precondition f.current { f0 = e; f1 = self.t_Map__produced }
-      /\ postcondition_mut f.current { f0 = e; f1 = self.t_Map__produced } f.final visited
+  predicate produces_one_I (self: t_Map_I_F) (visited: t_B) (succ: t_Map_I_F) =
+    exists f: MutBorrow.t t_F, e: t_Item [postcondition_mut_F f.current { f0 = e;
+                                                                          f1 = self.produced } f.final visited]. f.current
+        = self.func
+      /\ f.final = succ.func
+      /\ produces_I self.iter (Seq.singleton e) succ.iter
+      /\ succ.produced = Seq.snoc self.produced e
+      /\ precondition_F f.current { f0 = e; f1 = self.produced }
+      /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited
   
-  axiom produces_one_spec: forall self: t_Map, visited: t_B, succ: t_Map. produces_one self visited succ
-      = produces'0 self (Seq.singleton visited) succ
+  axiom produces_one_I_spec: forall self: t_Map_I_F, visited: t_B, succ: t_Map_I_F. produces_one_I self visited succ
+      = produces_Map_I_F self (Seq.singleton visited) succ
   
-  predicate inv'3 (_1: t_B)
+  predicate inv_B (_1: t_B)
   
-  predicate inv'4 (_1: t_Option)
+  predicate inv_Option_B (_1: t_Option_B)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option [inv'4 x]. inv'4 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'3 a_0
+        | None -> true
+        | Some f0'0 -> inv_B f0'0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Map. inv'2 self
-      -> inv'2 self
-      /\ (forall result: t_Option. match result with
-              | C_None -> completed'0 self
-              | C_Some v -> produces_one self.current v self.final
+  goal refines: forall self: MutBorrow.t t_Map_I_F. inv_ref_Map_I_F self
+      -> inv_ref_Map_I_F self
+      /\ (forall result: t_Option_B. match result with
+              | None -> completed_Map_I_F self
+              | Some v -> produces_one_I self.current v self.final
               end
-          /\ inv'4 result
+          /\ inv_Option_B result
         -> match result with
-            | C_None -> completed'0 self
-            | C_Some v -> produces'0 self.current (Seq.singleton v) self.final
+            | None -> completed_Map_I_F self
+            | Some v -> produces_Map_I_F self.current (Seq.singleton v) self.final
             end
-        /\ inv'4 result)
+        /\ inv_Option_B result)
 end
-module M_06_map_precond__qyi13778860181180212516__produces_refl__refines (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__produces_refl__refines (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -1680,81 +1719,82 @@ module M_06_map_precond__qyi13778860181180212516__produces_refl__refines (* <Map
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Map. forall result: (). produces'0 self (Seq.empty: Seq.seq t_B) self
-        -> produces'0 self (Seq.empty: Seq.seq t_B) self
+  goal refines: forall self: t_Map_I_F. forall result: (). produces_Map_I_F self (Seq.empty: Seq.seq t_B) self
+        -> produces_Map_I_F self (Seq.empty: Seq.seq t_B) self
 end
-module M_06_map_precond__qyi13778860181180212516__produces_trans__refines (* <Map<I, F> as common::Iterator> *)
+module M_impl_Iterator_for_Map_I_F__produces_trans__refines (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
@@ -1765,81 +1805,82 @@ module M_06_map_precond__qyi13778860181180212516__produces_trans__refines (* <Ma
   
   type t_Item
   
-  predicate produces (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
-  function produces_trans (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
   
-  axiom produces_trans_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_I) : ()
+  function produces_refl_I (self: t_I) : ()
   
-  axiom produces_refl_spec: forall self: t_I. produces self (Seq.empty: Seq.seq t_Item) self
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type t_Map = { t_Map__iter: t_I; t_Map__func: t_F; t_Map__produced: Seq.seq t_Item }
+  type t_Map_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
   
-  type tuple = { f0: t_Item; f1: Seq.seq t_Item }
+  type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
-  predicate postcondition_once (self: t_F) (args: tuple) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
-  predicate resolve (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: tuple) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once (self: t_F) (args: tuple) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: tuple, res: t_B. postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: tuple) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: tuple, res_state: t_F, res: t_B. postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  predicate precondition (self: t_F) (args: tuple)
+  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate produces'0 [@inline:trivial] (self: t_Map) (visited: Seq.seq t_B) (succ: t_Map) =
-    hist_inv self.t_Map__func succ.t_Map__func
+  predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
+    hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq t_Item [produces self.t_Map__iter s succ.t_Map__iter]. Seq.length s = Seq.length visited
-        /\ produces self.t_Map__iter s succ.t_Map__iter
-        /\ succ.t_Map__produced = Seq.(++) self.t_Map__produced s
+      /\ (exists s: Seq.seq t_Item [produces_I self.iter s succ.iter]. Seq.length s = Seq.length visited
+        /\ produces_I self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
         /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
         /\ (if Seq.length visited = 0 then
-            self.t_Map__func = succ.t_Map__func
+            self.func = succ.func
           else
-            (Seq.get fs 0).current = self.t_Map__func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.t_Map__func
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv self.t_Map__func (Seq.get fs i).current
-          /\ precondition (Seq.get fs i).current { f0 = Seq.get s i;
-                                                   f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) }
-          /\ postcondition_mut (Seq.get fs i).current { f0 = Seq.get s i;
-                                                        f1 = Seq.(++) self.t_Map__produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+          -> hist_inv_F self.func (Seq.get fs i).current
+          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
+          /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
+                                                          f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces'0
+  meta "rewrite_def" predicate produces_Map_I_F
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Map. forall ab: Seq.seq t_B. forall b: t_Map. forall bc: Seq.seq t_B. forall c: t_Map. produces'0 b bc c
-                /\ produces'0 a ab b
-              -> produces'0 b bc c
-              /\ produces'0 a ab b
-              /\ (forall result: (). produces'0 a (Seq.(++) ab bc) c -> produces'0 a (Seq.(++) ab bc) c)
+    forall a: t_Map_I_F. forall ab: Seq.seq t_B. forall b: t_Map_I_F. forall bc: Seq.seq t_B. forall c: t_Map_I_F. produces_Map_I_F b bc c
+                /\ produces_Map_I_F a ab b
+              -> produces_Map_I_F b bc c
+              /\ produces_Map_I_F a ab b
+              /\ (forall result: (). produces_Map_I_F a (Seq.(++) ab bc) c -> produces_Map_I_F a (Seq.(++) ab bc) c)
 end

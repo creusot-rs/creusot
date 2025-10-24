@@ -1,164 +1,166 @@
-module M_1410__bar
+module M_bar
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Range = { t_Range__start: Int32.t; t_Range__end: Int32.t }
+  type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
+  let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {result = self_} (! return {result}) ]
   
   type t_F
   
-  predicate precondition (self: t_F) (args: ())
+  predicate precondition_F (self: t_F) (args: ())
   
-  predicate inv (_1: t_F)
+  predicate inv_F (_1: t_F)
   
-  function deep_model [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
   
-  meta "rewrite_def" function deep_model
+  meta "rewrite_def" function deep_model_i32
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int32.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
-    /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
+  predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
+    self.end' = o.end'
+    /\ deep_model_i32 self.start <= deep_model_i32 o.start
+    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
   
-  function produces_trans (a: t_Range) (ab: Seq.seq Int32.t) (b: t_Range) (bc: Seq.seq Int32.t) (c: t_Range) : ()
+  function produces_trans_Range_i32 (a: t_Range_i32) (ab: Seq.seq Int32.t) (b: t_Range_i32) (bc: Seq.seq Int32.t) (c: t_Range_i32) : ()
   
-  axiom produces_trans_spec:
-    forall a: t_Range, ab: Seq.seq Int32.t, b: t_Range, bc: Seq.seq Int32.t, c: t_Range. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Range_i32_spec:
+    forall a: t_Range_i32, ab: Seq.seq Int32.t, b: t_Range_i32, bc: Seq.seq Int32.t, c: t_Range_i32. produces_Range_i32 a ab b
+      -> produces_Range_i32 b bc c -> produces_Range_i32 a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Range) : ()
+  function produces_refl_Range_i32 (self: t_Range_i32) : ()
   
-  axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq Int32.t) self
+  axiom produces_refl_Range_i32_spec:
+    forall self: t_Range_i32. produces_Range_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate inv'0 [@inline:trivial] (_1: t_Range) = true
+  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Range_i32
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_i32
   
-  type t_Option = C_None | C_Some Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_ref_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Range_i32
   
-  predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
+  predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
+    resolve_ref_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
-  let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+  let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+    [ return (result: t_Option_i32) -> {match result with
+        | None -> completed_Range_i32 self_
+        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: Int32.t)) = any
-    [ good (field_0: Int32.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: Int32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_i32) (ret (f0: Int32.t)) = any
+    [ good (f0: Int32.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: Int32.t [Some f0: t_Option_i32]. Some f0 <> input} (! {false} any) ]
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_F) = inv self.current /\ inv self.final
+  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_F
   
-  predicate inv'2 [@inline:trivial] (_1: MutBorrow.t t_F) = invariant' _1
+  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_ref_F
   
-  predicate postcondition_once (self: t_F) (args: ()) (result: ())
+  predicate postcondition_once_F (self: t_F) (args: ()) (result: ())
   
-  predicate resolve'0 (_1: t_F)
+  predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut (self: t_F) (args: ()) (result_state: t_F) (result: ())
+  predicate postcondition_mut_F (self: t_F) (args: ()) (result_state: t_F) (result: ())
   
-  function fn_mut_once (self: t_F) (args: ()) (res: ()) : ()
+  function fn_mut_once_F (self: t_F) (args: ()) (res: ()) : ()
   
-  axiom fn_mut_once_spec: forall self: t_F, args: (), res: (). postcondition_once self args res
-      = (exists res_state: t_F. postcondition_mut self args res_state res /\ resolve'0 res_state)
+  axiom fn_mut_once_F_spec: forall self: t_F, args: (), res: (). postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
-  predicate hist_inv (self: t_F) (result_state: t_F)
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
   
-  function hist_inv_trans (self: t_F) (b: t_F) (c: t_F) : ()
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_spec: forall self: t_F, b: t_F, c: t_F. hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
   
-  function hist_inv_refl (self: t_F) : ()
+  function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_spec: forall self: t_F. hist_inv self self
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
   
-  function postcondition_mut_hist_inv (self: t_F) (args: ()) (res_state: t_F) (res: ()) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (args: ()) (res_state: t_F) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: t_F, args: (), res_state: t_F, res: (). postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: (), res_state: t_F, res: (). postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
   
-  let rec call_mut (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
-    {[@expl:call_mut 'self_' type invariant] inv'2 self_}
-    {[@expl:call_mut requires] precondition self_.current arg}
-    any [ return (result: ()) -> {postcondition_mut self_.current arg self_.final result} (! return {result}) ]
+  let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
+    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut requires] precondition_F self_.current arg}
+    any [ return (result: ()) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec bar (f: t_F) (return (x: ())) = {[@expl:bar 'f' type invariant] inv f}
-    {[@expl:bar requires] precondition f ()}
+  let rec bar_F (f: t_F) (return (x: ())) = {[@expl:bar 'f' type invariant] inv_F f}
+    {[@expl:bar requires] precondition_F f ()}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- { t_Range__start = (0: Int32.t); t_Range__end = (1: Int32.t) } ] s1
-      | s1 = into_iter {_4} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
+      [ s0 = [ &_4 <- { start = (0: Int32.t); end' = (1: Int32.t) } ] s1
+      | s1 = into_iter_Range_i32 {_4} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:for invariant] inv'1 produced}
-        {[@expl:for invariant] inv'0 iter}
-        {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] inv f}
-        {[@expl:loop invariant #1] Seq.length produced = 0 -> precondition f ()}
+      [ bb4 = {[@expl:for invariant] inv_Seq_i32 produced}
+        {[@expl:for invariant] inv_Range_i32 iter}
+        {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
+        {[@expl:loop invariant #0] inv_F f}
+        {[@expl:loop invariant #1] Seq.length produced = 0 -> precondition_F f ()}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_18 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range> {_18.current} {MutBorrow.get_id _18}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_17 <- _ret ] [ &_18 <- { _18 with current = _ret.final } ] s2)
-          | s2 = next {_17} (fun (_ret: t_Option) -> [ &_16 <- _ret ] s3)
+          [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_18 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_18.current} {MutBorrow.get_id _18}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_17 <- _ret ] [ &_18 <- { _18 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_17} (fun (_ret: t_Option_i32) -> [ &_16 <- _ret ] s3)
           | s3 = bb6 ]
         | bb6 = s0
-          [ s0 = -{resolve _18}- s1
-          | s1 = any [ br0 -> {_16 = C_None} (! bb9) | br1 (x0: Int32.t) -> {_16 = C_Some x0} (! bb10) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _18}- s1
+          | s1 = any [ br0 -> {_16 = None} (! bb9) | br1 (x0: Int32.t) -> {_16 = Some x0} (! bb10) ] ]
         | bb10 = s0
-          [ s0 = v_Some {_16} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_16} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_21 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb11 ]
         | bb11 = s0
           [ s0 = [ &produced <- _21 ] s1
-          | s1 = {inv f}
+          | s1 = {inv_F f}
             MutBorrow.borrow_mut <t_F> {f}
-              (fun (_ret: MutBorrow.t t_F) -> [ &_24 <- _ret ] -{inv _ret.final}- [ &f <- _ret.final ] s2)
-          | s2 = call_mut {_24} {_25} (fun (_ret: ()) -> [ &_23 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_F) -> [ &_24 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s2)
+          | s2 = call_mut_F {_24} {_25} (fun (_ret: ()) -> [ &_23 <- _ret ] s3)
           | s3 = bb4 ] ] ]
-    | bb9 = s0 [ s0 = {[@expl:type invariant] inv f} s1 | s1 = -{resolve'0 f}- s2 | s2 = bb13 ]
+    | bb9 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb13 ]
     | bb13 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & f: t_F = f
-    | & iter: t_Range = Any.any_l ()
-    | & _4: t_Range = Any.any_l ()
-    | & iter_old: t_Range = Any.any_l ()
+    | & iter: t_Range_i32 = Any.any_l ()
+    | & _4: t_Range_i32 = Any.any_l ()
+    | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _16: t_Option = Any.any_l ()
-    | & _17: MutBorrow.t t_Range = Any.any_l ()
-    | & _18: MutBorrow.t t_Range = Any.any_l ()
+    | & _16: t_Option_i32 = Any.any_l ()
+    | & _17: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _18: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
     | & _21: Seq.seq Int32.t = Any.any_l ()
     | & _23: () = Any.any_l ()

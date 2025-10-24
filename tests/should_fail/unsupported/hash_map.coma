@@ -1,71 +1,71 @@
-module M_hash_map__qyi5744717520881225036__new (* Foo *)
+module M_impl_Foo__new (* Foo *)
   use creusot.prelude.Any
   
-  type t_HashMap
+  type t_HashMap_u64_u8_RandomState
   
-  type t_Foo = { t_Foo__0: t_HashMap }
+  type t_Foo = { f0: t_HashMap_u64_u8_RandomState }
   
-  predicate inv (_1: t_HashMap)
+  predicate inv_HashMap_u64_u8_RandomState (_1: t_HashMap_u64_u8_RandomState)
   
-  predicate inv'0 (_1: t_Foo)
+  predicate inv_Foo (_1: t_Foo)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv'0 x]. inv'0 x = inv x.t_Foo__0
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec new (return (x: t_Foo)) = (! bb0
-    [ bb0 = {false} any ] [ & _0: t_Foo = Any.any_l () | & _1: t_HashMap = Any.any_l () ])
-    [ return (result: t_Foo) -> {[@expl:new result type invariant] inv'0 result} (! return {result}) ]
+    [ bb0 = {false} any ] [ & _0: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState = Any.any_l () ])
+    [ return (result: t_Foo) -> {[@expl:new result type invariant] inv_Foo result} (! return {result}) ]
 end
-module M_hash_map__qyi5744717520881225036__add (* Foo *)
+module M_impl_Foo__add (* Foo *)
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use creusot.int.UInt8
   use map.Map
   
-  type t_HashMap
+  type t_HashMap_u64_u8_RandomState
   
-  type t_Foo = { t_Foo__0: t_HashMap }
+  type t_Foo = { f0: t_HashMap_u64_u8_RandomState }
   
-  predicate inv (_1: t_HashMap)
+  predicate inv_HashMap_u64_u8_RandomState (_1: t_HashMap_u64_u8_RandomState)
   
-  predicate inv'0 (_1: t_Foo)
+  predicate inv_Foo (_1: t_Foo)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv'0 x]. inv'0 x = inv x.t_Foo__0
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_Foo) = inv'0 self.current /\ inv'0 self.final
+  predicate invariant_ref_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) = inv_Foo self.current /\ inv_Foo self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Foo
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant' _1
+  predicate inv_ref_Foo [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant_ref_Foo _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_Foo
   
-  type t_FMap
+  type t_FMap_Int_u8
   
-  type t_Option = C_None | C_Some UInt8.t
+  type t_Option_u8 = None | Some UInt8.t
   
-  function view (self: t_FMap) : Map.map int t_Option
+  function view_FMap_Int_u8 (self: t_FMap_Int_u8) : Map.map int t_Option_u8
   
-  function get [@inline:trivial] (self: t_FMap) (k: int) : t_Option = Map.get (view self) k
+  function get_Int [@inline:trivial] (self: t_FMap_Int_u8) (k: int) : t_Option_u8 = Map.get (view_FMap_Int_u8 self) k
   
-  meta "rewrite_def" function get
+  meta "rewrite_def" function get_Int
   
-  function view'0 (self: t_HashMap) : t_FMap
+  function view_HashMap_u64_u8_RandomState (self: t_HashMap_u64_u8_RandomState) : t_FMap_Int_u8
   
-  function view'1 [@inline:trivial] (self: t_Foo) : t_FMap = view'0 self.t_Foo__0
+  function view_Foo [@inline:trivial] (self: t_Foo) : t_FMap_Int_u8 = view_HashMap_u64_u8_RandomState self.f0
   
-  meta "rewrite_def" function view'1
+  meta "rewrite_def" function view_Foo
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv'1 self}
+    {[@expl:add 'self' type invariant] inv_ref_Foo self}
     (! bb0
     [ bb0 = {false} any ]
     [ & _0: () = Any.any_l ()
@@ -73,6 +73,6 @@ module M_hash_map__qyi5744717520881225036__add (* Foo *)
     | & num: UInt64.t = num
     | & bar: UInt8.t = bar
     | & _6: MutBorrow.t UInt8.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:add ensures] get (view'1 self.final) (UInt64.t'int num) = C_Some bar}
+    [ return (result: ()) -> {[@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num) = Some bar}
       (! return {result}) ]
 end

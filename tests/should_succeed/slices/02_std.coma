@@ -1,4 +1,4 @@
-module M_02_std__binary_search
+module M_binary_search
   use creusot.int.UInt32
   use creusot.prelude.Any
   use creusot.slice.Slice64
@@ -6,110 +6,114 @@ module M_02_std__binary_search
   use seq.Seq
   use mach.int.Int
   
-  type t_Result = C_Ok UInt64.t | C_Err UInt64.t
+  type t_Result_usize_usize = Ok UInt64.t | Err UInt64.t
   
-  predicate sorted_range (self: Seq.seq int) (start: int) (end': int) =
+  predicate sorted_range_Int (self: Seq.seq int) (start: int) (end': int) =
     forall i: int, j: int. start <= i /\ i <= j /\ j < end' -> Seq.get self i <= Seq.get self j
   
-  predicate sorted (self: Seq.seq int) = sorted_range self 0 (Seq.length self)
+  predicate sorted_Int (self: Seq.seq int) = sorted_range_Int self 0 (Seq.length self)
   
-  function deep_model [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
   
-  meta "rewrite_def" function deep_model
+  meta "rewrite_def" function deep_model_u32
   
-  function index_logic [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
+  function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_slice_u32
   
-  function deep_model'0 (self: Slice64.slice UInt32.t) : Seq.seq int
+  function deep_model_slice_u32 (self: Slice64.slice UInt32.t) : Seq.seq int
   
-  axiom deep_model_spec: forall self: Slice64.slice UInt32.t. Seq.length (Slice64.view self)
-      = Seq.length (deep_model'0 self)
+  axiom deep_model_slice_u32_spec: forall self: Slice64.slice UInt32.t. Seq.length (Slice64.view self)
+      = Seq.length (deep_model_slice_u32 self)
   
-  axiom deep_model_spec'0: forall self: Slice64.slice UInt32.t. forall i: int. 0 <= i
-          /\ i < Seq.length (deep_model'0 self) -> Seq.get (deep_model'0 self) i = deep_model (index_logic self i)
+  axiom deep_model_slice_u32_spec'0: forall self: Slice64.slice UInt32.t. forall i: int. 0 <= i
+          /\ i < Seq.length (deep_model_slice_u32 self)
+        -> Seq.get (deep_model_slice_u32 self) i = deep_model_u32 (index_slice_u32 self i)
   
-  function deep_model'1 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq int = deep_model'0 self
+  function deep_model_ref_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) : Seq.seq int =
+    deep_model_slice_u32 self
   
-  meta "rewrite_def" function deep_model'1
+  meta "rewrite_def" function deep_model_ref_slice_u32
   
-  function deep_model'2 [@inline:trivial] (self: UInt32.t) : int = deep_model self
+  function deep_model_ref_u32 [@inline:trivial] (self: UInt32.t) : int = deep_model_u32 self
   
-  meta "rewrite_def" function deep_model'2
+  meta "rewrite_def" function deep_model_ref_u32
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
-  let rec binary_search (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result)) =
-    {[@expl:binary_search requires] sorted (deep_model'1 self_)}
+  let rec binary_search_u32 (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
+    {[@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
     any
-    [ return (result: t_Result) -> {forall i: UInt64.t. result = C_Ok i
+    [ return (result: t_Result_usize_usize) -> {forall i: UInt64.t. result = Ok i
         -> UInt64.t'int i < Seq.length (Slice64.view self_)
-        /\ Seq.get (deep_model'0 self_) (UInt64.t'int i) = deep_model'2 x}
-      {forall i: UInt64.t. result = C_Err i
+        /\ Seq.get (deep_model_slice_u32 self_) (UInt64.t'int i) = deep_model_ref_u32 x}
+      {forall i: UInt64.t. result = Err i
         -> UInt64.t'int i <= Seq.length (Slice64.view self_)
         /\ (forall j: int. 0 <= j /\ j < Seq.length (Slice64.view self_)
-          -> Seq.get (deep_model'1 self_) j <> deep_model'2 x)}
-      {forall i: UInt64.t. result = C_Err i
-        -> (forall j: UInt64.t. UInt64.lt j i -> Seq.get (deep_model'1 self_) (UInt64.t'int j) < deep_model'2 x)}
-      {forall i: UInt64.t. result = C_Err i
+          -> Seq.get (deep_model_ref_slice_u32 self_) j <> deep_model_ref_u32 x)}
+      {forall i: UInt64.t. result = Err i
+        -> (forall j: UInt64.t. UInt64.lt j i
+          -> Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j) < deep_model_ref_u32 x)}
+      {forall i: UInt64.t. result = Err i
         -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self_)
-          -> deep_model'2 x < Seq.get (deep_model'1 self_) (UInt64.t'int j))}
+          -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j))}
       (! return {result}) ]
   
-  let rec unwrap (self_: t_Result) (return (x: UInt64.t)) = {[@expl:unwrap requires] exists t: UInt64.t. self_ = C_Ok t}
-    any [ return (result: UInt64.t) -> {C_Ok result = self_} (! return {result}) ]
+  let rec unwrap_usize (self_: t_Result_usize_usize) (return (x: UInt64.t)) =
+    {[@expl:unwrap requires] exists t: UInt64.t. self_ = Ok t}
+    any [ return (result: UInt64.t) -> {Ok result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec binary_search'0 (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
+  let rec binary_search (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
     {[@expl:binary_search requires #0] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
-      -> UInt32.t'int (index_logic s i) = i}
+      -> UInt32.t'int (index_slice_u32 s i) = i}
     {[@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5}
     (! bb0
     [ bb0 = s0
@@ -117,14 +121,14 @@ module M_02_std__binary_search
         [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- (2: UInt32.t) ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
         [ & _0'0: UInt32.t = Any.any_l () ] [ _const_ret (_const: UInt32.t) -> [ &_12 <- _const ] s1 ]
       | s1 = [ &_8 <- _12 ] s2
-      | s2 = binary_search {s} {_8} (fun (_ret: t_Result) -> [ &_5 <- _ret ] s3)
+      | s2 = binary_search_u32 {s} {_8} (fun (_ret: t_Result_usize_usize) -> [ &_5 <- _ret ] s3)
       | s3 = bb1 ]
-    | bb1 = s0 [ s0 = unwrap {_5} (fun (_ret: UInt64.t) -> [ &ix <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = unwrap_usize {_5} (fun (_ret: UInt64.t) -> [ &ix <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = {[@expl:assertion] UInt64.t'int ix < 5} s1 | s1 = [ &_0 <- ix ] s2 | s2 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
     | & s: Slice64.slice UInt32.t = s
     | & ix: UInt64.t = Any.any_l ()
-    | & _5: t_Result = Any.any_l ()
+    | & _5: t_Result_usize_usize = Any.any_l ()
     | & _8: UInt32.t = Any.any_l ()
     | & _12: UInt32.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end

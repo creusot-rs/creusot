@@ -1,67 +1,68 @@
-module M_922__g
+module M_g
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { f0: Int32.t; f1: MutBorrow.t Int32.t }
+  type tup2_i32_ref_i32 = { f0: Int32.t; f1: MutBorrow.t Int32.t }
   
-  type tuple'0 = { f0'0: tuple; f1'0: Int32.t }
+  type tup2_tup2_i32_ref_i32_i32 = { f0'0: tup2_i32_ref_i32; f1'0: Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: tuple) = resolve _1.f1
+  predicate resolve_tup2_i32_ref_i32 [@inline:trivial] (_1: tup2_i32_ref_i32) = resolve_ref_i32 _1.f1
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_tup2_i32_ref_i32
   
-  predicate resolve'1 [@inline:trivial] (_1: tuple'0) = resolve'0 _1.f0'0
+  predicate resolve_tup2_tup2_i32_ref_i32_i32 [@inline:trivial] (_1: tup2_tup2_i32_ref_i32_i32) =
+    resolve_tup2_i32_ref_i32 _1.f0'0
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_tup2_tup2_i32_ref_i32_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec g (x: tuple'0) (return (x'0: MutBorrow.t Int32.t)) = (! bb0
+  let rec g (x: tup2_tup2_i32_ref_i32_i32) (return (x'0: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Int32.t> {x.f0'0.f1.current} {MutBorrow.get_id x.f0'0.f1}
           (fun (_ret: MutBorrow.t Int32.t) ->
             [ &_4 <- _ret ] [ &x <- { x with f0'0 = { x.f0'0 with f1 = { x.f0'0.f1 with current = _ret.final } } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_4.current} {MutBorrow.get_id _4}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
-      | s2 = -{resolve _4}- s3
+      | s2 = -{resolve_ref_i32 _4}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = -{resolve'1 x}- s6
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = -{resolve_tup2_tup2_i32_ref_i32_i32 x}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
-    | & x: tuple'0 = x
+    | & x: tup2_tup2_i32_ref_i32_i32 = x
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _4: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: MutBorrow.t Int32.t) -> {[@expl:g ensures] result = x.f0'0.f1} (! return {result}) ]
 end
-module M_922__f1
+module M_f1
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { f0: Int32.t; f1: MutBorrow.t Int32.t }
+  type tup2_i32_ref_i32 = { f0: Int32.t; f1: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve_ref_tup2_i32_ref_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_ref_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_tup2_i32_ref_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f1'0 (b: MutBorrow.t tuple) (return (x: MutBorrow.t Int32.t)) = (! bb0
+  let rec f1'0 (b: MutBorrow.t tup2_i32_ref_i32) (return (x: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {b.current.f1.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
@@ -69,14 +70,14 @@ module M_922__f1
             [ &b <- { b with current = { b.current with f1 = { b.current.f1 with current = _ret.final } } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = -{resolve _6}- s3
+      | s2 = -{resolve_ref_i32 _6}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = -{resolve'0 b}- s6
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = -{resolve_ref_tup2_i32_ref_i32 b}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
-    | & b: MutBorrow.t tuple = b
+    | & b: MutBorrow.t tup2_i32_ref_i32 = b
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: MutBorrow.t Int32.t) -> {[@expl:f1 ensures #0] result.current = b.current.f1.current}
@@ -84,26 +85,26 @@ module M_922__f1
       {[@expl:f1 ensures #2] b.current.f1.final = b.final.f1.final}
       (! return {result}) ]
 end
-module M_922__f2
+module M_f2
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { f0: Int32.t; f1: MutBorrow.t Int32.t }
+  type tup2_i32_ref_i32 = { f0: Int32.t; f1: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve_ref_tup2_i32_ref_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_ref_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_tup2_i32_ref_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f2 (x0: MutBorrow.t tuple) (return (x: MutBorrow.t Int32.t)) = (! bb0
+  let rec f2 (x0: MutBorrow.t tup2_i32_ref_i32) (return (x: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {x0.current.f1.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
@@ -111,14 +112,14 @@ module M_922__f2
             [ &x0 <- { x0 with current = { x0.current with f1 = { x0.current.f1 with current = _ret.final } } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = -{resolve _6}- s3
+      | s2 = -{resolve_ref_i32 _6}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = -{resolve'0 x0}- s6
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = -{resolve_ref_tup2_i32_ref_i32 x0}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
-    | & x0: MutBorrow.t tuple = x0
+    | & x0: MutBorrow.t tup2_i32_ref_i32 = x0
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: MutBorrow.t Int32.t) -> {[@expl:f2 ensures #0] result.current = x0.current.f1.current}
@@ -126,26 +127,26 @@ module M_922__f2
       {[@expl:f2 ensures #2] x0.current.f1.final = x0.final.f1.final}
       (! return {result}) ]
 end
-module M_922__f3
+module M_f3
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { f0: Int32.t; f1: MutBorrow.t Int32.t }
+  type tup2_i32_ref_i32 = { f0: Int32.t; f1: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve_ref_tup2_i32_ref_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_ref_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_tup2_i32_ref_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f3 (x1: MutBorrow.t tuple) (return (x: MutBorrow.t Int32.t)) = (! bb0
+  let rec f3 (x1: MutBorrow.t tup2_i32_ref_i32) (return (x: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {x1.current.f1.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
@@ -153,14 +154,14 @@ module M_922__f3
             [ &x1 <- { x1 with current = { x1.current with f1 = { x1.current.f1 with current = _ret.final } } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = -{resolve _6}- s3
+      | s2 = -{resolve_ref_i32 _6}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = -{resolve'0 x1}- s6
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = -{resolve_ref_tup2_i32_ref_i32 x1}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
-    | & x1: MutBorrow.t tuple = x1
+    | & x1: MutBorrow.t tup2_i32_ref_i32 = x1
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: MutBorrow.t Int32.t) -> {[@expl:f3 ensures #0] result.current = x1.current.f1.current}
@@ -168,26 +169,26 @@ module M_922__f3
       {[@expl:f3 ensures #2] x1.current.f1.final = x1.final.f1.final}
       (! return {result}) ]
 end
-module M_922__f4
+module M_f4
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type tuple = { f0: Int32.t; f1: MutBorrow.t Int32.t }
+  type tup2_i32_ref_i32 = { f0: Int32.t; f1: MutBorrow.t Int32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t tuple) = _1.final = _1.current
+  predicate resolve_ref_tup2_i32_ref_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_ref_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_tup2_i32_ref_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f4 (x2: MutBorrow.t tuple) (return (x: MutBorrow.t Int32.t)) = (! bb0
+  let rec f4 (x2: MutBorrow.t tup2_i32_ref_i32) (return (x: MutBorrow.t Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <Int32.t> {x2.current.f1.current}
           (fun (_ret: MutBorrow.t Int32.t) ->
@@ -195,14 +196,14 @@ module M_922__f4
             [ &x2 <- { x2 with current = { x2.current with f1 = { x2.current.f1 with current = _ret.final } } } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_2 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s2)
-      | s2 = -{resolve _6}- s3
+      | s2 = -{resolve_ref_i32 _6}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s4)
-      | s4 = -{resolve _2}- s5
-      | s5 = -{resolve'0 x2}- s6
+      | s4 = -{resolve_ref_i32 _2}- s5
+      | s5 = -{resolve_ref_tup2_i32_ref_i32 x2}- s6
       | s6 = return {_0} ] ]
     [ & _0: MutBorrow.t Int32.t = Any.any_l ()
-    | & x2: MutBorrow.t tuple = x2
+    | & x2: MutBorrow.t tup2_i32_ref_i32 = x2
     | & _2: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l () ])
     [ return (result: MutBorrow.t Int32.t) -> {[@expl:f4 ensures #0] result.current = x2.current.f1.current}

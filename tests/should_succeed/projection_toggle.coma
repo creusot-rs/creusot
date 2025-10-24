@@ -1,76 +1,76 @@
-module M_projection_toggle__proj_toggle
+module M_proj_toggle
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
+  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant' _1
+  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec proj_toggle (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:proj_toggle 'a' type invariant] inv'0 a}
-    {[@expl:proj_toggle 'b' type invariant] inv'0 b}
+  let rec proj_toggle_T (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T) (return (x: MutBorrow.t t_T)) =
+    {[@expl:proj_toggle 'a' type invariant] inv_ref_T a}
+    {[@expl:proj_toggle 'b' type invariant] inv_ref_T b}
     (! bb0
     [ bb0 = any [ br0 -> {toggle = false} (! bb2) | br1 -> {toggle} (! bb1) ]
     | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv'0 b} s1
-      | s1 = -{resolve b}- s2
-      | s2 = {inv a.current}
+      [ s0 = {[@expl:type invariant] inv_ref_T b} s1
+      | s1 = -{resolve_ref_T b}- s2
+      | s2 = {inv_T a.current}
         MutBorrow.borrow_final <t_T> {a.current} {MutBorrow.get_id a}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_8 <- _ret ] -{inv _ret.final}-
+            [ &_8 <- _ret ] -{inv_T _ret.final}-
             [ &a <- { a with current = _ret.final } ] s3)
-      | s3 = {inv _8.current}
+      | s3 = {inv_T _8.current}
         MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_6 <- _ret ] -{inv _ret.final}-
+            [ &_6 <- _ret ] -{inv_T _ret.final}-
             [ &_8 <- { _8 with current = _ret.final } ] s4)
-      | s4 = {[@expl:type invariant] inv'0 _8} s5
-      | s5 = -{resolve _8}- s6
+      | s4 = {[@expl:type invariant] inv_ref_T _8} s5
+      | s5 = -{resolve_ref_T _8}- s6
       | s6 = bb3 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv'0 a} s1
-      | s1 = -{resolve a}- s2
-      | s2 = {inv b.current}
+      [ s0 = {[@expl:type invariant] inv_ref_T a} s1
+      | s1 = -{resolve_ref_T a}- s2
+      | s2 = {inv_T b.current}
         MutBorrow.borrow_final <t_T> {b.current} {MutBorrow.get_id b}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_6 <- _ret ] -{inv _ret.final}-
+            [ &_6 <- _ret ] -{inv_T _ret.final}-
             [ &b <- { b with current = _ret.final } ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = {inv _6.current}
+      [ s0 = {inv_T _6.current}
         MutBorrow.borrow_final <t_T> {_6.current} {MutBorrow.get_id _6}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_4 <- _ret ] -{inv _ret.final}-
+            [ &_4 <- _ret ] -{inv_T _ret.final}-
             [ &_6 <- { _6 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv'0 _6} s2
-      | s2 = -{resolve _6}- s3
-      | s3 = {inv _4.current}
+      | s1 = {[@expl:type invariant] inv_ref_T _6} s2
+      | s2 = -{resolve_ref_T _6}- s3
+      | s3 = {inv_T _4.current}
         MutBorrow.borrow_final <t_T> {_4.current} {MutBorrow.get_id _4}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_0 <- _ret ] -{inv _ret.final}-
+            [ &_0 <- _ret ] -{inv_T _ret.final}-
             [ &_4 <- { _4 with current = _ret.final } ] s4)
-      | s4 = {[@expl:type invariant] inv'0 _4} s5
-      | s5 = -{resolve _4}- s6
-      | s6 = {[@expl:type invariant] inv'0 b} s7
-      | s7 = -{resolve b}- s8
-      | s8 = {[@expl:type invariant] inv'0 a} s9
-      | s9 = -{resolve a}- s10
+      | s4 = {[@expl:type invariant] inv_ref_T _4} s5
+      | s5 = -{resolve_ref_T _4}- s6
+      | s6 = {[@expl:type invariant] inv_ref_T b} s7
+      | s7 = -{resolve_ref_T b}- s8
+      | s8 = {[@expl:type invariant] inv_ref_T a} s9
+      | s9 = -{resolve_ref_T a}- s10
       | s10 = return {_0} ] ]
     [ & _0: MutBorrow.t t_T = Any.any_l ()
     | & toggle: bool = toggle
@@ -79,7 +79,7 @@ module M_projection_toggle__proj_toggle
     | & _4: MutBorrow.t t_T = Any.any_l ()
     | & _6: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:proj_toggle result type invariant] inv'0 result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:proj_toggle result type invariant] inv_ref_T result}
       {[@expl:proj_toggle ensures] if toggle then
         result = a /\ b.final = b.current
       else
@@ -87,12 +87,12 @@ module M_projection_toggle__proj_toggle
       }
       (! return {result}) ]
 end
-module M_projection_toggle__f
+module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  let rec proj_toggle (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
+  let rec proj_toggle_i32 (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) -> {if toggle then
         result = a /\ b.final = b.current
@@ -101,9 +101,9 @@ module M_projection_toggle__f
       }
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_i32
   
   meta "compute_max_steps" 1000000
   
@@ -121,13 +121,13 @@ module M_projection_toggle__f
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_4 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s5)
       | s5 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s6)
-      | s6 = proj_toggle {true} {_4} {_6} (fun (_ret: MutBorrow.t Int32.t) -> [ &x <- _ret ] s7)
+      | s6 = proj_toggle_i32 {true} {_4} {_6} (fun (_ret: MutBorrow.t Int32.t) -> [ &x <- _ret ] s7)
       | s7 = bb1 ]
     | bb1 = s0
-      [ s0 = -{resolve _7}- s1
-      | s1 = -{resolve _5}- s2
+      [ s0 = -{resolve_ref_i32 _7}- s1
+      | s1 = -{resolve_ref_i32 _5}- s2
       | s2 = Int32.add {x.current} {(5: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- { x with current = _ret } ] s3)
-      | s3 = -{resolve x}- s4
+      | s3 = -{resolve_ref_i32 x}- s4
       | s4 = [ &_9 <- a = (15: Int32.t) ] s5
       | s5 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ]
     | bb2 = return {_0}

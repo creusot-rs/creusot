@@ -1,4 +1,4 @@
-module M_knapsack__max
+module M_max
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.MinMax
@@ -18,7 +18,7 @@ module M_knapsack__max
       = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
 end
-module M_knapsack__m
+module M_m
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
@@ -26,49 +26,49 @@ module M_knapsack__m
   
   type t_Name
   
-  type t_Item = { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
   
-  predicate well_founded_relation [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
-  meta "rewrite_def" predicate well_founded_relation
+  meta "rewrite_def" predicate well_founded_relation_Int
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant items : Seq.seq t_Item
+  constant items : Seq.seq t_Item_Name
   
   constant i : int
   
   constant w : int
   
-  function m (items: Seq.seq t_Item) (i: int) (w: int) : int
+  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
   
-  goal vc_m: 0 <= i /\ i <= Seq.length items
+  goal vc_m_Name: 0 <= i /\ i <= Seq.length items
     -> 0 <= w
     -> (if i = 0 then
       [@expl:m ensures] 0 >= 0
     else
-      if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
+      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
         ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) && ([@expl:m requires #1] 0 <= w))
-          /\ well_founded_relation i (i - 1))
-        /\ (m items (i - 1) w >= 0 -> ([@expl:m ensures] m items (i - 1) w >= 0))
+          /\ well_founded_relation_Int i (i - 1))
+        /\ (m_Name items (i - 1) w >= 0 -> ([@expl:m ensures] m_Name items (i - 1) w >= 0))
       else
         ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) && ([@expl:m requires #1] 0 <= w))
-          /\ well_founded_relation i (i - 1))
-        /\ (m items (i - 1) w >= 0
+          /\ well_founded_relation_Int i (i - 1))
+        /\ (m_Name items (i - 1) w >= 0
         -> ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            && ([@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight))
-          /\ well_founded_relation i (i - 1))
-        /\ (m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight) >= 0
-        -> ([@expl:m ensures] MinMax.max (m items (i - 1) w) (m items (i - 1) (w
-            - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
-          + UInt64.t'int (Seq.get items (i - 1)).t_Item__value)
+            && ([@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
+          /\ well_founded_relation_Int i (i - 1))
+        /\ (m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight) >= 0
+        -> ([@expl:m ensures] MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
+            - UInt64.t'int (Seq.get items (i - 1)).weight)
+          + UInt64.t'int (Seq.get items (i - 1)).value)
         >= 0)))
     
     )
 end
-module M_knapsack__knapsack01_dyn
+module M_knapsack01_dyn
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
@@ -76,341 +76,412 @@ module M_knapsack__knapsack01_dyn
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_usize_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq UInt64.t
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_usize_Global_spec: forall self: t_Vec_usize_Global. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt64.t = Seq.get (view self) ix
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_Vec_usize_Global
   
-  let rec from_elem (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec)) = any
-    [ return (result: t_Vec) -> {Seq.length (view result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic result i = elem}
+  let rec from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
+    [ return (result: t_Vec_usize_Global) -> {Seq.length (view_Vec_usize_Global result) = UInt64.t'int n}
+      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_usize_Global result i = elem}
       (! return {result}) ]
   
-  type t_Vec'0
+  type t_Vec_Item_Name_Global
   
   type t_Name
   
-  type t_Item = { t_Item__name: t_Name; t_Item__weight: UInt64.t; t_Item__value: UInt64.t }
+  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
   
-  predicate inv (_1: t_Name)
+  predicate inv_Name (_1: t_Name)
   
-  predicate inv'0 (_1: t_Item)
+  predicate inv_Item_Name (_1: t_Item_Name)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Item [inv'0 x]. inv'0 x = inv x.t_Item__name
+  axiom inv_axiom [@rewrite]: forall x: t_Item_Name [inv_Item_Name x]. inv_Item_Name x = inv_Name x.name
   
-  predicate invariant' (self: t_Item) = inv'0 self
+  predicate invariant_Box_Item_Name_Global (self: t_Item_Name) = inv_Item_Name self
   
-  predicate inv'1 [@inline:trivial] (_1: t_Item) = invariant' _1
+  predicate inv_Box_Item_Name_Global [@inline:trivial] (_1: t_Item_Name) = invariant_Box_Item_Name_Global _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Box_Item_Name_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+  predicate invariant_Seq_Item_Name [@inline:trivial] (self: Seq.seq t_Item_Name) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_Item_Name_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_Item_Name
   
-  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_Item) = invariant''0 _1
+  predicate inv_Seq_Item_Name [@inline:trivial] (_1: Seq.seq t_Item_Name) = invariant_Seq_Item_Name _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_Seq_Item_Name
   
-  function view'0 (self: t_Vec'0) : Seq.seq t_Item
+  function view_Vec_Item_Name_Global (self: t_Vec_Item_Name_Global) : Seq.seq t_Item_Name
   
-  axiom view_spec'0: forall self: t_Vec'0. Seq.length (view'0 self) <= UInt64.t'int const_MAX
+  axiom view_Vec_Item_Name_Global_spec: forall self: t_Vec_Item_Name_Global. Seq.length (view_Vec_Item_Name_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec'0) = inv'2 (view'0 self)
+  predicate invariant_Vec_Item_Name_Global (self: t_Vec_Item_Name_Global) =
+    inv_Seq_Item_Name (view_Vec_Item_Name_Global self)
   
-  predicate inv'3 (_1: t_Vec'0)
+  predicate inv_Vec_Item_Name_Global (_1: t_Vec_Item_Name_Global)
   
-  axiom inv_axiom'0: forall x: t_Vec'0 [inv'3 x]. inv'3 x -> invariant''1 x
+  axiom inv_axiom'0: forall x: t_Vec_Item_Name_Global [inv_Vec_Item_Name_Global x]. inv_Vec_Item_Name_Global x
+      -> invariant_Vec_Item_Name_Global x
   
-  predicate invariant''2 [@inline:trivial] (self: t_Vec'0) = inv'3 self
+  predicate invariant_ref_Vec_Item_Name_Global [@inline:trivial] (self: t_Vec_Item_Name_Global) =
+    inv_Vec_Item_Name_Global self
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_Vec_Item_Name_Global
   
-  predicate inv'4 [@inline:trivial] (_1: t_Vec'0) = invariant''2 _1
+  predicate inv_ref_Vec_Item_Name_Global [@inline:trivial] (_1: t_Vec_Item_Name_Global) =
+    invariant_ref_Vec_Item_Name_Global _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_Vec_Item_Name_Global
   
-  let rec len (self_: t_Vec'0) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv'4 self_}
-    any [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view'0 self_)} (! return {result}) ]
-  
-  type t_Vec'1
-  
-  function view'1 (self: t_Vec'1) : Seq.seq t_Vec
-  
-  axiom view_spec'1: forall self: t_Vec'1. Seq.length (view'1 self) <= UInt64.t'int const_MAX
-  
-  function index_logic'0 [@inline:trivial] (self: t_Vec'1) (ix: int) : t_Vec = Seq.get (view'1 self) ix
-  
-  meta "rewrite_def" function index_logic'0
-  
-  let rec from_elem'0 (elem: t_Vec) (n: UInt64.t) (return (x: t_Vec'1)) = any
-    [ return (result: t_Vec'1) -> {Seq.length (view'1 result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_logic'0 result i = elem}
+  let rec len_Item_Name (self_: t_Vec_Item_Name_Global) (return (x: UInt64.t)) =
+    {[@expl:len 'self_' type invariant] inv_ref_Vec_Item_Name_Global self_}
+    any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_Item_Name_Global self_)}
       (! return {result}) ]
   
-  function m (items: Seq.seq t_Item) (i: int) (w: int) : int
+  type t_Vec_Vec_usize_Global_Global
   
-  axiom m_def: forall items: Seq.seq t_Item, i: int, w: int. 0 <= i /\ i <= Seq.length items
+  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
+  
+  axiom view_Vec_Vec_usize_Global_Global_spec:
+    forall self: t_Vec_Vec_usize_Global_Global. Seq.length (view_Vec_Vec_usize_Global_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
+   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
+  
+  let rec from_elem_Vec_usize_Global (elem: t_Vec_usize_Global) (n: UInt64.t)
+    (return (x: t_Vec_Vec_usize_Global_Global)) = any
+    [ return (result: t_Vec_Vec_usize_Global_Global) -> {Seq.length (view_Vec_Vec_usize_Global_Global result)
+      = UInt64.t'int n}
+      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_Vec_usize_Global_Global result i = elem}
+      (! return {result}) ]
+  
+  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
+  
+  axiom m_Name_def: forall items: Seq.seq t_Item_Name, i: int, w: int. 0 <= i /\ i <= Seq.length items
       -> 0 <= w
-      -> m items i w
+      -> m_Name items i w
       = (if i = 0 then
         0
       else
-        if UInt64.t'int (Seq.get items (i - 1)).t_Item__weight > w then
-          m items (i - 1) w
+        if UInt64.t'int (Seq.get items (i - 1)).weight > w then
+          m_Name items (i - 1) w
         else
-          MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).t_Item__weight)
-          + UInt64.t'int (Seq.get items (i - 1)).t_Item__value)
+          MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)
+          + UInt64.t'int (Seq.get items (i - 1)).value)
       
       )
   
-  axiom m_spec: forall items: Seq.seq t_Item, i: int, w: int. 0 <= i /\ i <= Seq.length items
-      -> 0 <= w -> m items i w >= 0
+  axiom m_Name_spec: forall items: Seq.seq t_Item_Name, i: int, w: int. 0 <= i /\ i <= Seq.length items
+      -> 0 <= w -> m_Name items i w >= 0
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item_Name) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds
+  meta "rewrite_def" predicate in_bounds_usize
   
-  predicate invariant''3 [@inline:trivial] (self: t_Item) = inv'0 self
+  predicate invariant_ref_Item_Name [@inline:trivial] (self: t_Item_Name) = inv_Item_Name self
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant_ref_Item_Name
   
-  predicate inv'5 [@inline:trivial] (_1: t_Item) = invariant''3 _1
+  predicate inv_ref_Item_Name [@inline:trivial] (_1: t_Item_Name) = invariant_ref_Item_Name _1
   
-  meta "rewrite_def" predicate inv'5
+  meta "rewrite_def" predicate inv_ref_Item_Name
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item) (out: t_Item) =
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item_Name) (out: t_Item_Name) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value
+  meta "rewrite_def" predicate has_value_usize
   
-  let rec index (self_: t_Vec'0) (ix: UInt64.t) (return (x: t_Item)) =
-    {[@expl:index 'self_' type invariant] inv'4 self_}
-    {[@expl:index requires] in_bounds ix (view'0 self_)}
-    any [ return (result: t_Item) -> {inv'5 result} {has_value ix (view'0 self_) result} (! return {result}) ]
+  let rec index_Vec_Item_Name_Global (self_: t_Vec_Item_Name_Global) (ix: UInt64.t) (return (x: t_Item_Name)) =
+    {[@expl:index 'self_' type invariant] inv_ref_Vec_Item_Name_Global self_}
+    {[@expl:index requires] in_bounds_usize ix (view_Vec_Item_Name_Global self_)}
+    any
+    [ return (result: t_Item_Name) -> {inv_ref_Item_Name result}
+      {has_value_usize ix (view_Vec_Item_Name_Global self_) result}
+      (! return {result}) ]
   
-  predicate in_bounds'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds'0
+  meta "rewrite_def" predicate in_bounds_usize'0
   
-  predicate has_value'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec) (out: t_Vec) =
+  predicate has_value_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) (out: t_Vec_usize_Global) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value'0
+  meta "rewrite_def" predicate has_value_usize'0
   
-  let rec index'0 (self_: t_Vec'1) (ix: UInt64.t) (return (x: t_Vec)) =
-    {[@expl:index requires] in_bounds'0 ix (view'1 self_)}
-    any [ return (result: t_Vec) -> {has_value'0 ix (view'1 self_) result} (! return {result}) ]
+  let rec index_Vec_Vec_usize_Global_Global'0 (self_: t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
+    (return (x: t_Vec_usize_Global)) =
+    {[@expl:index requires] in_bounds_usize'0 ix (view_Vec_Vec_usize_Global_Global self_)}
+    any
+    [ return (result: t_Vec_usize_Global) -> {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_) result}
+      (! return {result}) ]
   
-  predicate in_bounds'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds'1
+  meta "rewrite_def" predicate in_bounds_usize'1
   
-  predicate has_value'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+  predicate has_value_usize'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value'1
+  meta "rewrite_def" predicate has_value_usize'1
   
-  let rec index'1 (self_: t_Vec) (ix: UInt64.t) (return (x: UInt64.t)) =
-    {[@expl:index requires] in_bounds'1 ix (view self_)}
-    any [ return (result: UInt64.t) -> {has_value'1 ix (view self_) result} (! return {result}) ]
+  let rec index_Vec_usize_Global'0 (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
+    {[@expl:index requires] in_bounds_usize'1 ix (view_Vec_usize_Global self_)}
+    any [ return (result: UInt64.t) -> {has_value_usize'1 ix (view_Vec_usize_Global self_) result} (! return {result}) ]
   
   let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = {[@expl:max requires] true}
     any
     [ return (result: UInt64.t) -> {UInt64.t'int result = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
   
-  predicate resolve_elswhere [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec) (fin: Seq.seq t_Vec) =
+  predicate resolve_elswhere_usize [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec_usize_Global) (fin: Seq.seq t_Vec_usize_Global) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
-  meta "rewrite_def" predicate resolve_elswhere
+  meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let rec index_mut (self_: MutBorrow.t t_Vec'1) (ix: UInt64.t) (return (x: MutBorrow.t t_Vec)) =
-    {[@expl:index_mut requires] in_bounds'0 ix (view'1 self_.current)}
+  let rec index_mut_Vec_Vec_usize_Global_Global (self_: MutBorrow.t t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
+    (return (x: MutBorrow.t t_Vec_usize_Global)) =
+    {[@expl:index_mut requires] in_bounds_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.current)}
     any
-    [ return (result: MutBorrow.t t_Vec) -> {has_value'0 ix (view'1 self_.current) result.current}
-      {has_value'0 ix (view'1 self_.final) result.final}
-      {resolve_elswhere ix (view'1 self_.current) (view'1 self_.final)}
-      {Seq.length (view'1 self_.final) = Seq.length (view'1 self_.current)}
+    [ return (result: MutBorrow.t t_Vec_usize_Global) ->
+    {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.current) result.current}
+      {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.final) result.final}
+      {resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final)}
+      {Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
+      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current)}
       (! return {result}) ]
   
-  predicate resolve_elswhere'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
+  predicate resolve_elswhere_usize'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
-  meta "rewrite_def" predicate resolve_elswhere'0
+  meta "rewrite_def" predicate resolve_elswhere_usize'0
   
-  let rec index_mut'0 (self_: MutBorrow.t t_Vec) (ix: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
-    {[@expl:index_mut requires] in_bounds'1 ix (view self_.current)}
+  let rec index_mut_Vec_usize_Global (self_: MutBorrow.t t_Vec_usize_Global) (ix: UInt64.t)
+    (return (x: MutBorrow.t UInt64.t)) =
+    {[@expl:index_mut requires] in_bounds_usize'1 ix (view_Vec_usize_Global self_.current)}
     any
-    [ return (result: MutBorrow.t UInt64.t) -> {has_value'1 ix (view self_.current) result.current}
-      {has_value'1 ix (view self_.final) result.final}
-      {resolve_elswhere'0 ix (view self_.current) (view self_.final)}
-      {Seq.length (view self_.final) = Seq.length (view self_.current)}
+    [ return (result: MutBorrow.t UInt64.t) ->
+    {has_value_usize'1 ix (view_Vec_usize_Global self_.current) result.current}
+      {has_value_usize'1 ix (view_Vec_usize_Global self_.final) result.final}
+      {resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final)}
+      {Seq.length (view_Vec_usize_Global self_.final) = Seq.length (view_Vec_usize_Global self_.current)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_usize
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
+  predicate resolve_ref_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Vec_usize_Global
   
-  type t_Vec'2
+  type t_Vec_ref_Item_Name_Global
   
-  predicate invariant''4 (self: t_Item) = inv'5 self
+  predicate invariant_Box_ref_Item_Name_Global (self: t_Item_Name) = inv_ref_Item_Name self
   
-  predicate inv'6 [@inline:trivial] (_1: t_Item) = invariant''4 _1
+  predicate inv_Box_ref_Item_Name_Global [@inline:trivial] (_1: t_Item_Name) = invariant_Box_ref_Item_Name_Global _1
   
-  meta "rewrite_def" predicate inv'6
+  meta "rewrite_def" predicate inv_Box_ref_Item_Name_Global
   
-  predicate invariant''5 [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'6 (Seq.get self i)
+  predicate invariant_Seq_ref_Item_Name [@inline:trivial] (self: Seq.seq t_Item_Name) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_Item_Name_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''5
+  meta "rewrite_def" predicate invariant_Seq_ref_Item_Name
   
-  predicate inv'7 [@inline:trivial] (_1: Seq.seq t_Item) = invariant''5 _1
+  predicate inv_Seq_ref_Item_Name [@inline:trivial] (_1: Seq.seq t_Item_Name) = invariant_Seq_ref_Item_Name _1
   
-  meta "rewrite_def" predicate inv'7
+  meta "rewrite_def" predicate inv_Seq_ref_Item_Name
   
-  function view'2 (self: t_Vec'2) : Seq.seq t_Item
+  function view_Vec_ref_Item_Name_Global (self: t_Vec_ref_Item_Name_Global) : Seq.seq t_Item_Name
   
-  axiom view_spec'2: forall self: t_Vec'2. Seq.length (view'2 self) <= UInt64.t'int const_MAX
+  axiom view_Vec_ref_Item_Name_Global_spec:
+    forall self: t_Vec_ref_Item_Name_Global. Seq.length (view_Vec_ref_Item_Name_Global self) <= UInt64.t'int const_MAX
   
-  predicate invariant''6 (self: t_Vec'2) = inv'7 (view'2 self)
+  predicate invariant_Vec_ref_Item_Name_Global (self: t_Vec_ref_Item_Name_Global) =
+    inv_Seq_ref_Item_Name (view_Vec_ref_Item_Name_Global self)
   
-  predicate inv'8 (_1: t_Vec'2)
+  predicate inv_Vec_ref_Item_Name_Global (_1: t_Vec_ref_Item_Name_Global)
   
-  axiom inv_axiom'1: forall x: t_Vec'2 [inv'8 x]. inv'8 x -> invariant''6 x
+  axiom inv_axiom'1:
+    forall x: t_Vec_ref_Item_Name_Global [inv_Vec_ref_Item_Name_Global x]. inv_Vec_ref_Item_Name_Global x
+      -> invariant_Vec_ref_Item_Name_Global x
   
-  let rec with_capacity (capacity: UInt64.t) (return (x: t_Vec'2)) = any
-    [ return (result: t_Vec'2) -> {inv'8 result} {Seq.length (view'2 result) = 0} (! return {result}) ]
+  let rec with_capacity_ref_Item_Name (capacity: UInt64.t) (return (x: t_Vec_ref_Item_Name_Global)) = any
+    [ return (result: t_Vec_ref_Item_Name_Global) -> {inv_Vec_ref_Item_Name_Global result}
+      {Seq.length (view_Vec_ref_Item_Name_Global result) = 0}
+      (! return {result}) ]
   
-  predicate invariant''7 [@inline:trivial] (self: MutBorrow.t t_Vec'2) = inv'8 self.current /\ inv'8 self.final
+  predicate invariant_ref_Vec_ref_Item_Name_Global [@inline:trivial] (self: MutBorrow.t t_Vec_ref_Item_Name_Global) =
+    inv_Vec_ref_Item_Name_Global self.current /\ inv_Vec_ref_Item_Name_Global self.final
   
-  meta "rewrite_def" predicate invariant''7
+  meta "rewrite_def" predicate invariant_ref_Vec_ref_Item_Name_Global
   
-  predicate inv'9 [@inline:trivial] (_1: MutBorrow.t t_Vec'2) = invariant''7 _1
+  predicate inv_ref_Vec_ref_Item_Name_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_ref_Item_Name_Global) =
+    invariant_ref_Vec_ref_Item_Name_Global _1
   
-  meta "rewrite_def" predicate inv'9
+  meta "rewrite_def" predicate inv_ref_Vec_ref_Item_Name_Global
   
-  let rec push (self_: MutBorrow.t t_Vec'2) (v: t_Item) (return (x: ())) =
-    {[@expl:push 'self_' type invariant] inv'9 self_}
-    {[@expl:push 'v' type invariant] inv'5 v}
-    any [ return (result: ()) -> {view'2 self_.final = Seq.snoc (view'2 self_.current) v} (! return {result}) ]
+  let rec push_ref_Item_Name (self_: MutBorrow.t t_Vec_ref_Item_Name_Global) (v: t_Item_Name) (return (x: ())) =
+    {[@expl:push 'self_' type invariant] inv_ref_Vec_ref_Item_Name_Global self_}
+    {[@expl:push 'v' type invariant] inv_ref_Item_Name v}
+    any
+    [ return (result: ()) -> {view_Vec_ref_Item_Name_Global self_.final
+      = Seq.snoc (view_Vec_ref_Item_Name_Global self_.current) v}
+      (! return {result}) ]
   
-  function index_logic'1 [@inline:trivial] (self: t_Vec'0) (ix: int) : t_Item = Seq.get (view'0 self) ix
+  function index_Vec_Item_Name_Global'0 [@inline:trivial] (self: t_Vec_Item_Name_Global) (ix: int) : t_Item_Name =
+    Seq.get (view_Vec_Item_Name_Global self) ix
   
-  meta "rewrite_def" function index_logic'1
+  meta "rewrite_def" function index_Vec_Item_Name_Global'0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec knapsack01_dyn (items: t_Vec'0) (max_weight: UInt64.t) (return (x: t_Vec'2)) =
-    {[@expl:knapsack01_dyn 'items' type invariant] inv'4 items}
-    {[@expl:knapsack01_dyn requires #0] Seq.length (view'0 items) < 10000000}
+  let rec knapsack01_dyn_Name (items: t_Vec_Item_Name_Global) (max_weight: UInt64.t)
+    (return (x: t_Vec_ref_Item_Name_Global)) =
+    {[@expl:knapsack01_dyn 'items' type invariant] inv_ref_Vec_Item_Name_Global items}
+    {[@expl:knapsack01_dyn requires #0] Seq.length (view_Vec_Item_Name_Global items) < 10000000}
     {[@expl:knapsack01_dyn requires #1] UInt64.t'int max_weight < 10000000}
-    {[@expl:knapsack01_dyn requires #2] forall i: int. 0 <= i /\ i < Seq.length (view'0 items)
-      -> UInt64.t'int (index_logic'1 items i).t_Item__value <= 10000000}
+    {[@expl:knapsack01_dyn requires #2] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_Item_Name_Global items)
+      -> UInt64.t'int (index_Vec_Item_Name_Global'0 items i).value <= 10000000}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_8 <- _ret ] s1)
-      | s1 = from_elem {(0: UInt64.t)} {_8} (fun (_ret: t_Vec) -> [ &_7 <- _ret ] s2)
+      | s1 = from_elem_usize {(0: UInt64.t)} {_8} (fun (_ret: t_Vec_usize_Global) -> [ &_7 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = len_Item_Name {items} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = UInt64.add {_11} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1)
-      | s1 = from_elem'0 {_7} {_10} (fun (_ret: t_Vec'1) -> [ &best_value <- _ret ] s2)
+      | s1 = from_elem_Vec_usize_Global {_7} {_10}
+          (fun (_ret: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant #0] Seq.length (view'0 items) + 1 = Seq.length (view'1 best_value)}
-        {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (view'1 best_value)
-          -> UInt64.t'int max_weight + 1 = Seq.length (view (index_logic'0 best_value i'0))}
+      [ bb4 = {[@expl:loop invariant #0] Seq.length (view_Vec_Item_Name_Global items) + 1
+        = Seq.length (view_Vec_Vec_usize_Global_Global best_value)}
+        {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0
+            /\ i'0 < Seq.length (view_Vec_Vec_usize_Global_Global best_value)
+          -> UInt64.t'int max_weight + 1
+          = Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value i'0))}
         {[@expl:loop invariant #2] forall ii: int, ww: int. 0 <= ii
             /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
-          -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items) ii ww}
+          -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
+          = m_Name (view_Vec_Item_Name_Global items) ii ww}
         {[@expl:loop invariant #3] forall ii: int, ww: int. 0 <= ii
-            /\ ii <= Seq.length (view'0 items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
-          -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) <= 10000000 * ii}
+            /\ ii <= Seq.length (view_Vec_Item_Name_Global items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
+          -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
+          <= 10000000 * ii}
         (! s0)
         [ s0 = bb5 ]
-        [ bb5 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_23 <- _ret ] s1) | s1 = bb6 ]
+        [ bb5 = s0 [ s0 = len_Item_Name {items} (fun (_ret: UInt64.t) -> [ &_23 <- _ret ] s1) | s1 = bb6 ]
         | bb6 = s0
           [ s0 = [ &_21 <- UInt64.lt i _23 ] s1 | s1 = any [ br0 -> {_21 = false} (! bb25) | br1 -> {_21} (! bb7) ] ]
-        | bb7 = s0 [ s0 = index {items} {i} (fun (_ret: t_Item) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
+        | bb7 = s0
+          [ s0 = index_Vec_Item_Name_Global {items} {i} (fun (_ret: t_Item_Name) -> [ &_26 <- _ret ] s1) | s1 = bb8 ]
         | bb8 = s0 [ s0 = [ &it <- _26 ] s1 | s1 = [ &w <- (0: UInt64.t) ] s2 | s2 = bb9 ]
         | bb9 = bb9
-          [ bb9 = {[@expl:loop invariant #0] Seq.length (view'0 items) + 1 = Seq.length (view'1 best_value)}
-            {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (view'1 best_value)
-              -> UInt64.t'int max_weight + 1 = Seq.length (view (index_logic'0 best_value i'0))}
+          [ bb9 = {[@expl:loop invariant #0] Seq.length (view_Vec_Item_Name_Global items) + 1
+            = Seq.length (view_Vec_Vec_usize_Global_Global best_value)}
+            {[@expl:loop invariant #1] forall i'0: int. 0 <= i'0
+                /\ i'0 < Seq.length (view_Vec_Vec_usize_Global_Global best_value)
+              -> UInt64.t'int max_weight + 1
+              = Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value i'0))}
             {[@expl:loop invariant #2] forall ii: int, ww: int. 0 <= ii
                 /\ ii <= UInt64.t'int i /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
-              -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) = m (view'0 items) ii ww}
+              -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
+              = m_Name (view_Vec_Item_Name_Global items) ii ww}
             {[@expl:loop invariant #3] forall ww: int. 0 <= ww /\ ww <= UInt64.t'int w - 1
-              -> UInt64.t'int (Seq.get (view (index_logic'0 best_value (UInt64.t'int i + 1))) ww)
-              = m (view'0 items) (UInt64.t'int i + 1) ww}
+              -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value (UInt64.t'int i
+                + 1))) ww)
+              = m_Name (view_Vec_Item_Name_Global items) (UInt64.t'int i + 1) ww}
             {[@expl:loop invariant #4] forall ii: int, ww: int. 0 <= ii
-                /\ ii <= Seq.length (view'0 items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
-              -> UInt64.t'int (Seq.get (view (index_logic'0 best_value ii)) ww) <= 10000000 * ii}
+                /\ ii <= Seq.length (view_Vec_Item_Name_Global items) /\ 0 <= ww /\ ww <= UInt64.t'int max_weight
+              -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
+              <= 10000000 * ii}
             (! s0)
             [ s0 = bb10 ]
             [ bb10 = s0
               [ s0 = [ &_37 <- UInt64.le w max_weight ] s1
               | s1 = any [ br0 -> {_37 = false} (! bb24) | br1 -> {_37} (! bb11) ] ]
             | bb11 = s0
-              [ s0 = [ &_41 <- UInt64.gt it.t_Item__weight w ] s1
+              [ s0 = [ &_41 <- UInt64.gt it.weight w ] s1
               | s1 = any [ br0 -> {_41 = false} (! bb15) | br1 -> {_41} (! bb12) ] ]
-            | bb12 = s0 [ s0 = index'0 {best_value} {i} (fun (_ret: t_Vec) -> [ &_46 <- _ret ] s1) | s1 = bb13 ]
-            | bb13 = s0 [ s0 = index'1 {_46} {w} (fun (_ret: UInt64.t) -> [ &_44 <- _ret ] s1) | s1 = bb14 ]
+            | bb12 = s0
+              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+                  (fun (_ret: t_Vec_usize_Global) -> [ &_46 <- _ret ] s1)
+              | s1 = bb13 ]
+            | bb13 = s0
+              [ s0 = index_Vec_usize_Global'0 {_46} {w} (fun (_ret: UInt64.t) -> [ &_44 <- _ret ] s1) | s1 = bb14 ]
             | bb14 = s0 [ s0 = [ &_40 <- _44 ] s1 | s1 = bb21 ]
-            | bb15 = s0 [ s0 = index'0 {best_value} {i} (fun (_ret: t_Vec) -> [ &_53 <- _ret ] s1) | s1 = bb16 ]
-            | bb16 = s0 [ s0 = index'1 {_53} {w} (fun (_ret: UInt64.t) -> [ &_51 <- _ret ] s1) | s1 = bb17 ]
-            | bb17 = s0 [ s0 = index'0 {best_value} {i} (fun (_ret: t_Vec) -> [ &_61 <- _ret ] s1) | s1 = bb18 ]
+            | bb15 = s0
+              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+                  (fun (_ret: t_Vec_usize_Global) -> [ &_53 <- _ret ] s1)
+              | s1 = bb16 ]
+            | bb16 = s0
+              [ s0 = index_Vec_usize_Global'0 {_53} {w} (fun (_ret: UInt64.t) -> [ &_51 <- _ret ] s1) | s1 = bb17 ]
+            | bb17 = s0
+              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+                  (fun (_ret: t_Vec_usize_Global) -> [ &_61 <- _ret ] s1)
+              | s1 = bb18 ]
             | bb18 = s0
-              [ s0 = UInt64.sub {w} {it.t_Item__weight} (fun (_ret: UInt64.t) -> [ &_64 <- _ret ] s1)
-              | s1 = index'1 {_61} {_64} (fun (_ret: UInt64.t) -> [ &_59 <- _ret ] s2)
+              [ s0 = UInt64.sub {w} {it.weight} (fun (_ret: UInt64.t) -> [ &_64 <- _ret ] s1)
+              | s1 = index_Vec_usize_Global'0 {_61} {_64} (fun (_ret: UInt64.t) -> [ &_59 <- _ret ] s2)
               | s2 = bb19 ]
             | bb19 = s0
-              [ s0 = UInt64.add {_59} {it.t_Item__value} (fun (_ret: UInt64.t) -> [ &_57 <- _ret ] s1)
+              [ s0 = UInt64.add {_59} {it.value} (fun (_ret: UInt64.t) -> [ &_57 <- _ret ] s1)
               | s1 = max {_51} {_57} (fun (_ret: UInt64.t) -> [ &_40 <- _ret ] s2)
               | s2 = bb21 ]
             | bb21 = s0
-              [ s0 = MutBorrow.borrow_mut <t_Vec'1> {best_value}
-                  (fun (_ret: MutBorrow.t t_Vec'1) -> [ &_71 <- _ret ] [ &best_value <- _ret.final ] s1)
+              [ s0 = MutBorrow.borrow_mut <t_Vec_Vec_usize_Global_Global> {best_value}
+                  (fun (_ret: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
+                    [ &_71 <- _ret ] [ &best_value <- _ret.final ] s1)
               | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_72 <- _ret ] s2)
-              | s2 = index_mut {_71} {_72} (fun (_ret: MutBorrow.t t_Vec) -> [ &_70 <- _ret ] s3)
+              | s2 = index_mut_Vec_Vec_usize_Global_Global {_71} {_72}
+                  (fun (_ret: MutBorrow.t t_Vec_usize_Global) -> [ &_70 <- _ret ] s3)
               | s3 = bb22 ]
             | bb22 = s0
-              [ s0 = MutBorrow.borrow_final <t_Vec> {_70.current} {MutBorrow.get_id _70}
-                  (fun (_ret: MutBorrow.t t_Vec) -> [ &_69 <- _ret ] [ &_70 <- { _70 with current = _ret.final } ] s1)
-              | s1 = index_mut'0 {_69} {w} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_68 <- _ret ] s2)
+              [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {_70.current} {MutBorrow.get_id _70}
+                  (fun (_ret: MutBorrow.t t_Vec_usize_Global) ->
+                    [ &_69 <- _ret ] [ &_70 <- { _70 with current = _ret.final } ] s1)
+              | s1 = index_mut_Vec_usize_Global {_69} {w} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_68 <- _ret ] s2)
               | s2 = bb23 ]
             | bb23 = s0
               [ s0 = [ &_68 <- { _68 with current = _40 } ] s1
-              | s1 = -{resolve _68}- s2
-              | s2 = -{resolve'0 _70}- s3
+              | s1 = -{resolve_ref_usize _68}- s2
+              | s2 = -{resolve_ref_Vec_usize_Global _70}- s3
               | s3 = UInt64.add {w} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &w <- _ret ] s4)
               | s4 = bb9 ] ] ]
         | bb24 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1) | s1 = bb4 ] ] ]
-    | bb25 = s0 [ s0 = len {items} (fun (_ret: UInt64.t) -> [ &_78 <- _ret ] s1) | s1 = bb26 ]
-    | bb26 = s0 [ s0 = with_capacity {_78} (fun (_ret: t_Vec'2) -> [ &result <- _ret ] s1) | s1 = bb27 ]
+    | bb25 = s0 [ s0 = len_Item_Name {items} (fun (_ret: UInt64.t) -> [ &_78 <- _ret ] s1) | s1 = bb26 ]
+    | bb26 = s0
+      [ s0 = with_capacity_ref_Item_Name {_78} (fun (_ret: t_Vec_ref_Item_Name_Global) -> [ &result <- _ret ] s1)
+      | s1 = bb27 ]
     | bb27 = s0
       [ s0 = [ &left_weight <- max_weight ] s1
-      | s1 = len {items} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s2)
+      | s1 = len_Item_Name {items} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s2)
       | s2 = bb29 ]
     | bb29 = bb29
-      [ bb29 = {[@expl:loop invariant #0] inv'8 result}
-        {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view'0 items)}
+      [ bb29 = {[@expl:loop invariant #0] inv_Vec_ref_Item_Name_Global result}
+        {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view_Vec_Item_Name_Global items)}
         {[@expl:loop invariant #2] UInt64.t'int left_weight <= UInt64.t'int max_weight}
         (! s0)
         [ s0 = bb30 ]
@@ -419,73 +490,85 @@ module M_knapsack__knapsack01_dyn
           | s1 = any [ br0 -> {_88 = false} (! bb41) | br1 -> {_88} (! bb31) ] ]
         | bb31 = s0
           [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s1)
-          | s1 = index {items} {j} (fun (_ret: t_Item) -> [ &_91 <- _ret ] s2)
+          | s1 = index_Vec_Item_Name_Global {items} {j} (fun (_ret: t_Item_Name) -> [ &_91 <- _ret ] s2)
           | s2 = bb32 ]
         | bb32 = s0
           [ s0 = [ &it'0 <- _91 ] s1
           | s1 = UInt64.add {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_100 <- _ret ] s2)
-          | s2 = index'0 {best_value} {_100} (fun (_ret: t_Vec) -> [ &_98 <- _ret ] s3)
+          | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_100}
+              (fun (_ret: t_Vec_usize_Global) -> [ &_98 <- _ret ] s3)
           | s3 = bb33 ]
-        | bb33 = s0 [ s0 = index'1 {_98} {left_weight} (fun (_ret: UInt64.t) -> [ &_96 <- _ret ] s1) | s1 = bb34 ]
-        | bb34 = s0 [ s0 = index'0 {best_value} {j} (fun (_ret: t_Vec) -> [ &_106 <- _ret ] s1) | s1 = bb35 ]
-        | bb35 = s0 [ s0 = index'1 {_106} {left_weight} (fun (_ret: UInt64.t) -> [ &_104 <- _ret ] s1) | s1 = bb36 ]
+        | bb33 = s0
+          [ s0 = index_Vec_usize_Global'0 {_98} {left_weight} (fun (_ret: UInt64.t) -> [ &_96 <- _ret ] s1)
+          | s1 = bb34 ]
+        | bb34 = s0
+          [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
+              (fun (_ret: t_Vec_usize_Global) -> [ &_106 <- _ret ] s1)
+          | s1 = bb35 ]
+        | bb35 = s0
+          [ s0 = index_Vec_usize_Global'0 {_106} {left_weight} (fun (_ret: UInt64.t) -> [ &_104 <- _ret ] s1)
+          | s1 = bb36 ]
         | bb36 = s0
           [ s0 = [ &_94 <- _96 <> _104 ] s1 | s1 = any [ br0 -> {_94 = false} (! bb29) | br1 -> {_94} (! bb37) ] ]
         | bb37 = s0
-          [ s0 = {inv'8 result}
-            MutBorrow.borrow_mut <t_Vec'2> {result}
-              (fun (_ret: MutBorrow.t t_Vec'2) -> [ &_111 <- _ret ] -{inv'8 _ret.final}- [ &result <- _ret.final ] s1)
-          | s1 = push {_111} {it'0} (fun (_ret: ()) -> [ &_110 <- _ret ] s2)
+          [ s0 = {inv_Vec_ref_Item_Name_Global result}
+            MutBorrow.borrow_mut <t_Vec_ref_Item_Name_Global> {result}
+              (fun (_ret: MutBorrow.t t_Vec_ref_Item_Name_Global) ->
+                [ &_111 <- _ret ] -{inv_Vec_ref_Item_Name_Global _ret.final}-
+                [ &result <- _ret.final ] s1)
+          | s1 = push_ref_Item_Name {_111} {it'0} (fun (_ret: ()) -> [ &_110 <- _ret ] s2)
           | s2 = bb38 ]
         | bb38 = s0
-          [ s0 = UInt64.sub {left_weight} {it'0.t_Item__weight} (fun (_ret: UInt64.t) -> [ &left_weight <- _ret ] s1)
+          [ s0 = UInt64.sub {left_weight} {it'0.weight} (fun (_ret: UInt64.t) -> [ &left_weight <- _ret ] s1)
           | s1 = bb29 ] ] ]
     | bb41 = s0 [ s0 = [ &_0 <- result ] s1 | s1 = bb43 ]
     | bb43 = return {_0} ]
-    [ & _0: t_Vec'2 = Any.any_l ()
-    | & items: t_Vec'0 = items
+    [ & _0: t_Vec_ref_Item_Name_Global = Any.any_l ()
+    | & items: t_Vec_Item_Name_Global = items
     | & max_weight: UInt64.t = max_weight
-    | & best_value: t_Vec'1 = Any.any_l ()
-    | & _7: t_Vec = Any.any_l ()
+    | & best_value: t_Vec_Vec_usize_Global_Global = Any.any_l ()
+    | & _7: t_Vec_usize_Global = Any.any_l ()
     | & _8: UInt64.t = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
     | & _11: UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _23: UInt64.t = Any.any_l ()
-    | & it: t_Item = Any.any_l ()
-    | & _26: t_Item = Any.any_l ()
+    | & it: t_Item_Name = Any.any_l ()
+    | & _26: t_Item_Name = Any.any_l ()
     | & w: UInt64.t = Any.any_l ()
     | & _37: bool = Any.any_l ()
     | & _40: UInt64.t = Any.any_l ()
     | & _41: bool = Any.any_l ()
     | & _44: UInt64.t = Any.any_l ()
-    | & _46: t_Vec = Any.any_l ()
+    | & _46: t_Vec_usize_Global = Any.any_l ()
     | & _51: UInt64.t = Any.any_l ()
-    | & _53: t_Vec = Any.any_l ()
+    | & _53: t_Vec_usize_Global = Any.any_l ()
     | & _57: UInt64.t = Any.any_l ()
     | & _59: UInt64.t = Any.any_l ()
-    | & _61: t_Vec = Any.any_l ()
+    | & _61: t_Vec_usize_Global = Any.any_l ()
     | & _64: UInt64.t = Any.any_l ()
     | & _68: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _69: MutBorrow.t t_Vec = Any.any_l ()
-    | & _70: MutBorrow.t t_Vec = Any.any_l ()
-    | & _71: MutBorrow.t t_Vec'1 = Any.any_l ()
+    | & _69: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _70: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _71: MutBorrow.t t_Vec_Vec_usize_Global_Global = Any.any_l ()
     | & _72: UInt64.t = Any.any_l ()
-    | & result: t_Vec'2 = Any.any_l ()
+    | & result: t_Vec_ref_Item_Name_Global = Any.any_l ()
     | & _78: UInt64.t = Any.any_l ()
     | & left_weight: UInt64.t = Any.any_l ()
     | & j: UInt64.t = Any.any_l ()
     | & _88: bool = Any.any_l ()
-    | & it'0: t_Item = Any.any_l ()
-    | & _91: t_Item = Any.any_l ()
+    | & it'0: t_Item_Name = Any.any_l ()
+    | & _91: t_Item_Name = Any.any_l ()
     | & _94: bool = Any.any_l ()
     | & _96: UInt64.t = Any.any_l ()
-    | & _98: t_Vec = Any.any_l ()
+    | & _98: t_Vec_usize_Global = Any.any_l ()
     | & _100: UInt64.t = Any.any_l ()
     | & _104: UInt64.t = Any.any_l ()
-    | & _106: t_Vec = Any.any_l ()
+    | & _106: t_Vec_usize_Global = Any.any_l ()
     | & _110: () = Any.any_l ()
-    | & _111: MutBorrow.t t_Vec'2 = Any.any_l () ])
-    [ return (result: t_Vec'2) -> {[@expl:knapsack01_dyn result type invariant] inv'8 result} (! return {result}) ]
+    | & _111: MutBorrow.t t_Vec_ref_Item_Name_Global = Any.any_l () ])
+    [ return (result: t_Vec_ref_Item_Name_Global) ->
+    {[@expl:knapsack01_dyn result type invariant] inv_Vec_ref_Item_Name_Global result}
+      (! return {result}) ]
 end

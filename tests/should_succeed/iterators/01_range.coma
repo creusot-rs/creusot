@@ -1,62 +1,62 @@
-module M_01_range__qyi16572111325853806140__produces_refl (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__produces_refl (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use seq.Seq
   use mach.int.Int
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
@@ -64,69 +64,69 @@ module M_01_range__qyi16572111325853806140__produces_refl (* <Range as common::I
   
   constant self : t_Range
   
-  function produces_refl (self: t_Range) : ()
+  function produces_refl_Range (self: t_Range) : ()
   
-  goal vc_produces_refl: [@expl:produces_refl ensures] produces self (Seq.empty: Seq.seq Int64.t) self
+  goal vc_produces_refl_Range: [@expl:produces_refl ensures] produces_Range self (Seq.empty: Seq.seq Int64.t) self
 end
-module M_01_range__qyi16572111325853806140__produces_trans (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__produces_trans (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use seq.Seq
   use mach.int.Int
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
@@ -142,114 +142,114 @@ module M_01_range__qyi16572111325853806140__produces_trans (* <Range as common::
   
   constant c : t_Range
   
-  function produces_trans (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
   
-  goal vc_produces_trans: produces a ab b
-    -> produces b bc c -> ([@expl:produces_trans ensures] produces a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Range: produces_Range a ab b
+    -> produces_Range b bc c -> ([@expl:produces_trans ensures] produces_Range a (Seq.(++) ab bc) c)
 end
-module M_01_range__qyi16572111325853806140__next (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use seq.Seq
   use mach.int.Int
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Range
   
-  type t_Option = C_None | C_Some Int64.t
+  type t_Option_isize = None | Some Int64.t
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ Int64.ge self.current.t_Range__start self.current.t_Range__end
+  predicate completed_Range (self: MutBorrow.t t_Range) =
+    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next (self: MutBorrow.t t_Range) (return (x: t_Option)) = (! bb0
+  let rec next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- Int64.ge self.current.t_Range__start self.current.t_Range__end ] s1
+      [ s0 = [ &_3 <- Int64.ge self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] ]
-    | bb1 = s0 [ s0 = -{resolve self}- s1 | s1 = [ &_0 <- C_None ] s2 | s2 = bb3 ]
+    | bb1 = s0 [ s0 = -{resolve_ref_Range self}- s1 | s1 = [ &_0 <- None ] s2 | s2 = bb3 ]
     | bb2 = s0
-      [ s0 = [ &r <- self.current.t_Range__start ] s1
-      | s1 = Int64.add {self.current.t_Range__start} {(1: Int64.t)}
-          (fun (_ret: Int64.t) -> [ &self <- { self with current = { self.current with t_Range__start = _ret } } ] s2)
-      | s2 = -{resolve self}- s3
-      | s3 = [ &_0 <- C_Some r ] s4
+      [ s0 = [ &r <- self.current.start ] s1
+      | s1 = Int64.add {self.current.start} {(1: Int64.t)}
+          (fun (_ret: Int64.t) -> [ &self <- { self with current = { self.current with start = _ret } } ] s2)
+      | s2 = -{resolve_ref_Range self}- s3
+      | s3 = [ &_0 <- Some r ] s4
       | s4 = bb3 ]
     | bb3 = return {_0} ]
-    [ & _0: t_Option = Any.any_l ()
+    [ & _0: t_Option_isize = Any.any_l ()
     | & self: MutBorrow.t t_Range = self
     | & _3: bool = Any.any_l ()
     | & r: Int64.t = Any.any_l () ])
-    [ return (result: t_Option) -> {[@expl:next ensures] match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
+    [ return (result: t_Option_isize) -> {[@expl:next ensures] match result with
+        | None -> completed_Range self
+        | Some v -> produces_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
-module M_01_range__qyi2180657552132013455__into_iter (* Range *)
+module M_impl_Range__into_iter (* Range *)
   use creusot.int.Int64
   use creusot.prelude.Any
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
   meta "compute_max_steps" 1000000
   
@@ -260,104 +260,105 @@ module M_01_range__qyi2180657552132013455__into_iter (* Range *)
     [ & _0: t_Range = Any.any_l () | & self: t_Range = self ])
     [ return (result: t_Range) -> {[@expl:into_iter ensures] result = self} (! return {result}) ]
 end
-module M_01_range__sum_range
+module M_sum_range
   use creusot.int.Int64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
   let rec into_iter (self: t_Range) (return (x: t_Range)) = any
     [ return (result: t_Range) -> {result = self} (! return {result}) ]
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
-  function produces_trans (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : () = ()
+  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+   = ()
   
-  axiom produces_trans_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Range_spec:
+    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
+      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Range) : () = ()
+  function produces_refl_Range (self: t_Range) : () = ()
   
-  axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq Int64.t) self
+  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
   
-  predicate inv [@inline:trivial] (_1: t_Range) = true
+  predicate inv_Range [@inline:trivial] (_1: t_Range) = true
   
-  meta "rewrite_def" predicate inv
+  meta "rewrite_def" predicate inv_Range
   
-  type t_Option = C_None | C_Some Int64.t
+  type t_Option_isize = None | Some Int64.t
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Range
   
-  predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ Int64.ge self.current.t_Range__start self.current.t_Range__end
+  predicate completed_Range (self: MutBorrow.t t_Range) =
+    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
   
-  let rec next (self: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {match result with
-        | C_None -> completed self
-        | C_Some v -> produces self.current (Seq.singleton v) self.final
+  let rec next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = any
+    [ return (result: t_Option_isize) -> {match result with
+        | None -> completed_Range self
+        | Some v -> produces_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: Int64.t)) = any
-    [ good (field_0: Int64.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: Int64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_isize) (ret (f0: Int64.t)) = any
+    [ good (f0: Int64.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: Int64.t [Some f0: t_Option_isize]. Some f0 <> input} (! {false} any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -367,25 +368,25 @@ module M_01_range__sum_range
     (! bb0
     [ bb0 = s0
       [ s0 = [ &i <- (0: Int64.t) ] s1
-      | s1 = [ &_6 <- { t_Range__start = (0: Int64.t); t_Range__end = n } ] s2
+      | s1 = [ &_6 <- { start = (0: Int64.t); end' = n } ] s2
       | s2 = into_iter {_6} (fun (_ret: t_Range) -> [ &it <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = [ &iter_old <- it ] s1 | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s1 | s1 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant #0] inv it}
-        {[@expl:loop invariant #1] produces iter_old produced it}
+      [ bb4 = {[@expl:loop invariant #0] inv_Range it}
+        {[@expl:loop invariant #1] produces_Range iter_old produced it}
         {[@expl:loop invariant #2] Int64.to_int i = Seq.length produced /\ Int64.le i n}
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range> {it}
               (fun (_ret: MutBorrow.t t_Range) -> [ &_19 <- _ret ] [ &it <- _ret.final ] s1)
-          | s1 = next {_19} (fun (_ret: t_Option) -> [ &_18 <- _ret ] s2)
+          | s1 = next_Range {_19} (fun (_ret: t_Option_isize) -> [ &_18 <- _ret ] s2)
           | s2 = bb6 ]
-        | bb6 = any [ br0 -> {_18 = C_None} (! bb9) | br1 (x0: Int64.t) -> {_18 = C_Some x0} (! bb10) ]
+        | bb6 = any [ br0 -> {_18 = None} (! bb9) | br1 (x0: Int64.t) -> {_18 = Some x0} (! bb10) ]
         | bb10 = s0
-          [ s0 = v_Some {_18} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
+          [ s0 = elim_Some {_18} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
           | s1 = [ &_22 <- Seq.(++) produced (Seq.singleton x) ] s2
           | s2 = bb11 ]
         | bb11 = s0
@@ -400,229 +401,230 @@ module M_01_range__sum_range
     | & _6: t_Range = Any.any_l ()
     | & iter_old: t_Range = Any.any_l ()
     | & produced: Seq.seq Int64.t = Any.any_l ()
-    | & _18: t_Option = Any.any_l ()
+    | & _18: t_Option_isize = Any.any_l ()
     | & _19: MutBorrow.t t_Range = Any.any_l ()
     | & x: Int64.t = Any.any_l ()
     | & _22: Seq.seq Int64.t = Any.any_l () ])
     [ return (result: Int64.t) -> {[@expl:sum_range ensures] result = n} (! return {result}) ]
 end
-module M_01_range__qyi16572111325853806140__produces_trans__refines (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use seq.Seq
   use mach.int.Int
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Range. forall ab: Seq.seq Int64.t. forall b: t_Range. forall bc: Seq.seq Int64.t. forall c: t_Range. produces b bc c
-                /\ produces a ab b
-              -> produces b bc c
-              /\ produces a ab b /\ (forall result: (). produces a (Seq.(++) ab bc) c -> produces a (Seq.(++) ab bc) c)
+    forall a: t_Range. forall ab: Seq.seq Int64.t. forall b: t_Range. forall bc: Seq.seq Int64.t. forall c: t_Range. produces_Range b bc c
+                /\ produces_Range a ab b
+              -> produces_Range b bc c
+              /\ produces_Range a ab b
+              /\ (forall result: (). produces_Range a (Seq.(++) ab bc) c -> produces_Range a (Seq.(++) ab bc) c)
 end
-module M_01_range__qyi16572111325853806140__next__refines (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
   
-  type t_Option = C_None | C_Some Int64.t
+  type t_Option_isize = None | Some Int64.t
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Range
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ Int64.ge self.current.t_Range__start self.current.t_Range__end
+  predicate completed_Range (self: MutBorrow.t t_Range) =
+    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Range. forall result: t_Option. match result with
-            | C_None -> completed self
-            | C_Some v -> produces self.current (Seq.singleton v) self.final
+  goal refines: forall self: MutBorrow.t t_Range. forall result: t_Option_isize. match result with
+            | None -> completed_Range self
+            | Some v -> produces_Range self.current (Seq.singleton v) self.final
             end
         -> match result with
-          | C_None -> completed self
-          | C_Some v -> produces self.current (Seq.singleton v) self.final
+          | None -> completed_Range self
+          | Some v -> produces_Range self.current (Seq.singleton v) self.final
           end
 end
-module M_01_range__qyi16572111325853806140__produces_refl__refines (* <Range as common::Iterator> *)
+module M_impl_Iterator_for_Range__produces_refl__refines (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use seq.Seq
   use mach.int.Int
   
-  type t_Range = { t_Range__start: Int64.t; t_Range__end: Int64.t }
+  type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      C_Less
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int64.t) (y: Int64.t) : ()
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
   
-  function antisym2 (x: Int64.t) (y: Int64.t) : ()
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
   
-  function antisym1 (x: Int64.t) (y: Int64.t) : ()
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_spec: forall x: Int64.t, y: Int64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
   
-  function trans (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
   
-  function refl (x: Int64.t) : ()
+  function refl_isize (x: Int64.t) : ()
   
-  axiom refl_spec: forall x: Int64.t. cmp_log x x = C_Equal
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
   
-  function cmp_gt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
   
-  function cmp_ge_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
   
-  function cmp_lt_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
   
-  function cmp_le_log (x: Int64.t) (y: Int64.t) : ()
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
-  predicate produces (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ Int64.le self.t_Range__start o.t_Range__start
-    /\ (Seq.length visited > 0 -> Int64.le o.t_Range__start o.t_Range__end)
-    /\ Seq.length visited = Int64.to_int o.t_Range__start - Int64.to_int self.t_Range__start
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.t_Range__start + i)
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Range. forall result: (). produces self (Seq.empty: Seq.seq Int64.t) self
-        -> produces self (Seq.empty: Seq.seq Int64.t) self
+  goal refines: forall self: t_Range. forall result: (). produces_Range self (Seq.empty: Seq.seq Int64.t) self
+        -> produces_Range self (Seq.empty: Seq.seq Int64.t) self
 end

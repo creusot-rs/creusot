@@ -1,4 +1,4 @@
-module M_06__test
+module M_test
   use creusot.int.UInt64
   use creusot.prelude.Any
   
@@ -6,42 +6,43 @@ module M_06__test
   
   type t_Tgt
   
-  type tuple = { f0: t_T; f1: UInt64.t }
+  type tup2_ref_T_usize = { f0: t_T; f1: UInt64.t }
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' [@inline:trivial] (self: t_T) = inv self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition (self: ()) (args: tuple)
+  predicate precondition_ix (self: ()) (args: tup2_ref_T_usize)
   
-  axiom precondition_fndef: forall args: tuple [precondition () args]. (let {f0 = self; f1 = ix} = args in inv'0 self)
-      -> precondition () args
+  axiom precondition_fndef:
+    forall args: tup2_ref_T_usize [precondition_ix () args]. (let {f0 = self; f1 = ix} = args in inv_ref_T self)
+      -> precondition_ix () args
   
-  predicate inv'1 (_1: t_Tgt)
+  predicate inv_Tgt (_1: t_Tgt)
   
-  predicate postcondition_once (self: ()) (args: tuple) (result: t_Tgt)
+  predicate postcondition_once_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt)
   
   axiom postcondition_fndef:
-    forall args: tuple, res: t_Tgt [postcondition_once () args res]. postcondition_once () args res
-      -> (let {f0 = self; f1 = ix} = args in inv'1 res)
+    forall args: tup2_ref_T_usize, res: t_Tgt [postcondition_once_ix () args res]. postcondition_once_ix () args res
+      -> (let {f0 = self; f1 = ix} = args in inv_Tgt res)
   
-  let rec ix (self: t_T) (ix'0: UInt64.t) (return (x: t_Tgt)) = {[@expl:ix requires] precondition () { f0 = self;
-                                                                                                       f1 = ix'0 }}
-    any [ return (result: t_Tgt) -> {postcondition_once () { f0 = self; f1 = ix'0 } result} (! return {result}) ]
+  let rec ix_T (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) = {[@expl:ix requires] precondition_ix () { f0 = self;
+                                                                                                          f1 = ix }}
+    any [ return (result: t_Tgt) -> {postcondition_once_ix () { f0 = self; f1 = ix } result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test (a: t_T) (return (x: t_Tgt)) = {[@expl:test 'a' type invariant] inv'0 a}
+  let rec test_T (a: t_T) (return (x: t_Tgt)) = {[@expl:test 'a' type invariant] inv_ref_T a}
     (! bb0
-    [ bb0 = s0 [ s0 = ix {a} {(0: UInt64.t)} (fun (_ret: t_Tgt) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = ix_T {a} {(0: UInt64.t)} (fun (_ret: t_Tgt) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = return {_0} ] [ & _0: t_Tgt = Any.any_l () | & a: t_T = a ])
-    [ return (result: t_Tgt) -> {[@expl:test result type invariant] inv'1 result} (! return {result}) ]
+    [ return (result: t_Tgt) -> {[@expl:test result type invariant] inv_Tgt result} (! return {result}) ]
 end

@@ -4,7 +4,7 @@ use crate::{
     backend::{Why3Generator, dependency::Dependency},
     contracts_items::{Intrinsic, get_builtin, is_logic, is_opaque},
     ctx::*,
-    naming::{name, variable_name},
+    naming::{field_name, name},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind};
@@ -312,13 +312,8 @@ pub(crate) fn eliminator<'tcx>(
         .fields
         .iter()
         .map(|fld| {
-            let id = if fld.name.as_str().as_bytes()[0].is_ascii_digit() {
-                &format!("field_{}", fld.name)
-            } else {
-                fld.name.as_str()
-            };
             let ty = translate_ty(ctx, names, DUMMY_SP, names.normalize(fld.ty(ctx.tcx, subst)));
-            (Ident::fresh_local(variable_name(id)), ty)
+            (Ident::fresh_local(&field_name(fld.name.as_str())), ty)
         })
         .collect();
 

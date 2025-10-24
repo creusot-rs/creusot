@@ -1,76 +1,80 @@
-module M_04__user
+module M_user
   use creusot.prelude.Any
   
   type t_T
   
-  type tuple = { f0: t_T; f1: t_T }
+  type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' [@inline:trivial] (self: t_T) = inv self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition (self: ()) (args: tuple)
+  predicate precondition_func1 (self: ()) (args: tup2_ref_T_ref_T)
   
-  axiom precondition_fndef: forall args: tuple [precondition () args]. (let {f0 = self; f1 = o} = args in inv'0 o
-        /\ inv'0 self) -> precondition () args
+  axiom precondition_fndef:
+    forall args: tup2_ref_T_ref_T [precondition_func1 () args]. (let {f0 = self; f1 = o} = args in inv_ref_T o
+        /\ inv_ref_T self) -> precondition_func1 () args
   
-  predicate postcondition_once (self: ()) (args: tuple) (result: bool)
+  predicate postcondition_once_func1 (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tuple, res: bool [postcondition_once () args res]. postcondition_once () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_func1 () args res]. postcondition_once_func1 () args res
       -> (let {f0 = self; f1 = o} = args in true)
   
-  let rec func1 (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func1 requires] precondition () { f0 = self; f1 = o }}
-    any [ return (result: bool) -> {postcondition_once () { f0 = self; f1 = o } result} (! return {result}) ]
+  let rec func1_T (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func1 requires] precondition_func1 () { f0 = self;
+                                                                                                            f1 = o }}
+    any [ return (result: bool) -> {postcondition_once_func1 () { f0 = self; f1 = o } result} (! return {result}) ]
   
-  predicate precondition'0 (self: ()) (args: tuple)
+  predicate precondition_func2 (self: ()) (args: tup2_ref_T_ref_T)
   
-  axiom precondition_fndef'0: forall args: tuple [precondition'0 () args]. (let {f0 = self; f1 = o} = args in inv'0 o
-        /\ inv'0 self) -> precondition'0 () args
+  axiom precondition_fndef'0:
+    forall args: tup2_ref_T_ref_T [precondition_func2 () args]. (let {f0 = self; f1 = o} = args in inv_ref_T o
+        /\ inv_ref_T self) -> precondition_func2 () args
   
-  predicate postcondition_once'0 (self: ()) (args: tuple) (result: bool)
+  predicate postcondition_once_func2 (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef'0:
-    forall args: tuple, res: bool [postcondition_once'0 () args res]. postcondition_once'0 () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_func2 () args res]. postcondition_once_func2 () args res
       -> (let {f0 = self; f1 = o} = args in true)
   
-  let rec func2 (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func2 requires] precondition'0 () { f0 = self;
-                                                                                                      f1 = o }}
-    any [ return (result: bool) -> {postcondition_once'0 () { f0 = self; f1 = o } result} (! return {result}) ]
+  let rec func2_T (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func2 requires] precondition_func2 () { f0 = self;
+                                                                                                            f1 = o }}
+    any [ return (result: bool) -> {postcondition_once_func2 () { f0 = self; f1 = o } result} (! return {result}) ]
   
-  predicate precondition'1 (self: ()) (args: tuple)
+  predicate precondition_func3 (self: ()) (args: tup2_ref_T_ref_T)
   
-  axiom precondition_fndef'1: forall args: tuple [precondition'1 () args]. (let {f0 = self; f1 = o} = args in inv'0 o
-        /\ inv'0 self) -> precondition'1 () args
+  axiom precondition_fndef'1:
+    forall args: tup2_ref_T_ref_T [precondition_func3 () args]. (let {f0 = self; f1 = o} = args in inv_ref_T o
+        /\ inv_ref_T self) -> precondition_func3 () args
   
-  predicate postcondition_once'1 (self: ()) (args: tuple) (result: bool)
+  predicate postcondition_once_func3 (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef'1:
-    forall args: tuple, res: bool [postcondition_once'1 () args res]. postcondition_once'1 () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_func3 () args res]. postcondition_once_func3 () args res
       -> (let {f0 = self; f1 = o} = args in true)
   
-  let rec func3 (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func3 requires] precondition'1 () { f0 = self;
-                                                                                                      f1 = o }}
-    any [ return (result: bool) -> {postcondition_once'1 () { f0 = self; f1 = o } result} (! return {result}) ]
+  let rec func3_T (self: t_T) (o: t_T) (return (x: bool)) = {[@expl:func3 requires] precondition_func3 () { f0 = self;
+                                                                                                            f1 = o }}
+    any [ return (result: bool) -> {postcondition_once_func3 () { f0 = self; f1 = o } result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec user (a: t_T) (b: t_T) (return (x: bool)) = {[@expl:user 'a' type invariant] inv'0 a}
-    {[@expl:user 'b' type invariant] inv'0 b}
+  let rec user_T (a: t_T) (b: t_T) (return (x: bool)) = {[@expl:user 'a' type invariant] inv_ref_T a}
+    {[@expl:user 'b' type invariant] inv_ref_T b}
     (! bb0
-    [ bb0 = s0 [ s0 = func1 {a} {b} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = func1_T {a} {b} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_4 = false} (! bb7) | br1 -> {_4} (! bb2) ]
-    | bb2 = s0 [ s0 = func2 {b} {a} (fun (_ret: bool) -> [ &_7 <- _ret ] s1) | s1 = bb3 ]
+    | bb2 = s0 [ s0 = func2_T {b} {a} (fun (_ret: bool) -> [ &_7 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = any [ br0 -> {_7 = false} (! bb7) | br1 -> {_7} (! bb4) ]
-    | bb4 = s0 [ s0 = func3 {a} {b} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb9 ]
+    | bb4 = s0 [ s0 = func3_T {a} {b} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb9 ]
     | bb7 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = bb9 ]
     | bb9 = return {_0} ]
     [ & _0: bool = Any.any_l () | & a: t_T = a | & b: t_T = b | & _4: bool = Any.any_l () | & _7: bool = Any.any_l () ])

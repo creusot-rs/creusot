@@ -1,12 +1,12 @@
-module M_inc_some_list__qyi14489061725823948544__lemma_sum_nonneg (* List *)
+module M_impl_List__lemma_sum_nonneg (* List *)
   use creusot.int.UInt32
   use mach.int.Int
   
-  type t_List = C_Cons UInt32.t t_List | C_Nil
+  type t_List = Cons UInt32.t t_List | Nil
   
   function sum (self: t_List) : int = match self with
-      | C_Cons a l -> UInt32.t'int a + sum l
-      | C_Nil -> 0
+      | Cons a l -> UInt32.t'int a + sum l
+      | Nil -> 0
       end
   
   meta "compute_max_steps" 1000000
@@ -18,27 +18,24 @@ module M_inc_some_list__qyi14489061725823948544__lemma_sum_nonneg (* List *)
   function lemma_sum_nonneg (self: t_List) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | C_Cons _ l -> sum l >= 0 -> ([@expl:lemma_sum_nonneg ensures] sum self >= 0)
-      | C_Nil -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Cons _ l -> sum l >= 0 -> ([@expl:lemma_sum_nonneg ensures] sum self >= 0)
+      | Nil -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
-module M_inc_some_list__qyi14489061725823948544__sum_x (* List *)
+module M_impl_List__sum_x (* List *)
   use creusot.int.UInt32
   use creusot.prelude.Any
   use mach.int.Int
   
-  type t_List = C_Cons UInt32.t t_List | C_Nil
+  type t_List = Cons UInt32.t t_List | Nil
   
-  let rec v_Cons (input: t_List) (ret (field_0: UInt32.t) (field_1: t_List)) = any
-    [ good (field_0: UInt32.t) (field_1: t_List) -> {C_Cons field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad -> {forall field_0: UInt32.t, field_1: t_List [C_Cons field_0 field_1: t_List]. C_Cons field_0 field_1
-        <> input}
-      (! {false}
-      any) ]
+  let rec elim_Cons (input: t_List) (ret (f0: UInt32.t) (f1: t_List)) = any
+    [ good (f0: UInt32.t) (f1: t_List) -> {Cons f0 f1 = input} (! ret {f0} {f1})
+    | bad -> {forall f0: UInt32.t, f1: t_List [Cons f0 f1: t_List]. Cons f0 f1 <> input} (! {false} any) ]
   
   function sum (self: t_List) : int = match self with
-      | C_Cons a l -> UInt32.t'int a + sum l
-      | C_Nil -> 0
+      | Cons a l -> UInt32.t'int a + sum l
+      | Nil -> 0
       end
   
   meta "compute_max_steps" 1000000
@@ -47,11 +44,11 @@ module M_inc_some_list__qyi14489061725823948544__sum_x (* List *)
   
   let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
     (! bb0
-    [ bb0 = any [ br0 (x0: UInt32.t) (x1: t_List) -> {self = C_Cons x0 x1} (! bb4) | br1 -> {self = C_Nil} (! bb3) ]
+    [ bb0 = any [ br0 (x0: UInt32.t) (x1: t_List) -> {self = Cons x0 x1} (! bb4) | br1 -> {self = Nil} (! bb3) ]
     | bb3 = s0 [ s0 = [ &_0 <- (0: UInt32.t) ] s1 | s1 = bb6 ]
     | bb4 = s0
-      [ s0 = v_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &a <- r0 ] s1)
-      | s1 = v_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &l <- r1 ] s2)
+      [ s0 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &a <- r0 ] s1)
+      | s1 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &l <- r1 ] s2)
       | s2 = sum_x {l} (fun (_ret: UInt32.t) -> [ &_8 <- _ret ] s3)
       | s3 = bb5 ]
     | bb5 = s0 [ s0 = UInt32.add {a} {_8} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s1) | s1 = bb6 ]
@@ -63,46 +60,43 @@ module M_inc_some_list__qyi14489061725823948544__sum_x (* List *)
     | & _8: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
 end
-module M_inc_some_list__qyi14489061725823948544__take_some (* List *)
+module M_impl_List__take_some (* List *)
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_List = C_Cons UInt32.t t_List | C_Nil
+  type t_List = Cons UInt32.t t_List | Nil
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
+  predicate resolve_ref_List [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_List
   
-  let rec v_Cons (input: t_List) (ret (field_0: UInt32.t) (field_1: t_List)) = any
-    [ good (field_0: UInt32.t) (field_1: t_List) -> {C_Cons field_0 field_1 = input} (! ret {field_0} {field_1})
-    | bad -> {forall field_0: UInt32.t, field_1: t_List [C_Cons field_0 field_1: t_List]. C_Cons field_0 field_1
-        <> input}
-      (! {false}
-      any) ]
+  let rec elim_Cons (input: t_List) (ret (f0: UInt32.t) (f1: t_List)) = any
+    [ good (f0: UInt32.t) (f1: t_List) -> {Cons f0 f1 = input} (! ret {f0} {f1})
+    | bad -> {forall f0: UInt32.t, f1: t_List [Cons f0 f1: t_List]. Cons f0 f1 <> input} (! {false} any) ]
   
   function sum (self: t_List) : int = match self with
-      | C_Cons a l -> UInt32.t'int a + sum l
-      | C_Nil -> 0
+      | Cons a l -> UInt32.t'int a + sum l
+      | Nil -> 0
       end
   
   function lemma_sum_nonneg (self: t_List) : () = match self with
-      | C_Cons _ l -> lemma_sum_nonneg l
-      | C_Nil -> ()
+      | Cons _ l -> lemma_sum_nonneg l
+      | Nil -> ()
       end
   
   axiom lemma_sum_nonneg_spec: forall self: t_List. sum self >= 0
   
   let rec random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
+  predicate resolve_ref_Box_List_Global [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Box_List_Global
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_u32
   
   meta "compute_max_steps" 1000000
   
@@ -110,35 +104,34 @@ module M_inc_some_list__qyi14489061725823948544__take_some (* List *)
   
   let rec take_some (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = any
-      [ br0 (x0: UInt32.t) (x1: t_List) -> {self.current = C_Cons x0 x1} (! bb4)
-      | br1 -> {self.current = C_Nil} (! bb3) ]
-    | bb3 = s0 [ s0 = -{resolve self}- s1 | s1 = bb11 ]
+      [ br0 (x0: UInt32.t) (x1: t_List) -> {self.current = Cons x0 x1} (! bb4) | br1 -> {self.current = Nil} (! bb3) ]
+    | bb3 = s0 [ s0 = -{resolve_ref_List self}- s1 | s1 = bb11 ]
     | bb11 = bb11 [ bb11 = (! bb11) ]
     | bb4 = s0
-      [ s0 = v_Cons {self.current}
+      [ s0 = elim_Cons {self.current}
           (fun (r0: UInt32.t) (r1: t_List) ->
             MutBorrow.borrow_final <UInt32.t> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
               (fun (_ret: MutBorrow.t UInt32.t) ->
-                [ &ma <- _ret ] [ &self <- { self with current = C_Cons _ret.final r1 } ] s1))
-      | s1 = v_Cons {self.current}
+                [ &ma <- _ret ] [ &self <- { self with current = Cons _ret.final r1 } ] s1))
+      | s1 = elim_Cons {self.current}
           (fun (r0: UInt32.t) (r1: t_List) ->
             MutBorrow.borrow_final <t_List> {r1} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
               (fun (_ret: MutBorrow.t t_List) ->
-                [ &ml <- _ret ] [ &self <- { self with current = C_Cons r0 _ret.final } ] s2))
+                [ &ml <- _ret ] [ &self <- { self with current = Cons r0 _ret.final } ] s2))
       | s2 = [ &_10 <- lemma_sum_nonneg ml.current ] s3
       | s3 = bb5 ]
     | bb5 = s0 [ s0 = random (fun (_ret: bool) -> [ &_13 <- _ret ] s1) | s1 = bb6 ]
     | bb6 = any [ br0 -> {_13 = false} (! bb8) | br1 -> {_13} (! bb7) ]
     | bb7 = s0
-      [ s0 = -{resolve'0 ml}- s1
+      [ s0 = -{resolve_ref_Box_List_Global ml}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {ma.current} {MutBorrow.get_id ma}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_14 <- _ret ] [ &ma <- { ma with current = _ret.final } ] s2)
       | s2 = MutBorrow.borrow_final <UInt32.t> {_14.current} {MutBorrow.get_id _14}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_12 <- _ret ] [ &_14 <- { _14 with current = _ret.final } ] s3)
-      | s3 = -{resolve'1 _14}- s4
+      | s3 = -{resolve_ref_u32 _14}- s4
       | s4 = bb10 ]
     | bb8 = s0
-      [ s0 = -{resolve'1 ma}- s1
+      [ s0 = -{resolve_ref_u32 ma}- s1
       | s1 = MutBorrow.borrow_final <t_List> {ml.current} {MutBorrow.get_id ml}
           (fun (_ret: MutBorrow.t t_List) -> [ &_16 <- _ret ] [ &ml <- { ml with current = _ret.final } ] s2)
       | s2 = take_some {_16} (fun (_ret: MutBorrow.t UInt32.t) -> [ &_15 <- _ret ] s3)
@@ -146,24 +139,24 @@ module M_inc_some_list__qyi14489061725823948544__take_some (* List *)
     | bb9 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_15.current} {MutBorrow.get_id _15}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_12 <- _ret ] [ &_15 <- { _15 with current = _ret.final } ] s1)
-      | s1 = -{resolve'1 _15}- s2
+      | s1 = -{resolve_ref_u32 _15}- s2
       | s2 = bb10 ]
     | bb10 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_12.current} {MutBorrow.get_id _12}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_9 <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s1)
-      | s1 = -{resolve'1 _12}- s2
+      | s1 = -{resolve_ref_u32 _12}- s2
       | s2 = MutBorrow.borrow_final <UInt32.t> {_9.current} {MutBorrow.get_id _9}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &_9 <- { _9 with current = _ret.final } ] s3)
-      | s3 = -{resolve'1 _9}- s4
-      | s4 = -{resolve'0 ml}- s5
-      | s5 = -{resolve'1 ma}- s6
+      | s3 = -{resolve_ref_u32 _9}- s4
+      | s4 = -{resolve_ref_Box_List_Global ml}- s5
+      | s5 = -{resolve_ref_u32 ma}- s6
       | s6 = MutBorrow.borrow_final <UInt32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_2 <- _ret ] [ &_5 <- { _5 with current = _ret.final } ] s7)
-      | s7 = -{resolve'1 _5}- s8
+      | s7 = -{resolve_ref_u32 _5}- s8
       | s8 = MutBorrow.borrow_final <UInt32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s9)
-      | s9 = -{resolve'1 _2}- s10
-      | s10 = -{resolve self}- s11
+      | s9 = -{resolve_ref_u32 _2}- s10
+      | s10 = -{resolve_ref_List self}- s11
       | s11 = return {_0} ] ]
     [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
     | & self: MutBorrow.t t_List = self
@@ -183,17 +176,17 @@ module M_inc_some_list__qyi14489061725823948544__take_some (* List *)
       {[@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current}
       (! return {result}) ]
 end
-module M_inc_some_list__inc_some_list
+module M_inc_some_list
   use creusot.int.UInt32
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_List = C_Cons UInt32.t t_List | C_Nil
+  type t_List = Cons UInt32.t t_List | Nil
   
   function sum (self: t_List) : int = match self with
-      | C_Cons a l -> UInt32.t'int a + sum l
-      | C_Nil -> 0
+      | Cons a l -> UInt32.t'int a + sum l
+      | Nil -> 0
       end
   
   let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
@@ -205,9 +198,9 @@ module M_inc_some_list__inc_some_list
       {UInt32.t'int result.current <= sum self.current}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_u32
   
   meta "compute_max_steps" 1000000
   
@@ -225,7 +218,7 @@ module M_inc_some_list__inc_some_list
       | s2 = bb2 ]
     | bb2 = s0
       [ s0 = UInt32.add {ma.current} {k} (fun (_ret: UInt32.t) -> [ &ma <- { ma with current = _ret } ] s1)
-      | s1 = -{resolve ma}- s2
+      | s1 = -{resolve_ref_u32 ma}- s2
       | s2 = sum_x {l} (fun (_ret: UInt32.t) -> [ &_11 <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0

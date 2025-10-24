@@ -1,4 +1,4 @@
-module M_02_operators__division
+module M_division
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -21,7 +21,7 @@ module M_02_operators__division
     | & _5: UInt64.t = Any.any_l ()
     | & _6: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_02_operators__modulus
+module M_modulus
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -44,7 +44,7 @@ module M_02_operators__modulus
     | & _5: UInt64.t = Any.any_l ()
     | & _6: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_02_operators__multiply
+module M_multiply
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -63,7 +63,7 @@ module M_02_operators__multiply
     [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_02_operators__add
+module M_add
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -82,7 +82,7 @@ module M_02_operators__add
     [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_02_operators__sub
+module M_sub
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -99,7 +99,7 @@ module M_02_operators__sub
     [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
-module M_02_operators__expression
+module M_expression
   use creusot.int.UInt64
   use creusot.prelude.Any
   use mach.int.Int
@@ -145,56 +145,56 @@ module M_02_operators__expression
     | & _16: UInt64.t = Any.any_l ()
     | & _17: bool = Any.any_l () ]) [ return (result: bool) -> {[@expl:expression ensures] result} (! return {result}) ]
 end
-module M_02_operators__primitive_comparison
+module M_primitive_comparison
   use creusot.prelude.Any
   use creusot.int.UInt64
   
-  type t_X = { t_X__a: UInt64.t }
+  type t_X = { a: UInt64.t }
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec: forall x: UInt64.t, y: UInt64.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec: forall x: UInt64.t. cmp_log x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   meta "compute_max_steps" 1000000
   
@@ -202,9 +202,9 @@ module M_02_operators__primitive_comparison
   
   let rec primitive_comparison (x: t_X) (return (x'0: ())) = (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:primitive_comparison ensures] UInt64.le x.t_X__a x.t_X__a} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:primitive_comparison ensures] UInt64.le x.a x.a} (! return {result}) ]
 end
-module M_02_operators__bool_eq
+module M_bool_eq
   use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000

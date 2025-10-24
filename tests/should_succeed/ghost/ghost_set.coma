@@ -1,77 +1,80 @@
-module M_ghost_set__ghost_map
+module M_ghost_map
   use creusot.int.Int32
   use set.Fset
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  let rec new (return (x: Fset.fset Int32.t)) = any
+  let rec new_i32 (return (x: Fset.fset Int32.t)) = any
     [ return (result: Fset.fset Int32.t) -> {Fset.is_empty result} (! return {result}) ]
   
-  predicate contains [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) = Fset.mem e self
+  predicate contains_i32 [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) = Fset.mem e self
   
-  meta "rewrite_def" predicate contains
+  meta "rewrite_def" predicate contains_i32
   
-  let rec deref_mut (self: MutBorrow.t (Fset.fset Int32.t)) (return (x: MutBorrow.t (Fset.fset Int32.t))) = any
+  let rec deref_mut_Ghost_FSet_i32 (self: MutBorrow.t (Fset.fset Int32.t))
+    (return (x: MutBorrow.t (Fset.fset Int32.t))) = any
     [ return (result: MutBorrow.t (Fset.fset Int32.t)) -> {result = self} (! return {result}) ]
   
-  function insert [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = Fset.add e self
+  function insert_i32 [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = Fset.add e self
   
-  meta "rewrite_def" function insert
+  meta "rewrite_def" function insert_i32
   
-  let rec insert_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {self.final = insert self.current value}
-      {result = (not contains self.current value)}
+  let rec insert_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {self.final = insert_i32 self.current value}
+      {result = (not contains_i32 self.current value)}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t (Fset.fset Int32.t)) = _1.final = _1.current
+  predicate resolve_ref_FSet_i32 [@inline:trivial] (_1: MutBorrow.t (Fset.fset Int32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_FSet_i32
   
-  let rec deref (self: Fset.fset Int32.t) (return (x: Fset.fset Int32.t)) = any
+  let rec deref_Ghost_FSet_i32 (self: Fset.fset Int32.t) (return (x: Fset.fset Int32.t)) = any
     [ return (result: Fset.fset Int32.t) -> {result = self} (! return {result}) ]
   
-  let rec len_ghost (self: Fset.fset Int32.t) (return (x: int)) = any
+  let rec len_ghost_i32 (self: Fset.fset Int32.t) (return (x: int)) = any
     [ return (result: int) -> {result = Fset.cardinal self} (! return {result}) ]
   
-  type tuple = { f0: Int32.t; f1: Int32.t; f2: Int32.t }
+  type tup3_i32_i32_i32 = { f0: Int32.t; f1: Int32.t; f2: Int32.t }
   
-  function remove [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = Fset.remove e self
+  function remove_i32 [@inline:trivial] (self: Fset.fset Int32.t) (e: Int32.t) : Fset.fset Int32.t = Fset.remove e self
   
-  meta "rewrite_def" function remove
+  meta "rewrite_def" function remove_i32
   
-  let rec remove_ghost (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {self.final = remove self.current value}
-      {result = contains self.current value}
+  let rec remove_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {self.final = remove_i32 self.current value}
+      {result = contains_i32 self.current value}
       (! return {result}) ]
   
-  let rec contains_ghost (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {result = contains self value} (! return {result}) ]
+  let rec contains_ghost_i32 (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {result = contains_i32 self value} (! return {result}) ]
   
-  let rec new'0 (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec ghost_map (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = new (fun (_ret: Fset.fset Int32.t) -> [ &set <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = new_i32 (fun (_ret: Fset.fset Int32.t) -> [ &set <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {[@expl:assertion] forall k: Int32.t. not contains set k} s1
+      [ s0 = {[@expl:assertion] forall k: Int32.t. not contains_i32 set k} s1
       | s1 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_9 <- _ret ] [ &set <- _ret.final ] s2)
-      | s2 = deref_mut {_9} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_8 <- _ret ] s3)
+      | s2 = deref_mut_Ghost_FSet_i32 {_9} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_8 <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0
       [ s0 = MutBorrow.borrow_final <Fset.fset Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s1)
-      | s1 = insert_ghost {_7} {(1: Int32.t)} (fun (_ret: bool) -> [ &_6 <- _ret ] s2)
+      | s1 = insert_ghost_i32 {_7} {(1: Int32.t)} (fun (_ret: bool) -> [ &_6 <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0
-      [ s0 = -{resolve _8}- s1 | s1 = deref {set} (fun (_ret: Fset.fset Int32.t) -> [ &_12 <- _ret ] s2) | s2 = bb4 ]
-    | bb4 = s0 [ s0 = len_ghost {_12} (fun (_ret: int) -> [ &length1 <- _ret ] s1) | s1 = bb5 ]
+      [ s0 = -{resolve_ref_FSet_i32 _8}- s1
+      | s1 = deref_Ghost_FSet_i32 {set} (fun (_ret: Fset.fset Int32.t) -> [ &_12 <- _ret ] s2)
+      | s2 = bb4 ]
+    | bb4 = s0 [ s0 = len_ghost_i32 {_12} (fun (_ret: int) -> [ &length1 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = {[@expl:assertion] contains set (1: Int32.t) /\ not contains set (2: Int32.t)} s1
+      [ s0 = {[@expl:assertion] contains_i32 set (1: Int32.t) /\ not contains_i32 set (2: Int32.t)} s1
       | s1 = {[@expl:assertion] length1 = 1} s2
       | s2 = [ &_21 <- { f0 = (1: Int32.t); f1 = (2: Int32.t); f2 = (3: Int32.t) } ] s3
       | s3 = [ &x1 <- _21.f0 ] s4
@@ -79,96 +82,98 @@ module M_ghost_set__ghost_map
       | s5 = [ &x3 <- _21.f2 ] s6
       | s6 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_25 <- _ret ] [ &set <- _ret.final ] s7)
-      | s7 = deref_mut {_25} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_24 <- _ret ] s8)
+      | s7 = deref_mut_Ghost_FSet_i32 {_25} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_24 <- _ret ] s8)
       | s8 = bb6 ]
     | bb6 = s0
       [ s0 = MutBorrow.borrow_final <Fset.fset Int32.t> {_24.current} {MutBorrow.get_id _24}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_23 <- _ret ] [ &_24 <- { _24 with current = _ret.final } ] s1)
-      | s1 = insert_ghost {_23} {(2: Int32.t)} (fun (_ret: bool) -> [ &inserted_true <- _ret ] s2)
+      | s1 = insert_ghost_i32 {_23} {(2: Int32.t)} (fun (_ret: bool) -> [ &inserted_true <- _ret ] s2)
       | s2 = bb7 ]
     | bb7 = s0
-      [ s0 = -{resolve _24}- s1
+      [ s0 = -{resolve_ref_FSet_i32 _24}- s1
       | s1 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_29 <- _ret ] [ &set <- _ret.final ] s2)
-      | s2 = deref_mut {_29} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_28 <- _ret ] s3)
+      | s2 = deref_mut_Ghost_FSet_i32 {_29} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_28 <- _ret ] s3)
       | s3 = bb8 ]
     | bb8 = s0
       [ s0 = MutBorrow.borrow_final <Fset.fset Int32.t> {_28.current} {MutBorrow.get_id _28}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_27 <- _ret ] [ &_28 <- { _28 with current = _ret.final } ] s1)
-      | s1 = insert_ghost {_27} {(2: Int32.t)} (fun (_ret: bool) -> [ &inserted_false <- _ret ] s2)
+      | s1 = insert_ghost_i32 {_27} {(2: Int32.t)} (fun (_ret: bool) -> [ &inserted_false <- _ret ] s2)
       | s2 = bb9 ]
     | bb9 = s0
-      [ s0 = -{resolve _28}- s1 | s1 = deref {set} (fun (_ret: Fset.fset Int32.t) -> [ &_32 <- _ret ] s2) | s2 = bb10 ]
-    | bb10 = s0 [ s0 = len_ghost {_32} (fun (_ret: int) -> [ &length2 <- _ret ] s1) | s1 = bb11 ]
+      [ s0 = -{resolve_ref_FSet_i32 _28}- s1
+      | s1 = deref_Ghost_FSet_i32 {set} (fun (_ret: Fset.fset Int32.t) -> [ &_32 <- _ret ] s2)
+      | s2 = bb10 ]
+    | bb10 = s0 [ s0 = len_ghost_i32 {_32} (fun (_ret: int) -> [ &length2 <- _ret ] s1) | s1 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:assertion] inserted_true /\ not inserted_false} s1
       | s1 = {[@expl:assertion] length2 = 2} s2
-      | s2 = {[@expl:assertion] contains set (1: Int32.t) /\ contains set (2: Int32.t)} s3
+      | s2 = {[@expl:assertion] contains_i32 set (1: Int32.t) /\ contains_i32 set (2: Int32.t)} s3
       | s3 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_43 <- _ret ] [ &set <- _ret.final ] s4)
-      | s4 = deref_mut {_43} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_42 <- _ret ] s5)
+      | s4 = deref_mut_Ghost_FSet_i32 {_43} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_42 <- _ret ] s5)
       | s5 = bb12 ]
     | bb12 = s0
       [ s0 = [ &_45 <- x3 ] s1
       | s1 = MutBorrow.borrow_final <Fset.fset Int32.t> {_42.current} {MutBorrow.get_id _42}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_41 <- _ret ] [ &_42 <- { _42 with current = _ret.final } ] s2)
-      | s2 = remove_ghost {_41} {_45} (fun (_ret: bool) -> [ &remove_false1 <- _ret ] s3)
+      | s2 = remove_ghost_i32 {_41} {_45} (fun (_ret: bool) -> [ &remove_false1 <- _ret ] s3)
       | s3 = bb13 ]
     | bb13 = s0
-      [ s0 = -{resolve _42}- s1
+      [ s0 = -{resolve_ref_FSet_i32 _42}- s1
       | s1 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_49 <- _ret ] [ &set <- _ret.final ] s2)
-      | s2 = deref_mut {_49} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_48 <- _ret ] s3)
+      | s2 = deref_mut_Ghost_FSet_i32 {_49} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_48 <- _ret ] s3)
       | s3 = bb14 ]
     | bb14 = s0
       [ s0 = [ &_51 <- x2 ] s1
       | s1 = MutBorrow.borrow_final <Fset.fset Int32.t> {_48.current} {MutBorrow.get_id _48}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_47 <- _ret ] [ &_48 <- { _48 with current = _ret.final } ] s2)
-      | s2 = remove_ghost {_47} {_51} (fun (_ret: bool) -> [ &remove_true <- _ret ] s3)
+      | s2 = remove_ghost_i32 {_47} {_51} (fun (_ret: bool) -> [ &remove_true <- _ret ] s3)
       | s3 = bb15 ]
     | bb15 = s0
-      [ s0 = -{resolve _48}- s1
+      [ s0 = -{resolve_ref_FSet_i32 _48}- s1
       | s1 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_55 <- _ret ] [ &set <- _ret.final ] s2)
-      | s2 = deref_mut {_55} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_54 <- _ret ] s3)
+      | s2 = deref_mut_Ghost_FSet_i32 {_55} (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) -> [ &_54 <- _ret ] s3)
       | s3 = bb16 ]
     | bb16 = s0
       [ s0 = [ &_57 <- x2 ] s1
       | s1 = MutBorrow.borrow_final <Fset.fset Int32.t> {_54.current} {MutBorrow.get_id _54}
           (fun (_ret: MutBorrow.t (Fset.fset Int32.t)) ->
             [ &_53 <- _ret ] [ &_54 <- { _54 with current = _ret.final } ] s2)
-      | s2 = remove_ghost {_53} {_57} (fun (_ret: bool) -> [ &remove_false2 <- _ret ] s3)
+      | s2 = remove_ghost_i32 {_53} {_57} (fun (_ret: bool) -> [ &remove_false2 <- _ret ] s3)
       | s3 = bb17 ]
     | bb17 = s0
-      [ s0 = -{resolve _54}- s1
+      [ s0 = -{resolve_ref_FSet_i32 _54}- s1
       | s1 = {[@expl:assertion] not remove_false1 /\ remove_true /\ not remove_false2} s2
-      | s2 = {[@expl:assertion] not contains set (2: Int32.t)} s3
+      | s2 = {[@expl:assertion] not contains_i32 set (2: Int32.t)} s3
       | s3 = {[@expl:assertion] Fset.cardinal set = 1} s4
-      | s4 = deref {set} (fun (_ret: Fset.fset Int32.t) -> [ &_66 <- _ret ] s5)
+      | s4 = deref_Ghost_FSet_i32 {set} (fun (_ret: Fset.fset Int32.t) -> [ &_66 <- _ret ] s5)
       | s5 = bb18 ]
     | bb18 = s0
       [ s0 = [ &_69 <- x1 ] s1
-      | s1 = contains_ghost {_66} {_69} (fun (_ret: bool) -> [ &contains1 <- _ret ] s2)
+      | s1 = contains_ghost_i32 {_66} {_69} (fun (_ret: bool) -> [ &contains1 <- _ret ] s2)
       | s2 = bb19 ]
-    | bb19 = s0 [ s0 = deref {set} (fun (_ret: Fset.fset Int32.t) -> [ &_72 <- _ret ] s1) | s1 = bb20 ]
+    | bb19 = s0 [ s0 = deref_Ghost_FSet_i32 {set} (fun (_ret: Fset.fset Int32.t) -> [ &_72 <- _ret ] s1) | s1 = bb20 ]
     | bb20 = s0
       [ s0 = [ &_75 <- x2 ] s1
-      | s1 = contains_ghost {_72} {_75} (fun (_ret: bool) -> [ &contains2 <- _ret ] s2)
+      | s1 = contains_ghost_i32 {_72} {_75} (fun (_ret: bool) -> [ &contains2 <- _ret ] s2)
       | s2 = bb21 ]
-    | bb21 = s0 [ s0 = deref {set} (fun (_ret: Fset.fset Int32.t) -> [ &_78 <- _ret ] s1) | s1 = bb22 ]
+    | bb21 = s0 [ s0 = deref_Ghost_FSet_i32 {set} (fun (_ret: Fset.fset Int32.t) -> [ &_78 <- _ret ] s1) | s1 = bb22 ]
     | bb22 = s0
       [ s0 = [ &_81 <- x3 ] s1
-      | s1 = contains_ghost {_78} {_81} (fun (_ret: bool) -> [ &contains3 <- _ret ] s2)
+      | s1 = contains_ghost_i32 {_78} {_81} (fun (_ret: bool) -> [ &contains3 <- _ret ] s2)
       | s2 = bb23 ]
     | bb23 = s0
       [ s0 = {[@expl:assertion] contains1} s1
       | s1 = {[@expl:assertion] not contains2} s2
       | s2 = {[@expl:assertion] not contains3} s3
-      | s3 = new'0 {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s4)
+      | s3 = new_unit {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s4)
       | s4 = bb24 ]
     | bb24 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -184,7 +189,7 @@ module M_ghost_set__ghost_map
     | & x1: Int32.t = Any.any_l ()
     | & x2: Int32.t = Any.any_l ()
     | & x3: Int32.t = Any.any_l ()
-    | & _21: tuple = Any.any_l ()
+    | & _21: tup3_i32_i32_i32 = Any.any_l ()
     | & inserted_true: bool = Any.any_l ()
     | & _23: MutBorrow.t (Fset.fset Int32.t) = Any.any_l ()
     | & _24: MutBorrow.t (Fset.fset Int32.t) = Any.any_l ()

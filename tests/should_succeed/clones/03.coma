@@ -1,49 +1,49 @@
-module M_03__prog
+module M_prog
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate resolve (_1: t_T)
+  predicate resolve_T (_1: t_T)
   
-  predicate omg (_x: t_T) = true
+  predicate omg_T (_x: t_T) = true
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec prog (x: t_T) (return (x'0: ())) = {[@expl:prog 'x' type invariant] inv x}
+  let rec prog_T (x: t_T) (return (x'0: ())) = {[@expl:prog 'x' type invariant] inv_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv x} s1 | s1 = -{resolve x}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T x} s1 | s1 = -{resolve_T x}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
     [ & _0: () = Any.any_l () | & x: t_T = x ])
-    [ return (result: ()) -> {[@expl:prog ensures] omg x} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:prog ensures] omg_T x} (! return {result}) ]
 end
-module M_03__prog2
+module M_prog2
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate omg (_x: Int32.t) = true
+  predicate omg_i32 (_x: Int32.t) = true
   
-  let rec prog (x: Int32.t) (return (x'0: ())) = any [ return (result: ()) -> {omg x} (! return {result}) ]
+  let rec prog_i32 (x: Int32.t) (return (x'0: ())) = any [ return (result: ()) -> {omg_i32 x} (! return {result}) ]
   
-  predicate omg'0 (_x: int) = true
+  predicate omg_Int (_x: int) = true
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec prog2 (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = prog {(0: Int32.t)} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = prog_i32 {(0: Int32.t)} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
     [ & _0: () = Any.any_l () | & _2: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:prog2 ensures] omg'0 0} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:prog2 ensures] omg_Int 0} (! return {result}) ]
 end
-module M_03__prog3
+module M_prog3
   use creusot.prelude.Any
   
-  type tuple = { f0: int; f1: int }
+  type tup2_Int_Int = { f0: int; f1: int }
   
-  predicate omg (_x: tuple) = true
+  predicate omg_tup2_Int_Int (_x: tup2_Int_Int) = true
   
   meta "compute_max_steps" 1000000
   
@@ -51,5 +51,5 @@ module M_03__prog3
   
   let rec prog3 (return (x: ())) = (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:prog3 ensures] omg { f0 = 0; f1 = 0 }} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:prog3 ensures] omg_tup2_Int_Int { f0 = 0; f1 = 0 }} (! return {result}) ]
 end

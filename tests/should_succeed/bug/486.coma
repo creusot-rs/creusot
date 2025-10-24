@@ -1,22 +1,22 @@
-module M_486__test
+module M_test
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_HasMutRef = { t_HasMutRef__0: MutBorrow.t UInt32.t }
+  type t_HasMutRef_u32 = { f0: MutBorrow.t UInt32.t }
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_u32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test (x: t_HasMutRef) (return (x'0: ())) = (! bb0
+  let rec test (x: t_HasMutRef_u32) (return (x'0: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &x <- { t_HasMutRef__0 = { x.t_HasMutRef__0 with current = (5: UInt32.t) } } ] s1
-      | s1 = -{resolve x.t_HasMutRef__0}- s2
-      | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: t_HasMutRef = x ])
-    [ return (result: ()) -> {[@expl:test ensures] UInt32.t'int x.t_HasMutRef__0.final = 5} (! return {result}) ]
+      [ s0 = [ &x <- { f0 = { x.f0 with current = (5: UInt32.t) } } ] s1
+      | s1 = -{resolve_ref_u32 x.f0}- s2
+      | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: t_HasMutRef_u32 = x ])
+    [ return (result: ()) -> {[@expl:test ensures] UInt32.t'int x.f0.final = 5} (! return {result}) ]
 end

@@ -1,53 +1,53 @@
-module M_12_default_method__T__default
+module M_trait_T__default
   use creusot.int.UInt32
   use creusot.prelude.Any
   
   type t_Self
   
-  predicate inv (_1: t_Self)
+  predicate inv_Self (_1: t_Self)
   
-  predicate invariant' [@inline:trivial] (self: t_Self) = inv self
+  predicate invariant_ref_Self [@inline:trivial] (self: t_Self) = inv_Self self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Self
   
-  predicate inv'0 [@inline:trivial] (_1: t_Self) = invariant' _1
+  predicate inv_ref_Self [@inline:trivial] (_1: t_Self) = invariant_ref_Self _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_Self
   
-  predicate precondition (self: ()) (args: t_Self)
+  predicate precondition_default (self: ()) (args: t_Self)
   
-  axiom precondition_fndef: forall args: t_Self [precondition () args]. (let self = args in inv'0 self)
-      -> precondition () args
+  axiom precondition_fndef: forall args: t_Self [precondition_default () args]. (let self = args in inv_ref_Self self)
+      -> precondition_default () args
   
-  predicate postcondition_once (self: ()) (args: t_Self) (result: UInt32.t)
+  predicate postcondition_once_default (self: ()) (args: t_Self) (result: UInt32.t)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: UInt32.t [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_Self, res: UInt32.t [postcondition_once_default () args res]. postcondition_once_default () args res
       -> (let self = args in true)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec default (self: t_Self) (return (x: UInt32.t)) = {[@expl:default 'self' type invariant] inv'0 self}
+  let rec default_Self (self: t_Self) (return (x: UInt32.t)) = {[@expl:default 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_0 <- (0: UInt32.t) ] s1 | s1 = return {_0} ] ] [ & _0: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
 end
-module M_12_default_method__should_use_impl
+module M_should_use_impl
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  let rec default (self: UInt32.t) (return (x: UInt32.t)) = any [ return (result: UInt32.t) -> (! return {result}) ]
+  let rec default_u32 (self: UInt32.t) (return (x: UInt32.t)) = any [ return (result: UInt32.t) -> (! return {result}) ]
   
-  predicate logic_default (self: UInt32.t) = true
+  predicate logic_default_u32 (self: UInt32.t) = true
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec should_use_impl (x: UInt32.t) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = default {x} (fun (_ret: UInt32.t) -> [ &_3 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = default_u32 {x} (fun (_ret: UInt32.t) -> [ &_3 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
     [ & _0: () = Any.any_l () | & x: UInt32.t = x | & _3: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:should_use_impl ensures] logic_default x} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
 end

@@ -1,85 +1,90 @@
-module M_excl__exclusivity
+module M_exclusivity
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use map.Map
   use creusot.prelude.Any
   
-  type t_Resource
+  type t_Resource_Excl_i32
   
   type t_Id
   
-  function id (self: t_Resource) : t_Id
+  function id_Excl_i32 (self: t_Resource_Excl_i32) : t_Id
   
-  let rec id_ghost (self: t_Resource) (return (x: t_Id)) = any
-    [ return (result: t_Id) -> {result = id self} (! return {result}) ]
+  let rec id_ghost_Excl_i32 (self: t_Resource_Excl_i32) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {result = id_Excl_i32 self} (! return {result}) ]
   
-  let rec eq (self: t_Id) (other: t_Id) (return (x: bool)) = any
+  let rec eq_Id (self: t_Id) (other: t_Id) (return (x: bool)) = any
     [ return (result: bool) -> {result = (self = other)} (! return {result}) ]
   
-  type t_Excl = { t_Excl__0: Int32.t }
+  type t_Excl_i32 = { f0: Int32.t }
   
-  type t_Option = C_None | C_Some t_Excl
+  type t_Option_Excl_i32 = None | Some t_Excl_i32
   
-  function and_then_logic (self: t_Option) (f: Map.map t_Excl t_Option) : t_Option = match self with
-      | C_None -> C_None
-      | C_Some x -> Map.get f x
+  function and_then_Option_Excl_i32 (self: t_Option_Excl_i32) (f: Map.map t_Excl_i32 t_Option_Excl_i32) : t_Option_Excl_i32
+   = match self with
+      | None -> None
+      | Some x -> Map.get f x
       end
   
-  function op (self: t_Excl) (_other: t_Excl) : t_Option = C_None
+  function op_Excl_i32 (self: t_Excl_i32) (_other: t_Excl_i32) : t_Option_Excl_i32 = None
   
-  function associative (a: t_Excl) (b: t_Excl) (c: t_Excl) : ()
+  function associative_Excl_i32 (a: t_Excl_i32) (b: t_Excl_i32) (c: t_Excl_i32) : ()
   
-  axiom associative_spec: forall a: t_Excl, b: t_Excl, c: t_Excl. and_then_logic (op a b) (fun (ab: t_Excl) -> op ab c)
-      = and_then_logic (op b c) (fun (bc: t_Excl) -> op a bc)
+  axiom associative_Excl_i32_spec:
+    forall a: t_Excl_i32, b: t_Excl_i32, c: t_Excl_i32. and_then_Option_Excl_i32 (op_Excl_i32 a b) (fun (ab: t_Excl_i32) -> op_Excl_i32 ab c)
+      = and_then_Option_Excl_i32 (op_Excl_i32 b c) (fun (bc: t_Excl_i32) -> op_Excl_i32 a bc)
   
-  function commutative (a: t_Excl) (b: t_Excl) : ()
+  function commutative_Excl_i32 (a: t_Excl_i32) (b: t_Excl_i32) : ()
   
-  axiom commutative_spec: forall a: t_Excl, b: t_Excl. op a b = op b a
+  axiom commutative_Excl_i32_spec: forall a: t_Excl_i32, b: t_Excl_i32. op_Excl_i32 a b = op_Excl_i32 b a
   
-  function val' (self: t_Resource) : t_Excl
+  function val_Excl_i32 (self: t_Resource_Excl_i32) : t_Excl_i32
   
-  function view [@inline:trivial] (self: t_Resource) : t_Excl = val' self
+  function view_Resource_Excl_i32 [@inline:trivial] (self: t_Resource_Excl_i32) : t_Excl_i32 = val_Excl_i32 self
   
-  meta "rewrite_def" function view
+  meta "rewrite_def" function view_Resource_Excl_i32
   
-  let rec valid_shared (self: MutBorrow.t t_Resource) (other: t_Resource) (return (x: ())) =
-    {[@expl:valid_shared requires] id self.current = id other}
+  let rec valid_shared_Excl_i32 (self: MutBorrow.t t_Resource_Excl_i32) (other: t_Resource_Excl_i32) (return (x: ())) =
+    {[@expl:valid_shared requires] id_Excl_i32 self.current = id_Excl_i32 other}
     any
     [ return (result: ()) -> {self.final = self.current}
-      {op (view self.current) (view other) <> C_None}
+      {op_Excl_i32 (view_Resource_Excl_i32 self.current) (view_Resource_Excl_i32 other) <> None}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Resource) = _1.final = _1.current
+  predicate resolve_ref_Resource_Excl_i32 [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_i32) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Resource_Excl_i32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec exclusivity (x: MutBorrow.t t_Resource) (y: t_Resource) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = id_ghost {x.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = id_ghost {y} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = eq {_7} {_10} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
+  let rec exclusivity (x: MutBorrow.t t_Resource_Excl_i32) (y: t_Resource_Excl_i32) (return (x'0: ())) = (! bb0
+    [ bb0 = s0 [ s0 = id_ghost_Excl_i32 {x.current} (fun (_ret: t_Id) -> [ &_7 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = id_ghost_Excl_i32 {y} (fun (_ret: t_Id) -> [ &_10 <- _ret ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = eq_Id {_7} {_10} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
     | bb3 = any [ br0 -> {_5 = false} (! bb8) | br1 -> {_5} (! bb4) ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_final <t_Resource> {x.current} {MutBorrow.get_id x}
-          (fun (_ret: MutBorrow.t t_Resource) -> [ &_13 <- _ret ] [ &x <- { x with current = _ret.final } ] s1)
-      | s1 = valid_shared {_13} {y} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_final <t_Resource_Excl_i32> {x.current} {MutBorrow.get_id x}
+          (fun (_ret: MutBorrow.t t_Resource_Excl_i32) -> [ &_13 <- _ret ] [ &x <- { x with current = _ret.final } ] s1)
+      | s1 = valid_shared_Excl_i32 {_13} {y} (fun (_ret: ()) -> [ &_12 <- _ret ] s2)
       | s2 = bb5 ]
-    | bb5 = s0 [ s0 = -{resolve x}- s1 | s1 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
+    | bb5 = s0
+      [ s0 = -{resolve_ref_Resource_Excl_i32 x}- s1
+      | s1 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
     | bb6 = {false} any
-    | bb8 = s0 [ s0 = -{resolve x}- s1 | s1 = bb9 ]
+    | bb8 = s0 [ s0 = -{resolve_ref_Resource_Excl_i32 x}- s1 | s1 = bb9 ]
     | bb9 = return {_0} ]
     [ & _0: () = Any.any_l ()
-    | & x: MutBorrow.t t_Resource = x
-    | & y: t_Resource = y
+    | & x: MutBorrow.t t_Resource_Excl_i32 = x
+    | & y: t_Resource_Excl_i32 = y
     | & _5: bool = Any.any_l ()
     | & _7: t_Id = Any.any_l ()
     | & _10: t_Id = Any.any_l ()
     | & _12: () = Any.any_l ()
-    | & _13: MutBorrow.t t_Resource = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:exclusivity ensures #0] id x.current <> id y}
+    | & _13: MutBorrow.t t_Resource_Excl_i32 = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:exclusivity ensures #0] id_Excl_i32 x.current <> id_Excl_i32 y}
       {[@expl:exclusivity ensures #1] x.current = x.final}
       (! return {result}) ]
 end

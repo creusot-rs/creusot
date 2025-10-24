@@ -1,98 +1,106 @@
-module M_sum__sum_first_n
+module M_sum_first_n
   use creusot.int.UInt32
   use mach.int.Int
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_RangeInclusive
+  type t_RangeInclusive_u32
   
-  predicate inv (_1: t_RangeInclusive)
+  predicate inv_RangeInclusive_u32 (_1: t_RangeInclusive_u32)
   
-  function start_log (self: t_RangeInclusive) : UInt32.t
+  function start_log_RangeInclusive_u32 (self: t_RangeInclusive_u32) : UInt32.t
   
-  function end_log (self: t_RangeInclusive) : UInt32.t
+  function end_log_RangeInclusive_u32 (self: t_RangeInclusive_u32) : UInt32.t
   
-  function deep_model [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
   
-  meta "rewrite_def" function deep_model
+  meta "rewrite_def" function deep_model_u32
   
-  predicate is_empty_log (self: t_RangeInclusive)
+  predicate is_empty_log_RangeInclusive_u32 (self: t_RangeInclusive_u32)
   
-  axiom is_empty_log_spec: forall self: t_RangeInclusive. not is_empty_log self
-      -> deep_model (start_log self) <= deep_model (end_log self)
+  axiom is_empty_log_RangeInclusive_u32_spec:
+    forall self: t_RangeInclusive_u32. not is_empty_log_RangeInclusive_u32 self
+      -> deep_model_u32 (start_log_RangeInclusive_u32 self) <= deep_model_u32 (end_log_RangeInclusive_u32 self)
   
-  let rec new (start: UInt32.t) (end': UInt32.t) (return (x: t_RangeInclusive)) = any
-    [ return (result: t_RangeInclusive) -> {inv result}
-      {start_log result = start}
-      {end_log result = end'}
-      {deep_model start <= deep_model end' -> not is_empty_log result}
+  let rec new_u32 (start: UInt32.t) (end': UInt32.t) (return (x: t_RangeInclusive_u32)) = any
+    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result}
+      {start_log_RangeInclusive_u32 result = start}
+      {end_log_RangeInclusive_u32 result = end'}
+      {deep_model_u32 start <= deep_model_u32 end' -> not is_empty_log_RangeInclusive_u32 result}
       (! return {result}) ]
   
-  let rec into_iter (self_: t_RangeInclusive) (return (x: t_RangeInclusive)) =
-    {[@expl:into_iter 'self_' type invariant] inv self_}
-    any [ return (result: t_RangeInclusive) -> {inv result} {result = self_} (! return {result}) ]
+  let rec into_iter_RangeInclusive_u32 (self_: t_RangeInclusive_u32) (return (x: t_RangeInclusive_u32)) =
+    {[@expl:into_iter 'self_' type invariant] inv_RangeInclusive_u32 self_}
+    any
+    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result} {result = self_} (! return {result}) ]
   
-  function range_inclusive_len (r: t_RangeInclusive) : int = if is_empty_log r then
+  function range_inclusive_len_u32 (r: t_RangeInclusive_u32) : int = if is_empty_log_RangeInclusive_u32 r then
       0
     else
-      deep_model (end_log r) - deep_model (start_log r) + 1
+      deep_model_u32 (end_log_RangeInclusive_u32 r) - deep_model_u32 (start_log_RangeInclusive_u32 r) + 1
   
   
-  axiom range_inclusive_len_spec: forall r: t_RangeInclusive. is_empty_log r = (range_inclusive_len r = 0)
+  axiom range_inclusive_len_u32_spec: forall r: t_RangeInclusive_u32. is_empty_log_RangeInclusive_u32 r
+      = (range_inclusive_len_u32 r = 0)
   
-  predicate produces (self: t_RangeInclusive) (visited: Seq.seq UInt32.t) (o: t_RangeInclusive) =
-    Seq.length visited = range_inclusive_len self - range_inclusive_len o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ end_log self = end_log o)
+  predicate produces_RangeInclusive_u32 (self: t_RangeInclusive_u32) (visited: Seq.seq UInt32.t) (o: t_RangeInclusive_u32) =
+    Seq.length visited = range_inclusive_len_u32 self - range_inclusive_len_u32 o
+    /\ (is_empty_log_RangeInclusive_u32 self -> is_empty_log_RangeInclusive_u32 o)
+    /\ (is_empty_log_RangeInclusive_u32 o \/ end_log_RangeInclusive_u32 self = end_log_RangeInclusive_u32 o)
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model (Seq.get visited i) = deep_model (start_log self) + i)
+      -> deep_model_u32 (Seq.get visited i) = deep_model_u32 (start_log_RangeInclusive_u32 self) + i)
   
-  function produces_trans (a: t_RangeInclusive) (ab: Seq.seq UInt32.t) (b: t_RangeInclusive) (bc: Seq.seq UInt32.t) (c: t_RangeInclusive) : ()
+  function produces_trans_RangeInclusive_u32 (a: t_RangeInclusive_u32) (ab: Seq.seq UInt32.t) (b: t_RangeInclusive_u32) (bc: Seq.seq UInt32.t) (c: t_RangeInclusive_u32) : ()
    = ()
   
-  axiom produces_trans_spec:
-    forall a: t_RangeInclusive, ab: Seq.seq UInt32.t, b: t_RangeInclusive, bc: Seq.seq UInt32.t, c: t_RangeInclusive. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_RangeInclusive_u32_spec:
+    forall a: t_RangeInclusive_u32, ab: Seq.seq UInt32.t, b: t_RangeInclusive_u32, bc: Seq.seq UInt32.t, c: t_RangeInclusive_u32. produces_RangeInclusive_u32 a ab b
+      -> produces_RangeInclusive_u32 b bc c -> produces_RangeInclusive_u32 a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_RangeInclusive) : () = ()
+  function produces_refl_RangeInclusive_u32 (self: t_RangeInclusive_u32) : () = ()
   
-  axiom produces_refl_spec: forall self: t_RangeInclusive. produces self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_RangeInclusive_u32_spec:
+    forall self: t_RangeInclusive_u32. produces_RangeInclusive_u32 self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
+  predicate inv_Seq_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Seq_u32
   
-  type t_Option = C_None | C_Some UInt32.t
+  type t_Option_u32 = None | Some UInt32.t
   
-  predicate invariant' [@inline:trivial] (self: MutBorrow.t t_RangeInclusive) = inv self.current /\ inv self.final
+  predicate invariant_ref_RangeInclusive_u32 [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_u32) =
+    inv_RangeInclusive_u32 self.current /\ inv_RangeInclusive_u32 self.final
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_RangeInclusive_u32
   
-  predicate inv'1 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive) = invariant' _1
+  predicate inv_ref_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
+    invariant_ref_RangeInclusive_u32 _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_RangeInclusive_u32
   
-  predicate completed (self: MutBorrow.t t_RangeInclusive) = is_empty_log self.current /\ is_empty_log self.final
+  predicate completed_RangeInclusive_u32 (self: MutBorrow.t t_RangeInclusive_u32) =
+    is_empty_log_RangeInclusive_u32 self.current /\ is_empty_log_RangeInclusive_u32 self.final
   
-  let rec next (self_: MutBorrow.t t_RangeInclusive) (return (x: t_Option)) =
-    {[@expl:next 'self_' type invariant] inv'1 self_}
+  let rec next_RangeInclusive_u32 (self_: MutBorrow.t t_RangeInclusive_u32) (return (x: t_Option_u32)) =
+    {[@expl:next 'self_' type invariant] inv_ref_RangeInclusive_u32 self_}
     any
-    [ return (result: t_Option) -> {match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+    [ return (result: t_Option_u32) -> {match result with
+        | None -> completed_RangeInclusive_u32 self_
+        | Some v -> produces_RangeInclusive_u32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive) = _1.final = _1.current
+  predicate resolve_ref_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_RangeInclusive_u32
   
-  let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
-    [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_u32) (ret (f0: UInt32.t)) = any
+    [ good (f0: UInt32.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: UInt32.t [Some f0: t_Option_u32]. Some f0 <> input} (! {false} any) ]
   
-  predicate resolve'0 (_1: t_RangeInclusive)
+  predicate resolve_RangeInclusive_u32 (_1: t_RangeInclusive_u32)
   
   meta "compute_max_steps" 1000000
   
@@ -102,37 +110,38 @@ module M_sum__sum_first_n
     (! bb0
     [ bb0 = s0
       [ s0 = [ &sum <- (0: UInt32.t) ] s1
-      | s1 = new {(1: UInt32.t)} {n} (fun (_ret: t_RangeInclusive) -> [ &_7 <- _ret ] s2)
+      | s1 = new_u32 {(1: UInt32.t)} {n} (fun (_ret: t_RangeInclusive_u32) -> [ &_7 <- _ret ] s2)
       | s2 = bb1 ]
-    | bb1 = s0 [ s0 = into_iter {_7} (fun (_ret: t_RangeInclusive) -> [ &iter <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0
+      [ s0 = into_iter_RangeInclusive_u32 {_7} (fun (_ret: t_RangeInclusive_u32) -> [ &iter <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt32.t ] s1 | s1 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:for invariant] inv'0 produced}
-        {[@expl:for invariant] inv iter}
-        {[@expl:for invariant] produces iter_old produced iter}
+      [ bb5 = {[@expl:for invariant] inv_Seq_u32 produced}
+        {[@expl:for invariant] inv_RangeInclusive_u32 iter}
+        {[@expl:for invariant] produces_RangeInclusive_u32 iter_old produced iter}
         {[@expl:loop invariant] UInt32.t'int sum * 2 = Seq.length produced * (Seq.length produced + 1)}
         (! s0)
         [ s0 = bb6 ]
         [ bb6 = s0
-          [ s0 = {inv iter}
-            MutBorrow.borrow_mut <t_RangeInclusive> {iter}
-              (fun (_ret: MutBorrow.t t_RangeInclusive) ->
-                [ &_21 <- _ret ] -{inv _ret.final}-
+          [ s0 = {inv_RangeInclusive_u32 iter}
+            MutBorrow.borrow_mut <t_RangeInclusive_u32> {iter}
+              (fun (_ret: MutBorrow.t t_RangeInclusive_u32) ->
+                [ &_21 <- _ret ] -{inv_RangeInclusive_u32 _ret.final}-
                 [ &iter <- _ret.final ] s1)
-          | s1 = {inv _21.current}
-            MutBorrow.borrow_final <t_RangeInclusive> {_21.current} {MutBorrow.get_id _21}
-              (fun (_ret: MutBorrow.t t_RangeInclusive) ->
-                [ &_20 <- _ret ] -{inv _ret.final}-
+          | s1 = {inv_RangeInclusive_u32 _21.current}
+            MutBorrow.borrow_final <t_RangeInclusive_u32> {_21.current} {MutBorrow.get_id _21}
+              (fun (_ret: MutBorrow.t t_RangeInclusive_u32) ->
+                [ &_20 <- _ret ] -{inv_RangeInclusive_u32 _ret.final}-
                 [ &_21 <- { _21 with current = _ret.final } ] s2)
-          | s2 = next {_20} (fun (_ret: t_Option) -> [ &_19 <- _ret ] s3)
+          | s2 = next_RangeInclusive_u32 {_20} (fun (_ret: t_Option_u32) -> [ &_19 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = {[@expl:type invariant] inv'1 _21} s1
-          | s1 = -{resolve _21}- s2
-          | s2 = any [ br0 -> {_19 = C_None} (! bb10) | br1 (x0: UInt32.t) -> {_19 = C_Some x0} (! bb11) ] ]
+          [ s0 = {[@expl:type invariant] inv_ref_RangeInclusive_u32 _21} s1
+          | s1 = -{resolve_ref_RangeInclusive_u32 _21}- s2
+          | s2 = any [ br0 -> {_19 = None} (! bb10) | br1 (x0: UInt32.t) -> {_19 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = v_Some {_19} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_19} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_24 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
@@ -141,20 +150,20 @@ module M_sum__sum_first_n
           | s2 = UInt32.add {sum} {i} (fun (_ret: UInt32.t) -> [ &sum <- _ret ] s3)
           | s3 = bb5 ] ] ]
     | bb10 = s0
-      [ s0 = {[@expl:type invariant] inv iter} s1
-      | s1 = -{resolve'0 iter}- s2
+      [ s0 = {[@expl:type invariant] inv_RangeInclusive_u32 iter} s1
+      | s1 = -{resolve_RangeInclusive_u32 iter}- s2
       | s2 = [ &_0 <- sum ] s3
       | s3 = return {_0} ] ]
     [ & _0: UInt32.t = Any.any_l ()
     | & n: UInt32.t = n
     | & sum: UInt32.t = Any.any_l ()
-    | & iter: t_RangeInclusive = Any.any_l ()
-    | & _7: t_RangeInclusive = Any.any_l ()
-    | & iter_old: t_RangeInclusive = Any.any_l ()
+    | & iter: t_RangeInclusive_u32 = Any.any_l ()
+    | & _7: t_RangeInclusive_u32 = Any.any_l ()
+    | & iter_old: t_RangeInclusive_u32 = Any.any_l ()
     | & produced: Seq.seq UInt32.t = Any.any_l ()
-    | & _19: t_Option = Any.any_l ()
-    | & _20: MutBorrow.t t_RangeInclusive = Any.any_l ()
-    | & _21: MutBorrow.t t_RangeInclusive = Any.any_l ()
+    | & _19: t_Option_u32 = Any.any_l ()
+    | & _20: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
+    | & _21: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt32.t = Any.any_l ()
     | & _24: Seq.seq UInt32.t = Any.any_l ()
     | & i: UInt32.t = Any.any_l () ])

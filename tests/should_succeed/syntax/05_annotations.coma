@@ -1,19 +1,22 @@
-module M_05_annotations__assertion
+module M_assertion
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate resolve (_1: t_T)
+  predicate resolve_T (_1: t_T)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec assertion (x: t_T) (return (x'0: ())) = {[@expl:assertion 'x' type invariant] inv x}
+  let rec assertion_T (x: t_T) (return (x'0: ())) = {[@expl:assertion 'x' type invariant] inv_T x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv x} s1 | s1 = -{resolve x}- s2 | s2 = {[@expl:assertion] x = x} s3 | s3 = bb1 ]
+      [ s0 = {[@expl:type invariant] inv_T x} s1
+      | s1 = -{resolve_T x}- s2
+      | s2 = {[@expl:assertion] x = x} s3
+      | s3 = bb1 ]
     | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & x: t_T = x ]) [ return (result: ()) -> (! return {result}) ]
 end

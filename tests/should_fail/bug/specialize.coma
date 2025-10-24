@@ -1,142 +1,147 @@
-module M_specialize__f
+module M_f
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_u32_Global
   
-  let rec x (self: t_Vec) (return (x'0: ())) = any [ return (result: ()) -> {true} (! return {result}) ]
+  let rec x_Vec_u32_Global (self: t_Vec_u32_Global) (return (x: ())) = any
+    [ return (result: ()) -> {true} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f (v: t_Vec) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = x {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+  let rec f (v: t_Vec_u32_Global) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = x_Vec_u32_Global {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec = v | & _2: () = Any.any_l () ])
+    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec_u32_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_specialize__g
+module M_g
   use seq.Seq
   use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_T_Global
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' (self: t_T) = inv self
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_T_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_T
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_T
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_T
+  function view_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_T
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_T_Global_spec: forall self: t_Vec_T_Global. Seq.length (view_Vec_T_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
+  predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
   
-  predicate inv'2 (_1: t_Vec)
+  predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
   
-  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
+  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
   
-  predicate precondition (self: ()) (args: t_Vec)
+  predicate precondition_x (self: ()) (args: t_Vec_T_Global)
   
-  axiom precondition_fndef: forall args: t_Vec [precondition () args]. (let self = args in inv'2 self)
-      -> precondition () args
+  axiom precondition_fndef:
+    forall args: t_Vec_T_Global [precondition_x () args]. (let self = args in inv_Vec_T_Global self)
+      -> precondition_x () args
   
-  predicate postcondition_once (self: ()) (args: t_Vec) (result: ())
+  predicate postcondition_once_x (self: ()) (args: t_Vec_T_Global) (result: ())
   
   axiom postcondition_fndef:
-    forall args: t_Vec, res: () [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_Vec_T_Global, res: () [postcondition_once_x () args res]. postcondition_once_x () args res
       -> (let self = args in true)
   
-  let rec x (self: t_Vec) (return (x'0: ())) = {[@expl:x requires] precondition () self}
-    any [ return (result: ()) -> {postcondition_once () self result} (! return {result}) ]
+  let rec x_Vec_T_Global (self: t_Vec_T_Global) (return (x: ())) = {[@expl:x requires] precondition_x () self}
+    any [ return (result: ()) -> {postcondition_once_x () self result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec g (v: t_Vec) (return (x'0: ())) = {[@expl:g 'v' type invariant] inv'2 v}
+  let rec g_T (v: t_Vec_T_Global) (return (x: ())) = {[@expl:g 'v' type invariant] inv_Vec_T_Global v}
     (! bb0
-    [ bb0 = s0 [ s0 = x {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = x_Vec_T_Global {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec = v | & _2: () = Any.any_l () ])
+    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec_T_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_specialize__h
+module M_h
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_i32_Global
   
-  let rec x (self: t_Vec) (return (x'0: ())) = any [ return (result: ()) -> {false} (! return {result}) ]
+  let rec x_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: ())) = any
+    [ return (result: ()) -> {false} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec h (v: t_Vec) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = x {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
+  let rec h (v: t_Vec_i32_Global) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = x_Vec_i32_Global {v} (fun (_ret: ()) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec = v | & _2: () = Any.any_l () ])
+    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & v: t_Vec_i32_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_specialize__qyi7590077194068412461__x__refines (* <std::vec::Vec<U> as T> *)
+module M_impl_T_for_Vec_U_Global__x__refines (* <std::vec::Vec<U> as T> *)
   use seq.Seq
   use mach.int.Int
   use creusot.int.UInt64
   
-  type t_Vec
+  type t_Vec_U_Global
   
   type t_U
   
-  predicate inv (_1: t_U)
+  predicate inv_U (_1: t_U)
   
-  predicate invariant' (self: t_U) = inv self
+  predicate invariant_Box_U_Global (self: t_U) = inv_U self
   
-  predicate inv'0 [@inline:trivial] (_1: t_U) = invariant' _1
+  predicate inv_Box_U_Global [@inline:trivial] (_1: t_U) = invariant_Box_U_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_U_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_U) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_U [@inline:trivial] (self: Seq.seq t_U) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_U_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_U
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_U) = invariant''0 _1
+  predicate inv_Seq_U [@inline:trivial] (_1: Seq.seq t_U) = invariant_Seq_U _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_U
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_U
+  function view_Vec_U_Global (self: t_Vec_U_Global) : Seq.seq t_U
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_U_Global_spec: forall self: t_Vec_U_Global. Seq.length (view_Vec_U_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''1 (self: t_Vec) = inv'1 (view self)
+  predicate invariant_Vec_U_Global (self: t_Vec_U_Global) = inv_Seq_U (view_Vec_U_Global self)
   
-  predicate inv'2 (_1: t_Vec)
+  predicate inv_Vec_U_Global (_1: t_Vec_U_Global)
   
-  axiom inv_axiom: forall x: t_Vec [inv'2 x]. inv'2 x -> invariant''1 x
+  axiom inv_axiom: forall x: t_Vec_U_Global [inv_Vec_U_Global x]. inv_Vec_U_Global x -> invariant_Vec_U_Global x
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Vec. inv'2 self -> inv'2 self
+  goal refines: forall self: t_Vec_U_Global. inv_Vec_U_Global self -> inv_Vec_U_Global self
 end

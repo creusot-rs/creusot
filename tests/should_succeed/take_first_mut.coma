@@ -1,4 +1,4 @@
-module M_take_first_mut__take_first_mut
+module M_take_first_mut
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
@@ -7,251 +7,265 @@ module M_take_first_mut__take_first_mut
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' (self: t_T) = inv self
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Box_T_Global
   
-  predicate invariant''0 [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'0 (Seq.get self i)
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_Seq_T
   
-  predicate inv'1 [@inline:trivial] (_1: Seq.seq t_T) = invariant''0 _1
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Seq_T
   
-  predicate invariant''1 (self: Slice64.slice t_T) = inv'1 (Slice64.view self)
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
   
-  predicate inv'2 [@inline:trivial] (_1: Slice64.slice t_T) = invariant''1 _1
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant''2 [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
-    inv'2 self.current /\ inv'2 self.final
+  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant''2
+  meta "rewrite_def" predicate invariant_ref_slice_T
   
-  predicate inv'3 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant''2 _1
+  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv'3
+  meta "rewrite_def" predicate inv_ref_slice_T
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
-    inv'3 self.current /\ inv'3 self.final
+  predicate invariant_ref_ref_slice_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
+    inv_ref_slice_T self.current /\ inv_ref_slice_T self.final
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant_ref_ref_slice_T
   
-  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) = invariant''3 _1
+  predicate inv_ref_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
+    invariant_ref_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_ref_slice_T
   
-  predicate postcondition_once [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
-    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv_ref_slice_T result
   
-  meta "rewrite_def" predicate postcondition_once
+  meta "rewrite_def" predicate postcondition_once_default
   
-  predicate resolve [@inline:trivial] (_1: ()) = true
+  predicate resolve_default [@inline:trivial] (_1: ()) = true
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_default
   
-  predicate postcondition_mut [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
-    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv_ref_slice_T result
   
-  meta "rewrite_def" predicate postcondition_mut
+  meta "rewrite_def" predicate postcondition_mut_default
   
-  function fn_mut_once (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
+  function fn_mut_once_default (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
-  axiom fn_mut_once_spec:
-    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once self args res
-      = (exists res_state: (). postcondition_mut self args res_state res /\ resolve res_state)
+  axiom fn_mut_once_default_spec:
+    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once_default self args res
+      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
   
-  predicate hist_inv [@inline:trivial] (self: ()) (result_state: ()) = true
+  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
   
-  meta "rewrite_def" predicate hist_inv
+  meta "rewrite_def" predicate hist_inv_default
   
-  function hist_inv_trans (self: ()) (b: ()) (c: ()) : ()
+  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_spec: forall self: (), b: (), c: (). hist_inv self b -> hist_inv b c -> hist_inv self c
+  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+      -> hist_inv_default b c -> hist_inv_default self c
   
-  function hist_inv_refl (self: ()) : ()
+  function hist_inv_refl_default (self: ()) : ()
   
-  axiom hist_inv_refl_spec: forall self: (). hist_inv self self
+  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
   
-  function postcondition_mut_hist_inv (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
+  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
-  axiom postcondition_mut_hist_inv_spec:
-    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut self args res_state res
-      -> hist_inv self res_state
+  axiom postcondition_mut_hist_inv_default_spec:
+    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut_default self args res_state res
+      -> hist_inv_default self res_state
   
-  function fn_hist_inv (self: ()) (res_state: ()) : ()
+  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_spec: forall self: (), res_state: (). hist_inv self res_state = (self = res_state)
+  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
   
-  predicate postcondition [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in Slice64.view result.final = (Seq.empty: Seq.seq t_T)
-    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv'3 result
+    /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ inv_ref_slice_T result
   
-  meta "rewrite_def" predicate postcondition
+  meta "rewrite_def" predicate postcondition_default
   
-  function fn_once (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
+  function fn_once_default (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
-  axiom fn_once_spec: forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once self args res
-      = (postcondition self args res /\ resolve self)
+  axiom fn_once_default_spec:
+    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once_default self args res
+      = (postcondition_default self args res /\ resolve_default self)
   
-  function fn_mut (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
+  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
-  axiom fn_mut_spec:
-    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut self args res_state res
-      = (postcondition self args res /\ self = res_state)
+  axiom fn_mut_default_spec:
+    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut_default self args res_state res
+      = (postcondition_default self args res /\ self = res_state)
   
-  let rec default (return (x: MutBorrow.t (Slice64.slice t_T))) = any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'3 result}
+  let rec default_ref_slice_T (return (x: MutBorrow.t (Slice64.slice t_T))) = any
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_ref_slice_T result}
       {Slice64.view result.current = (Seq.empty: Seq.seq t_T)}
       {Slice64.view result.final = (Seq.empty: Seq.seq t_T)}
       (! return {result}) ]
   
-  let rec take (dest: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:take 'dest' type invariant] inv'4 dest}
+  let rec take_ref_slice_T (dest: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
+    (return (x: MutBorrow.t (Slice64.slice t_T))) = {[@expl:take 'dest' type invariant] inv_ref_ref_slice_T dest}
     any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv'3 result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_ref_slice_T result}
       {result = dest.current}
-      {postcondition () () dest.final}
+      {postcondition_default () () dest.final}
       (! return {result}) ]
   
-  type tuple = { f0: MutBorrow.t t_T; f1: MutBorrow.t (Slice64.slice t_T) }
+  type tup2_ref_T_ref_slice_T = { f0: MutBorrow.t t_T; f1: MutBorrow.t (Slice64.slice t_T) }
   
-  type t_Option = C_None | C_Some tuple
+  type t_Option_tup2_ref_T_ref_slice_T = None | Some tup2_ref_T_ref_slice_T
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_T) = inv self.current /\ inv self.final
+  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant''4
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'5 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant''4 _1
+  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'5
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate inv'6 [@inline:trivial] (_1: tuple) = inv'5 _1.f0 /\ inv'3 _1.f1
+  predicate inv_tup2_ref_T_ref_slice_T [@inline:trivial] (_1: tup2_ref_T_ref_slice_T) =
+    inv_ref_T _1.f0 /\ inv_ref_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv'6
+  meta "rewrite_def" predicate inv_tup2_ref_T_ref_slice_T
   
-  predicate inv'7 (_1: t_Option)
+  predicate inv_Option_tup2_ref_T_ref_slice_T (_1: t_Option_tup2_ref_T_ref_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option [inv'7 x]. inv'7 x
+  axiom inv_axiom [@rewrite]:
+    forall x: t_Option_tup2_ref_T_ref_slice_T [inv_Option_tup2_ref_T_ref_slice_T x]. inv_Option_tup2_ref_T_ref_slice_T x
       = match x with
-        | C_None -> true
-        | C_Some a_0 -> inv'6 a_0
+        | None -> true
+        | Some f0'0 -> inv_tup2_ref_T_ref_slice_T f0'0
         end
   
-  function index_logic [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_slice_T
   
-  function tail (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  let rec split_first_mut (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Option)) =
-    {[@expl:split_first_mut 'self_' type invariant] inv'3 self_}
+  let rec split_first_mut_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Option_tup2_ref_T_ref_slice_T)) =
+    {[@expl:split_first_mut 'self_' type invariant] inv_ref_slice_T self_}
     any
-    [ return (result: t_Option) -> {inv'7 result}
+    [ return (result: t_Option_tup2_ref_T_ref_slice_T) -> {inv_Option_tup2_ref_T_ref_slice_T result}
       {match result with
-        | C_Some {f0 = first; f1 = tail'0} -> first.current = index_logic self_.current 0
-        /\ first.final = index_logic self_.final 0
+        | Some {f0 = first; f1 = tail} -> first.current = index_slice_T self_.current 0
+        /\ first.final = index_slice_T self_.final 0
         /\ Seq.length (Slice64.view self_.current) > 0
         /\ Seq.length (Slice64.view self_.final) > 0
-        /\ Slice64.view tail'0.current = tail (Slice64.view self_.current)
-        /\ Slice64.view tail'0.final = tail (Slice64.view self_.final)
-        | C_None -> Seq.length (Slice64.view self_.current) = 0
+        /\ Slice64.view tail.current = tail_T (Slice64.view self_.current)
+        /\ Slice64.view tail.final = tail_T (Slice64.view self_.final)
+        | None -> Seq.length (Slice64.view self_.current) = 0
         /\ self_.final = self_.current /\ Slice64.view self_.current = (Seq.empty: Seq.seq t_T)
         end}
       (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: tuple)) = any
-    [ good (field_0: tuple) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: tuple [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_tup2_ref_T_ref_slice_T) (ret (f0'0: tup2_ref_T_ref_slice_T)) = any
+    [ good (f0'0: tup2_ref_T_ref_slice_T) -> {Some f0'0 = input} (! ret {f0'0})
+    | bad -> {forall f0'0: tup2_ref_T_ref_slice_T [Some f0'0: t_Option_tup2_ref_T_ref_slice_T]. Some f0'0 <> input}
+      (! {false}
+      any) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_slice_T
   
-  predicate resolve'1 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) = _1.final = _1.current
+  predicate resolve_ref_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'1
+  meta "rewrite_def" predicate resolve_ref_ref_slice_T
   
-  type t_Option'0 = C_None'0 | C_Some'0 (MutBorrow.t t_T)
+  type t_Option_ref_T = None'0 | Some'0 (MutBorrow.t t_T)
   
-  predicate resolve'2 [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'2
+  meta "rewrite_def" predicate resolve_ref_T
   
-  predicate inv'8 (_1: t_Option'0)
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option'0 [inv'8 x]. inv'8 x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
       = match x with
-        | C_None'0 -> true
-        | C_Some'0 a_0 -> inv'5 a_0
+        | None'0 -> true
+        | Some'0 f0'0 -> inv_ref_T f0'0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take_first_mut (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option'0)) =
-    {[@expl:take_first_mut 'self_' type invariant] inv'4 self_}
+  let rec take_first_mut_T (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option_ref_T)) =
+    {[@expl:take_first_mut 'self_' type invariant] inv_ref_ref_slice_T self_}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv'3 self_.current}
+      [ s0 = {inv_ref_slice_T self_.current}
         MutBorrow.borrow_mut <MutBorrow.t (Slice64.slice t_T)> {self_.current}
           (fun (_ret: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) ->
-            [ &_6 <- _ret ] -{inv'3 _ret.final}-
+            [ &_6 <- _ret ] -{inv_ref_slice_T _ret.final}-
             [ &self_ <- { self_ with current = _ret.final } ] s1)
-      | s1 = take {_6} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_5 <- _ret ] s2)
+      | s1 = take_ref_slice_T {_6} (fun (_ret: MutBorrow.t (Slice64.slice t_T)) -> [ &_5 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'2 _5.current}
+      [ s0 = {inv_slice_T _5.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_5.current} {MutBorrow.get_id _5}
           (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_4 <- _ret ] -{inv'2 _ret.final}-
+            [ &_4 <- _ret ] -{inv_slice_T _ret.final}-
             [ &_5 <- { _5 with current = _ret.final } ] s1)
-      | s1 = split_first_mut {_4} (fun (_ret: t_Option) -> [ &_3 <- _ret ] s2)
+      | s1 = split_first_mut_T {_4} (fun (_ret: t_Option_tup2_ref_T_ref_slice_T) -> [ &_3 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = any [ br0 -> {_3 = C_None} (! bb4) | br1 (x0: tuple) -> {_3 = C_Some x0} (! bb5) ]
+    | bb2 = any [ br0 -> {_3 = None} (! bb4) | br1 (x0: tup2_ref_T_ref_slice_T) -> {_3 = Some x0} (! bb5) ]
     | bb5 = s0
-      [ s0 = v_Some {_3} (fun (r0: tuple) -> [ &first <- r0.f0 ] s1)
-      | s1 = v_Some {_3} (fun (r0: tuple) -> [ &rem <- r0.f1 ] s2)
-      | s2 = {inv'2 rem.current}
+      [ s0 = elim_Some {_3} (fun (r0: tup2_ref_T_ref_slice_T) -> [ &first <- r0.f0 ] s1)
+      | s1 = elim_Some {_3} (fun (r0: tup2_ref_T_ref_slice_T) -> [ &rem <- r0.f1 ] s2)
+      | s2 = {inv_slice_T rem.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {rem.current} {MutBorrow.get_id rem}
           (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_11 <- _ret ] -{inv'2 _ret.final}-
+            [ &_11 <- _ret ] -{inv_slice_T _ret.final}-
             [ &rem <- { rem with current = _ret.final } ] s3)
-      | s3 = {[@expl:type invariant] inv'3 self_.current} s4
-      | s4 = -{resolve'0 self_.current}- s5
+      | s3 = {[@expl:type invariant] inv_ref_slice_T self_.current} s4
+      | s4 = -{resolve_ref_slice_T self_.current}- s5
       | s5 = [ &self_ <- { self_ with current = _11 } ] s6
-      | s6 = {[@expl:type invariant] inv'4 self_} s7
-      | s7 = -{resolve'1 self_}- s8
-      | s8 = {inv first.current}
+      | s6 = {[@expl:type invariant] inv_ref_ref_slice_T self_} s7
+      | s7 = -{resolve_ref_ref_slice_T self_}- s8
+      | s8 = {inv_T first.current}
         MutBorrow.borrow_final <t_T> {first.current} {MutBorrow.get_id first}
           (fun (_ret: MutBorrow.t t_T) ->
-            [ &_12 <- _ret ] -{inv _ret.final}-
+            [ &_12 <- _ret ] -{inv_T _ret.final}-
             [ &first <- { first with current = _ret.final } ] s9)
-      | s9 = [ &_0 <- C_Some'0 _12 ] s10
-      | s10 = {[@expl:type invariant] inv'3 rem} s11
-      | s11 = -{resolve'0 rem}- s12
-      | s12 = {[@expl:type invariant] inv'5 first} s13
-      | s13 = -{resolve'2 first}- s14
-      | s14 = {[@expl:type invariant] inv'3 _5} s15
-      | s15 = -{resolve'0 _5}- s16
+      | s9 = [ &_0 <- Some'0 _12 ] s10
+      | s10 = {[@expl:type invariant] inv_ref_slice_T rem} s11
+      | s11 = -{resolve_ref_slice_T rem}- s12
+      | s12 = {[@expl:type invariant] inv_ref_T first} s13
+      | s13 = -{resolve_ref_T first}- s14
+      | s14 = {[@expl:type invariant] inv_ref_slice_T _5} s15
+      | s15 = -{resolve_ref_slice_T _5}- s16
       | s16 = bb7 ]
-    | bb4 = s0 [ s0 = {[@expl:type invariant] inv'4 self_} s1 | s1 = -{resolve'1 self_}- s2 | s2 = bb6 ]
+    | bb4 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_ref_slice_T self_} s1
+      | s1 = -{resolve_ref_ref_slice_T self_}- s2
+      | s2 = bb6 ]
     | bb6 = s0
-      [ s0 = [ &_0 <- C_None'0 ] s1 | s1 = {[@expl:type invariant] inv'3 _5} s2 | s2 = -{resolve'0 _5}- s3 | s3 = bb7 ]
+      [ s0 = [ &_0 <- None'0 ] s1
+      | s1 = {[@expl:type invariant] inv_ref_slice_T _5} s2
+      | s2 = -{resolve_ref_slice_T _5}- s3
+      | s3 = bb7 ]
     | bb7 = return {_0} ]
-    [ & _0: t_Option'0 = Any.any_l ()
+    [ & _0: t_Option_ref_T = Any.any_l ()
     | & self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = self_
-    | & _3: t_Option = Any.any_l ()
+    | & _3: t_Option_tup2_ref_T_ref_slice_T = Any.any_l ()
     | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _5: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _6: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = Any.any_l ()
@@ -259,15 +273,15 @@ module M_take_first_mut__take_first_mut
     | & rem: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _11: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _12: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: t_Option'0) -> {[@expl:take_first_mut result type invariant] inv'8 result}
+    [ return (result: t_Option_ref_T) -> {[@expl:take_first_mut result type invariant] inv_Option_ref_T result}
       {[@expl:take_first_mut ensures] match result with
-        | C_Some'0 r -> r.current = index_logic self_.current.current 0
-        /\ r.final = index_logic self_.current.final 0
+        | Some'0 r -> r.current = index_slice_T self_.current.current 0
+        /\ r.final = index_slice_T self_.current.final 0
         /\ Seq.length (Slice64.view self_.current.current) > 0
         /\ Seq.length (Slice64.view self_.current.final) > 0
-        /\ Slice64.view self_.final.current = tail (Slice64.view self_.current.current)
-        /\ Slice64.view self_.final.final = tail (Slice64.view self_.current.final)
-        | C_None'0 -> Slice64.view self_.final.current = (Seq.empty: Seq.seq t_T)
+        /\ Slice64.view self_.final.current = tail_T (Slice64.view self_.current.current)
+        /\ Slice64.view self_.final.final = tail_T (Slice64.view self_.current.final)
+        | None'0 -> Slice64.view self_.final.current = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.current.final = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.current.current = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.final.final = (Seq.empty: Seq.seq t_T)

@@ -1,54 +1,59 @@
-module M_two_phase__test
+module M_test
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_usize_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq UInt64.t
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_usize_Global_spec: forall self: t_Vec_usize_Global. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
   
-  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+  let rec len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_usize_Global self_)}
+      (! return {result}) ]
   
-  let rec push (self_: MutBorrow.t t_Vec) (v: UInt64.t) (return (x: ())) = any
-    [ return (result: ()) -> {view self_.final = Seq.snoc (view self_.current) v} (! return {result}) ]
+  let rec push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
+    [ return (result: ()) -> {view_Vec_usize_Global self_.final = Seq.snoc (view_Vec_usize_Global self_.current) v}
+      (! return {result}) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Vec) = _1.final = _1.current
+  predicate resolve_ref_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Vec_usize_Global
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt64.t = Seq.get (view self) ix
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_Vec_usize_Global
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test (v: MutBorrow.t t_Vec) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = len {v.current} (fun (_ret: UInt64.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+  let rec test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = len_usize {v.current} (fun (_ret: UInt64.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec> {v.current} {MutBorrow.get_id v}
-          (fun (_ret: MutBorrow.t t_Vec) -> [ &_4 <- _ret ] [ &v <- { v with current = _ret.final } ] s1)
-      | s1 = push {_4} {_5} (fun (_ret: ()) -> [ &_3 <- _ret ] s2)
+      [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
+          (fun (_ret: MutBorrow.t t_Vec_usize_Global) -> [ &_4 <- _ret ] [ &v <- { v with current = _ret.final } ] s1)
+      | s1 = push_usize {_4} {_5} (fun (_ret: ()) -> [ &_3 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve v}- s1 | s1 = return {_0} ] ]
+    | bb2 = s0 [ s0 = -{resolve_ref_Vec_usize_Global v}- s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & v: MutBorrow.t t_Vec = v
+    | & v: MutBorrow.t t_Vec_usize_Global = v
     | & _3: () = Any.any_l ()
-    | & _4: MutBorrow.t t_Vec = Any.any_l ()
+    | & _4: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
     | & _5: UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:test ensures] UInt64.t'int (index_logic v.final (Seq.length (view v.current)))
-      = Seq.length (view v.current)}
+    [ return (result: ()) ->
+    {[@expl:test ensures] UInt64.t'int (index_Vec_usize_Global v.final (Seq.length (view_Vec_usize_Global v.current)))
+      = Seq.length (view_Vec_usize_Global v.current)}
       (! return {result}) ]
 end
-module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
+module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
@@ -57,123 +62,130 @@ module M_two_phase__qyi14099956410468907124__insert (* VacantEntry<'_, K> *)
   
   type t_K
   
-  type t_Vec
+  type t_Vec_K_Global
   
-  type t_VacantEntry = {
-    t_VacantEntry__map: MutBorrow.t t_Vec;
-    t_VacantEntry__key: t_K;
-    t_VacantEntry__index: UInt64.t }
+  type t_VacantEntry_K = { map: MutBorrow.t t_Vec_K_Global; key: t_K; index: UInt64.t }
   
-  predicate inv (_1: t_K)
+  predicate inv_K (_1: t_K)
   
-  predicate invariant' [@inline:trivial] (self: t_K) = inv self
+  predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_K
   
-  predicate inv'0 [@inline:trivial] (_1: t_K) = invariant' _1
+  predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_K
   
-  predicate precondition (self: ()) (args: t_K)
+  predicate precondition_clone (self: ()) (args: t_K)
   
-  axiom precondition_fndef: forall args: t_K [precondition () args]. (let self_ = args in inv'0 self_)
-      -> precondition () args
+  axiom precondition_fndef: forall args: t_K [precondition_clone () args]. (let self_ = args in inv_ref_K self_)
+      -> precondition_clone () args
   
-  predicate postcondition_once (self: ()) (args: t_K) (result: t_K)
+  predicate postcondition_once_clone (self: ()) (args: t_K) (result: t_K)
   
-  axiom postcondition_fndef: forall args: t_K, res: t_K [postcondition_once () args res]. postcondition_once () args res
-      -> (let self_ = args in inv res)
+  axiom postcondition_fndef:
+    forall args: t_K, res: t_K [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_K res)
   
-  let rec clone' (self_: t_K) (return (x: t_K)) = {[@expl:clone requires] precondition () self_}
-    any [ return (result: t_K) -> {postcondition_once () self_ result} (! return {result}) ]
+  let rec clone_K (self_: t_K) (return (x: t_K)) = {[@expl:clone requires] precondition_clone () self_}
+    any [ return (result: t_K) -> {postcondition_once_clone () self_ result} (! return {result}) ]
   
-  predicate invariant''0 (self: t_K) = inv self
+  predicate invariant_Box_K_Global (self: t_K) = inv_K self
   
-  predicate inv'1 [@inline:trivial] (_1: t_K) = invariant''0 _1
+  predicate inv_Box_K_Global [@inline:trivial] (_1: t_K) = invariant_Box_K_Global _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_Box_K_Global
   
-  predicate invariant''1 [@inline:trivial] (self: Seq.seq t_K) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv'1 (Seq.get self i)
+  predicate invariant_Seq_K [@inline:trivial] (self: Seq.seq t_K) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_K_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant''1
+  meta "rewrite_def" predicate invariant_Seq_K
   
-  predicate inv'2 [@inline:trivial] (_1: Seq.seq t_K) = invariant''1 _1
+  predicate inv_Seq_K [@inline:trivial] (_1: Seq.seq t_K) = invariant_Seq_K _1
   
-  meta "rewrite_def" predicate inv'2
+  meta "rewrite_def" predicate inv_Seq_K
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq t_K
+  function view_Vec_K_Global (self: t_Vec_K_Global) : Seq.seq t_K
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_K_Global_spec: forall self: t_Vec_K_Global. Seq.length (view_Vec_K_Global self)
+      <= UInt64.t'int const_MAX
   
-  predicate invariant''2 (self: t_Vec) = inv'2 (view self)
+  predicate invariant_Vec_K_Global (self: t_Vec_K_Global) = inv_Seq_K (view_Vec_K_Global self)
   
-  predicate inv'3 (_1: t_Vec)
+  predicate inv_Vec_K_Global (_1: t_Vec_K_Global)
   
-  axiom inv_axiom: forall x: t_Vec [inv'3 x]. inv'3 x -> invariant''2 x
+  axiom inv_axiom: forall x: t_Vec_K_Global [inv_Vec_K_Global x]. inv_Vec_K_Global x -> invariant_Vec_K_Global x
   
-  predicate invariant''3 [@inline:trivial] (self: MutBorrow.t t_Vec) = inv'3 self.current /\ inv'3 self.final
+  predicate invariant_ref_Vec_K_Global [@inline:trivial] (self: MutBorrow.t t_Vec_K_Global) =
+    inv_Vec_K_Global self.current /\ inv_Vec_K_Global self.final
   
-  meta "rewrite_def" predicate invariant''3
+  meta "rewrite_def" predicate invariant_ref_Vec_K_Global
   
-  predicate inv'4 [@inline:trivial] (_1: MutBorrow.t t_Vec) = invariant''3 _1
+  predicate inv_ref_Vec_K_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_K_Global) = invariant_ref_Vec_K_Global _1
   
-  meta "rewrite_def" predicate inv'4
+  meta "rewrite_def" predicate inv_ref_Vec_K_Global
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : t_K = Seq.get (view self) ix
+  function index_Vec_K_Global [@inline:trivial] (self: t_Vec_K_Global) (ix: int) : t_K =
+    Seq.get (view_Vec_K_Global self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_Vec_K_Global
   
-  let rec insert (self_: MutBorrow.t t_Vec) (index: UInt64.t) (element: t_K) (return (x: ())) =
-    {[@expl:insert 'self_' type invariant] inv'4 self_}
-    {[@expl:insert 'element' type invariant] inv element}
+  let rec insert_K (self_: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
+    {[@expl:insert 'self_' type invariant] inv_ref_Vec_K_Global self_}
+    {[@expl:insert 'element' type invariant] inv_K element}
     any
-    [ return (result: ()) -> {Seq.length (view self_.final) = Seq.length (view self_.current) + 1}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int index -> index_logic self_.final i = index_logic self_.current i}
-      {index_logic self_.final (UInt64.t'int index) = element}
-      {forall i: int. UInt64.t'int index < i /\ i < Seq.length (view self_.final)
-        -> index_logic self_.final i = index_logic self_.current (i - 1)}
+    [ return (result: ()) -> {Seq.length (view_Vec_K_Global self_.final)
+      = Seq.length (view_Vec_K_Global self_.current) + 1}
+      {forall i: int. 0 <= i /\ i < UInt64.t'int index'0
+        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current i}
+      {index_Vec_K_Global self_.final (UInt64.t'int index'0) = element}
+      {forall i: int. UInt64.t'int index'0 < i /\ i < Seq.length (view_Vec_K_Global self_.final)
+        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current (i - 1)}
       (! return {result}) ]
   
-  predicate inv'5 (_1: t_VacantEntry)
+  predicate inv_VacantEntry_K (_1: t_VacantEntry_K)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_VacantEntry [inv'5 x]. inv'5 x
-      = (inv'4 x.t_VacantEntry__map /\ inv x.t_VacantEntry__key)
+  axiom inv_axiom'0 [@rewrite]: forall x: t_VacantEntry_K [inv_VacantEntry_K x]. inv_VacantEntry_K x
+      = (inv_ref_Vec_K_Global x.map /\ inv_K x.key)
   
-  predicate invariant''4 [@inline:trivial] (self: MutBorrow.t t_VacantEntry) = inv'5 self.current /\ inv'5 self.final
+  predicate invariant_ref_VacantEntry_K [@inline:trivial] (self: MutBorrow.t t_VacantEntry_K) =
+    inv_VacantEntry_K self.current /\ inv_VacantEntry_K self.final
   
-  meta "rewrite_def" predicate invariant''4
+  meta "rewrite_def" predicate invariant_ref_VacantEntry_K
   
-  predicate inv'6 [@inline:trivial] (_1: MutBorrow.t t_VacantEntry) = invariant''4 _1
+  predicate inv_ref_VacantEntry_K [@inline:trivial] (_1: MutBorrow.t t_VacantEntry_K) = invariant_ref_VacantEntry_K _1
   
-  meta "rewrite_def" predicate inv'6
+  meta "rewrite_def" predicate inv_ref_VacantEntry_K
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_VacantEntry) = _1.final = _1.current
+  predicate resolve_ref_VacantEntry_K [@inline:trivial] (_1: MutBorrow.t t_VacantEntry_K) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_VacantEntry_K
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec insert'0 (self: MutBorrow.t t_VacantEntry) (return (x: ())) =
-    {[@expl:insert 'self' type invariant] inv'6 self}
+  let rec insert_K'0 (self: MutBorrow.t t_VacantEntry_K) (return (x: ())) =
+    {[@expl:insert 'self' type invariant] inv_ref_VacantEntry_K self}
     (! bb0
-    [ bb0 = s0 [ s0 = clone' {self.current.t_VacantEntry__key} (fun (_ret: t_K) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = clone_K {self.current.key} (fun (_ret: t_K) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv'3 self.current.t_VacantEntry__map.current}
-        MutBorrow.borrow_mut <t_Vec> {self.current.t_VacantEntry__map.current}
-          (fun (_ret: MutBorrow.t t_Vec) ->
-            [ &_2 <- _ret ] -{inv'3 _ret.final}-
-            [ &self <- { self with current = { self.current with t_VacantEntry__map = { self.current.t_VacantEntry__map with current = _ret.final } } } ]
+      [ s0 = {inv_Vec_K_Global self.current.map.current}
+        MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
+          (fun (_ret: MutBorrow.t t_Vec_K_Global) ->
+            [ &_2 <- _ret ] -{inv_Vec_K_Global _ret.final}-
+            [ &self <- { self with current = { self.current with map = { self.current.map with current = _ret.final } } } ]
             s1)
-      | s1 = insert {_2} {self.current.t_VacantEntry__index} {_4} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
+      | s1 = insert_K {_2} {self.current.index} {_4} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv'6 self} s1 | s1 = -{resolve self}- s2 | s2 = return {_0} ] ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_VacantEntry_K self} s1
+      | s1 = -{resolve_ref_VacantEntry_K self}- s2
+      | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
-    | & self: MutBorrow.t t_VacantEntry = self
-    | & _2: MutBorrow.t t_Vec = Any.any_l ()
+    | & self: MutBorrow.t t_VacantEntry_K = self
+    | & _2: MutBorrow.t t_Vec_K_Global = Any.any_l ()
     | & _4: t_K = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

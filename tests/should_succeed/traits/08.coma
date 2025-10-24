@@ -1,52 +1,52 @@
-module M_08__Tr__program
+module M_trait_Tr__program
   use creusot.prelude.Any
   
   type t_Self
   
-  predicate inv (_1: t_Self)
+  predicate inv_Self (_1: t_Self)
   
-  predicate invariant' [@inline:trivial] (self: t_Self) = inv self
+  predicate invariant_ref_Self [@inline:trivial] (self: t_Self) = inv_Self self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_Self
   
-  predicate inv'0 [@inline:trivial] (_1: t_Self) = invariant' _1
+  predicate inv_ref_Self [@inline:trivial] (_1: t_Self) = invariant_ref_Self _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_Self
   
-  predicate precondition (self: ()) (args: t_Self)
+  predicate precondition_program (self: ()) (args: t_Self)
   
-  axiom precondition_fndef: forall args: t_Self [precondition () args]. (let self = args in inv'0 self)
-      -> precondition () args
+  axiom precondition_fndef: forall args: t_Self [precondition_program () args]. (let self = args in inv_ref_Self self)
+      -> precondition_program () args
   
-  predicate postcondition_once (self: ()) (args: t_Self) (result: ())
+  predicate postcondition_once_program (self: ()) (args: t_Self) (result: ())
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: () [postcondition_once () args res]. postcondition_once () args res
+    forall args: t_Self, res: () [postcondition_once_program () args res]. postcondition_once_program () args res
       -> (let self = args in true)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec program (self: t_Self) (return (x: ())) = {[@expl:program 'self' type invariant] inv'0 self}
+  let rec program_Self (self: t_Self) (return (x: ())) = {[@expl:program 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_08__test
+module M_test
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate resolve (_1: t_T)
+  predicate resolve_T (_1: t_T)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test (_1: t_T) (return (x: ())) = {[@expl:test '_1' type invariant] inv _1}
+  let rec test_T (_1: t_T) (return (x: ())) = {[@expl:test '_1' type invariant] inv_T _1}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv _1} s1 | s1 = -{resolve _1}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T _1} s1 | s1 = -{resolve_T _1}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
     [ & _0: () = Any.any_l () | & _1: t_T = _1 ]) [ return (result: ()) -> (! return {result}) ]
 end

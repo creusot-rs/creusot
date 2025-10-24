@@ -107,6 +107,26 @@ impl Scope {
         });
     }
 
+    /// Bind multiple identifiers, assigning them the same disambiguating index.
+    /// We use this to generate more uniform identifiers for all the fields or all the constructors of each ADT.
+    fn binds(&mut self, idents: &[Ident]) {
+        assert!(idents.iter().all(|i| !self.rename.contains_key(i) && i.id() != 0));
+        let base_names = idents.iter().map(|i| i.name.to_identifier()).collect::<Box<[Symbol]>>();
+        let mut names = base_names.clone();
+        for i in 0.. {
+            if names.iter().all(|sym| !self.bound.contains(sym)) {
+                break;
+            }
+            names = base_names
+                .iter()
+                .map(|sym| Symbol::intern(&format!("{}'{i}", sym.to_string())))
+                .collect();
+        }
+        self.bound.extend(names.iter());
+        self.undo.last_mut().unwrap().extend(idents);
+        self.rename.extend(idents.iter().cloned().zip(names));
+    }
+
     /// Get the symbol associated with an identifier in the current scope by a previous call to `bind()`.
     fn get(&self, ident: Ident) -> String {
         match self.rename.get(&ident) {
@@ -142,6 +162,10 @@ impl Why3Scope {
 
     pub fn bind_value(&mut self, ident: Ident) {
         self.value_scope.bind(ident)
+    }
+
+    pub fn bind_values(&mut self, idents: &[Ident]) {
+        self.value_scope.binds(idents)
     }
 
     pub fn bind_type(&mut self, ident: Ident) {
@@ -1241,14 +1265,12 @@ impl Print for TyDecl {
                     scope.bind_type(*ty_name);
                     match sumrecord {
                         SumRecord::Sum(constrs) => {
-                            for ConstructorDecl { name, .. } in constrs.iter() {
-                                scope.bind_value(*name);
-                            }
+                            let idents = constrs.iter().map(|c| c.name).collect::<Box<[_]>>();
+                            scope.bind_values(&idents);
                         }
                         SumRecord::Record(fields) => {
-                            for FieldDecl { name, .. } in fields.iter() {
-                                scope.bind_value(*name);
-                            }
+                            let idents = fields.iter().map(|f| f.name).collect::<Box<[_]>>();
+                            scope.bind_values(&idents);
                         }
                     }
                 }

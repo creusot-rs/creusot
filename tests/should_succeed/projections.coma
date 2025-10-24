@@ -1,4 +1,4 @@
-module M_projections__copy_out_of_ref
+module M_copy_out_of_ref
   use creusot.int.UInt32
   use creusot.prelude.Any
   
@@ -10,97 +10,96 @@ module M_projections__copy_out_of_ref
     [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: UInt32.t = Any.any_l () | & x: UInt32.t = x ])
     [ return (result: UInt32.t) -> (! return {result}) ]
 end
-module M_projections__copy_out_of_sum
+module M_copy_out_of_sum
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  type t_Result = C_Ok (MutBorrow.t UInt32.t) | C_Err (MutBorrow.t UInt32.t)
+  type t_Result_ref_u32_ref_u32 = Ok (MutBorrow.t UInt32.t) | Err (MutBorrow.t UInt32.t)
   
-  let rec v_Err (input: t_Result) (ret (field_0: MutBorrow.t UInt32.t)) = any
-    [ good (field_0: MutBorrow.t UInt32.t) -> {C_Err field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: MutBorrow.t UInt32.t [C_Err field_0: t_Result]. C_Err field_0 <> input} (! {false} any) ]
+  let rec elim_Err (input: t_Result_ref_u32_ref_u32) (ret (f0: MutBorrow.t UInt32.t)) = any
+    [ good (f0: MutBorrow.t UInt32.t) -> {Err f0 = input} (! ret {f0})
+    | bad -> {forall f0: MutBorrow.t UInt32.t [Err f0: t_Result_ref_u32_ref_u32]. Err f0 <> input} (! {false} any) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_u32
   
-  let rec v_Ok (input: t_Result) (ret (field_0: MutBorrow.t UInt32.t)) = any
-    [ good (field_0: MutBorrow.t UInt32.t) -> {C_Ok field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: MutBorrow.t UInt32.t [C_Ok field_0: t_Result]. C_Ok field_0 <> input} (! {false} any) ]
+  let rec elim_Ok (input: t_Result_ref_u32_ref_u32) (ret (f0: MutBorrow.t UInt32.t)) = any
+    [ good (f0: MutBorrow.t UInt32.t) -> {Ok f0 = input} (! ret {f0})
+    | bad -> {forall f0: MutBorrow.t UInt32.t [Ok f0: t_Result_ref_u32_ref_u32]. Ok f0 <> input} (! {false} any) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec copy_out_of_sum (x: t_Result) (return (x'0: UInt32.t)) = (! bb0
+  let rec copy_out_of_sum (x: t_Result_ref_u32_ref_u32) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = any
-      [ br0 (x0: MutBorrow.t UInt32.t) -> {x = C_Ok x0} (! bb4)
-      | br1 (x0: MutBorrow.t UInt32.t) -> {x = C_Err x0} (! bb3) ]
+      [ br0 (x0: MutBorrow.t UInt32.t) -> {x = Ok x0} (! bb4) | br1 (x0: MutBorrow.t UInt32.t) -> {x = Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = v_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s1)
-      | s1 = -{resolve y}- s2
+      [ s0 = elim_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s1)
+      | s1 = -{resolve_ref_u32 y}- s2
       | s2 = [ &_0 <- y.current ] s3
       | s3 = bb5 ]
     | bb4 = s0
-      [ s0 = v_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s1)
-      | s1 = -{resolve x'0}- s2
+      [ s0 = elim_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s1)
+      | s1 = -{resolve_ref_u32 x'0}- s2
       | s2 = [ &_0 <- x'0.current ] s3
       | s3 = bb5 ]
     | bb5 = return {_0} ]
     [ & _0: UInt32.t = Any.any_l ()
-    | & x: t_Result = x
+    | & x: t_Result_ref_u32_ref_u32 = x
     | & x'0: MutBorrow.t UInt32.t = Any.any_l ()
     | & y: MutBorrow.t UInt32.t = Any.any_l () ]) [ return (result: UInt32.t) -> (! return {result}) ]
 end
-module M_projections__write_into_sum
+module M_write_into_sum
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_Option = C_None | C_Some UInt32.t
+  type t_Option_u32 = None | Some UInt32.t
   
-  let rec v_Some (input: t_Option) (ret (field_0: UInt32.t)) = any
-    [ good (field_0: UInt32.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: UInt32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_u32) (ret (f0: UInt32.t)) = any
+    [ good (f0: UInt32.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: UInt32.t [Some f0: t_Option_u32]. Some f0 <> input} (! {false} any) ]
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_u32
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t t_Option) = _1.final = _1.current
+  predicate resolve_ref_Option_u32 [@inline:trivial] (_1: MutBorrow.t t_Option_u32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_Option_u32
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec write_into_sum (x: MutBorrow.t t_Option) (return (x'0: ())) = (! bb0
-    [ bb0 = any [ br0 -> {x.current = C_None} (! bb3) | br1 (x0: UInt32.t) -> {x.current = C_Some x0} (! bb4) ]
+  let rec write_into_sum (x: MutBorrow.t t_Option_u32) (return (x'0: ())) = (! bb0
+    [ bb0 = any [ br0 -> {x.current = None} (! bb3) | br1 (x0: UInt32.t) -> {x.current = Some x0} (! bb4) ]
     | bb4 = s0
-      [ s0 = v_Some {x.current}
+      [ s0 = elim_Some {x.current}
           (fun (r0: UInt32.t) ->
             MutBorrow.borrow_final <UInt32.t> {r0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
-              (fun (_ret: MutBorrow.t UInt32.t) -> [ &y <- _ret ] [ &x <- { x with current = C_Some _ret.final } ] s1))
+              (fun (_ret: MutBorrow.t UInt32.t) -> [ &y <- _ret ] [ &x <- { x with current = Some _ret.final } ] s1))
       | s1 = [ &y <- { y with current = (10: UInt32.t) } ] s2
-      | s2 = -{resolve y}- s3
-      | s3 = -{resolve'0 x}- s4
+      | s2 = -{resolve_ref_u32 y}- s3
+      | s3 = -{resolve_ref_Option_u32 x}- s4
       | s4 = bb5 ]
-    | bb3 = s0 [ s0 = -{resolve'0 x}- s1 | s1 = bb5 ]
+    | bb3 = s0 [ s0 = -{resolve_ref_Option_u32 x}- s1 | s1 = bb5 ]
     | bb5 = return {_0} ]
-    [ & _0: () = Any.any_l () | & x: MutBorrow.t t_Option = x | & y: MutBorrow.t UInt32.t = Any.any_l () ])
+    [ & _0: () = Any.any_l () | & x: MutBorrow.t t_Option_u32 = x | & y: MutBorrow.t UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_projections__f
+module M_f
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  type t_Option = C_None | C_Some Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
-  let rec v_Some (input: t_Option) (ret (field_0: Int32.t)) = any
-    [ good (field_0: Int32.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: Int32.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_i32) (ret (f0: Int32.t)) = any
+    [ good (f0: Int32.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: Int32.t [Some f0: t_Option_i32]. Some f0 <> input} (! {false} any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -108,14 +107,14 @@ module M_projections__f
   
   let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_2 <- C_Some (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_2 = C_None} (! bb3) | br1 (x0: Int32.t) -> {_2 = C_Some x0} (! bb4) ] ]
+      [ s0 = [ &_2 <- Some (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_2 = None} (! bb3) | br1 (x0: Int32.t) -> {_2 = Some x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = v_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = [ &_1 <- x = (0: Int32.t) ] s2 | s2 = bb5 ]
+      [ s0 = elim_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = [ &_1 <- x = (0: Int32.t) ] s2 | s2 = bb5 ]
     | bb3 = s0 [ s0 = [ &_1 <- false ] s1 | s1 = bb5 ]
     | bb5 = return {_0} ]
     [ & _0: () = Any.any_l ()
     | & _1: bool = Any.any_l ()
-    | & _2: t_Option = Any.any_l ()
+    | & _2: t_Option_i32 = Any.any_l ()
     | & x: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

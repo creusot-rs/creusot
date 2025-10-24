@@ -1,18 +1,18 @@
-module M_type_invariants__id
+module M_id
   use creusot.prelude.Any
   
-  predicate invariant' (self: ()) = true
+  predicate invariant_WithInvariant (self: ()) = true
   
-  predicate inv [@inline:trivial] (_1: ()) = invariant' _1
+  predicate inv_WithInvariant [@inline:trivial] (_1: ()) = invariant_WithInvariant _1
   
-  meta "rewrite_def" predicate inv
+  meta "rewrite_def" predicate inv_WithInvariant
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec id (x: ()) (return (x'0: ())) = {[@expl:id 'x' type invariant] inv x}
+  let rec id (x: ()) (return (x'0: ())) = {[@expl:id 'x' type invariant] inv_WithInvariant x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: () = Any.any_l () | & x: () = x ])
-    [ return (result: ()) -> {[@expl:id result type invariant] inv result} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:id result type invariant] inv_WithInvariant result} (! return {result}) ]
 end

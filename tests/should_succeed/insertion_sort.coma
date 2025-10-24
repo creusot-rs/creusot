@@ -1,4 +1,4 @@
-module M_insertion_sort__insertion_sort
+module M_insertion_sort
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -9,169 +9,170 @@ module M_insertion_sort__insertion_sort
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
-  let rec len (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
-  type t_Range = { t_Range__start: UInt64.t; t_Range__end: UInt64.t }
+  type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let rec into_iter (self_: t_Range) (return (x: t_Range)) = any
-    [ return (result: t_Range) -> {result = self_} (! return {result}) ]
+  let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
+    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
   
-  predicate permutation_of (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
+  predicate permutation_of_i32 (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
     Permut.permut self other 0 (Seq.length self)
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      C_Less
+  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: Int32.t) (y: Int32.t) : ()
+  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
   
-  function antisym2 (x: Int32.t) (y: Int32.t) : ()
+  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
   
-  function antisym1 (x: Int32.t) (y: Int32.t) : ()
+  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_spec: forall x: Int32.t, y: Int32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
   
-  function trans (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
+      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
   
-  function refl (x: Int32.t) : ()
+  function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_spec: forall x: Int32.t. cmp_log x x = C_Equal
+  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
   
-  function cmp_gt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
   
-  function cmp_ge_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
   
-  function cmp_lt_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
   
-  function cmp_le_log (x: Int32.t) (y: Int32.t) : ()
+  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
   
-  predicate sorted_range (s: Seq.seq Int32.t) (l: int) (u: int) =
+  predicate sorted_range_i32 (s: Seq.seq Int32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
   
-  function deep_model [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
-  meta "rewrite_def" function deep_model
+  meta "rewrite_def" function deep_model_usize
   
-  predicate produces (self: t_Range) (visited: Seq.seq UInt64.t) (o: t_Range) =
-    self.t_Range__end = o.t_Range__end
-    /\ deep_model self.t_Range__start <= deep_model o.t_Range__start
-    /\ (Seq.length visited > 0 -> deep_model o.t_Range__start <= deep_model o.t_Range__end)
-    /\ Seq.length visited = deep_model o.t_Range__start - deep_model self.t_Range__start
+  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
+    self.end' = o.end'
+    /\ deep_model_usize self.start <= deep_model_usize o.start
+    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model (Seq.get visited i) = deep_model self.t_Range__start + i)
+      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
   
-  function produces_trans (a: t_Range) (ab: Seq.seq UInt64.t) (b: t_Range) (bc: Seq.seq UInt64.t) (c: t_Range) : ()
+  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
   
-  axiom produces_trans_spec:
-    forall a: t_Range, ab: Seq.seq UInt64.t, b: t_Range, bc: Seq.seq UInt64.t, c: t_Range. produces a ab b
-      -> produces b bc c -> produces a (Seq.(++) ab bc) c
+  axiom produces_trans_Range_usize_spec:
+    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
+      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
   
-  function produces_refl (self: t_Range) : ()
+  function produces_refl_Range_usize (self: t_Range_usize) : ()
   
-  axiom produces_refl_spec: forall self: t_Range. produces self (Seq.empty: Seq.seq UInt64.t) self
+  axiom produces_refl_Range_usize_spec:
+    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv [@inline:trivial] (_1: t_Range) = true
+  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
   
-  meta "rewrite_def" predicate inv
+  meta "rewrite_def" predicate inv_Range_usize
   
-  predicate inv'0 [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_Seq_usize
   
-  type t_Option = C_None | C_Some UInt64.t
+  type t_Option_usize = None | Some UInt64.t
   
-  predicate resolve [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve
+  meta "rewrite_def" predicate resolve_ref_Range_usize
   
-  predicate completed (self: MutBorrow.t t_Range) =
-    resolve self /\ deep_model self.current.t_Range__start >= deep_model self.current.t_Range__end
+  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
+    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
-  let rec next (self_: MutBorrow.t t_Range) (return (x: t_Option)) = any
-    [ return (result: t_Option) -> {match result with
-        | C_None -> completed self_
-        | C_Some v -> produces self_.current (Seq.singleton v) self_.final
+  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+    [ return (result: t_Option_usize) -> {match result with
+        | None -> completed_Range_usize self_
+        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
-  let rec v_Some (input: t_Option) (ret (field_0: UInt64.t)) = any
-    [ good (field_0: UInt64.t) -> {C_Some field_0 = input} (! ret {field_0})
-    | bad -> {forall field_0: UInt64.t [C_Some field_0: t_Option]. C_Some field_0 <> input} (! {false} any) ]
+  let rec elim_Some (input: t_Option_usize) (ret (f0: UInt64.t)) = any
+    [ good (f0: UInt64.t) -> {Some f0 = input} (! ret {f0})
+    | bad -> {forall f0: UInt64.t [Some f0: t_Option_usize]. Some f0 <> input} (! {false} any) ]
   
-  function index_logic [@inline:trivial] (self: Slice64.slice Int32.t) (ix: UInt64.t) : Int32.t =
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: UInt64.t) : Int32.t =
     Seq.get (Slice64.view self) (UInt64.t'int ix)
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_slice_i32
   
-  function index_logic'0 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+  function index_slice_i32'0 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic'0
+  meta "rewrite_def" function index_slice_i32'0
   
-  function cmp_log'0 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec'0: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log'0 x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Greater -> cmp_log'0 y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Less -> cmp_log'0 y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans'0 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec'0: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log'0 x y = o
-      -> cmp_log'0 y z = o -> cmp_log'0 x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl'0 (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec'0: forall x: UInt64.t. cmp_log'0 x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log'0 x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log'0 x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log'0 x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log'0 x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
-  let rec swap (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
+  let rec swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
@@ -179,11 +180,11 @@ module M_insertion_sort__insertion_sort
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
-  predicate resolve'0 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
+  predicate resolve_ref_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve'0
+  meta "rewrite_def" predicate resolve_ref_slice_i32
   
-  predicate sorted (s: Seq.seq Int32.t) = sorted_range s 0 (Seq.length s)
+  predicate sorted_i32 (s: Seq.seq Int32.t) = sorted_range_i32 s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
@@ -191,36 +192,37 @@ module M_insertion_sort__insertion_sort
   
   let rec insertion_sort (array: MutBorrow.t (Slice64.slice Int32.t)) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &original <- array ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len {array.current} (fun (_ret: UInt64.t) -> [ &n <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = len_i32 {array.current} (fun (_ret: UInt64.t) -> [ &n <- _ret ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_10 <- { t_Range__start = (1: UInt64.t); t_Range__end = n } ] s1
-      | s1 = into_iter {_10} (fun (_ret: t_Range) -> [ &iter <- _ret ] s2)
+      [ s0 = [ &_10 <- { start = (1: UInt64.t); end' = n } ] s1
+      | s1 = into_iter_Range_usize {_10} (fun (_ret: t_Range_usize) -> [ &iter <- _ret ] s2)
       | s2 = bb3 ]
     | bb3 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb4 ]
     | bb4 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb5 ]
     | bb5 = s0 [ s0 = [ &old_6_0 <- array ] s1 | s1 = bb6 ]
     | bb6 = bb6
       [ bb6 = {[@expl:mut invariant] old_6_0.final = array.final}
-        {[@expl:for invariant] inv'0 produced}
-        {[@expl:for invariant] inv iter}
-        {[@expl:for invariant] produces iter_old produced iter}
-        {[@expl:loop invariant #0] sorted_range (Slice64.view array.current) 0 (Seq.length produced + 1)}
+        {[@expl:for invariant] inv_Seq_usize produced}
+        {[@expl:for invariant] inv_Range_usize iter}
+        {[@expl:for invariant] produces_Range_usize iter_old produced iter}
+        {[@expl:loop invariant #0] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length produced + 1)}
         {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
-        {[@expl:loop invariant #2] permutation_of (Slice64.view original.current) (Slice64.view array.current)}
+        {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
         (! s0)
         [ s0 = bb7 ]
         [ bb7 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range> {iter}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_26 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range> {_26.current} {MutBorrow.get_id _26}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_25 <- _ret ] [ &_26 <- { _26 with current = _ret.final } ] s2)
-          | s2 = next {_25} (fun (_ret: t_Option) -> [ &_24 <- _ret ] s3)
+          [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
+              (fun (_ret: MutBorrow.t t_Range_usize) -> [ &_26 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_usize> {_26.current} {MutBorrow.get_id _26}
+              (fun (_ret: MutBorrow.t t_Range_usize) ->
+                [ &_25 <- _ret ] [ &_26 <- { _26 with current = _ret.final } ] s2)
+          | s2 = next_Range_usize {_25} (fun (_ret: t_Option_usize) -> [ &_24 <- _ret ] s3)
           | s3 = bb8 ]
         | bb8 = s0
-          [ s0 = -{resolve _26}- s1
-          | s1 = any [ br0 -> {_24 = C_None} (! bb11) | br1 (x0: UInt64.t) -> {_24 = C_Some x0} (! bb12) ] ]
+          [ s0 = -{resolve_ref_Range_usize _26}- s1
+          | s1 = any [ br0 -> {_24 = None} (! bb11) | br1 (x0: UInt64.t) -> {_24 = Some x0} (! bb12) ] ]
         | bb12 = s0
-          [ s0 = v_Some {_24} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_24} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &_29 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb13 ]
         | bb13 = s0
@@ -233,12 +235,13 @@ module M_insertion_sort__insertion_sort
           [ bb14 = {[@expl:mut invariant] old_14_0.final = array.final}
             {[@expl:loop invariant #0] UInt64.le j i}
             {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
-            {[@expl:loop invariant #2] permutation_of (Slice64.view original.current) (Slice64.view array.current)}
+            {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
             {[@expl:loop invariant #3] forall a: int, b: int. 0 <= a /\ a <= b /\ b <= UInt64.t'int i
               -> a <> UInt64.t'int j
-              -> b <> UInt64.t'int j -> Int32.le (index_logic'0 array.current a) (index_logic'0 array.current b)}
+              -> b <> UInt64.t'int j
+              -> Int32.le (index_slice_i32'0 array.current a) (index_slice_i32'0 array.current b)}
             {[@expl:loop invariant #4] forall a: int. UInt64.t'int j + 1 <= a /\ a <= UInt64.t'int i
-              -> Int32.lt (index_logic array.current j) (index_logic'0 array.current a)}
+              -> Int32.lt (index_slice_i32 array.current j) (index_slice_i32'0 array.current a)}
             (! s0)
             [ s0 = bb15 ]
             [ bb15 = s0
@@ -274,26 +277,27 @@ module M_insertion_sort__insertion_sort
               | s1 = MutBorrow.borrow_mut <Slice64.slice Int32.t> {array.current}
                   (fun (_ret: MutBorrow.t (Slice64.slice Int32.t)) ->
                     [ &_55 <- _ret ] [ &array <- { array with current = _ret.final } ] s2)
-              | s2 = swap {_55} {_56} {j} (fun (_ret: ()) -> [ &_54 <- _ret ] s3)
+              | s2 = swap_i32 {_55} {_56} {j} (fun (_ret: ()) -> [ &_54 <- _ret ] s3)
               | s3 = bb20 ]
             | bb20 = s0
               [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s1) | s1 = bb14 ] ] ] ] ]
     | bb11 = s0
-      [ s0 = -{resolve'0 array}- s1
-      | s1 = {[@expl:assertion] sorted_range (Slice64.view array.current) 0 (Seq.length (Slice64.view array.current))}
+      [ s0 = -{resolve_ref_slice_i32 array}- s1
+      | s1 =
+        {[@expl:assertion] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length (Slice64.view array.current))}
         s2
       | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
     | & array: MutBorrow.t (Slice64.slice Int32.t) = array
     | & original: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & n: UInt64.t = Any.any_l ()
-    | & iter: t_Range = Any.any_l ()
-    | & _10: t_Range = Any.any_l ()
-    | & iter_old: t_Range = Any.any_l ()
+    | & iter: t_Range_usize = Any.any_l ()
+    | & _10: t_Range_usize = Any.any_l ()
+    | & iter_old: t_Range_usize = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _24: t_Option = Any.any_l ()
-    | & _25: MutBorrow.t t_Range = Any.any_l ()
-    | & _26: MutBorrow.t t_Range = Any.any_l ()
+    | & _24: t_Option_usize = Any.any_l ()
+    | & _25: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _26: MutBorrow.t t_Range_usize = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
     | & _29: Seq.seq UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
@@ -314,7 +318,7 @@ module M_insertion_sort__insertion_sort
     | & old_14_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & old_6_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l () ])
     [ return (result: ()) ->
-    {[@expl:insertion_sort ensures #0] permutation_of (Slice64.view array.current) (Slice64.view array.final)}
-      {[@expl:insertion_sort ensures #1] sorted (Slice64.view array.final)}
+    {[@expl:insertion_sort ensures #0] permutation_of_i32 (Slice64.view array.current) (Slice64.view array.final)}
+      {[@expl:insertion_sort ensures #1] sorted_i32 (Slice64.view array.final)}
       (! return {result}) ]
 end

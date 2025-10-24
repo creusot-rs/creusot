@@ -1,38 +1,40 @@
-module M_assoc_type__uses3
+module M_uses3
   use creusot.prelude.Any
   
   type t_A
   
-  predicate inv (_1: t_A)
+  predicate inv_A (_1: t_A)
   
-  type t_Assoc = { t_Assoc__item: t_A }
+  type t_Assoc_T = { item: t_A }
   
-  predicate inv'0 (_1: t_Assoc)
+  predicate inv_Assoc_T (_1: t_Assoc_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Assoc [inv'0 x]. inv'0 x = inv x.t_Assoc__item
+  axiom inv_axiom [@rewrite]: forall x: t_Assoc_T [inv_Assoc_T x]. inv_Assoc_T x = inv_A x.item
   
-  type t_Nested = { t_Nested__item: t_Assoc }
+  type t_Nested_T = { item'0: t_Assoc_T }
   
-  predicate inv'1 (_1: t_Nested)
+  predicate inv_Nested_T (_1: t_Nested_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Nested [inv'1 x]. inv'1 x = inv'0 x.t_Nested__item
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Nested_T [inv_Nested_T x]. inv_Nested_T x = inv_Assoc_T x.item'0
   
-  predicate resolve (_1: t_A)
+  predicate resolve_A (_1: t_A)
   
-  predicate resolve'0 (_1: t_Assoc)
+  predicate resolve_Assoc_T (_1: t_Assoc_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Assoc [resolve'0 x]. resolve'0 x = resolve x.t_Assoc__item
+  axiom resolve_axiom [@rewrite]: forall x: t_Assoc_T [resolve_Assoc_T x]. resolve_Assoc_T x = resolve_A x.item
   
-  predicate resolve'1 (_1: t_Nested)
+  predicate resolve_Nested_T (_1: t_Nested_T)
   
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Nested [resolve'1 x]. resolve'1 x = resolve'0 x.t_Nested__item
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Nested_T [resolve_Nested_T x]. resolve_Nested_T x
+      = resolve_Assoc_T x.item'0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec uses3 (_1: t_Nested) (return (x: ())) = {[@expl:uses3 '_1' type invariant] inv'1 _1}
+  let rec uses3_T (_1: t_Nested_T) (return (x: ())) = {[@expl:uses3 '_1' type invariant] inv_Nested_T _1}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv'1 _1} s1 | s1 = -{resolve'1 _1}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & _1: t_Nested = _1 ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_Nested_T _1} s1 | s1 = -{resolve_Nested_T _1}- s2 | s2 = bb1 ]
+    | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & _1: t_Nested_T = _1 ])
+    [ return (result: ()) -> (! return {result}) ]
 end

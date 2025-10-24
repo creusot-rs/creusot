@@ -1,7 +1,7 @@
-module M_snapshot_in_ghost__foo
+module M_foo
   use creusot.prelude.Any
   
-  let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -9,12 +9,13 @@ module M_snapshot_in_ghost__foo
   
   let rec foo (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] x = 1} s1 | s1 = new {_2} (fun (_ret: ()) -> [ &_1 <- _ret ] s2) | s2 = bb2 ]
+    | bb1 = s0
+      [ s0 = {[@expl:assertion] x = 1} s1 | s1 = new_unit {_2} (fun (_ret: ()) -> [ &_1 <- _ret ] s2) | s2 = bb2 ]
     | bb2 = return {_0} ]
     [ & _0: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () | & x: int = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_snapshot_in_ghost__is_ghost
+module M_is_ghost
   use creusot.prelude.Any
   
   meta "compute_max_steps" 1000000
@@ -25,11 +26,11 @@ module M_snapshot_in_ghost__is_ghost
     [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = bb1 ] | bb1 = s0 [ s0 = {[@expl:assertion] x = 1} s1 | s1 = return {_0} ] ]
     [ & _0: () = Any.any_l () | & x: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_snapshot_in_ghost__bar
+module M_bar
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  let rec new (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -40,7 +41,7 @@ module M_snapshot_in_ghost__bar
     | bb1 = s0 [ s0 = [ &_4 <- x ] s1 | s1 = bb2 ]
     | bb2 = s0
       [ s0 = {[@expl:assertion] exists y: Int32.t. x = y} s1
-      | s1 = new {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s2)
+      | s1 = new_unit {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s2)
       | s2 = bb4 ]
     | bb4 = return {_0} ]
     [ & _0: () = Any.any_l ()

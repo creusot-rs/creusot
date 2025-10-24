@@ -1,127 +1,130 @@
-module M_04_binary_search__binary_search
+module M_binary_search
   use creusot.int.UInt64
   use seq.Seq
   use creusot.int.UInt32
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_Vec
+  type t_Vec_u32_Global
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view (self: t_Vec) : Seq.seq UInt32.t
+  function view_Vec_u32_Global (self: t_Vec_u32_Global) : Seq.seq UInt32.t
   
-  axiom view_spec: forall self: t_Vec. Seq.length (view self) <= UInt64.t'int const_MAX
+  axiom view_Vec_u32_Global_spec: forall self: t_Vec_u32_Global. Seq.length (view_Vec_u32_Global self)
+      <= UInt64.t'int const_MAX
   
-  let rec len (self_: t_Vec) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view self_)} (! return {result}) ]
+  let rec len_u32 (self_: t_Vec_u32_Global) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_u32_Global self_)} (! return {result}) ]
   
-  type t_Result = C_Ok UInt64.t | C_Err UInt64.t
+  type t_Result_usize_usize = Ok UInt64.t | Err UInt64.t
   
-  type t_Ordering = C_Less | C_Equal | C_Greater
+  type t_Ordering = Less | Equal | Greater
   
-  function cmp_log (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
-      C_Less
+  function cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp (x: UInt32.t) (y: UInt32.t) : ()
+  function eq_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom eq_cmp_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log x y = C_Equal)
+  axiom eq_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log_u32 x y = Equal)
   
-  function antisym2 (x: UInt32.t) (y: UInt32.t) : ()
+  function antisym2_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym2_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Greater -> cmp_log y x = C_Less
+  axiom antisym2_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
   
-  function antisym1 (x: UInt32.t) (y: UInt32.t) : ()
+  function antisym1_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom antisym1_spec: forall x: UInt32.t, y: UInt32.t. cmp_log x y = C_Less -> cmp_log y x = C_Greater
+  axiom antisym1_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
   
-  function trans (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
+  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
   
-  axiom trans_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log x y = o
-      -> cmp_log y z = o -> cmp_log x z = o
+  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log_u32 x y = o
+      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
   
-  function refl (x: UInt32.t) : ()
+  function refl_u32 (x: UInt32.t) : ()
   
-  axiom refl_spec: forall x: UInt32.t. cmp_log x x = C_Equal
+  axiom refl_u32_spec: forall x: UInt32.t. cmp_log_u32 x x = Equal
   
-  function cmp_gt_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_gt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log x y = C_Greater)
+  axiom cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log_u32 x y = Greater)
   
-  function cmp_ge_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_ge_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log x y <> C_Less)
+  axiom cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log_u32 x y <> Less)
   
-  function cmp_lt_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_lt_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log x y = C_Less)
+  axiom cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log_u32 x y = Less)
   
-  function cmp_le_log (x: UInt32.t) (y: UInt32.t) : ()
+  function cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
   
-  axiom cmp_le_log_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log x y <> C_Greater)
+  axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
-  function index_logic [@inline:trivial] (self: t_Vec) (ix: int) : UInt32.t = Seq.get (view self) ix
+  function index_Vec_u32_Global [@inline:trivial] (self: t_Vec_u32_Global) (ix: int) : UInt32.t =
+    Seq.get (view_Vec_u32_Global self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_Vec_u32_Global
   
-  function cmp_log'0 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      C_Less
+  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
     else
-      if self = o then C_Equal else C_Greater
+      if self = o then Equal else Greater
   
   
-  function eq_cmp'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_spec'0: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log'0 x y = C_Equal)
+  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
   
-  function antisym2'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Greater -> cmp_log'0 y x = C_Less
+  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
   
-  function antisym1'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_spec'0: forall x: UInt64.t, y: UInt64.t. cmp_log'0 x y = C_Less -> cmp_log'0 y x = C_Greater
+  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
   
-  function trans'0 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
   
-  axiom trans_spec'0: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log'0 x y = o
-      -> cmp_log'0 y z = o -> cmp_log'0 x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
+      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
   
-  function refl'0 (x: UInt64.t) : ()
+  function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_spec'0: forall x: UInt64.t. cmp_log'0 x x = C_Equal
+  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
   
-  function cmp_gt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log'0 x y = C_Greater)
+  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
   
-  function cmp_ge_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log'0 x y <> C_Less)
+  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
   
-  function cmp_lt_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log'0 x y = C_Less)
+  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
   
-  function cmp_le_log'0 (x: UInt64.t) (y: UInt64.t) : ()
+  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_spec'0: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log'0 x y <> C_Greater)
+  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
-  predicate in_bounds [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) = UInt64.t'int self < Seq.length seq
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) =
+    UInt64.t'int self < Seq.length seq
   
-  meta "rewrite_def" predicate in_bounds
+  meta "rewrite_def" predicate in_bounds_usize
   
-  predicate has_value [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) (out: UInt32.t) =
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt32.t) (out: UInt32.t) =
     Seq.get seq (UInt64.t'int self) = out
   
-  meta "rewrite_def" predicate has_value
+  meta "rewrite_def" predicate has_value_usize
   
-  let rec index (self_: t_Vec) (ix: UInt64.t) (return (x: UInt32.t)) =
-    {[@expl:index requires] in_bounds ix (view self_)}
-    any [ return (result: UInt32.t) -> {has_value ix (view self_) result} (! return {result}) ]
+  let rec index_Vec_u32_Global'0 (self_: t_Vec_u32_Global) (ix: UInt64.t) (return (x: UInt32.t)) =
+    {[@expl:index requires] in_bounds_usize ix (view_Vec_u32_Global self_)}
+    any [ return (result: UInt32.t) -> {has_value_usize ix (view_Vec_u32_Global self_) result} (! return {result}) ]
   
   predicate sorted_range (s: Seq.seq UInt32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> UInt32.le (Seq.get s i) (Seq.get s j)
@@ -132,23 +135,24 @@ module M_04_binary_search__binary_search
   
   meta "select_lsinst" "all"
   
-  let rec binary_search (arr: t_Vec) (elem: UInt32.t) (return (x: t_Result)) =
-    {[@expl:binary_search requires #0] Seq.length (view arr) <= UInt64.t'int const_MAX}
-    {[@expl:binary_search requires #1] sorted (view arr)}
+  let rec binary_search (arr: t_Vec_u32_Global) (elem: UInt32.t) (return (x: t_Result_usize_usize)) =
+    {[@expl:binary_search requires #0] Seq.length (view_Vec_u32_Global arr) <= UInt64.t'int const_MAX}
+    {[@expl:binary_search requires #1] sorted (view_Vec_u32_Global arr)}
     (! bb0
-    [ bb0 = s0 [ s0 = len {arr} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = len_u32 {arr} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_9 <- _10 = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ]
-    | bb2 = s0 [ s0 = [ &_0 <- C_Err (0: UInt64.t) ] s1 | s1 = bb21 ]
-    | bb3 = s0 [ s0 = len {arr} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s1) | s1 = bb4 ]
+    | bb2 = s0 [ s0 = [ &_0 <- Err (0: UInt64.t) ] s1 | s1 = bb21 ]
+    | bb3 = s0 [ s0 = len_u32 {arr} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0 [ s0 = [ &base <- (0: UInt64.t) ] s1 | s1 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
-        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view arr)}
+        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view_Vec_u32_Global arr)}
         {[@expl:loop invariant #1] forall i: UInt64.t. UInt64.lt i base
-          -> UInt32.le (index_logic arr (UInt64.t'int i)) elem}
+          -> UInt32.le (index_Vec_u32_Global arr (UInt64.t'int i)) elem}
         {[@expl:loop invariant #2] forall i: UInt64.t. UInt64.t'int base + UInt64.t'int size < UInt64.t'int i
-            /\ UInt64.t'int i < Seq.length (view arr) -> UInt32.lt elem (index_logic arr (UInt64.t'int i))}
+            /\ UInt64.t'int i < Seq.length (view_Vec_u32_Global arr)
+          -> UInt32.lt elem (index_Vec_u32_Global arr (UInt64.t'int i))}
         (! s0)
         [ s0 = bb6 ]
         [ bb6 = s0
@@ -159,7 +163,7 @@ module M_04_binary_search__binary_search
         | bb8 = s0
           [ s0 = UInt64.div {size} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &half <- _ret ] s1)
           | s1 = UInt64.add {base} {half} (fun (_ret: UInt64.t) -> [ &mid <- _ret ] s2)
-          | s2 = index {arr} {mid} (fun (_ret: UInt32.t) -> [ &_33 <- _ret ] s3)
+          | s2 = index_Vec_u32_Global'0 {arr} {mid} (fun (_ret: UInt32.t) -> [ &_33 <- _ret ] s3)
           | s3 = bb9 ]
         | bb9 = s0
           [ s0 = [ &_31 <- UInt32.gt _33 elem ] s1
@@ -170,22 +174,22 @@ module M_04_binary_search__binary_search
           [ s0 = [ &base <- _30 ] s1
           | s1 = UInt64.sub {size} {half} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s2)
           | s2 = bb5 ] ] ]
-    | bb13 = s0 [ s0 = index {arr} {base} (fun (_ret: UInt32.t) -> [ &_40 <- _ret ] s1) | s1 = bb14 ]
+    | bb13 = s0 [ s0 = index_Vec_u32_Global'0 {arr} {base} (fun (_ret: UInt32.t) -> [ &_40 <- _ret ] s1) | s1 = bb14 ]
     | bb14 = s0
       [ s0 = [ &cmp <- _40 ] s1
       | s1 = [ &_43 <- cmp = elem ] s2
       | s2 = any [ br0 -> {_43 = false} (! bb16) | br1 -> {_43} (! bb15) ] ]
-    | bb15 = s0 [ s0 = [ &_0 <- C_Ok base ] s1 | s1 = bb21 ]
+    | bb15 = s0 [ s0 = [ &_0 <- Ok base ] s1 | s1 = bb21 ]
     | bb16 = s0
       [ s0 = [ &_47 <- UInt32.lt cmp elem ] s1 | s1 = any [ br0 -> {_47 = false} (! bb18) | br1 -> {_47} (! bb17) ] ]
     | bb17 = s0
       [ s0 = UInt64.add {base} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_50 <- _ret ] s1)
-      | s1 = [ &_0 <- C_Err _50 ] s2
+      | s1 = [ &_0 <- Err _50 ] s2
       | s2 = bb21 ]
-    | bb18 = s0 [ s0 = [ &_0 <- C_Err base ] s1 | s1 = bb21 ]
+    | bb18 = s0 [ s0 = [ &_0 <- Err base ] s1 | s1 = bb21 ]
     | bb21 = return {_0} ]
-    [ & _0: t_Result = Any.any_l ()
-    | & arr: t_Vec = arr
+    [ & _0: t_Result_usize_usize = Any.any_l ()
+    | & arr: t_Vec_u32_Global = arr
     | & elem: UInt32.t = elem
     | & _9: bool = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
@@ -203,12 +207,12 @@ module M_04_binary_search__binary_search
     | & _43: bool = Any.any_l ()
     | & _47: bool = Any.any_l ()
     | & _50: UInt64.t = Any.any_l () ])
-    [ return (result: t_Result) -> {[@expl:binary_search ensures #0] forall x: UInt64.t. result = C_Ok x
-        -> index_logic arr (UInt64.t'int x) = elem}
-      {[@expl:binary_search ensures #1] forall x: UInt64.t. result = C_Err x
-        -> (forall i: UInt64.t. UInt64.lt i x -> UInt32.le (index_logic arr (UInt64.t'int i)) elem)}
-      {[@expl:binary_search ensures #2] forall x: UInt64.t. result = C_Err x
-        -> (forall i: UInt64.t. UInt64.lt x i /\ UInt64.t'int i < Seq.length (view arr)
-          -> UInt32.lt elem (index_logic arr (UInt64.t'int i)))}
+    [ return (result: t_Result_usize_usize) -> {[@expl:binary_search ensures #0] forall x: UInt64.t. result = Ok x
+        -> index_Vec_u32_Global arr (UInt64.t'int x) = elem}
+      {[@expl:binary_search ensures #1] forall x: UInt64.t. result = Err x
+        -> (forall i: UInt64.t. UInt64.lt i x -> UInt32.le (index_Vec_u32_Global arr (UInt64.t'int i)) elem)}
+      {[@expl:binary_search ensures #2] forall x: UInt64.t. result = Err x
+        -> (forall i: UInt64.t. UInt64.lt x i /\ UInt64.t'int i < Seq.length (view_Vec_u32_Global arr)
+          -> UInt32.lt elem (index_Vec_u32_Global arr (UInt64.t'int i)))}
       (! return {result}) ]
 end

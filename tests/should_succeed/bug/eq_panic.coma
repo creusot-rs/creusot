@@ -1,49 +1,50 @@
-module M_eq_panic__omg
+module M_omg
   use creusot.prelude.Any
   
   type t_T
   
-  predicate inv (_1: t_T)
+  predicate inv_T (_1: t_T)
   
-  predicate invariant' [@inline:trivial] (self: t_T) = inv self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  meta "rewrite_def" predicate invariant'
+  meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv'0 [@inline:trivial] (_1: t_T) = invariant' _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
-  meta "rewrite_def" predicate inv'0
+  meta "rewrite_def" predicate inv_ref_T
   
-  predicate invariant''0 [@inline:trivial] (self: t_T) = inv'0 self
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
   
-  meta "rewrite_def" predicate invariant''0
+  meta "rewrite_def" predicate invariant_ref_ref_T
   
-  predicate inv'1 [@inline:trivial] (_1: t_T) = invariant''0 _1
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
   
-  meta "rewrite_def" predicate inv'1
+  meta "rewrite_def" predicate inv_ref_ref_T
   
   type t_DeepModelTy
   
-  function deep_model (self: t_T) : t_DeepModelTy
+  function deep_model_T (self: t_T) : t_DeepModelTy
   
-  function deep_model'0 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model self
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
-  meta "rewrite_def" function deep_model'0
+  meta "rewrite_def" function deep_model_ref_T
   
-  function deep_model'1 [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model'0 self
+  function deep_model_ref_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_ref_T self
   
-  meta "rewrite_def" function deep_model'1
+  meta "rewrite_def" function deep_model_ref_ref_T
   
-  let rec eq (self_: t_T) (rhs: t_T) (return (x: bool)) = {[@expl:eq 'self_' type invariant] inv'1 self_}
-    {[@expl:eq 'rhs' type invariant] inv'1 rhs}
-    any [ return (result: bool) -> {result = (deep_model'1 self_ = deep_model'1 rhs)} (! return {result}) ]
+  let rec eq_ref_T (self_: t_T) (rhs: t_T) (return (x: bool)) = {[@expl:eq 'self_' type invariant] inv_ref_ref_T self_}
+    {[@expl:eq 'rhs' type invariant] inv_ref_ref_T rhs}
+    any
+    [ return (result: bool) -> {result = (deep_model_ref_ref_T self_ = deep_model_ref_ref_T rhs)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec omg (x: t_T) (y: t_T) (return (x'0: bool)) = {[@expl:omg 'x' type invariant] inv'0 x}
-    {[@expl:omg 'y' type invariant] inv'0 y}
+  let rec omg_T (x: t_T) (y: t_T) (return (x'0: bool)) = {[@expl:omg 'x' type invariant] inv_ref_T x}
+    {[@expl:omg 'y' type invariant] inv_ref_T y}
     (! bb0
-    [ bb0 = s0 [ s0 = eq {x} {y} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
+    [ bb0 = s0 [ s0 = eq_ref_T {x} {y} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
     [ & _0: bool = Any.any_l () | & x: t_T = x | & y: t_T = y ]) [ return (result: bool) -> (! return {result}) ]
 end

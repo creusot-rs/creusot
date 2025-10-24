@@ -1,4 +1,4 @@
-module M_logic_vcgen__bor_1_2
+module M_bor_1_2
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use mach.int.Int
@@ -14,18 +14,19 @@ module M_logic_vcgen__bor_1_2
   goal vc_bor_1_2: Int32.to_int x.current = 1 /\ Int32.to_int x.final = 2
     -> ([@expl:bor_1_2 ensures] Int32.to_int x.current - Int32.to_int x.final = - 1)
 end
-module M_logic_vcgen__f
+module M_f
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.Int32
   use seq.Seq
   use mach.int.Int
   
-  type tuple = { f0: Int32.t; f1: Int32.t }
+  type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
   
-  function index_logic [@inline:trivial] (self: Slice64.array tuple) (ix: int) : tuple = Seq.get (Slice64.view self) ix
+  function index_array_tup2_i32_i32_5 [@inline:trivial] (self: Slice64.array tup2_i32_i32) (ix: int) : tup2_i32_i32 =
+    Seq.get (Slice64.view self) ix
   
-  meta "rewrite_def" function index_logic
+  meta "rewrite_def" function index_array_tup2_i32_i32_5
   
   function bor_1_2 (x: MutBorrow.t Int32.t) : int = Int32.to_int x.current - Int32.to_int x.final
   
@@ -36,22 +37,22 @@ module M_logic_vcgen__f
   
   meta "select_lsinst" "all"
   
-  constant x : MutBorrow.t (Slice64.array tuple)
+  constant x : MutBorrow.t (Slice64.array tup2_i32_i32)
   
-  predicate f (x: MutBorrow.t (Slice64.array tuple))
+  predicate f (x: MutBorrow.t (Slice64.array tup2_i32_i32))
   
-  goal vc_f: Int32.to_int (index_logic x.current 2).f0 = 1
-    -> Int32.to_int (index_logic x.final 2).f0 = 2
-    -> ([@expl:bor_1_2 requires] Int32.to_int (MutBorrow.borrow_logic (index_logic x.current 2).f0 (index_logic x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1)).current
+  goal vc_f: Int32.to_int (index_array_tup2_i32_i32_5 x.current 2).f0 = 1
+    -> Int32.to_int (index_array_tup2_i32_i32_5 x.final 2).f0 = 2
+    -> ([@expl:bor_1_2 requires] Int32.to_int (MutBorrow.borrow_logic (index_array_tup2_i32_i32_5 x.current 2).f0 (index_array_tup2_i32_i32_5 x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1)).current
         = 1
-      /\ Int32.to_int (MutBorrow.borrow_logic (index_logic x.current 2).f0 (index_logic x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1)).final
+      /\ Int32.to_int (MutBorrow.borrow_logic (index_array_tup2_i32_i32_5 x.current 2).f0 (index_array_tup2_i32_i32_5 x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1)).final
       = 2)
-    /\ (bor_1_2 (MutBorrow.borrow_logic (index_logic x.current 2).f0 (index_logic x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
+    /\ (bor_1_2 (MutBorrow.borrow_logic (index_array_tup2_i32_i32_5 x.current 2).f0 (index_array_tup2_i32_i32_5 x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
       = - 1
-    -> ([@expl:f ensures] bor_1_2 (MutBorrow.borrow_logic (index_logic x.current 2).f0 (index_logic x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
+    -> ([@expl:f ensures] bor_1_2 (MutBorrow.borrow_logic (index_array_tup2_i32_i32_5 x.current 2).f0 (index_array_tup2_i32_i32_5 x.final 2).f0 (MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id x) 2) 1))
     = - 1))
 end
-module M_logic_vcgen__bool_of_int
+module M_bool_of_int
   use mach.int.Int
   
   meta "compute_max_steps" 1000000
@@ -64,7 +65,7 @@ module M_logic_vcgen__bool_of_int
   
   goal vc_bool_of_int: true
 end
-module M_logic_vcgen__g
+module M_g
   use mach.int.Int
   use map.Map
   

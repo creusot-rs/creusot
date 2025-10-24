@@ -1,74 +1,88 @@
-module M_agree__agreement
+module M_agreement
   use creusot.int.Int32
   use map.Map
   use creusot.prelude.Any
   
-  type t_Resource
+  type t_Resource_Ag_i32
   
   type t_Id
   
-  function id (self: t_Resource) : t_Id
+  function id_Ag_i32 (self: t_Resource_Ag_i32) : t_Id
   
-  type t_Ag = { t_Ag__0: Int32.t }
+  type t_Ag_i32 = { f0: Int32.t }
   
-  type t_Option = C_None | C_Some t_Ag
+  type t_Option_Ag_i32 = None | Some t_Ag_i32
   
-  function and_then_logic (self: t_Option) (f: Map.map t_Ag t_Option) : t_Option = match self with
-      | C_None -> C_None
-      | C_Some x -> Map.get f x
+  function and_then_Option_Ag_i32 (self: t_Option_Ag_i32) (f: Map.map t_Ag_i32 t_Option_Ag_i32) : t_Option_Ag_i32 =
+    match self with
+      | None -> None
+      | Some x -> Map.get f x
       end
   
-  function op (self: t_Ag) (other: t_Ag) : t_Option = if self.t_Ag__0 = other.t_Ag__0 then C_Some self else C_None
+  function op_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) : t_Option_Ag_i32 = if self.f0 = other.f0 then
+      Some self
+    else
+      None
   
-  function associative (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
   
-  axiom associative_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. and_then_logic (op a b) (fun (ab: t_Ag) -> op ab c)
-      = and_then_logic (op b c) (fun (bc: t_Ag) -> op a bc)
+  function associative_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) (c: t_Ag_i32) : ()
   
-  function commutative (a: t_Ag) (b: t_Ag) : ()
+  axiom associative_Ag_i32_spec:
+    forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32. and_then_Option_Ag_i32 (op_Ag_i32 a b) (fun (ab: t_Ag_i32) -> op_Ag_i32 ab c)
+      = and_then_Option_Ag_i32 (op_Ag_i32 b c) (fun (bc: t_Ag_i32) -> op_Ag_i32 a bc)
   
-  axiom commutative_spec: forall a: t_Ag, b: t_Ag. op a b = op b a
+  function commutative_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) : ()
   
-  function factor (self: t_Ag) (factor'0: t_Ag) : t_Option = op self factor'0
+  axiom commutative_Ag_i32_spec: forall a: t_Ag_i32, b: t_Ag_i32. op_Ag_i32 a b = op_Ag_i32 b a
   
-  axiom factor_spec: forall self: t_Ag, factor'0: t_Ag. match factor self factor'0 with
-        | C_Some c -> op factor'0 c = C_Some self
-        | C_None -> forall c: t_Ag. op factor'0 c <> C_Some self
+  function factor_Ag_i32 (self: t_Ag_i32) (factor: t_Ag_i32) : t_Option_Ag_i32 = op_Ag_i32 self factor
+  
+  axiom factor_Ag_i32_spec: forall self: t_Ag_i32, factor: t_Ag_i32. match factor_Ag_i32 self factor with
+        | Some c -> op_Ag_i32 factor c = Some self
+        | None -> forall c: t_Ag_i32. op_Ag_i32 factor c <> Some self
         end
   
-  predicate incl (self: t_Ag) (other: t_Ag) = factor other self <> C_None
+  predicate incl_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) = factor_Ag_i32 other self <> None
   
-  function incl_transitive (a: t_Ag) (b: t_Ag) (c: t_Ag) : ()
+  function incl_transitive_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) (c: t_Ag_i32) : ()
   
-  axiom incl_transitive_spec: forall a: t_Ag, b: t_Ag, c: t_Ag. incl a b -> incl b c -> incl a c
+  axiom incl_transitive_Ag_i32_spec: forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32. incl_Ag_i32 a b
+      -> incl_Ag_i32 b c -> incl_Ag_i32 a c
   
-  function incl_op (self: t_Ag) (other: t_Ag) (comb: t_Ag) : ()
+  function incl_op_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) (comb: t_Ag_i32) : ()
   
-  axiom incl_op_spec: forall self: t_Ag, other: t_Ag, comb: t_Ag. op self other = C_Some comb -> incl self comb
+  axiom incl_op_Ag_i32_spec: forall self: t_Ag_i32, other: t_Ag_i32, comb: t_Ag_i32. op_Ag_i32 self other = Some comb
+      -> incl_Ag_i32 self comb
   
-  predicate incl_eq (self: t_Ag) (other: t_Ag) = self = other \/ incl self other
+  predicate incl_eq_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) = self = other \/ incl_Ag_i32 self other
   
-  function val' (self: t_Resource) : t_Ag
+  function val_Ag_i32 (self: t_Resource_Ag_i32) : t_Ag_i32
   
-  function view [@inline:trivial] (self: t_Resource) : t_Ag = val' self
+  function view_Resource_Ag_i32 [@inline:trivial] (self: t_Resource_Ag_i32) : t_Ag_i32 = val_Ag_i32 self
   
-  meta "rewrite_def" function view
+  meta "rewrite_def" function view_Resource_Ag_i32
   
-  let rec join_shared (self: t_Resource) (other: t_Resource) (return (x: t_Resource)) =
-    {[@expl:join_shared requires] id self = id other}
+  let rec join_shared_Ag_i32 (self: t_Resource_Ag_i32) (other: t_Resource_Ag_i32) (return (x: t_Resource_Ag_i32)) =
+    {[@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
     any
-    [ return (result: t_Resource) -> {id result = id self}
-      {incl_eq (view self) (view result) /\ incl_eq (view other) (view result)}
+    [ return (result: t_Resource_Ag_i32) -> {id_Ag_i32 result = id_Ag_i32 self}
+      {incl_eq_Ag_i32 (view_Resource_Ag_i32 self) (view_Resource_Ag_i32 result)
+      /\ incl_eq_Ag_i32 (view_Resource_Ag_i32 other) (view_Resource_Ag_i32 result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec agreement (x: t_Resource) (y: t_Resource) (return (x'0: ())) = {[@expl:agreement requires] id x = id y}
+  let rec agreement (x: t_Resource_Ag_i32) (y: t_Resource_Ag_i32) (return (x'0: ())) =
+    {[@expl:agreement requires] id_Ag_i32 x = id_Ag_i32 y}
     (! bb0
-    [ bb0 = s0 [ s0 = join_shared {x} {y} (fun (_ret: t_Resource) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = join_shared_Ag_i32 {x} {y} (fun (_ret: t_Resource_Ag_i32) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & x: t_Resource = x | & y: t_Resource = y | & _5: t_Resource = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:agreement ensures] view x = view y} (! return {result}) ]
+    [ & _0: () = Any.any_l ()
+    | & x: t_Resource_Ag_i32 = x
+    | & y: t_Resource_Ag_i32 = y
+    | & _5: t_Resource_Ag_i32 = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:agreement ensures] view_Resource_Ag_i32 x = view_Resource_Ag_i32 y}
+      (! return {result}) ]
 end
