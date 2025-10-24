@@ -2,7 +2,7 @@
 
 ## Installation
 
-Install Creusot and why3 as described in the [README](https://github.com/creusot-rs/creusot).
+See the [Installation](https://creusot-rs.github.io/creusot/guide/installation.html) section.
 
 ## Create a project
 
