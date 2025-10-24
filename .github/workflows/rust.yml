@@ -64,10 +64,6 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'prelude-generator/**') }}
     - name: Build
       run: cargo build
-    - name: dummy creusot setup
-      run: |
-        mkdir -p ~/.config/creusot
-        cp ci/creusot-config-dummy.toml ~/.config/creusot/Config.toml
     - name: Run tests
       run: cargo test
     - run: cargo test --test why3 dummy-dummy-dummy # make sure its deps are in the cargo cache
@@ -128,9 +124,8 @@ jobs:
     - name: Install solvers
       # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
       run: |
-        ./INSTALL --skip-cargo-creusot --skip-creusot-rustc --provers-parallelism 2
-        echo -e "\n>> ~/.config/creusot/Config.toml:\n"
-        cat ~/.config/creusot/Config.toml
+        ./INSTALL --skip-cargo-creusot --skip-creusot-rustc
+        cargo run --bin cargo-creusot creusot why3-conf --provers-parallelism 2
         echo -e "\n>> ~/.config/creusot/why3.conf:\n"
         cat ~/.config/creusot/why3.conf
     - run: cargo test --test why3
