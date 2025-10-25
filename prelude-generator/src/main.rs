@@ -7,7 +7,7 @@ use std::{
 
 // This needs to run when installing Creusot of course,
 // and also before replaying the proofs in the test suite.
-pub fn build_prelude() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     println!("Building prelude...");
 
     // Get the path  to the crate directory

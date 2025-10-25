@@ -25,7 +25,6 @@ fn main() -> Result<()> {
     match cargs.subcommand {
         None => creusot(None, cargs.args, &workspace_root()?),
         Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args, &workspace_root()?),
-        Some(Setup { command: SetupSubCommand::Status }) => setup::status(),
         Some(Prove(args)) => {
             let root = workspace_root()?;
             creusot(None, cargs.args, &root)?;
@@ -35,6 +34,8 @@ fn main() -> Result<()> {
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
         Some(Why3(args)) => why3(args),
+        Some(Why3Conf(args)) => why3_conf(args),
+        Some(Version) => version(),
     }
 }
 
@@ -72,7 +73,7 @@ fn invoke_cargo(
     let toolchain = setup::toolchain_channel();
     let creusot_rustc_path = match creusot_rustc {
         Some(path) => path,
-        None => setup::toolchain_dir(&setup::get_data_dir().unwrap(), &toolchain)
+        None => setup::toolchain_dir(&setup::creusot_paths().data_dir(), &toolchain)
             .join("bin")
             .join("creusot-rustc"),
     };
@@ -155,12 +156,6 @@ pub struct CargoCreusotArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum CargoCreusotSubCommand {
-    /// Setup and manage Creusot's installation
-    #[command(arg_required_else_help(true))]
-    Setup {
-        #[command(subcommand)]
-        command: SetupSubCommand,
-    },
     #[command(flatten)]
     Creusot(Doc),
     /// Run prover on translated files
@@ -173,6 +168,10 @@ pub enum CargoCreusotSubCommand {
     Clean(CleanArgs),
     /// Run Why3
     Why3(Why3Args),
+    /// Regenerate `why3.conf`
+    Why3Conf(Why3ConfArgs),
+    /// Show version information of Creusot and its dependencies
+    Version,
 }
 use CargoCreusotSubCommand::*;
 
@@ -398,6 +397,48 @@ fn why3(args: Why3Args) -> Result<()> {
         Why3SubCommand::Ide => Why3Mode::Ide,
         Why3SubCommand::Replay => Why3Mode::Replay,
     };
-    let paths = setup::creusot_paths()?;
-    run_why3(mode, args.coma_file, args.args, paths)
+    let paths = setup::creusot_paths();
+    run_why3(mode, args.coma_file, args.args, &paths)
+}
+
+#[derive(Debug, Parser)]
+pub struct Why3ConfArgs {
+    #[clap(long, default_value_t = default_provers_parallelism())]
+    provers_parallelism: usize,
+}
+
+impl Default for Why3ConfArgs {
+    fn default() -> Self {
+        Why3ConfArgs { provers_parallelism: default_provers_parallelism() }
+    }
+}
+
+fn default_provers_parallelism() -> usize {
+    match std::thread::available_parallelism() {
+        Ok(n) => n.get(),
+        Err(_) => 1,
+    }
+}
+
+fn why3_conf(args: Why3ConfArgs) -> Result<()> {
+    why3_launcher::generate_why3_conf(&setup::creusot_paths(), &args)
+}
+
+fn version() -> Result<()> {
+    println!("cargo-creusot {}", env!("CARGO_PKG_VERSION"));
+    println!("Rust toolchain {}", setup::toolchain_channel());
+    let paths = setup::creusot_paths();
+    let _ = Command::new(paths.why3()).arg("--version").status();
+    let _ = Command::new(paths.why3find()).arg("--version").status();
+    for tool in setup::PROVERS {
+        let version =
+            tool.detect_version(&paths.binary(tool.binary_name)).unwrap_or_else(|e| e.to_string());
+        let mismatch = if version != tool.version {
+            format!(" (recommended {})", tool.version)
+        } else {
+            "".into()
+        };
+        println!("{} {}{}", tool.binary_name, version, mismatch);
+    }
+    Ok(())
 }

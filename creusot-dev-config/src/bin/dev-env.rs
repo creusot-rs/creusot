@@ -3,9 +3,8 @@ use std::{env, path::PathBuf};
 use which::which;
 
 pub fn main() -> anyhow::Result<()> {
-    let paths = creusot_setup::creusot_paths()?;
-
-    let why3_path = which(&paths.why3)?;
+    let paths = creusot_setup::creusot_paths();
+    let why3_path = which(&paths.why3())?;
     eprintln!("Using Why3 at: {}", &why3_path.display());
     let why3_dir = PathBuf::from(&why3_path.parent().ok_or(anyhow!("finding why3's location"))?);
     let new_path = match env::var_os("PATH") {
@@ -18,7 +17,7 @@ pub fn main() -> anyhow::Result<()> {
     };
     println!("PATH={:?}; export PATH;", &new_path);
 
-    eprintln!("Using Why3 config at: {}", &paths.why3_config.display());
-    println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &paths.why3_config.display());
+    eprintln!("Using Why3 config at: {}", &paths.why3_conf().display());
+    println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &paths.why3_conf().display());
     Ok(())
 }
