@@ -92,7 +92,7 @@ struct ExternMethod {
 #[derive(Clone, Debug)]
 enum TraitOrImpl {
     Trait(Ident, Generics),
-    Impl(Type),
+    Impl(Box<Type>),
 }
 
 #[derive(Clone, Debug)]
@@ -134,22 +134,19 @@ impl ExternSpecs {
     }
 }
 
-impl TraitOrImpl {
-    fn self_ty(&self) -> Type {
-        match self {
-            TraitOrImpl::Trait(_, _) => parse_quote! { Self_ },
-            TraitOrImpl::Impl(ty) => ty.clone(),
-        }
-    }
+fn self_escape<T: Parse>(mut span: Span) -> T {
+    span = span.resolved_at(Span::mixed_site());
+    parse_quote_spanned! { span => self_ }
+}
+
+fn self_type_escape<T: Parse>(mut span: Span) -> T {
+    span = span.resolved_at(Span::mixed_site());
+    parse_quote_spanned! { span => Self_ }
 }
 
 impl FlatSpec {
     fn into_tokens(mut self) -> TokenStream {
         let span = self.span;
-        let err = escape_self_in_contracts(&mut self.attrs);
-        if let Err(e) = err {
-            return e.into_compile_error();
-        }
         let args: Punctuated<Expr, Comma> = self
             .signature
             .inputs
@@ -160,7 +157,7 @@ impl FlatSpec {
                 let exp: Expr = if let FnArg::Typed(PatType { pat, .. }) = inp {
                     Expr::Verbatim(pat.to_token_stream())
                 } else {
-                    Expr::Verbatim(quote_spanned! {span=> self_ })
+                    Expr::Verbatim(self_escape(inp.span()))
                 };
                 Pair::new(exp, comma)
             })
@@ -168,6 +165,7 @@ impl FlatSpec {
 
         let ident = crate::creusot::generate_unique_ident("extern_spec", span);
 
+        let mut replacer;
         if let Some(mut data) = self.impl_data {
             data.params.extend(self.signature.generics.params);
             self.signature.generics.params = data.params;
@@ -185,22 +183,27 @@ impl FlatSpec {
                 where_clause.predicates.extend(p)
             };
 
-            let self_ty = data.self_ty.self_ty();
-            let mut replacer = SelfEscape { self_ty };
+            let escape = match &data.self_ty {
+                TraitOrImpl::Trait(_, _) => SelfTypeKind::Self_,
+                TraitOrImpl::Impl(ty) => SelfTypeKind::Type(ty.clone()),
+            };
+            replacer = SelfTypeEscaper { escape, err: Ok(()) };
 
             self.signature.inputs.iter_mut().for_each(|input| match input {
-                FnArg::Receiver(Receiver { reference, mutability, .. }) => {
+                FnArg::Receiver(Receiver { self_token, ty, .. }) => {
                     // An `impl` block may have a `self` reciever, but we should replace it with the actual
                     // underlying type. This constructs the correct replacement for those cases.
-                    let mut self_ty = replacer.self_ty.clone();
-                    if let Some((and, l)) = reference {
-                        self_ty = parse_quote! { #and #l #mutability #self_ty};
-                    };
+
+                    let mut ty = ty.clone();
+                    replacer.visit_type_mut(&mut ty);
+
+                    let self_: Ident = self_escape(self_token.span());
+
                     *input = FnArg::Typed(PatType {
                         attrs: Vec::new(),
-                        pat: parse_quote_spanned! {span=> self_ },
+                        pat: parse_quote!(#self_),
                         colon_token: Default::default(),
-                        ty: Box::new(self_ty),
+                        ty,
                     });
                 }
                 FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
@@ -209,16 +212,30 @@ impl FlatSpec {
             replacer.visit_return_type_mut(&mut self.signature.output);
 
             if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
+                let selfty = self_type_escape(span);
                 where_clause
                     .predicates
-                    .push(parse_quote_spanned! {span=> Self_: ?::std::marker::Sized + #trait_name #generics });
+                    .push(parse_quote_spanned! {span=> #selfty : ?::std::marker::Sized + #trait_name #generics });
 
-                self.signature.generics.params.insert(0, parse_quote_spanned! {span=> Self_ });
+                self.signature.generics.params.insert(0, selfty);
 
                 where_clause.predicates.iter_mut().for_each(|pred| {
                     replacer.visit_where_predicate_mut(pred);
                 });
             }
+
+            if let Some(block) = &mut self.body {
+                replacer.visit_block_mut(block)
+            }
+        } else {
+            replacer = SelfTypeEscaper { escape: SelfTypeKind::None, err: Ok(()) };
+        }
+
+        if let Err(e) = escape_self_in_contracts(&mut self.attrs, &mut replacer) {
+            return e.into_compile_error();
+        }
+        if let Err(e) = replacer.err {
+            return e.into_compile_error();
         }
 
         let sig = Signature {
@@ -292,39 +309,85 @@ fn filter_erasure(attrs: &[Attribute]) -> Vec<Attribute> {
         .collect::<Vec<_>>()
 }
 
-struct SelfEscape {
-    self_ty: Type,
+enum SelfTypeKind {
+    Self_,
+    Type(Box<Type>),
+    None,
 }
 
-impl syn::visit_mut::VisitMut for SelfEscape {
-    fn visit_type_mut(&mut self, ty: &mut Type) {
-        if let Type::Path(TypePath { path, .. }) = ty {
-            if path.segments[0].ident == "Self" {
-                if self.self_ty == parse_quote! { Self_ } {
-                    let mut ident: Ident = parse_quote! { Self_ };
-                    ident.set_span(path.segments[0].ident.span());
-                    path.segments[0].ident = ident;
-                } else {
-                    *ty = self.self_ty.clone();
+struct SelfTypeEscaper {
+    escape: SelfTypeKind,
+    err: Result<()>,
+}
+
+impl SelfTypeEscaper {
+    fn visit_struct_path(&mut self, path: &mut Path) {
+        if path.segments[0].ident == "Self" {
+            match &self.escape {
+                SelfTypeKind::None => (),
+                SelfTypeKind::Type(box Type::Path(TypePath { path: pathty, .. }))
+                    if path.segments.len() == 1 =>
+                {
+                    *path = pathty.clone()
                 }
+                SelfTypeKind::Type(_) => {
+                    self.err = Err(Error::new(path.segments[0].span(), "Cannot use Self here."))
+                }
+                SelfTypeKind::Self_ => path.segments[0] = self_type_escape(path.segments[0].span()),
+            }
+        }
+    }
+}
+
+impl syn::visit_mut::VisitMut for SelfTypeEscaper {
+    fn visit_type_mut(&mut self, ty: &mut Type) {
+        if let Type::Path(TypePath { path, .. }) = ty
+            && path.segments[0].ident == "Self"
+        {
+            match &self.escape {
+                SelfTypeKind::None => (),
+                SelfTypeKind::Type(box escty) if path.segments.len() == 1 => *ty = escty.clone(),
+                SelfTypeKind::Type(_) => {
+                    self.err = Err(Error::new(path.segments[0].span(), "Cannot use Self here."))
+                }
+                SelfTypeKind::Self_ => path.segments[0] = self_type_escape(path.segments[0].span()),
             }
         }
 
         visit_mut::visit_type_mut(self, ty);
     }
+
+    fn visit_expr_struct_mut(&mut self, expr: &mut ExprStruct) {
+        self.visit_struct_path(&mut expr.path);
+        visit_mut::visit_expr_struct_mut(self, expr);
+    }
+
+    fn visit_expr_path_mut(&mut self, expr: &mut ExprPath) {
+        if expr.path.segments[0].ident == "Self" {
+            let span = expr.path.segments[0].span();
+            match &self.escape {
+                SelfTypeKind::None => (),
+                SelfTypeKind::Type(_) => self.err = Err(Error::new(span, "Cannot use Self here.")),
+                SelfTypeKind::Self_ => expr.path.segments[0] = self_type_escape(span),
+            }
+        }
+        visit_mut::visit_expr_path_mut(self, expr);
+    }
 }
 
-fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
+fn escape_self_in_contracts(
+    attrs: &mut Vec<Attribute>,
+    replacer: &mut SelfTypeEscaper,
+) -> Result<()> {
     for attr in attrs {
-        if let Some(id) = attr.path().get_ident() {
-            if id == "ensures" || id == "requires" {
-                if let Meta::List(l) = &mut attr.meta {
-                    let tokens = std::mem::take(&mut l.tokens);
-                    let mut term: Term = syn::parse2(tokens)?;
-                    escape_self_in_term(&mut term);
-                    l.tokens = term.into_token_stream();
-                }
-            }
+        if let Some(id) = attr.path().get_ident()
+            && (id == "ensures" || id == "requires")
+            && let Meta::List(l) = &mut attr.meta
+        {
+            let tokens = std::mem::take(&mut l.tokens);
+            let mut term: Term = syn::parse2(tokens)?;
+            escape_self_in_term(&mut term, replacer);
+            l.tokens = term.into_token_stream();
         }
     }
     Ok(())
@@ -335,136 +398,165 @@ fn escape_self_in_block(b: &mut Block) {
     impl VisitMut for BlockSelfRename {
         fn visit_expr_path_mut(&mut self, i: &mut ExprPath) {
             if i.path.is_ident("self") {
-                let span = i.path.span();
-                i.path = parse_quote_spanned! {span=> self_};
+                i.path = self_escape(i.path.span());
             }
         }
     }
     BlockSelfRename.visit_block_mut(b);
 }
 
-fn escape_self_in_term(t: &mut Term) {
-    let span = t.span();
+fn escape_self_in_term(t: &mut Term, replacer: &mut SelfTypeEscaper) {
     match t {
-        Term::Macro(_) => {}
         Term::Array(TermArray { elems, .. }) => {
             for elem in elems {
-                escape_self_in_term(elem)
+                escape_self_in_term(elem, replacer)
             }
         }
         Term::Binary(TermBinary { left, right, .. }) => {
-            escape_self_in_term(left);
-            escape_self_in_term(right);
+            escape_self_in_term(left, replacer);
+            escape_self_in_term(right, replacer)
         }
-        Term::Block(TermBlock { block, .. }) => escape_self_in_tblock(block),
+        Term::Block(TermBlock { block, .. }) => escape_self_in_tblock(block, replacer),
         Term::Call(TermCall { func, args, .. }) => {
-            escape_self_in_term(func);
+            escape_self_in_term(func, replacer);
             for arg in args {
-                escape_self_in_term(arg)
+                escape_self_in_term(arg, replacer)
             }
         }
-        Term::Cast(TermCast { expr, .. }) => {
-            escape_self_in_term(expr);
+        Term::Cast(TermCast { expr, ty, .. }) => {
+            replacer.visit_type_mut(ty);
+            escape_self_in_term(expr, replacer)
         }
-        Term::Field(TermField { base, .. }) => escape_self_in_term(base),
-        Term::Group(TermGroup { expr, .. }) => {
-            escape_self_in_term(expr);
+        Term::Field(TermField { base, member, .. }) => {
+            replacer.visit_member_mut(member);
+            escape_self_in_term(base, replacer)
         }
+        Term::Group(TermGroup { expr, .. }) => escape_self_in_term(expr, replacer),
         Term::If(TermIf { cond, then_branch, else_branch, .. }) => {
-            escape_self_in_term(cond);
-            escape_self_in_tblock(then_branch);
+            escape_self_in_term(cond, replacer);
+            escape_self_in_tblock(then_branch, replacer);
             if let Some((_, b)) = else_branch {
-                escape_self_in_term(b);
+                escape_self_in_term(b, replacer);
             }
         }
         Term::Index(TermIndex { expr, index, .. }) => {
-            escape_self_in_term(expr);
-            escape_self_in_term(index);
+            escape_self_in_term(expr, replacer);
+            escape_self_in_term(index, replacer);
         }
-        Term::Let(TermLet { expr, .. }) => {
-            escape_self_in_term(expr);
+        Term::Let(TermLet { expr, pat, .. }) => {
+            replacer.visit_pat_mut(pat);
+            escape_self_in_term(expr, replacer)
         }
+        Term::Lit(TermLit { lit }) => replacer.visit_lit_mut(lit),
         Term::Match(TermMatch { expr, arms, .. }) => {
-            escape_self_in_term(expr);
+            escape_self_in_term(expr, replacer);
             for arm in arms {
-                escape_self_in_term(&mut arm.body)
-            }
-        }
-        Term::MethodCall(TermMethodCall { receiver, args, .. }) => {
-            escape_self_in_term(receiver);
-            for arg in args {
-                escape_self_in_term(arg)
-            }
-        }
-        Term::Paren(TermParen { expr, .. }) => {
-            escape_self_in_term(expr);
-        }
-        Term::Path(TermPath { inner }) => {
-            if let Some(id) = inner.path.get_ident() {
-                if id == "self" {
-                    inner.path = parse_quote_spanned! {span=> self_ };
+                replacer.visit_pat_mut(&mut arm.pat);
+                if let Some(guard) = &mut arm.guard {
+                    escape_self_in_term(&mut *guard.1, replacer);
                 }
+                escape_self_in_term(&mut arm.body, replacer)
+            }
+        }
+        Term::MethodCall(TermMethodCall { receiver, turbofish, args, .. }) => {
+            escape_self_in_term(receiver, replacer);
+            if let Some(turbofish) = turbofish {
+                for arg in &mut turbofish.args {
+                    match arg {
+                        TermGenericMethodArgument::Type(ty) => replacer.visit_type_mut(ty),
+                        TermGenericMethodArgument::Const(term) => {
+                            escape_self_in_term(term, replacer)
+                        }
+                    }
+                }
+            }
+            for arg in args {
+                escape_self_in_term(arg, replacer)
+            }
+        }
+        Term::Paren(TermParen { expr, .. }) => escape_self_in_term(expr, replacer),
+        Term::Path(TermPath { inner }) => {
+            if inner.path.get_ident().is_some_and(|id| id == "self") {
+                inner.path = self_escape(inner.span());
+            } else {
+                replacer.visit_expr_path_mut(inner)
             }
         }
         Term::Range(TermRange { from, to, .. }) => {
             if let Some(from) = from {
-                escape_self_in_term(from);
+                escape_self_in_term(from, replacer);
             }
             if let Some(to) = to {
-                escape_self_in_term(to);
+                escape_self_in_term(to, replacer);
             }
         }
-        Term::Reference(TermReference { expr, .. }) => {
-            escape_self_in_term(expr);
-        }
+        Term::Reference(TermReference { expr, .. }) => escape_self_in_term(expr, replacer),
         Term::Repeat(TermRepeat { expr, len, .. }) => {
-            escape_self_in_term(expr);
-            escape_self_in_term(len);
+            escape_self_in_term(expr, replacer);
+            escape_self_in_term(len, replacer);
         }
-        Term::Struct(TermStruct { fields, rest, .. }) => {
+        Term::Struct(TermStruct { path, fields, rest, .. }) => {
+            replacer.visit_struct_path(path);
             for field in fields {
-                escape_self_in_term(&mut field.expr)
+                replacer.visit_member_mut(&mut field.member);
+                escape_self_in_term(&mut field.expr, replacer)
             }
             if let Some(t) = rest {
-                escape_self_in_term(t)
+                escape_self_in_term(t, replacer)
             }
         }
         Term::Tuple(TermTuple { elems, .. }) => {
             for elem in elems {
-                escape_self_in_term(elem)
+                escape_self_in_term(elem, replacer)
             }
         }
-        Term::Type(TermType { expr, .. }) => {
-            escape_self_in_term(expr);
+        Term::Type(TermType { expr, ty, .. }) => {
+            escape_self_in_term(expr, replacer);
+            replacer.visit_type_mut(ty)
         }
-        Term::Unary(TermUnary { expr, .. }) => {
-            escape_self_in_term(expr);
-        }
-        Term::Final(TermFinal { term, .. }) => escape_self_in_term(term),
-        Term::View(TermView { term, .. }) => escape_self_in_term(term),
-        Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
-            escape_self_in_term(lhs);
-            escape_self_in_term(rhs)
-        }
+        Term::Unary(TermUnary { expr, .. }) => escape_self_in_term(expr, replacer),
+        Term::Final(TermFinal { term, .. }) => escape_self_in_term(term, replacer),
+        Term::View(TermView { term, .. }) => escape_self_in_term(term, replacer),
         Term::Impl(TermImpl { hyp, cons, .. }) => {
-            escape_self_in_term(hyp);
-            escape_self_in_term(cons);
+            escape_self_in_term(hyp, replacer);
+            escape_self_in_term(cons, replacer)
         }
-        Term::Quant(TermQuant { term, .. }) => escape_self_in_term(term),
+        Term::Quant(TermQuant { args, trigger, term, .. }) => {
+            for arg in args.iter_mut() {
+                if let Some((_, box ty)) = &mut arg.ty {
+                    replacer.visit_type_mut(ty)
+                }
+            }
+            for t in trigger.iter_mut().flat_map(|tr| tr.terms.iter_mut()) {
+                escape_self_in_term(t, replacer)
+            }
+            escape_self_in_term(term, replacer)
+        }
         Term::Dead(TermDead { .. }) => {}
-        Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
-        Term::Lit(TermLit { .. }) => {}
-        Term::Closure(TermClosure { body, .. }) => escape_self_in_term(body),
+        Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block, replacer),
+        Term::ProofAssert(TermProofAssert { block, .. }) => escape_self_in_tblock(block, replacer),
+        Term::Seq(TermSeq { terms, .. }) => {
+            for term in terms {
+                escape_self_in_term(term, replacer)
+            }
+        }
+        Term::Closure(TermClosure { inputs, output, body, .. }) => {
+            for input in inputs.iter_mut() {
+                replacer.visit_pat_mut(input)
+            }
+            replacer.visit_return_type_mut(output);
+            escape_self_in_term(body, replacer)
+        }
         Term::__Nonexhaustive => {}
     }
 }
 
-fn escape_self_in_tblock(t: &mut TBlock) {
+fn escape_self_in_tblock(t: &mut TBlock, replacer: &mut SelfTypeEscaper) {
     for s in &mut t.stmts {
         match s {
-            TermStmt::Local(TLocal { init: Some((_, t)), .. }) => escape_self_in_term(t),
-            TermStmt::Expr(t) => escape_self_in_term(t),
-            TermStmt::Semi(t, _) => escape_self_in_term(t),
+            TermStmt::Local(TLocal { init: Some((_, t)), .. }) => escape_self_in_term(t, replacer),
+            TermStmt::Expr(t) => escape_self_in_term(t, replacer),
+            TermStmt::Semi(t, _) => escape_self_in_term(t, replacer),
             _ => {}
         }
     }
@@ -562,7 +654,7 @@ fn flatten(
                     prefix.clone(),
                     item_name.clone(),
                     Some(ImplData {
-                        self_ty: TraitOrImpl::Impl(*ty.clone()),
+                        self_ty: TraitOrImpl::Impl(ty.clone()),
                         params: impl_.generics.params.clone(),
                         where_clause: impl_.generics.where_clause.clone().map(|w| w.predicates),
                     }),
@@ -743,7 +835,7 @@ impl Parse for ExternImpl {
 
         let first_ty_span = input.span();
         let mut first_ty: Type = input.parse()?;
-        let self_ty: Type;
+        let self_ty: Box<Type>;
         let trait_;
 
         let is_impl_for = input.peek(Token![for]);
@@ -772,7 +864,7 @@ impl Parse for ExternImpl {
             self_ty = input.parse()?;
         } else {
             trait_ = None;
-            self_ty = first_ty;
+            self_ty = Box::new(first_ty);
         }
 
         generics.where_clause = input.parse()?;
@@ -795,7 +887,7 @@ impl Parse for ExternImpl {
             _impl_token: impl_token,
             generics,
             trait_,
-            self_ty: Box::new(self_ty),
+            self_ty,
             brace_token,
             items,
         })

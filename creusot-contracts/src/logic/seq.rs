@@ -936,14 +936,6 @@ impl<T> Resolve for SeqIter<T> {
     fn resolve_coherence(self) {}
 }
 
-/// A sequence literal `seq![a, b, c]`.
-#[macro_export]
-macro_rules! seq {
-    ($($items:expr),+) => { creusot_contracts::__stubs::seq_literal(&[$(creusot_contracts::macros::pearlite!($items)),+]) };
-    () => { Seq::empty() };
-}
-pub use seq;
-
 // Some properties
 // TODO : use parameters instead of quantification, and mode to impl block
 

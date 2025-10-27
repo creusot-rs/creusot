@@ -13,8 +13,10 @@ mod kw {
     syn::custom_keyword!(forall);
     syn::custom_keyword!(exists);
     syn::custom_keyword!(dead);
-    syn::custom_keyword!(pearlite);
     syn::custom_keyword!(trigger);
+    syn::custom_keyword!(pearlite);
+    syn::custom_keyword!(seq);
+    syn::custom_keyword!(proof_assert);
 }
 
 ast_enum_of_structs! {
@@ -109,9 +111,6 @@ ast_enum_of_structs! {
         /// The view of a term: `x@`
         View(TermView),
 
-        /// Logical equality
-        LogEq(TermLogEq),
-
         /// Logical implication
         Impl(TermImpl),
 
@@ -124,8 +123,11 @@ ast_enum_of_structs! {
         /// Pearlite macro `pearlite!{ ... }`.
         Pearlite(TermPearlite),
 
-        /// A macro invocation expression: `format!("{}", q)`.
-        Macro(ExprMacro),
+        /// Macro `proof_assert!{ ... }`.
+        ProofAssert(TermProofAssert),
+
+        /// Macro `seq!{ ... }`.
+        Seq(TermSeq),
 
         /// A closure expresion: |a, b| a + b.
         Closure(TermClosure),
@@ -402,15 +404,6 @@ ast_struct! {
 }
 
 ast_struct! {
-    pub struct TermLogEq {
-        pub lhs: Box<Term>,
-        pub eqeq_token: Token![==],
-        pub eq_token: Token![=],
-        pub rhs: Box<Term>,
-    }
-}
-
-ast_struct! {
     pub struct TermImpl {
         pub hyp: Box<Term>,
         pub eqeq_token: Token![==],
@@ -480,6 +473,23 @@ ast_struct! {
         pub pearlite_token: kw::pearlite,
         pub bang_token: Token![!],
         pub block: TBlock,
+    }
+}
+
+ast_struct! {
+    pub struct TermProofAssert {
+        pub proof_assert_token: kw::proof_assert,
+        pub bang_token: Token![!],
+        pub block: TBlock,
+    }
+}
+
+ast_struct! {
+    pub struct TermSeq {
+        pub seq_token: kw::seq,
+        pub bang_token: Token![!],
+        pub bracket_token: token::Bracket,
+        pub terms: Punctuated<Term, Token![,]>,
     }
 }
 
@@ -605,10 +615,11 @@ pub(crate) fn requires_terminator(expr: &Term) -> bool {
 #[cfg(feature = "parsing")]
 pub(crate) mod parsing {
     use super::*;
-    use syn::parse::{Parse, ParseStream, Result};
-    use token::{Brace, Bracket, Paren};
-    // use syn::path;
     use std::cmp::Ordering;
+    use syn::{
+        parse::{Parse, ParseStream, Result},
+        spanned::Spanned,
+    };
 
     syn::custom_keyword!(raw);
 
@@ -1200,22 +1211,45 @@ pub(crate) mod parsing {
             && is_mod_style(&expr.inner.path)
         {
             let bang_token: Token![!] = input.parse()?;
-            let (delim, span, tokens) = input.parse_any_delimiter()?;
-            let delimiter = match delim {
-                Delimiter::Parenthesis => MacroDelimiter::Paren(Paren { span }),
-                Delimiter::Brace => MacroDelimiter::Brace(Brace { span }),
-                // Delimiter::None should not be encountered here.
-                Delimiter::Bracket | Delimiter::None => MacroDelimiter::Bracket(Bracket { span }),
-            };
-            return Ok(Term::Macro(ExprMacro {
-                attrs: Vec::new(),
-                mac: Macro {
-                    path: expr.inner.path,
+
+            let (_, span_delim, tokens) = input.parse_any_delimiter()?;
+
+            // It's unclear what to do with macros. Either we translate the parameters, but then
+            // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
+            // or we don't translate parameters, but then we let the user write non-pearlite code
+            // in pearlite... So we only treat well known macros.
+
+            if expr.inner.path.is_ident("proof_assert") {
+                return Ok(Term::ProofAssert(TermProofAssert {
+                    proof_assert_token: kw::proof_assert(expr.inner.span()),
                     bang_token,
-                    delimiter,
-                    tokens: tokens.parse()?,
-                },
-            }));
+                    block: TBlock {
+                        brace_token: token::Brace(span_delim),
+                        stmts: TBlock::parse_within(&tokens)?,
+                    },
+                }));
+            } else if expr.inner.path.is_ident("pearlite") {
+                return Ok(Term::Pearlite(TermPearlite {
+                    pearlite_token: kw::pearlite(expr.inner.span()),
+                    bang_token,
+                    block: TBlock {
+                        brace_token: token::Brace(span_delim),
+                        stmts: TBlock::parse_within(&tokens)?,
+                    },
+                }));
+            } else if expr.inner.path.is_ident("seq") {
+                return Ok(Term::Seq(TermSeq {
+                    seq_token: kw::seq(expr.inner.span()),
+                    bang_token,
+                    bracket_token: token::Bracket(span_delim),
+                    terms: Punctuated::parse_terminated(&tokens)?,
+                }));
+            } else {
+                return Err(Error::new_spanned(
+                    expr,
+                    " Unsupported expression: macros other than `pearlite!`, `proof_assert!` or `seq!` are unsupported in Pearlite code.",
+                ));
+            }
         }
 
         if allow_struct.0 && input.peek(token::Brace) {
@@ -1928,15 +1962,6 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TermLogEq {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.lhs.to_tokens(tokens);
-            self.eqeq_token.to_tokens(tokens);
-            self.eq_token.to_tokens(tokens);
-            self.rhs.to_tokens(tokens);
-        }
-    }
-
     impl ToTokens for TermImpl {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.hyp.to_tokens(tokens);
@@ -1997,6 +2022,22 @@ pub(crate) mod printing {
             self.pearlite_token.to_tokens(tokens);
             self.bang_token.to_tokens(tokens);
             self.block.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermProofAssert {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.proof_assert_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.block.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermSeq {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.seq_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.terms.to_tokens(tokens);
         }
     }
 

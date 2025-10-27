@@ -551,7 +551,7 @@ mod base_prelude {
     };
 
     #[cfg(creusot)]
-    pub use crate::{invariant::inv, logic::seq::seq, resolve::resolve};
+    pub use crate::{invariant::inv, resolve::resolve};
 }
 /// Re-exports available under the `creusot_contracts` namespace
 pub mod prelude {
