@@ -124,7 +124,6 @@ fn place_to_term<'tcx>(
             ProjectionElem::Subslice { .. } => return None,
             ProjectionElem::Downcast(_, _) => return None,
             ProjectionElem::OpaqueCast(_) => return None,
-            ProjectionElem::Subtype(_) => return None,
             ProjectionElem::UnwrapUnsafeBinder(_) => return None,
         }
 
