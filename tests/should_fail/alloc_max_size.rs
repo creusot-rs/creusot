@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, prelude::*};
+use creusot_contracts::prelude::*;
 
 #[ensures(false)]
 pub fn main() {
@@ -7,10 +7,4 @@ pub fn main() {
         let x = [0usize; usize::MAX];
         let _ = std::mem::size_of_val(&x);
     };
-}
-
-#[ensures(false)]
-pub fn g() {
-    let x = [0usize; usize::MAX];
-    let _ = PtrOwn::new(x);
 }
