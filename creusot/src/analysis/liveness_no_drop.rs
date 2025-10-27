@@ -174,8 +174,7 @@ impl DefUse {
                 MutatingUseContext::Call
                 | MutatingUseContext::Yield
                 | MutatingUseContext::AsmOutput
-                | MutatingUseContext::Store
-                | MutatingUseContext::Deinit,
+                | MutatingUseContext::Store,
             ) => {
                 if place_contains_borrow_deref(place.as_ref(), &ctx.body, ctx.tcx) {
                     // Treat derefs of (mutable) borrows as a use of the base local.
