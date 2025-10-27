@@ -102,6 +102,7 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
                 #tags_toks
                 #(#attrs)*
                 #documentation
+                #[allow(unused)]
                 #vis #sig #req_body
             })
         }

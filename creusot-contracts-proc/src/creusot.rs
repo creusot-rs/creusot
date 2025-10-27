@@ -39,7 +39,7 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::trusted]
-        #[allow(creusot::experimental)]
+        #[allow(creusot::experimental, unused)]
         #tokens
     })
 }

@@ -253,7 +253,7 @@ impl FlatSpec {
         };
         let mut attrs = filter_erasure(&self.attrs);
         let has_erasure = attrs.len() < self.attrs.len();
-        attrs.push(parse_quote! { #[allow(dead_code, non_snake_case)] });
+        attrs.push(parse_quote! { #[allow(unused, non_snake_case)] });
 
         let call = Expr::Call(ExprCall {
             attrs: Vec::new(),
