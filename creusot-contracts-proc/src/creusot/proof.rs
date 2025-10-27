@@ -20,7 +20,6 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
-                #[allow(unused_braces)]
                 || -> bool #assert_body;
         }
     })

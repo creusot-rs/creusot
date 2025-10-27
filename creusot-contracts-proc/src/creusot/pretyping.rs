@@ -7,10 +7,10 @@
 
 use pearlite_syn::{Term, term::*};
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
-use quote::{ToTokens, quote_spanned};
+use quote::{ToTokens, quote, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    Ident, Lit, Pat, PatIdent, PatType, Path, UnOp, parse_quote_spanned,
+    Ident, Lit, Pat, PatIdent, PatType, UnOp,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
@@ -131,27 +131,6 @@ impl From<TokenStream> for EncodingResult {
 fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, EncodeError> {
     let sp = term.span();
     match term {
-        // It's unclear what to do with macros. Either we translate the parameters, but then
-        // it's impossible to handle proc macros whose parameters is not valid pearlite syntax,
-        // or we don't translate parameters, but then we let the user write non-pearlite code
-        // in pearlite...
-        Term::Macro(term) => {
-            let mut term = term.clone();
-            let path: Path = if term.mac.path.is_ident("proof_assert") {
-                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::macros::proof_assert }
-            } else if term.mac.path.is_ident("pearlite") {
-                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::macros::pearlite }
-            } else if term.mac.path.is_ident("seq") {
-                parse_quote_spanned! { term.mac.path.span() => ::creusot_contracts::logic::seq::seq }
-            } else {
-                return Err(EncodeError::Unsupported(
-                        sp,
-                        "macros other than `pearlite!` or `proof_assert!` or `seq!` are unsupported in pearlite code".into(),
-                    ));
-            };
-            term.mac.path = path;
-            Ok(term.to_token_stream().into())
-        }
         Term::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
         Term::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
@@ -409,14 +388,6 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             let term = encode_term_(term, locals)?.toks();
             Ok(quote_spanned! {sp=> ((#term).__creusot_view_stub()) }.into())
         }
-        Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
-            let lhs = encode_term_(lhs, locals)?.toks();
-            let rhs = encode_term_(rhs, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                ::creusot_contracts::__stubs::equal(#lhs, #rhs)
-            }
-            .into())
-        }
         Term::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
                 Term::Paren(TermParen { expr, .. }) => match &**expr {
@@ -457,7 +428,38 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             .into())
         }
         Term::Dead(_) => Ok(quote_spanned! {sp=> (*::creusot_contracts::__stubs::dead()) }.into()),
-        Term::Pearlite(term) => Ok(quote_spanned! {sp=> #term }.into()),
+        Term::Pearlite(TermPearlite { block, .. }) => {
+            let term = encode_block_(block, locals);
+            Ok(quote! { (#term) }.into())
+        }
+        Term::ProofAssert(TermProofAssert { block, .. }) => {
+            let assert_body = encode_block_(block, locals);
+            Ok(quote_spanned! {sp =>
+                {
+                    #[allow(let_underscore_drop)]
+                    let _ =
+                        #[creusot::no_translate]
+                        #[creusot::spec]
+                        #[creusot::spec::assert]
+                        || -> bool #assert_body;
+                }
+            }
+            .into())
+        }
+        Term::Seq(TermSeq { terms, .. }) => {
+            if terms.is_empty() {
+                return Ok(
+                    quote_spanned! { sp=> ::creusot_contracts::logic::seq::Seq::empty() }.into()
+                );
+            }
+
+            let terms: Vec<_> = terms
+                .into_iter()
+                .map(|t| Ok(encode_term_(t, locals)?.toks()))
+                .collect::<Result<_, _>>()?;
+            Ok(quote_spanned! {sp=> creusot_contracts::__stubs::seq_literal(&[#(#terms),*]) }
+                .into())
+        }
         Term::Closure(clos) => {
             if clos.inputs.len() != 1 {
                 return Err(EncodeError::Unsupported(

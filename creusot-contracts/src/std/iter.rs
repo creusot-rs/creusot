@@ -122,11 +122,11 @@ extern_spec! {
                 #[requires(forall<e, i2>
                                 self.produces(Seq::singleton(e), i2) ==>
                                 f.precondition((e,)))]
-                #[requires(map::reinitialize::<Self_, B, F>())]
-                #[requires(map::preservation::<Self_, B, F>(self, f))]
+                #[requires(map::reinitialize::<Self, B, F>())]
+                #[requires(map::preservation::<Self, B, F>(self, f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn map<B, F>(self, f: F) -> Map<Self, F>
-                    where Self: Sized, F: FnMut(Self_::Item) -> B;
+                    where Self: Sized, F: FnMut(Self::Item) -> B;
 
                 #[check(ghost)]
                 #[requires(filter::immutable(f))]
@@ -134,7 +134,7 @@ extern_spec! {
                 #[requires(filter::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P>(self, f: P) -> Filter<Self, P>
-                    where Self: Sized, P: for<'a> FnMut(&Self_::Item) -> bool;
+                    where Self: Sized, P: for<'a> FnMut(&Self::Item) -> bool;
 
                 #[check(ghost)]
                 #[requires(filter_map::immutable(f))]
@@ -142,12 +142,12 @@ extern_spec! {
                 #[requires(filter_map::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
-                    where Self: Sized, F: for<'a> FnMut(Self_::Item) -> Option<B>;
+                    where Self: Sized, F: for<'a> FnMut(Self::Item) -> Option<B>;
 
                 #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self_> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
-                #[requires(forall<s: Seq<Self_::Item>, i: Self_> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
+                #[requires(forall<i: &mut Self> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
+                #[requires(forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n()@ == 0)]
                 fn enumerate(self) -> Enumerate<Self>
                     where Self: Sized;
@@ -164,8 +164,7 @@ extern_spec! {
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized, U::IntoIter: Iterator;
 
-                // TODO: Investigate why Self_ needed
-                #[ensures(exists<done: &mut Self_, prod>
+                #[ensures(exists<done: &mut Self, prod>
                     resolve(^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
                 fn collect<B>(self) -> B
                     where Self: Sized, B: FromIteratorSpec<Self::Item>;
@@ -183,7 +182,7 @@ extern_spec! {
                 #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
                             T::into_iter.postcondition((iter,), into_iter) &&
                             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
-                            Self_::from_iter_post(prod, result))]
+                            Self::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: IteratorSpec;
             }

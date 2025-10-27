@@ -46,8 +46,6 @@ pub fn ghost_let(body: TS1) -> TS1 {
     ghost(body)
 }
 
-// #[proc_macro_attribute]
-
 pub fn requires(_: TS1, tokens: TS1) -> TS1 {
     let mut item = syn::parse_macro_input!(tokens as ContractSubject);
     delete_invariants(&mut item);
