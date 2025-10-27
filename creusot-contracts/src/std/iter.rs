@@ -52,10 +52,10 @@ pub trait IteratorSpec: Iterator {
     #[requires(forall<e, i2>
                     self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::empty()))))]
-    #[requires(MapInv::<Self, _, F>::reinitialize())]
-    #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
+    #[requires(MapInv::<Self, F>::reinitialize())]
+    #[requires(MapInv::<Self, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
-    fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
+    fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item, Snapshot<Seq<Self::Item>>) -> B,

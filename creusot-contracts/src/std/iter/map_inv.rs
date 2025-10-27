@@ -1,13 +1,13 @@
 use crate::{invariant::Invariant, prelude::*};
 
-pub struct MapInv<I, B, F> {
+pub struct MapInv<I: Iterator, F> {
     pub iter: I,
     pub func: F,
-    pub produced: Snapshot<Seq<B>>,
+    pub produced: Snapshot<Seq<I::Item>>,
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> IteratorSpec
-    for MapInv<I, I::Item, F>
+    for MapInv<I, F>
 {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
@@ -46,7 +46,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
-    for MapInv<I, I::Item, F>
+    for MapInv<I, F>
 {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
@@ -59,7 +59,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> std::iter::Iterator
-    for MapInv<I, I::Item, F>
+    for MapInv<I, F>
 {
     type Item = B;
 
@@ -89,7 +89,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> std::it
     }
 }
 
-impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, I::Item, F> {
+impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, F> {
     #[logic(open, prophetic)]
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {

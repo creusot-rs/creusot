@@ -246,7 +246,7 @@ module M_impl_Board__new (* Board *)
   axiom produces_refl_Range_usize_spec'0:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  type t_MapInv_Range_usize_usize_closure3 = { iter: t_Range_usize; func: closure3; produced: Seq.seq UInt64.t }
+  type t_MapInv_Range_usize_closure3 = { iter: t_Range_usize; func: closure3; produced: Seq.seq UInt64.t }
   
   predicate precondition_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) =
     let {f0 = _0; f1 = _1} = args in true
@@ -283,35 +283,34 @@ module M_impl_Board__new (* Board *)
         = (Seq.empty: Seq.seq UInt64.t)
       -> preservation_inv_Range_usize iter'0 func'0 produced'0 = preservation_Range_usize iter'0 func'0
   
-  predicate invariant_MapInv_Range_usize_Item_closure3 (self: t_MapInv_Range_usize_usize_closure3) =
+  predicate invariant_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) =
     reinitialize_Range_usize
     /\ preservation_inv_Range_usize self.iter self.func self.produced
     /\ next_precondition_Range_usize self.iter self.func self.produced
   
-  predicate inv_MapInv_Range_usize_usize_closure3 (_1: t_MapInv_Range_usize_usize_closure3)
+  predicate inv_MapInv_Range_usize_closure3 (_1: t_MapInv_Range_usize_closure3)
   
   axiom inv_axiom [@rewrite]:
-    forall x: t_MapInv_Range_usize_usize_closure3 [inv_MapInv_Range_usize_usize_closure3 x]. inv_MapInv_Range_usize_usize_closure3 x
-      = invariant_MapInv_Range_usize_Item_closure3 x
+    forall x: t_MapInv_Range_usize_closure3 [inv_MapInv_Range_usize_closure3 x]. inv_MapInv_Range_usize_closure3 x
+      = invariant_MapInv_Range_usize_closure3 x
   
-  let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3)
-    (return (x: t_MapInv_Range_usize_usize_closure3)) =
+  let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3) (return (x: t_MapInv_Range_usize_closure3)) =
     {[@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
       -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t }}
     {[@expl:map_inv requires #1] reinitialize_Range_usize}
     {[@expl:map_inv requires #2] preservation_Range_usize self func'0}
     any
-    [ return (result: t_MapInv_Range_usize_usize_closure3) -> {inv_MapInv_Range_usize_usize_closure3 result}
+    [ return (result: t_MapInv_Range_usize_closure3) -> {inv_MapInv_Range_usize_closure3 result}
       {result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t }}
       (! return {result}) ]
   
   type t_Vec_Vec_usize_Global_Global
   
-  predicate resolve_MapInv_Range_usize_usize_closure3 [@inline:trivial] (_1: t_MapInv_Range_usize_usize_closure3) = true
+  predicate resolve_MapInv_Range_usize_closure3 [@inline:trivial] (_1: t_MapInv_Range_usize_closure3) = true
   
-  meta "rewrite_def" predicate resolve_MapInv_Range_usize_usize_closure3
+  meta "rewrite_def" predicate resolve_MapInv_Range_usize_closure3
   
-  predicate produces_MapInv_Range_usize_Item_closure3 [@inline:trivial] (self: t_MapInv_Range_usize_usize_closure3) (visited: Seq.seq t_Vec_usize_Global) (succ: t_MapInv_Range_usize_usize_closure3) =
+  predicate produces_MapInv_Range_usize_closure3 [@inline:trivial] (self: t_MapInv_Range_usize_closure3) (visited: Seq.seq t_Vec_usize_Global) (succ: t_MapInv_Range_usize_closure3) =
     hist_inv_closure3 self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t closure3). Seq.length fs = Seq.length visited
       /\ (exists s: Seq.seq UInt64.t. Seq.length s = Seq.length visited
@@ -330,21 +329,20 @@ module M_impl_Board__new (* Board *)
           /\ postcondition_mut_closure3 (Seq.get fs i).current { f0 = Seq.get s i;
                                                                  f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces_MapInv_Range_usize_Item_closure3
+  meta "rewrite_def" predicate produces_MapInv_Range_usize_closure3
   
-  function produces_trans_MapInv_Range_usize_Item_closure3 (a: t_MapInv_Range_usize_usize_closure3) (ab: Seq.seq t_Vec_usize_Global) (b: t_MapInv_Range_usize_usize_closure3) (bc: Seq.seq t_Vec_usize_Global) (c: t_MapInv_Range_usize_usize_closure3) : ()
+  function produces_trans_MapInv_Range_usize_closure3 (a: t_MapInv_Range_usize_closure3) (ab: Seq.seq t_Vec_usize_Global) (b: t_MapInv_Range_usize_closure3) (bc: Seq.seq t_Vec_usize_Global) (c: t_MapInv_Range_usize_closure3) : ()
   
-  axiom produces_trans_MapInv_Range_usize_Item_closure3_spec:
-    forall a: t_MapInv_Range_usize_usize_closure3, ab: Seq.seq t_Vec_usize_Global, b: t_MapInv_Range_usize_usize_closure3, bc: Seq.seq t_Vec_usize_Global, c: t_MapInv_Range_usize_usize_closure3. produces_MapInv_Range_usize_Item_closure3 a ab b
-      -> produces_MapInv_Range_usize_Item_closure3 b bc c
-      -> produces_MapInv_Range_usize_Item_closure3 a (Seq.(++) ab bc) c
+  axiom produces_trans_MapInv_Range_usize_closure3_spec:
+    forall a: t_MapInv_Range_usize_closure3, ab: Seq.seq t_Vec_usize_Global, b: t_MapInv_Range_usize_closure3, bc: Seq.seq t_Vec_usize_Global, c: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 a ab b
+      -> produces_MapInv_Range_usize_closure3 b bc c -> produces_MapInv_Range_usize_closure3 a (Seq.(++) ab bc) c
   
-  function produces_refl_MapInv_Range_usize_Item_closure3 (self: t_MapInv_Range_usize_usize_closure3) : ()
+  function produces_refl_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) : ()
   
-  axiom produces_refl_MapInv_Range_usize_Item_closure3_spec:
-    forall self: t_MapInv_Range_usize_usize_closure3. produces_MapInv_Range_usize_Item_closure3 self (Seq.empty: Seq.seq t_Vec_usize_Global) self
+  axiom produces_refl_MapInv_Range_usize_closure3_spec:
+    forall self: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 self (Seq.empty: Seq.seq t_Vec_usize_Global) self
   
-  predicate completed_MapInv_Range_usize_Item_closure3 (self: MutBorrow.t t_MapInv_Range_usize_usize_closure3) =
+  predicate completed_MapInv_Range_usize_closure3 (self: MutBorrow.t t_MapInv_Range_usize_closure3) =
     self.final.produced = (Seq.empty: Seq.seq UInt64.t)
     /\ completed_Range_usize (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ self.current.func = self.final.func
@@ -358,14 +356,14 @@ module M_impl_Board__new (* Board *)
   predicate from_iter_post_Vec_Vec_usize_Global_Global (prod: Seq.seq t_Vec_usize_Global) (res: t_Vec_Vec_usize_Global_Global) =
     prod = view_Vec_Vec_usize_Global_Global res
   
-  let rec collect_MapInv_Range_usize_usize_closure3 (self_: t_MapInv_Range_usize_usize_closure3)
+  let rec collect_MapInv_Range_usize_closure3 (self_: t_MapInv_Range_usize_closure3)
     (return (x: t_Vec_Vec_usize_Global_Global)) =
-    {[@expl:collect 'self_' type invariant] inv_MapInv_Range_usize_usize_closure3 self_}
+    {[@expl:collect 'self_' type invariant] inv_MapInv_Range_usize_closure3 self_}
     any
     [ return (result: t_Vec_Vec_usize_Global_Global) ->
-    {exists done': MutBorrow.t t_MapInv_Range_usize_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_usize_closure3 done'.final
-        /\ completed_MapInv_Range_usize_Item_closure3 done'
-        /\ produces_MapInv_Range_usize_Item_closure3 self_ prod done'.current
+    {exists done': MutBorrow.t t_MapInv_Range_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_closure3 done'.final
+        /\ completed_MapInv_Range_usize_closure3 done'
+        /\ produces_MapInv_Range_usize_closure3 self_ prod done'.current
         /\ from_iter_post_Vec_Vec_usize_Global_Global prod result}
       (! return {result}) ]
   
@@ -391,10 +389,10 @@ module M_impl_Board__new (* Board *)
     [ bb0 = s0
       [ s0 = [ &_7 <- { start = (0: UInt64.t); end' = size'0 } ] s1
       | s1 = [ &_9 <- { c0 = size'0 } ] s2
-      | s2 = map_inv_Range_usize {_7} {_9} (fun (_ret: t_MapInv_Range_usize_usize_closure3) -> [ &_6 <- _ret ] s3)
+      | s2 = map_inv_Range_usize {_7} {_9} (fun (_ret: t_MapInv_Range_usize_closure3) -> [ &_6 <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = collect_MapInv_Range_usize_usize_closure3 {_6}
+      [ s0 = collect_MapInv_Range_usize_closure3 {_6}
           (fun (_ret: t_Vec_Vec_usize_Global_Global) -> [ &rows <- _ret ] s1)
       | s1 = bb2 ]
     | bb2 = s0 [ s0 = [ &_0 <- { size = size'0; field = rows } ] s1 | s1 = bb4 ]
@@ -402,7 +400,7 @@ module M_impl_Board__new (* Board *)
     [ & _0: t_Board = Any.any_l ()
     | & size'0: UInt64.t = size'0
     | & rows: t_Vec_Vec_usize_Global_Global = Any.any_l ()
-    | & _6: t_MapInv_Range_usize_usize_closure3 = Any.any_l ()
+    | & _6: t_MapInv_Range_usize_closure3 = Any.any_l ()
     | & _7: t_Range_usize = Any.any_l ()
     | & _9: closure3 = Any.any_l () ])
     [ return (result: t_Board) -> {[@expl:new ensures #0] result.size = size'0}
