@@ -952,43 +952,44 @@ impl<'tcx> BodyLocals<'tcx> {
         body: &mir::Body<'tcx>,
         erased_locals: &MixedBitSet<Local>,
     ) -> BodyLocals<'tcx> {
-        let mut vars = fmir::LocalDecls::with_capacity(body.local_decls.len());
-        let mut locals = HashMap::new();
-        let external_body = !body.source.def_id().is_local();
+        let args = if body.source.promoted.is_some() {
+            &[]
+        } else {
+            &*ctx.sig(body.source.def_id()).inputs
+        };
 
-        let args = &ctx.sig(body.source.def_id()).inputs;
+        assert!(body.arg_count == args.len());
 
-        for (loc, d) in body.local_decls.iter_enumerated() {
-            if erased_locals.contains(loc) {
-                continue;
-            }
-            let ident = if 0 < loc.index() && loc.index() <= args.len() {
-                args[loc.index() - 1].0.0
-            } else
-            // `is_user_variable` panics if the body comes from another crate
-            if external_body || !d.is_user_variable() {
-                Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
-            } else {
-                let x = body.var_debug_info.iter().find(|var_info| match var_info.value {
-                    mir::VarDebugInfoContents::Place(p) => {
-                        p.as_local().map(|l| l == loc).unwrap_or(false)
-                    }
-                    _ => false,
-                });
-                let debug_info = x.expect("expected user variable to have name");
-                Ident::fresh(ctx.crate_name(), lowercase_prefix("v_", debug_info.name.as_str()))
-            };
-            locals.insert(loc, ident);
-            vars.insert(
-                ident,
-                fmir::LocalDecl {
-                    span: d.source_info.span,
-                    ty: d.ty,
-                    temp: !external_body && !d.is_user_variable(),
-                    arg: 0 < loc.index() && loc.index() <= body.arg_count,
-                },
-            );
-        }
+        let (vars, locals) = body
+            .local_decls
+            .iter_enumerated()
+            .filter(|(loc, _)| !erased_locals.contains(*loc))
+            .map(|(loc, d)| {
+                let (mut temp, mut arg) = (false, false);
+                let ident;
+                if 0 < loc.index() && loc.index() <= body.arg_count {
+                    arg = true;
+                    ident = args[loc.index() - 1].0.0
+                } else if let Some(debug_info) =
+                    body.var_debug_info.iter().find(|var_info| match var_info.value {
+                        mir::VarDebugInfoContents::Place(p) => {
+                            p.as_local().map(|l| l == loc).unwrap_or(false)
+                        }
+                        _ => false,
+                    })
+                {
+                    ident = Ident::fresh(
+                        ctx.crate_name(),
+                        lowercase_prefix("v_", debug_info.name.as_str()),
+                    )
+                } else {
+                    temp = true;
+                    ident = Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
+                };
+                let span = d.source_info.span;
+                ((ident, fmir::LocalDecl { span, ty: d.ty, temp, arg }), (loc, ident))
+            })
+            .unzip();
         BodyLocals { vars, locals }
     }
 }
