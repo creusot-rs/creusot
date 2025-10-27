@@ -85,7 +85,7 @@ impl<'tcx> Dependency<'tcx> {
                     let mut name =
                         lowercase_prefix("f_", name.strip_suffix("_logic").unwrap_or(name));
                     let first_ty = if let Some(parent) = ctx.impl_of_assoc(did)
-                        && let Some(trait_ref) = ctx.impl_trait_ref(parent)
+                        && let Some(trait_ref) = ctx.impl_opt_trait_ref(parent)
                     {
                         // AssocFn in a trait impl: get the instantiated Self type
                         first_ty_arg(trait_ref.instantiate(ctx.tcx, subst).args)
