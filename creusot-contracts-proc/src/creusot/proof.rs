@@ -20,6 +20,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
+                #[allow(unused)]
                 || -> bool #assert_body;
         }
     })
@@ -34,6 +35,7 @@ pub fn snapshot(snapshot: TS1) -> TS1 {
             #[creusot::no_translate]
             #[creusot::spec]
             #[creusot::spec::snapshot]
+            #[allow(unused)]
             || #snap_body
         )
     })
