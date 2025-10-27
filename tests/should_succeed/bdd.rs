@@ -421,11 +421,10 @@ impl<'arena> Context<'arena> {
 impl<'arena> Context<'arena> {
     #[check(terminates)]
     pub fn new(alloc: &'arena bumpalo::Bump) -> Self {
-        let t = &True; // FIXME: make it possible to write this is pearlite
         Context {
             alloc,
             hashcons: hashmap::MyHashMap::new(),
-            hashcons_ghost: snapshot! { Mapping::cst(t) },
+            hashcons_ghost: snapshot! { Mapping::cst(&True) },
             not_memo: hashmap::MyHashMap::new(),
             and_memo: hashmap::MyHashMap::new(),
             cnt: PeanoInt::new(),

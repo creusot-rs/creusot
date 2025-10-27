@@ -1509,17 +1509,17 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
 end
 module M_impl_Context_0__new (* Context<'arena> *)
   use creusot.int.UInt64
-  use creusot.prelude.Any
   use map.Map
   use map.Const
+  use creusot.prelude.Any
   use mach.int.Int
-  
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   
   type t_MyHashMap_Node_Bdd
   
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  type t_NodeLog = False' | True' | If UInt64.t UInt64.t UInt64.t
+  
+  type t_Node = False''0 | True''0 | If'0 UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
   type t_Option_Bdd = None | Some t_Bdd
   
@@ -1562,9 +1562,9 @@ module M_impl_Context_0__new (* Context<'arena> *)
     cnt: t_PeanoInt }
   
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      | False''0 -> False'
+      | True''0 -> True'
+      | If'0 v childt childf -> If v (childt.f1) (childf.f1)
       end
   
   function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
@@ -1577,16 +1577,16 @@ module M_impl_Context_0__new (* Context<'arena> *)
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      | {f0 = True''0; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False''0; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If'0 v _ _; f1 = _} -> UInt64.t'int v
       end
   
   predicate is_valid_node (self: t_Context) (n: t_Node) =
     match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
+      | True''0 -> true
+      | False''0 -> true
+      | If'0 v childt childf -> childt.f0 <> childf.f0
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
@@ -1642,9 +1642,9 @@ module M_impl_Context_0__new (* Context<'arena> *)
   
   predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
     match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      | {f0 = True''0; f1 = _} -> true
+      | {f0 = False''0; f1 = _} -> false
+      | {f0 = If'0 v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
       end
   
   predicate invariant_Context [@inline:trivial] (self: t_Context) =
@@ -1682,32 +1682,22 @@ module M_impl_Context_0__new (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec new'0 (alloc'0: t_Bump) (return (x: t_Context)) = (! bb0
-    [ bb0 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = [ &alloc'0 <- True' ] s1'0 | s1'0 = [ &_0'0 <- alloc'0 ] s2'0 | s2'0 = _const_ret {_0'0} ] ]
-        [ & _0'0: t_Node = Any.any_l () | & alloc'0: t_Node = Any.any_l () ]
-        [ _const_ret (_const: t_Node) -> [ &_11 <- _const ] s1 ]
-      | s1 = [ &t <- _11 ] s2
-      | s2 = new_Node (fun (_ret: t_MyHashMap_Node_Bdd) -> [ &_5 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_6 <- Const.const t ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = new_Bdd (fun (_ret: t_MyHashMap_Bdd_Bdd) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_tup2_Bdd_Bdd (fun (_ret: t_MyHashMap_tup2_Bdd_Bdd_Bdd) -> [ &_9 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = new (fun (_ret: t_PeanoInt) -> [ &_10 <- _ret ] s1) | s1 = bb5 ]
+    [ bb0 = s0 [ s0 = new_Node (fun (_ret: t_MyHashMap_Node_Bdd) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_4 <- Const.const (True''0) ] s1 | s1 = bb2 ]
+    | bb2 = s0 [ s0 = new_Bdd (fun (_ret: t_MyHashMap_Bdd_Bdd) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = new_tup2_Bdd_Bdd (fun (_ret: t_MyHashMap_tup2_Bdd_Bdd_Bdd) -> [ &_7 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0 [ s0 = new (fun (_ret: t_PeanoInt) -> [ &_8 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = [ &_0 <- { alloc = alloc'0; hashcons = _5; hashcons_ghost = _6; not_memo = _8; and_memo = _9; cnt = _10 } ]
+      [ s0 = [ &_0 <- { alloc = alloc'0; hashcons = _3; hashcons_ghost = _4; not_memo = _6; and_memo = _7; cnt = _8 } ]
         s1
       | s1 = return {_0} ] ]
     [ & _0: t_Context = Any.any_l ()
     | & alloc'0: t_Bump = alloc'0
-    | & t: t_Node = Any.any_l ()
-    | & _5: t_MyHashMap_Node_Bdd = Any.any_l ()
-    | & _6: Map.map UInt64.t t_Node = Any.any_l ()
-    | & _8: t_MyHashMap_Bdd_Bdd = Any.any_l ()
-    | & _9: t_MyHashMap_tup2_Bdd_Bdd_Bdd = Any.any_l ()
-    | & _10: t_PeanoInt = Any.any_l ()
-    | & _11: t_Node = Any.any_l () ])
+    | & _3: t_MyHashMap_Node_Bdd = Any.any_l ()
+    | & _4: Map.map UInt64.t t_Node = Any.any_l ()
+    | & _6: t_MyHashMap_Bdd_Bdd = Any.any_l ()
+    | & _7: t_MyHashMap_tup2_Bdd_Bdd_Bdd = Any.any_l ()
+    | & _8: t_PeanoInt = Any.any_l () ])
     [ return (result: t_Context) -> {[@expl:new result type invariant] inv_Context result} (! return {result}) ]
 end
 module M_impl_Context_0__hashcons (* Context<'arena> *)

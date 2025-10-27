@@ -66,7 +66,9 @@ enum SetupTool {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    build_prelude()?;
+    if !args.skip_prelude {
+        build_prelude()?;
+    }
     if args.only_build_prelude {
         return Ok(());
     }
