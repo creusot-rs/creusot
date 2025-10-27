@@ -1,7 +1,9 @@
 #![feature(exit_status_error, try_blocks)]
 use anyhow::{Context as _, anyhow, bail};
 use clap::*;
-use creusot_setup::{self as setup, Binary, CreusotPaths, run, tools_versions_urls::*};
+use creusot_setup::{
+    self as setup, Binary, CreusotPaths, generate_why3_conf, run, tools_versions_urls::*,
+};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -45,6 +47,9 @@ struct Args {
     /// Skip installing Why3 and Why3find (you must already have them in `$XDG_DATA_HOME/creusot/bin`)
     #[arg(long)]
     skip_why3: bool,
+    /// Skip installing why3.conf and why3find.json
+    #[arg(long)]
+    skip_why3_conf: bool,
     /// Skip installing the Creusot prelude (Why3 library)
     #[arg(long, conflicts_with = "only_build_prelude")]
     skip_prelude: bool,
@@ -54,6 +59,9 @@ struct Args {
     /// Only build the prelude, don't install anything (implies the skip options)
     #[arg(long)]
     only_build_prelude: bool,
+    /// Set the number of available threads for Why3
+    #[arg(long)]
+    provers_parallelism: Option<usize>,
 }
 
 #[derive(Debug, ValueEnum, Clone, Copy, PartialEq)]
@@ -96,9 +104,11 @@ fn install(args: Args) -> anyhow::Result<()> {
         install_creusot_rustc(&paths)?;
     }
     if !args.skip_extra_tools {
-        install_tools(&paths, args)?;
+        install_tools(&paths, &args)?;
     }
-    install_config(&paths)?;
+    if !args.skip_why3_conf {
+        install_config(&paths, &args)?;
+    }
     Ok(())
 }
 
@@ -173,7 +183,7 @@ fn install_creusot_rustc(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn install_tools(paths: &setup::CreusotPaths, args: Args) -> anyhow::Result<()> {
+fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
     fs::create_dir_all(&paths.cache_dir())?;
     for (bin, tool) in [
         (ALTERGO, SetupTool::AltErgo),
@@ -200,9 +210,10 @@ fn install_prelude(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn install_config(paths: &CreusotPaths) -> anyhow::Result<()> {
+fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     // Default why3find.json for `cargo creusot new`.
     fs::copy("creusot-install/why3find.json", paths.data_dir().join("why3find.json"))?;
+    generate_why3_conf(paths, args.provers_parallelism)?;
     Ok(())
 }
 

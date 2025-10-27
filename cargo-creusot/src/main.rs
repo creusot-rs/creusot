@@ -403,25 +403,12 @@ fn why3(args: Why3Args) -> Result<()> {
 
 #[derive(Debug, Parser)]
 pub struct Why3ConfArgs {
-    #[clap(long, default_value_t = default_provers_parallelism())]
-    provers_parallelism: usize,
-}
-
-impl Default for Why3ConfArgs {
-    fn default() -> Self {
-        Why3ConfArgs { provers_parallelism: default_provers_parallelism() }
-    }
-}
-
-fn default_provers_parallelism() -> usize {
-    match std::thread::available_parallelism() {
-        Ok(n) => n.get(),
-        Err(_) => 1,
-    }
+    #[clap(long)]
+    provers_parallelism: Option<usize>,
 }
 
 fn why3_conf(args: Why3ConfArgs) -> Result<()> {
-    why3_launcher::generate_why3_conf(&setup::creusot_paths(), &args)
+    setup::generate_why3_conf(&setup::creusot_paths(), args.provers_parallelism)
 }
 
 fn version() -> Result<()> {
