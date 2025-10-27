@@ -1015,7 +1015,7 @@ module M_counter
   axiom produces_refl_Iter_u32_spec'0:
     forall self: t_Iter_u32. produces_Iter_u32 self (Seq.empty: Seq.seq UInt32.t) self
   
-  type t_MapInv_Iter_u32_ref_u32_closure0 = { iter: t_Iter_u32; func: closure0; produced: Seq.seq UInt32.t }
+  type t_MapInv_Iter_u32_closure0 = { iter: t_Iter_u32; func: closure0; produced: Seq.seq UInt32.t }
   
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) =
     let {f0 = x; f1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
@@ -1053,37 +1053,37 @@ module M_counter
         = (Seq.empty: Seq.seq UInt32.t)
       -> preservation_inv_Iter_u32 iter'0 func'0 produced'0 = preservation_Iter_u32 iter'0 func'0
   
-  predicate invariant_MapInv_Iter_u32_Item_closure0 (self: t_MapInv_Iter_u32_ref_u32_closure0) =
+  predicate invariant_MapInv_Iter_u32_closure0 (self: t_MapInv_Iter_u32_closure0) =
     reinitialize_Iter_u32
     /\ preservation_inv_Iter_u32 self.iter self.func self.produced
     /\ next_precondition_Iter_u32 self.iter self.func self.produced
   
-  predicate inv_MapInv_Iter_u32_ref_u32_closure0 (_1: t_MapInv_Iter_u32_ref_u32_closure0)
+  predicate inv_MapInv_Iter_u32_closure0 (_1: t_MapInv_Iter_u32_closure0)
   
   axiom inv_axiom [@rewrite]:
-    forall x: t_MapInv_Iter_u32_ref_u32_closure0 [inv_MapInv_Iter_u32_ref_u32_closure0 x]. inv_MapInv_Iter_u32_ref_u32_closure0 x
-      = (invariant_MapInv_Iter_u32_Item_closure0 x /\ inv_Iter_u32 x.iter)
+    forall x: t_MapInv_Iter_u32_closure0 [inv_MapInv_Iter_u32_closure0 x]. inv_MapInv_Iter_u32_closure0 x
+      = (invariant_MapInv_Iter_u32_closure0 x /\ inv_Iter_u32 x.iter)
   
-  let rec map_inv_Iter_u32 (self: t_Iter_u32) (func'0: closure0) (return (x: t_MapInv_Iter_u32_ref_u32_closure0)) =
+  let rec map_inv_Iter_u32 (self: t_Iter_u32) (func'0: closure0) (return (x: t_MapInv_Iter_u32_closure0)) =
     {[@expl:map_inv 'self' type invariant] inv_Iter_u32 self}
     {[@expl:map_inv requires #0] forall e: UInt32.t, i2: t_Iter_u32. produces_Iter_u32 self (Seq.singleton e) i2
       -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
     {[@expl:map_inv requires #1] reinitialize_Iter_u32}
     {[@expl:map_inv requires #2] preservation_Iter_u32 self func'0}
     any
-    [ return (result: t_MapInv_Iter_u32_ref_u32_closure0) -> {inv_MapInv_Iter_u32_ref_u32_closure0 result}
+    [ return (result: t_MapInv_Iter_u32_closure0) -> {inv_MapInv_Iter_u32_closure0 result}
       {result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt32.t }}
       (! return {result}) ]
   
   predicate resolve_Iter_u32 (_1: t_Iter_u32)
   
-  predicate resolve_MapInv_Iter_u32_ref_u32_closure0 (_1: t_MapInv_Iter_u32_ref_u32_closure0)
+  predicate resolve_MapInv_Iter_u32_closure0 (_1: t_MapInv_Iter_u32_closure0)
   
   axiom resolve_axiom [@rewrite]:
-    forall x: t_MapInv_Iter_u32_ref_u32_closure0 [resolve_MapInv_Iter_u32_ref_u32_closure0 x]. resolve_MapInv_Iter_u32_ref_u32_closure0 x
+    forall x: t_MapInv_Iter_u32_closure0 [resolve_MapInv_Iter_u32_closure0 x]. resolve_MapInv_Iter_u32_closure0 x
       = (resolve_Iter_u32 x.iter /\ resolve_closure0 x.func)
   
-  predicate produces_MapInv_Iter_u32_Item_closure0 [@inline:trivial] (self: t_MapInv_Iter_u32_ref_u32_closure0) (visited: Seq.seq UInt32.t) (succ: t_MapInv_Iter_u32_ref_u32_closure0) =
+  predicate produces_MapInv_Iter_u32_closure0 [@inline:trivial] (self: t_MapInv_Iter_u32_closure0) (visited: Seq.seq UInt32.t) (succ: t_MapInv_Iter_u32_closure0) =
     hist_inv_closure0 self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t closure0). Seq.length fs = Seq.length visited
       /\ (exists s: Seq.seq UInt32.t. Seq.length s = Seq.length visited
@@ -1102,20 +1102,20 @@ module M_counter
           /\ postcondition_mut_closure0 (Seq.get fs i).current { f0 = Seq.get s i;
                                                                  f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
-  meta "rewrite_def" predicate produces_MapInv_Iter_u32_Item_closure0
+  meta "rewrite_def" predicate produces_MapInv_Iter_u32_closure0
   
-  function produces_trans_MapInv_Iter_u32_Item_closure0 (a: t_MapInv_Iter_u32_ref_u32_closure0) (ab: Seq.seq UInt32.t) (b: t_MapInv_Iter_u32_ref_u32_closure0) (bc: Seq.seq UInt32.t) (c: t_MapInv_Iter_u32_ref_u32_closure0) : ()
+  function produces_trans_MapInv_Iter_u32_closure0 (a: t_MapInv_Iter_u32_closure0) (ab: Seq.seq UInt32.t) (b: t_MapInv_Iter_u32_closure0) (bc: Seq.seq UInt32.t) (c: t_MapInv_Iter_u32_closure0) : ()
   
-  axiom produces_trans_MapInv_Iter_u32_Item_closure0_spec:
-    forall a: t_MapInv_Iter_u32_ref_u32_closure0, ab: Seq.seq UInt32.t, b: t_MapInv_Iter_u32_ref_u32_closure0, bc: Seq.seq UInt32.t, c: t_MapInv_Iter_u32_ref_u32_closure0. produces_MapInv_Iter_u32_Item_closure0 a ab b
-      -> produces_MapInv_Iter_u32_Item_closure0 b bc c -> produces_MapInv_Iter_u32_Item_closure0 a (Seq.(++) ab bc) c
+  axiom produces_trans_MapInv_Iter_u32_closure0_spec:
+    forall a: t_MapInv_Iter_u32_closure0, ab: Seq.seq UInt32.t, b: t_MapInv_Iter_u32_closure0, bc: Seq.seq UInt32.t, c: t_MapInv_Iter_u32_closure0. produces_MapInv_Iter_u32_closure0 a ab b
+      -> produces_MapInv_Iter_u32_closure0 b bc c -> produces_MapInv_Iter_u32_closure0 a (Seq.(++) ab bc) c
   
-  function produces_refl_MapInv_Iter_u32_Item_closure0 (self: t_MapInv_Iter_u32_ref_u32_closure0) : ()
+  function produces_refl_MapInv_Iter_u32_closure0 (self: t_MapInv_Iter_u32_closure0) : ()
   
-  axiom produces_refl_MapInv_Iter_u32_Item_closure0_spec:
-    forall self: t_MapInv_Iter_u32_ref_u32_closure0. produces_MapInv_Iter_u32_Item_closure0 self (Seq.empty: Seq.seq UInt32.t) self
+  axiom produces_refl_MapInv_Iter_u32_closure0_spec:
+    forall self: t_MapInv_Iter_u32_closure0. produces_MapInv_Iter_u32_closure0 self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate completed_MapInv_Iter_u32_Item_closure0 (self: MutBorrow.t t_MapInv_Iter_u32_ref_u32_closure0) =
+  predicate completed_MapInv_Iter_u32_closure0 (self: MutBorrow.t t_MapInv_Iter_u32_closure0) =
     self.final.produced = (Seq.empty: Seq.seq UInt32.t)
     /\ completed_Iter_u32 (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
     /\ self.current.func = self.final.func
@@ -1123,13 +1123,13 @@ module M_counter
   predicate from_iter_post_Vec_u32_Global (prod: Seq.seq UInt32.t) (res: t_Vec_u32_Global) =
     prod = view_Vec_u32_Global res
   
-  let rec collect_MapInv_Iter_u32_ref_u32_closure0 (self_: t_MapInv_Iter_u32_ref_u32_closure0)
-    (return (x: t_Vec_u32_Global)) = {[@expl:collect 'self_' type invariant] inv_MapInv_Iter_u32_ref_u32_closure0 self_}
+  let rec collect_MapInv_Iter_u32_closure0 (self_: t_MapInv_Iter_u32_closure0) (return (x: t_Vec_u32_Global)) =
+    {[@expl:collect 'self_' type invariant] inv_MapInv_Iter_u32_closure0 self_}
     any
     [ return (result: t_Vec_u32_Global) ->
-    {exists done': MutBorrow.t t_MapInv_Iter_u32_ref_u32_closure0, prod: Seq.seq UInt32.t. resolve_MapInv_Iter_u32_ref_u32_closure0 done'.final
-        /\ completed_MapInv_Iter_u32_Item_closure0 done'
-        /\ produces_MapInv_Iter_u32_Item_closure0 self_ prod done'.current /\ from_iter_post_Vec_u32_Global prod result}
+    {exists done': MutBorrow.t t_MapInv_Iter_u32_closure0, prod: Seq.seq UInt32.t. resolve_MapInv_Iter_u32_closure0 done'.final
+        /\ completed_MapInv_Iter_u32_closure0 done'
+        /\ produces_MapInv_Iter_u32_closure0 self_ prod done'.current /\ from_iter_post_Vec_u32_Global prod result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1146,11 +1146,10 @@ module M_counter
       [ s0 = MutBorrow.borrow_mut <UInt64.t> {cnt}
           (fun (_ret: MutBorrow.t UInt64.t) -> [ &_10 <- _ret ] [ &cnt <- _ret.final ] s1)
       | s1 = [ &_9 <- { c0 = _10 } ] s2
-      | s2 = map_inv_Iter_u32 {_5} {_9} (fun (_ret: t_MapInv_Iter_u32_ref_u32_closure0) -> [ &_4 <- _ret ] s3)
+      | s2 = map_inv_Iter_u32 {_5} {_9} (fun (_ret: t_MapInv_Iter_u32_closure0) -> [ &_4 <- _ret ] s3)
       | s3 = bb3 ]
     | bb3 = s0
-      [ s0 = collect_MapInv_Iter_u32_ref_u32_closure0 {_4} (fun (_ret: t_Vec_u32_Global) -> [ &x <- _ret ] s1)
-      | s1 = bb4 ]
+      [ s0 = collect_MapInv_Iter_u32_closure0 {_4} (fun (_ret: t_Vec_u32_Global) -> [ &x <- _ret ] s1) | s1 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:assertion] Seq.length (view_Vec_u32_Global x) = Seq.length (view_Vec_u32_Global v)} s1
       | s1 = {[@expl:assertion] Seq.(==) (view_Vec_u32_Global x) (view_Vec_u32_Global v)} s2
@@ -1161,7 +1160,7 @@ module M_counter
     | & v: t_Vec_u32_Global = v
     | & cnt: UInt64.t = Any.any_l ()
     | & x: t_Vec_u32_Global = Any.any_l ()
-    | & _4: t_MapInv_Iter_u32_ref_u32_closure0 = Any.any_l ()
+    | & _4: t_MapInv_Iter_u32_closure0 = Any.any_l ()
     | & _5: t_Iter_u32 = Any.any_l ()
     | & _7: Slice64.slice UInt32.t = Any.any_l ()
     | & _9: closure0 = Any.any_l ()
