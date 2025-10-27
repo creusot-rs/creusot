@@ -2,7 +2,7 @@
 #![feature(box_patterns)]
 #![feature(never_type, try_blocks)]
 #![feature(closure_lifetime_binder, assert_matches)]
-#![feature(if_let_guard, slice_as_array)]
+#![feature(if_let_guard, alloc_slice_into_array)]
 #![feature(iter_intersperse, map_try_insert)]
 
 extern crate either;

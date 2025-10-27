@@ -630,7 +630,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     def(ProjectionElem::Downcast(symbol, variant_idx))
                 }
                 ProjectionElem::OpaqueCast(ty) => def(ProjectionElem::OpaqueCast(ty)),
-                ProjectionElem::Subtype(ty) => def(ProjectionElem::Subtype(ty)),
                 ProjectionElem::UnwrapUnsafeBinder(ty) => {
                     def(ProjectionElem::UnwrapUnsafeBinder(ty))
                 }

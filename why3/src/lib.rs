@@ -1,4 +1,4 @@
-#![feature(slice_as_array)]
+#![feature(alloc_slice_into_array)]
 
 pub mod ce_models;
 pub mod coma;

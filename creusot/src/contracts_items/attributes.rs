@@ -277,7 +277,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
     let mut matched = Vec::new();
 
     for attr in attrs.iter() {
-        if attr.is_doc_comment() {
+        if attr.is_doc_comment().is_some() {
             continue;
         }
 

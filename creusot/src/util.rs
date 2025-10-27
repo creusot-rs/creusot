@@ -138,6 +138,8 @@ fn hashed_symbol(data: DefPathData) -> Option<Symbol> {
         | AnonConst
         | OpaqueTy
         | SyntheticCoroutineBody
+        | LateAnonConst
+        | DesugaredAnonymousLifetime
         | NestedStatic => None,
     }
 }
@@ -146,7 +148,7 @@ pub fn impl_subject<'tcx>(
     tcx: TyCtxt<'tcx>,
     id: DefId,
 ) -> Result<ty::TraitRef<'tcx>, ty::Ty<'tcx>> {
-    match tcx.impl_trait_ref(id) {
+    match tcx.impl_opt_trait_ref(id) {
         Some(trait_ref) => Ok(trait_ref.skip_binder()),
         None => Err(tcx.type_of(id).skip_binder()),
     }

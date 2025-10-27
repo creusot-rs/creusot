@@ -608,7 +608,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard })
             }
             PatKind::Binding { mode, var, subpattern, .. } => {
-                if mode.0 == ByRef::Yes(Mutability::Mut) {
+                if let ByRef::Yes(_, Mutability::Mut) = mode.0 {
                     return Err(self
                         .ctx
                         .dcx()

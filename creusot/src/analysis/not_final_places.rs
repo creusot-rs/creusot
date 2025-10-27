@@ -239,7 +239,7 @@ impl<'tcx> Analysis<'tcx> for NotFinalPlaces<'tcx> {
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {}
 
     fn apply_primary_statement_effect(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         statement: &mir::Statement<'tcx>,
         location: mir::Location,
@@ -248,7 +248,7 @@ impl<'tcx> Analysis<'tcx> for NotFinalPlaces<'tcx> {
     }
 
     fn apply_primary_terminator_effect<'mir>(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
         location: mir::Location,
