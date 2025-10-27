@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow, bail};
 use clap::*;
-use creusot_setup::{Paths, creusot_paths};
+use creusot_setup::{CreusotPaths, creusot_paths};
 use std::{
     ffi::OsStr,
     path::{Component, Path, PathBuf},
@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     OUTPUT_PREFIX,
-    why3_launcher::{self, Why3Mode},
+    why3_launcher::{self, Why3Mode, check_why3_conf_exists},
 };
 
 #[derive(Debug, Parser)]
@@ -64,8 +64,8 @@ fn check_why3find_json_exists(root: &PathBuf) -> Result<()> {
     }
 }
 
-fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
-    let mut why3find = Command::new(&paths.why3find);
+fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result<()> {
+    let mut why3find = Command::new(&paths.why3find());
     why3find.arg("prove");
     if args.ide.ide_on_fail {
         why3find.arg("-i");
@@ -81,14 +81,13 @@ fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
         why3find.arg("-s");
     }
     why3find.args(files);
-    if let Some(why3_path) = paths.why3.parent() {
-        let mut path = why3_path.to_path_buf().into_os_string();
-        path.push(":");
-        path.push(std::env::var("PATH").unwrap());
-        why3find.env("PATH", path);
-    }
+    // Add $XDG_DATA_HOME/creusot/bin to PATH for why3find to find why3
+    let mut path = paths.bin().to_path_buf().into_os_string();
+    path.push(":");
+    path.push(std::env::var("PATH").unwrap());
+    why3find.env("PATH", path);
     why3find
-        .env("WHY3CONFIG", &paths.why3_config)
+        .env("WHY3CONFIG", &paths.why3_conf())
         .status()
         .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
         .and_then(
@@ -99,7 +98,8 @@ fn raw_prove(args: ProveArgs, paths: &Paths, files: &[PathBuf]) -> Result<()> {
 }
 
 pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
-    let paths = creusot_paths()?;
+    let paths = creusot_paths();
+    check_why3_conf_exists(&paths)?;
     check_why3find_json_exists(root)?;
     let patterns =
         args.patterns.iter().map(|s| Pattern::parse(root, s)).collect::<Result<Patterns>>()?;
@@ -121,7 +121,7 @@ pub fn why3find_prove(args: ProveArgs, root: &PathBuf) -> Result<()> {
     // If the proof fails, we still want to run the IDE if `--ide-always` was set.
     let prove_result = raw_prove(args, &paths, &files);
     if let Some(coma) = coma {
-        why3_launcher::run_why3(Why3Mode::Ide, coma, String::new(), paths)?;
+        why3_launcher::run_why3(Why3Mode::Ide, coma, String::new(), &paths)?;
     }
     prove_result
 }

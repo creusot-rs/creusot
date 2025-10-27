@@ -6,9 +6,11 @@
 - [`cargo creusot prove`](#prove)
 - [`cargo creusot doc`](#doc)
 - [`cargo creusot clean`](#clean)
+- [`cargo creusot why3 ide`](#why3-ide)
 - [`cargo creusot new`](#new)
 - [`cargo creusot init`](#init)
-- [`cargo creusot setup status`](#setup-status)
+- [`cargo creusot why3-conf`](#why3-conf)
+- [`cargo creusot version`](#version)
 
 ## Main commands
 
@@ -150,14 +152,25 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 - `<NAME>`: Name of the package. (By default, it is the name of the directory.)
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
 
-## Show configuration
+## Configuration
 
-### `setup status`
+### `why3-conf`
 
 ```
-cargo creusot setup status
+cargo creusot why3-conf [--provers-parallelism <N>]
 ```
 
-Show the status of the Creusot installation.
+Regenerate `why3.conf` (in `$XDG_CONFIG_HOME/creusot/`, by default on Linux `.config/creusot/`).
 
-Print tool locations and configuration paths.
+#### Options
+
+- `--provers-parallelism`: Set the max number of threads to use to invoke SMT provers.
+    (Default: automatically detect the number of threads for your machine)
+
+### `version`
+
+```
+cargo creusot version
+```
+
+Print version of Creusot and accompanying tools.
