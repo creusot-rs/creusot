@@ -49,7 +49,7 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
             continue;
         }
         use rustc_middle::ty::print::PrintTraitRefExt;
-        let trait_ref = ctx.impl_trait_ref(*impl_id).unwrap().skip_binder();
+        let trait_ref = ctx.impl_trait_ref(*impl_id).skip_binder();
 
         if is_trusted(ctx.tcx, trait_ref.def_id) != is_trusted(ctx.tcx, impl_id.to_def_id()) {
             let msg = if is_trusted(ctx.tcx, trait_ref.def_id) {
