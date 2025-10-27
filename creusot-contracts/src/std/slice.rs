@@ -342,7 +342,7 @@ extern_spec! {
             None => (*^self)@ == Seq::empty() && (^*self)@ == Seq::empty() &&
                     (**self)@ == Seq::empty() && (^^self)@ == Seq::empty()
         })]
-        fn split_off_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
+        fn split_off_first_mut<'a>(self: &mut &'a mut [T]) -> Option<&'a mut T>;
 
         #[check(ghost)]
         #[ensures(result@ == self)]
