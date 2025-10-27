@@ -32,28 +32,25 @@ extern_spec! {
             #[ensures(resolve(t))]
             fn forget<T>(t: T) {}
 
-            #[check(ghost)]
+            // This is not `#[check(ghost)]` because `size_of` overflows are only caught at codegen time
+            // which ghost code doesn't reach.
+            #[check(terminates)]
             #[ensures(result@ == size_of_logic::<T>())]
             fn size_of<T>() -> usize;
 
-            // Note: you may be tempted to add `result@ <= isize::MAX@`.
-            // Indeed, allocation size is bounded; source: https://doc.rust-lang.org/std/ptr/index.html#allocation
-            // But this is not true in ghost code. Counterexample:
-            //
-            // ```
-            // #[ensures(false)]
-            // pub fn bad() {
-            //     ghost! {
-            //         let x = [0usize; usize::MAX];
-            //         let _ = std::mem::size_of_val(&x);
-            //     };
-            // }
-            // ```
-            #[check(ghost)]
+            // This is not `#[check(ghost)]` because `size_of_val` overflows are only caught at codegen time
+            // which ghost code doesn't reach.
+            #[check(terminates)]
             #[ensures(result@ == size_of_val_logic::<T>(*val))]
             fn size_of_val<T: ?Sized>(val: &T) -> usize;
 
-            #[check(ghost)]
+            // This is not `#[check(ghost)]` because `align_of` overflows are only caught at codegen time
+            // which ghost code doesn't reach.
+            //
+            // Alignment values may range from 1 to 2^29
+            // ([source](https://doc.rust-lang.org/reference/type-layout.html#r-layout.repr.alignment.constraint-alignment)),
+            // which may overflow on 16-bit archs.
+            #[check(terminates)]
             #[ensures(result == align_of_logic::<T>())]
             fn align_of<T>() -> usize;
         }

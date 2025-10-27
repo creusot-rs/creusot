@@ -308,7 +308,7 @@ extern_spec! {
             self as _
         }
 
-        #[check(ghost)]
+        #[check(terminates)]
         #[erasure]
         #[ensures(result == self.is_aligned_logic())]
         fn is_aligned(self) -> bool
@@ -347,7 +347,7 @@ extern_spec! {
             self as _
         }
 
-        #[check(ghost)]
+        #[check(terminates)]
         #[erasure]
         #[ensures(result == self.is_aligned_logic())]
         fn is_aligned(self) -> bool
