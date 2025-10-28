@@ -239,11 +239,10 @@ impl Parse for Attributes {
 fn spec_attrs(tag: Ident) -> TokenStream {
     let name_tag = tag.to_string();
     quote! {
-        #[creusot::no_translate]
-        #[creusot::item=#name_tag]
-        #[creusot::spec]
-        #[allow(unused)]
-        #[doc(hidden)]
+         #[creusot::no_translate]
+         #[creusot::item=#name_tag]
+         #[creusot::spec]
+         #[doc(hidden)]
     }
 }
 
