@@ -150,7 +150,6 @@ fn mir_borrowck<'tcx, 'a>(
 
 /// Try to retrieve the promoted MIR for a body from a thread local cache.
 /// The cache is populated when rustc runs the `mir_borrowck` query.
-/// After a body was retrieved, calling this function again for the same `def_id` will return `None`.
 pub fn get_body<'tcx, 'a>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
