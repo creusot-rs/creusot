@@ -12,7 +12,7 @@ mod m {
 
     /// A ghost wrapper around a [resource algebra](RA).
     ///
-    /// This structure is meant to be manipulated in [`ghost`](mod@ghost) code.
+    /// This structure is meant to be manipulated in [`ghost`] code.
     ///
     /// The usual usage is this:
     /// - [Create](Self::alloc) some ghost resource

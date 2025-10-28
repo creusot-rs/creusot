@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 /// # Logic
 ///
 /// This type is (in particular) the logical representation of a [`Vec`]. This can be
-/// accessed via its [view](crate::View) (The `@` operator).
+/// accessed via its [view][crate::model::View] (The `@` operator).
 ///
 /// ```rust,creusot
 /// # use creusot_contracts::prelude::*;
