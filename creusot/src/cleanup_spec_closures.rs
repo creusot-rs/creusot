@@ -20,8 +20,7 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
     trace!("cleanup_spec_closures: {:?}", def_id);
 
     if is_no_translate(tcx, def_id) || is_logic(tcx, def_id) {
-        trace!("replacing function body");
-        *body.basic_blocks_mut() = make_loop(tcx);
+        return;
     } else {
         let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
         cleanup.visit_body(body);

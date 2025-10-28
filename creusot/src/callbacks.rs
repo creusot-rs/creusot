@@ -10,6 +10,7 @@ use std::{cell::RefCell, collections::HashMap, thread_local};
 
 use crate::{
     cleanup_spec_closures::*,
+    contracts_items::{is_logic, is_no_translate},
     lints,
     metadata::BinaryMetadata,
     validate::{AnfBlock, a_normal_form_without_specs},
@@ -119,6 +120,16 @@ fn mir_borrowck<'tcx, 'a>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
 ) -> Result<&'a mir::DefinitionSiteHiddenTypes<'tcx>, ErrorGuaranteed> {
+    let def = def_id.to_def_id();
+    if is_no_translate(tcx, def) || is_logic(tcx, def) {
+        let (input_body, _) = tcx.mir_promoted(def_id);
+        let opaque_types = mir::DefinitionSiteHiddenTypes(Default::default());
+        return Ok(tcx.arena.alloc(opaque_types))
+    }
+    eprintln!("WAT {def_id:?}");
+    if tcx.def_path_str(def_id).contains("as_mut_ptr_own") {
+        eprintln!("{def_id:?} {:#?}", tcx.mir_promoted(def_id))
+    }
     let opts = ConsumerOptions::RegionInferenceContext;
     let bodies_with_facts =
         rustc_borrowck::consumers::get_bodies_with_borrowck_facts(tcx, def_id, opts);
@@ -145,6 +156,7 @@ fn mir_borrowck<'tcx, 'a>(
         }
     });
 
+    // TODO: does the borrow-checker run twice? once here + once in `get_bodieswith_borrowck_facts`?
     (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, def_id)
 }
 
