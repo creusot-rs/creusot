@@ -8,7 +8,7 @@ use crate::{ghost::Plain, prelude::*};
 ///
 /// # Usage
 ///
-/// Ids are used in [`cell::PermCell`] and [resource algebras](crate::ghost::resource::Resource).
+/// Ids are used in [`PermCell`][crate::cell::PermCell] and [resource algebras](crate::ghost::resource::Resource).
 #[opaque]
 #[allow(dead_code)]
 pub struct Id(());

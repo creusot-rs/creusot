@@ -9,7 +9,7 @@
 //!
 //! # Writing specifications
 //!
-//! To start writing specification, use the [`requires`] and [`ensures`] macros:
+//! To start writing specification, use the [`requires`][crate::macros::requires] and [`ensures`][crate::macros::ensures] macros:
 //!
 //! ```
 //! use creusot_contracts::prelude::*;
@@ -105,7 +105,7 @@ pub mod macros {
     /// ```
     pub use base_macros::ensures;
 
-    /// Create a new [`Snapshot`](crate::Snapshot) object.
+    /// Create a new [`Snapshot`](crate::snapshot::Snapshot) object.
     ///
     /// The inside of `snapshot` may look like Rust code, but it is in fact
     /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
@@ -235,7 +235,7 @@ pub mod macros {
     /// # Produced
     ///
     /// If the loop is a `for` loop, you have access to a special variable `produced`, that
-    /// holds a [sequence](crate::Seq) of all the (logical representations of) items the
+    /// holds a [sequence](crate::logic::Seq) of all the (logical representations of) items the
     /// iterator yielded so far.
     ///
     /// # Example
@@ -450,7 +450,7 @@ pub mod macros {
     pub use base_macros::maintains;
 
     /// This attribute can be used on a function or closure to instruct Creusot not to ensure as a postcondition that the
-    /// return value of the function satisfies its [type invariant](crate::Invariant).
+    /// return value of the function satisfies its [type invariant](crate::invariant::Invariant).
     pub use base_macros::open_inv_result;
 
     /// This attribute indicates that the function need to be proved in "bitwise" mode, which means that Creusot will use

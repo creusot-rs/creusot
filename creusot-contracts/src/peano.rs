@@ -21,7 +21,7 @@
 //!
 //! # Ghost code
 //!
-//! You cannot increase a peano integer in [ghost](macro@crate::ghost) code, as it may
+//! You cannot increase a peano integer in [`ghost`] code, as it may
 //! overflow the backing integer. Since ghost code is not executed, the time argument is
 //! not applicable.
 

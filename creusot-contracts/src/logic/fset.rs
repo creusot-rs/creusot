@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashSet`](std::collections::HashSet) and
-/// [`std::collections::BTreeSet`](std::collections::BTreeSet) have finite
+/// Since [`std::collections::HashSet`] and
+/// [`std::collections::BTreeSet`] have finite
 /// capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
