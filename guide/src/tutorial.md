@@ -242,10 +242,10 @@ cargo creusot prove -i
 If there are many functions to verify, we can pick a specific one on the command line
 by naming the Coma file it was compiled to. Coma files are generated in the `verif/` directory,
 and their path consists of the crate name (`creusot_tutorial_rlib` for the library `creusot-tutorial`)
-followed by the fully qualified function name (`creusot_tutorial::sum_up_to` becomes `creusot_tutorial/M_sum_up_to.coma`).
+followed by the fully qualified function name (`creusot_tutorial::sum_up_to` becomes `creusot_tutorial/sum_up_to.coma`).
 
 ```
-cargo creusot prove -i verif/creusot_tutorial_rlib/creusot_tutorial/M_sum_up_to.coma
+cargo creusot prove -i verif/creusot_tutorial_rlib/creusot_tutorial/sum_up_to.coma
 ```
 
 Why3 IDE is a GUI that looks like this:
