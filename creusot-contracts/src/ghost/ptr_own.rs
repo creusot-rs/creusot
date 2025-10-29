@@ -78,6 +78,26 @@ impl<T> PtrOwn<T> {
         Self::from_box(Box::new(v))
     }
 
+    /// Convert `&PtrOwn<T>` into `&PtrOwn<[T]>` representing a singleton slice.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ptr().thin() == self.ptr())]
+    #[ensures(result.val()@ == Seq::singleton(*self.val()))]
+    pub fn as_slice_own_ref_ghost(&self) -> &PtrOwn<[T]> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Convert `&mut PtrOwn<T>` into `&mut PtrOwn<[T]>` representing a singleton slice.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ptr().thin() == self.ptr())]
+    #[ensures(result.val()@ == Seq::singleton(*self.val()))]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^result).val()@ == Seq::singleton(*(^self).val()))]
+    pub fn as_slice_own_mut_ghost(&mut self) -> &mut PtrOwn<[T]> {
+        panic!("called ghost function in normal code")
+    }
+
     /// If one owns two `PtrOwn`s for non-zero sized types, then they are for different pointers.
     #[trusted]
     #[check(ghost)]
