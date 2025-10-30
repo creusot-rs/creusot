@@ -272,8 +272,6 @@ module M_test_ptr2
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn_T
@@ -284,8 +282,6 @@ module M_test_ptr2
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T)
-  
   predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_T
@@ -293,20 +289,6 @@ module M_test_ptr2
   function val_T (self: t_PtrOwn_T) : t_T
   
   function metadata_T (_1: Opaque.ptr) : ()
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_T [@inline:trivial] (val': t_T) : int = size_of_T
-  
-  meta "rewrite_def" function size_of_val_T
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate inv_T (_1: t_T)
   
@@ -320,11 +302,7 @@ module M_test_ptr2
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
@@ -369,8 +347,6 @@ module M_test_ptr_mut2
   use creusot.prelude.MutBorrow
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn_T
@@ -381,8 +357,6 @@ module M_test_ptr_mut2
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T)
-  
   predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_T
@@ -390,20 +364,6 @@ module M_test_ptr_mut2
   function val_T (self: t_PtrOwn_T) : t_T
   
   function metadata_T (_1: Opaque.ptr) : ()
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_T [@inline:trivial] (val': t_T) : int = size_of_T
-  
-  meta "rewrite_def" function size_of_val_T
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate inv_T (_1: t_T)
   
@@ -417,11 +377,7 @@ module M_test_ptr_mut2
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
@@ -727,7 +683,6 @@ module M_slice_as_ptr_own
   use mach.int.Int
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -771,8 +726,6 @@ module M_slice_as_ptr_own
   
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
@@ -782,28 +735,9 @@ module M_slice_as_ptr_own
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
@@ -934,7 +868,6 @@ module M_slice_as_mut_ptr_own
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -979,8 +912,6 @@ module M_slice_as_mut_ptr_own
   
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
@@ -989,21 +920,6 @@ module M_slice_as_mut_ptr_own
   function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
@@ -1015,11 +931,7 @@ module M_slice_as_mut_ptr_own
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T'0 (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
