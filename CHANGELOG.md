@@ -12,6 +12,80 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+- Improve generated names
+    - [Generate better Coma names](https://github.com/creusot-rs/creusot/pull/1807)
+    - [A bit of cleanup in generated names](https://github.com/creusot-rs/creusot/pull/1770)
+- [Support for `@` patterns in pearlite](https://github.com/creusot-rs/creusot/pull/1801)
+- [Add `#[erasure(_)]` for ghost functions](https://github.com/creusot-rs/creusot/pull/1759)
+- [Add axioms for non-zero sized types (and restrict `PtrOwn::disjoint_lemma` to non-zero sized types)](https://github.com/creusot-rs/creusot/pull/1790)
+- [Support for edition 2024](https://github.com/creusot-rs/creusot/pull/1765)
+
+### Guide
+
+- [Improve the documentation of logical functions](https://github.com/creusot-rs/creusot/pull/1758)
+- [Add 'Known limitations' section](https://github.com/creusot-rs/creusot/pull/1791)
+
+### `creusot-contracts`
+
+- [Refactor namespaces in creusot-contracts, edition 2024 in tests](https://github.com/creusot-rs/creusot/pull/1803)
+- [Document issue about `vec!`](https://github.com/creusot-rs/creusot/pull/1805)
+- [Add `ptr` and `slice` methods](https://github.com/creusot-rs/creusot/pull/1789)
+- [Index `Seq` with a pair of integers](https://github.com/creusot-rs/creusot/pull/1787)
+- [Add `Seq::split_off_ghost`](https://github.com/creusot-rs/creusot/pull/1788)
+- [Add `size_of_val_logic`](https://github.com/creusot-rs/creusot/pull/1783)
+- [Implement `Index(Mut)` for `Seq`/`FMap`](https://github.com/creusot-rs/creusot/pull/1741)
+- [Make `PtrOwn` opaque, and specify in its invariants that the underlying value verifies its invariant](https://github.com/creusot-rs/creusot/pull/1754)
+- [Ghost iterators](https://github.com/creusot-rs/creusot/pull/1736)
+
+#### Extern specs
+
+- [Add more `extern_spec` of `From` impls for range types](https://github.com/creusot-rs/creusot/pull/1793)
+- [Add `extern_spec` for `cast` and `is_multiple_of`](https://github.com/creusot-rs/creusot/pull/1779)
+- [Add `extern_spec` for Range-related items](https://github.com/creusot-rs/creusot/pull/1772)
+- [Add `extern_spec` for `intrinsics::{unreachable, assume}`](https://github.com/creusot-rs/creusot/pull/1761)
+- [Add specs for `align_of`](https://github.com/creusot-rs/creusot/pull/1746)
+- [Add `extern_spec` for `core::intrinsics::ub_checks`](https://github.com/creusot-rs/creusot/pull/1745)
+
+### Toolchain
+
+- [Move installation to `XDG_DATA_HOME`](https://github.com/creusot-rs/creusot/pull/1810)
+- [Bump versions of dependencies](https://github.com/creusot-rs/creusot/pull/1757)
+- [Update to nightly-2025-10-01](https://github.com/creusot-rs/creusot/pull/1752)
+
+### Bug fixes
+
+- [Substitute `self` and `Self` in more places in extern specs](https://github.com/creusot-rs/creusot/pull/1821)
+- [Make `size_of`, `size_of_val`, and `align_of` terminates instead of ghost](https://github.com/creusot-rs/creusot/pull/1812)
+- [Fix bugs in `BodyLocals::from_body`](https://github.com/creusot-rs/creusot/pull/1810)
+- [Remove useless type parameter in `MapInv`](https://github.com/creusot-rs/creusot/pull/1811)
+- [termination of `PermCell` methods](https://github.com/creusot-rs/creusot/pull/1800)
+- [Better error message for incorrect usage of `dead`](https://github.com/creusot-rs/creusot/pull/1799)
+- [Make private fields opaque](https://github.com/creusot-rs/creusot/pull/1795)
+- [Fix spec of `Vec::clone`](https://github.com/creusot-rs/creusot/pull/1794)
+- [Normalize result type of `#[erasure]` functions](https://github.com/creusot-rs/creusot/pull/1792)
+- [erasure: ignore ghost `mut` bindings](https://github.com/creusot-rs/creusot/pull/1786)
+- [Change erasure to consider `*const` and `*mut` as distinct](https://github.com/creusot-rs/creusot/pull/1784)
+- [Ignore Fake borrows](https://github.com/creusot-rs/creusot/pull/1781)
+- [erasure: Extend support for casts](https://github.com/creusot-rs/creusot/pull/1780)
+- [Error on incorrect attributes](https://github.com/creusot-rs/creusot/pull/1771)
+- [Better errors in `ghost!`](https://github.com/creusot-rs/creusot/pull/1742)
+- [Fix detection of extern functions](https://github.com/creusot-rs/creusot/pull/1778)
+- [Don't clone THIR bodies in `before_analysis`](https://github.com/creusot-rs/creusot/pull/1775)
+- [Small fix in ghost macro](https://github.com/creusot-rs/creusot/pull/1768)
+- [Simplify `inline_pearlite_subst` logic which does no longer need to support captures](https://github.com/creusot-rs/creusot/pull/1767)
+- [erasure enhancements](https://github.com/creusot-rs/creusot/pull/1766)
+- [Enable `check(ghost)` even for trusted functions](https://github.com/creusot-rs/creusot/pull/1763)
+- [Fix erasure of trait methods](https://github.com/creusot-rs/creusot/pull/1755)
+- [impl `Resolve` for `Seq`, `FMap`, `FSet`](https://github.com/creusot-rs/creusot/pull/1753)
+- [Fix handling of absolute paths in cargo creusot prove](https://github.com/creusot-rs/creusot/pull/1751)
+- [When determining resolution points, do not consider shared borrows to freeze the borrowee](https://github.com/creusot-rs/creusot/pull/1749)
+- [Refactor handling of ensures/requires clauses in the pearlite parser, pretyper and in the front-end](https://github.com/creusot-rs/creusot/pull/1748)
+- [`snapshot!` macro: do not call `Snapshot::new`](https://github.com/creusot-rs/creusot/pull/1747)
+- [Make `addr_logic` a builtin](https://github.com/creusot-rs/creusot/pull/1744)
+- [Open the body of `metadata_matches`](https://github.com/creusot-rs/creusot/pull/1740)
+
 ## [0.6.0] - 2025-09-29
 
 ### Highlights
