@@ -114,7 +114,7 @@ cargo install cargo-release
 
 1. `git fetch; git checkout origin/master -b release` to make sure you're starting from `master` and make a new branch `release`.
 2. Add a list of changes under "Unreleased" in `CHANGELOG.md`. Free style. Suggested approach: list merged PRs, group by themes, write up summaries or highlight important features.
-3. `cargo release --no-tag --no-push X.Y.Z --execute` (where `X.Y.Z` is the new version number). This will:
+3. (This step is not reversible!) `cargo release --no-tag --no-push X.Y.Z --execute` (where `X.Y.Z` is the new version number). This will:
 
   a. Bump versions in `Cargo.toml` and `CHANGELOG.md`.
   b. Commit those changes.
@@ -124,6 +124,7 @@ cargo install cargo-release
 4. `git push origin release`, open a PR. Merge it ASAP.
 5. `git checkout master; git pull`
 6. `git tag vX.Y.Z; git push origin vX.Y.Z` (the tags looks better this way IMO, but it's also OK to remove the `--no-tag` option from `cargo release` above)
+7. [Make the release on Github.](https://github.com/creusot-rs/creusot/releases/new)
 
 ## Pre-release versioning
 
