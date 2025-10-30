@@ -887,8 +887,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -909,30 +907,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
   
-  predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
-    UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  constant align_of_T : UInt64.t
-  
-  axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
-    /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
-  
-  axiom align_of_T_spec'0: Int.mod size_of_T (UInt64.t'int align_of_T) = 0
-  
-  predicate is_aligned_T [@inline:trivial] (ptr: Opaque.ptr) = is_aligned_to_ptr_T ptr align_of_T
-  
-  meta "rewrite_def" predicate is_aligned_T
-  
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
-  
   predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_T
@@ -940,16 +914,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   function val_T (self: t_PtrOwn_T) : t_T
   
   function metadata_T (_1: Opaque.ptr) : ()
-  
-  function size_of_val_T [@inline:trivial] (val': t_T) : int = size_of_T
-  
-  meta "rewrite_def" function size_of_val_T
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
@@ -961,11 +925,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
@@ -1012,8 +972,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_PtrOwn_T
@@ -1024,14 +982,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
   
-  predicate is_aligned_T (ptr: Opaque.ptr)
-  
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
-  
   type t_Metadata
   
   predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
@@ -1039,14 +989,6 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   function val_T (self: t_PtrOwn_T) : t_T
   
   function metadata_T (_1: Opaque.ptr) : t_Metadata
-  
-  function size_of_val_T (val': t_T) : int
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate inv_T (_1: t_T)
   
@@ -1060,11 +1002,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
@@ -1109,51 +1047,99 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
     [ & _0: () = Any.any_l () | & ptr: Opaque.ptr = ptr | & own: t_PtrOwn_T = own | & _4: t_T = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own::PtrOwn<T> *)
+module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_ref_ghost (* ghost::ptr_own::PtrOwn<[T]> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  use creusot.prelude.Any
+  use seq.Seq
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
+  use creusot.slice.Slice64
   use mach.int.Int
-  use creusot.int.Int64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_PtrOwn_slice_T
   
   type t_PtrOwn_T
+  
+  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  
+  type t_T
+  
+  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches_slice_T
+  
+  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  
+  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
+    not is_null_ptr_slice_T (ptr_slice_T self)
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ inv_ref_slice_T (val_slice_T self)
+  
+  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
+      = invariant_PtrOwn_slice_T x
+  
+  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: t_PtrOwn_slice_T) = inv_PtrOwn_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  
+  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: t_PtrOwn_slice_T) = invariant_ref_PtrOwn_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
   
-  predicate is_aligned_T (ptr: Opaque.ptr)
+  predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
-  
-  type t_T
-  
-  type t_Metadata
-  
-  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  meta "rewrite_def" predicate metadata_matches_T
   
   function val_T (self: t_PtrOwn_T) : t_T
   
-  function metadata_T (_1: Opaque.ptr) : t_Metadata
-  
-  function size_of_val_T (val': t_T) : int
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate inv_T (_1: t_T)
+  function metadata_T (_1: Opaque.ptr) : ()
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
@@ -1165,15 +1151,11 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
   
   predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
   
@@ -1183,15 +1165,550 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
   
   meta "rewrite_def" predicate inv_ref_PtrOwn_T
   
+  predicate invariant_Box_ref_PtrOwn_T_Global (self: t_PtrOwn_T) = inv_ref_PtrOwn_T self
+  
+  predicate inv_Box_ref_PtrOwn_T_Global [@inline:trivial] (_1: t_PtrOwn_T) = invariant_Box_ref_PtrOwn_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_ref_PtrOwn_T_Global
+  
+  predicate invariant_Seq_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq t_PtrOwn_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_PtrOwn_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_PtrOwn_T
+  
+  predicate inv_Seq_ref_PtrOwn_T [@inline:trivial] (_1: Seq.seq t_PtrOwn_T) = invariant_Seq_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_PtrOwn_T
+  
+  function len_T [@inline:trivial] (self: t_PtrOwn_slice_T) : int = Seq.length (Slice64.view (val_slice_T self))
+  
+  meta "rewrite_def" function len_T
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function sub_ptr_T (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+  
+  function offset_ptr_T (self: Opaque.ptr) (offset: int) : Opaque.ptr
+  
+  axiom offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. UInt64.t'int (Ptr.addr_logic_u64 self)
+          + offset * size_of_T
+        < UInt64.t'int const_MAX
+      -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T self offset))
+      = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+  
+  function sub_offset_ptr_T (self: Opaque.ptr) (offset: int) : ()
+  
+  axiom sub_offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. sub_ptr_T (offset_ptr_T self offset) self = offset
+  
+  function sub_logic_refl_ptr_T (self: Opaque.ptr) : ()
+  
+  axiom sub_logic_refl_ptr_T_spec: forall self: Opaque.ptr. sub_ptr_T self self = 0
+  
+  function offset_logic_assoc_ptr_T (self: Opaque.ptr) (offset1: int) (offset2: int) : ()
+  
+  axiom offset_logic_assoc_ptr_T_spec:
+    forall self: Opaque.ptr, offset1: int, offset2: int. offset_ptr_T (offset_ptr_T self offset1) offset2
+      = offset_ptr_T self (offset1 + offset2)
+  
+  function offset_logic_zero_ptr_T (self: Opaque.ptr) : ()
+  
+  axiom offset_logic_zero_ptr_T_spec: forall self: Opaque.ptr. offset_ptr_T self 0 = self
+  
+  function len_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : UInt64.t = metadata_slice_T self
+  
+  meta "rewrite_def" function len_ptr_slice_T
+  
+  function thin_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : Opaque.ptr = Opaque.thin self
+  
+  meta "rewrite_def" function thin_ptr_slice_T
+  
+  function slice_ptr_ext_ptr_slice_T (self: Opaque.ptr) (other: Opaque.ptr) : ()
+  
+  axiom slice_ptr_ext_ptr_slice_T_spec: forall self: Opaque.ptr, other: Opaque.ptr. thin_ptr_slice_T self
+          = thin_ptr_slice_T other
+        /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other
+  
+  let rec elements_T (self: t_PtrOwn_slice_T) (return (x: Seq.seq t_PtrOwn_T)) =
+    {[@expl:elements 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+    any
+    [ return (result: Seq.seq t_PtrOwn_T) -> {inv_Seq_ref_PtrOwn_T result}
+      {Seq.length result = len_T self}
+      {forall i: int. 0 <= i /\ i < len_T self
+        -> ptr_T (Seq.get result i) = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self)) i
+        /\ val_T (Seq.get result i) = Seq.get (Slice64.view (val_slice_T self)) i}
+      (! return {result}) ]
+  
+  predicate invariant_ref_Seq_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn_T)) =
+    inv_Seq_ref_PtrOwn_T self.current /\ inv_Seq_ref_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_ref_PtrOwn_T
+  
+  predicate inv_ref_Seq_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_PtrOwn_T)) =
+    invariant_ref_Seq_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_ref_PtrOwn_T
+  
+  let rec split_off_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq t_PtrOwn_T)) (mid: int)
+    (return (x: Seq.seq t_PtrOwn_T)) = {[@expl:split_off_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+    {[@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current}
+    any
+    [ return (result: Seq.seq t_PtrOwn_T) -> {inv_Seq_ref_PtrOwn_T result}
+      {Seq.length self.final = mid}
+      {Seq.(++) self.final result = self.current}
+      (! return {result}) ]
+  
+  type t_Option_ref_PtrOwn_T = None | Some t_PtrOwn_T
+  
+  predicate inv_Option_ref_PtrOwn_T (_1: t_Option_ref_PtrOwn_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_ref_PtrOwn_T [inv_Option_ref_PtrOwn_T x]. inv_Option_ref_PtrOwn_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_PtrOwn_T f0
+        end
+  
+  function push_front_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq t_PtrOwn_T) (x: t_PtrOwn_T) : Seq.seq t_PtrOwn_T =
+    Seq.cons x self
+  
+  meta "rewrite_def" function push_front_ref_PtrOwn_T
+  
+  let rec pop_front_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq t_PtrOwn_T)) (return (x: t_Option_ref_PtrOwn_T)) =
+    {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+    any
+    [ return (result: t_Option_ref_PtrOwn_T) -> {inv_Option_ref_PtrOwn_T result}
+      {match result with
+        | None -> self.current = (Seq.empty: Seq.seq t_PtrOwn_T) /\ self.current = self.final
+        | Some r -> self.current = push_front_ref_PtrOwn_T self.final r
+        end}
+      (! return {result}) ]
+  
+  let rec unwrap_ref_PtrOwn_T (self_: t_Option_ref_PtrOwn_T) (return (x: t_PtrOwn_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_PtrOwn_T self_}
+    {[@expl:unwrap requires] self_ <> None}
+    any [ return (result: t_PtrOwn_T) -> {inv_ref_PtrOwn_T result} {Some result = self_} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ptr_is_aligned_lemma_T (self: t_PtrOwn_T) (return (x: ())) =
-    {[@expl:ptr_is_aligned_lemma 'self' type invariant] inv_ref_PtrOwn_T self}
+  let rec index_ptr_own_ref_ghost_T (self: t_PtrOwn_slice_T) (index: int) (return (x: t_PtrOwn_T)) =
+    {[@expl:index_ptr_own_ref_ghost 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+    {[@expl:index_ptr_own_ref_ghost requires] 0 <= index /\ index < len_T self}
     (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:ptr_is_aligned_lemma ensures] is_aligned_ptr_T (ptr_T self)} (! return {result}) ]
+    [ bb0 = s0 [ s0 = elements_T {self} (fun (_ret: Seq.seq t_PtrOwn_T) -> [ &r <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = {inv_Seq_ref_PtrOwn_T r}
+        MutBorrow.borrow_mut <Seq.seq t_PtrOwn_T> {r}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn_T)) ->
+            [ &_12 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+            [ &r <- _ret.final ] s1)
+      | s1 = split_off_ghost_ref_PtrOwn_T {_12} {index} (fun (_ret: Seq.seq t_PtrOwn_T) -> [ &_11 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = {inv_Seq_ref_PtrOwn_T _11}
+        MutBorrow.borrow_mut <Seq.seq t_PtrOwn_T> {_11}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn_T)) ->
+            [ &_10 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+            [ &_11 <- _ret.final ] s1)
+      | s1 = pop_front_ghost_ref_PtrOwn_T {_10} (fun (_ret: t_Option_ref_PtrOwn_T) -> [ &_9 <- _ret ] s2)
+      | s2 = bb3 ]
+    | bb3 = s0 [ s0 = unwrap_ref_PtrOwn_T {_9} (fun (_ret: t_PtrOwn_T) -> [ &_8 <- _ret ] s1) | s1 = bb4 ]
+    | bb4 = s0 [ s0 = [ &_0 <- _8 ] s1 | s1 = return {_0} ] ]
+    [ & _0: t_PtrOwn_T = Any.any_l ()
+    | & self: t_PtrOwn_slice_T = self
+    | & index: int = index
+    | & r: Seq.seq t_PtrOwn_T = Any.any_l ()
+    | & _8: t_PtrOwn_T = Any.any_l ()
+    | & _9: t_Option_ref_PtrOwn_T = Any.any_l ()
+    | & _10: MutBorrow.t (Seq.seq t_PtrOwn_T) = Any.any_l ()
+    | & _11: Seq.seq t_PtrOwn_T = Any.any_l ()
+    | & _12: MutBorrow.t (Seq.seq t_PtrOwn_T) = Any.any_l () ])
+    [ return (result: t_PtrOwn_T) -> {[@expl:index_ptr_own_ref_ghost result type invariant] inv_ref_PtrOwn_T result}
+      {[@expl:index_ptr_own_ref_ghost ensures #0] ptr_T result
+      = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self)) index}
+      {[@expl:index_ptr_own_ref_ghost ensures #1] val_T result = Seq.get (Slice64.view (val_slice_T self)) index}
+      (! return {result}) ]
+end
+module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::ptr_own::PtrOwn<[T]> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use seq.Seq
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type t_PtrOwn_slice_T
+  
+  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  
+  type t_T
+  
+  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches_slice_T
+  
+  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  
+  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
+    not is_null_ptr_slice_T (ptr_slice_T self)
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ inv_ref_slice_T (val_slice_T self)
+  
+  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
+      = invariant_PtrOwn_slice_T x
+  
+  type t_PtrOwn_T
+  
+  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+    inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  
+  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_ref_PtrOwn_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches_T
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : ()
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  predicate invariant_Box_ref_PtrOwn_T_Global (self: MutBorrow.t t_PtrOwn_T) = inv_ref_PtrOwn_T self
+  
+  predicate inv_Box_ref_PtrOwn_T_Global [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) =
+    invariant_Box_ref_PtrOwn_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_ref_PtrOwn_T_Global
+  
+  predicate invariant_Seq_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_PtrOwn_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_PtrOwn_T
+  
+  predicate inv_Seq_ref_PtrOwn_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
+    invariant_Seq_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_PtrOwn_T
+  
+  function len_T [@inline:trivial] (self: t_PtrOwn_slice_T) : int = Seq.length (Slice64.view (val_slice_T self))
+  
+  meta "rewrite_def" function len_T
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function sub_ptr_T (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+  
+  function offset_ptr_T (self: Opaque.ptr) (offset: int) : Opaque.ptr
+  
+  axiom offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. UInt64.t'int (Ptr.addr_logic_u64 self)
+          + offset * size_of_T
+        < UInt64.t'int const_MAX
+      -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T self offset))
+      = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+  
+  function sub_offset_ptr_T (self: Opaque.ptr) (offset: int) : ()
+  
+  axiom sub_offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. sub_ptr_T (offset_ptr_T self offset) self = offset
+  
+  function sub_logic_refl_ptr_T (self: Opaque.ptr) : ()
+  
+  axiom sub_logic_refl_ptr_T_spec: forall self: Opaque.ptr. sub_ptr_T self self = 0
+  
+  function offset_logic_assoc_ptr_T (self: Opaque.ptr) (offset1: int) (offset2: int) : ()
+  
+  axiom offset_logic_assoc_ptr_T_spec:
+    forall self: Opaque.ptr, offset1: int, offset2: int. offset_ptr_T (offset_ptr_T self offset1) offset2
+      = offset_ptr_T self (offset1 + offset2)
+  
+  function offset_logic_zero_ptr_T (self: Opaque.ptr) : ()
+  
+  axiom offset_logic_zero_ptr_T_spec: forall self: Opaque.ptr. offset_ptr_T self 0 = self
+  
+  function len_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : UInt64.t = metadata_slice_T self
+  
+  meta "rewrite_def" function len_ptr_slice_T
+  
+  function thin_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : Opaque.ptr = Opaque.thin self
+  
+  meta "rewrite_def" function thin_ptr_slice_T
+  
+  function slice_ptr_ext_ptr_slice_T (self: Opaque.ptr) (other: Opaque.ptr) : ()
+  
+  axiom slice_ptr_ext_ptr_slice_T_spec: forall self: Opaque.ptr, other: Opaque.ptr. thin_ptr_slice_T self
+          = thin_ptr_slice_T other
+        /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other
+  
+  let rec elements_mut_T (self: MutBorrow.t t_PtrOwn_slice_T) (return (x: Seq.seq (MutBorrow.t t_PtrOwn_T))) =
+    {[@expl:elements_mut 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+    any
+    [ return (result: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> {inv_Seq_ref_PtrOwn_T result}
+      {Seq.length result = len_T self.current}
+      {forall i: int. 0 <= i /\ i < len_T self.current
+        -> ptr_T (Seq.get result i).current = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self.current)) i
+        /\ val_T (Seq.get result i).current = Seq.get (Slice64.view (val_slice_T self.current)) i
+        /\ ptr_slice_T self.final = ptr_slice_T self.current
+        /\ val_T (Seq.get result i).final = Seq.get (Slice64.view (val_slice_T self.final)) i}
+      (! return {result}) ]
+  
+  predicate invariant_ref_Seq_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) =
+    inv_Seq_ref_PtrOwn_T self.current /\ inv_Seq_ref_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_ref_PtrOwn_T
+  
+  predicate inv_ref_Seq_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) =
+    invariant_ref_Seq_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_ref_PtrOwn_T
+  
+  let rec split_off_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) (mid: int)
+    (return (x: Seq.seq (MutBorrow.t t_PtrOwn_T))) =
+    {[@expl:split_off_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+    {[@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current}
+    any
+    [ return (result: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> {inv_Seq_ref_PtrOwn_T result}
+      {Seq.length self.final = mid}
+      {Seq.(++) self.final result = self.current}
+      (! return {result}) ]
+  
+  type t_Option_ref_PtrOwn_T = None | Some (MutBorrow.t t_PtrOwn_T)
+  
+  predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_T
+  
+  predicate resolve_Option_ref_PtrOwn_T (_1: t_Option_ref_PtrOwn_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Option_ref_PtrOwn_T [resolve_Option_ref_PtrOwn_T x]. resolve_Option_ref_PtrOwn_T x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_ref_PtrOwn_T x0
+        end
+  
+  function get_ref_PtrOwn_T (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) (ix: int) : t_Option_ref_PtrOwn_T = if 0 <= ix
+    /\ ix < Seq.length self then
+      Some (Seq.get self ix)
+    else
+      None
+  
+  
+  predicate resolve_Seq_ref_PtrOwn_T (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
+    forall i: int. resolve_Option_ref_PtrOwn_T (get_ref_PtrOwn_T self i)
+  
+  predicate resolve_Seq_ref_PtrOwn_T'0 (_1: Seq.seq (MutBorrow.t t_PtrOwn_T))
+  
+  axiom resolve_axiom'0:
+    forall x: Seq.seq (MutBorrow.t t_PtrOwn_T) [resolve_Seq_ref_PtrOwn_T'0 x]. resolve_Seq_ref_PtrOwn_T'0 x
+      -> resolve_Seq_ref_PtrOwn_T x
+  
+  predicate inv_Option_ref_PtrOwn_T (_1: t_Option_ref_PtrOwn_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_ref_PtrOwn_T [inv_Option_ref_PtrOwn_T x]. inv_Option_ref_PtrOwn_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_PtrOwn_T f0
+        end
+  
+  function push_front_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) (x: MutBorrow.t t_PtrOwn_T) : Seq.seq (MutBorrow.t t_PtrOwn_T)
+   = Seq.cons x self
+  
+  meta "rewrite_def" function push_front_ref_PtrOwn_T
+  
+  let rec pop_front_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)))
+    (return (x: t_Option_ref_PtrOwn_T)) = {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+    any
+    [ return (result: t_Option_ref_PtrOwn_T) -> {inv_Option_ref_PtrOwn_T result}
+      {match result with
+        | None -> self.current = (Seq.empty: Seq.seq (MutBorrow.t t_PtrOwn_T)) /\ self.current = self.final
+        | Some r -> self.current = push_front_ref_PtrOwn_T self.final r
+        end}
+      (! return {result}) ]
+  
+  let rec unwrap_ref_PtrOwn_T (self_: t_Option_ref_PtrOwn_T) (return (x: MutBorrow.t t_PtrOwn_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_PtrOwn_T self_}
+    {[@expl:unwrap requires] self_ <> None}
+    any
+    [ return (result: MutBorrow.t t_PtrOwn_T) -> {inv_ref_PtrOwn_T result} {Some result = self_} (! return {result}) ]
+  
+  predicate resolve_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_slice_T
+  
+  type t_Option_T = None'0 | Some'0 t_T
+  
+  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+      Some'0 (Seq.get self ix)
+    else
+      None'0
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec index_ptr_own_mut_ghost_T (self: MutBorrow.t t_PtrOwn_slice_T) (index: int)
+    (return (x: MutBorrow.t t_PtrOwn_T)) =
+    {[@expl:index_ptr_own_mut_ghost 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+    {[@expl:index_ptr_own_mut_ghost requires] 0 <= index /\ index < len_T self.current}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv_PtrOwn_slice_T self.current}
+        MutBorrow.borrow_final <t_PtrOwn_slice_T> {self.current} {MutBorrow.get_id self}
+          (fun (_ret: MutBorrow.t t_PtrOwn_slice_T) ->
+            [ &_11 <- _ret ] -{inv_PtrOwn_slice_T _ret.final}-
+            [ &self <- { self with current = _ret.final } ] s1)
+      | s1 = elements_mut_T {_11} (fun (_ret: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> [ &r <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0
+      [ s0 = {inv_Seq_ref_PtrOwn_T r}
+        MutBorrow.borrow_mut <Seq.seq (MutBorrow.t t_PtrOwn_T)> {r}
+          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) ->
+            [ &_16 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+            [ &r <- _ret.final ] s1)
+      | s1 = split_off_ghost_ref_PtrOwn_T {_16} {index}
+          (fun (_ret: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> [ &_15 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_Seq_ref_PtrOwn_T r} s1
+      | s1 = -{resolve_Seq_ref_PtrOwn_T'0 r}- s2
+      | s2 = {inv_Seq_ref_PtrOwn_T _15}
+        MutBorrow.borrow_mut <Seq.seq (MutBorrow.t t_PtrOwn_T)> {_15}
+          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) ->
+            [ &_14 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+            [ &_15 <- _ret.final ] s3)
+      | s3 = pop_front_ghost_ref_PtrOwn_T {_14} (fun (_ret: t_Option_ref_PtrOwn_T) -> [ &_13 <- _ret ] s4)
+      | s4 = bb3 ]
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv_Seq_ref_PtrOwn_T _15} s1
+      | s1 = -{resolve_Seq_ref_PtrOwn_T'0 _15}- s2
+      | s2 = unwrap_ref_PtrOwn_T {_13} (fun (_ret: MutBorrow.t t_PtrOwn_T) -> [ &_12 <- _ret ] s3)
+      | s3 = bb4 ]
+    | bb4 = s0
+      [ s0 = {inv_PtrOwn_T _12.current}
+        MutBorrow.borrow_final <t_PtrOwn_T> {_12.current} {MutBorrow.get_id _12}
+          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
+            [ &_3 <- _ret ] -{inv_PtrOwn_T _ret.final}-
+            [ &_12 <- { _12 with current = _ret.final } ] s1)
+      | s1 = {[@expl:type invariant] inv_ref_PtrOwn_T _12} s2
+      | s2 = -{resolve_ref_PtrOwn_T _12}- s3
+      | s3 = {inv_PtrOwn_T _3.current}
+        MutBorrow.borrow_final <t_PtrOwn_T> {_3.current} {MutBorrow.get_id _3}
+          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
+            [ &_0 <- _ret ] -{inv_PtrOwn_T _ret.final}-
+            [ &_3 <- { _3 with current = _ret.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_PtrOwn_T _3} s5
+      | s5 = -{resolve_ref_PtrOwn_T _3}- s6
+      | s6 = {[@expl:type invariant] inv_ref_PtrOwn_slice_T self} s7
+      | s7 = -{resolve_ref_PtrOwn_slice_T self}- s8
+      | s8 = return {_0} ] ]
+    [ & _0: MutBorrow.t t_PtrOwn_T = Any.any_l ()
+    | & self: MutBorrow.t t_PtrOwn_slice_T = self
+    | & index: int = index
+    | & _3: MutBorrow.t t_PtrOwn_T = Any.any_l ()
+    | & r: Seq.seq (MutBorrow.t t_PtrOwn_T) = Any.any_l ()
+    | & _11: MutBorrow.t t_PtrOwn_slice_T = Any.any_l ()
+    | & _12: MutBorrow.t t_PtrOwn_T = Any.any_l ()
+    | & _13: t_Option_ref_PtrOwn_T = Any.any_l ()
+    | & _14: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)) = Any.any_l ()
+    | & _15: Seq.seq (MutBorrow.t t_PtrOwn_T) = Any.any_l ()
+    | & _16: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)) = Any.any_l () ])
+    [ return (result: MutBorrow.t t_PtrOwn_T) ->
+    {[@expl:index_ptr_own_mut_ghost result type invariant] inv_ref_PtrOwn_T result}
+      {[@expl:index_ptr_own_mut_ghost ensures #0] ptr_T result.current
+      = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self.current)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #1] val_T result.current
+      = Seq.get (Slice64.view (val_slice_T self.current)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #2] val_T result.final
+      = Seq.get (Slice64.view (val_slice_T self.final)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #3] ptr_slice_T self.final = ptr_slice_T self.current}
+      {[@expl:index_ptr_own_mut_ghost ensures #4] forall k: int. k <> index
+        -> get_T (Slice64.view (val_slice_T self.final)) k = get_T (Slice64.view (val_slice_T self.current)) k}
+      (! return {result}) ]
 end
 module M_ghost__resource__fmap_view__impl_Authority_K_V__new (* ghost::resource::fmap_view::Authority<K, V> *)
   type namespace_other
@@ -48045,7 +48562,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   use mach.int.Int
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -48089,8 +48605,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
@@ -48100,28 +48614,9 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
@@ -48207,7 +48702,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -48252,8 +48746,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
@@ -48262,21 +48754,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
@@ -48288,11 +48765,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T'0 (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
@@ -73488,7 +73961,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   
   type t_T
   
@@ -73539,29 +74011,12 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
   meta "rewrite_def" predicate metadata_matches_slice_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
@@ -73573,11 +74028,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T'0 (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
@@ -73633,7 +74084,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use creusot.int.Int64
   
   type t_T
   
@@ -73678,8 +74128,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
-  
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
@@ -73687,28 +74135,9 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  function size_of_val_slice_T [@inline:trivial] (val': Slice64.slice t_T) : int = size_of_T
-    * Seq.length (Slice64.view val')
-  
-  meta "rewrite_def" function size_of_val_slice_T
-  
-  axiom size_of_val_slice_T_spec: forall val': Slice64.slice t_T. 0 <= size_of_val_slice_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ ptr_is_aligned_opaque_slice_T self
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
-      <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
