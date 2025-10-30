@@ -11,15 +11,15 @@ mod implementation {
         prelude::*,
     };
 
-    pub struct Elem<T>(*const Node<T>);
+    pub struct Elem(*mut ());
 
-    impl<T> PartialEq for Elem<T> {
+    impl PartialEq for Elem {
         #[ensures(result == (self.deep_model() == other.deep_model()))]
         fn eq(&self, other: &Self) -> bool {
             std::ptr::addr_eq(self.0, other.0)
         }
     }
-    impl<T> DeepModel for Elem<T> {
+    impl DeepModel for Elem {
         type DeepModelTy = usize;
         #[logic(inline)]
         fn deep_model(self) -> usize {
@@ -29,17 +29,17 @@ mod implementation {
 
     enum Node<T> {
         Root { rank: PeanoInt, payload: T },
-        Link(Elem<T>),
+        Link(Elem),
     }
 
-    impl<T> Clone for Elem<T> {
+    impl Clone for Elem {
         #[ensures(*self == result)]
         #[check(ghost)]
         fn clone(&self) -> Self {
             Self(self.0)
         }
     }
-    impl<T> Copy for Elem<T> {}
+    impl Copy for Elem {}
 
     /// Handle to the union-find data structure.
     ///
@@ -50,13 +50,13 @@ mod implementation {
 
     struct UFInner<T> {
         /// which "pointers" are involved
-        domain: Snapshot<FSet<Elem<T>>>,
+        domain: Snapshot<FSet<Elem>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        perms: FMap<Elem<T>, PtrOwn<Node<T>>>,
+        perms: FMap<Elem, PtrOwn<Node<T>>>,
         /// Map each element in [`Self::domain`] to its payload.
-        payloads: Snapshot<Mapping<Elem<T>, T>>,
+        payloads: Snapshot<Mapping<Elem, T>>,
         /// Map each element in [`Self::domain`] to its canonical representative.
-        roots: Snapshot<Mapping<Elem<T>, Elem<T>>>,
+        roots: Snapshot<Mapping<Elem, Elem>>,
     }
 
     impl<T> Invariant for UF<T> {
@@ -65,7 +65,7 @@ mod implementation {
             pearlite! {
             forall<e> self.0.domain.contains(e) ==>
                 self.0.perms.contains(e) &&
-                self.0.perms[e].ptr() == e.0 &&
+                self.0.perms[e].ptr() == e.0 as *const Node<T> &&
                 self.0.domain.contains(self.0.roots[e]) &&
                 self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                 match *self.0.perms[e].val() {
@@ -82,17 +82,15 @@ mod implementation {
     }
 
     impl<T> UF<T> {
-        /// Returns all the element that are handled by this union-find structure.
+        /// Returns all the elements that are handled by this union-find structure.
         #[logic]
-        //#[requires(inv(self))]
-        //#[ensures(forall<e1: Elem<T>, e2: Elem<T>> result.contains(e1) && result.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2)]
-        pub fn domain(self) -> FSet<Elem<T>> {
+        pub fn domain(self) -> FSet<Elem> {
             *self.0.domain
         }
 
-        /// Returns all the element that are handled by this union-find structure.
+        /// Returns all the elements that are handled by this union-find structure.
         #[logic(open)]
-        pub fn in_domain(self, e: Elem<T>) -> bool {
+        pub fn in_domain(self, e: Elem) -> bool {
             self.domain().contains(e)
         }
 
@@ -102,11 +100,11 @@ mod implementation {
         /// The root element of a root is itself.
         #[logic]
         #[requires(inv(self))]
-        #[ensures(forall<e: Elem<T>> self.in_domain(e) ==>
+        #[ensures(forall<e: Elem> self.in_domain(e) ==>
             self.in_domain(result[e]) &&
             result[e] == result[result[e]]
         )]
-        pub fn roots_map(self) -> Mapping<Elem<T>, Elem<T>> {
+        pub fn roots_map(self) -> Mapping<Elem, Elem> {
             *self.0.roots
         }
 
@@ -115,13 +113,13 @@ mod implementation {
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
         #[logic(open)]
-        pub fn root(self, e: Elem<T>) -> Elem<T> {
+        pub fn root(self, e: Elem) -> Elem {
             self.roots_map()[e]
         }
 
         /// Returns the payloads associated with each element.
         #[logic]
-        pub fn payloads_map(self) -> Mapping<Elem<T>, T> {
+        pub fn payloads_map(self) -> Mapping<Elem, T> {
             *self.0.payloads
         }
 
@@ -130,7 +128,7 @@ mod implementation {
         /// For each element, this describes the unique root element of the associated set.
         /// The root element of a root is itself.
         #[logic(open)]
-        pub fn payload(self, e: Elem<T>) -> T {
+        pub fn payload(self, e: Elem) -> T {
             self.payloads_map()[e]
         }
 
@@ -175,10 +173,10 @@ mod implementation {
     #[ensures((^uf).domain() == uf.domain().insert(result))]
     #[ensures((^uf).roots_map() == uf.roots_map().set(result, result))]
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
-    pub fn make<T>(mut uf: Ghost<&mut UF<T>>, payload: T) -> Elem<T> {
+    pub fn make<T>(mut uf: Ghost<&mut UF<T>>, payload: T) -> Elem {
         let payload_snap = snapshot!(payload);
         let (ptr, perm) = PtrOwn::new(Node::Root { rank: PeanoInt::new(), payload });
-        let elt = Elem(ptr);
+        let elt = Elem(ptr as *mut ());
         ghost! {
             let (mut perm, uf) = (perm.into_inner(), uf.into_inner());
 
@@ -199,9 +197,9 @@ mod implementation {
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
-    pub fn find<T>(mut uf: Ghost<&mut UF<T>>, elem: Elem<T>) -> Elem<T> {
+    pub fn find<T>(mut uf: Ghost<&mut UF<T>>, elem: Elem) -> Elem {
         ghost_let!(perm = uf.0.perms.get_ghost(&elem).unwrap());
-        match unsafe { PtrOwn::as_ref(elem.0, perm) } {
+        match unsafe { PtrOwn::as_ref(elem.0 as *const Node<T>, perm) } {
             Node::Root { .. } => elem,
             &Node::Link(e) => {
                 let root = find(ghost! {&mut **uf}, e);
@@ -220,9 +218,9 @@ mod implementation {
     #[requires(uf.in_domain(elem))]
     #[requires(uf.root(elem) == elem)]
     #[ensures(*result == uf.payload(elem))]
-    pub fn get<T>(uf: Ghost<&UF<T>>, elem: Elem<T>) -> &T {
+    pub fn get<T>(uf: Ghost<&UF<T>>, elem: Elem) -> &T {
         let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
-        match unsafe { PtrOwn::as_ref(elem.0, perm) } {
+        match unsafe { PtrOwn::as_ref(elem.0 as *const Node<T>, perm) } {
             Node::Root { payload, .. } => payload,
             _ => unreachable!(),
         }
@@ -238,7 +236,7 @@ mod implementation {
         (^uf).root(z) ==
             if uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y) { result } else { uf.root(z) }
     )]
-    fn link<T>(mut uf: Ghost<&mut UF<T>>, x: Elem<T>, y: Elem<T>) -> Elem<T> {
+    fn link<T>(mut uf: Ghost<&mut UF<T>>, x: Elem, y: Elem) -> Elem {
         ghost_let!(mut uf = &mut uf.0);
         if x == y {
             ghost! {
@@ -281,7 +279,7 @@ mod implementation {
             if uf.root(z) == uf.root(x) || uf.root(z) == uf.root(y) { result }
             else { uf.root(z) }
     )]
-    pub fn union<T>(mut uf: Ghost<&mut UF<T>>, x: Elem<T>, y: Elem<T>) -> Elem<T> {
+    pub fn union<T>(mut uf: Ghost<&mut UF<T>>, x: Elem, y: Elem) -> Elem {
         let rx = find(ghost! {&mut **uf}, x);
         let ry = find(ghost! {&mut **uf}, y);
         link(uf, rx, ry)
