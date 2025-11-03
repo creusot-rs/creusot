@@ -1,6 +1,6 @@
 use crate::contracts_items::{is_logic, is_no_translate};
 use indexmap::IndexSet;
-use rustc_hir::def_id::DefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
@@ -10,6 +10,13 @@ use rustc_middle::{
     },
     ty::TyCtxt,
 };
+use std::{cell::RefCell, collections::HashMap};
+
+thread_local! {
+    pub static PEARLITE_MIR:
+        RefCell<HashMap<LocalDefId, IndexVec<BasicBlock, BasicBlockData<'static>>>> =
+        RefCell::new(HashMap::new());
+}
 
 /// Hide non-linear specification code from the borrow checker
 ///
@@ -21,7 +28,12 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
 
     if is_no_translate(tcx, def_id) || is_logic(tcx, def_id) {
         trace!("replacing function body");
-        *body.basic_blocks_mut() = make_loop(tcx);
+        PEARLITE_MIR.with(|map| {
+            let bb = std::mem::replace(body.basic_blocks_mut(), make_loop());
+            // SAFETY: Consumers cast lifetime back to 'tcx
+            let bb = unsafe { std::mem::transmute(bb) };
+            map.borrow_mut().insert(def_id.expect_local(), bb);
+        });
     } else {
         let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
         cleanup.visit_body(body);
@@ -50,7 +62,7 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
     }
 }
 
-pub(crate) fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
+pub(crate) fn make_loop<'tcx>() -> IndexVec<BasicBlock, BasicBlockData<'tcx>> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(
         Some(Terminator {
