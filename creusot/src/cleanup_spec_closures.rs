@@ -1,9 +1,11 @@
 use crate::contracts_items::{is_logic, is_no_translate};
 use indexmap::IndexSet;
+use rustc_abi::FieldIdx;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_index::{Idx, IndexVec};
 use rustc_middle::{
     mir::{
+        self,
         AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, Rvalue, SourceInfo,
         StatementKind, Terminator, TerminatorKind,
         visit::{MutVisitor, PlaceContext},
@@ -35,7 +37,7 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
             map.borrow_mut().insert(def_id.expect_local(), bb);
         });
     } else {
-        let mut cleanup = NoTranslateNoMoves { tcx, unused: IndexSet::new() };
+        let mut cleanup = NoTranslateNoMoves::new(tcx);
         cleanup.visit_body(body);
 
         cleanup_statements(body, &cleanup.unused);
@@ -77,6 +79,17 @@ pub(crate) fn make_loop<'tcx>() -> IndexVec<BasicBlock, BasicBlockData<'tcx>> {
 pub struct NoTranslateNoMoves<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub unused: IndexSet<Local>,
+    pub closures: HashMap<DefId, IndexVec<FieldIdx, mir::Operand<'tcx>>>,
+}
+
+impl<'tcx> NoTranslateNoMoves<'tcx> {
+    fn new(tcx: TyCtxt<'tcx>) -> Self {
+        Self {
+            tcx,
+            unused: Default::default(),
+            closures: Default::default(),
+        }
+    }
 }
 
 impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
@@ -94,15 +107,15 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
                 if is_no_translate(self.tcx, *def_id) {
-                    substs.iter_mut().for_each(|p| {
+                    for p in substs.iter() {
                         if p.is_move() {
                             let place = p.place().unwrap();
                             if let Some(loc) = place.as_local() {
                                 self.unused.insert(loc);
                             }
                         }
-                    });
-                    *substs = IndexVec::new();
+                    }
+                    self.closures.insert(*def_id, std::mem::take(substs));
                 }
             }
             _ => self.super_rvalue(rvalue, l),
