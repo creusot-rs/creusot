@@ -4,7 +4,6 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::{mir, ty::TyCtxt};
-use rustc_span::ErrorGuaranteed;
 
 use std::{cell::RefCell, collections::HashMap, thread_local};
 
@@ -71,18 +70,36 @@ impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
         self.set_output_dir(config);
 
-        // HACK: remove this once `config.locale_resources` is defined as a Vec
-        let mut locale_resources = config.locale_resources.to_vec();
-        locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
-        config.locale_resources = locale_resources;
+        config.locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
         config.override_queries = Some(|_sess, providers| {
+            // Remove MIR of Pearlite code (logic functions, contracts, assertions, snapshots)
+            // One might wonder why not override `mir_promoted` instead: that would be too late because
+            // drops are inserted then, and that results in errors because many types are not Drop.
             providers.mir_built = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
-                cleanup_spec_closures(tcx, def_id.to_def_id(), &mut mir);
+                cleanup_spec_closures(tcx, def_id, &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
 
+            // Store borrow-checked bodies for translation
+            providers.mir_borrowck = |tcx, local_id| {
+                copy_mir_bodies(tcx, local_id);
+                (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, local_id)
+            };
+
+            // The `check_liveness` query is where unused variable warnings are emitted.
+            // We reintroduce the MIR of Pearlite code for this analysis.
+            // Then we remove it again for good.
+            providers.check_liveness = |tcx, local_id| {
+                restore_mir_for_liveness_check(tcx, local_id);
+                let value =
+                    (rustc_interface::DEFAULT_QUERY_PROVIDERS.check_liveness)(tcx, local_id);
+                cleanup_spec_closures_final(tcx, local_id);
+                value
+            };
+
+            // Remove ghost code for codegen
             providers.mir_drops_elaborated_and_const_checked = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS
                     .mir_drops_elaborated_and_const_checked)(tcx, def_id);
@@ -90,9 +107,6 @@ impl Callbacks for ToWhy {
                 remove_ghost_closures(tcx, &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
-
-            providers.mir_borrowck = |tcx, def_id| mir_borrowck(tcx, def_id);
-            // TODO override mir_borrowck_const_arg
         });
 
         let previous = config.register_lints.take();
@@ -115,10 +129,7 @@ impl Callbacks for ToWhy {
     }
 }
 
-fn mir_borrowck<'tcx, 'a>(
-    tcx: TyCtxt<'tcx>,
-    def_id: LocalDefId,
-) -> Result<&'a mir::DefinitionSiteHiddenTypes<'tcx>, ErrorGuaranteed> {
+fn copy_mir_bodies<'tcx, 'a>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
     let opts = ConsumerOptions::RegionInferenceContext;
     let bodies_with_facts =
         rustc_borrowck::consumers::get_bodies_with_borrowck_facts(tcx, def_id, opts);
@@ -144,8 +155,6 @@ fn mir_borrowck<'tcx, 'a>(
             assert!(map.insert(def_id, body).is_none());
         }
     });
-
-    (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, def_id)
 }
 
 /// Try to retrieve the promoted MIR for a body from a thread local cache.
