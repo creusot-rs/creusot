@@ -12,6 +12,8 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.7.0] - 2025-11-03
+
 ### Features
 
 - Improve generated names
