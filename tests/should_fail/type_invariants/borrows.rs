@@ -48,6 +48,7 @@ pub fn tuple(mut x: (NonZero, &mut NonZero)) {
     // here we resolve x and thus assert x.inv() which is not provable
 }
 
+#[allow(unused)]
 #[requires(x.1.0@ < i32::MAX@)]
 #[requires(x.1.0@ != -1)]
 pub fn partial_move(x: (NonZero, &mut NonZero)) {
@@ -56,6 +57,7 @@ pub fn partial_move(x: (NonZero, &mut NonZero)) {
     a.0 = 0;
 }
 
+#[allow(unused)]
 #[requires(x.1.0@ < i32::MAX@)]
 #[requires(x.1.0@ != -1)]
 pub fn destruct(x: (NonZero, &mut NonZero)) {
@@ -64,14 +66,14 @@ pub fn destruct(x: (NonZero, &mut NonZero)) {
     inc(&mut b.0);
 }
 
+#[allow(unused)]
 #[requires(x.0@ < i32::MAX@)]
 #[requires(x.0@ != -1)]
 pub fn frozen_dead<'a>(mut x: &'a mut NonZero, y: &'a mut NonZero) {
     let _a = &mut x.0;
     // here we have to resolve x
     // assert x.inv() fails: depends on ^a which is unknown
-    (#[allow(unused_assignments)]
-    x) = y;
+    x = y;
     inc(_a); // assert old(x).inv()
 }
 

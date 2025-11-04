@@ -13,6 +13,7 @@ pub fn test_program(s: S2) {
     s.s1.f;
 }
 
+#[allow(unused)]
 pub fn test_assign(mut s: S2) {
     s.s1.f = 2;
 }

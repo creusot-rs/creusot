@@ -20,8 +20,8 @@ module M_apply_once
   let rec apply_once_F (f: t_F) (return (x: ())) = {[@expl:apply_once 'f' type invariant] inv_F f}
     {[@expl:apply_once requires] precondition_F f ()}
     (! bb0
-    [ bb0 = s0 [ s0 = call_once_F {f} {_5} (fun (_ret: ()) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]
-    [ & _0: () = Any.any_l () | & f: t_F = f | & _5: () = Any.any_l () ])
+    [ bb0 = s0 [ s0 = call_once_F {f} {_7} (fun (_ret: ()) -> [ &_0 <- _ret ] s1) | s1 = bb2 ] | bb2 = return {_0} ]
+    [ & _0: () = Any.any_l () | & f: t_F = f | & _7: () = Any.any_l () ])
     [ return (result: ()) -> {[@expl:apply_once ensures] postcondition_once_F f () ()} (! return {result}) ]
 end
 module M_apply_mut
@@ -85,12 +85,12 @@ module M_apply_mut
     [ bb0 = s0
       [ s0 = {inv_F f}
         MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_4 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_mut_F {_4} {_5} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
+          (fun (_ret: MutBorrow.t t_F) -> [ &_6 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
+      | s1 = call_mut_F {_6} {_7} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
     | bb2 = return {_0} ]
-    [ & _0: () = Any.any_l () | & f: t_F = f | & _4: MutBorrow.t t_F = Any.any_l () | & _5: () = Any.any_l () ])
+    [ & _0: () = Any.any_l () | & f: t_F = f | & _6: MutBorrow.t t_F = Any.any_l () | & _7: () = Any.any_l () ])
     [ return (result: ()) -> {[@expl:apply_mut ensures] exists g: t_F. postcondition_mut_F f () g () /\ resolve_F g}
       (! return {result}) ]
 end
@@ -243,9 +243,9 @@ module M_foo1
       | s2 = [ &snap_r <- r ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1)
-      | s1 = [ &_7 <- { start = (0: Int32.t); end' = _8 } ] s2
-      | s2 = into_iter_Range_i32 {_7} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
+      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
+      | s1 = [ &_8 <- { start = (0: Int32.t); end' = _9 } ] s2
+      | s2 = into_iter_Range_i32 {_8} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
@@ -261,24 +261,24 @@ module M_foo1
         [ s0 = bb6 ]
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_i32> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next_Range_i32 {_21} (fun (_ret: t_Option_i32) -> [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_33 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_32 <- _ret ] [ &_33 <- { _33 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_32} (fun (_ret: t_Option_i32) -> [ &_31 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve_ref_Range_i32 _22}- s1
-          | s1 = any [ br0 -> {_20 = None} (! bb10) | br1 (x0: Int32.t) -> {_20 = Some x0} (! bb11) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _33}- s1
+          | s1 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = elim_Some {_20} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_36 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
-          [ s0 = [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _36 ] s1
           | s1 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_ret: MutBorrow.t Int32.t) -> [ &_29 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
-          | s2 = [ &_28 <- { c0 = _29 } ] s3
-          | s3 = apply_mut_closure10 {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t Int32.t) -> [ &_42 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
+          | s2 = [ &_41 <- { c0 = _42 } ] s3
+          | s3 = apply_mut_closure10 {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s4)
           | s4 = bb5 ] ] ]
     | bb10 = s0 [ s0 = -{resolve_ref_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -286,18 +286,18 @@ module M_foo1
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & snap_r: MutBorrow.t Int32.t = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
-    | & _7: t_Range_i32 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l ()
+    | & _8: t_Range_i32 = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _20: t_Option_i32 = Any.any_l ()
-    | & _21: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: t_Option_i32 = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _25: Seq.seq Int32.t = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: closure10 = Any.any_l ()
-    | & _29: MutBorrow.t Int32.t = Any.any_l ()
+    | & _36: Seq.seq Int32.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure10 = Any.any_l ()
+    | & _42: MutBorrow.t Int32.t = Any.any_l ()
     | & old_5_0: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo2
@@ -458,9 +458,9 @@ module M_foo2
       | s2 = [ &snap_r <- r ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1)
-      | s1 = [ &_7 <- { start = (0: Int32.t); end' = _8 } ] s2
-      | s2 = into_iter_Range_i32 {_7} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
+      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
+      | s1 = [ &_8 <- { start = (0: Int32.t); end' = _9 } ] s2
+      | s2 = into_iter_Range_i32 {_8} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb5 ]
@@ -474,24 +474,24 @@ module M_foo2
         [ s0 = bb6 ]
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_i32> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next_Range_i32 {_21} (fun (_ret: t_Option_i32) -> [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_33 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_32 <- _ret ] [ &_33 <- { _33 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_32} (fun (_ret: t_Option_i32) -> [ &_31 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve_ref_Range_i32 _22}- s1
-          | s1 = any [ br0 -> {_20 = None} (! bb10) | br1 (x0: Int32.t) -> {_20 = Some x0} (! bb11) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _33}- s1
+          | s1 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = elim_Some {_20} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_36 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
-          [ s0 = [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _36 ] s1
           | s1 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {r}
-              (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_29 <- _ret ] [ &r <- _ret.final ] s2)
-          | s2 = [ &_28 <- { c0 = _29 } ] s3
-          | s3 = apply_mut_closure10 {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_42 <- _ret ] [ &r <- _ret.final ] s2)
+          | s2 = [ &_41 <- { c0 = _42 } ] s3
+          | s3 = apply_mut_closure10 {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s4)
           | s4 = bb5 ] ] ]
     | bb10 = s0 [ s0 = -{resolve_ref_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -499,18 +499,18 @@ module M_foo2
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & snap_r: MutBorrow.t Int32.t = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
-    | & _7: t_Range_i32 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l ()
+    | & _8: t_Range_i32 = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _20: t_Option_i32 = Any.any_l ()
-    | & _21: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: t_Option_i32 = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _25: Seq.seq Int32.t = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: closure10 = Any.any_l ()
-    | & _29: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _36: Seq.seq Int32.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure10 = Any.any_l ()
+    | & _42: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo3
   use creusot.int.Int32
@@ -661,9 +661,9 @@ module M_foo3
       | s2 = [ &snap_r <- r ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1)
-      | s1 = [ &_7 <- { start = (0: Int32.t); end' = _8 } ] s2
-      | s2 = into_iter_Range_i32 {_7} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
+      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
+      | s1 = [ &_8 <- { start = (0: Int32.t); end' = _9 } ] s2
+      | s2 = into_iter_Range_i32 {_8} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
@@ -679,24 +679,24 @@ module M_foo3
         [ s0 = bb6 ]
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_i32> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next_Range_i32 {_21} (fun (_ret: t_Option_i32) -> [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_33 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_32 <- _ret ] [ &_33 <- { _33 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_32} (fun (_ret: t_Option_i32) -> [ &_31 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve_ref_Range_i32 _22}- s1
-          | s1 = any [ br0 -> {_20 = None} (! bb10) | br1 (x0: Int32.t) -> {_20 = Some x0} (! bb11) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _33}- s1
+          | s1 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = elim_Some {_20} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_36 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
-          [ s0 = [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _36 ] s1
           | s1 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_ret: MutBorrow.t Int32.t) -> [ &_29 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
-          | s2 = [ &_28 <- { c0 = _29 } ] s3
-          | s3 = apply_mut_closure1 {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t Int32.t) -> [ &_42 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
+          | s2 = [ &_41 <- { c0 = _42 } ] s3
+          | s3 = apply_mut_closure1 {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s4)
           | s4 = bb5 ] ] ]
     | bb10 = s0 [ s0 = -{resolve_ref_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -704,18 +704,18 @@ module M_foo3
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & snap_r: MutBorrow.t Int32.t = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
-    | & _7: t_Range_i32 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l ()
+    | & _8: t_Range_i32 = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _20: t_Option_i32 = Any.any_l ()
-    | & _21: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: t_Option_i32 = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _25: Seq.seq Int32.t = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: closure1 = Any.any_l ()
-    | & _29: MutBorrow.t Int32.t = Any.any_l ()
+    | & _36: Seq.seq Int32.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure1 = Any.any_l ()
+    | & _42: MutBorrow.t Int32.t = Any.any_l ()
     | & old_5_0: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo4
@@ -826,9 +826,9 @@ module M_foo4
       | s2 = [ &snap_r <- r ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1)
-      | s1 = [ &_7 <- { start = (0: Int32.t); end' = _8 } ] s2
-      | s2 = into_iter_Range_i32 {_7} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
+      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
+      | s1 = [ &_8 <- { start = (0: Int32.t); end' = _9 } ] s2
+      | s2 = into_iter_Range_i32 {_8} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
@@ -844,24 +844,24 @@ module M_foo4
         [ s0 = bb6 ]
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_i32> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next_Range_i32 {_21} (fun (_ret: t_Option_i32) -> [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_33 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_32 <- _ret ] [ &_33 <- { _33 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_32} (fun (_ret: t_Option_i32) -> [ &_31 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve_ref_Range_i32 _22}- s1
-          | s1 = any [ br0 -> {_20 = None} (! bb10) | br1 (x0: Int32.t) -> {_20 = Some x0} (! bb11) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _33}- s1
+          | s1 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = elim_Some {_20} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_36 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
-          [ s0 = [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _36 ] s1
           | s1 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_ret: MutBorrow.t Int32.t) -> [ &_29 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
-          | s2 = [ &_28 <- { c0 = _29 } ] s3
-          | s3 = apply_once_closure10 {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t Int32.t) -> [ &_42 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
+          | s2 = [ &_41 <- { c0 = _42 } ] s3
+          | s3 = apply_once_closure10 {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s4)
           | s4 = bb5 ] ] ]
     | bb10 = s0 [ s0 = -{resolve_ref_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -869,18 +869,18 @@ module M_foo4
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & snap_r: MutBorrow.t Int32.t = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
-    | & _7: t_Range_i32 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l ()
+    | & _8: t_Range_i32 = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _20: t_Option_i32 = Any.any_l ()
-    | & _21: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: t_Option_i32 = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _25: Seq.seq Int32.t = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: closure10 = Any.any_l ()
-    | & _29: MutBorrow.t Int32.t = Any.any_l ()
+    | & _36: Seq.seq Int32.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure10 = Any.any_l ()
+    | & _42: MutBorrow.t Int32.t = Any.any_l ()
     | & old_5_0: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo5
@@ -991,9 +991,9 @@ module M_foo5
       | s2 = [ &snap_r <- r ] s3
       | s3 = bb1 ]
     | bb1 = s0
-      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1)
-      | s1 = [ &_7 <- { start = (0: Int32.t); end' = _8 } ] s2
-      | s2 = into_iter_Range_i32 {_7} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
+      [ s0 = Int32.sub {(42: Int32.t)} {(13: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
+      | s1 = [ &_8 <- { start = (0: Int32.t); end' = _9 } ] s2
+      | s2 = into_iter_Range_i32 {_8} (fun (_ret: t_Range_i32) -> [ &iter <- _ret ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
     | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s1 | s1 = bb4 ]
@@ -1009,24 +1009,24 @@ module M_foo5
         [ s0 = bb6 ]
         [ bb6 = s0
           [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_22 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_i32> {_22.current} {MutBorrow.get_id _22}
-              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s2)
-          | s2 = next_Range_i32 {_21} (fun (_ret: t_Option_i32) -> [ &_20 <- _ret ] s3)
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_33 <- _ret ] [ &iter <- _ret.final ] s1)
+          | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
+              (fun (_ret: MutBorrow.t t_Range_i32) -> [ &_32 <- _ret ] [ &_33 <- { _33 with current = _ret.final } ] s2)
+          | s2 = next_Range_i32 {_32} (fun (_ret: t_Option_i32) -> [ &_31 <- _ret ] s3)
           | s3 = bb7 ]
         | bb7 = s0
-          [ s0 = -{resolve_ref_Range_i32 _22}- s1
-          | s1 = any [ br0 -> {_20 = None} (! bb10) | br1 (x0: Int32.t) -> {_20 = Some x0} (! bb11) ] ]
+          [ s0 = -{resolve_ref_Range_i32 _33}- s1
+          | s1 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
         | bb11 = s0
-          [ s0 = elim_Some {_20} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_25 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_36 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = bb12 ]
         | bb12 = s0
-          [ s0 = [ &produced <- _25 ] s1
+          [ s0 = [ &produced <- _36 ] s1
           | s1 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_ret: MutBorrow.t Int32.t) -> [ &_29 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
-          | s2 = [ &_28 <- { c0 = _29 } ] s3
-          | s3 = apply_once_closure10 {_28} (fun (_ret: ()) -> [ &_27 <- _ret ] s4)
+              (fun (_ret: MutBorrow.t Int32.t) -> [ &_42 <- _ret ] [ &r <- { r with current = _ret.final } ] s2)
+          | s2 = [ &_41 <- { c0 = _42 } ] s3
+          | s3 = apply_once_closure10 {_41} (fun (_ret: ()) -> [ &_40 <- _ret ] s4)
           | s4 = bb5 ] ] ]
     | bb10 = s0 [ s0 = -{resolve_ref_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_0} ] ]
     [ & _0: () = Any.any_l ()
@@ -1034,17 +1034,17 @@ module M_foo5
     | & r: MutBorrow.t Int32.t = Any.any_l ()
     | & snap_r: MutBorrow.t Int32.t = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
-    | & _7: t_Range_i32 = Any.any_l ()
-    | & _8: Int32.t = Any.any_l ()
+    | & _8: t_Range_i32 = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _20: t_Option_i32 = Any.any_l ()
-    | & _21: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: t_Option_i32 = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _25: Seq.seq Int32.t = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: closure10 = Any.any_l ()
-    | & _29: MutBorrow.t Int32.t = Any.any_l ()
+    | & _36: Seq.seq Int32.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure10 = Any.any_l ()
+    | & _42: MutBorrow.t Int32.t = Any.any_l ()
     | & old_5_0: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

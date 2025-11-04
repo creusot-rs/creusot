@@ -28,15 +28,15 @@ module M_unsound
     | bb2 = s0
       [ s0 = {[@expl:assertion] bg.current = true /\ bg.final = true} s1
       | s1 = MutBorrow.borrow_final <bool> {xm.current} {MutBorrow.get_id xm}
-          (fun (_ret: MutBorrow.t bool) -> [ &_12 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s2)
-      | s2 = MutBorrow.borrow_final <bool> {_12.current} {MutBorrow.get_id _12}
-          (fun (_ret: MutBorrow.t bool) -> [ &evil <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s3)
-      | s3 = -{resolve_ref_Snapshot_bool _12}- s4
+          (fun (_ret: MutBorrow.t bool) -> [ &_14 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s2)
+      | s2 = MutBorrow.borrow_final <bool> {_14.current} {MutBorrow.get_id _14}
+          (fun (_ret: MutBorrow.t bool) -> [ &evil <- _ret ] [ &_14 <- { _14 with current = _ret.final } ] s3)
+      | s3 = -{resolve_ref_Snapshot_bool _14}- s4
       | s4 = {[@expl:assertion] (evil = bg) = (evil.final = true)} s5
-      | s5 = [ &_15 <- if evil = bg then false else true ] s6
+      | s5 = [ &_19 <- if evil = bg then false else true ] s6
       | s6 = bb3 ]
     | bb3 = s0
-      [ s0 = [ &evil <- { evil with current = _15 } ] s1
+      [ s0 = [ &evil <- { evil with current = _19 } ] s1
       | s1 = -{resolve_ref_Snapshot_bool evil}- s2
       | s2 = -{resolve_ref_Snapshot_bool xm}- s3
       | s3 = {[@expl:assertion] evil.current = (not evil.final)} s4
@@ -50,6 +50,6 @@ module M_unsound
     | & _6: MutBorrow.t bool = Any.any_l ()
     | & bg: MutBorrow.t bool = Any.any_l ()
     | & evil: MutBorrow.t bool = Any.any_l ()
-    | & _12: MutBorrow.t bool = Any.any_l ()
-    | & _15: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _14: MutBorrow.t bool = Any.any_l ()
+    | & _19: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
