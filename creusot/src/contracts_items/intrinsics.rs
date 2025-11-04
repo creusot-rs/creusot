@@ -22,9 +22,22 @@ macro_rules! contracts_items {
                 .iter_local_def_id()
                 .filter_map(|did| {
                     let mut did = did.to_def_id();
-                    if let DefKind::Ctor(..) = tcx.def_kind(did) {
-                        did = tcx.parent(did);
+                    match tcx.def_kind(did) {
+                        DefKind::Ctor(..) => did = tcx.parent(did),
+                        // Some definitions are not associated to HirIds and cannot have attributes
+                        // For these definitions, `get_intrinsic` crashes. So we filter only the
+                        // `DefKind`s that we know will not make it crash. This list is not
+                        // exhaustive and may need to be extended if we need other kinds of
+                        // intrinsics in the future.
+                        DefKind::Struct |
+                        DefKind::Union |
+                        DefKind::Enum |
+                        DefKind::Fn |
+                        DefKind::AssocFn |
+                        DefKind::Trait => (),
+                        _ => return None
                     }
+
                     Some((get_intrinsic(tcx, did)?, did))
                 })
                 .collect();
