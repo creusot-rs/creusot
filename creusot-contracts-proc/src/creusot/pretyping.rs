@@ -634,6 +634,10 @@ fn encode_arm_(arm: &TermArm, locals: &mut Locals) -> Result<TokenStream, Encode
     if arm.guard.is_some() {
         return Err(EncodeError::Unsupported(arm.span(), "match guard".to_string()));
     }
+    // See #1827 for details
+    if matches!(arm.pat, Pat::Lit(syn::ExprLit{lit: Lit::Int(_), .. })) {
+        return Err(EncodeError::Unsupported(arm.span(), "Pattern matching literals on Int are unsupported by Pearlite. Consider using if-then-else instead.".to_string()));
+    }
     let comma = &arm.comma;
     let pat = &arm.pat;
     locals.open();
