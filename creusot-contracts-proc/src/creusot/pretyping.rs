@@ -83,6 +83,17 @@ impl Locals {
     }
 }
 
+struct PatEncoder<'a> {
+    locals: &'a mut Locals,
+    has_literal_int: bool, // #1827
+}
+
+impl<'a> PatEncoder<'a> {
+    fn new(locals: &'a mut Locals) -> Self {
+        Self { locals, has_literal_int: false }
+    }
+}
+
 fn add_use(toks: TokenStream, span: Span) -> TokenStream {
     quote_spanned! { span =>
         {
@@ -515,7 +526,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 }
                 // |pat: ty|
                 Pat::Type(PatType { attrs, pat, ty, .. }) => {
-                    pattern_bind(pat, locals);
+                    pattern_bind(pat, locals, term.span())?;
                     quote_spanned! {sp=> #(#attrs)* &#pat : &#ty }
                 }
                 // |x|
@@ -530,7 +541,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     quote_spanned! {sp=> #ident : &_ }
                 }
                 pat => {
-                    pattern_bind(pat, locals);
+                    pattern_bind(pat, locals, term.span())?;
                     quote_spanned! {sp=> &#pat }
                 }
             };
@@ -599,7 +610,7 @@ fn encode_stmt_(stmt: &TermStmt, locals: &mut Locals) -> Result<TokenStream, Enc
         TermStmt::Local(TLocal { let_token, pat, init, semi_token }) => {
             if let Some((eq_token, init)) = init {
                 let init = encode_term_(init, locals)?.toks();
-                pattern_bind(pat, locals);
+                pattern_bind(pat, locals, stmt.span())?;
                 Ok(quote_spanned! {stmt.span() => #let_token #pat #eq_token #init #semi_token })
             } else {
                 Err(EncodeError::LocalLetNoInit(pat.span()))
@@ -615,19 +626,32 @@ fn encode_stmt_(stmt: &TermStmt, locals: &mut Locals) -> Result<TokenStream, Enc
     }
 }
 
-impl<'a> Visit<'a> for &'a mut Locals {
+impl<'a> Visit<'a> for PatEncoder<'a> {
     fn visit_pat(&mut self, pat: &'a Pat) {
         match pat {
-            Pat::Path(path) if let Some(ident) = path.path.get_ident() => self.bind_raw(ident),
-            Pat::Ident(ident) => self.bind_raw(&ident.ident),
+            Pat::Path(path) if let Some(ident) = path.path.get_ident() => {
+                self.locals.bind_raw(ident)
+            }
+            Pat::Ident(ident) => self.locals.bind_raw(&ident.ident),
+            Pat::Lit(syn::ExprLit { lit: Lit::Int(_), .. }) => {
+                self.has_literal_int = true;
+                visit_pat(self, pat)
+            }
             _ => visit_pat(self, pat),
         }
     }
 }
 
 /// `bind_raw` on every variable in `pat`
-fn pattern_bind<'a>(pat: &'a Pat, mut locals: &'a mut Locals) {
-    locals.visit_pat(pat)
+fn pattern_bind<'a>(pat: &'a Pat, locals: &'a mut Locals, span: Span) -> Result<(), EncodeError> {
+    let mut encoder = PatEncoder::new(locals);
+    encoder.visit_pat(pat);
+
+    if encoder.has_literal_int {
+        Err(EncodeError::Unsupported(span, "Pattern matching literals on Int are unsupported by Pearlite. Consider using if-then-else instead.".to_string()))
+    } else {
+        Ok(())
+    }
 }
 
 fn encode_arm_(arm: &TermArm, locals: &mut Locals) -> Result<TokenStream, EncodeError> {
@@ -637,7 +661,7 @@ fn encode_arm_(arm: &TermArm, locals: &mut Locals) -> Result<TokenStream, Encode
     let comma = &arm.comma;
     let pat = &arm.pat;
     locals.open();
-    pattern_bind(&pat, locals);
+    pattern_bind(&pat, locals, arm.span())?;
     let body = encode_term_(&arm.body, locals)?.toks();
     locals.close();
     Ok(quote_spanned! {arm.span()=> #pat => #body #comma })
