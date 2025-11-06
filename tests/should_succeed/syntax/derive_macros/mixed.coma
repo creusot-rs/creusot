@@ -222,8 +222,8 @@ module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::Parti
   predicate precondition_eq (self: ()) (args: tup2_ref_A_ref_A)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_A_ref_A [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_A rhs
-        /\ inv_ref_A self_) -> precondition_eq () args
+    forall args: tup2_ref_A_ref_A [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_A self_
+        /\ inv_ref_A rhs) -> precondition_eq () args
   
   type t_DeepModelTy
   
@@ -258,8 +258,8 @@ module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::Parti
   predicate precondition_eq'0 (self: ()) (args: tup2_ref_B_ref_B)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_B_ref_B [precondition_eq'0 () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_B rhs
-        /\ inv_ref_B self_) -> precondition_eq'0 () args
+    forall args: tup2_ref_B_ref_B [precondition_eq'0 () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_B self_
+        /\ inv_ref_B rhs) -> precondition_eq'0 () args
   
   type t_DeepModelTy'0
   
@@ -583,8 +583,8 @@ module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
   predicate precondition_eq (self: ()) (args: tup2_ref_B_ref_B)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_B_ref_B [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_B rhs
-        /\ inv_ref_B self_) -> precondition_eq () args
+    forall args: tup2_ref_B_ref_B [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_B self_
+        /\ inv_ref_B rhs) -> precondition_eq () args
   
   type t_DeepModelTy
   
@@ -623,8 +623,8 @@ module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
   predicate precondition_eq'0 (self: ()) (args: tup2_ref_A_ref_A)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_A_ref_A [precondition_eq'0 () args]. (let {f0'1 = self_; f1'1 = rhs} = args in inv_ref_A rhs
-        /\ inv_ref_A self_) -> precondition_eq'0 () args
+    forall args: tup2_ref_A_ref_A [precondition_eq'0 () args]. (let {f0'1 = self_; f1'1 = rhs} = args in inv_ref_A self_
+        /\ inv_ref_A rhs) -> precondition_eq'0 () args
   
   type t_DeepModelTy'0
   
@@ -1196,8 +1196,9 @@ module M_impl_Clone_for_Product_A_B__clone__refines (* <Product<A, B> as std::cl
   
   goal refines: forall self_: t_Product_A_B. inv_ref_Product_A_B self_
       -> inv_ref_Product_A_B self_
-      /\ (forall result: t_Product_A_B. postcondition_clone () self_.a result.a
-          /\ postcondition_clone'0 () self_.b result.b /\ inv_Product_A_B result -> inv_Product_A_B result)
+      /\ (forall result: t_Product_A_B. inv_Product_A_B result
+          /\ postcondition_clone () self_.a result.a /\ postcondition_clone'0 () self_.b result.b
+        -> inv_Product_A_B result)
 end
 module M_impl_Clone_for_Sum_A_B__clone__refines (* <Sum<A, B> as std::clone::Clone> *)
   type t_A
@@ -1388,12 +1389,12 @@ module M_impl_Clone_for_Sum_A_B__clone__refines (* <Sum<A, B> as std::clone::Clo
   
   goal refines: forall self_: t_Sum_A_B. inv_ref_Sum_A_B self_
       -> inv_ref_Sum_A_B self_
-      /\ (forall result: t_Sum_A_B. match { f0 = self_; f1 = result } with
-              | {f0 = A v0_1; f1 = A v0_r} -> postcondition_clone () v0_1 v0_r
-              | {f0 = B b_1; f1 = B b_r} -> postcondition_clone'0 () b_1 b_r
-              | _ -> false
-              end
-          /\ inv_Sum_A_B result -> inv_Sum_A_B result)
+      /\ (forall result: t_Sum_A_B. inv_Sum_A_B result
+          /\ match { f0 = self_; f1 = result } with
+            | {f0 = A v0_1; f1 = A v0_r} -> postcondition_clone () v0_1 v0_r
+            | {f0 = B b_1; f1 = B b_r} -> postcondition_clone'0 () b_1 b_r
+            | _ -> false
+            end -> inv_Sum_A_B result)
 end
 module M_impl_Clone_for_Sum2_A_B__clone__refines (* <Sum2<A, B> as std::clone::Clone> *)
   type t_A
@@ -1645,12 +1646,12 @@ module M_impl_Clone_for_Sum2_A_B__clone__refines (* <Sum2<A, B> as std::clone::C
   
   goal refines: forall self_: t_Sum2_A_B. inv_ref_Sum2_A_B self_
       -> inv_ref_Sum2_A_B self_
-      /\ (forall result: t_Sum2_A_B. match { f0 = self_; f1 = result } with
-              | {f0 = X v0_1; f1 = X v0_r} -> postcondition_clone () v0_1 v0_r
-              | {f0 = Y a_1 x_1; f1 = Y a_r x_r} -> postcondition_clone'0 () a_1 a_r /\ postcondition_clone'1 () x_1 x_r
-              | _ -> false
-              end
-          /\ inv_Sum2_A_B result -> inv_Sum2_A_B result)
+      /\ (forall result: t_Sum2_A_B. inv_Sum2_A_B result
+          /\ match { f0 = self_; f1 = result } with
+            | {f0 = X v0_1; f1 = X v0_r} -> postcondition_clone () v0_1 v0_r
+            | {f0 = Y a_1 x_1; f1 = Y a_r x_r} -> postcondition_clone'0 () a_1 a_r /\ postcondition_clone'1 () x_1 x_r
+            | _ -> false
+            end -> inv_Sum2_A_B result)
 end
 module M_impl_PartialEq_for_Product_A_B__eq__refines (* <Product<A, B> as std::cmp::PartialEq> *)
   type t_A
@@ -1697,10 +1698,10 @@ module M_impl_PartialEq_for_Product_A_B__eq__refines (* <Product<A, B> as std::c
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Product_A_B. forall rhs: t_Product_A_B. inv_ref_Product_A_B rhs
-          /\ inv_ref_Product_A_B self_
-        -> inv_ref_Product_A_B rhs
-        /\ inv_ref_Product_A_B self_
+  goal refines: forall self_: t_Product_A_B. forall rhs: t_Product_A_B. inv_ref_Product_A_B self_
+          /\ inv_ref_Product_A_B rhs
+        -> inv_ref_Product_A_B self_
+        /\ inv_ref_Product_A_B rhs
         /\ (forall result: bool. result = (deep_model_ref_Product_A_B self_ = deep_model_ref_Product_A_B rhs)
           -> result = (deep_model_ref_Product_A_B self_ = deep_model_ref_Product_A_B rhs))
 end
@@ -1755,9 +1756,9 @@ module M_impl_PartialEq_for_Sum_A_B__eq__refines (* <Sum<A, B> as std::cmp::Part
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Sum_A_B. forall rhs: t_Sum_A_B. inv_ref_Sum_A_B rhs /\ inv_ref_Sum_A_B self_
-        -> inv_ref_Sum_A_B rhs
-        /\ inv_ref_Sum_A_B self_
+  goal refines: forall self_: t_Sum_A_B. forall rhs: t_Sum_A_B. inv_ref_Sum_A_B self_ /\ inv_ref_Sum_A_B rhs
+        -> inv_ref_Sum_A_B self_
+        /\ inv_ref_Sum_A_B rhs
         /\ (forall result: bool. result = (deep_model_ref_Sum_A_B self_ = deep_model_ref_Sum_A_B rhs)
           -> result = (deep_model_ref_Sum_A_B self_ = deep_model_ref_Sum_A_B rhs))
 end

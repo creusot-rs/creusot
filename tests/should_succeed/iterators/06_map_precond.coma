@@ -228,8 +228,6 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
       -> precondition_next () args
   
-  predicate completed_I (self: MutBorrow.t t_I)
-  
   predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
@@ -240,15 +238,17 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
         | Some f0 -> inv_Item f0
         end
   
+  predicate completed_I (self: MutBorrow.t t_I)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self = args in match res with
-          | None -> completed_I self
-          | Some v -> produces_I self.current (Seq.singleton v) self.final
-          end
-      /\ inv_Option_Item res)
+      -> (let self = args in inv_Option_Item res
+      /\ match res with
+        | None -> completed_I self
+        | Some v -> produces_I self.current (Seq.singleton v) self.final
+        end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
@@ -1643,6 +1643,16 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   
   type t_Option_B = None | Some t_B
   
+  predicate inv_B (_1: t_B)
+  
+  predicate inv_Option_B (_1: t_Option_B)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_B f0'0
+        end
+  
   predicate completed_Map_I_F (self: MutBorrow.t t_Map_I_F) =
     self.final.produced = (Seq.empty: Seq.seq t_Item)
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -1681,32 +1691,22 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   axiom produces_one_I_spec: forall self: t_Map_I_F, visited: t_B, succ: t_Map_I_F. produces_one_I self visited succ
       = produces_Map_I_F self (Seq.singleton visited) succ
   
-  predicate inv_B (_1: t_B)
-  
-  predicate inv_Option_B (_1: t_Option_B)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_B f0'0
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: MutBorrow.t t_Map_I_F. inv_ref_Map_I_F self
       -> inv_ref_Map_I_F self
-      /\ (forall result: t_Option_B. match result with
-              | None -> completed_Map_I_F self
-              | Some v -> produces_one_I self.current v self.final
-              end
-          /\ inv_Option_B result
-        -> match result with
+      /\ (forall result: t_Option_B. inv_Option_B result
+          /\ match result with
             | None -> completed_Map_I_F self
-            | Some v -> produces_Map_I_F self.current (Seq.singleton v) self.final
+            | Some v -> produces_one_I self.current v self.final
             end
-        /\ inv_Option_B result)
+        -> inv_Option_B result
+        /\ match result with
+          | None -> completed_Map_I_F self
+          | Some v -> produces_Map_I_F self.current (Seq.singleton v) self.final
+          end)
 end
 module M_impl_Iterator_for_Map_I_F__produces_refl__refines (* <Map<I, F> as common::Iterator> *)
   use seq.Seq
@@ -1878,9 +1878,9 @@ module M_impl_Iterator_for_Map_I_F__produces_trans__refines (* <Map<I, F> as com
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Map_I_F. forall ab: Seq.seq t_B. forall b: t_Map_I_F. forall bc: Seq.seq t_B. forall c: t_Map_I_F. produces_Map_I_F b bc c
-                /\ produces_Map_I_F a ab b
-              -> produces_Map_I_F b bc c
-              /\ produces_Map_I_F a ab b
+    forall a: t_Map_I_F. forall ab: Seq.seq t_B. forall b: t_Map_I_F. forall bc: Seq.seq t_B. forall c: t_Map_I_F. produces_Map_I_F a ab b
+                /\ produces_Map_I_F b bc c
+              -> produces_Map_I_F a ab b
+              /\ produces_Map_I_F b bc c
               /\ (forall result: (). produces_Map_I_F a (Seq.(++) ab bc) c -> produces_Map_I_F a (Seq.(++) ab bc) c)
 end

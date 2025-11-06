@@ -123,10 +123,10 @@ module M_impl_Iterator_for_Empty_T__produces_trans__refines (* <Empty<T> as comm
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Empty_T. forall ab: Seq.seq t_T. forall b: t_Empty_T. forall bc: Seq.seq t_T. forall c: t_Empty_T. produces_Empty_T b bc c
-                /\ produces_Empty_T a ab b
-              -> produces_Empty_T b bc c
-              /\ produces_Empty_T a ab b
+    forall a: t_Empty_T. forall ab: Seq.seq t_T. forall b: t_Empty_T. forall bc: Seq.seq t_T. forall c: t_Empty_T. produces_Empty_T a ab b
+                /\ produces_Empty_T b bc c
+              -> produces_Empty_T a ab b
+              /\ produces_Empty_T b bc c
               /\ (forall result: (). produces_Empty_T a (Seq.(++) ab bc) c -> produces_Empty_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterator> *)
@@ -136,6 +136,16 @@ module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterat
   type t_T
   
   type t_Option_T = None | Some t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
   
   type t_Empty_T = { f0: () }
   
@@ -148,28 +158,18 @@ module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterat
   predicate produces_Empty_T (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
   
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_T f0'0
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Empty_T. forall result: t_Option_T. match result with
-              | None -> completed_Empty_T self
-              | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
-              end
-          /\ inv_Option_T result
-        -> match result with
+  goal refines: forall self: MutBorrow.t t_Empty_T. forall result: t_Option_T. inv_Option_T result
+          /\ match result with
             | None -> completed_Empty_T self
             | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
             end
-        /\ inv_Option_T result
+        -> inv_Option_T result
+        /\ match result with
+          | None -> completed_Empty_T self
+          | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
+          end
 end

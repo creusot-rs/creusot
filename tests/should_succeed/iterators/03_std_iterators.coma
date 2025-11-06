@@ -665,8 +665,6 @@ module M_skip_take
   
   function iter_Take_I (self: t_Take_I) : t_I
   
-  function n_Take_I (self: t_Take_I) : UInt64.t
-  
   predicate invariant_Take_I [@inline:trivial] (self: t_Take_I) = inv_I (iter_Take_I self)
   
   meta "rewrite_def" predicate invariant_Take_I
@@ -675,11 +673,13 @@ module M_skip_take
   
   axiom inv_axiom: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x -> invariant_Take_I x
   
+  function n_Take_I (self: t_Take_I) : UInt64.t
+  
   predicate postcondition_once_take (self: ()) (args: tup2_I_usize) (result: t_Take_I)
   
   axiom postcondition_fndef:
     forall args: tup2_I_usize, res: t_Take_I [postcondition_once_take () args res]. postcondition_once_take () args res
-      -> (let {f0 = self_; f1 = n} = args in iter_Take_I res = self_ /\ n_Take_I res = n /\ inv_Take_I res)
+      -> (let {f0 = self_; f1 = n} = args in inv_Take_I res /\ iter_Take_I res = self_ /\ n_Take_I res = n)
   
   let rec take_I (self_: t_I) (n: UInt64.t) (return (x: t_Take_I)) =
     {[@expl:take requires] precondition_take () { f0 = self_; f1 = n }}
