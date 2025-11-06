@@ -9,4 +9,3 @@ fn is_zero(v: Option<Int>) -> Int {
         }
     }
 }
-

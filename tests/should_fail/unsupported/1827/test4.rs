@@ -9,4 +9,3 @@ pub fn has_zero(v: Option<(Option<Int>, Option<Int>)>) -> Int {
         }
     }
 }
-

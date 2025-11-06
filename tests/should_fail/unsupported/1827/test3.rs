@@ -9,4 +9,3 @@ pub fn has_zero(v: (Int, Int, Int)) -> Int {
         }
     }
 }
-
