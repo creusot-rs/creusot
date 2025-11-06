@@ -66,17 +66,15 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
-        let mut ensures = self.ensures.clone();
-
-        let postcond = ensures.pop().map_or(Term::true_(tcx), |cond| cond.term);
-        ensures.into_iter().rfold(postcond, |postcond, cond| Term::conj(postcond, cond.term))
+        self.ensures.iter().fold(Term::true_(tcx), |postcond, cond| {
+            Term::conj(postcond, cond.term.clone().spanned_nontrivial())
+        })
     }
 
     pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
-        let mut requires = self.requires.clone();
-
-        let precond = requires.pop().map_or(Term::true_(tcx), |cond| cond.term);
-        requires.into_iter().rfold(precond, |precond, cond| Term::conj(precond, cond.term))
+        self.requires.iter().fold(Term::true_(tcx), |precond, cond| {
+            Term::conj(precond, cond.term.clone().spanned_nontrivial())
+        })
     }
 }
 

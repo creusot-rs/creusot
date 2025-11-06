@@ -40,10 +40,9 @@ fn lower_pure_raw<'tcx>(
     term: &Term<'tcx>,
     weakdep: bool,
 ) -> Exp {
-    let span = term.span;
     let mut term = Lower { ctx, names, weakdep }.lower_term(term);
     term.reassociate();
-    if let Some(attr) = names.span(span) { term.with_attr(attr) } else { term }
+    term
 }
 
 pub(crate) fn lower_pure<'tcx>(
@@ -67,7 +66,7 @@ pub(crate) fn lower_condition<'tcx>(
     names: &impl Namer<'tcx>,
     cond: Condition<'tcx>,
 ) -> WCondition {
-    WCondition { exp: lower_pure(ctx, names, &cond.term), expl: cond.expl }
+    WCondition { exp: lower_pure(ctx, names, &cond.term.spanned()), expl: cond.expl }
 }
 
 pub(crate) fn lower_pat<'tcx>(
@@ -395,6 +394,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.names.private_resolve(adt.did(), subst)
                 };
                 Exp::var(f).app([arg])
+            }
+            TermKind::Spanned(term2) => {
+                let exp = self.lower_term(term2);
+                if let Some(attr) = self.names.span(term.span) { exp.with_attr(attr) } else { exp }
             }
         }
     }

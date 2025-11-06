@@ -562,6 +562,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::PrivateInv { .. } | TermKind::PrivateResolve { .. } => {
                 self.ctx.span_bug(t.span, "private_inv and private_resolve should not appear here.")
             }
+            TermKind::Spanned(term) => self.build_wp(term, k),
         }
     }
 
@@ -657,7 +658,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
         let wf_relation = Exp::Var(self.names.item(wf_relation, variant_subst));
         let subst: HashMap<Ident, Exp> =
             self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();
-        let mut variant_after = self.lower_pure(&variant_after);
+        let mut variant_after = self.lower_pure(&variant_after.spanned());
         variant_after.subst(&subst);
         wf_relation.app([self.variant.clone().unwrap(), variant_after])
     }
