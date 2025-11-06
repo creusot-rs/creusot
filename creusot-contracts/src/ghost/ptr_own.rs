@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::{
-    mem::{size_of_logic, size_of_val_logic},
+    mem::size_of_logic,
     ptr::{metadata_logic, metadata_matches},
 };
 
@@ -63,13 +63,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
     fn invariant(self) -> bool {
         pearlite! {
             !self.ptr().is_null_logic()
-                && self.ptr_is_aligned_opaque()
                 && metadata_matches(*self.val(), metadata_logic(self.ptr()))
-                // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
-                && size_of_val_logic(*self.val()) <= isize::MAX@
-                // The allocation fits in the address space
-                // (this is needed to verify (a `PtrOwn` variant of) `<*const T>::add`, which checks this condition)
-                && self.ptr().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
                 && inv(self.val())
         }
     }
@@ -234,17 +228,174 @@ impl<T: ?Sized> PtrOwn<T> {
     pub unsafe fn drop(ptr: *mut T, own: Ghost<PtrOwn<T>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
+}
 
-    /// The pointer of a `PtrOwn` is always aligned.
+/// # Permissions for slice pointers
+///
+/// Core methods:
+///
+/// - To split a `&PtrOwn<[T]>`: [`split_at_ghost`](PtrOwn::split_at_ghost), [`split_at_mut_ghost`](PtrOwn::split_at_mut_ghost).
+/// - To index a `&PtrOwn<[T]>` into `&PtrOwn<T>`: [`elements`](PtrOwn::elements), [`elements_mut`](PtrOwn::elements_mut).
+/// - To extract a [`&PtrLive<T>`][PtrLive] (evidence used by pointer arithmetic): [`live`](PtrOwn::live), [`live_mut`](PtrOwn::live_mut).
+impl<T> PtrOwn<[T]> {
+    /// The number of elements in the slice.
+    #[logic(open, inline)]
+    pub fn len(&self) -> Int {
+        pearlite! { self.val()@.len() }
+    }
+
+    /// Split a `&PtrOwn<[T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
     #[check(ghost)]
-    #[ensures(self.ptr().is_aligned_logic())]
-    pub fn ptr_is_aligned_lemma(&self) {}
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ptr().thin() == result.0.ptr().thin() && self.ptr().thin().offset_logic(index) == result.1.ptr().thin())]
+    #[ensures(index == result.0.len() && self.len() - index == result.1.len())]
+    #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k])]
+    #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index])]
+    pub fn split_at_ghost(&self, index: Int) -> (&Self, &Self) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
 
-    /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
-    /// We use this to hide alignment logic by default in `invariant` because it confuses SMT solvers sometimes.
-    /// The underlying property is exposed by [`PtrOwn::ptr_is_aligned_lemma`].
-    #[logic(open(self))]
-    pub fn ptr_is_aligned_opaque(self) -> bool {
-        self.ptr().is_aligned_logic()
+    /// Split a `&mut PtrOwn<[T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ptr().thin() == result.0.ptr().thin() && self.ptr().thin().offset_logic(index) == result.1.ptr().thin())]
+    #[ensures(index == result.0.len() && self.len() - index == result.1.len())]
+    #[ensures(index == (^result.0).len() && self.len() - index == (^result.1).len())]
+    #[ensures(forall<k: Int> 0 <= k && k < index ==> self.val()@[k] == result.0.val()@[k] && (^self).val()@[k] == (^result.0).val()@[k])]
+    #[ensures(forall<k: Int> index <= k && k < self.len() ==> self.val()@[k] == result.1.val()@[k - index] && (^self).val()@[k] == (^result.1).val()@[k - index])]
+    #[ensures((^self).ptr() == self.ptr())]
+    pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&PtrOwn<[T]>` into a sequence of `&PtrOwn<T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> result[i].ptr() == self.ptr().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    pub fn elements(&self) -> Seq<&PtrOwn<T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&mut PtrOwn<[T]>` into a sequence of `&mut PtrOwn<T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> result[i].ptr() == self.ptr().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i]
+        && (^self).ptr() == self.ptr()
+        && *(^result[i]).val() == (^self).val()@[i])]
+    pub fn elements_mut(&mut self) -> Seq<&mut PtrOwn<T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Convert a `&PtrOwn<[T]>` for a non-empty slice into a `&PtrOwn<T>` for the element at the given index.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    pub fn index_ptr_own_ref_ghost(&self, index: Int) -> &PtrOwn<T> {
+        let mut r = self.elements();
+        r.split_off_ghost(index).pop_front_ghost().unwrap()
+    }
+
+    /// Convert a `&mut PtrOwn<[T]>` for a non-empty slice into a `&mut PtrOwn<T>` for the element at the given index.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result.ptr() == self.ptr().thin().offset_logic(index))]
+    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures(*(^result).val() == (^self).val()@[index])]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures(forall<k: Int> k != index ==> (^self).val()@.get(k) == self.val()@.get(k))]
+    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
+        let mut r = self.elements_mut();
+        r.split_off_ghost(index).pop_front_ghost().unwrap()
+    }
+
+    /// Convert `&PtrOwn<T>` to `&PtrLive`
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ptr() == self.ptr().thin())]
+    #[ensures(result.len()@ == self.len())]
+    pub fn live(&self) -> &PtrLive<T> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split a `&PtrLive` token out of `&mut PtrOwn<T>`.
+    ///
+    /// The original `&mut PtrOwn<T>` is returned so that
+    /// it can be used even during the lifetime of the `&PtrLive`.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.0 == self)]
+    #[ensures(result.1.ptr() == self.ptr().thin())]
+    #[ensures(result.1.len()@ == self.len())]
+    pub fn live_mut(&mut self) -> (&mut Self, &PtrLive<T>) {
+        panic!("called ghost function in normal code")
+    }
+}
+
+/// Evidence that a range of memory is alive.
+///
+/// This evidence enables taking pointer offsets (see [`add_own`](crate::std::intrinsics::add_own) and others)
+/// without ownership (via [`PtrOwn`]) of that range of memory.
+///
+/// It only ever exists as `&PtrLive<T>`: this resource can be duplicated freely,
+/// but its lifetime is bounded by some `&PtrOwn<[T]>` (via `PtrOwn::live`)
+/// or `&mut PtrOwn<[T]>` (via `PtrOwn::live_mut`).
+#[allow(dead_code)]
+#[opaque]
+pub struct PtrLive<T>(PhantomData<T>);
+
+/// This invariant makes explicit certain facts about the layout of allocations
+/// which are otherwise invisible in `PtrOwn`. If you have a `&PtrOwn`, you can make
+/// these facts known by calling [`PtrOwn::live`].
+impl<T> Invariant for PtrLive<T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            // Allocations can never be larger than `isize` bytes
+            // (source: <https://doc.rust-lang.org/std/ptr/index.html#allocation>)
+            self.len()@ * size_of_logic::<T>() <= isize::MAX@
+            // The allocation fits in the address space
+            // (this is needed to verify (a `PtrOwn` variant of) `<*const T>::add`, which checks this condition)
+            && self.ptr().addr_logic()@ + self.len()@ * size_of_logic::<T>() <= usize::MAX@
+            // The pointer of a `PtrOwn` is always aligned.
+            && self.ptr().is_aligned_logic()
+        }
+    }
+}
+
+impl<T> PtrLive<T> {
+    /// Base pointer, start of the range
+    #[trusted]
+    #[logic(opaque)]
+    pub fn ptr(self) -> *const T {
+        dead
+    }
+
+    /// The number of elements (of type `T`) in the range.
+    ///
+    /// The length in bytes is thus `self.len()@ * size_of_logic::<T>()`.
+    #[trusted]
+    #[logic(opaque)]
+    pub fn len(self) -> usize {
+        dead
+    }
+
+    /// The live range contains `ptr`
+    #[logic(open, inline)]
+    pub fn contains(self, ptr: *const T) -> bool {
+        pearlite! {
+            ptr == self.ptr().offset_logic(ptr.sub_logic(self.ptr()))
+            && 0 <= ptr.sub_logic(self.ptr()) && ptr.sub_logic(self.ptr()) <= self.len()@
+        }
     }
 }
