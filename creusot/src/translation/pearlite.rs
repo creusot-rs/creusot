@@ -541,7 +541,7 @@ impl<'tcx> Term<'tcx> {
         } else {
             Term {
                 ty: self.ty,
-                span: self.span.until(rhs.span),
+                span: self.span,
                 kind: TermKind::Binary { op: BinOp::And, lhs: Box::new(self), rhs: Box::new(rhs) },
             }
         }
@@ -567,7 +567,7 @@ impl<'tcx> Term<'tcx> {
         } else {
             Term {
                 ty: self.ty,
-                span: self.span.until(rhs.span),
+                span: rhs.span,
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
             }
         }
