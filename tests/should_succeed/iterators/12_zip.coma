@@ -166,8 +166,6 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
     forall args: MutBorrow.t t_A [precondition_next () args]. (let self = args in inv_ref_A self)
       -> precondition_next () args
   
-  predicate completed_A (self: MutBorrow.t t_A)
-  
   predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
@@ -178,15 +176,17 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
         | Some f0 -> inv_Item f0
         end
   
+  predicate completed_A (self: MutBorrow.t t_A)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_A) (result: t_Option_Item)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_A, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self = args in match res with
-          | None -> completed_A self
-          | Some v -> produces_A self.current (Seq.singleton v) self.final
-          end
-      /\ inv_Option_Item res)
+      -> (let self = args in inv_Option_Item res
+      /\ match res with
+        | None -> completed_A self
+        | Some v -> produces_A self.current (Seq.singleton v) self.final
+        end)
   
   let rec next_A (self: MutBorrow.t t_A) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
@@ -227,8 +227,6 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
     forall args: MutBorrow.t t_B [precondition_next'0 () args]. (let self = args in inv_ref_B self)
       -> precondition_next'0 () args
   
-  predicate completed_B (self: MutBorrow.t t_B)
-  
   predicate inv_Item'0 (_1: t_Item'0)
   
   predicate inv_Option_Item'0 (_1: t_Option_Item'0)
@@ -239,15 +237,17 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
         | Some'0 f0 -> inv_Item'0 f0
         end
   
+  predicate completed_B (self: MutBorrow.t t_B)
+  
   predicate postcondition_once_next'0 (self: ()) (args: MutBorrow.t t_B) (result: t_Option_Item'0)
   
   axiom postcondition_fndef'0:
     forall args: MutBorrow.t t_B, res: t_Option_Item'0 [postcondition_once_next'0 () args res]. postcondition_once_next'0 () args res
-      -> (let self = args in match res with
-          | None'0 -> completed_B self
-          | Some'0 v -> produces_B self.current (Seq.singleton v) self.final
-          end
-      /\ inv_Option_Item'0 res)
+      -> (let self = args in inv_Option_Item'0 res
+      /\ match res with
+        | None'0 -> completed_B self
+        | Some'0 v -> produces_B self.current (Seq.singleton v) self.final
+        end)
   
   let rec next_B (self: MutBorrow.t t_B) (return (x: t_Option_Item'0)) =
     {[@expl:next requires] precondition_next'0 () self}
@@ -423,6 +423,23 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
   
   type t_Option_tup2_Item_Item = None | Some tup2_Item_Item
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate inv_Option_tup2_Item_Item (_1: t_Option_tup2_Item_Item)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item x]. inv_Option_tup2_Item_Item x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_tup2_Item_Item f0'0
+        end
+  
   predicate completed_A (self: MutBorrow.t t_A)
   
   predicate resolve_Item (_1: t_Item)
@@ -443,39 +460,22 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate inv_Item'0 (_1: t_Item'0)
-  
-  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_Item_Item
-  
-  predicate inv_Option_tup2_Item_Item (_1: t_Option_tup2_Item_Item)
-  
-  axiom inv_axiom'0 [@rewrite]:
-    forall x: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item x]. inv_Option_tup2_Item_Item x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_tup2_Item_Item f0'0
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: MutBorrow.t t_Zip_A_B. inv_ref_Zip_A_B self
       -> inv_ref_Zip_A_B self
-      /\ (forall result: t_Option_tup2_Item_Item. match result with
-              | None -> completed_Zip_A_B self
-              | Some v -> produces_Zip_A_B self.current (Seq.singleton v) self.final
-              end
-          /\ inv_Option_tup2_Item_Item result
-        -> match result with
+      /\ (forall result: t_Option_tup2_Item_Item. inv_Option_tup2_Item_Item result
+          /\ match result with
             | None -> completed_Zip_A_B self
             | Some v -> produces_Zip_A_B self.current (Seq.singleton v) self.final
             end
-        /\ inv_Option_tup2_Item_Item result)
+        -> inv_Option_tup2_Item_Item result
+        /\ match result with
+          | None -> completed_Zip_A_B self
+          | Some v -> produces_Zip_A_B self.current (Seq.singleton v) self.final
+          end)
 end
 module M_impl_Iterator_for_Zip_A_B__produces_trans__refines (* <Zip<A, B> as common::Iterator> *)
   use seq.Seq
@@ -529,10 +529,10 @@ module M_impl_Iterator_for_Zip_A_B__produces_trans__refines (* <Zip<A, B> as com
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a'0: t_Zip_A_B. forall ab: Seq.seq tup2_Item_Item. forall b'0: t_Zip_A_B. forall bc: Seq.seq tup2_Item_Item. forall c: t_Zip_A_B. produces_Zip_A_B b'0 bc c
-                /\ produces_Zip_A_B a'0 ab b'0
-              -> produces_Zip_A_B b'0 bc c
-              /\ produces_Zip_A_B a'0 ab b'0
+    forall a'0: t_Zip_A_B. forall ab: Seq.seq tup2_Item_Item. forall b'0: t_Zip_A_B. forall bc: Seq.seq tup2_Item_Item. forall c: t_Zip_A_B. produces_Zip_A_B a'0 ab b'0
+                /\ produces_Zip_A_B b'0 bc c
+              -> produces_Zip_A_B a'0 ab b'0
+              /\ produces_Zip_A_B b'0 bc c
               /\ (forall result: (). produces_Zip_A_B a'0 (Seq.(++) ab bc) c -> produces_Zip_A_B a'0 (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Zip_A_B__produces_refl__refines (* <Zip<A, B> as common::Iterator> *)

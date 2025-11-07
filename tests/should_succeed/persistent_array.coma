@@ -1830,6 +1830,31 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     f1'1: t_Tokens;
     f2'1: closure0 }
   
+  predicate invariant_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
+    inv_Rc_LocalInvariant_PA_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate inv_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
+    invariant_ref_Rc_LocalInvariant_PA_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
+    inv_ref_Rc_LocalInvariant_PA_T_Global self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
+    invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate precondition_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) =
+    let self_ = args in inv_ref_Rc_LocalInvariant_PA_T_Global self_
+  
+  meta "rewrite_def" predicate precondition_deref
+  
   predicate postcondition_once_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) (result: t_LocalInvariant_PA_T) =
     let self_ = args in result = view_Rc_LocalInvariant_PA_T_Global self_
   
@@ -1895,6 +1920,14 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     f1'2: t_Tokens;
     f2'2: closure0 }
   
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
   predicate index_Mapping_Seq_T_bool [@inline:trivial] (self: Map.map (Seq.seq t_T) bool) (a: Seq.seq t_T) =
     Map.get self a
   
@@ -1958,21 +1991,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" function fin_Ghost_ref_PA_T
   
-  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
-  
-  meta "rewrite_def" predicate contains_Namespace
-  
-  function namespaces (self: t_Tokens) : Set.set t_Namespace
-  
-  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
-  
   predicate precondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-          /\ inv_Ghost_ref_PA_T t
-        -> precondition_closure0 f t
-        /\ (forall res: t_Fragment_Id_Seq_T. postcondition_once_closure0 f t res
-          -> protocol_PA_T (fin_Ghost_ref_PA_T t) (public_PA_T self'0)))
-    /\ contains tokens (namespace_PA_T self'0) /\ inv_closure0 f
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_closure0 f
+    /\ contains tokens (namespace_PA_T self'0)
+    /\ (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0) /\ inv_Ghost_ref_PA_T t
+      -> precondition_closure0 f t
+      /\ (forall res: t_Fragment_Id_Seq_T. postcondition_once_closure0 f t res
+        -> protocol_PA_T (fin_Ghost_ref_PA_T t) (public_PA_T self'0)))
   
   meta "rewrite_def" predicate precondition_open
   
@@ -1980,35 +2005,12 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   axiom new_ref_LocalInvariant_PA_T_spec: forall x: t_LocalInvariant_PA_T. new_ref_LocalInvariant_PA_T x = x
   
-  predicate invariant_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
-    inv_Rc_LocalInvariant_PA_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate inv_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
-    invariant_ref_Rc_LocalInvariant_PA_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate precondition_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) =
-    let self_ = args in inv_ref_Rc_LocalInvariant_PA_T_Global self_
-  
-  meta "rewrite_def" predicate precondition_deref
-  
-  predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
-    inv_ref_Rc_LocalInvariant_PA_T_Global self
-  
-  meta "rewrite_def" predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
-    invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global
-  
   predicate precondition_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (forall this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        -> precondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f })
-    /\ precondition_deref () self'0 /\ inv_closure0 f /\ inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global self'0
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global self'0
+    /\ inv_closure0 f
+    /\ precondition_deref () self'0
+    /\ (forall this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      -> precondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f })
   
   meta "rewrite_def" predicate precondition_open'0
   
@@ -2034,9 +2036,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       (! return {result}) ]
   
   predicate postcondition_once_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_Id_Seq_T) =
-    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_once_open
   
@@ -2045,9 +2047,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate resolve_open
   
   predicate postcondition_mut_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result_state: ()) (result: t_Fragment_Id_Seq_T) =
-    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_mut_open
   
@@ -2081,9 +2083,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   axiom fn_hist_inv_open_spec: forall self: (), res_state: (). hist_inv_open self res_state = (self = res_state)
   
   predicate postcondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_Id_Seq_T) =
-    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_open
   
@@ -2118,9 +2120,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     forall x: t_Rc_LocalInvariant_PA_T_Global. new_ref_Rc_LocalInvariant_PA_T_Global x = x
   
   predicate postcondition_once_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result: t_Fragment_Id_Seq_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
   
   meta "rewrite_def" predicate postcondition_once_open'0
   
@@ -2129,9 +2131,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate resolve_open'0
   
   predicate postcondition_mut_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result_state: ()) (result: t_Fragment_Id_Seq_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
   
   meta "rewrite_def" predicate postcondition_mut_open'0
   
@@ -2165,9 +2167,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   axiom fn_hist_inv_open_spec'0: forall self: (), res_state: (). hist_inv_open'0 self res_state = (self = res_state)
   
   predicate postcondition_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result: t_Fragment_Id_Seq_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
-    /\ inv_Ghost_Fragment_Id_Seq_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_Ghost_Fragment_Id_Seq_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'2 = new_ref_LocalInvariant_PA_T this; f1'2 = tokens; f2'2 = f } result)
   
   meta "rewrite_def" predicate postcondition_open'0
   
@@ -4072,6 +4074,31 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     f1'0: t_Tokens;
     f2'0: closure0 }
   
+  predicate invariant_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
+    inv_Rc_LocalInvariant_PA_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate inv_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
+    invariant_ref_Rc_LocalInvariant_PA_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
+    inv_ref_Rc_LocalInvariant_PA_T_Global self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
+    invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global
+  
+  predicate precondition_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) =
+    let self_ = args in inv_ref_Rc_LocalInvariant_PA_T_Global self_
+  
+  meta "rewrite_def" predicate precondition_deref
+  
   predicate postcondition_once_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) (result: t_LocalInvariant_PA_T) =
     let self_ = args in result = view_Rc_LocalInvariant_PA_T_Global self_
   
@@ -4137,6 +4164,14 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     f1'1: t_Tokens;
     f2'1: closure0 }
   
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
   predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (resource_id: t_Id) =
     partial_invariant_T self resource_id
     /\ (forall id: t_Id. contains_Id'1 (view_Authority_Id_Seq_T self.auth) id -> contains_Id self.perms id)
@@ -4153,21 +4188,13 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
-  
-  meta "rewrite_def" predicate contains_Namespace
-  
-  function namespaces (self: t_Tokens) : Set.set t_Namespace
-  
-  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
-  
   predicate precondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-          /\ inv_Ghost_ref_PA_T t
-        -> precondition_closure0 f t
-        /\ (forall res: t_T. postcondition_once_closure0 f t res
-          -> protocol_PA_T (fin_Ghost_ref_PA_T t) (public_PA_T self'0)))
-    /\ contains tokens (namespace_PA_T self'0) /\ inv_closure0 f
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_closure0 f
+    /\ contains tokens (namespace_PA_T self'0)
+    /\ (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0) /\ inv_Ghost_ref_PA_T t
+      -> precondition_closure0 f t
+      /\ (forall res: t_T. postcondition_once_closure0 f t res
+        -> protocol_PA_T (fin_Ghost_ref_PA_T t) (public_PA_T self'0)))
   
   meta "rewrite_def" predicate precondition_open
   
@@ -4175,35 +4202,12 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   axiom new_ref_LocalInvariant_PA_T_spec: forall x: t_LocalInvariant_PA_T. new_ref_LocalInvariant_PA_T x = x
   
-  predicate invariant_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
-    inv_Rc_LocalInvariant_PA_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate inv_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
-    invariant_ref_Rc_LocalInvariant_PA_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate precondition_deref [@inline:trivial] (self: ()) (args: t_Rc_LocalInvariant_PA_T_Global) =
-    let self_ = args in inv_ref_Rc_LocalInvariant_PA_T_Global self_
-  
-  meta "rewrite_def" predicate precondition_deref
-  
-  predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (self: t_Rc_LocalInvariant_PA_T_Global) =
-    inv_ref_Rc_LocalInvariant_PA_T_Global self
-  
-  meta "rewrite_def" predicate invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global
-  
-  predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global [@inline:trivial] (_1: t_Rc_LocalInvariant_PA_T_Global) =
-    invariant_Ghost_ref_Rc_LocalInvariant_PA_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global
-  
   predicate precondition_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) =
-    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in (forall this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        -> precondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f })
-    /\ precondition_deref () self'0 /\ inv_closure0 f /\ inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global self'0
+    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in inv_Ghost_ref_Rc_LocalInvariant_PA_T_Global self'0
+    /\ inv_closure0 f
+    /\ precondition_deref () self'0
+    /\ (forall this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      -> precondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f })
   
   meta "rewrite_def" predicate precondition_open'0
   
@@ -4229,9 +4233,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       (! return {result}) ]
   
   predicate postcondition_once_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_ref_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_ref_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_once_open
   
@@ -4240,9 +4244,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate resolve_open
   
   predicate postcondition_mut_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result_state: ()) (result: t_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_ref_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_ref_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_mut_open
   
@@ -4276,9 +4280,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   axiom fn_hist_inv_open_spec: forall self: (), res_state: (). hist_inv_open self res_state = (self = res_state)
   
   predicate postcondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_LocalInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-        /\ postcondition_once_closure0 f t result)
-    /\ inv_ref_T result
+    let {f0'1 = self'0; f1'1 = tokens; f2'1 = f} = args in inv_ref_T result
+    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
+      /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_open
   
@@ -4313,9 +4317,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     forall x: t_Rc_LocalInvariant_PA_T_Global. new_ref_Rc_LocalInvariant_PA_T_Global x = x
   
   predicate postcondition_once_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
-    /\ inv_ref_T result
+    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in inv_ref_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
   
   meta "rewrite_def" predicate postcondition_once_open'0
   
@@ -4324,9 +4328,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate resolve_open'0
   
   predicate postcondition_mut_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result_state: ()) (result: t_T) =
-    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
-    /\ inv_ref_T result
+    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in inv_ref_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
   
   meta "rewrite_def" predicate postcondition_mut_open'0
   
@@ -4360,9 +4364,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   axiom fn_hist_inv_open_spec'0: forall self: (), res_state: (). hist_inv_open'0 self res_state = (self = res_state)
   
   predicate postcondition_open'0 [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_Rc_LocalInvariant_PA_T_Global_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
-        /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
-    /\ inv_ref_T result
+    let {f0'0 = self'0; f1'0 = tokens; f2'0 = f} = args in inv_ref_T result
+    /\ (exists this: t_LocalInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'1 = new_ref_LocalInvariant_PA_T this; f1'1 = tokens; f2'1 = f } result)
   
   meta "rewrite_def" predicate postcondition_open'0
   
@@ -5899,6 +5903,6 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   goal refines: forall self_: t_PersistentArray_T. inv_ref_PersistentArray_T self_
       -> inv_ref_PersistentArray_T self_
-      /\ (forall result: t_PersistentArray_T. view_PersistentArray_T result = view_PersistentArray_T self_
-          /\ inv_PersistentArray_T result -> inv_PersistentArray_T result)
+      /\ (forall result: t_PersistentArray_T. inv_PersistentArray_T result
+          /\ view_PersistentArray_T result = view_PersistentArray_T self_ -> inv_PersistentArray_T result)
 end

@@ -82,8 +82,6 @@ module M_extend
     forall args: MutBorrow.t t_I [precondition_next () args]. (let self_ = args in inv_ref_I self_)
       -> precondition_next () args
   
-  predicate completed_I (self: MutBorrow.t t_I)
-  
   predicate inv_Option_T (_1: t_Option_T)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
@@ -92,15 +90,17 @@ module M_extend
         | Some f0 -> inv_T f0
         end
   
+  predicate completed_I (self: MutBorrow.t t_I)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_T)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_I, res: t_Option_T [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self_ = args in match res with
-          | None -> completed_I self_
-          | Some v -> produces_I self_.current (Seq.singleton v) self_.final
-          end
-      /\ inv_Option_T res)
+      -> (let self_ = args in inv_Option_T res
+      /\ match res with
+        | None -> completed_I self_
+        | Some v -> produces_I self_.current (Seq.singleton v) self_.final
+        end)
   
   let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_T)) = {[@expl:next requires] precondition_next () self_}
     any [ return (result: t_Option_T) -> {postcondition_once_next () self_ result} (! return {result}) ]
@@ -286,8 +286,6 @@ module M_collect
     forall args: MutBorrow.t t_I [precondition_next () args]. (let self_ = args in inv_ref_I self_)
       -> precondition_next () args
   
-  predicate completed_I (self: MutBorrow.t t_I)
-  
   predicate inv_Option_Item (_1: t_Option_Item)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
@@ -296,15 +294,17 @@ module M_collect
         | Some f0 -> inv_Item f0
         end
   
+  predicate completed_I (self: MutBorrow.t t_I)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self_ = args in match res with
-          | None -> completed_I self_
-          | Some v -> produces_I self_.current (Seq.singleton v) self_.final
-          end
-      /\ inv_Option_Item res)
+      -> (let self_ = args in inv_Option_Item res
+      /\ match res with
+        | None -> completed_I self_
+        | Some v -> produces_I self_.current (Seq.singleton v) self_.final
+        end)
   
   let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_Item)) =
     {[@expl:next requires] precondition_next () self_}

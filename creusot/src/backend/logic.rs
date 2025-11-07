@@ -134,7 +134,7 @@ pub(crate) fn lower_logical_defn<'tcx>(
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
-    let body = lower_pure_weakdep(ctx, names, &body);
+    let body = lower_pure_weakdep(ctx, names, &body.spanned());
 
     if sig.variant.is_none() {
         let mut sig = sig.why_sig.clone();

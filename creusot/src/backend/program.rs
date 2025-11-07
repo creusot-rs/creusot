@@ -191,7 +191,7 @@ pub(crate) fn to_why<'tcx>(
                 typing_env,
                 wf_relation,
                 subst,
-                [Term::var(variant_name, variant_expr.ty), variant_expr],
+                [Term::var(variant_name, variant_expr.ty), variant_expr.spanned()],
             );
             lower_pure(ctx, names, &variant_decreases)
                 .with_attr(Attribute::Attr("expl:function variant".to_string()))
@@ -393,7 +393,7 @@ fn component_to_defn<'tcx>(
             ctx.tcx,
             wf_relation,
             subst,
-            [Term::var(variant.old_name, variant.term.ty), variant.term.clone()],
+            [Term::var(variant.old_name, variant.term.ty), variant.term.spanned()],
         );
 
         lower_pure(ctx, lower.names, &variant_decreases)
@@ -520,7 +520,7 @@ impl<'tcx> Operand<'tcx> {
     ) -> Exp {
         match self {
             Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
-            Operand::Term(c) => lower_pure(lower.ctx, lower.names, &c),
+            Operand::Term(c) => lower_pure(lower.ctx, lower.names, &c.spanned()),
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
                 let result = Ident::fresh_local("_const");
@@ -859,7 +859,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var(res_ident)
             }
-            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t),
+            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t.spanned()),
             RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
@@ -1098,8 +1098,8 @@ impl<'tcx> Block<'tcx> {
         statements.push(Defn::simple(cont, body));
 
         let mut body = Expr::var(cont0);
-        if let Some(variant) = &self.variant {
-            let term = lower_pure(lower.ctx, lower.names, &variant.term);
+        if let Some(variant) = self.variant {
+            let term = lower_pure(lower.ctx, lower.names, &variant.term.spanned());
             body = body.assign(variant.old_name.0, term);
         }
         if !self.invariants.is_empty() {
@@ -1108,7 +1108,8 @@ impl<'tcx> Block<'tcx> {
 
         for i in self.invariants.into_iter().rev() {
             body = Expr::assert(
-                lower_pure(lower.ctx, lower.names, &i.body).with_attr(Attribute::Attr(i.expl)),
+                lower_pure(lower.ctx, lower.names, &i.body.spanned())
+                    .with_attr(Attribute::Attr(i.expl)),
                 body,
             );
         }
@@ -1314,7 +1315,7 @@ impl<'tcx> Statement<'tcx> {
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
             StatementKind::Assertion { cond, msg, trusted } => {
-                let mut e = lower_pure(lower.ctx, lower.names, &cond);
+                let mut e = lower_pure(lower.ctx, lower.names, &cond.spanned());
                 if let Some(msg) = msg {
                     e = e.with_attr(Attribute::Attr(msg))
                 }

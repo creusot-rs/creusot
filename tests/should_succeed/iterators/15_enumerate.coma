@@ -132,8 +132,6 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
     forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
       -> precondition_next () args
   
-  predicate completed_I (self: MutBorrow.t t_I)
-  
   predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
@@ -144,15 +142,17 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
         | Some f0 -> inv_Item f0
         end
   
+  predicate completed_I (self: MutBorrow.t t_I)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self = args in match res with
-          | None -> completed_I self
-          | Some v -> produces_I self.current (Seq.singleton v) self.final
-          end
-      /\ inv_Option_Item res)
+      -> (let self = args in inv_Option_Item res
+      /\ match res with
+        | None -> completed_I self
+        | Some v -> produces_I self.current (Seq.singleton v) self.final
+        end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
@@ -373,21 +373,6 @@ module M_impl_Iterator_for_Enumerate_I__next__refines (* <Enumerate<I> as common
   
   type t_Option_tup2_usize_Item = None | Some tup2_usize_Item
   
-  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_usize
-  
-  predicate completed_Enumerate_I (self: MutBorrow.t t_Enumerate_I) =
-    completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
-    /\ resolve_ref_usize (MutBorrow.borrow_logic self.current.count self.final.count (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
-  
-  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
-    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
-    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
-  
   predicate inv_Item (_1: t_Item)
   
   predicate inv_tup2_usize_Item [@inline:trivial] (_1: tup2_usize_Item) = inv_Item _1.f1
@@ -403,22 +388,37 @@ module M_impl_Iterator_for_Enumerate_I__next__refines (* <Enumerate<I> as common
         | Some f0'0 -> inv_tup2_usize_Item f0'0
         end
   
+  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_usize
+  
+  predicate completed_Enumerate_I (self: MutBorrow.t t_Enumerate_I) =
+    completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
+    /\ resolve_ref_usize (MutBorrow.borrow_logic self.current.count self.final.count (MutBorrow.inherit_id (MutBorrow.get_id self) 2))
+  
+  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
+    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
+    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: MutBorrow.t t_Enumerate_I. inv_ref_Enumerate_I self
       -> inv_ref_Enumerate_I self
-      /\ (forall result: t_Option_tup2_usize_Item. match result with
-              | None -> completed_Enumerate_I self
-              | Some v -> produces_Enumerate_I self.current (Seq.singleton v) self.final
-              end
-          /\ inv_Option_tup2_usize_Item result
-        -> match result with
+      /\ (forall result: t_Option_tup2_usize_Item. inv_Option_tup2_usize_Item result
+          /\ match result with
             | None -> completed_Enumerate_I self
             | Some v -> produces_Enumerate_I self.current (Seq.singleton v) self.final
             end
-        /\ inv_Option_tup2_usize_Item result)
+        -> inv_Option_tup2_usize_Item result
+        /\ match result with
+          | None -> completed_Enumerate_I self
+          | Some v -> produces_Enumerate_I self.current (Seq.singleton v) self.final
+          end)
 end
 module M_impl_Iterator_for_Enumerate_I__produces_trans__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -456,10 +456,10 @@ module M_impl_Iterator_for_Enumerate_I__produces_trans__refines (* <Enumerate<I>
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Enumerate_I. forall ab: Seq.seq tup2_usize_Item. forall b: t_Enumerate_I. forall bc: Seq.seq tup2_usize_Item. forall c: t_Enumerate_I. produces_Enumerate_I b bc c
-                /\ produces_Enumerate_I a ab b
-              -> produces_Enumerate_I b bc c
-              /\ produces_Enumerate_I a ab b
+    forall a: t_Enumerate_I. forall ab: Seq.seq tup2_usize_Item. forall b: t_Enumerate_I. forall bc: Seq.seq tup2_usize_Item. forall c: t_Enumerate_I. produces_Enumerate_I a ab b
+                /\ produces_Enumerate_I b bc c
+              -> produces_Enumerate_I a ab b
+              /\ produces_Enumerate_I b bc c
               /\ (forall result: (). produces_Enumerate_I a (Seq.(++) ab bc) c
                 -> produces_Enumerate_I a (Seq.(++) ab bc) c)
 end

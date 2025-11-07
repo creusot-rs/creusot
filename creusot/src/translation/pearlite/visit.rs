@@ -64,6 +64,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         TermKind::Postcondition { params, .. } => params.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::PrivateInv { term } => visitor.visit_term(term),
         TermKind::PrivateResolve { term } => visitor.visit_term(term),
+        TermKind::Spanned(term) => visitor.visit_term(term),
     }
 }
 
@@ -145,6 +146,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         }
         TermKind::PrivateInv { term } => visitor.visit_mut_term(term),
         TermKind::PrivateResolve { term } => visitor.visit_mut_term(term),
+        TermKind::Spanned(term) => visitor.visit_mut_term(term),
     }
 }
 

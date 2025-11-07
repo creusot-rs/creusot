@@ -52,8 +52,6 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
     forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
       -> precondition_next () args
   
-  predicate completed_I (self: MutBorrow.t t_I)
-  
   predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
@@ -64,15 +62,17 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
         | Some'0 f0 -> inv_Item f0
         end
   
+  predicate completed_I (self: MutBorrow.t t_I)
+  
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_once_next () args res]. postcondition_once_next () args res
-      -> (let self = args in match res with
-          | None'0 -> completed_I self
-          | Some'0 v -> produces_I self.current (Seq.singleton v) self.final
-          end
-      /\ inv_Option_Item res)
+      -> (let self = args in inv_Option_Item res
+      /\ match res with
+        | None'0 -> completed_I self
+        | Some'0 v -> produces_I self.current (Seq.singleton v) self.final
+        end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
@@ -408,10 +408,10 @@ module M_impl_Iterator_for_Fuse_I__produces_trans__refines (* <Fuse<I> as common
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Fuse_I. forall ab: Seq.seq t_Item. forall b: t_Fuse_I. forall bc: Seq.seq t_Item. forall c: t_Fuse_I. produces_Fuse_I b bc c
-                /\ produces_Fuse_I a ab b
-              -> produces_Fuse_I b bc c
-              /\ produces_Fuse_I a ab b
+    forall a: t_Fuse_I. forall ab: Seq.seq t_Item. forall b: t_Fuse_I. forall bc: Seq.seq t_Item. forall c: t_Fuse_I. produces_Fuse_I a ab b
+                /\ produces_Fuse_I b bc c
+              -> produces_Fuse_I a ab b
+              /\ produces_Fuse_I b bc c
               /\ (forall result: (). produces_Fuse_I a (Seq.(++) ab bc) c -> produces_Fuse_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Fuse_I__produces_refl__refines (* <Fuse<I> as common::Iterator> *)
@@ -500,6 +500,16 @@ module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator
   
   type t_Option_Item = None'0 | Some'0 t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate inv_Option_Item (_1: t_Option_Item)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_Item f0
+        end
+  
   predicate completed_I (self: MutBorrow.t t_I)
   
   predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
@@ -515,32 +525,22 @@ module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator
         end
       end
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate inv_Option_Item (_1: t_Option_Item)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
-        | None'0 -> true
-        | Some'0 f0 -> inv_Item f0
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self: MutBorrow.t t_Fuse_I. inv_ref_Fuse_I self
       -> inv_ref_Fuse_I self
-      /\ (forall result: t_Option_Item. match result with
-              | None'0 -> completed_Fuse_I self
-              | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
-              end
-          /\ inv_Option_Item result
-        -> match result with
+      /\ (forall result: t_Option_Item. inv_Option_Item result
+          /\ match result with
             | None'0 -> completed_Fuse_I self
             | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
             end
-        /\ inv_Option_Item result)
+        -> inv_Option_Item result
+        /\ match result with
+          | None'0 -> completed_Fuse_I self
+          | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
+          end)
 end
 module M_impl_FusedIterator_for_Fuse_I__is_fused__refines (* <Fuse<I> as FusedIterator> *)
   use seq.Seq
@@ -596,9 +596,9 @@ module M_impl_FusedIterator_for_Fuse_I__is_fused__refines (* <Fuse<I> as FusedIt
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: MutBorrow.t t_Fuse_I. forall steps: Seq.seq t_Item. forall next: t_Fuse_I. produces_Fuse_I self.final steps next
-            /\ completed_Fuse_I self
-          -> produces_Fuse_I self.final steps next
-          /\ completed_Fuse_I self
+    forall self: MutBorrow.t t_Fuse_I. forall steps: Seq.seq t_Item. forall next: t_Fuse_I. completed_Fuse_I self
+            /\ produces_Fuse_I self.final steps next
+          -> completed_Fuse_I self
+          /\ produces_Fuse_I self.final steps next
           /\ (forall result: (). steps = (Seq.empty: Seq.seq t_Item) -> steps = (Seq.empty: Seq.seq t_Item))
 end

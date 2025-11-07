@@ -236,6 +236,10 @@ pub enum TermKind<'tcx> {
         subst: GenericArgsRef<'tcx>,
         params: Box<[Term<'tcx>]>,
     },
+    /// Instruction to annotate a term with its span
+    /// This allows keeping track of sub-expressions that come directly from the Rust source,
+    /// notably in trait refinement goals.
+    Spanned(Box<Term<'tcx>>),
 }
 
 impl<I: Interner> TypeFoldable<I> for Literal<'_> {
@@ -541,7 +545,7 @@ impl<'tcx> Term<'tcx> {
         } else {
             Term {
                 ty: self.ty,
-                span: self.span.until(rhs.span),
+                span: self.span,
                 kind: TermKind::Binary { op: BinOp::And, lhs: Box::new(self), rhs: Box::new(rhs) },
             }
         }
@@ -567,7 +571,7 @@ impl<'tcx> Term<'tcx> {
         } else {
             Term {
                 ty: self.ty,
-                span: self.span.until(rhs.span),
+                span: rhs.span,
                 kind: TermKind::Impl { lhs: Box::new(self), rhs: Box::new(rhs) },
             }
         }
@@ -647,6 +651,17 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn span(mut self, sp: Span) -> Self {
         self.span = sp;
         self
+    }
+
+    pub(crate) fn spanned(self) -> Self {
+        let ty = self.ty;
+        let span = self.span;
+        Term { kind: TermKind::Spanned(self.into()), ty, span }
+    }
+
+    /// Don't wrap `true` and `false` to enable simplification by `conj` and `implies`
+    pub(crate) fn spanned_nontrivial(self) -> Self {
+        if self.is_true() || self.is_false() { self } else { self.spanned() }
     }
 
     /// For each `(var, term)` in `inv_subst`, replace `var` by `term` in `self` (as
@@ -737,6 +752,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::PrivateInv { term } => term.subst_(bound, subst),
             TermKind::PrivateResolve { term } => term.subst_(bound, subst),
+            TermKind::Spanned(term) => term.subst_(bound, subst),
         }
     }
 
@@ -828,6 +844,7 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::PrivateInv { term } => term.free_vars_inner(bound, free),
             TermKind::PrivateResolve { term } => term.free_vars_inner(bound, free),
+            TermKind::Spanned(term) => term.free_vars_inner(bound, free),
         }
     }
 }

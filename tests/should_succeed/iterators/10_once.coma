@@ -191,16 +191,16 @@ module M_impl_Iterator_for_Once_T__next__refines (* <Once<T> as common::Iterator
   
   goal refines: forall self: MutBorrow.t t_Once_T. inv_ref_Once_T self
       -> inv_ref_Once_T self
-      /\ (forall result: t_Option_T. match result with
-              | None -> completed_Once_T self
-              | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
-              end
-          /\ inv_Option_T result
-        -> match result with
+      /\ (forall result: t_Option_T. inv_Option_T result
+          /\ match result with
             | None -> completed_Once_T self
             | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
             end
-        /\ inv_Option_T result)
+        -> inv_Option_T result
+        /\ match result with
+          | None -> completed_Once_T self
+          | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
+          end)
 end
 module M_impl_Iterator_for_Once_T__produces_refl__refines (* <Once<T> as common::Iterator> *)
   use seq.Seq
@@ -240,9 +240,9 @@ module M_impl_Iterator_for_Once_T__produces_trans__refines (* <Once<T> as common
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Once_T. forall ab: Seq.seq t_T. forall b: t_Once_T. forall bc: Seq.seq t_T. forall c: t_Once_T. produces_Once_T b bc c
-                /\ produces_Once_T a ab b
-              -> produces_Once_T b bc c
-              /\ produces_Once_T a ab b
+    forall a: t_Once_T. forall ab: Seq.seq t_T. forall b: t_Once_T. forall bc: Seq.seq t_T. forall c: t_Once_T. produces_Once_T a ab b
+                /\ produces_Once_T b bc c
+              -> produces_Once_T a ab b
+              /\ produces_Once_T b bc c
               /\ (forall result: (). produces_Once_T a (Seq.(++) ab bc) c -> produces_Once_T a (Seq.(++) ab bc) c)
 end

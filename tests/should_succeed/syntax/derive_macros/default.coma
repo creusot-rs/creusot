@@ -590,6 +590,16 @@ end
 module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default::Default> *)
   use creusot.int.Int32
   
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  type t_Named_T = { x: Int32.t; y: t_T }
+  
+  predicate inv_Named_T (_1: t_Named_T)
+  
+  axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
+  
   predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
     let () = args in result = (0: Int32.t)
   
@@ -648,14 +658,8 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
     forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut_default self args res_state res
       = (postcondition_default self args res /\ self = res_state)
   
-  let rec default_i32 (return (x: Int32.t)) = any
+  let rec default_i32 (return (x'0: Int32.t)) = any
     [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
-  
-  type t_T
-  
-  type t_Named_T = { x: Int32.t; y: t_T }
-  
-  predicate inv_T (_1: t_T)
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_T)
   
@@ -727,17 +731,12 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
   let rec default_T (return (x'0: t_T)) = {[@expl:default requires] precondition_default () ()}
     any [ return (result: t_T) -> {postcondition_once_default'0 () () result} (! return {result}) ]
   
-  predicate inv_Named_T (_1: t_Named_T)
-  
-  axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall result: t_Named_T. true
-        /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y /\ inv_Named_T result
-      -> inv_Named_T result
+  goal refines: forall result: t_Named_T. inv_Named_T result
+        /\ true /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y -> inv_Named_T result
 end
 module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::default::Default> *)
   type t_T
@@ -747,6 +746,16 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
   type t_ENamed_T_U = A t_T t_U | B
   
   predicate inv_T (_1: t_T)
+  
+  predicate inv_U (_1: t_U)
+  
+  predicate inv_ENamed_T_U (_1: t_ENamed_T_U)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_ENamed_T_U [inv_ENamed_T_U x]. inv_ENamed_T_U x
+      = match x with
+        | A x'0 y -> inv_T x'0 /\ inv_U y
+        | B -> true
+        end
   
   predicate postcondition_once_default (self: ()) (args: ()) (result: t_T)
   
@@ -816,8 +825,6 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
   
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
     any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
-  
-  predicate inv_U (_1: t_U)
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_U)
   
@@ -889,21 +896,13 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
   let rec default_U (return (x: t_U)) = {[@expl:default requires] precondition_default'0 () ()}
     any [ return (result: t_U) -> {postcondition_once_default'0 () () result} (! return {result}) ]
   
-  predicate inv_ENamed_T_U (_1: t_ENamed_T_U)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_ENamed_T_U [inv_ENamed_T_U x]. inv_ENamed_T_U x
-      = match x with
-        | A x'0 y -> inv_T x'0 /\ inv_U y
-        | B -> true
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall result: t_ENamed_T_U. match result with
-            | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
-            | _ -> false
-            end
-        /\ inv_ENamed_T_U result -> inv_ENamed_T_U result
+  goal refines: forall result: t_ENamed_T_U. inv_ENamed_T_U result
+        /\ match result with
+          | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
+          | _ -> false
+          end -> inv_ENamed_T_U result
 end

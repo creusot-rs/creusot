@@ -61,10 +61,10 @@ pub(crate) fn lower_program_sig<'tcx>(
         attrs.push(attr)
     }
 
-    let variant =
-        pre_sig.contract.variant.take().map(|term| {
-            (lower_pure(ctx, names, &term), translate_ty(ctx, names, term.span, term.ty))
-        });
+    let variant = pre_sig.contract.variant.take().map(|term| {
+        let ty = translate_ty(ctx, names, term.span, term.ty);
+        (lower_pure(ctx, names, &term.spanned()), ty)
+    });
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
     ProgramSignature { prototype: Prototype { name, attrs, params }, contract, return_ty, variant }
@@ -113,7 +113,8 @@ pub(crate) fn lower_logic_sig<'tcx>(
     } else {
         Some(translate_ty(ctx, names, span, pre_sig.output))
     };
-    let variant = pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term));
+    let variant =
+        pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term.spanned()));
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
     let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };

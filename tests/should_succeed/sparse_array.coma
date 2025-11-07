@@ -1423,19 +1423,6 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
   
   constant const_SIZE : UInt64.t
   
-  predicate resolve_T (_1: t_T)
-  
-  predicate resolve_array_T_n [@inline:trivial] (self: Slice64.array t_T) =
-    forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve_T (Seq.get (Slice64.view self) i)
-  
-  meta "rewrite_def" predicate resolve_array_T_n
-  
-  predicate resolve_array_T_n'0 (_1: Slice64.array t_T)
-  
-  axiom resolve_axiom: forall x: Slice64.array t_T [resolve_array_T_n'0 x]. resolve_array_T_n'0 x -> resolve_array_T_n x
-  
-  predicate structural_resolve_Sparse_T (_1: t_Sparse_T) = resolve_array_T_n'0 _1.values
-  
   function index_array_usize_n [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
     Seq.get (Slice64.view self) ix
   
@@ -1487,6 +1474,19 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
   axiom inv_axiom [@rewrite]: forall x: t_Sparse_T [inv_Sparse_T x]. inv_Sparse_T x
       = (invariant_Sparse_T x /\ inv_array_T_n x.values /\ inv_array_usize_n x.idx /\ inv_array_usize_n x.back)
   
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_array_T_n [@inline:trivial] (self: Slice64.array t_T) =
+    forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve_T (Seq.get (Slice64.view self) i)
+  
+  meta "rewrite_def" predicate resolve_array_T_n
+  
+  predicate resolve_array_T_n'0 (_1: Slice64.array t_T)
+  
+  axiom resolve_axiom: forall x: Slice64.array t_T [resolve_array_T_n'0 x]. resolve_array_T_n'0 x -> resolve_array_T_n x
+  
+  predicate structural_resolve_Sparse_T (_1: t_Sparse_T) = resolve_array_T_n'0 _1.values
+  
   type t_Option_T = None | Some t_T
   
   predicate resolve_Option_T (_1: t_Option_T)
@@ -1521,7 +1521,7 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Sparse_T. structural_resolve_Sparse_T self /\ inv_Sparse_T self
-      -> structural_resolve_Sparse_T self
-      /\ inv_Sparse_T self /\ (forall result: (). resolve_Sparse_T self -> resolve_Sparse_T self)
+  goal refines: forall self: t_Sparse_T. inv_Sparse_T self /\ structural_resolve_Sparse_T self
+      -> inv_Sparse_T self
+      /\ structural_resolve_Sparse_T self /\ (forall result: (). resolve_Sparse_T self -> resolve_Sparse_T self)
 end

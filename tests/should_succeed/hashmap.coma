@@ -622,8 +622,8 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   predicate precondition_eq (self: ()) (args: tup2_ref_K_ref_K)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K rhs
-        /\ inv_ref_K self_) -> precondition_eq () args
+    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
+        /\ inv_ref_K rhs) -> precondition_eq () args
   
   predicate postcondition_once_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool)
   
@@ -1069,8 +1069,8 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   predicate precondition_eq (self: ()) (args: tup2_ref_K_ref_K)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K rhs
-        /\ inv_ref_K self_) -> precondition_eq () args
+    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
+        /\ inv_ref_K rhs) -> precondition_eq () args
   
   predicate postcondition_once_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool)
   
@@ -1890,7 +1890,7 @@ module M_impl_Clone_for_List_T__clone__refines (* <List<T> as std::clone::Clone>
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_List_T. inv_ref_List_T self_
-      -> inv_ref_List_T self_ /\ (forall result: t_List_T. result = self_ /\ inv_List_T result -> inv_List_T result)
+      -> inv_ref_List_T self_ /\ (forall result: t_List_T. inv_List_T result /\ result = self_ -> inv_List_T result)
 end
 module M_impl_Resolve_for_List_tup2_K_V__resolve_coherence__refines (* <List<(K, V)> as creusot_contracts::resolve::Resolve> *)
   type t_K
@@ -1900,6 +1900,28 @@ module M_impl_Resolve_for_List_tup2_K_V__resolve_coherence__refines (* <List<(K,
   type tup2_K_V = { f0: t_K; f1: t_V }
   
   type t_List_tup2_K_V = Nil | Cons tup2_K_V t_List_tup2_K_V
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0 /\ inv_V _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_K_V
+  
+  predicate inv_List_tup2_K_V (_1: t_List_tup2_K_V)
+  
+  predicate invariant_Box_List_tup2_K_V_Global (self: t_List_tup2_K_V) = inv_List_tup2_K_V self
+  
+  predicate inv_Box_List_tup2_K_V_Global [@inline:trivial] (_1: t_List_tup2_K_V) = invariant_Box_List_tup2_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_List_tup2_K_V_Global
+  
+  axiom inv_axiom [@rewrite]: forall x: t_List_tup2_K_V [inv_List_tup2_K_V x]. inv_List_tup2_K_V x
+      = match x with
+        | Nil -> true
+        | Cons f0'0 f1'0 -> inv_tup2_K_V f0'0 /\ inv_Box_List_tup2_K_V_Global f1'0
+        end
   
   predicate resolve_K (_1: t_K)
   
@@ -1949,40 +1971,18 @@ module M_impl_Resolve_for_List_tup2_K_V__resolve_coherence__refines (* <List<(K,
       | Cons x0 x1 -> resolve_tup2_K_V x0 /\ resolve_Box_List_tup2_K_V_Global x1
       end
   
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0 /\ inv_V _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_K_V
-  
-  predicate inv_List_tup2_K_V (_1: t_List_tup2_K_V)
-  
-  predicate invariant_Box_List_tup2_K_V_Global (self: t_List_tup2_K_V) = inv_List_tup2_K_V self
-  
-  predicate inv_Box_List_tup2_K_V_Global [@inline:trivial] (_1: t_List_tup2_K_V) = invariant_Box_List_tup2_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_List_tup2_K_V_Global
-  
-  axiom inv_axiom [@rewrite]: forall x: t_List_tup2_K_V [inv_List_tup2_K_V x]. inv_List_tup2_K_V x
-      = match x with
-        | Nil -> true
-        | Cons f0'0 f1'0 -> inv_tup2_K_V f0'0 /\ inv_Box_List_tup2_K_V_Global f1'0
-        end
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_List_tup2_K_V. structural_resolve_List_tup2_K_V self /\ inv_List_tup2_K_V self
+  goal refines: forall self: t_List_tup2_K_V. inv_List_tup2_K_V self /\ structural_resolve_List_tup2_K_V self
       -> structural_resolve_List_tup2_K_V self
       /\ (forall result: (). resolve_List_tup2_K_V self -> resolve_List_tup2_K_V self)
 end
 module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMap<K, V> as creusot_contracts::resolve::Resolve> *)
-  use mach.int.Int
   use seq.Seq
   use creusot.int.UInt64
+  use mach.int.Int
   use int.EuclideanDivision
   use map.Map
   
@@ -2005,19 +2005,9 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
   axiom view_Vec_List_tup2_K_V_Global_spec:
     forall self: t_Vec_List_tup2_K_V_Global. Seq.length (view_Vec_List_tup2_K_V_Global self) <= UInt64.t'int const_MAX
   
-  type t_Option_V = None | Some t_V
-  
-  predicate resolve_V (_1: t_V)
-  
-  predicate resolve_Option_V (_1: t_Option_V)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_V [resolve_Option_V x]. resolve_Option_V x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_V x0
-        end
-  
   type t_DeepModelTy
+  
+  type t_Option_V = None | Some t_V
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
@@ -2026,46 +2016,6 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
       | Cons {f0 = k; f1 = v} tl -> if deep_model_K k = index then Some v else get_K tl index
       end
   
-  predicate resolve_List_tup2_K_V (self: t_List_tup2_K_V) = forall k: t_DeepModelTy. resolve_Option_V (get_K self k)
-  
-  predicate resolve_K (_1: t_K)
-  
-  predicate resolve_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = resolve_K _1.f0 /\ resolve_V _1.f1
-  
-  meta "rewrite_def" predicate resolve_tup2_K_V
-  
-  predicate resolve_List_tup2_K_V'0 (_1: t_List_tup2_K_V)
-  
-  predicate resolve_Box_List_tup2_K_V_Global [@inline:trivial] (_1: t_List_tup2_K_V) = resolve_List_tup2_K_V'0 _1
-  
-  meta "rewrite_def" predicate resolve_Box_List_tup2_K_V_Global
-  
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_List_tup2_K_V [resolve_List_tup2_K_V'0 x]. resolve_List_tup2_K_V'0 x
-      = (resolve_List_tup2_K_V x
-      /\ match x with
-        | Nil -> true
-        | Cons x0 x1 -> resolve_tup2_K_V x0 /\ resolve_Box_List_tup2_K_V_Global x1
-        end)
-  
-  function index_Vec_List_tup2_K_V_Global [@inline:trivial] (self: t_Vec_List_tup2_K_V_Global) (ix: int) : t_List_tup2_K_V
-   = Seq.get (view_Vec_List_tup2_K_V_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_List_tup2_K_V_Global
-  
-  predicate resolve_Vec_List_tup2_K_V_Global [@inline:trivial] (self: t_Vec_List_tup2_K_V_Global) =
-    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_List_tup2_K_V_Global self)
-      -> resolve_List_tup2_K_V'0 (index_Vec_List_tup2_K_V_Global self i)
-  
-  meta "rewrite_def" predicate resolve_Vec_List_tup2_K_V_Global
-  
-  predicate resolve_Vec_List_tup2_K_V_Global'0 (_1: t_Vec_List_tup2_K_V_Global)
-  
-  axiom resolve_axiom'1:
-    forall x: t_Vec_List_tup2_K_V_Global [resolve_Vec_List_tup2_K_V_Global'0 x]. resolve_Vec_List_tup2_K_V_Global'0 x
-      -> resolve_Vec_List_tup2_K_V_Global x
-  
-  predicate structural_resolve_MyHashMap_K_V (_1: t_MyHashMap_K_V) = resolve_Vec_List_tup2_K_V_Global'0 _1.buckets
-  
   function hash_log_K (_1: t_DeepModelTy) : int
   
   function bucket_ix_K (self: t_MyHashMap_K_V) (k: t_DeepModelTy) : int =
@@ -2073,6 +2023,11 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
   
   predicate good_bucket_K (self: t_MyHashMap_K_V) (l: t_List_tup2_K_V) (h: int) =
     forall k: t_DeepModelTy, v: t_V. get_K l k = Some v -> bucket_ix_K self k = h
+  
+  function index_Vec_List_tup2_K_V_Global [@inline:trivial] (self: t_Vec_List_tup2_K_V_Global) (ix: int) : t_List_tup2_K_V
+   = Seq.get (view_Vec_List_tup2_K_V_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_List_tup2_K_V_Global
   
   predicate no_double_binding_K (self: t_List_tup2_K_V) =
     match self with
@@ -2131,6 +2086,51 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
   axiom inv_axiom'1 [@rewrite]: forall x: t_MyHashMap_K_V [inv_MyHashMap_K_V x]. inv_MyHashMap_K_V x
       = (invariant_MyHashMap_K_V x /\ inv_Vec_List_tup2_K_V_Global x.buckets)
   
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_Option_V (_1: t_Option_V)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_V [resolve_Option_V x]. resolve_Option_V x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_V x0
+        end
+  
+  predicate resolve_List_tup2_K_V (self: t_List_tup2_K_V) = forall k: t_DeepModelTy. resolve_Option_V (get_K self k)
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = resolve_K _1.f0 /\ resolve_V _1.f1
+  
+  meta "rewrite_def" predicate resolve_tup2_K_V
+  
+  predicate resolve_List_tup2_K_V'0 (_1: t_List_tup2_K_V)
+  
+  predicate resolve_Box_List_tup2_K_V_Global [@inline:trivial] (_1: t_List_tup2_K_V) = resolve_List_tup2_K_V'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_List_tup2_K_V_Global
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_List_tup2_K_V [resolve_List_tup2_K_V'0 x]. resolve_List_tup2_K_V'0 x
+      = (resolve_List_tup2_K_V x
+      /\ match x with
+        | Nil -> true
+        | Cons x0 x1 -> resolve_tup2_K_V x0 /\ resolve_Box_List_tup2_K_V_Global x1
+        end)
+  
+  predicate resolve_Vec_List_tup2_K_V_Global [@inline:trivial] (self: t_Vec_List_tup2_K_V_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_List_tup2_K_V_Global self)
+      -> resolve_List_tup2_K_V'0 (index_Vec_List_tup2_K_V_Global self i)
+  
+  meta "rewrite_def" predicate resolve_Vec_List_tup2_K_V_Global
+  
+  predicate resolve_Vec_List_tup2_K_V_Global'0 (_1: t_Vec_List_tup2_K_V_Global)
+  
+  axiom resolve_axiom'1:
+    forall x: t_Vec_List_tup2_K_V_Global [resolve_Vec_List_tup2_K_V_Global'0 x]. resolve_Vec_List_tup2_K_V_Global'0 x
+      -> resolve_Vec_List_tup2_K_V_Global x
+  
+  predicate structural_resolve_MyHashMap_K_V (_1: t_MyHashMap_K_V) = resolve_Vec_List_tup2_K_V_Global'0 _1.buckets
+  
   function bucket_K (self: t_MyHashMap_K_V) (k: t_DeepModelTy) : t_List_tup2_K_V =
     index_Vec_List_tup2_K_V_Global self.buckets (bucket_ix_K self k)
   
@@ -2144,9 +2144,10 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_MyHashMap_K_V. structural_resolve_MyHashMap_K_V self /\ inv_MyHashMap_K_V self
-      -> structural_resolve_MyHashMap_K_V self
-      /\ inv_MyHashMap_K_V self /\ (forall result: (). resolve_MyHashMap_K_V self -> resolve_MyHashMap_K_V self)
+  goal refines: forall self: t_MyHashMap_K_V. inv_MyHashMap_K_V self /\ structural_resolve_MyHashMap_K_V self
+      -> inv_MyHashMap_K_V self
+      /\ structural_resolve_MyHashMap_K_V self
+      /\ (forall result: (). resolve_MyHashMap_K_V self -> resolve_MyHashMap_K_V self)
 end
 module M_impl_Hash_for_usize__hash__refines (* <usize as Hash> *)
   use creusot.int.UInt64
