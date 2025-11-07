@@ -64,6 +64,7 @@ impl NonNeg {
 
 #[check(ghost)]
 #[variant(i.0@)]
+#[requires(0 <= i.0@)]
 pub fn quux(i: NonNeg) -> NonNeg {
     if i.0 == 0 { i } else { quux(i.decr()) }
 }
