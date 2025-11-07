@@ -272,6 +272,7 @@ fn run_creusot(
     paths: &CreusotPaths,
     with_spans: bool,
 ) -> Option<std::process::Command> {
+    // Magic comment with instructions for creusot
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
@@ -280,8 +281,6 @@ fn run_creusot(
     let mut cmd = Command::new(&paths.creusot_rustc);
     cmd.current_dir(file.parent().unwrap());
 
-    // Magic comment with instructions for creusot
-    let header_line = BufReader::new(File::open(file).unwrap()).lines().nth(0).unwrap().unwrap();
     // Find comment chunks of the form CREUSOT_ARG=ARGUMENT. Does not support spaces in arguments currently (would require real parser)
     let args: Vec<_> = header_line
         .split(" ")
@@ -306,10 +305,12 @@ fn run_creusot(
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
-    if with_spans {
-        cmd.arg("--span-mode=relative");
-    } else {
-        cmd.arg("--span-mode=off");
+    if !args.iter().any(|arg| arg.starts_with("--span-mode")) {
+        if with_spans {
+            cmd.arg("--span-mode=relative");
+        } else {
+            cmd.arg("--span-mode=off");
+        }
     }
     cmd.args(args);
     cmd.args(&["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);

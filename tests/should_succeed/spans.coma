@@ -1,0 +1,196 @@
+module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
+  let%span sspans = "spans.rs" 15 15 15 21
+  let%span sspans'0 = "spans.rs" 16 14 16 30
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) = {[@expl:foo requires] [%#sspans] x /\ x}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () | & x: bool = x ])
+    [ return (result: bool) -> {[@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
+end
+module M_bar [#"spans.rs" 24 0 24 33]
+  let%span sspans = "spans.rs" 25 14 25 16
+  let%span sspans'0 = "spans.rs" 26 16 26 23
+  let%span sspans'1 = "spans.rs" 27 10 27 11
+  let%span sspans'2 = "spans.rs" 28 13 28 14
+  let%span sspans'3 = "spans.rs" 23 11 23 18
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
+  
+  use mach.int.Int
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
+    {[@expl:bar requires] [%#sspans'3] UInt64.t'int i <= 0}
+    (! bb0
+    [ bb0 = bb1
+    | bb1 = bb1invariant
+      [ bb1 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i)} bb1invariant
+      | bb1invariant = {[@expl:loop invariant] [%#sspans'0] UInt64.t'int i <= 0}
+        (! [ &variant_old_bb1 <- [%#sspans] UInt64.t'int i ] s0)
+        [ s0 = bb2 ]
+        [ bb2 = s0
+          [ s0 = [ &_8 <- UInt64.lt ([%#sspans'1] (0: UInt64.t)) i ] s1
+          | s1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb3) ] ]
+        | bb3 = s0
+          [ s0 = UInt64.sub {i} {[%#sspans'2] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
+          | s1 = bb1 ] ] ]
+    | bb4 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = return {_0} ] ]
+    [ & _0: UInt64.t = Any.any_l ()
+    | & i: UInt64.t = i
+    | & _8: bool = Any.any_l ()
+    | & variant_old_bb1: int = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+end
+module M_baz [#"spans.rs" 37 0 37 25]
+  let%span sspans = "spans.rs" 34 10 34 11
+  let%span sspans'0 = "spans.rs" 35 11 35 17
+  let%span sspans'1 = "spans.rs" 36 10 36 21
+  let%span sspans'2 = "spans.rs" 39 8 43 9
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
+  
+  use mach.int.Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  function baz [#"spans.rs" 37 0 37 25] (i: int) : int
+  
+  goal vc_baz: ([%#sspans'0] 0 <= i)
+    -> (if i <= 0 then
+      [@expl:baz ensures] [%#sspans'1] i = 0
+    else
+      (([@expl:baz requires] [%#sspans'0] 0 <= i - 1) /\ well_founded_relation_Int ([%#sspans] i) ([%#sspans] i - 1))
+      /\ (([%#sspans'1] baz (i - 1) = 0) -> ([@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0))
+    )
+end
+module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
+  let%span sspans = "spans.rs" 61 22 61 23
+  let%span sspans'0 = "spans.rs" 60 16 60 20
+  let%span sspans'1 = "spans.rs" 58 15 58 26
+  let%span sspans'2 = "spans.rs" 60 25 60 29
+  let%span sspans'3 = "spans.rs" 59 14 59 38
+  let%span sspans'4 = "spans.rs" 52 20 52 32
+  
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type t_NonNeg = { f0: UInt64.t }
+  
+  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'4] 0 <= UInt64.t'int self.f0
+  
+  predicate inv_NonNeg (_1: t_NonNeg)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
+    {[@expl:decr 'self' type invariant] [%#sspans'0] inv_NonNeg self}
+    {[@expl:decr requires] [%#sspans'1] 0 < UInt64.t'int self.f0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:type invariant] inv_NonNeg self} s1
+      | s1 = UInt64.sub {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s2)
+      | s2 = [ &_0 <- { f0 = _4 } ] s3
+      | s3 = return {_0} ] ]
+    [ & _0: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _4: UInt64.t = Any.any_l () ])
+    [ return (result: t_NonNeg) -> {[@expl:decr result type invariant] [%#sspans'2] inv_NonNeg result}
+      {[@expl:decr ensures] [%#sspans'3] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+      (! return {result}) ]
+end
+module M_quux [#"spans.rs" 67 0 67 32]
+  let%span sspans = "spans.rs" 68 14 68 15
+  let%span sspans'0 = "spans.rs" 66 10 66 14
+  let%span sspans'1 = "spans.rs" 67 12 67 13
+  let%span sspans'2 = "spans.rs" 67 26 67 32
+  let%span sspans'3 = "spans.rs" 60 16 60 20
+  let%span sspans'4 = "spans.rs" 58 15 58 26
+  let%span sspans'5 = "spans.rs" 60 25 60 29
+  let%span sspans'6 = "spans.rs" 59 14 59 38
+  let%span sspans'7 = "spans.rs" 52 20 52 32
+  let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
+  
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type t_NonNeg = { f0: UInt64.t }
+  
+  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'7] 0 <= UInt64.t'int self.f0
+  
+  predicate inv_NonNeg (_1: t_NonNeg)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
+  
+  let rec decr (self: t_NonNeg) (return (x: t_NonNeg)) =
+    {[@expl:decr 'self' type invariant] [%#sspans'3] inv_NonNeg self}
+    {[@expl:decr requires] [%#sspans'4] 0 < UInt64.t'int self.f0}
+    any
+    [ return (result: t_NonNeg) -> {[%#sspans'5] inv_NonNeg result}
+      {[%#sspans'6] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+      (! return {result}) ]
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    [%#swell_founded] self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec quux [#"spans.rs" 67 0 67 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
+    {[@expl:quux 'i' type invariant] [%#sspans'1] inv_NonNeg i}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_3 <- i.f0 = ([%#sspans] (0: UInt64.t)) ] s1
+      | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] ]
+    | bb1 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = bb5 ]
+    | bb2 = s0 [ s0 = decr {i} (fun (_ret: t_NonNeg) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = quux {_5} (fun (_ret: t_NonNeg) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
+    | bb5 = return {_0} ]
+    [ & _0: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _3: bool = Any.any_l () | & _5: t_NonNeg = Any.any_l () ]
+    [ quux (i: t_NonNeg) (_ret (_r: t_NonNeg)) ->
+    {[@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'0] UInt64.t'int i.f0)}
+      quux {i} (_ret) ] [ function_variant: int = [%#sspans'0] UInt64.t'int i.f0 ])
+    [ return (result: t_NonNeg) -> {[@expl:quux result type invariant] [%#sspans'2] inv_NonNeg result}
+      (! return {result}) ]
+end
+module M_impl_Tr_for_S__foo__refines [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
+  let%span sspans = "spans.rs" 7 15 7 16
+  let%span sspans'0 = "spans.rs" 15 15 15 21
+  let%span sspans'1 = "spans.rs" 16 14 16 30
+  let%span sspans'2 = "spans.rs" 8 14 8 20
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: bool. ([%#sspans] x)
+      -> ([%#sspans'0] x /\ x) /\ (forall result: bool. ([%#sspans'1] result \/ result) -> ([%#sspans'2] result))
+end
