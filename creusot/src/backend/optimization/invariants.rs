@@ -254,7 +254,7 @@ impl<'tcx> FmirVisitor<'tcx> for BorrowProph<'_, 'tcx> {
                     self.record_write_to(r);
                 }
             }
-            fmir::StatementKind::Call(r, _, _, _) => {
+            fmir::StatementKind::Call(r, _, _, _, _) => {
                 self.record_write_to(r);
             }
             _ => (),

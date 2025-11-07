@@ -131,6 +131,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                     fun_def_id,
                                     subst,
                                     func_args,
+                                    span,
                                 ),
                                 span: span.source_callsite(),
                             });

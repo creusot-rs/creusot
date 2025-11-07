@@ -41,8 +41,7 @@ use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
     declaration::{
-        Attribute, Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl,
-        Use,
+        Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl, Use,
     },
     ty::Type,
 };
@@ -102,7 +101,7 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
         self.namer.typing_env()
     }
 
-    fn span(&self, span: Span) -> Option<Attribute> {
+    fn span(&self, span: Span) -> Option<Ident> {
         self.namer.span(span)
     }
 

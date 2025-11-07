@@ -216,7 +216,7 @@ pub(crate) fn to_why<'tcx>(
                 .iter()
                 .map(|p| match p {
                     Param::Term(ident, _) => Arg::Term(Exp::Var(Name::local(*ident))),
-                    Param::Cont(ident, _, _) => Arg::Cont(Expr::Name(Name::local(*ident))),
+                    Param::Cont(ident, _, _) => Arg::Cont(Expr::var(*ident)),
                     _ => unreachable!(),
                 })
                 .collect();
@@ -234,7 +234,7 @@ pub(crate) fn to_why<'tcx>(
                         // assert the variant
                         variant.clone().boxed(),
                         // call the function with the same args
-                        Expr::app(Expr::Name(fun_name), args).boxed(),
+                        Expr::app(Expr::name(fun_name), args).boxed(),
                     ),
                 }]
                 .into(),
@@ -438,7 +438,7 @@ fn component_to_defn<'tcx>(
     if let Some(variant) = variant {
         let new_name =
             Ident::fresh_local(format!("{}invariant", block.prototype.name.name().to_string()));
-        let variant_expr = Expr::assert(variant, Expr::Name(Name::Local(new_name, None)));
+        let variant_expr = Expr::assert(variant, Expr::var(new_name));
         block.body = Expr::Defn(
             Expr::var(new_name).boxed(),
             true,
@@ -636,11 +636,12 @@ impl<'tcx> RValue<'tcx> {
                     Logic => Exp::qvar(fname).app(args),
                     Program => {
                         let ret_ident = Ident::fresh_local("_ret");
-                        istmts.push(IntermediateStmt::call(
+                        istmts.push(IntermediateStmt::call_span(
                             ret_ident,
                             lower.ty(ty),
                             Name::Global(fname),
                             args.map(Arg::Term),
+                            span,
                         ));
                         Exp::var(ret_ident)
                     }
@@ -921,7 +922,7 @@ impl<'tcx> Terminator<'tcx> {
             }
             Terminator::Abort(span) => {
                 let mut exp = Exp::mk_false();
-                if let Some(attr) = lower.names.span(span) {
+                if let Some(attr) = lower.names.span_attr(span) {
                     exp = exp.with_attr(attr);
                 };
                 Expr::assert(exp, Expr::Any)
@@ -1089,12 +1090,12 @@ impl<'tcx> Block<'tcx> {
             let stmt = s.into_why(lower, recursive_calls);
             let old_cont = cont;
             cont = Ident::fresh_local(format!("s{}", ix + 1));
-            let body = assemble_intermediates(stmt.into_iter(), Expr::var(cont));
+            let body = assemble_intermediates(lower.names, stmt.into_iter(), Expr::var(cont));
             statements.push(Defn::simple(old_cont, body));
         }
 
         let (istmts, terminator) = self.terminator.into_why(lower);
-        let body = assemble_intermediates(istmts.into_iter(), terminator);
+        let body = assemble_intermediates(lower.names, istmts.into_iter(), terminator);
         statements.push(Defn::simple(cont, body));
 
         let mut body = Expr::var(cont0);
@@ -1121,15 +1122,18 @@ impl<'tcx> Block<'tcx> {
 }
 
 /// Combine `exp` and the statements `istmts` into one coma expression.
-fn assemble_intermediates<I>(istmts: I, exp: Expr) -> Expr
+fn assemble_intermediates<'tcx, I>(names: &impl Namer<'tcx>, istmts: I, exp: Expr) -> Expr
 where
     I: IntoIterator<Item = IntermediateStmt>,
     I: DoubleEndedIterator<Item = IntermediateStmt>,
 {
     istmts.rfold(exp, |tail, stmt| match stmt {
         IntermediateStmt::Assign(id, exp) => tail.assign(id, exp),
-        IntermediateStmt::Call(params, fun, args) => Expr::Name(fun)
-            .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))])),
+        IntermediateStmt::Call(params, fun, args, span) => {
+            let span = span.and_then(|span| names.span(span));
+            Expr::Name(fun, span)
+                .app(args.into_iter().chain([Arg::Cont(Expr::Lambda(params, tail.boxed()))]))
+        }
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
         IntermediateStmt::Expr(expr, k, x, ty) => Expr::Defn(
@@ -1166,7 +1170,7 @@ pub(crate) enum IntermediateStmt {
     // [ id = E] K
     Assign(Ident, Exp),
     // E [ARGS] (id: ty -> K)
-    Call(Box<[Param]>, Name, Box<[Arg]>),
+    Call(Box<[Param]>, Name, Box<[Arg]>, Option<Span>),
     /// `E [ K (X : T) -> _ ]`
     Expr(Expr /* E */, Ident /* K */, Ident /* X */, Type /* T */),
     // -{ E }- K
@@ -1179,7 +1183,27 @@ pub(crate) enum IntermediateStmt {
 
 impl IntermediateStmt {
     fn call(id: Ident, ty: Type, f: Name, args: impl IntoIterator<Item = Arg>) -> Self {
-        IntermediateStmt::Call([Param::Term(id, ty)].into(), f, args.into_iter().collect())
+        Self::call_(id, ty, f, args, None)
+    }
+
+    fn call_span(
+        id: Ident,
+        ty: Type,
+        f: Name,
+        args: impl IntoIterator<Item = Arg>,
+        span: Span,
+    ) -> Self {
+        Self::call_(id, ty, f, args, Some(span))
+    }
+
+    fn call_(
+        id: Ident,
+        ty: Type,
+        f: Name,
+        args: impl IntoIterator<Item = Arg>,
+        span: Option<Span>,
+    ) -> Self {
+        IntermediateStmt::Call([Param::Term(id, ty)].into(), f, args.into_iter().collect(), span)
     }
 }
 
@@ -1292,7 +1316,7 @@ impl<'tcx> Statement<'tcx> {
                     e.into_why(self.span, lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
-            StatementKind::Call(dest, fun_id, subst, args) => {
+            StatementKind::Call(dest, fun_id, subst, args, span) => {
                 let params =
                     args.iter().map(|a| lower.ty(a.ty(lower.ctx.tcx, lower.locals))).collect();
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
@@ -1311,7 +1335,7 @@ impl<'tcx> Statement<'tcx> {
                     }
                 }
                 let ret_ident = Ident::fresh_local("_ret");
-                istmts.push(IntermediateStmt::call(ret_ident, ty, fun_qname, args));
+                istmts.push(IntermediateStmt::call_span(ret_ident, ty, fun_qname, args, span));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
             StatementKind::Assertion { cond, msg, trusted } => {

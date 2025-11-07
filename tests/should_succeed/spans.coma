@@ -18,7 +18,8 @@ module M_bar [#"spans.rs" 24 0 24 33]
   let%span sspans'0 = "spans.rs" 26 16 26 23
   let%span sspans'1 = "spans.rs" 27 10 27 11
   let%span sspans'2 = "spans.rs" 28 13 28 14
-  let%span sspans'3 = "spans.rs" 23 11 23 18
+  let%span sspans'3 = "spans.rs" 28 8 28 14
+  let%span sspans'4 = "spans.rs" 23 11 23 18
   let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use mach.int.Int
@@ -35,7 +36,7 @@ module M_bar [#"spans.rs" 24 0 24 33]
   meta "select_lsinst" "all"
   
   let rec bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@expl:bar requires] [%#sspans'3] UInt64.t'int i <= 0}
+    {[@expl:bar requires] [%#sspans'4] UInt64.t'int i <= 0}
     (! bb0
     [ bb0 = bb1
     | bb1 = bb1invariant
@@ -47,7 +48,7 @@ module M_bar [#"spans.rs" 24 0 24 33]
           [ s0 = [ &_8 <- UInt64.lt ([%#sspans'1] (0: UInt64.t)) i ] s1
           | s1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb3) ] ]
         | bb3 = s0
-          [ s0 = UInt64.sub {i} {[%#sspans'2] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
+          [ s0 = UInt64.sub [%#sspans'3] {i} {[%#sspans'2] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
           | s1 = bb1 ] ] ]
     | bb4 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = return {_0} ] ]
     [ & _0: UInt64.t = Any.any_l ()
@@ -87,11 +88,12 @@ module M_baz [#"spans.rs" 37 0 37 25]
 end
 module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   let%span sspans = "spans.rs" 61 22 61 23
-  let%span sspans'0 = "spans.rs" 60 16 60 20
-  let%span sspans'1 = "spans.rs" 58 15 58 26
-  let%span sspans'2 = "spans.rs" 60 25 60 29
-  let%span sspans'3 = "spans.rs" 59 14 59 38
-  let%span sspans'4 = "spans.rs" 52 20 52 32
+  let%span sspans'0 = "spans.rs" 61 13 61 23
+  let%span sspans'1 = "spans.rs" 60 16 60 20
+  let%span sspans'2 = "spans.rs" 58 15 58 26
+  let%span sspans'3 = "spans.rs" 60 25 60 29
+  let%span sspans'4 = "spans.rs" 59 14 59 38
+  let%span sspans'5 = "spans.rs" 52 20 52 32
   
   use creusot.int.UInt64
   use mach.int.Int
@@ -99,7 +101,7 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   
   type t_NonNeg = { f0: UInt64.t }
   
-  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'4] 0 <= UInt64.t'int self.f0
+  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'5] 0 <= UInt64.t'int self.f0
   
   predicate inv_NonNeg (_1: t_NonNeg)
   
@@ -110,29 +112,32 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   meta "select_lsinst" "all"
   
   let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:decr 'self' type invariant] [%#sspans'0] inv_NonNeg self}
-    {[@expl:decr requires] [%#sspans'1] 0 < UInt64.t'int self.f0}
+    {[@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self}
+    {[@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv_NonNeg self} s1
-      | s1 = UInt64.sub {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s2)
+      | s1 = UInt64.sub [%#sspans'0] {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s2)
       | s2 = [ &_0 <- { f0 = _4 } ] s3
       | s3 = return {_0} ] ]
     [ & _0: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _4: UInt64.t = Any.any_l () ])
-    [ return (result: t_NonNeg) -> {[@expl:decr result type invariant] [%#sspans'2] inv_NonNeg result}
-      {[@expl:decr ensures] [%#sspans'3] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+    [ return (result: t_NonNeg) -> {[@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result}
+      {[@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
       (! return {result}) ]
 end
-module M_quux [#"spans.rs" 67 0 67 32]
-  let%span sspans = "spans.rs" 68 14 68 15
-  let%span sspans'0 = "spans.rs" 66 10 66 14
-  let%span sspans'1 = "spans.rs" 67 12 67 13
-  let%span sspans'2 = "spans.rs" 67 26 67 32
-  let%span sspans'3 = "spans.rs" 60 16 60 20
-  let%span sspans'4 = "spans.rs" 58 15 58 26
-  let%span sspans'5 = "spans.rs" 60 25 60 29
-  let%span sspans'6 = "spans.rs" 59 14 59 38
-  let%span sspans'7 = "spans.rs" 52 20 52 32
+module M_quux [#"spans.rs" 68 0 68 32]
+  let%span sspans = "spans.rs" 69 14 69 15
+  let%span sspans'0 = "spans.rs" 69 34 69 42
+  let%span sspans'1 = "spans.rs" 69 29 69 43
+  let%span sspans'2 = "spans.rs" 66 10 66 14
+  let%span sspans'3 = "spans.rs" 68 12 68 13
+  let%span sspans'4 = "spans.rs" 67 11 67 20
+  let%span sspans'5 = "spans.rs" 68 26 68 32
+  let%span sspans'6 = "spans.rs" 60 16 60 20
+  let%span sspans'7 = "spans.rs" 58 15 58 26
+  let%span sspans'8 = "spans.rs" 60 25 60 29
+  let%span sspans'9 = "spans.rs" 59 14 59 38
+  let%span sspans'10 = "spans.rs" 52 20 52 32
   let%span swell_founded = "../../creusot-contracts/src/logic/well_founded.rs" 43 8 43 33
   
   use creusot.int.UInt64
@@ -141,18 +146,18 @@ module M_quux [#"spans.rs" 67 0 67 32]
   
   type t_NonNeg = { f0: UInt64.t }
   
-  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'7] 0 <= UInt64.t'int self.f0
+  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'10] 0 <= UInt64.t'int self.f0
   
   predicate inv_NonNeg (_1: t_NonNeg)
   
   axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
   
   let rec decr (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:decr 'self' type invariant] [%#sspans'3] inv_NonNeg self}
-    {[@expl:decr requires] [%#sspans'4] 0 < UInt64.t'int self.f0}
+    {[@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self}
+    {[@expl:decr requires] [%#sspans'7] 0 < UInt64.t'int self.f0}
     any
-    [ return (result: t_NonNeg) -> {[%#sspans'5] inv_NonNeg result}
-      {[%#sspans'6] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+    [ return (result: t_NonNeg) -> {[%#sspans'8] inv_NonNeg result}
+      {[%#sspans'9] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
       (! return {result}) ]
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
@@ -164,21 +169,22 @@ module M_quux [#"spans.rs" 67 0 67 32]
   
   meta "select_lsinst" "all"
   
-  let rec quux [#"spans.rs" 67 0 67 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:quux 'i' type invariant] [%#sspans'1] inv_NonNeg i}
+  let rec quux [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
+    {[@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i}
+    {[@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_3 <- i.f0 = ([%#sspans] (0: UInt64.t)) ] s1
-      | s1 = any [ br0 -> {_3 = false} (! bb2) | br1 -> {_3} (! bb1) ] ]
+      [ s0 = [ &_4 <- i.f0 = ([%#sspans] (0: UInt64.t)) ] s1
+      | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
     | bb1 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = bb5 ]
-    | bb2 = s0 [ s0 = decr {i} (fun (_ret: t_NonNeg) -> [ &_5 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = quux {_5} (fun (_ret: t_NonNeg) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
+    | bb2 = s0 [ s0 = decr [%#sspans'0] {i} (fun (_ret: t_NonNeg) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
+    | bb3 = s0 [ s0 = quux [%#sspans'1] {_6} (fun (_ret: t_NonNeg) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = return {_0} ]
-    [ & _0: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _3: bool = Any.any_l () | & _5: t_NonNeg = Any.any_l () ]
+    [ & _0: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _4: bool = Any.any_l () | & _6: t_NonNeg = Any.any_l () ]
     [ quux (i: t_NonNeg) (_ret (_r: t_NonNeg)) ->
-    {[@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'0] UInt64.t'int i.f0)}
-      quux {i} (_ret) ] [ function_variant: int = [%#sspans'0] UInt64.t'int i.f0 ])
-    [ return (result: t_NonNeg) -> {[@expl:quux result type invariant] [%#sspans'2] inv_NonNeg result}
+    {[@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'2] UInt64.t'int i.f0)}
+      quux {i} (_ret) ] [ function_variant: int = [%#sspans'2] UInt64.t'int i.f0 ])
+    [ return (result: t_NonNeg) -> {[@expl:quux result type invariant] [%#sspans'5] inv_NonNeg result}
       (! return {result}) ]
 end
 module M_impl_Tr_for_S__foo__refines [#"spans.rs" 17 4 17 27] (* <S as Tr> *)

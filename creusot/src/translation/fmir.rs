@@ -91,7 +91,7 @@ pub enum StatementKind<'tcx> {
         msg: Option<String>,
         trusted: bool,
     },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -569,7 +569,7 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
         StatementKind::Assertion { cond, .. } => {
             visitor.visit_term(cond);
         }
-        StatementKind::Call(place, _, _, operands) => {
+        StatementKind::Call(place, _, _, operands, _) => {
             visitor.visit_place(place);
             for operand in operands {
                 visitor.visit_operand(operand);
