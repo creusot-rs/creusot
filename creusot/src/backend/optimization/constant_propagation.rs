@@ -107,7 +107,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
                 self.visit_term(cond);
                 self.visit_term(cond);
             }
-            StatementKind::Call(dest, _, _, args) => {
+            StatementKind::Call(dest, _, _, args, _) => {
                 self.write_place(dest);
                 args.iter().for_each(|a| self.visit_operand(a));
             }
@@ -291,7 +291,7 @@ impl<'tcx> SimplePropagator<'tcx> {
         match &mut s.kind {
             StatementKind::Assignment(_, r) => self.visit_rvalue(r),
             StatementKind::Assertion { cond, .. } => self.visit_term(cond),
-            StatementKind::Call(_, _, _, args) => {
+            StatementKind::Call(_, _, _, args, _) => {
                 args.iter_mut().for_each(|a| self.visit_operand(a))
             }
         }

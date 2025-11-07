@@ -397,7 +397,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Spanned(term2) => {
                 let exp = self.lower_term(term2);
-                if let Some(attr) = self.names.span(term.span) { exp.with_attr(attr) } else { exp }
+                if let Some(attr) = self.names.span_attr(term.span) {
+                    exp.with_attr(attr)
+                } else {
+                    exp
+                }
             }
         }
     }

@@ -223,7 +223,12 @@ pub(crate) trait Namer<'tcx> {
 
     fn typing_env(&self) -> TypingEnv<'tcx>;
 
-    fn span(&self, span: Span) -> Option<Attribute>;
+    fn span_attr(&self, span: Span) -> Option<Attribute> {
+        let ident = self.span(span)?;
+        Some(Attribute::NamedSpan(ident))
+    }
+
+    fn span(&self, span: Span) -> Option<Ident>;
 
     fn bitwise_mode(&self) -> bool;
 
@@ -269,15 +274,14 @@ impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {
         self.typing_env
     }
 
-    fn span(&self, span: Span) -> Option<Attribute> {
+    fn span(&self, span: Span) -> Option<Ident> {
         let path = path_of_span(self.tcx(), span, &self.span_mode)?;
-        let ident = self.spans.insert(span, |_| {
+        Some(*self.spans.insert(span, |_| {
             Box::new(Ident::fresh_local(format!(
                 "s{}",
                 path.file_stem().unwrap().to_str().unwrap()
             )))
-        });
-        Some(Attribute::NamedSpan(*ident))
+        }))
     }
 
     fn bitwise_mode(&self) -> bool {
@@ -313,7 +317,7 @@ impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
         self.names.register_constant_setter(setter);
     }
 
-    fn span(&self, span: Span) -> Option<Attribute> {
+    fn span(&self, span: Span) -> Option<Ident> {
         self.names.span(span)
     }
 
