@@ -25,7 +25,7 @@ use creusot_args::options::Options;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
 use rustc_ast::{
-    Fn, FnSig, NodeId,
+    AttrVec, Fn, FnSig, NodeId,
     visit::{FnKind, Visitor, walk_fn},
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
@@ -202,7 +202,7 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
     struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
-        fn visit_fn(&mut self, fk: FnKind<'a>, _: Span, node: NodeId) {
+        fn visit_fn(&mut self, fk: FnKind<'a>, _: &AttrVec, _: Span, node: NodeId) {
             let decl = match fk {
                 FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
                 FnKind::Closure(_, _, decl, _) => decl,

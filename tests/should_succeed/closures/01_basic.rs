@@ -31,12 +31,11 @@ pub fn new_ref<'a, T>() -> &'a mut T {
     panic!()
 }
 
+#[allow(unused)]
 pub fn move_mut() {
-    #[allow(unused)]
     let mut x = &mut 0u32;
 
     let mut a = move || {
-        #[allow(unused)]
         x = new_ref();
     };
     (a)();

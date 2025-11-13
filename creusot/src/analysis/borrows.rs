@@ -121,7 +121,7 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
     }
 
     fn apply_primary_statement_effect(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         stmt: &mir::Statement<'tcx>,
         location: Location,
@@ -162,7 +162,6 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
 
             mir::StatementKind::FakeRead(..)
             | mir::StatementKind::SetDiscriminant { .. }
-            | mir::StatementKind::Deinit(..)
             | mir::StatementKind::Retag { .. }
             | mir::StatementKind::PlaceMention(..)
             | mir::StatementKind::AscribeUserType(..)
@@ -175,7 +174,7 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
     }
 
     fn apply_primary_terminator_effect<'mir>(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
         location: Location,

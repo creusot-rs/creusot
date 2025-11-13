@@ -48,6 +48,7 @@ pub struct MyStruct {
 }
 
 #[requires(x.g@ == 0)]
-pub fn takes_struct(mut x: MyStruct) {
+pub fn takes_struct(mut x: MyStruct) -> MyStruct {
     x.g = snapshot! { x.f };
+    x
 }

@@ -13,8 +13,8 @@ use crate::{
 use rustc_ast::Mutability;
 use rustc_middle::{
     mir::{
-        BorrowKind::*, CastKind, Location, NullOp, Operand::*, Place, Rvalue, SourceInfo,
-        Statement, StatementKind,
+        BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
     },
     ty::{ConstKind, Ty, TyKind, UintTy, adjustment::PointerCoercion},
 };
@@ -47,7 +47,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             StatementKind::Intrinsic(_) => {
                 self.crash_and_error(statement.source_info.span, "intrinsics are not supported")
             }
-            StatementKind::Deinit(_) => unreachable!("Deinit unsupported"),
         }
     }
 
@@ -196,14 +195,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::FloatToInt
                 | CastKind::FnPtrToPtr
                 | CastKind::FloatToFloat
+                | CastKind::Subtype
                 | CastKind::Transmute,
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
-            Rvalue::NullaryOp(NullOp::SizeOf, _) => self
-                .ctx
-                .fatal_error(si.span, format!("MIR code used Rvalue SizeOf: {rvalue:?}"))
-                .with_note("If you are trying to use the vec! macro, you should use the version provided by creusot-contracts.").emit(),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)

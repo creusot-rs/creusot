@@ -47,8 +47,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn translate_impl(&self, impl_id: DefId) -> Vec<Refinement<'tcx>> {
-        assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
-        let trait_ref = self.impl_trait_ref(impl_id).unwrap().instantiate_identity();
+        assert!(self.impl_opt_trait_id(impl_id).is_some(), "{impl_id:?} is not a trait impl");
+        let trait_ref = self.impl_trait_ref(impl_id).instantiate_identity();
 
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
@@ -175,7 +175,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
         fulfill_cx.register_predicate_obligation(infcx, obligation);
     }
-    let errors = fulfill_cx.select_all_or_error(infcx);
+    let errors = fulfill_cx.evaluate_obligations_error_on_ambiguity(infcx);
     if !errors.is_empty() { Err(errors) } else { Ok(()) }
 }
 
@@ -484,8 +484,7 @@ impl<'tcx> GraphTraversal<'tcx> {
         Box::new(candidates.filter(|&child| {
             let infcx = self.infcx.fork();
             let args = infcx.fresh_args_for_item(DUMMY_SP, child);
-            let trait_ref_child =
-                self.tcx.impl_trait_ref(child).unwrap().instantiate(self.tcx, args);
+            let trait_ref_child = self.tcx.impl_trait_ref(child).instantiate(self.tcx, args);
             infcx
                 .at(&ObligationCause::dummy(), self.param_env)
                 .eq(DefineOpaqueTypes::Yes, trait_ref_child, self.trait_ref)

@@ -547,17 +547,17 @@ module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
     [ bb0 = any [ br0 -> {self = Z} (! bb4) | br1 (x0: t_Peano) -> {self = S x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_S {self} (fun (r0: t_Peano) -> [ &v0_1 <- r0 ] s1)
-      | s1 = [ &_8 <- v0_1 ] s2
-      | s2 = clone_ref_Peano {_8} (fun (_ret: t_Peano) -> [ &_6 <- _ret ] s3)
+      | s1 = [ &_9 <- v0_1 ] s2
+      | s2 = clone_ref_Peano {_9} (fun (_ret: t_Peano) -> [ &_7 <- _ret ] s3)
       | s3 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_0 <- S _6 ] s1 | s1 = bb6 ]
+    | bb5 = s0 [ s0 = [ &_0 <- S _7 ] s1 | s1 = bb6 ]
     | bb4 = s0 [ s0 = [ &_0 <- Z ] s1 | s1 = bb6 ]
     | bb6 = return {_0} ]
     [ & _0: t_Peano = Any.any_l ()
     | & self: t_Peano = self
     | & v0_1: t_Peano = Any.any_l ()
-    | & _6: t_Peano = Any.any_l ()
-    | & _8: t_Peano = Any.any_l () ])
+    | & _7: t_Peano = Any.any_l ()
+    | & _9: t_Peano = Any.any_l () ])
     [ return (result: t_Peano) -> {[@expl:clone ensures] match { f0 = self; f1 = result } with
         | {f0 = Z; f1 = Z} -> true
         | {f0 = S v0_1; f1 = S v0_r} -> postcondition_clone () v0_1 v0_r
@@ -647,36 +647,33 @@ module M_str
 end
 module M_is_zst
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.Any
   
-  constant size_of_T : int
+  constant const_SIZE : UInt64.t
   
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  let rec size_of_T'0 (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = size_of_T} (! return {result}) ]
+  let rec set_SIZE (ret) = bb0
+    [ bb0 = {false} any ] [ & _0: UInt64.t = Any.any_l () ]
+    [ const_ret (_const: UInt64.t) -> -{const_SIZE = _const}- ret ]
   
   constant const_IS_ZST : bool
   
   let rec set_IS_ZST (ret) = bb0
-    [ bb0 = s0 [ s0 = size_of_T'0 (fun (_ret: UInt64.t) -> [ &_1 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _1 = (0: UInt64.t) ] s1 | s1 = const_ret {_0} ] ]
-    [ & _0: bool = Any.any_l () | & _1: UInt64.t = Any.any_l () ]
+    [ bb0 = s0 [ s0 = [ &_0 <- const_SIZE = (0: UInt64.t) ] s1 | s1 = const_ret {_0} ] ] [ & _0: bool = Any.any_l () ]
     [ const_ret (_const: bool) -> -{const_IS_ZST = _const}- ret ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec is_zst_T (return (x: bool)) = set_IS_ZST
-      ((! bb0
-      [ bb0 = s0
-        [ s0 = bb0'0
-          [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_IS_ZST ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
-          [ & _0'0: bool = Any.any_l () ] [ _const_ret (_const: bool) -> [ &_0 <- _const ] s1 ]
-        | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ])
-      [ return (result: bool) -> {[@expl:is_zst ensures] result = const_IS_ZST} (! return {result}) ])
+  let rec is_zst_T (return (x: bool)) = set_SIZE
+      (set_IS_ZST
+        ((! bb0
+        [ bb0 = s0
+          [ s0 = bb0'0
+            [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- const_IS_ZST ] s1'0 | s1'0 = _const_ret {_0'0} ] ]
+            [ & _0'0: bool = Any.any_l () ] [ _const_ret (_const: bool) -> [ &_0 <- _const ] s1 ]
+          | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ])
+        [ return (result: bool) -> {[@expl:is_zst ensures] result = const_IS_ZST} (! return {result}) ]))
 end
 module M_is_zst_z
   use creusot.prelude.Any
@@ -740,11 +737,11 @@ module M_fn_pointer_test
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_0'0 <- () ] s1'0 | s1'0 = _const_ret {_0'0} ] ] [ & _0'0: () = Any.any_l () ]
-        [ _const_ret (_const: ()) -> [ &_7 <- _const ] s1 ]
-      | s1 = [ &x <- _7 ] s2
+        [ _const_ret (_const: ()) -> [ &_8 <- _const ] s1 ]
+      | s1 = [ &x <- _8 ] s2
       | s2 = some_fn_pointer (fun (_ret: Int32.t) -> [ &y <- _ret ] s3)
       | s3 = bb1 ]
     | bb1 = s0 [ s0 = {[@expl:assertion] Int32.to_int y = 2} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & x: () = Any.any_l () | & y: Int32.t = Any.any_l () | & _7: () = Any.any_l () ])
+    [ & _0: () = Any.any_l () | & x: () = Any.any_l () | & y: Int32.t = Any.any_l () | & _8: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

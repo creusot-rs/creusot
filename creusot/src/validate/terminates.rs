@@ -390,7 +390,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             return (node, bounds);
         }
 
-        let trait_id = ctx.trait_id_of_impl(impl_id.into()).unwrap();
+        let trait_id = ctx.impl_trait_id(impl_id.to_def_id());
 
         let spec_node_def = if let Some(def_impl) = ctx.impl_of_assoc(item_id) {
             specialization_graph::Node::Impl(def_impl)

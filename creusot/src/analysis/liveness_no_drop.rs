@@ -60,7 +60,7 @@ impl<'a, 'tcx> Analysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
         // No variables are live until we observe a use
     }
     fn apply_primary_statement_effect(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         statement: &mir::Statement<'tcx>,
         location: Location,
@@ -69,7 +69,7 @@ impl<'a, 'tcx> Analysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
     }
 
     fn apply_primary_terminator_effect<'mir>(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
         location: Location,
@@ -79,7 +79,7 @@ impl<'a, 'tcx> Analysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
     }
 
     fn apply_call_return_effect(
-        &mut self,
+        &self,
         trans: &mut Self::Domain,
         _block: mir::BasicBlock,
         return_places: CallReturnPlaces<'_, 'tcx>,
@@ -174,8 +174,7 @@ impl DefUse {
                 MutatingUseContext::Call
                 | MutatingUseContext::Yield
                 | MutatingUseContext::AsmOutput
-                | MutatingUseContext::Store
-                | MutatingUseContext::Deinit,
+                | MutatingUseContext::Store,
             ) => {
                 if place_contains_borrow_deref(place.as_ref(), &ctx.body, ctx.tcx) {
                     // Treat derefs of (mutable) borrows as a use of the base local.

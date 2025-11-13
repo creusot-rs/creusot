@@ -181,7 +181,7 @@ impl ComaNames {
 /// For inherent impls, generate name `impl_$TY`.
 /// For trait impls, generate name `impl_$TRAIT_for_$TY`
 fn impl_name<'tcx>(tcx: TyCtxt<'tcx>, id: LocalDefId) -> String {
-    if let Some(trait_ref) = tcx.impl_trait_ref(id.to_def_id()) {
+    if let Some(trait_ref) = tcx.impl_opt_trait_ref(id.to_def_id()) {
         let trait_ref: rustc_type_ir::TraitRef<TyCtxt<'tcx>> = trait_ref.skip_binder();
         let mut name = ascii_item_name("impl_", tcx, trait_ref.def_id);
         name.push_str("_for");

@@ -240,7 +240,6 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
             ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::Subtype(_)
             | ProjectionElem::UnwrapUnsafeBinder(_) => {
                 ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?}"))
             }
@@ -295,9 +294,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
                 ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?} in reborrow"))
             }
             // Nothing to do
-            ProjectionElem::Downcast(..)
-            | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::Subtype(_) => {}
+            ProjectionElem::Downcast(..) | ProjectionElem::OpaqueCast(_) => {}
         }
     }
     borrow_id
@@ -382,12 +379,7 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
             (ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. }, _) => {
                 ctx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
             }
-            (
-                ProjectionElem::OpaqueCast(_)
-                | ProjectionElem::Subtype(_)
-                | ProjectionElem::UnwrapUnsafeBinder(_),
-                _,
-            ) => {
+            (ProjectionElem::OpaqueCast(_) | ProjectionElem::UnwrapUnsafeBinder(_), _) => {
                 unreachable!("{el:?} unsupported projection.")
             }
         }

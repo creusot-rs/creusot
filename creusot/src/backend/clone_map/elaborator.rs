@@ -662,7 +662,7 @@ fn traitref_of_item<'tcx>(
         return Some(TraitRef::new(tcx, cont, subst));
     }
 
-    let trait_ref = tcx.impl_trait_ref(cont)?.instantiate(tcx, subst);
+    let trait_ref = tcx.impl_opt_trait_ref(cont)?.instantiate(tcx, subst);
     Some(tcx.normalize_erasing_regions(typing_env, trait_ref))
 }
 
