@@ -1,14 +1,12 @@
 use crate::contracts_items::{is_logic, is_no_translate, is_opaque};
 use indexmap::IndexSet;
 use rustc_abi::FieldIdx;
-use rustc_data_structures::sync::RwLock;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_index::{Idx, IndexVec};
+use rustc_index::IndexVec;
 use rustc_middle::{
     mir::{
         self, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, Rvalue, SourceInfo,
-        StatementKind, Terminator, TerminatorKind,
-        visit::{MutVisitor, PlaceContext},
+        StatementKind, Terminator, TerminatorKind, visit::MutVisitor,
     },
     ty::TyCtxt,
 };
@@ -216,43 +214,6 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
             }
             _ => self.super_rvalue(rvalue, l),
         }
-    }
-}
-
-pub(crate) fn map_locals<V>(
-    local_decls: &mut IndexVec<Local, V>,
-    dead_locals: &IndexSet<Local>,
-) -> IndexVec<Local, Option<Local>> {
-    let mut map: IndexVec<Local, Option<Local>> = IndexVec::from_elem(None, &*local_decls);
-    let mut used = Local::new(0);
-    for idx in local_decls.indices() {
-        if dead_locals.contains(&idx) {
-            continue;
-        }
-
-        map[idx] = Some(used);
-        if idx != used {
-            local_decls.swap(idx, used);
-        }
-        used.increment_by(1);
-    }
-
-    local_decls.truncate(used.index());
-    map
-}
-
-pub struct LocalUpdater<'tcx> {
-    pub map: IndexVec<Local, Option<Local>>,
-    pub tcx: TyCtxt<'tcx>,
-}
-
-impl<'tcx> MutVisitor<'tcx> for LocalUpdater<'tcx> {
-    fn tcx(&self) -> TyCtxt<'tcx> {
-        self.tcx
-    }
-
-    fn visit_local(&mut self, l: &mut Local, _: PlaceContext, _: Location) {
-        *l = self.map[*l].unwrap();
     }
 }
 
