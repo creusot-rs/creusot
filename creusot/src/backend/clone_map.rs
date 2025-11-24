@@ -495,7 +495,10 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
                 {
                     ctx.crash_and_error(
                         ctx.def_span(scc[0].did().unwrap().0),
-                        format!("encountered a cycle during translation: {:?}", scc),
+                        format!(
+                            "encountered a cycle during translation: {}",
+                            display_cycle(ctx.tcx, &scc)
+                        ),
                     );
                 }
 
@@ -567,6 +570,54 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         };
         (decls, self.names.constant_setters)
     }
+}
+
+fn display_cycle<'tcx>(tcx: TyCtxt<'tcx>, scc: &[Dependency<'tcx>]) -> String {
+    let mut msg = String::new();
+    display_cycle_(tcx, scc, &mut msg).unwrap();
+    msg
+}
+
+fn display_cycle_<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    scc: &[Dependency<'tcx>],
+    mut f: impl std::fmt::Write,
+) -> std::fmt::Result {
+    for (i, dep) in scc.into_iter().enumerate() {
+        use Dependency::*;
+        match dep {
+            Type(ty) => write!(f, "{ty}"),
+            Item(def_id, args) => {
+                write!(f, "{}{}", tcx.def_path_str(def_id), args.print_as_list())
+            }
+            TyInvAxiom(ty) => write!(f, "ty inv axiom {ty}"),
+            ResolveAxiom(ty) => write!(f, "resolve axiom {ty}"),
+            ClosureAccessor(def_id, args, _) => {
+                write!(f, "closure accessor {}{}", tcx.def_path_str(def_id), args.print_as_list())
+            }
+            TupleField(args, field_idx) => write!(
+                f,
+                "tuple field ({}).{}",
+                args.into_iter().map(|ty| ty.to_string()).join(", "),
+                field_idx.as_u32()
+            ),
+            PreMod(pre_mod) => write!(f, "PreMod::{pre_mod:?}"),
+            Eliminator(def_id, _args) => write!(f, "eliminator {}", tcx.def_path_str(def_id)),
+            DynCast(ty1, ty2) => write!(f, "dyncast {ty1} -> {ty2}"),
+            PrivateFields(def_id, _args) => {
+                write!(f, "private fields {}", tcx.def_path_str(def_id))
+            }
+            PrivateResolve(def_id, _args) => {
+                write!(f, "private resolve {}", tcx.def_path_str(def_id))
+            }
+            PrivateTyInv(def_id, _args) => write!(f, "private ty inv {}", tcx.def_path_str(def_id)),
+        }?;
+        f.write_str(";")?;
+        if i < scc.len() - 1 {
+            f.write_str(" ")?;
+        }
+    }
+    Ok(())
 }
 
 /// Names of constant setters declared in the current module.
