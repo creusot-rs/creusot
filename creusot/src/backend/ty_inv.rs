@@ -42,7 +42,6 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         // Handle user invariant
         match resolve_user_inv(ctx, ty, typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::NoInstance => {}
             TraitResolved::Instance { def, .. } if is_trivial_if_param_trivial(ctx.tcx, def.0) => {
                 match ty.kind() {
                     TyKind::Ref(_, ty, _) | TyKind::Slice(ty) | TyKind::Array(ty, _) => {
@@ -53,6 +52,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 }
                 continue;
             }
+            TraitResolved::NoInstance(info) if !info.trait_ref_is_specializable() => {}
             _ => return false,
         }
 
@@ -127,8 +127,7 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
                 [subject.clone()],
             ))
         }
-        TraitResolved::UnknownNotFound => use_impl = true,
-        TraitResolved::NoInstance => (),
+        TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
     }
 
     if let Some(sinv) = structural_invariant(ctx, names, subject.clone()) {
@@ -297,6 +296,18 @@ pub(crate) fn resolve_user_inv<'tcx>(
         Intrinsic::Invariant.get(ctx),
         ctx.mk_args(&[GenericArg::from(ty)]),
     )
+}
+
+/// `true` if this type definitely doesn't implement `Invariant`
+pub(crate) fn has_no_user_invariant<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    ty: Ty<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+) -> bool {
+    match resolve_user_inv(ctx, ty, typing_env) {
+        TraitResolved::NoInstance(info) => !info.trait_ref_is_specializable(),
+        _ => false,
+    }
 }
 
 pub(crate) fn sig_add_type_invariant_spec<'tcx>(

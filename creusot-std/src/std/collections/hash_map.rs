@@ -3,13 +3,16 @@ use crate::{
     prelude::*,
     std::iter::{FromIteratorSpec, IteratorSpec},
 };
+#[cfg(feature = "nightly")]
+use std::alloc::Allocator;
 use std::{
     collections::hash_map::*,
     default::Default,
     hash::{BuildHasher, Hash},
 };
 
-impl<K: DeepModel, V, S> View for HashMap<K, V, S> {
+#[cfg(feature = "nightly")]
+impl<K: DeepModel, V, S, A: Allocator> View for HashMap<K, V, S, A> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
     #[logic(opaque)]
@@ -22,7 +25,7 @@ extern_spec! {
     mod std {
         mod collections {
             mod hash_map {
-                impl<K: DeepModel, V, S> HashMap<K, V, S> {
+                impl<K: DeepModel, V, S, A: Allocator> HashMap<K, V, S, A> {
                     #[ensures(self@ == result@)]
                     fn iter(&self) -> Iter<'_, K, V>;
 
@@ -35,17 +38,17 @@ extern_spec! {
         }
     }
 
-    impl<K: DeepModel, V, S> IntoIterator for HashMap<K, V, S> {
+    impl<K: DeepModel, V, S, A: Allocator> IntoIterator for HashMap<K, V, S, A> {
         #[ensures(self@ == result@)]
-        fn into_iter(self) -> IntoIter<K, V>;
+        fn into_iter(self) -> IntoIter<K, V, A>;
     }
 
-    impl<'a, K: DeepModel, V, S> IntoIterator for &'a HashMap<K, V, S> {
+    impl<'a, K: DeepModel, V, S, A: Allocator> IntoIterator for &'a HashMap<K, V, S, A> {
         #[ensures(self@ == result@)]
         fn into_iter(self) -> Iter<'a, K, V>;
     }
 
-    impl<'a, K: DeepModel, V, S> IntoIterator for &'a mut HashMap<K, V, S> {
+    impl<'a, K: DeepModel, V, S, A: Allocator> IntoIterator for &'a mut HashMap<K, V, S, A> {
         #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
         #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
         #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
@@ -53,7 +56,8 @@ extern_spec! {
     }
 }
 
-impl<K: DeepModel, V> View for IntoIter<K, V> {
+#[cfg(feature = "nightly")]
+impl<K: DeepModel, V, A: Allocator> View for IntoIter<K, V, A> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
     #[logic(opaque)]
@@ -62,7 +66,8 @@ impl<K: DeepModel, V> View for IntoIter<K, V> {
     }
 }
 
-impl<K: DeepModel, V> IteratorSpec for IntoIter<K, V> {
+#[cfg(feature = "nightly")]
+impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
     #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
@@ -200,4 +205,18 @@ impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIteratorSpec<(K,
         == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
             && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k) }
     }
+}
+
+#[cfg(not(feature = "nightly"))]
+mod impls {
+    use crate::{logic::FMap, prelude::*};
+    use std::collections::hash_map::{HashMap, IntoIter};
+
+    impl<K: DeepModel, V, S> View for HashMap<K, V, S> {
+        type ViewTy = FMap<K::DeepModelTy, V>;
+    }
+    impl<K: DeepModel, V> View for IntoIter<K, V> {
+        type ViewTy = FMap<K::DeepModelTy, V>;
+    }
+    impl<K: DeepModel, V> IteratorSpec for IntoIter<K, V> {}
 }

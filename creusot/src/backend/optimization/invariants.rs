@@ -8,7 +8,7 @@ use crate::{
         program::node_graph,
         projections::{iter_projections_ty, projections_term},
         ty::{AdtKind, classify_adt},
-        ty_inv::{inv_call, is_tyinv_trivial, resolve_user_inv},
+        ty_inv::{has_no_user_invariant, inv_call, is_tyinv_trivial},
         wto::{Component, weak_topological_order},
     },
     contracts_items::is_open_inv_result,
@@ -19,7 +19,6 @@ use crate::{
             Statement, StatementKind, Terminator,
         },
         pearlite::{Ident, Term},
-        traits::TraitResolved,
     },
 };
 use indexmap::{IndexMap, map::Entry};
@@ -34,7 +33,7 @@ use rustc_middle::{
     ty::{Ty, TyKind, TypingEnv},
 };
 use rustc_span::DUMMY_SP;
-use std::{assert_matches::assert_matches, iter::repeat, ops::Deref};
+use std::{assert_matches, iter::repeat, ops::Deref};
 
 struct InvariantAnalysisCtx<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
@@ -463,8 +462,7 @@ impl TyInvPlacesTree {
                 /* Third step: remove the modified node if appropriate. */
                 if flds.iter().all(|t| matches!(t, Self::Top)) {
                     *self = Self::Top
-                } else if let TraitResolved::NoInstance =
-                    resolve_user_inv(ctx, place_ty.ty, ctx.typing_env)
+                } else if has_no_user_invariant(ctx, place_ty.ty, ctx.typing_env)
                     && flds
                         .iter()
                         .zip_eq(&*tys)
@@ -502,8 +500,7 @@ impl TyInvPlacesTree {
                 /* Third step: remove the modified node if appropriate. */
                 if vs.iter().all(|t| matches!(t, Self::Top)) {
                     *self = Self::Top
-                } else if let TraitResolved::NoInstance =
-                    resolve_user_inv(ctx, place_ty.ty, ctx.typing_env)
+                } else if has_no_user_invariant(ctx, place_ty.ty, ctx.typing_env)
                     && vs.iter().zip_eq(def.variants()).all(|(t, v)| {
                         matches!(t, Self::TyInv)
                             || v.fields.iter().all(|f| is_tyinv_trivial(f.ty(ctx.tcx, subst)))
@@ -651,8 +648,7 @@ impl TyInvState {
                 unreachable!("binary op / unary op / casts / ptr should return trivial tyinv")
             }
             RValue::Constructor(.., ops) => {
-                matches!(resolve_user_inv(ctx, ty, ctx.typing_env), TraitResolved::NoInstance)
-                    && ops.iter().all(ty_inv_op)
+                has_no_user_invariant(ctx, ty, ctx.typing_env) && ops.iter().all(ty_inv_op)
             }
             RValue::Tuple(ops) | RValue::Array(ops) => ops.iter().all(ty_inv_op),
             RValue::Repeat(op, _) => ty_inv_op(op),

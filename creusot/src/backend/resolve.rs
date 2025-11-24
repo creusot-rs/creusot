@@ -35,7 +35,6 @@ pub fn is_resolve_trivial<'tcx>(
 
         match resolve_user_resolve(ctx, ty, typing_env) {
             TraitResolved::NotATraitItem => unreachable!(),
-            TraitResolved::NoInstance => {}
             TraitResolved::Instance { def, .. } if is_trivial_if_param_trivial(ctx.tcx, def.0) => {
                 match ty.kind() {
                     TyKind::Ref(_, _, Mutability::Not) => {}
@@ -45,6 +44,7 @@ pub fn is_resolve_trivial<'tcx>(
                 }
                 continue;
             }
+            TraitResolved::NoInstance(info) if !info.trait_ref_is_specializable() => {}
             _ => return false,
         }
 
@@ -223,8 +223,7 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
                 [subject.clone()],
             ))
         }
-        TraitResolved::UnknownNotFound => use_impl = true,
-        TraitResolved::NoInstance => (),
+        TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
     }
 
     if let Some(sres) = structural_resolve(ctx, names, subject.clone(), span) {

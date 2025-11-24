@@ -97,6 +97,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             fun_def_id,
                             subst,
                         );
+                        let known = !matches!(tr_res, TraitResolved::UnknownFound);
                         let (fun_def_id, subst) =
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
 
@@ -118,7 +119,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 self.ctx.intrinsic(fun_def_id),
                                 Intrinsic::GhostDerefMut | Intrinsic::GhostDeref,
                             )
-                            && !matches!(tr_res, TraitResolved::UnknownFound)
+                            && known
                         {
                             target = None
                         } else {

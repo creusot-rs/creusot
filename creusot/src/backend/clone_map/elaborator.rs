@@ -33,7 +33,7 @@ use rustc_middle::ty::{
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
 use std::{
-    assert_matches::assert_matches,
+    assert_matches,
     cell::RefCell,
     collections::{HashMap, HashSet, VecDeque},
 };
@@ -776,7 +776,7 @@ fn postcondition_once_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
-                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+                TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
         }
@@ -869,7 +869,7 @@ fn postcondition_mut_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
-                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+                TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
         }
@@ -935,7 +935,7 @@ fn postcondition_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
-                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+                TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
         }
@@ -1009,7 +1009,7 @@ fn precondition_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
-                TraitResolved::UnknownNotFound | TraitResolved::NoInstance => unreachable!(),
+                TraitResolved::NoInstance(..) => unreachable!(),
             }
             pre_fndef(ctx, names, did, subst, args)
         }

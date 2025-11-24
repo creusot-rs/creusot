@@ -287,7 +287,7 @@ fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
             continue;
         }
 
-        let matches = item.path.segments.iter().zip(path).all(|(seg, s)| seg.name.as_str() == *s);
+        let matches = item.path.segments.iter().zip(path).all(|(seg, s)| seg.as_str() == *s);
 
         if matches {
             matched.push(attr)

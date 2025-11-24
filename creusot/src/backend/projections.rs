@@ -20,7 +20,7 @@ use rustc_middle::{
 };
 use rustc_span::Span;
 use rustc_type_ir::UintTy;
-use std::{assert_matches::assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
+use std::{assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
 use why3::{
     Ident, Name,
     coma::{Arg, Param},
