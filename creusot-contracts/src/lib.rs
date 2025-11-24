@@ -50,6 +50,7 @@
         fn_traits,
         print_internals,
         fmt_internals,
+        fmt_arguments_from_str,
         fmt_helpers_for_derive,
         step_trait,
         try_trait_v2,
