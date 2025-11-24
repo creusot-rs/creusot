@@ -93,7 +93,7 @@ fn main() {
 
         let rs_file = File::open(&file.with_extension("rs"))
             .unwrap_or_else(|_| panic!("no rust file for {:?}", file));
-        let header_line = BufReader::new(rs_file).lines().nth(0).unwrap().unwrap();
+        let header_line = BufReader::new(rs_file).lines().next().unwrap().unwrap();
 
         // Default (not `quiet`): print "Testing tests/current/test ... " and flush before running the test
         // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
@@ -184,8 +184,8 @@ fn main() {
             why3.arg(sessiondir.clone());
 
             output = why3.ok();
-            if output.is_ok() {
-                let outputstring = std::str::from_utf8(&output.as_ref().unwrap().stderr).unwrap();
+            if let Ok(output) = &output {
+                let outputstring = std::str::from_utf8(&output.stderr).unwrap();
 
                 match session_obsolete(outputstring) {
                     Obsolete::Obsolete => {
@@ -276,20 +276,24 @@ fn main() {
             out.reset().unwrap();
         }
 
-        if !output.is_ok() {
+        if let Err(output) = output {
             write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
             writeln!(&mut out, "failure").unwrap();
             out.reset().unwrap();
 
-            let output = output.unwrap_err();
-            let output = output.as_output().unwrap();
-
-            writeln!(&mut out, "******** STDOUT ********").unwrap();
-            writeln!(&mut out, "{}", std::str::from_utf8(&output.stdout).unwrap()).unwrap();
-            writeln!(&mut out, "******** STDERR ********").unwrap();
-            writeln!(&mut out, "{}", std::str::from_utf8(&output.stderr).unwrap()).unwrap();
-            writeln!(&mut out, "************************").unwrap();
+            if let Some(output) = output.as_output() {
+                // why3 returned an error code
+                writeln!(&mut out, "******** STDOUT ********").unwrap();
+                out.write_all(&output.stdout).unwrap();
+                writeln!(&mut out, "******** STDERR ********").unwrap();
+                out.write_all(&output.stderr).unwrap();
+                writeln!(&mut out, "************************").unwrap();
+            } else {
+                // there was an issue launching the why3 command
+                writeln!(&mut out, "{output}").unwrap();
+                return;
+            }
 
             success = false;
         }
