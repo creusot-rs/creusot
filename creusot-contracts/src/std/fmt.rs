@@ -138,8 +138,7 @@ extern_spec! {
         mod fmt {
             impl<'a> Arguments<'a> {
                 #[check(ghost)]
-                #[requires(N <= 1usize)]
-                fn new_const<const N: usize>(pieces: &'a [&'static str; N]) -> Self;
+                fn from_str(s: &'static str) -> Self;
             }
         }
     }

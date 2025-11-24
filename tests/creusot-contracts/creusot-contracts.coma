@@ -47365,9 +47365,7 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
   use creusot.int.UInt64BW
   use creusot.prelude.Opaque
   use creusot.prelude.PtrBW
-  use creusot.slice.Slice64
   use creusot.prelude.Any
-  use seq.Seq
   
   let rec is_power_of_two (self_: UInt64BW.t) (return (x: bool)) = any
     [ return (result: bool) -> {result
@@ -47379,78 +47377,10 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
   
   type t_Arguments
   
-  predicate inv_Seq_ref_str [@inline:trivial] (_1: Seq.seq string) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_str
-  
-  predicate invariant_array_ref_str_1 (self: Slice64.array string) =
-    inv_Seq_ref_str (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64BW.t'int (1: UInt64BW.t)
-  
-  predicate inv_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_array_ref_str_1
-  
-  predicate invariant_ref_array_ref_str_1 [@inline:trivial] (self: Slice64.array string) = inv_array_ref_str_1 self
-  
-  meta "rewrite_def" predicate invariant_ref_array_ref_str_1
-  
-  predicate inv_ref_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_ref_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_ref_array_ref_str_1
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64BW.t) (o: UInt64BW.t) : t_Ordering = if UInt64BW.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Greater
-      -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Less
-      -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64BW.t) (y: UInt64BW.t) (z: UInt64BW.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t, z: UInt64BW.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64BW.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64BW.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log_usize x y <> Greater)
-  
   predicate inv_Arguments (_1: t_Arguments)
   
-  let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
-    {[@expl:new_const 'pieces' type invariant] inv_ref_array_ref_str_1 pieces}
-    {[@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t)}
-    any [ return (result: t_Arguments) -> {inv_Arguments result} (! return {result}) ]
+  let rec from_str (s: string) (return (x: t_Arguments)) = any
+    [ return (result: t_Arguments) -> {inv_Arguments result} (! return {result}) ]
   
   predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64BW.t) =
     UInt64BW.bw_and (PtrBW.addr_logic_u64 self) (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)
@@ -47465,38 +47395,24 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
     (! bb0
     [ bb0 = s0 [ s0 = is_power_of_two {align} (fun (_ret: bool) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ]
-    | bb2 = s0 [ s0 = addr_T {self_} (fun (_ret: UInt64BW.t) -> [ &_22 <- _ret ] s1) | s1 = bb5 ]
+    | bb2 = s0 [ s0 = addr_T {self_} (fun (_ret: UInt64BW.t) -> [ &_19 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_ret: UInt64BW.t) -> [ &_24 <- _ret ] s1)
-      | s1 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s2
-      | s2 = [ &_0 <- _21 = (0: UInt64BW.t) ] s3
+      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_ret: UInt64BW.t) -> [ &_21 <- _ret ] s1)
+      | s1 = [ &_18 <- UInt64BW.bw_and _19 _21 ] s2
+      | s2 = [ &_0 <- _18 = (0: UInt64BW.t) ] s3
       | s3 = return {_0} ]
     | bb3 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = "is_aligned_to: align is not a power-of-two"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_0'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_0'0} ] ]
-        [ & _0'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
-      | s1 = [ &_19 <- _26 ] s2
-      | s2 = new_const {_19} (fun (_ret: t_Arguments) -> [ &_17 <- _ret ] s3)
-      | s3 = bb4 ]
+      [ s0 = from_str {"is_aligned_to: align is not a power-of-two"} (fun (_ret: t_Arguments) -> [ &_17 <- _ret ] s1)
+      | s1 = bb4 ]
     | bb4 = {false} any ]
     [ & _0: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
     | & _12: bool = Any.any_l ()
     | & _17: t_Arguments = Any.any_l ()
-    | & _19: Slice64.array string = Any.any_l ()
-    | & _21: UInt64BW.t = Any.any_l ()
-    | & _22: UInt64BW.t = Any.any_l ()
-    | & _24: UInt64BW.t = Any.any_l ()
-    | & _26: Slice64.array string = Any.any_l () ])
+    | & _18: UInt64BW.t = Any.any_l ()
+    | & _19: UInt64BW.t = Any.any_l ()
+    | & _21: UInt64BW.t = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_T__ptrconst_T_is_aligned_to_body ensures] result
       = is_aligned_to_ptr_T self_ align}
       (! return {result}) ]
@@ -47582,9 +47498,7 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
   use creusot.int.UInt64BW
   use creusot.prelude.Opaque
   use creusot.prelude.PtrBW
-  use creusot.slice.Slice64
   use creusot.prelude.Any
-  use seq.Seq
   
   let rec is_power_of_two (self_: UInt64BW.t) (return (x: bool)) = any
     [ return (result: bool) -> {result
@@ -47596,78 +47510,10 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
   
   type t_Arguments
   
-  predicate inv_Seq_ref_str [@inline:trivial] (_1: Seq.seq string) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_str
-  
-  predicate invariant_array_ref_str_1 (self: Slice64.array string) =
-    inv_Seq_ref_str (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64BW.t'int (1: UInt64BW.t)
-  
-  predicate inv_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_array_ref_str_1
-  
-  predicate invariant_ref_array_ref_str_1 [@inline:trivial] (self: Slice64.array string) = inv_array_ref_str_1 self
-  
-  meta "rewrite_def" predicate invariant_ref_array_ref_str_1
-  
-  predicate inv_ref_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_ref_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_ref_array_ref_str_1
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64BW.t) (o: UInt64BW.t) : t_Ordering = if UInt64BW.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Greater
-      -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Less
-      -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64BW.t) (y: UInt64BW.t) (z: UInt64BW.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t, z: UInt64BW.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64BW.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64BW.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log_usize x y <> Greater)
-  
   predicate inv_Arguments (_1: t_Arguments)
   
-  let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
-    {[@expl:new_const 'pieces' type invariant] inv_ref_array_ref_str_1 pieces}
-    {[@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t)}
-    any [ return (result: t_Arguments) -> {inv_Arguments result} (! return {result}) ]
+  let rec from_str (s: string) (return (x: t_Arguments)) = any
+    [ return (result: t_Arguments) -> {inv_Arguments result} (! return {result}) ]
   
   predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64BW.t) =
     UInt64BW.bw_and (PtrBW.addr_logic_u64 self) (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)
@@ -47682,38 +47528,24 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
     (! bb0
     [ bb0 = s0 [ s0 = is_power_of_two {align} (fun (_ret: bool) -> [ &_12 <- _ret ] s1) | s1 = bb1 ]
     | bb1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ]
-    | bb2 = s0 [ s0 = addr_T {self_} (fun (_ret: UInt64BW.t) -> [ &_22 <- _ret ] s1) | s1 = bb5 ]
+    | bb2 = s0 [ s0 = addr_T {self_} (fun (_ret: UInt64BW.t) -> [ &_19 <- _ret ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_ret: UInt64BW.t) -> [ &_24 <- _ret ] s1)
-      | s1 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s2
-      | s2 = [ &_0 <- _21 = (0: UInt64BW.t) ] s3
+      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_ret: UInt64BW.t) -> [ &_21 <- _ret ] s1)
+      | s1 = [ &_18 <- UInt64BW.bw_and _19 _21 ] s2
+      | s2 = [ &_0 <- _18 = (0: UInt64BW.t) ] s3
       | s3 = return {_0} ]
     | bb3 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = "is_aligned_to: align is not a power-of-two"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_0'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_0'0} ] ]
-        [ & _0'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
-      | s1 = [ &_19 <- _26 ] s2
-      | s2 = new_const {_19} (fun (_ret: t_Arguments) -> [ &_17 <- _ret ] s3)
-      | s3 = bb4 ]
+      [ s0 = from_str {"is_aligned_to: align is not a power-of-two"} (fun (_ret: t_Arguments) -> [ &_17 <- _ret ] s1)
+      | s1 = bb4 ]
     | bb4 = {false} any ]
     [ & _0: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
     | & _12: bool = Any.any_l ()
     | & _17: t_Arguments = Any.any_l ()
-    | & _19: Slice64.array string = Any.any_l ()
-    | & _21: UInt64BW.t = Any.any_l ()
-    | & _22: UInt64BW.t = Any.any_l ()
-    | & _24: UInt64BW.t = Any.any_l ()
-    | & _26: Slice64.array string = Any.any_l () ])
+    | & _18: UInt64BW.t = Any.any_l ()
+    | & _19: UInt64BW.t = Any.any_l ()
+    | & _21: UInt64BW.t = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_T__ptrmut_T_is_aligned_to_body ensures] result
       = is_aligned_to_ptr_T self_ align}
       (! return {result}) ]
