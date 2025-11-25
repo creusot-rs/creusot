@@ -1,14 +1,11 @@
-use crate::{
-    backend::program::node_graph,
-    translation::fmir::{self, Terminator},
-};
-use indexmap::{IndexMap, IndexSet};
+use crate::translation::fmir::{self, Block, Branches, Terminator};
+use indexmap::IndexMap;
 use rustc_middle::mir::BasicBlock;
 
-fn is_empty_block(b: &fmir::Block) -> Option<BasicBlock> {
+fn get_goto_block(b: &Block) -> Option<BasicBlock> {
     match b {
         // do it like this so we don't forget fields
-        fmir::Block { invariants, variant, stmts, terminator: Terminator::Goto(bb) }
+        Block { invariants, variant, stmts, terminator: Terminator::Goto(bb) }
             if stmts.is_empty() && invariants.is_empty() && variant.is_none() =>
         {
             Some(*bb)
@@ -29,50 +26,41 @@ fn is_empty_block(b: &fmir::Block) -> Option<BasicBlock> {
 /// ```
 /// `bb2` is useless here.
 pub(super) fn remove_useless_gotos(body: &mut fmir::Body) {
-    let graph = node_graph(body);
-
     let mut shortcuts_to = IndexMap::new();
-    for bb in graph.nodes() {
-        let block = &body.blocks[&bb];
-        if let Some(to_bb) = is_empty_block(block) {
+    for (&bb, block) in body.blocks.iter() {
+        if let Some(to_bb) = get_goto_block(block) {
             shortcuts_to.insert(bb, to_bb);
         }
     }
 
-    let mut visited = IndexSet::new();
-    let mut replace_with = |bb2: &mut _| {
-        visited.clear();
-        if let Some(to) = find_shortcut(&mut shortcuts_to, *bb2, &mut visited) {
-            *bb2 = to;
-        }
-    };
-    for bb in graph.nodes() {
-        match &mut body.blocks[&bb].terminator {
-            Terminator::Goto(bb) => replace_with(bb),
+    let mut replace_bb = |bb2: &mut _| find_shortcut(&mut shortcuts_to, bb2);
+    for (_, block) in body.blocks.iter_mut() {
+        match &mut block.terminator {
+            Terminator::Goto(bb) => replace_bb(bb),
             Terminator::Switch(_, branches) => match branches {
-                fmir::Branches::Int(items, def) => {
-                    replace_with(def);
+                Branches::Int(items, def) => {
+                    replace_bb(def);
                     for (_, to) in items {
-                        replace_with(to);
+                        replace_bb(to);
                     }
                 }
-                fmir::Branches::Uint(items, def) => {
-                    replace_with(def);
+                Branches::Uint(items, def) => {
+                    replace_bb(def);
                     for (_, to) in items {
-                        replace_with(to);
+                        replace_bb(to);
                     }
                 }
-                fmir::Branches::Constructor(_, _, cases, def) => {
+                Branches::Constructor(_, _, cases, def) => {
                     if let Some(def) = def {
-                        replace_with(def);
+                        replace_bb(def);
                     }
                     for (_, to) in cases {
-                        replace_with(to);
+                        replace_bb(to);
                     }
                 }
-                fmir::Branches::Bool(to1, to2) => {
-                    replace_with(to1);
-                    replace_with(to2);
+                Branches::Bool(to1, to2) => {
+                    replace_bb(to1);
+                    replace_bb(to2);
                 }
             },
             Terminator::Return | Terminator::Abort(_) => {}
@@ -84,20 +72,12 @@ pub(super) fn remove_useless_gotos(body: &mut fmir::Body) {
 /// as needed.
 ///
 /// This will correctly detect loops.
-fn find_shortcut(
-    shortcuts: &mut IndexMap<BasicBlock, BasicBlock>,
-    from: BasicBlock,
-    visited: &mut IndexSet<BasicBlock>,
-) -> Option<BasicBlock> {
-    if !visited.insert(from) {
-        return Some(from);
-    }
-    let to = *shortcuts.get(&from)?;
-    match find_shortcut(shortcuts, to, visited) {
-        Some(next) => {
-            shortcuts.insert(from, next);
-            Some(next)
-        }
-        None => Some(to),
+fn find_shortcut(shortcuts: &mut IndexMap<BasicBlock, BasicBlock>, from: &mut BasicBlock) {
+    // We remove the shortcut to avoid looping in the case of loops.
+    let Some(mut to) = shortcuts.swap_remove(from) else { return };
+    find_shortcut(shortcuts, &mut to);
+    if to != *from {
+        shortcuts.insert(*from, to); // Compress path
+        *from = to
     }
 }

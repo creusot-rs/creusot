@@ -48,7 +48,7 @@ impl ZeroOneMany {
 
 /// Gathers usages of a fMIR local in a fMIR body.
 #[derive(Clone, Copy, Default, Debug)]
-pub(crate) struct Usage {
+struct Usage {
     /// Is this local written to?
     write: ZeroOneMany,
     /// Is this local read?
@@ -75,21 +75,23 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
     }
 
     fn visit_block(&mut self, b: &Block<'tcx>) {
-        b.invariants.iter().for_each(|t| self.visit_term(&t.body));
-        if let Some(v) = &b.variant {
-            self.visit_term(&v.term);
-        }
-        b.stmts.iter().for_each(|s| self.visit_statement(s));
-        self.visit_terminator(&b.terminator);
+        let Block { invariants, variant, stmts, terminator } = b;
+        invariants.iter().for_each(|t| self.visit_term(&t.body));
+        variant.iter().for_each(|v| self.visit_term(&v.term));
+        stmts.iter().for_each(|s| self.visit_statement(s));
+        self.visit_terminator(terminator);
     }
 
     fn visit_terminator(&mut self, t: &Terminator<'tcx>) {
         match t {
             Terminator::Switch(e, _) => self.visit_operand(e),
-            Terminator::Return => {
-                self.read_many(self.return_place);
+            Terminator::Return =>
+            // We do not want to "propagate the return place", because the return instruction
+            // does not take an operand. So we pretend it is read several times here.
+            {
+                self.read_many(self.return_place)
             }
-            _ => {}
+            Terminator::Abort(_) | Terminator::Goto(_) => {}
         }
     }
 
@@ -197,6 +199,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
 
     fn get(&mut self, local: Ident) -> Option<&mut Usage> {
         if !self.locals.contains_key(&local) {
+            // The variable may be captured by a binder in Pearlite
             return None;
         }
 
