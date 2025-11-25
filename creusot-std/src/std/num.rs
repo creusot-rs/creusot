@@ -196,6 +196,30 @@ macro_rules! spec_unsized {
                     #[check(ghost)]
                     #[ensures(result == (self != $zero && self & (self - $one) == $zero))]
                     fn is_power_of_two(self) -> bool;
+
+                    #[check(ghost)]
+                    #[ensures(self >> $type::BITS - result == $zero)]
+                    #[ensures((result != $type::BITS) == (self >> ($type::BITS - result - 1u32) == $one))]
+                    #[ensures((result == $type::BITS) == (self == $zero))]
+                    fn leading_zeros(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(self << $type::BITS - result == $zero)]
+                    #[ensures((result != $type::BITS) == ((self >> $type::BITS) & $one == $one))]
+                    #[ensures((result == $type::BITS) == (self == $zero))]
+                    fn trailing_zeros(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(!self >> $type::BITS - result == $zero)]
+                    #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $zero))]
+                    #[ensures((result == $type::BITS) == (self == $type::MAX))]
+                    fn leading_ones(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(!self << $type::BITS - result == $zero)]
+                    #[ensures((result != $type::BITS) == ((!self >> $type::BITS) & $one == $one))]
+                    #[ensures((result == $type::BITS) == (self == $type::MAX))]
+                    fn trailing_ones(self) -> u32;
             }
         }
     };
