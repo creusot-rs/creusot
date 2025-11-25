@@ -219,6 +219,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 if matches!(op, UnOp::Neg) {
                     self.names.import_prelude_module(PreMod::Int);
                 }
+                if matches!(op, UnOp::Not) && arg.ty.is_integral() {
+                    let bw_not = self.names.in_pre(ty_to_prelude(self.names.tcx(), arg.ty.kind()), "bw_not");
+                    return Exp::qvar(bw_not).app([self.lower_term(arg)])
+                }
                 let op = match op {
                     UnOp::Not => WUnOp::Not,
                     UnOp::Neg => WUnOp::Neg,
