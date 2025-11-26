@@ -12,7 +12,7 @@ use std::{
     },
     thread,
 };
-use termcolor::*;
+use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, WriteColor as _};
 
 mod diff;
 use diff::differ;
@@ -87,10 +87,10 @@ fn main() {
     }
 
     let mut test_creusot_std = true;
-    if let Some(ref filter) = args.filter {
-        if !"tests/creusot-std/creusot-std.rs".contains(filter) {
-            test_creusot_std = false;
-        }
+    if let Some(filter) = &args.filter
+        && !"tests/creusot-std/creusot-std.rs".contains(filter)
+    {
+        test_creusot_std = false;
     }
     let contracts_success = translate_creusot_std(&args, &paths, test_creusot_std);
 
@@ -278,7 +278,7 @@ fn run_creusot(
     with_spans: bool,
 ) -> Option<std::process::Command> {
     // Magic comment with instructions for creusot
-    let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
+    let header_line = BufReader::new(File::open(file).unwrap()).lines().next().unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
     }
@@ -295,16 +295,16 @@ fn run_creusot(
         })
         .collect();
 
-    cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
-    cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_std={}", paths.rlib.display())]);
+    cmd.args(["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
+    cmd.args(["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
+    cmd.args(["--extern", &format!("creusot_std={}", paths.rlib.display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
     if header_line.contains("SHORT_ERROR") {
         cmd.arg("--error-format=short");
     }
-    cmd.args(&[
+    cmd.args([
         "--",
         "--stdout",
         "--export-metadata=false",
@@ -319,7 +319,7 @@ fn run_creusot(
         }
     }
     cmd.args(args);
-    cmd.args(&["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
+    cmd.args(["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
 
     Some(cmd)
 }
@@ -380,7 +380,7 @@ where
         let mut wrote = 0;
         write!(out, "Testing: ").unwrap();
         wrote += "Testing: ".len();
-        for (i, name) in (&*in_flight).iter().enumerate() {
+        for (i, name) in in_flight.iter().enumerate() {
             if i != 0 {
                 write!(out, ", ").unwrap();
                 wrote += ", ".len();
@@ -410,10 +410,11 @@ where
                 test_count.fetch_add(1, SeqCst);
                 let entry = entry.unwrap();
 
-                if let Some(ref filter) = args.filter {
-                    if !entry.to_str().map(|entry| entry.contains(filter)).unwrap_or(false) {
-                        continue;
-                    }
+                if let Some(filter) = &args.filter
+                    && let Some(entry) = entry.to_str()
+                    && !entry.contains(filter)
+                {
+                    continue;
                 }
 
                 let entry_name = entry.file_stem().unwrap().to_str().unwrap();
@@ -450,10 +451,10 @@ where
                 let mut out = out.lock().unwrap();
                 let (in_flight, out) = &mut *out;
 
-                if !args.quiet {
-                    if let Some(i) = in_flight.iter().position(|n| n == entry_name) {
-                        in_flight.remove(i);
-                    }
+                if !args.quiet
+                    && let Some(i) = in_flight.iter().position(|n| n == entry_name)
+                {
+                    in_flight.remove(i);
                 }
 
                 if args.bless && !(should_succeed && !output.status.success()) {
