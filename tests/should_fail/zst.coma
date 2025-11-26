@@ -6,7 +6,6 @@ module M_zst_pointers_may_be_equal
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
-  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Vec_unit_Global
@@ -57,8 +56,6 @@ module M_zst_pointers_may_be_equal
   
   function ptr_unit (self: t_PtrOwn_unit) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_unit (self: t_PtrOwn_unit)
-  
   predicate metadata_matches_unit [@inline:trivial] (_value: ()) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_unit
@@ -67,31 +64,13 @@ module M_zst_pointers_may_be_equal
   
   function metadata_unit (_1: Opaque.ptr) : ()
   
-  constant size_of_unit: int = 0
-  
-  meta "rewrite_def" constant size_of_unit
-  
-  axiom size_of_unit_spec: 0 <= size_of_unit
-  
-  function size_of_val_unit [@inline:trivial] (val': ()) : int = size_of_unit
-  
-  meta "rewrite_def" function size_of_val_unit
-  
-  axiom size_of_val_unit_spec: forall val': (). 0 <= size_of_val_unit val'
-  
-  constant const_MAX'0: Int64.t = (9223372036854775807: Int64.t)
-  
   predicate inv_ref_unit [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate inv_ref_unit
   
   predicate invariant_PtrOwn_unit (self: t_PtrOwn_unit) =
     not is_null_ptr_unit (ptr_unit self)
-    /\ ptr_is_aligned_opaque_unit self
-    /\ metadata_matches_unit (val_unit self) (metadata_unit (ptr_unit self))
-    /\ size_of_val_unit (val_unit self) <= Int64.to_int const_MAX'0
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_unit self)) + size_of_val_unit (val_unit self) <= UInt64.t'int const_MAX
-    /\ inv_ref_unit (val_unit self)
+    /\ metadata_matches_unit (val_unit self) (metadata_unit (ptr_unit self)) /\ inv_ref_unit (val_unit self)
   
   predicate inv_PtrOwn_unit (_1: t_PtrOwn_unit)
   
@@ -125,7 +104,7 @@ module M_zst_pointers_may_be_equal
     [ return (result: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> {inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit result}
       {ptr_unit result.f1.current = result.f0}
       {val_unit result.f1.current = r.current}
-      {val_unit result.f1.final = r.final}
+      {ptr_unit result.f1.final = ptr_unit result.f1.current -> val_unit result.f1.final = r.final}
       (! return {result}) ]
   
   predicate resolve_ref_unit [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -173,6 +152,12 @@ module M_zst_pointers_may_be_equal
   let rec into_inner_ref_PtrOwn_unit'0 (self: t_PtrOwn_unit) (return (x: t_PtrOwn_unit)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_PtrOwn_unit'0 self}
     any [ return (result: t_PtrOwn_unit) -> {inv_ref_PtrOwn_unit'0 result} {result = self} (! return {result}) ]
+  
+  constant size_of_unit: int = 0
+  
+  meta "rewrite_def" constant size_of_unit
+  
+  axiom size_of_unit_spec: 0 <= size_of_unit
   
   let rec disjoint_lemma_unit (own1: MutBorrow.t t_PtrOwn_unit) (own2: t_PtrOwn_unit) (return (x: ())) =
     {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrOwn_unit own1}
