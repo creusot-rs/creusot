@@ -964,6 +964,481 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
       {[@expl:new ensures] ptr_T result.f1 = result.f0 /\ val_T result.f1 = v}
       (! return {result}) ]
 end
+module M_ghost__ptr_own__impl_PtrOwn_T_0__disjoint_lemma (* ghost::ptr_own::PtrOwn<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.prelude.Any
+  
+  type t_PtrOwn_T
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  type t_T
+  
+  predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches_T
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : ()
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  type t_PtrMut_T = { f0: MutBorrow.t t_PtrOwn_T }
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
+  
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0)
+  
+  let rec as_ptr_mut_T (self: MutBorrow.t t_PtrOwn_T) (return (x: t_PtrMut_T)) =
+    {[@expl:as_ptr_mut 'self' type invariant] inv_ref_PtrOwn_T self}
+    any [ return (result: t_PtrMut_T) -> {inv_PtrMut_T result} {own_T result = self} (! return {result}) ]
+  
+  predicate invariant_ref_PtrMut_T [@inline:trivial] (self: MutBorrow.t t_PtrMut_T) =
+    inv_PtrMut_T self.current /\ inv_PtrMut_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrMut_T
+  
+  predicate inv_ref_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = invariant_ref_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrMut_T
+  
+  predicate invariant_ref_PtrOwn_T'0 [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T'0
+  
+  predicate inv_ref_PtrOwn_T'0 [@inline:trivial] (_1: t_PtrOwn_T) = invariant_ref_PtrOwn_T'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T'0
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  let rec disjoint_lemma_T (own1: MutBorrow.t t_PtrMut_T) (own2: t_PtrOwn_T) (return (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrMut_T own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_T'0 own2}
+    {[@expl:disjoint_lemma requires] size_of_T <> 0}
+    any
+    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_T'0 own1.current) <> Ptr.addr_logic_u64 (ptr_T own2)}
+      {own1.current = own1.final}
+      (! return {result}) ]
+  
+  predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_T
+  
+  predicate resolve_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = resolve_ref_PtrOwn_T (own_T self)
+  
+  meta "rewrite_def" predicate resolve_PtrMut_T
+  
+  predicate resolve_PtrMut_T'0 (_1: t_PtrMut_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_PtrMut_T [resolve_PtrMut_T'0 x]. resolve_PtrMut_T'0 x
+      = (resolve_PtrMut_T x /\ resolve_ref_PtrOwn_T x.f0)
+  
+  predicate resolve_ref_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrMut_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec disjoint_lemma_T'0 (own1: MutBorrow.t t_PtrOwn_T) (own2: t_PtrOwn_T) (return (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrOwn_T own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_T'0 own2}
+    {[@expl:disjoint_lemma requires] size_of_T <> 0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {inv_PtrOwn_T own1.current}
+        MutBorrow.borrow_final <t_PtrOwn_T> {own1.current} {MutBorrow.get_id own1}
+          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
+            [ &_12 <- _ret ] -{inv_PtrOwn_T _ret.final}-
+            [ &own1 <- { own1 with current = _ret.final } ] s1)
+      | s1 = as_ptr_mut_T {_12} (fun (_ret: t_PtrMut_T) -> [ &_11 <- _ret ] s2)
+      | s2 = bb1 ]
+    | bb1 = s0
+      [ s0 = {inv_PtrMut_T _11}
+        MutBorrow.borrow_mut <t_PtrMut_T> {_11}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) -> [ &_10 <- _ret ] -{inv_PtrMut_T _ret.final}- [ &_11 <- _ret.final ] s1)
+      | s1 = {inv_PtrMut_T _10.current}
+        MutBorrow.borrow_final <t_PtrMut_T> {_10.current} {MutBorrow.get_id _10}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) ->
+            [ &_9 <- _ret ] -{inv_PtrMut_T _ret.final}-
+            [ &_10 <- { _10 with current = _ret.final } ] s2)
+      | s2 = disjoint_lemma_T {_9} {own2} (fun (_ret: ()) -> [ &_0 <- _ret ] s3)
+      | s3 = bb2 ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_PtrMut_T _11} s1
+      | s1 = -{resolve_PtrMut_T'0 _11}- s2
+      | s2 = {[@expl:type invariant] inv_ref_PtrMut_T _10} s3
+      | s3 = -{resolve_ref_PtrMut_T _10}- s4
+      | s4 = {[@expl:type invariant] inv_ref_PtrOwn_T own1} s5
+      | s5 = -{resolve_ref_PtrOwn_T own1}- s6
+      | s6 = return {_0} ] ]
+    [ & _0: () = Any.any_l ()
+    | & own1: MutBorrow.t t_PtrOwn_T = own1
+    | & own2: t_PtrOwn_T = own2
+    | & _9: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _10: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _11: t_PtrMut_T = Any.any_l ()
+    | & _12: MutBorrow.t t_PtrOwn_T = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:disjoint_lemma ensures #0] Ptr.addr_logic_u64 (ptr_T own1.current)
+      <> Ptr.addr_logic_u64 (ptr_T own2)}
+      {[@expl:disjoint_lemma ensures #1] own1.current = own1.final}
+      (! return {result}) ]
+end
+module M_ghost__ptr_own__impl_PtrOwn_T_1__as_mut (* ghost::ptr_own::PtrOwn<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_PtrOwn_T
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  type t_T
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  predicate invariant_Ghost_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) = inv_ref_PtrOwn_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_T
+  
+  predicate inv_Ghost_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_Ghost_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_T
+  
+  let rec into_inner_ref_PtrOwn_T (self: MutBorrow.t t_PtrOwn_T) (return (x: MutBorrow.t t_PtrOwn_T)) =
+    {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_PtrOwn_T self}
+    any [ return (result: MutBorrow.t t_PtrOwn_T) -> {inv_ref_PtrOwn_T result} {result = self} (! return {result}) ]
+  
+  type t_PtrMut_T = { f0: MutBorrow.t t_PtrOwn_T }
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
+  
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0)
+  
+  let rec as_ptr_mut_T (self: MutBorrow.t t_PtrOwn_T) (return (x: t_PtrMut_T)) =
+    {[@expl:as_ptr_mut 'self' type invariant] inv_ref_PtrOwn_T self}
+    any [ return (result: t_PtrMut_T) -> {inv_PtrMut_T result} {own_T result = self} (! return {result}) ]
+  
+  predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_T
+  
+  predicate invariant_Ghost_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = inv_PtrMut_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_PtrMut_T
+  
+  predicate inv_Ghost_PtrMut_T [@inline:trivial] (_1: t_PtrMut_T) = invariant_Ghost_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_PtrMut_T
+  
+  let rec new_PtrMut_T (x: t_PtrMut_T) (return (x'0: t_PtrMut_T)) = {[@expl:new 'x' type invariant] inv_PtrMut_T x}
+    any [ return (result: t_PtrMut_T) -> {inv_Ghost_PtrMut_T result} {result = x} (! return {result}) ]
+  
+  predicate invariant_ref_Ghost_PtrMut_T [@inline:trivial] (self: MutBorrow.t t_PtrMut_T) =
+    inv_Ghost_PtrMut_T self.current /\ inv_Ghost_PtrMut_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_PtrMut_T
+  
+  predicate inv_ref_Ghost_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = invariant_ref_Ghost_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_PtrMut_T
+  
+  predicate invariant_ref_PtrMut_T [@inline:trivial] (self: MutBorrow.t t_PtrMut_T) =
+    inv_PtrMut_T self.current /\ inv_PtrMut_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrMut_T
+  
+  predicate inv_ref_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = invariant_ref_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrMut_T
+  
+  let rec deref_mut_Ghost_PtrMut_T (self: MutBorrow.t t_PtrMut_T) (return (x: MutBorrow.t t_PtrMut_T)) =
+    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_PtrMut_T self}
+    any [ return (result: MutBorrow.t t_PtrMut_T) -> {inv_ref_PtrMut_T result} {result = self} (! return {result}) ]
+  
+  predicate resolve_ref_Ghost_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_Ghost_PtrMut_T
+  
+  predicate resolve_ref_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrMut_T
+  
+  predicate invariant_Ghost_ref_PtrMut_T [@inline:trivial] (self: MutBorrow.t t_PtrMut_T) = inv_ref_PtrMut_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_PtrMut_T
+  
+  predicate inv_Ghost_ref_PtrMut_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_T) = invariant_Ghost_ref_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_PtrMut_T
+  
+  let rec new_ref_PtrMut_T (x: MutBorrow.t t_PtrMut_T) (return (x'0: MutBorrow.t t_PtrMut_T)) =
+    {[@expl:new 'x' type invariant] inv_ref_PtrMut_T x}
+    any [ return (result: MutBorrow.t t_PtrMut_T) -> {inv_Ghost_ref_PtrMut_T result} {result = x} (! return {result}) ]
+  
+  predicate invariant_ref_T'0 [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_T'0
+  
+  predicate inv_ref_T'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_T'0
+  
+  function fin_ptr_T [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).final
+  
+  meta "rewrite_def" function fin_ptr_T
+  
+  function fin_val_T [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).final
+  
+  meta "rewrite_def" function fin_val_T
+  
+  let rec as_mut_T (ptr: Opaque.ptr) (m: MutBorrow.t t_PtrMut_T) (return (x: MutBorrow.t t_T)) =
+    {[@expl:as_mut 'm' type invariant] inv_Ghost_ref_PtrMut_T m}
+    {[@expl:as_mut requires] ptr = ptr_T'0 m.current}
+    any
+    [ return (result: MutBorrow.t t_T) -> {inv_ref_T'0 result}
+      {fin_ptr_T m.current = ptr_T'0 m.current}
+      {result.current = val_T'0 m.current}
+      {result.final = fin_val_T m.current}
+      (! return {result}) ]
+  
+  predicate resolve_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = resolve_ref_PtrOwn_T (own_T self)
+  
+  meta "rewrite_def" predicate resolve_PtrMut_T
+  
+  predicate resolve_PtrMut_T'0 (_1: t_PtrMut_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_PtrMut_T [resolve_PtrMut_T'0 x]. resolve_PtrMut_T'0 x
+      = (resolve_PtrMut_T x /\ resolve_ref_PtrOwn_T x.f0)
+  
+  predicate resolve_Ghost_PtrMut_T [@inline:trivial] (_1: t_PtrMut_T) = resolve_PtrMut_T'0 _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_PtrMut_T
+  
+  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_T
+  
+  function fin_Ghost_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) : t_PtrOwn_T = self.final
+  
+  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec as_mut_T'0 (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_T) (return (x: MutBorrow.t t_T)) =
+    {[@expl:as_mut 'own' type invariant] inv_Ghost_ref_PtrOwn_T own}
+    {[@expl:as_mut requires] ptr = ptr_T own.current}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = into_inner_ref_PtrOwn_T {own} (fun (_ret: MutBorrow.t t_PtrOwn_T) -> [ &_16 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0
+      [ s0 = {inv_PtrOwn_T _16.current}
+        MutBorrow.borrow_final <t_PtrOwn_T> {_16.current} {MutBorrow.get_id _16}
+          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
+            [ &_15 <- _ret ] -{inv_PtrOwn_T _ret.final}-
+            [ &_16 <- { _16 with current = _ret.final } ] s1)
+      | s1 = as_ptr_mut_T {_15} (fun (_ret: t_PtrMut_T) -> [ &_14 <- _ret ] s2)
+      | s2 = bb2 ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_T _16} s1
+      | s1 = -{resolve_ref_PtrOwn_T _16}- s2
+      | s2 = new_PtrMut_T {_14} (fun (_ret: t_PtrMut_T) -> [ &r <- _ret ] s3)
+      | s3 = bb3 ]
+    | bb3 = s0
+      [ s0 = {inv_Ghost_PtrMut_T r}
+        MutBorrow.borrow_mut <t_PtrMut_T> {r}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) ->
+            [ &_26 <- _ret ] -{inv_Ghost_PtrMut_T _ret.final}-
+            [ &r <- _ret.final ] s1)
+      | s1 = {inv_Ghost_PtrMut_T _26.current}
+        MutBorrow.borrow_final <t_PtrMut_T> {_26.current} {MutBorrow.get_id _26}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) ->
+            [ &_25 <- _ret ] -{inv_Ghost_PtrMut_T _ret.final}-
+            [ &_26 <- { _26 with current = _ret.final } ] s2)
+      | s2 = deref_mut_Ghost_PtrMut_T {_25} (fun (_ret: MutBorrow.t t_PtrMut_T) -> [ &_24 <- _ret ] s3)
+      | s3 = bb4 ]
+    | bb4 = s0
+      [ s0 = {inv_PtrMut_T _24.current}
+        MutBorrow.borrow_final <t_PtrMut_T> {_24.current} {MutBorrow.get_id _24}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) ->
+            [ &_23 <- _ret ] -{inv_PtrMut_T _ret.final}-
+            [ &_24 <- { _24 with current = _ret.final } ] s1)
+      | s1 = {[@expl:type invariant] inv_ref_Ghost_PtrMut_T _26} s2
+      | s2 = -{resolve_ref_Ghost_PtrMut_T _26}- s3
+      | s3 = {[@expl:type invariant] inv_ref_PtrMut_T _24} s4
+      | s4 = -{resolve_ref_PtrMut_T _24}- s5
+      | s5 = {inv_PtrMut_T _23.current}
+        MutBorrow.borrow_final <t_PtrMut_T> {_23.current} {MutBorrow.get_id _23}
+          (fun (_ret: MutBorrow.t t_PtrMut_T) ->
+            [ &_22 <- _ret ] -{inv_PtrMut_T _ret.final}-
+            [ &_23 <- { _23 with current = _ret.final } ] s6)
+      | s6 = new_ref_PtrMut_T {_22} (fun (_ret: MutBorrow.t t_PtrMut_T) -> [ &_21 <- _ret ] s7)
+      | s7 = bb5 ]
+    | bb5 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_PtrMut_T _23} s1
+      | s1 = -{resolve_ref_PtrMut_T _23}- s2
+      | s2 = as_mut_T {ptr} {_21} (fun (_ret: MutBorrow.t t_T) -> [ &_19 <- _ret ] s3)
+      | s3 = bb6 ]
+    | bb6 = s0
+      [ s0 = {[@expl:type invariant] inv_Ghost_PtrMut_T r} s1
+      | s1 = -{resolve_Ghost_PtrMut_T r}- s2
+      | s2 = {inv_T _19.current}
+        MutBorrow.borrow_final <t_T> {_19.current} {MutBorrow.get_id _19}
+          (fun (_ret: MutBorrow.t t_T) ->
+            [ &_18 <- _ret ] -{inv_T _ret.final}-
+            [ &_19 <- { _19 with current = _ret.final } ] s3)
+      | s3 = {[@expl:type invariant] inv_ref_T'0 _19} s4
+      | s4 = -{resolve_ref_T _19}- s5
+      | s5 = {inv_T _18.current}
+        MutBorrow.borrow_final <t_T> {_18.current} {MutBorrow.get_id _18}
+          (fun (_ret: MutBorrow.t t_T) ->
+            [ &_3 <- _ret ] -{inv_T _ret.final}-
+            [ &_18 <- { _18 with current = _ret.final } ] s6)
+      | s6 = {[@expl:type invariant] inv_ref_T'0 _18} s7
+      | s7 = -{resolve_ref_T _18}- s8
+      | s8 = {inv_T _3.current}
+        MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
+          (fun (_ret: MutBorrow.t t_T) ->
+            [ &_0 <- _ret ] -{inv_T _ret.final}-
+            [ &_3 <- { _3 with current = _ret.final } ] s9)
+      | s9 = {[@expl:type invariant] inv_ref_T'0 _3} s10
+      | s10 = -{resolve_ref_T _3}- s11
+      | s11 = return {_0} ] ]
+    [ & _0: MutBorrow.t t_T = Any.any_l ()
+    | & ptr: Opaque.ptr = ptr
+    | & own: MutBorrow.t t_PtrOwn_T = own
+    | & _3: MutBorrow.t t_T = Any.any_l ()
+    | & r: t_PtrMut_T = Any.any_l ()
+    | & _14: t_PtrMut_T = Any.any_l ()
+    | & _15: MutBorrow.t t_PtrOwn_T = Any.any_l ()
+    | & _16: MutBorrow.t t_PtrOwn_T = Any.any_l ()
+    | & _18: MutBorrow.t t_T = Any.any_l ()
+    | & _19: MutBorrow.t t_T = Any.any_l ()
+    | & _21: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _22: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _23: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _24: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _25: MutBorrow.t t_PtrMut_T = Any.any_l ()
+    | & _26: MutBorrow.t t_PtrMut_T = Any.any_l () ])
+    [ return (result: MutBorrow.t t_T) -> {[@expl:as_mut result type invariant] inv_ref_T'0 result}
+      {[@expl:as_mut ensures #0] result.current = val_T own.current}
+      {[@expl:as_mut ensures #1] ptr_T (fin_Ghost_ref_PtrOwn_T own) = ptr_T own.current}
+      {[@expl:as_mut ensures #2] val_T (fin_Ghost_ref_PtrOwn_T own) = result.final}
+      (! return {result}) ]
+end
 module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   type namespace_other
   
@@ -1333,7 +1808,207 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_ref_ghost (* ghost::
       {[@expl:index_ptr_own_ref_ghost ensures #1] val_T result = Seq.get (Slice64.view (val_slice_T self)) index}
       (! return {result}) ]
 end
-module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::ptr_own::PtrOwn<[T]> *)
+module M_ghost__ptr_own__impl_Resolve_for_PtrMut_T__resolve_coherence (* <ghost::ptr_own::PtrMut<'a, T> as resolve::Resolve> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  
+  type t_PtrOwn_T
+  
+  type t_PtrMut_T = { f0: MutBorrow.t t_PtrOwn_T }
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
+  
+  type t_T
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0)
+  
+  predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_T
+  
+  predicate structural_resolve_PtrMut_T (_1: t_PtrMut_T) = resolve_ref_PtrOwn_T _1.f0
+  
+  predicate resolve_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = resolve_ref_PtrOwn_T (own_T self)
+  
+  meta "rewrite_def" predicate resolve_PtrMut_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PtrMut_T
+  
+  function resolve_coherence_PtrMut_T (self: t_PtrMut_T) : ()
+  
+  goal vc_resolve_coherence_PtrMut_T: inv_PtrMut_T self
+    -> structural_resolve_PtrMut_T self -> ([@expl:resolve_coherence ensures] resolve_PtrMut_T self)
+end
+module M_ghost__ptr_own__impl_PtrMut_T__as_ptr_own (* ghost::ptr_own::PtrMut<'a, T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  
+  type t_PtrOwn_T
+  
+  type t_PtrMut_T = { f0: MutBorrow.t t_PtrOwn_T }
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
+  
+  type t_T
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0)
+  
+  predicate invariant_ref_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = inv_PtrMut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_PtrMut_T
+  
+  predicate inv_ref_PtrMut_T [@inline:trivial] (_1: t_PtrMut_T) = invariant_ref_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrMut_T
+  
+  predicate invariant_ref_PtrOwn_T'0 [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T'0
+  
+  predicate inv_ref_PtrOwn_T'0 [@inline:trivial] (_1: t_PtrOwn_T) = invariant_ref_PtrOwn_T'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec as_ptr_own_T (self: t_PtrMut_T) (return (x: t_PtrOwn_T)) =
+    {[@expl:as_ptr_own 'self' type invariant] inv_ref_PtrMut_T self}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- self.f0.current ] s1 | s1 = return {_0} ] ]
+    [ & _0: t_PtrOwn_T = Any.any_l () | & self: t_PtrMut_T = self ])
+    [ return (result: t_PtrOwn_T) -> {[@expl:as_ptr_own result type invariant] inv_ref_PtrOwn_T'0 result}
+      {[@expl:as_ptr_own ensures #0] ptr_T result = ptr_T'0 self}
+      {[@expl:as_ptr_own ensures #1] val_T result = val_T'0 self}
+      (! return {result}) ]
+end
+module M_ghost__ptr_own__impl_PtrMut_slice_T__index_ptr_own_mut_ghost (* ghost::ptr_own::PtrMut<'a, [T]> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -1349,9 +2024,18 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   type t_PtrOwn_slice_T
   
+  type t_PtrMut_slice_T = { f0: MutBorrow.t t_PtrOwn_slice_T }
+  
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  
+  function own_slice_T (self: t_PtrMut_slice_T) : MutBorrow.t t_PtrOwn_slice_T = self.f0
+  
+  function ptr_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Opaque.ptr =
+    ptr_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function ptr_slice_T'0
   
   type t_T
   
@@ -1361,6 +2045,11 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   meta "rewrite_def" predicate metadata_matches_slice_T
   
   function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  
+  function val_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function val_slice_T'0
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -1395,6 +2084,11 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
+  predicate invariant_PtrMut_slice_T (self: t_PtrMut_slice_T) =
+    not is_null_ptr_slice_T (ptr_slice_T'0 self)
+    /\ metadata_matches_slice_T (val_slice_T'0 self) (metadata_slice_T (ptr_slice_T'0 self))
+    /\ inv_ref_slice_T (val_slice_T'0 self)
+  
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
     /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
@@ -1404,8 +2098,6 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
       = invariant_PtrOwn_slice_T x
-  
-  type t_PtrOwn_T
   
   predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
     inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
@@ -1417,15 +2109,44 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
   
+  predicate inv_PtrMut_slice_T (_1: t_PtrMut_slice_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_slice_T [inv_PtrMut_slice_T x]. inv_PtrMut_slice_T x
+      = (invariant_PtrMut_slice_T x /\ inv_ref_PtrOwn_slice_T x.f0)
+  
+  type t_PtrOwn_T
+  
+  type t_PtrMut_T = { f0'0: MutBorrow.t t_PtrOwn_T }
+  
+  predicate invariant_ref_PtrMut_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrMut_slice_T) =
+    inv_PtrMut_slice_T self.current /\ inv_PtrMut_slice_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrMut_slice_T
+  
+  predicate inv_ref_PtrMut_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_slice_T) =
+    invariant_ref_PtrMut_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrMut_slice_T
+  
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0'0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
   
   predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_T
   
   function val_T (self: t_PtrOwn_T) : t_T
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
   
   function metadata_T (_1: Opaque.ptr) : ()
   
@@ -1437,13 +2158,17 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   meta "rewrite_def" predicate inv_ref_T
   
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
     not is_null_ptr_T (ptr_T self)
     /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
   
   predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
     inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
@@ -1454,24 +2179,27 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   meta "rewrite_def" predicate inv_ref_PtrOwn_T
   
-  predicate invariant_Box_ref_PtrOwn_T_Global (self: MutBorrow.t t_PtrOwn_T) = inv_ref_PtrOwn_T self
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
   
-  predicate inv_Box_ref_PtrOwn_T_Global [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) =
-    invariant_Box_ref_PtrOwn_T_Global _1
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0'0)
   
-  meta "rewrite_def" predicate inv_Box_ref_PtrOwn_T_Global
+  predicate invariant_Box_PtrMut_T_Global (self: t_PtrMut_T) = inv_PtrMut_T self
   
-  predicate invariant_Seq_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_PtrOwn_T_Global (Seq.get self i)
+  predicate inv_Box_PtrMut_T_Global [@inline:trivial] (_1: t_PtrMut_T) = invariant_Box_PtrMut_T_Global _1
   
-  meta "rewrite_def" predicate invariant_Seq_ref_PtrOwn_T
+  meta "rewrite_def" predicate inv_Box_PtrMut_T_Global
   
-  predicate inv_Seq_ref_PtrOwn_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
-    invariant_Seq_ref_PtrOwn_T _1
+  predicate invariant_Seq_PtrMut_T [@inline:trivial] (self: Seq.seq t_PtrMut_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_PtrMut_T_Global (Seq.get self i)
   
-  meta "rewrite_def" predicate inv_Seq_ref_PtrOwn_T
+  meta "rewrite_def" predicate invariant_Seq_PtrMut_T
   
-  function len_T [@inline:trivial] (self: t_PtrOwn_slice_T) : int = Seq.length (Slice64.view (val_slice_T self))
+  predicate inv_Seq_PtrMut_T [@inline:trivial] (_1: Seq.seq t_PtrMut_T) = invariant_Seq_PtrMut_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_PtrMut_T
+  
+  function len_T [@inline:trivial] (self: t_PtrMut_slice_T) : int = Seq.length (Slice64.view (val_slice_T'0 self))
   
   meta "rewrite_def" function len_T
   
@@ -1523,103 +2251,117 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
           = thin_ptr_slice_T other
         /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other
   
-  let rec elements_mut_T (self: MutBorrow.t t_PtrOwn_slice_T) (return (x: Seq.seq (MutBorrow.t t_PtrOwn_T))) =
-    {[@expl:elements_mut 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+  function fin_val_slice_T [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).final
+  
+  meta "rewrite_def" function fin_val_slice_T
+  
+  function fin_val_T [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).final
+  
+  meta "rewrite_def" function fin_val_T
+  
+  let rec elements_mut_T (self: MutBorrow.t t_PtrMut_slice_T) (return (x: Seq.seq t_PtrMut_T)) =
+    {[@expl:elements_mut 'self' type invariant] inv_ref_PtrMut_slice_T self}
     any
-    [ return (result: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> {inv_Seq_ref_PtrOwn_T result}
+    [ return (result: Seq.seq t_PtrMut_T) -> {inv_Seq_PtrMut_T result}
       {Seq.length result = len_T self.current}
       {forall i: int. 0 <= i /\ i < len_T self.current
-        -> ptr_T (Seq.get result i).current = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self.current)) i
-        /\ val_T (Seq.get result i).current = Seq.get (Slice64.view (val_slice_T self.current)) i}
-      {ptr_slice_T self.final = ptr_slice_T self.current}
-      {forall i: int. 0 <= i
-          /\ i < len_T self.current /\ ptr_T (Seq.get result i).current = ptr_T (Seq.get result i).final
-        -> val_T (Seq.get result i).final = Seq.get (Slice64.view (val_slice_T self.final)) i}
+        -> ptr_T'0 (Seq.get result i) = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T'0 self.current)) i
+        /\ val_T'0 (Seq.get result i) = Seq.get (Slice64.view (val_slice_T'0 self.current)) i}
+      {ptr_slice_T'0 self.final = ptr_slice_T'0 self.current}
+      {fin_val_slice_T self.final = fin_val_slice_T self.current}
+      {forall i: int. 0 <= i /\ i < len_T self.current
+        -> fin_val_T (Seq.get result i) = Seq.get (Slice64.view (val_slice_T'0 self.final)) i}
       (! return {result}) ]
   
-  predicate invariant_ref_Seq_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) =
-    inv_Seq_ref_PtrOwn_T self.current /\ inv_Seq_ref_PtrOwn_T self.final
+  predicate invariant_ref_Seq_PtrMut_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrMut_T)) =
+    inv_Seq_PtrMut_T self.current /\ inv_Seq_PtrMut_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_PtrOwn_T
+  meta "rewrite_def" predicate invariant_ref_Seq_PtrMut_T
   
-  predicate inv_ref_Seq_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) =
-    invariant_ref_Seq_ref_PtrOwn_T _1
+  predicate inv_ref_Seq_PtrMut_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_PtrMut_T)) =
+    invariant_ref_Seq_PtrMut_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_ref_PtrOwn_T
+  meta "rewrite_def" predicate inv_ref_Seq_PtrMut_T
   
-  let rec split_off_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) (mid: int)
-    (return (x: Seq.seq (MutBorrow.t t_PtrOwn_T))) =
-    {[@expl:split_off_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+  let rec split_off_ghost_PtrMut_T (self: MutBorrow.t (Seq.seq t_PtrMut_T)) (mid: int)
+    (return (x: Seq.seq t_PtrMut_T)) = {[@expl:split_off_ghost 'self' type invariant] inv_ref_Seq_PtrMut_T self}
     {[@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current}
     any
-    [ return (result: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> {inv_Seq_ref_PtrOwn_T result}
+    [ return (result: Seq.seq t_PtrMut_T) -> {inv_Seq_PtrMut_T result}
       {Seq.length self.final = mid}
       {Seq.(++) self.final result = self.current}
       (! return {result}) ]
   
-  type t_Option_ref_PtrOwn_T = None | Some (MutBorrow.t t_PtrOwn_T)
+  type t_Option_PtrMut_T = None | Some t_PtrMut_T
   
   predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_PtrOwn_T
   
-  predicate resolve_Option_ref_PtrOwn_T (_1: t_Option_ref_PtrOwn_T)
+  predicate resolve_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = resolve_ref_PtrOwn_T (own_T self)
   
-  axiom resolve_axiom [@rewrite]:
-    forall x: t_Option_ref_PtrOwn_T [resolve_Option_ref_PtrOwn_T x]. resolve_Option_ref_PtrOwn_T x
+  meta "rewrite_def" predicate resolve_PtrMut_T
+  
+  predicate resolve_PtrMut_T'0 (_1: t_PtrMut_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_PtrMut_T [resolve_PtrMut_T'0 x]. resolve_PtrMut_T'0 x
+      = (resolve_PtrMut_T x /\ resolve_ref_PtrOwn_T x.f0'0)
+  
+  predicate resolve_Option_PtrMut_T (_1: t_Option_PtrMut_T)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_PtrMut_T [resolve_Option_PtrMut_T x]. resolve_Option_PtrMut_T x
       = match x with
         | None -> true
-        | Some x0 -> resolve_ref_PtrOwn_T x0
+        | Some x0 -> resolve_PtrMut_T'0 x0
         end
   
-  function get_ref_PtrOwn_T (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) (ix: int) : t_Option_ref_PtrOwn_T = if 0 <= ix
+  function get_PtrMut_T (self: Seq.seq t_PtrMut_T) (ix: int) : t_Option_PtrMut_T = if 0 <= ix
     /\ ix < Seq.length self then
       Some (Seq.get self ix)
     else
       None
   
   
-  predicate resolve_Seq_ref_PtrOwn_T (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) =
-    forall i: int. resolve_Option_ref_PtrOwn_T (get_ref_PtrOwn_T self i)
+  predicate resolve_Seq_PtrMut_T (self: Seq.seq t_PtrMut_T) =
+    forall i: int. resolve_Option_PtrMut_T (get_PtrMut_T self i)
   
-  predicate resolve_Seq_ref_PtrOwn_T'0 (_1: Seq.seq (MutBorrow.t t_PtrOwn_T))
+  predicate resolve_Seq_PtrMut_T'0 (_1: Seq.seq t_PtrMut_T)
   
-  axiom resolve_axiom'0:
-    forall x: Seq.seq (MutBorrow.t t_PtrOwn_T) [resolve_Seq_ref_PtrOwn_T'0 x]. resolve_Seq_ref_PtrOwn_T'0 x
-      -> resolve_Seq_ref_PtrOwn_T x
+  axiom resolve_axiom'1: forall x: Seq.seq t_PtrMut_T [resolve_Seq_PtrMut_T'0 x]. resolve_Seq_PtrMut_T'0 x
+      -> resolve_Seq_PtrMut_T x
   
-  predicate inv_Option_ref_PtrOwn_T (_1: t_Option_ref_PtrOwn_T)
+  predicate inv_Option_PtrMut_T (_1: t_Option_PtrMut_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_ref_PtrOwn_T [inv_Option_ref_PtrOwn_T x]. inv_Option_ref_PtrOwn_T x
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_PtrMut_T [inv_Option_PtrMut_T x]. inv_Option_PtrMut_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_ref_PtrOwn_T f0
+        | Some f0'1 -> inv_PtrMut_T f0'1
         end
   
-  function push_front_ref_PtrOwn_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_PtrOwn_T)) (x: MutBorrow.t t_PtrOwn_T) : Seq.seq (MutBorrow.t t_PtrOwn_T)
-   = Seq.cons x self
+  function push_front_PtrMut_T [@inline:trivial] (self: Seq.seq t_PtrMut_T) (x: t_PtrMut_T) : Seq.seq t_PtrMut_T =
+    Seq.cons x self
   
-  meta "rewrite_def" function push_front_ref_PtrOwn_T
+  meta "rewrite_def" function push_front_PtrMut_T
   
-  let rec pop_front_ghost_ref_PtrOwn_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)))
-    (return (x: t_Option_ref_PtrOwn_T)) = {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_ref_PtrOwn_T self}
+  let rec pop_front_ghost_PtrMut_T (self: MutBorrow.t (Seq.seq t_PtrMut_T)) (return (x: t_Option_PtrMut_T)) =
+    {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_PtrMut_T self}
     any
-    [ return (result: t_Option_ref_PtrOwn_T) -> {inv_Option_ref_PtrOwn_T result}
+    [ return (result: t_Option_PtrMut_T) -> {inv_Option_PtrMut_T result}
       {match result with
-        | None -> self.current = (Seq.empty: Seq.seq (MutBorrow.t t_PtrOwn_T)) /\ self.current = self.final
-        | Some r -> self.current = push_front_ref_PtrOwn_T self.final r
+        | None -> self.current = (Seq.empty: Seq.seq t_PtrMut_T) /\ self.current = self.final
+        | Some r -> self.current = push_front_PtrMut_T self.final r
         end}
       (! return {result}) ]
   
-  let rec unwrap_ref_PtrOwn_T (self_: t_Option_ref_PtrOwn_T) (return (x: MutBorrow.t t_PtrOwn_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_PtrOwn_T self_}
+  let rec unwrap_PtrMut_T (self_: t_Option_PtrMut_T) (return (x: t_PtrMut_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_PtrMut_T self_}
     {[@expl:unwrap requires] self_ <> None}
-    any
-    [ return (result: MutBorrow.t t_PtrOwn_T) -> {inv_ref_PtrOwn_T result} {Some result = self_} (! return {result}) ]
+    any [ return (result: t_PtrMut_T) -> {inv_PtrMut_T result} {Some result = self_} (! return {result}) ]
   
-  predicate resolve_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) = _1.final = _1.current
+  predicate resolve_ref_PtrMut_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrMut_slice_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate resolve_ref_PtrMut_slice_T
   
   type t_Option_T = None'0 | Some'0 t_T
   
@@ -1633,83 +2375,65 @@ module M_ghost__ptr_own__impl_PtrOwn_slice_T__index_ptr_own_mut_ghost (* ghost::
   
   meta "select_lsinst" "all"
   
-  let rec index_ptr_own_mut_ghost_T (self: MutBorrow.t t_PtrOwn_slice_T) (index: int)
-    (return (x: MutBorrow.t t_PtrOwn_T)) =
-    {[@expl:index_ptr_own_mut_ghost 'self' type invariant] inv_ref_PtrOwn_slice_T self}
+  let rec index_ptr_own_mut_ghost_T (self: MutBorrow.t t_PtrMut_slice_T) (index: int) (return (x: t_PtrMut_T)) =
+    {[@expl:index_ptr_own_mut_ghost 'self' type invariant] inv_ref_PtrMut_slice_T self}
     {[@expl:index_ptr_own_mut_ghost requires] 0 <= index /\ index < len_T self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_PtrOwn_slice_T self.current}
-        MutBorrow.borrow_final <t_PtrOwn_slice_T> {self.current} {MutBorrow.get_id self}
-          (fun (_ret: MutBorrow.t t_PtrOwn_slice_T) ->
-            [ &_22 <- _ret ] -{inv_PtrOwn_slice_T _ret.final}-
+      [ s0 = {inv_PtrMut_slice_T self.current}
+        MutBorrow.borrow_final <t_PtrMut_slice_T> {self.current} {MutBorrow.get_id self}
+          (fun (_ret: MutBorrow.t t_PtrMut_slice_T) ->
+            [ &_23 <- _ret ] -{inv_PtrMut_slice_T _ret.final}-
             [ &self <- { self with current = _ret.final } ] s1)
-      | s1 = elements_mut_T {_22} (fun (_ret: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> [ &r <- _ret ] s2)
+      | s1 = elements_mut_T {_23} (fun (_ret: Seq.seq t_PtrMut_T) -> [ &r <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
-      [ s0 = {inv_Seq_ref_PtrOwn_T r}
-        MutBorrow.borrow_mut <Seq.seq (MutBorrow.t t_PtrOwn_T)> {r}
-          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) ->
-            [ &_27 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+      [ s0 = {inv_Seq_PtrMut_T r}
+        MutBorrow.borrow_mut <Seq.seq t_PtrMut_T> {r}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrMut_T)) ->
+            [ &_27 <- _ret ] -{inv_Seq_PtrMut_T _ret.final}-
             [ &r <- _ret.final ] s1)
-      | s1 = split_off_ghost_ref_PtrOwn_T {_27} {index}
-          (fun (_ret: Seq.seq (MutBorrow.t t_PtrOwn_T)) -> [ &_26 <- _ret ] s2)
+      | s1 = split_off_ghost_PtrMut_T {_27} {index} (fun (_ret: Seq.seq t_PtrMut_T) -> [ &_26 <- _ret ] s2)
       | s2 = bb2 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_Seq_ref_PtrOwn_T r} s1
-      | s1 = -{resolve_Seq_ref_PtrOwn_T'0 r}- s2
-      | s2 = {inv_Seq_ref_PtrOwn_T _26}
-        MutBorrow.borrow_mut <Seq.seq (MutBorrow.t t_PtrOwn_T)> {_26}
-          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T))) ->
-            [ &_25 <- _ret ] -{inv_Seq_ref_PtrOwn_T _ret.final}-
+      [ s0 = {[@expl:type invariant] inv_Seq_PtrMut_T r} s1
+      | s1 = -{resolve_Seq_PtrMut_T'0 r}- s2
+      | s2 = {inv_Seq_PtrMut_T _26}
+        MutBorrow.borrow_mut <Seq.seq t_PtrMut_T> {_26}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrMut_T)) ->
+            [ &_25 <- _ret ] -{inv_Seq_PtrMut_T _ret.final}-
             [ &_26 <- _ret.final ] s3)
-      | s3 = pop_front_ghost_ref_PtrOwn_T {_25} (fun (_ret: t_Option_ref_PtrOwn_T) -> [ &_24 <- _ret ] s4)
+      | s3 = pop_front_ghost_PtrMut_T {_25} (fun (_ret: t_Option_PtrMut_T) -> [ &_24 <- _ret ] s4)
       | s4 = bb3 ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv_Seq_ref_PtrOwn_T _26} s1
-      | s1 = -{resolve_Seq_ref_PtrOwn_T'0 _26}- s2
-      | s2 = unwrap_ref_PtrOwn_T {_24} (fun (_ret: MutBorrow.t t_PtrOwn_T) -> [ &_23 <- _ret ] s3)
+      [ s0 = {[@expl:type invariant] inv_Seq_PtrMut_T _26} s1
+      | s1 = -{resolve_Seq_PtrMut_T'0 _26}- s2
+      | s2 = unwrap_PtrMut_T {_24} (fun (_ret: t_PtrMut_T) -> [ &_0 <- _ret ] s3)
       | s3 = bb4 ]
     | bb4 = s0
-      [ s0 = {inv_PtrOwn_T _23.current}
-        MutBorrow.borrow_final <t_PtrOwn_T> {_23.current} {MutBorrow.get_id _23}
-          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
-            [ &_3 <- _ret ] -{inv_PtrOwn_T _ret.final}-
-            [ &_23 <- { _23 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_PtrOwn_T _23} s2
-      | s2 = -{resolve_ref_PtrOwn_T _23}- s3
-      | s3 = {inv_PtrOwn_T _3.current}
-        MutBorrow.borrow_final <t_PtrOwn_T> {_3.current} {MutBorrow.get_id _3}
-          (fun (_ret: MutBorrow.t t_PtrOwn_T) ->
-            [ &_0 <- _ret ] -{inv_PtrOwn_T _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_PtrOwn_T _3} s5
-      | s5 = -{resolve_ref_PtrOwn_T _3}- s6
-      | s6 = {[@expl:type invariant] inv_ref_PtrOwn_slice_T self} s7
-      | s7 = -{resolve_ref_PtrOwn_slice_T self}- s8
-      | s8 = return {_0} ] ]
-    [ & _0: MutBorrow.t t_PtrOwn_T = Any.any_l ()
-    | & self: MutBorrow.t t_PtrOwn_slice_T = self
+      [ s0 = {[@expl:type invariant] inv_ref_PtrMut_slice_T self} s1
+      | s1 = -{resolve_ref_PtrMut_slice_T self}- s2
+      | s2 = return {_0} ] ]
+    [ & _0: t_PtrMut_T = Any.any_l ()
+    | & self: MutBorrow.t t_PtrMut_slice_T = self
     | & index: int = index
-    | & _3: MutBorrow.t t_PtrOwn_T = Any.any_l ()
-    | & r: Seq.seq (MutBorrow.t t_PtrOwn_T) = Any.any_l ()
-    | & _22: MutBorrow.t t_PtrOwn_slice_T = Any.any_l ()
-    | & _23: MutBorrow.t t_PtrOwn_T = Any.any_l ()
-    | & _24: t_Option_ref_PtrOwn_T = Any.any_l ()
-    | & _25: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)) = Any.any_l ()
-    | & _26: Seq.seq (MutBorrow.t t_PtrOwn_T) = Any.any_l ()
-    | & _27: MutBorrow.t (Seq.seq (MutBorrow.t t_PtrOwn_T)) = Any.any_l () ])
-    [ return (result: MutBorrow.t t_PtrOwn_T) ->
-    {[@expl:index_ptr_own_mut_ghost result type invariant] inv_ref_PtrOwn_T result}
-      {[@expl:index_ptr_own_mut_ghost ensures #0] ptr_T result.current
-      = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T self.current)) index}
-      {[@expl:index_ptr_own_mut_ghost ensures #1] val_T result.current
-      = Seq.get (Slice64.view (val_slice_T self.current)) index}
-      {[@expl:index_ptr_own_mut_ghost ensures #2] ptr_slice_T self.final = ptr_slice_T self.current}
-      {[@expl:index_ptr_own_mut_ghost ensures #3] ptr_T result.current = ptr_T result.final
-      -> val_T result.final = Seq.get (Slice64.view (val_slice_T self.final)) index}
-      {[@expl:index_ptr_own_mut_ghost ensures #4] forall k: int. k <> index
-        -> get_T (Slice64.view (val_slice_T self.final)) k = get_T (Slice64.view (val_slice_T self.current)) k}
+    | & r: Seq.seq t_PtrMut_T = Any.any_l ()
+    | & _23: MutBorrow.t t_PtrMut_slice_T = Any.any_l ()
+    | & _24: t_Option_PtrMut_T = Any.any_l ()
+    | & _25: MutBorrow.t (Seq.seq t_PtrMut_T) = Any.any_l ()
+    | & _26: Seq.seq t_PtrMut_T = Any.any_l ()
+    | & _27: MutBorrow.t (Seq.seq t_PtrMut_T) = Any.any_l () ])
+    [ return (result: t_PtrMut_T) -> {[@expl:index_ptr_own_mut_ghost result type invariant] inv_PtrMut_T result}
+      {[@expl:index_ptr_own_mut_ghost ensures #0] ptr_T'0 result
+      = offset_ptr_T (thin_ptr_slice_T (ptr_slice_T'0 self.current)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #1] val_T'0 result
+      = Seq.get (Slice64.view (val_slice_T'0 self.current)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #2] ptr_slice_T'0 self.final = ptr_slice_T'0 self.current}
+      {[@expl:index_ptr_own_mut_ghost ensures #3] fin_val_slice_T self.final = fin_val_slice_T self.current}
+      {[@expl:index_ptr_own_mut_ghost ensures #4] fin_val_T result
+      = Seq.get (Slice64.view (val_slice_T'0 self.final)) index}
+      {[@expl:index_ptr_own_mut_ghost ensures #5] forall k: int. k <> index
+        -> get_T (Slice64.view (val_slice_T'0 self.final)) k = get_T (Slice64.view (val_slice_T'0 self.current)) k}
       (! return {result}) ]
 end
 module M_ghost__resource__fmap_view__impl_Authority_K_V__new (* ghost::resource::fmap_view::Authority<K, V> *)
@@ -48732,9 +49456,9 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   meta "rewrite_def" predicate inv_slice_T
   
-  type t_PtrOwn_slice_T
+  type t_PtrMut_slice_T
   
-  type tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_slice_T_Ghost_PtrMut_slice_T = { f0: Opaque.ptr; f1: t_PtrMut_slice_T }
   
   predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
@@ -48747,7 +49471,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
+  type t_PtrOwn_slice_T
+  
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  
+  function own_slice_T (self: t_PtrMut_slice_T) : MutBorrow.t t_PtrOwn_slice_T
+  
+  function ptr_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Opaque.ptr =
+    ptr_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function ptr_slice_T'0
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
@@ -48755,6 +49488,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   meta "rewrite_def" predicate metadata_matches_slice_T
   
   function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  
+  function val_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function val_slice_T'0
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -48766,73 +49504,58 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   meta "rewrite_def" predicate inv_ref_slice_T'0
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ inv_ref_slice_T'0 (val_slice_T self)
+  predicate invariant_PtrMut_slice_T (self: t_PtrMut_slice_T) =
+    not is_null_ptr_slice_T (ptr_slice_T'0 self)
+    /\ metadata_matches_slice_T (val_slice_T'0 self) (metadata_slice_T (ptr_slice_T'0 self))
+    /\ inv_ref_slice_T'0 (val_slice_T'0 self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_PtrMut_slice_T (_1: t_PtrMut_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom: forall x: t_PtrMut_slice_T [inv_PtrMut_slice_T x]. inv_PtrMut_slice_T x -> invariant_PtrMut_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
+  predicate invariant_Ghost_PtrMut_slice_T [@inline:trivial] (self: t_PtrMut_slice_T) = inv_PtrMut_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_PtrMut_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_PtrMut_slice_T [@inline:trivial] (_1: t_PtrMut_slice_T) = invariant_Ghost_PtrMut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_PtrMut_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_ref_PtrOwn_slice_T self
+  predicate inv_tup2_ptr_slice_T_Ghost_PtrMut_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_PtrMut_slice_T) =
+    inv_Ghost_PtrMut_slice_T _1.f1
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_PtrMut_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  function fin_val_slice_T [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).final
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" function fin_val_slice_T
   
-  predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T
-  
-  let rec from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T)) = {[@expl:from_mut 'r' type invariant] inv_ref_slice_T r}
+  let rec from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T)) (return (x: tup2_ptr_slice_T_Ghost_PtrMut_slice_T)) =
+    {[@expl:from_mut 'r' type invariant] inv_ref_slice_T r}
     any
-    [ return (result: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) ->
-    {inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T result}
-      {ptr_slice_T result.f1.current = result.f0}
-      {val_slice_T result.f1.current = r.current}
-      {ptr_slice_T result.f1.final = ptr_slice_T result.f1.current -> val_slice_T result.f1.final = r.final}
+    [ return (result: tup2_ptr_slice_T_Ghost_PtrMut_slice_T) -> {inv_tup2_ptr_slice_T_Ghost_PtrMut_slice_T result}
+      {ptr_slice_T'0 result.f1 = result.f0}
+      {val_slice_T'0 result.f1 = r.current}
+      {fin_val_slice_T result.f1 = r.final}
       (! return {result}) ]
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_PtrMut_slice_T = { f0'0: Opaque.ptr; f1'0: t_PtrMut_slice_T }
   
   predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1'0
+  predicate inv_tup2_ptr_T_Ghost_PtrMut_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_PtrMut_slice_T) =
+    inv_Ghost_PtrMut_slice_T _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
-  
-  function fin_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
-    self.final
-  
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_PtrMut_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_mut_ptr_own_slice_T (self: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T)) =
+  let rec as_mut_ptr_own_slice_T (self: MutBorrow.t (Slice64.slice t_T)) (return (x: tup2_ptr_T_Ghost_PtrMut_slice_T)) =
     {[@expl:as_mut_ptr_own 'self' type invariant] inv_ref_slice_T self}
     (! bb0
     [ bb0 = s0
@@ -48841,28 +49564,28 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
           (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_12 <- _ret ] -{inv_slice_T _ret.final}-
             [ &self <- { self with current = _ret.final } ] s1)
-      | s1 = from_mut_slice_T {_12} (fun (_ret: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) -> [ &_11 <- _ret ] s2)
+      | s1 = from_mut_slice_T {_12} (fun (_ret: tup2_ptr_slice_T_Ghost_PtrMut_slice_T) -> [ &_11 <- _ret ] s2)
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = [ &ptr <- _11.f0 ] s1
-      | s1 = [ &own <- _11.f1 ] s2
+      | s1 = [ &m <- _11.f1 ] s2
       | s2 = [ &_13 <- Opaque.thin ptr ] s3
-      | s3 = [ &_0 <- { f0'0 = _13; f1'0 = own } ] s4
+      | s3 = [ &_0 <- { f0'0 = _13; f1'0 = m } ] s4
       | s4 = {[@expl:type invariant] inv_ref_slice_T self} s5
       | s5 = -{resolve_ref_slice_T self}- s6
       | s6 = return {_0} ] ]
-    [ & _0: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    [ & _0: tup2_ptr_T_Ghost_PtrMut_slice_T = Any.any_l ()
     | & self: MutBorrow.t (Slice64.slice t_T) = self
     | & ptr: Opaque.ptr = Any.any_l ()
-    | & own: MutBorrow.t t_PtrOwn_slice_T = Any.any_l ()
-    | & _11: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    | & m: t_PtrMut_slice_T = Any.any_l ()
+    | & _11: tup2_ptr_slice_T_Ghost_PtrMut_slice_T = Any.any_l ()
     | & _12: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _13: Opaque.ptr = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
-    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
-      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr_slice_T result.f1'0.current)}
-      {[@expl:as_mut_ptr_own ensures #1] self.current = val_slice_T result.f1'0.current}
-      {[@expl:as_mut_ptr_own ensures #2] self.final = val_slice_T (fin_Ghost_ref_PtrOwn_slice_T result.f1'0)}
+    [ return (result: tup2_ptr_T_Ghost_PtrMut_slice_T) ->
+    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_PtrMut_slice_T result}
+      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr_slice_T'0 result.f1'0)}
+      {[@expl:as_mut_ptr_own ensures #1] self.current = val_slice_T'0 result.f1'0}
+      {[@expl:as_mut_ptr_own ensures #2] self.final = fin_val_slice_T result.f1'0}
       (! return {result}) ]
 end
 module M_std__slice__impl_IteratorSpec_for_Iter_T__produces_refl (* <std::slice::Iter<'a, T> as std::iter::IteratorSpec> *)
@@ -49149,6 +49872,98 @@ module M_cell__permcell__impl_Resolve_for_PermCellOwn_T__resolve_coherence__refi
       -> inv_PermCellOwn_T self
       /\ structural_resolve_PermCellOwn_T self
       /\ (forall result: (). resolve_PermCellOwn_T self -> resolve_PermCellOwn_T self)
+end
+module M_ghost__ptr_own__impl_Resolve_for_PtrMut_T__resolve_coherence__refines (* <ghost::ptr_own::PtrMut<'a, T> as resolve::Resolve> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  
+  type t_PtrOwn_T
+  
+  type t_PtrMut_T = { f0: MutBorrow.t t_PtrOwn_T }
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  
+  function own_T (self: t_PtrMut_T) : MutBorrow.t t_PtrOwn_T = self.f0
+  
+  function ptr_T'0 [@inline:trivial] (self: t_PtrMut_T) : Opaque.ptr = ptr_T (own_T self).current
+  
+  meta "rewrite_def" function ptr_T'0
+  
+  type t_T
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_T (self: t_PtrOwn_T) : t_T
+  
+  function val_T'0 [@inline:trivial] (self: t_PtrMut_T) : t_T = val_T (own_T self).current
+  
+  meta "rewrite_def" function val_T'0
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_PtrMut_T (self: t_PtrMut_T) =
+    not is_null_ptr_T (ptr_T'0 self)
+    /\ metadata_matches_T (val_T'0 self) (metadata_T (ptr_T'0 self)) /\ inv_ref_T (val_T'0 self)
+  
+  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
+    not is_null_ptr_T (ptr_T self)
+    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self)) /\ inv_ref_T (val_T self)
+  
+  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
+  
+  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+    inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  
+  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  
+  predicate inv_PtrMut_T (_1: t_PtrMut_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrMut_T [inv_PtrMut_T x]. inv_PtrMut_T x
+      = (invariant_PtrMut_T x /\ inv_ref_PtrOwn_T x.f0)
+  
+  predicate resolve_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrOwn_T
+  
+  predicate structural_resolve_PtrMut_T (_1: t_PtrMut_T) = resolve_ref_PtrOwn_T _1.f0
+  
+  predicate resolve_PtrMut_T [@inline:trivial] (self: t_PtrMut_T) = resolve_ref_PtrOwn_T (own_T self)
+  
+  meta "rewrite_def" predicate resolve_PtrMut_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_PtrMut_T. inv_PtrMut_T self /\ structural_resolve_PtrMut_T self
+      -> inv_PtrMut_T self
+      /\ structural_resolve_PtrMut_T self /\ (forall result: (). resolve_PtrMut_T self -> resolve_PtrMut_T self)
 end
 module M_invariant__impl_Resolve_for_Subset_T__resolve_coherence__refines (* <invariant::Subset<T> as resolve::Resolve> *)
   type namespace_other
@@ -74032,13 +74847,22 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  type t_PtrOwn_slice_T
+  type t_PtrMut_slice_T
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_PtrMut_slice_T = { f0: Opaque.ptr; f1: t_PtrMut_slice_T }
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
+  type t_PtrOwn_slice_T
+  
   function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  
+  function own_slice_T (self: t_PtrMut_slice_T) : MutBorrow.t t_PtrOwn_slice_T
+  
+  function ptr_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Opaque.ptr =
+    ptr_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function ptr_slice_T'0
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
@@ -74046,6 +74870,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   meta "rewrite_def" predicate metadata_matches_slice_T
   
   function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  
+  function val_slice_T'0 [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).current
+  
+  meta "rewrite_def" function val_slice_T'0
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -74057,45 +74886,32 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   meta "rewrite_def" predicate inv_ref_slice_T'0
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
-    /\ inv_ref_slice_T'0 (val_slice_T self)
+  predicate invariant_PtrMut_slice_T (self: t_PtrMut_slice_T) =
+    not is_null_ptr_slice_T (ptr_slice_T'0 self)
+    /\ metadata_matches_slice_T (val_slice_T'0 self) (metadata_slice_T (ptr_slice_T'0 self))
+    /\ inv_ref_slice_T'0 (val_slice_T'0 self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_PtrMut_slice_T (_1: t_PtrMut_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom: forall x: t_PtrMut_slice_T [inv_PtrMut_slice_T x]. inv_PtrMut_slice_T x -> invariant_PtrMut_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
+  predicate invariant_Ghost_PtrMut_slice_T [@inline:trivial] (self: t_PtrMut_slice_T) = inv_PtrMut_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_PtrMut_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_PtrMut_slice_T [@inline:trivial] (_1: t_PtrMut_slice_T) = invariant_Ghost_PtrMut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_PtrMut_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_ref_PtrOwn_slice_T self
+  predicate inv_tup2_ptr_T_Ghost_PtrMut_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_PtrMut_slice_T) =
+    inv_Ghost_PtrMut_slice_T _1.f1
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_PtrMut_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  function fin_val_slice_T [@inline:trivial] (self: t_PtrMut_slice_T) : Slice64.slice t_T =
+    val_slice_T (own_slice_T self).final
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
-  
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
-  
-  function fin_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
-    self.final
-  
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" function fin_val_slice_T
   
   meta "compute_max_steps" 1000000
   
@@ -74103,11 +74919,10 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_ref_slice_T self
       -> inv_ref_slice_T self
-      /\ (forall result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result
-          /\ result.f0 = Opaque.thin (ptr_slice_T result.f1.current)
-          /\ self.current = val_slice_T result.f1.current
-          /\ self.final = val_slice_T (fin_Ghost_ref_PtrOwn_slice_T result.f1)
-        -> inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result)
+      /\ (forall result: tup2_ptr_T_Ghost_PtrMut_slice_T. inv_tup2_ptr_T_Ghost_PtrMut_slice_T result
+          /\ result.f0 = Opaque.thin (ptr_slice_T'0 result.f1)
+          /\ self.current = val_slice_T'0 result.f1 /\ self.final = fin_val_slice_T result.f1
+        -> inv_tup2_ptr_T_Ghost_PtrMut_slice_T result)
 end
 module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as std::slice::SliceExt<T>> *)
   type namespace_other

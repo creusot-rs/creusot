@@ -48,13 +48,21 @@ module M_zst_pointers_may_be_equal
       {Seq.length (view_Vec_unit_Global self_.final) = Seq.length (view_Vec_unit_Global self_.current)}
       (! return {result}) ]
   
-  type t_PtrOwn_unit
+  type t_PtrMut_unit
   
-  type tup2_ptr_unit_Ghost_ref_PtrOwn_unit = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_unit }
+  type tup2_ptr_unit_Ghost_PtrMut_unit = { f0: Opaque.ptr; f1: t_PtrMut_unit }
   
   predicate is_null_ptr_unit (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
+  type t_PtrOwn_unit
+  
   function ptr_unit (self: t_PtrOwn_unit) : Opaque.ptr
+  
+  function own_unit (self: t_PtrMut_unit) : MutBorrow.t t_PtrOwn_unit
+  
+  function ptr_unit'0 [@inline:trivial] (self: t_PtrMut_unit) : Opaque.ptr = ptr_unit (own_unit self).current
+  
+  meta "rewrite_def" function ptr_unit'0
   
   predicate metadata_matches_unit [@inline:trivial] (_value: ()) (_metadata: ()) = true
   
@@ -62,49 +70,46 @@ module M_zst_pointers_may_be_equal
   
   function val_unit (self: t_PtrOwn_unit) : ()
   
+  function val_unit'0 [@inline:trivial] (self: t_PtrMut_unit) : () = val_unit (own_unit self).current
+  
+  meta "rewrite_def" function val_unit'0
+  
   function metadata_unit (_1: Opaque.ptr) : ()
   
   predicate inv_ref_unit [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate inv_ref_unit
   
-  predicate invariant_PtrOwn_unit (self: t_PtrOwn_unit) =
-    not is_null_ptr_unit (ptr_unit self)
-    /\ metadata_matches_unit (val_unit self) (metadata_unit (ptr_unit self)) /\ inv_ref_unit (val_unit self)
+  predicate invariant_PtrMut_unit (self: t_PtrMut_unit) =
+    not is_null_ptr_unit (ptr_unit'0 self)
+    /\ metadata_matches_unit (val_unit'0 self) (metadata_unit (ptr_unit'0 self)) /\ inv_ref_unit (val_unit'0 self)
   
-  predicate inv_PtrOwn_unit (_1: t_PtrOwn_unit)
+  predicate inv_PtrMut_unit (_1: t_PtrMut_unit)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_unit [inv_PtrOwn_unit x]. inv_PtrOwn_unit x = invariant_PtrOwn_unit x
+  axiom inv_axiom: forall x: t_PtrMut_unit [inv_PtrMut_unit x]. inv_PtrMut_unit x -> invariant_PtrMut_unit x
   
-  predicate invariant_ref_PtrOwn_unit [@inline:trivial] (self: MutBorrow.t t_PtrOwn_unit) =
-    inv_PtrOwn_unit self.current /\ inv_PtrOwn_unit self.final
+  predicate invariant_Ghost_PtrMut_unit [@inline:trivial] (self: t_PtrMut_unit) = inv_PtrMut_unit self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_unit
+  meta "rewrite_def" predicate invariant_Ghost_PtrMut_unit
   
-  predicate inv_ref_PtrOwn_unit [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_unit) = invariant_ref_PtrOwn_unit _1
+  predicate inv_Ghost_PtrMut_unit [@inline:trivial] (_1: t_PtrMut_unit) = invariant_Ghost_PtrMut_unit _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_unit
+  meta "rewrite_def" predicate inv_Ghost_PtrMut_unit
   
-  predicate invariant_Ghost_ref_PtrOwn_unit [@inline:trivial] (self: MutBorrow.t t_PtrOwn_unit) =
-    inv_ref_PtrOwn_unit self
+  predicate inv_tup2_ptr_unit_Ghost_PtrMut_unit [@inline:trivial] (_1: tup2_ptr_unit_Ghost_PtrMut_unit) =
+    inv_Ghost_PtrMut_unit _1.f1
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_unit
+  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_PtrMut_unit
   
-  predicate inv_Ghost_ref_PtrOwn_unit [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_unit) =
-    invariant_Ghost_ref_PtrOwn_unit _1
+  function fin_val_unit [@inline:trivial] (self: t_PtrMut_unit) : () = val_unit (own_unit self).final
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_unit
+  meta "rewrite_def" function fin_val_unit
   
-  predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit [@inline:trivial] (_1: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) =
-    inv_Ghost_ref_PtrOwn_unit _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit
-  
-  let rec from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_ref_PtrOwn_unit)) = any
-    [ return (result: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> {inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit result}
-      {ptr_unit result.f1.current = result.f0}
-      {val_unit result.f1.current = r.current}
-      {ptr_unit result.f1.final = ptr_unit result.f1.current -> val_unit result.f1.final = r.final}
+  let rec from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_PtrMut_unit)) = any
+    [ return (result: tup2_ptr_unit_Ghost_PtrMut_unit) -> {inv_tup2_ptr_unit_Ghost_PtrMut_unit result}
+      {ptr_unit'0 result.f1 = result.f0}
+      {val_unit'0 result.f1 = r.current}
+      {fin_val_unit result.f1 = r.final}
       (! return {result}) ]
   
   predicate resolve_ref_unit [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -115,43 +120,59 @@ module M_zst_pointers_may_be_equal
     {[@expl:index requires] in_bounds_usize ix (view_Vec_unit_Global self_)}
     any [ return (result: ()) -> {has_value_usize ix (view_Vec_unit_Global self_) result} (! return {result}) ]
   
-  type tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0 = { f0'0: Opaque.ptr; f1'0: t_PtrOwn_unit }
+  type tup2_ptr_unit_Ghost_ref_PtrOwn_unit = { f0'0: Opaque.ptr; f1'0: t_PtrOwn_unit }
   
-  predicate invariant_ref_PtrOwn_unit'0 [@inline:trivial] (self: t_PtrOwn_unit) = inv_PtrOwn_unit self
+  predicate invariant_PtrOwn_unit (self: t_PtrOwn_unit) =
+    not is_null_ptr_unit (ptr_unit self)
+    /\ metadata_matches_unit (val_unit self) (metadata_unit (ptr_unit self)) /\ inv_ref_unit (val_unit self)
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_unit'0
+  predicate inv_PtrOwn_unit (_1: t_PtrOwn_unit)
   
-  predicate inv_ref_PtrOwn_unit'0 [@inline:trivial] (_1: t_PtrOwn_unit) = invariant_ref_PtrOwn_unit'0 _1
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn_unit [inv_PtrOwn_unit x]. inv_PtrOwn_unit x = invariant_PtrOwn_unit x
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_unit'0
+  predicate invariant_ref_PtrOwn_unit [@inline:trivial] (self: t_PtrOwn_unit) = inv_PtrOwn_unit self
   
-  predicate invariant_Ghost_ref_PtrOwn_unit'0 [@inline:trivial] (self: t_PtrOwn_unit) = inv_ref_PtrOwn_unit'0 self
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_unit
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_unit'0
+  predicate inv_ref_PtrOwn_unit [@inline:trivial] (_1: t_PtrOwn_unit) = invariant_ref_PtrOwn_unit _1
   
-  predicate inv_Ghost_ref_PtrOwn_unit'0 [@inline:trivial] (_1: t_PtrOwn_unit) = invariant_Ghost_ref_PtrOwn_unit'0 _1
+  meta "rewrite_def" predicate inv_ref_PtrOwn_unit
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_unit'0
+  predicate invariant_Ghost_ref_PtrOwn_unit [@inline:trivial] (self: t_PtrOwn_unit) = inv_ref_PtrOwn_unit self
   
-  predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0 [@inline:trivial] (_1: tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0) =
-    inv_Ghost_ref_PtrOwn_unit'0 _1.f1'0
+  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_unit
   
-  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0
+  predicate inv_Ghost_ref_PtrOwn_unit [@inline:trivial] (_1: t_PtrOwn_unit) = invariant_Ghost_ref_PtrOwn_unit _1
   
-  let rec from_ref_unit (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0)) = any
-    [ return (result: tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0) -> {inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0 result}
+  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_unit
+  
+  predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit [@inline:trivial] (_1: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) =
+    inv_Ghost_ref_PtrOwn_unit _1.f1'0
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit
+  
+  let rec from_ref_unit (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_PtrOwn_unit)) = any
+    [ return (result: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> {inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit result}
       {ptr_unit result.f1'0 = result.f0'0}
       {val_unit result.f1'0 = r}
       (! return {result}) ]
   
-  let rec into_inner_ref_PtrOwn_unit (self: MutBorrow.t t_PtrOwn_unit) (return (x: MutBorrow.t t_PtrOwn_unit)) =
-    {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_PtrOwn_unit self}
-    any
-    [ return (result: MutBorrow.t t_PtrOwn_unit) -> {inv_ref_PtrOwn_unit result} {result = self} (! return {result}) ]
+  let rec into_inner_PtrMut_unit (self: t_PtrMut_unit) (return (x: t_PtrMut_unit)) =
+    {[@expl:into_inner 'self' type invariant] inv_Ghost_PtrMut_unit self}
+    any [ return (result: t_PtrMut_unit) -> {inv_PtrMut_unit result} {result = self} (! return {result}) ]
   
-  let rec into_inner_ref_PtrOwn_unit'0 (self: t_PtrOwn_unit) (return (x: t_PtrOwn_unit)) =
-    {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_PtrOwn_unit'0 self}
-    any [ return (result: t_PtrOwn_unit) -> {inv_ref_PtrOwn_unit'0 result} {result = self} (! return {result}) ]
+  let rec into_inner_ref_PtrOwn_unit (self: t_PtrOwn_unit) (return (x: t_PtrOwn_unit)) =
+    {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_PtrOwn_unit self}
+    any [ return (result: t_PtrOwn_unit) -> {inv_ref_PtrOwn_unit result} {result = self} (! return {result}) ]
+  
+  predicate invariant_ref_PtrMut_unit [@inline:trivial] (self: MutBorrow.t t_PtrMut_unit) =
+    inv_PtrMut_unit self.current /\ inv_PtrMut_unit self.final
+  
+  meta "rewrite_def" predicate invariant_ref_PtrMut_unit
+  
+  predicate inv_ref_PtrMut_unit [@inline:trivial] (_1: MutBorrow.t t_PtrMut_unit) = invariant_ref_PtrMut_unit _1
+  
+  meta "rewrite_def" predicate inv_ref_PtrMut_unit
   
   constant size_of_unit: int = 0
   
@@ -159,18 +180,31 @@ module M_zst_pointers_may_be_equal
   
   axiom size_of_unit_spec: 0 <= size_of_unit
   
-  let rec disjoint_lemma_unit (own1: MutBorrow.t t_PtrOwn_unit) (own2: t_PtrOwn_unit) (return (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrOwn_unit own1}
-    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_unit'0 own2}
+  let rec disjoint_lemma_unit (own1: MutBorrow.t t_PtrMut_unit) (own2: t_PtrOwn_unit) (return (x: ())) =
+    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrMut_unit own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_unit own2}
     {[@expl:disjoint_lemma requires] size_of_unit <> 0}
     any
-    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_unit own1.current) <> Ptr.addr_logic_u64 (ptr_unit own2)}
+    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_unit'0 own1.current) <> Ptr.addr_logic_u64 (ptr_unit own2)}
       {own1.current = own1.final}
       (! return {result}) ]
   
   predicate resolve_ref_PtrOwn_unit [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_unit) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_PtrOwn_unit
+  
+  predicate resolve_PtrMut_unit [@inline:trivial] (self: t_PtrMut_unit) = resolve_ref_PtrOwn_unit (own_unit self)
+  
+  meta "rewrite_def" predicate resolve_PtrMut_unit
+  
+  predicate resolve_PtrMut_unit'0 (_1: t_PtrMut_unit)
+  
+  axiom resolve_axiom: forall x: t_PtrMut_unit [resolve_PtrMut_unit'0 x]. resolve_PtrMut_unit'0 x
+      -> resolve_PtrMut_unit x
+  
+  predicate resolve_ref_PtrMut_unit [@inline:trivial] (_1: MutBorrow.t t_PtrMut_unit) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_PtrMut_unit
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -203,7 +237,7 @@ module M_zst_pointers_may_be_equal
           (fun (_ret: MutBorrow.t ()) -> [ &_15 <- _ret ] [ &_16 <- { _16 with current = _ret.final } ] s1)
       | s1 = MutBorrow.borrow_final <()> {_15.current} {MutBorrow.get_id _15}
           (fun (_ret: MutBorrow.t ()) -> [ &_14 <- _ret ] [ &_15 <- { _15 with current = _ret.final } ] s2)
-      | s2 = from_mut_unit {_14} (fun (_ret: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> [ &_13 <- _ret ] s3)
+      | s2 = from_mut_unit {_14} (fun (_ret: tup2_ptr_unit_Ghost_PtrMut_unit) -> [ &_13 <- _ret ] s3)
       | s3 = bb8 ]
     | bb8 = s0
       [ s0 = [ &p1 <- _13.f0 ] s1
@@ -214,28 +248,36 @@ module M_zst_pointers_may_be_equal
       | s5 = bb9 ]
     | bb9 = s0
       [ s0 = [ &_22 <- _23 ] s1
-      | s1 = from_ref_unit {_22} (fun (_ret: tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0) -> [ &_20 <- _ret ] s2)
+      | s1 = from_ref_unit {_22} (fun (_ret: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> [ &_20 <- _ret ] s2)
       | s2 = bb10 ]
     | bb10 = s0
       [ s0 = [ &p2 <- _20.f0'0 ] s1
       | s1 = [ &own2 <- _20.f1'0 ] s2
-      | s2 = into_inner_ref_PtrOwn_unit {own1} (fun (_ret: MutBorrow.t t_PtrOwn_unit) -> [ &_28 <- _ret ] s3)
+      | s2 = into_inner_PtrMut_unit {own1} (fun (_ret: t_PtrMut_unit) -> [ &_29 <- _ret ] s3)
       | s3 = bb11 ]
     | bb11 = s0
-      [ s0 = into_inner_ref_PtrOwn_unit'0 {own2} (fun (_ret: t_PtrOwn_unit) -> [ &_31 <- _ret ] s1) | s1 = bb12 ]
+      [ s0 = {inv_PtrMut_unit _29}
+        MutBorrow.borrow_mut <t_PtrMut_unit> {_29}
+          (fun (_ret: MutBorrow.t t_PtrMut_unit) ->
+            [ &_28 <- _ret ] -{inv_PtrMut_unit _ret.final}-
+            [ &_29 <- _ret.final ] s1)
+      | s1 = into_inner_ref_PtrOwn_unit {own2} (fun (_ret: t_PtrOwn_unit) -> [ &_32 <- _ret ] s2)
+      | s2 = bb12 ]
     | bb12 = s0
-      [ s0 = {inv_PtrOwn_unit _28.current}
-        MutBorrow.borrow_final <t_PtrOwn_unit> {_28.current} {MutBorrow.get_id _28}
-          (fun (_ret: MutBorrow.t t_PtrOwn_unit) ->
-            [ &_27 <- _ret ] -{inv_PtrOwn_unit _ret.final}-
+      [ s0 = {inv_PtrMut_unit _28.current}
+        MutBorrow.borrow_final <t_PtrMut_unit> {_28.current} {MutBorrow.get_id _28}
+          (fun (_ret: MutBorrow.t t_PtrMut_unit) ->
+            [ &_27 <- _ret ] -{inv_PtrMut_unit _ret.final}-
             [ &_28 <- { _28 with current = _ret.final } ] s1)
-      | s1 = disjoint_lemma_unit {_27} {_31} (fun (_ret: ()) -> [ &_26 <- _ret ] s2)
+      | s1 = disjoint_lemma_unit {_27} {_32} (fun (_ret: ()) -> [ &_26 <- _ret ] s2)
       | s2 = bb13 ]
     | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_unit _28} s1
-      | s1 = -{resolve_ref_PtrOwn_unit _28}- s2
-      | s2 = new_unit {_26} (fun (_ret: ()) -> [ &_25 <- _ret ] s3)
-      | s3 = bb14 ]
+      [ s0 = {[@expl:type invariant] inv_PtrMut_unit _29} s1
+      | s1 = -{resolve_PtrMut_unit'0 _29}- s2
+      | s2 = {[@expl:type invariant] inv_ref_PtrMut_unit _28} s3
+      | s3 = -{resolve_ref_PtrMut_unit _28}- s4
+      | s4 = new_unit {_26} (fun (_ret: ()) -> [ &_25 <- _ret ] s5)
+      | s5 = bb14 ]
     | bb14 = s0 [ s0 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s1 | s1 = bb16 ]
     | bb16 = return {_0} ]
     [ & _0: () = Any.any_l ()
@@ -246,20 +288,21 @@ module M_zst_pointers_may_be_equal
     | & _9: Slice64.array () = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()
-    | & own1: MutBorrow.t t_PtrOwn_unit = Any.any_l ()
-    | & _13: tup2_ptr_unit_Ghost_ref_PtrOwn_unit = Any.any_l ()
+    | & own1: t_PtrMut_unit = Any.any_l ()
+    | & _13: tup2_ptr_unit_Ghost_PtrMut_unit = Any.any_l ()
     | & _14: MutBorrow.t () = Any.any_l ()
     | & _15: MutBorrow.t () = Any.any_l ()
     | & _16: MutBorrow.t () = Any.any_l ()
     | & _17: MutBorrow.t t_Vec_unit_Global = Any.any_l ()
     | & p2: Opaque.ptr = Any.any_l ()
     | & own2: t_PtrOwn_unit = Any.any_l ()
-    | & _20: tup2_ptr_unit_Ghost_ref_PtrOwn_unit'0 = Any.any_l ()
+    | & _20: tup2_ptr_unit_Ghost_ref_PtrOwn_unit = Any.any_l ()
     | & _22: () = Any.any_l ()
     | & _23: () = Any.any_l ()
     | & _25: () = Any.any_l ()
     | & _26: () = Any.any_l ()
-    | & _27: MutBorrow.t t_PtrOwn_unit = Any.any_l ()
-    | & _28: MutBorrow.t t_PtrOwn_unit = Any.any_l ()
-    | & _31: t_PtrOwn_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _27: MutBorrow.t t_PtrMut_unit = Any.any_l ()
+    | & _28: MutBorrow.t t_PtrMut_unit = Any.any_l ()
+    | & _29: t_PtrMut_unit = Any.any_l ()
+    | & _32: t_PtrOwn_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

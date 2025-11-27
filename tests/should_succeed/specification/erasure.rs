@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, prelude::*};
+use creusot_contracts::{
+    ghost::{PtrMut, PtrOwn},
+    prelude::*,
+};
 
 fn foo(x: i32) -> i32 {
     x
@@ -171,6 +174,6 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 }
 
 #[erasure(slice_as_mut_ptr)]
-pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
+pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<PtrMut<'_, [T]>>) {
     s.as_mut_ptr_own()
 }

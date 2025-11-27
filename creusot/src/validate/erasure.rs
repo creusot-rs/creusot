@@ -797,8 +797,9 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 .instantiate(self.tcx, subst_resolved);
                             (erased.def.0, (*subst).into(), args)
                         } else if let Some(ctx) = self.ctx
-                            && let Intrinsic::PtrOwnAsRef | Intrinsic::PtrOwnAsMut =
-                                ctx.intrinsic(fun_id)
+                            && let Intrinsic::PtrOwnAsRef
+                            | Intrinsic::PtrOwnAsMut
+                            | Intrinsic::PtrMutAsMut = ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();
                             let mut place = std::boxed::Box::new(AnfPlace::immut(arg0.0));

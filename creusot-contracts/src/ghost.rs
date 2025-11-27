@@ -26,7 +26,7 @@ pub mod local_invariant;
 mod ptr_own;
 pub mod resource;
 pub use fn_ghost::{FnGhost, FnGhostWrapper};
-pub use ptr_own::{PtrLive, PtrOwn};
+pub use ptr_own::{PtrLive, PtrMut, PtrOwn};
 
 /// A type that can be used in [`ghost!`] context.
 ///

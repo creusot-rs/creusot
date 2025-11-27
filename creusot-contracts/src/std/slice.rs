@@ -1,6 +1,11 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{ghost::PtrOwn, invariant::*, logic::ops::IndexLogic, prelude::*};
+use crate::{
+    ghost::{PtrMut, PtrOwn},
+    invariant::*,
+    logic::ops::IndexLogic,
+    prelude::*,
+};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 use std::{
@@ -85,7 +90,7 @@ pub trait SliceExt<T> {
     fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
 
     #[check(terminates)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>);
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<PtrMut<'_, [T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -120,11 +125,11 @@ impl<T> SliceExt<T> for [T] {
     #[check(terminates)]
     #[ensures(result.0 as *const T == result.1.ptr() as *const T)]
     #[ensures(&*self == result.1.val())]
-    #[ensures(&^self == (^result.1).val())]
+    #[ensures(&^self == result.1.fin_val())]
     #[erasure(Self::as_mut_ptr)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
-        let (ptr, own) = PtrOwn::from_mut(self);
-        (ptr as *mut T, own)
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<PtrMut<'_, [T]>>) {
+        let (ptr, m) = PtrMut::from_mut(self);
+        (ptr as *mut T, m)
     }
 }
 

@@ -4,9 +4,12 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 #[cfg(creusot)]
-use crate::std::{
-    mem::size_of_logic,
-    ptr::{metadata_logic, metadata_matches},
+use crate::{
+    resolve::structural_resolve,
+    std::{
+        mem::size_of_logic,
+        ptr::{metadata_logic, metadata_matches},
+    },
 };
 
 /// Token that represents the ownership of a memory cell
@@ -79,13 +82,14 @@ impl<T> PtrOwn<T> {
     }
 
     /// If one owns two `PtrOwn`s for non-zero sized types, then they are for different pointers.
-    #[trusted]
     #[check(ghost)]
     #[requires(size_of_logic::<T>() != 0)]
     #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
-    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {}
+    pub fn disjoint_lemma(own1: &mut PtrOwn<T>, own2: &PtrOwn<T>) {
+        PtrMut::disjoint_lemma(&mut own1.as_ptr_mut(), own2)
+    }
 }
 
 impl<T: ?Sized> PtrOwn<T> {
@@ -115,28 +119,6 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*result.1.val() == *r)]
     #[intrinsic("ptr_own_from_ref")]
     pub fn from_ref(r: &T) -> (*const T, Ghost<&PtrOwn<T>>) {
-        (r, Ghost::conjure())
-    }
-
-    /// Decompose a mutable reference into a raw pointer and a ghost `PtrOwn`.
-    ///
-    /// # Erasure
-    ///
-    /// This function erases to a raw reborrow of a reference.
-    ///
-    /// ```ignore
-    /// PtrOwn::from_mut(r)
-    /// // erases to
-    /// r as *const T  // or *mut T (both are allowed)
-    /// ```
-    #[trusted]
-    #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(result.1.ptr() == result.0)]
-    #[ensures(*result.1.val() == *r)]
-    // NOTE: If the caller swaps `result.1` with another token, there are no guarantees about the final value of `r`.
-    #[ensures((^*result.1).ptr() == result.1.ptr() ==> *(^*result.1).val() == ^r)]
-    #[intrinsic("ptr_own_from_mut")]
-    pub fn from_mut(r: &mut T) -> (*mut T, Ghost<&mut PtrOwn<T>>) {
         (r, Ghost::conjure())
     }
 
@@ -186,7 +168,6 @@ impl<T: ?Sized> PtrOwn<T> {
     /// // erases to
     /// &mut *ptr
     /// ```
-    #[trusted]
     #[check(terminates)]
     #[allow(unused_variables)]
     #[requires(ptr as *const T == own.ptr())]
@@ -195,7 +176,8 @@ impl<T: ?Sized> PtrOwn<T> {
     #[ensures(*(^own).val() == ^result)]
     #[intrinsic("ptr_own_as_mut")]
     pub unsafe fn as_mut(ptr: *mut T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
-        unsafe { &mut *ptr }
+        let mut r = ghost! { own.into_inner().as_ptr_mut() };
+        unsafe { PtrMut::as_mut(ptr, ghost! { &mut r }) }
     }
 
     /// Transfers ownership of `own` back into a [`Box`].
@@ -229,6 +211,13 @@ impl<T: ?Sized> PtrOwn<T> {
     pub unsafe fn drop(ptr: *mut T, own: Ghost<PtrOwn<T>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
+
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.own() == self)]
+    pub fn as_ptr_mut(&mut self) -> PtrMut<'_, T> {
+        panic!("called ghost function in normal code")
+    }
 }
 
 /// # Permissions for slice pointers
@@ -241,7 +230,7 @@ impl<T: ?Sized> PtrOwn<T> {
 impl<T> PtrOwn<[T]> {
     /// The number of elements in the slice.
     #[logic(open, inline)]
-    pub fn len(&self) -> Int {
+    pub fn len(self) -> Int {
         pearlite! { self.val()@.len() }
     }
 
@@ -258,25 +247,6 @@ impl<T> PtrOwn<[T]> {
         panic!("called ghost function in normal code")
     }
 
-    /// Split a `&mut PtrOwn<[T]>` into two subslices of lengths `index` and `self.len() - index`.
-    #[trusted]
-    #[check(ghost)]
-    #[requires(0 <= index && index <= self.len())]
-    #[ensures(self.ptr().thin() == result.0.ptr().thin())]
-    #[ensures(self.ptr().thin().offset_logic(index) == result.1.ptr().thin())]
-    #[ensures(self.val()@.subsequence(0, index) == result.0.val()@)]
-    #[ensures(self.val()@.subsequence(index, self.len()) == result.1.val()@)]
-    #[ensures((^self).ptr() == self.ptr())]
-    // NOTE: If the caller swaps `result.0` or `result.1` with another token, there are no guarantees about the final value in `self`.
-    #[ensures(result.0.ptr() == (^result.0).ptr()
-        ==> (^self).val()@.subsequence(0, index) == (^result.0).val()@)]
-    #[ensures(result.1.ptr() == (^result.1).ptr()
-        ==> (^self).val()@.subsequence(index, self.len()) == (^result.1).val()@)]
-    pub fn split_at_mut_ghost(&mut self, index: Int) -> (&mut Self, &mut Self) {
-        let _ = index;
-        panic!("called ghost function in normal code")
-    }
-
     /// Split `&PtrOwn<[T]>` into a sequence of `&PtrOwn<T>` for each element.
     #[trusted]
     #[check(ghost)]
@@ -285,22 +255,6 @@ impl<T> PtrOwn<[T]> {
         ==> result[i].ptr() == self.ptr().thin().offset_logic(i)
         && *result[i].val() == self.val()@[i])]
     pub fn elements(&self) -> Seq<&PtrOwn<T>> {
-        panic!("called ghost function in normal code")
-    }
-
-    /// Split `&mut PtrOwn<[T]>` into a sequence of `&mut PtrOwn<T>` for each element.
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(result.len() == self.len())]
-    #[ensures(forall<i> 0 <= i && i < self.len()
-        ==> result[i].ptr() == self.ptr().thin().offset_logic(i)
-        && *result[i].val() == self.val()@[i])]
-    #[ensures((^self).ptr() == self.ptr())]
-    // NOTE: If the caller swaps `result[i]` with another token, there are no guarantees about the final value in `self`.
-    #[ensures(forall<i> 0 <= i && i < self.len()
-        && result[i].ptr() == (^result[i]).ptr()
-        ==> *(^result[i]).val() == (^self).val()@[i])]
-    pub fn elements_mut(&mut self) -> Seq<&mut PtrOwn<T>> {
         panic!("called ghost function in normal code")
     }
 
@@ -314,42 +268,200 @@ impl<T> PtrOwn<[T]> {
         r.split_off_ghost(index).pop_front_ghost().unwrap()
     }
 
-    /// Convert a `&mut PtrOwn<[T]>` for a non-empty slice into a `&mut PtrOwn<T>` for the element at the given index.
+    /// Extract `PtrLive<'a, T>` from `&'a PtrOwn<[T]>`
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.ptr() == self.ptr().thin())]
+    #[ensures(result.len()@ == self.len())]
+    pub fn live(&self) -> PtrLive<'_, T> {
+        panic!("called ghost function in normal code")
+    }
+}
+
+/// Permission token for mutable access to a pointer.
+///
+/// This is basically a wrapper around `&'a mut PtrOwn<T>` that prevents
+/// moving the underlying `PtrOwn<T>`.
+#[allow(dead_code)]
+pub struct PtrMut<'a, T: ?Sized>(&'a mut PtrOwn<T>);
+
+impl<'a, T: ?Sized> Invariant for PtrMut<'a, T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            !self.ptr().is_null_logic()
+                && metadata_matches(*self.val(), metadata_logic(self.ptr()))
+                && inv(self.val())
+        }
+    }
+}
+
+impl<'a, T: ?Sized> Resolve for PtrMut<'a, T> {
+    #[logic(open, inline, prophetic)]
+    fn resolve(self) -> bool {
+        resolve(self.own())
+    }
+
+    #[logic(prophetic)]
+    #[requires(inv(self))]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+impl<'a, T: ?Sized> PtrMut<'a, T> {
+    #[logic]
+    pub fn own(self) -> &'a mut PtrOwn<T> {
+        self.0
+    }
+
+    #[logic(open, inline)]
+    pub fn ptr(self) -> *const T {
+        self.own().ptr()
+    }
+
+    #[logic(open, inline, prophetic)]
+    pub fn fin_ptr(self) -> *const T {
+        pearlite! { (^self.own()).ptr() }
+    }
+
+    #[logic(open, inline)]
+    pub fn val<'b>(self) -> &'b T {
+        self.own().val()
+    }
+
+    #[logic(open, inline, prophetic)]
+    pub fn fin_val<'b>(self) -> &'b T {
+        pearlite! { (^self.own()).val() }
+    }
+
+    /// Decompose a mutable reference into a raw pointer and a ghost `PtrMut`.
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a raw reborrow of a reference.
+    ///
+    /// ```ignore
+    /// PtrMut::from_mut(r)
+    /// // erases to
+    /// r as *mut T
+    /// ```
+    #[trusted]
+    #[check(terminates)] // can overflow the number of available pointer adresses
+    #[ensures(result.1.ptr() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[ensures(*result.1.fin_val() == ^r)]
+    #[intrinsic("ptr_own_from_mut")]
+    pub fn from_mut(r: &'a mut T) -> (*mut T, Ghost<Self>) {
+        (r, Ghost::conjure())
+    }
+
+    /// Mutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&mut *ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](PtrMut).
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a cast from raw pointer to mutable reference.
+    ///
+    /// ```ignore
+    /// PtrMut::as_mut(ptr, own)
+    /// // erases to
+    /// &mut *ptr
+    /// ```
+    #[trusted]
+    #[check(terminates)]
+    #[allow(unused_variables)]
+    #[requires(ptr as *const T == m.ptr())]
+    #[ensures(m.fin_ptr() == m.ptr())]
+    #[ensures(*result == *m.val())]
+    #[ensures(^result == *m.fin_val())]
+    #[intrinsic("ptr_mut_as_mut")]
+    pub unsafe fn as_mut(ptr: *mut T, m: Ghost<&mut Self>) -> &'a mut T {
+        unsafe { &mut *ptr }
+    }
+
+    #[ensures(result.ptr() == self.ptr())]
+    #[ensures(result.val() == self.val())]
+    pub fn as_ptr_own(&self) -> &PtrOwn<T> {
+        self.0
+    }
+}
+
+impl<'a, T> PtrMut<'a, T> {
+    /// If one owns two `PtrOwn`s for non-zero sized types, then they are for different pointers.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(size_of_logic::<T>() != 0)]
+    #[ensures(own1.ptr().addr_logic() != own2.ptr().addr_logic())]
+    #[ensures(*own1 == ^own1)]
+    #[allow(unused_variables)]
+    pub fn disjoint_lemma(own1: &mut PtrMut<'a, T>, own2: &PtrOwn<T>) {}
+}
+
+impl<'a, T> PtrMut<'a, [T]> {
+    /// The number of elements in the slice.
+    #[logic(open, inline)]
+    pub fn len(self) -> Int {
+        pearlite! { self.val()@.len() }
+    }
+
+    /// Split a `&mut PtrMut<[T]>` into two subslices of lengths `index` and `self.len() - index`.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(0 <= index && index <= self.len())]
+    #[ensures(self.ptr().thin() == result.0.ptr().thin())]
+    #[ensures(self.ptr().thin().offset_logic(index) == result.1.ptr().thin())]
+    #[ensures(self.val()@.subsequence(0, index) == result.0.val()@)]
+    #[ensures(self.val()@.subsequence(index, self.len()) == result.1.val()@)]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).fin_val() == self.fin_val())]
+    #[ensures((^self).val()@.subsequence(0, index) == result.0.fin_val()@)]
+    #[ensures((^self).val()@.subsequence(index, self.len()) == result.1.fin_val()@)]
+    pub fn split_at_mut_ghost(&mut self, index: Int) -> (PtrMut<'_, [T]>, PtrMut<'_, [T]>) {
+        let _ = index;
+        panic!("called ghost function in normal code")
+    }
+
+    /// Split `&mut PtrMut<[T]>` into a sequence of `&mut PtrOwn<T>` for each element.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len()
+        ==> result[i].ptr() == self.ptr().thin().offset_logic(i)
+        && *result[i].val() == self.val()@[i])]
+    #[ensures((^self).ptr() == self.ptr())]
+    #[ensures((^self).fin_val() == self.fin_val())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *result[i].fin_val() == (^self).val()@[i])]
+    pub fn elements_mut(&mut self) -> Seq<PtrMut<'_, T>> {
+        panic!("called ghost function in normal code")
+    }
+
+    /// Convert a `&mut PtrMut<[T]>` for a non-empty slice into a `&mut PtrMut<T>` for the element at the given index.
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
     #[ensures(result.ptr() == self.ptr().thin().offset_logic(index))]
     #[ensures(*result.val() == self.val()@[index])]
     #[ensures((^self).ptr() == self.ptr())]
-    // NOTE: If the caller swaps `result` with another token, there are no guarantees about the final value in `self`.
-    #[ensures(result.ptr() == (^result).ptr() ==> *(^result).val() == (^self).val()@[index])]
+    #[ensures((^self).fin_val() == self.fin_val())]
+    #[ensures(*result.fin_val() == (^self).val()@[index])]
     #[ensures(forall<k: Int> k != index ==> (^self).val()@.get(k) == self.val()@.get(k))]
-    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> &mut PtrOwn<T> {
+    pub fn index_ptr_own_mut_ghost(&mut self, index: Int) -> PtrMut<'_, T> {
         let mut r = self.elements_mut();
         r.split_off_ghost(index).pop_front_ghost().unwrap()
     }
 
-    /// Convert `&PtrOwn<[T]>` to `&PtrLive<T>`
+    /// Extract `PtrLive<'a, T>` from `&PtrMut<'a, [T]>`.
     #[trusted]
     #[check(ghost)]
     #[ensures(result.ptr() == self.ptr().thin())]
     #[ensures(result.len()@ == self.len())]
-    pub fn live(&self) -> &PtrLive<'_, T> {
-        panic!("called ghost function in normal code")
-    }
-
-    /// Split a `&PtrLive<T>` token out of `&mut PtrOwn<[T]>`.
-    ///
-    /// The original `&mut PtrOwn<T>` is returned so that
-    /// it can be used even during the lifetime of the `&PtrLive`.
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(*result.0 == *self)]
-    #[ensures(result.1.ptr() == self.ptr().thin())]
-    #[ensures(result.1.len()@ == self.len())]
-    #[ensures((^self).ptr() == self.ptr())]
-    // NOTE: If the caller swaps `result.0` with another token, there are no guarantees about the final value.
-    #[ensures((^result.0).ptr() == result.0.ptr() ==> (^result.0).val() == (^self).val())]
-    pub fn live_mut(&mut self) -> (&mut Self, &PtrLive<'_, T>) {
+    pub fn live_mut(&self) -> PtrLive<'a, T> {
         panic!("called ghost function in normal code")
     }
 }

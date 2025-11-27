@@ -149,6 +149,7 @@ contracts_items! {
     "postcondition_mut"         PostconditionMut
     "postcondition_once"        PostconditionOnce
     "precondition"              Precondition
+    "ptr_mut_as_mut"            PtrMutAsMut
     "ptr_own_as_mut"            PtrOwnAsMut
     "ptr_own_as_ref"            PtrOwnAsRef
     "ptr_own_from_mut"          PtrOwnFromMut
