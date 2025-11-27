@@ -191,9 +191,13 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   let rec next_A (self: MutBorrow.t t_A) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_Item) (ret (f0: t_Item)) = any
-    [ good (f0: t_Item) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Item [Some f0: t_Option_Item]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
+    [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_B (_1: t_B)
   
@@ -270,9 +274,13 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   meta "rewrite_def" predicate resolve_ref_Zip_A_B
   
-  let rec elim_Some'0 (input: t_Option_Item'0) (ret (f0: t_Item'0)) = any
-    [ good (f0: t_Item'0) -> {Some'0 f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Item'0 [Some'0 f0: t_Option_Item'0]. Some'0 f0 <> input} (! {false} any) ]
+  let rec elim_Some'0 (_x: t_Option_Item'0) (return (f0: t_Item'0)) = any
+    [ _k (f0: t_Item'0) -> {Some'0 f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some'0 _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
   

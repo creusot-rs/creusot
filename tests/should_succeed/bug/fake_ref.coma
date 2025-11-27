@@ -4,13 +4,21 @@ module M_range
   
   type t_Bound_ref_usize = Included UInt64.t | Excluded UInt64.t | Unbounded
   
-  let rec elim_Excluded (input: t_Bound_ref_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Excluded f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Excluded f0: t_Bound_ref_usize]. Excluded f0 <> input} (! {false} any) ]
+  let rec elim_Excluded (_x: t_Bound_ref_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Excluded f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Excluded _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_Included (input: t_Bound_ref_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Included f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Included f0: t_Bound_ref_usize]. Included f0 <> input} (! {false} any) ]
+  let rec elim_Included (_x: t_Bound_ref_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Included f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Included _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   

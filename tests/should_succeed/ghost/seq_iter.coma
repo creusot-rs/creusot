@@ -101,9 +101,13 @@ module M_reverse_ghost
   
   meta "rewrite_def" predicate resolve_ref_SeqIter_T
   
-  let rec elim_Some (input: t_Option_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate invariant_ref_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_T self.current /\ inv_Seq_T self.final
@@ -392,9 +396,13 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate resolve_ref_SeqIterRef_T
   
-  let rec elim_Some (input: t_Option_ref_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_ref_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_ref_T self.current /\ inv_Seq_ref_T self.final

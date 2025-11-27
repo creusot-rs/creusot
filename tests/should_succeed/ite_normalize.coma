@@ -4,14 +4,20 @@ module M_impl_Clone_for_Expr__clone (* <Expr as std::clone::Clone> *)
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
-  let rec elim_Var (input: t_Expr) (ret (v: UInt64.t)) = any
-    [ good (v: UInt64.t) -> {Var v = input} (! ret {v})
-    | bad -> {forall v: UInt64.t [Var v: t_Expr]. Var v <> input} (! {false} any) ]
+  let rec elim_Var (_x: t_Expr) (return (v: UInt64.t)) = any
+    [ _k (v: UInt64.t) -> {Var v = _x} (! return {v})
+    | _chk -> (! {match _x with
+        | Var _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
-    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = input} (! ret {c} {t} {e})
-    | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [IfThenElse c t e: t_Expr]. IfThenElse c t e <> input}
-      (! {false}
+  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
+    | _chk -> (! {match _x with
+        | IfThenElse _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   meta "compute_max_steps" 1000000
@@ -123,10 +129,12 @@ module M_impl_Expr__transpose (* Expr *)
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
-  let rec elim_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
-    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = input} (! ret {c} {t} {e})
-    | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [IfThenElse c t e: t_Expr]. IfThenElse c t e <> input}
-      (! {false}
+  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
+    | _chk -> (! {match _x with
+        | IfThenElse _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   let rec clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
@@ -196,10 +204,12 @@ module M_impl_Expr__normalize (* Expr *)
   let rec clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {result = self} (! return {result}) ]
   
-  let rec elim_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
-    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = input} (! ret {c} {t} {e})
-    | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [IfThenElse c t e: t_Expr]. IfThenElse c t e <> input}
-      (! {false}
+  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
+    | _chk -> (! {match _x with
+        | IfThenElse _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   predicate is_normalized (self: t_Expr) =
@@ -334,9 +344,13 @@ module M_impl_Expr__simplify_helper (* Expr *)
   
   predicate resolve_BTreeMap_usize_bool (_1: t_BTreeMap_usize_bool)
   
-  let rec elim_Var (input: t_Expr) (ret (v: UInt64.t)) = any
-    [ good (v: UInt64.t) -> {Var v = input} (! ret {v})
-    | bad -> {forall v: UInt64.t [Var v: t_Expr]. Var v <> input} (! {false} any) ]
+  let rec elim_Var (_x: t_Expr) (return (v: UInt64.t)) = any
+    [ _k (v: UInt64.t) -> {Var v = _x} (! return {v})
+    | _chk -> (! {match _x with
+        | Var _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_Option_ref_bool = None | Some bool
   
@@ -358,14 +372,20 @@ module M_impl_Expr__simplify_helper (* Expr *)
       {forall v: bool. result = Some v -> Map.get (view_BTreeMap_usize_bool self) (deep_model_ref_usize key) = Some'0 v}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_ref_bool) (ret (f0: bool)) = any
-    [ good (f0: bool) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: bool [Some f0: t_Option_ref_bool]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_ref_bool) (return (f0: bool)) = any
+    [ _k (f0: bool) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_IfThenElse (input: t_Expr) (ret (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
-    [ good (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = input} (! ret {c} {t} {e})
-    | bad -> {forall c: t_Expr, t: t_Expr, e: t_Expr [IfThenElse c t e: t_Expr]. IfThenElse c t e <> input}
-      (! {false}
+  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
+    | _chk -> (! {match _x with
+        | IfThenElse _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   let rec clone_BTreeMap_usize_bool (self: t_BTreeMap_usize_bool) (return (x: t_BTreeMap_usize_bool)) = any

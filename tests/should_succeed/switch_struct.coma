@@ -4,13 +4,21 @@ module M_test
   
   type t_M_u32 = F UInt32.t | G UInt32.t
   
-  let rec elim_G (input: t_M_u32) (ret (field2: UInt32.t)) = any
-    [ good (field2: UInt32.t) -> {G field2 = input} (! ret {field2})
-    | bad -> {forall field2: UInt32.t [G field2: t_M_u32]. G field2 <> input} (! {false} any) ]
+  let rec elim_G (_x: t_M_u32) (return (field2: UInt32.t)) = any
+    [ _k (field2: UInt32.t) -> {G field2 = _x} (! return {field2})
+    | _chk -> (! {match _x with
+        | G _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_F (input: t_M_u32) (ret (field1: UInt32.t)) = any
-    [ good (field1: UInt32.t) -> {F field1 = input} (! ret {field1})
-    | bad -> {forall field1: UInt32.t [F field1: t_M_u32]. F field1 <> input} (! {false} any) ]
+  let rec elim_F (_x: t_M_u32) (return (field1: UInt32.t)) = any
+    [ _k (field1: UInt32.t) -> {F field1 = _x} (! return {field1})
+    | _chk -> (! {match _x with
+        | F _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   

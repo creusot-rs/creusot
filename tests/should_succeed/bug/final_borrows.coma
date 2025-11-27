@@ -522,9 +522,13 @@ module M_select_field
         | Some f0'0 -> inv_T f0'0
         end
   
-  let rec elim_Some (input: t_Option_T) (ret (f0'0: t_T)) = any
-    [ good (f0'0: t_T) -> {Some f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: t_T [Some f0'0: t_Option_T]. Some f0'0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_T) (return (f0'0: t_T)) = any
+    [ _k (f0'0: t_T) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
@@ -1505,9 +1509,13 @@ module M_shallow_borrow_no_gen
   
   meta "rewrite_def" predicate resolve_ref_Option_i32
   
-  let rec elim_Some (input: t_Option_i32) (ret (f0: Int32.t)) = any
-    [ good (f0: Int32.t) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: Int32.t [Some f0: t_Option_i32]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
+    [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   

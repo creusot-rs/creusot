@@ -47,9 +47,13 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_A)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_A) -> {postcondition_once_next () self result} (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_A) (ret (f0: t_A)) = any
-    [ good (f0: t_A) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_A [Some f0: t_Option_A]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_A) (return (f0: t_A)) = any
+    [ _k (f0: t_A) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_F (_1: t_F)
   

@@ -6,14 +6,13 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   type t_T = A Int8.t Int8.t | B Int8.t Int8.t Int8.t Int8.t Int8.t Int8.t
   
-  let rec elim_B (input: t_T) (ret (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t)) = any
-    [ good (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t) -> {B f0 f1 f2 f3 f4 f5
-      = input}
-      (! ret {f0} {f1} {f2} {f3} {f4} {f5})
-    | bad ->
-    {forall f0: Int8.t, f1: Int8.t, f2: Int8.t, f3: Int8.t, f4: Int8.t, f5: Int8.t [B f0 f1 f2 f3 f4 f5: t_T]. B f0 f1 f2 f3 f4 f5
-        <> input}
-      (! {false}
+  let rec elim_B (_x: t_T) (return (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t)) = any
+    [ _k (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t) -> {B f0 f1 f2 f3 f4 f5 = _x}
+      (! return {f0} {f1} {f2} {f3} {f4} {f5})
+    | _chk -> (! {match _x with
+        | B _ _ _ _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   type dyn_Debug
@@ -47,9 +46,13 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   meta "rewrite_def" predicate resolve_ref_Formatter
   
-  let rec elim_A (input: t_T) (ret (x: Int8.t) (y: Int8.t)) = any
-    [ good (x: Int8.t) (y: Int8.t) -> {A x y = input} (! ret {x} {y})
-    | bad -> {forall x: Int8.t, y: Int8.t [A x y: t_T]. A x y <> input} (! {false} any) ]
+  let rec elim_A (_x: t_T) (return (x: Int8.t) (y: Int8.t)) = any
+    [ _k (x: Int8.t) (y: Int8.t) -> {A x y = _x} (! return {x} {y})
+    | _chk -> (! {match _x with
+        | A _ _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   let rec debug_struct_field2_finish (self_: MutBorrow.t t_Formatter) (name: string) (name1: string) (value1: dyn_Debug)
     (name2: string) (value2: dyn_Debug) (return (x: t_Result_unit_Error)) =

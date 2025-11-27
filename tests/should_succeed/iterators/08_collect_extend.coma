@@ -109,9 +109,13 @@ module M_extend
   
   meta "rewrite_def" predicate resolve_ref_I
   
-  let rec elim_Some (input: t_Option_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   let rec push_T (self_: MutBorrow.t t_Vec_T_Global) (v: t_T) (return (x: ())) =
     {[@expl:push 'self_' type invariant] inv_ref_Vec_T_Global self_}
@@ -314,9 +318,13 @@ module M_collect
   
   meta "rewrite_def" predicate resolve_ref_I
   
-  let rec elim_Some (input: t_Option_Item) (ret (f0: t_Item)) = any
-    [ good (f0: t_Item) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Item [Some f0: t_Option_Item]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
+    [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate invariant_ref_Vec_Item_Global [@inline:trivial] (self: MutBorrow.t t_Vec_Item_Global) =
     inv_Vec_Item_Global self.current /\ inv_Vec_Item_Global self.final
