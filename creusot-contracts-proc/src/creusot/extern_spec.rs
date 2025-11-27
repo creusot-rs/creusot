@@ -137,14 +137,12 @@ impl ExternSpecs {
     }
 }
 
-fn self_escape<T: Parse>(mut span: Span) -> T {
-    span = span.resolved_at(Span::mixed_site());
-    parse_quote_spanned! { span => self_ }
+fn self_escape<T: Parse>(span: Span) -> T {
+    parse_quote_spanned! {span=> self_ }
 }
 
-fn self_type_escape<T: Parse>(mut span: Span) -> T {
-    span = span.resolved_at(Span::mixed_site());
-    parse_quote_spanned! { span => Self_ }
+fn self_type_escape<T: Parse>(span: Span) -> T {
+    parse_quote_spanned! {span=> Self_ }
 }
 
 impl FlatSpec {
