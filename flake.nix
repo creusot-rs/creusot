@@ -33,13 +33,13 @@
 
       pins = {
         why3 = {
-          version = "1.8.2";
-          sha256 = "sha256-t9ES7dW8zmvM4AI9K8g06yrhocQteupE/6Ek1km1C+o=";
+          version = "51e0579b3561f51a305069042dd9fba56154e600";
+          sha256 = "sha256-KNna+AEDwvc9AWWLiyTbofk2lAwa99Z/9d443McfG9c=";
         };
 
         why3find = {
-          version = "1.2.0";
-          sha256 = "sha256-qUeT5jVDlpNTuQFTlMZlHJ/RSOXbDDEDFzO5kBpvS1g=";
+          version = "833defb466008b37511bb503e671704b8ce2b192";
+          sha256 = "sha256-h0YzvsQ6s+Z6ImHXlKa856gDRE1ZsEP8T+ztdg5Rsiw=";
         };
 
         alt-ergo = {

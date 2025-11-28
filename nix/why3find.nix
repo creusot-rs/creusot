@@ -4,23 +4,25 @@
   sha256,
   why3,
 }:
-pkgs.ocamlPackages.buildDunePackage {
-  inherit version;
+with pkgs;
+with ocamlPackages;
+  buildDunePackage {
+    inherit version;
 
-  pname = "why3find";
+    pname = "why3find";
 
-  src = pkgs.fetchurl {
-    url = "https://git.frama-c.com/pub/why3find/-/archive/${version}/why3find-${version}.tar.gz";
-    hash = sha256;
-  };
+    src = pkgs.fetchurl {
+      url = "https://git.frama-c.com/pub/why3find/-/archive/${version}/why3find-${version}.tar.gz";
+      hash = sha256;
+    };
 
-  buildInputs =
-    [why3]
-    ++ (with pkgs; [dune_3 zeromq])
-    ++ (with pkgs.ocamlPackages; [
+    buildInputs = [
       dune-site
+      dune_3
       terminal_size
+      why3
       yojson
+      zeromq
       zmq
-    ]);
-}
+    ];
+  }
