@@ -146,8 +146,8 @@ pub struct CargoCreusotArgs {
     /// Allow mismatching creusot-contracts versions (use at your own risk!)
     #[clap(long)]
     pub no_check_version: bool,
-    /// Path to creusot-rustc (for testing)
-    #[clap(long, value_name = "PATH")]
+    /// Path to creusot-rustc (for testing and for Nix)
+    #[clap(long, value_name = "PATH", env = "CREUSOT_RUSTC")]
     pub creusot_rustc: Option<PathBuf>,
     /// Additional flags to pass to the underlying cargo invocation.
     #[clap(last = true, global = true)]
