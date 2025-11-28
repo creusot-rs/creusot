@@ -75,8 +75,10 @@
       rust = let
         rustToolchain = (pkgs.lib.importTOML ./rust-toolchain).toolchain;
       in {
+        lib = crane.mkLib pkgs;
+
         toolchain = pkgs.rust-bin.fromRustupToolchain rustToolchain;
-        env = (crane.mkLib pkgs).overrideToolchain rust.toolchain;
+        env = rust.lib.overrideToolchain rust.toolchain;
       };
     in rec {
       inherit lib;
@@ -91,9 +93,17 @@
         creusot = let
           inherit (pins.creusot) meta version;
 
-          src = ./.;
-          pname = "cargo-creusot";
+          src = pkgs.lib.cleanSourceWith {
+            name = "creusot-source";
+            src = ./.;
 
+            filter = path: type:
+              (rust.lib.filterCargoSources path type)
+              || (builtins.match ".*/rust-toolchain" path != null)
+              || (builtins.match ".*/messages.ftl" path != null);
+          };
+
+          pname = "cargo-creusot";
           cargoExtraArgs = "--workspace --exclude creusot-install";
         in
           rust.env.buildPackage rec {
@@ -108,12 +118,12 @@
               inherit cargoExtraArgs meta pname src version;
             };
 
+            doCheck = false;
             doNotRemoveReferencesToRustToolchain = true;
 
             postInstall = with lib.strings; ''
               wrapProgram $out/bin/cargo-creusot \
-                --append-flags "--creusot-rustc $out/bin/creusot-rustc" \
-                --set XDG_DATA_HOME "${packages.tools}"
+                --set CREUSOT_RUSTC $out/bin/creusot-rustc
 
               wrapProgram $out/bin/creusot-rustc \
                 --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}" \
@@ -121,9 +131,15 @@
             '';
           };
 
-        default = pkgs.symlinkJoin {
+        default = pkgs.buildEnv {
           name = "creusot-env";
-          paths = [packages.creusot packages.tools rust.toolchain];
+          paths = [pkgs.gcc packages.creusot packages.tools rust.toolchain];
+
+          nativeBuildInputs = [pkgs.makeWrapper];
+          postBuild = ''
+            wrapProgram $out/bin/cargo-creusot \
+              --set XDG_DATA_HOME "${packages.tools}"
+          '';
         };
       };
 
