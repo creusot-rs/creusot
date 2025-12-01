@@ -200,7 +200,9 @@ fn copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
     if dst.exists() {
         return;
     }
-    fs::copy(src, dst).unwrap();
+    if let Err(err) = fs::copy(src, dst) {
+        panic!("Error copying {} to {}: {err}", src.display(), dst.display());
+    }
 }
 
 /// Add or update creusot-contracts in Cargo.toml:
