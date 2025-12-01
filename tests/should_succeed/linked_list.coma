@@ -105,7 +105,7 @@ module M_impl_List_T__new (* List<T> *)
   
   type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_PtrOwn_Cell_T }
   
-  predicate invariant_List_T (self: t_List_T) =
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
     /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
@@ -113,6 +113,8 @@ module M_impl_List_T__new (* List<T> *)
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
         -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
   
   predicate inv_List_T (_1: t_List_T)
   
@@ -458,7 +460,7 @@ module M_impl_List_T__push_back (* List<T> *)
     {[@expl:push_back_ghost 'x' type invariant] inv_PtrOwn_Cell_T x}
     any [ return (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
   
-  predicate invariant_List_T (self: t_List_T) =
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
     /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
@@ -466,6 +468,8 @@ module M_impl_List_T__push_back (* List<T> *)
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
         -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
   
   predicate inv_List_T (_1: t_List_T)
   
@@ -816,7 +820,7 @@ module M_impl_List_T__push_front (* List<T> *)
   
   meta "rewrite_def" predicate resolve_ref_Seq_PtrOwn_Cell_T
   
-  predicate invariant_List_T (self: t_List_T) =
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
     /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
@@ -824,6 +828,8 @@ module M_impl_List_T__push_front (* List<T> *)
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
         -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
   
   predicate inv_List_T (_1: t_List_T)
   
@@ -918,5 +924,330 @@ module M_impl_List_T__push_front (* List<T> *)
     | & _22: t_PtrOwn_Cell_T = Any.any_l () ])
     [ return (result: ()) -> {[@expl:push_front ensures] view_List_T self.final
       = push_front_T (view_List_T self.current) x}
+      (! return {result}) ]
+end
+module M_impl_List_T__pop_front (* List<T> *)
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use mach.int.Int
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  use map.Map
+  
+  type t_PtrOwn_Cell_T
+  
+  type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_PtrOwn_Cell_T }
+  
+  predicate is_null_ptr_Cell_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  let rec is_null_Cell_T (self_: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {result = is_null_ptr_Cell_T self_} (! return {result}) ]
+  
+  function ptr_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
+  
+  type t_T
+  
+  type t_Cell_T = { v: t_T; next: Opaque.ptr }
+  
+  function val_Cell_T (self: t_PtrOwn_Cell_T) : t_Cell_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
+    \/ Seq.length self.seq > 0
+    /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
+    /\ self.last = ptr_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
+        -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
+    /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
+  predicate ptr_is_aligned_opaque_Cell_T (self: t_PtrOwn_Cell_T)
+  
+  predicate metadata_matches_Cell_T [@inline:trivial] (_value: t_Cell_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches_Cell_T
+  
+  function metadata_Cell_T (_1: Opaque.ptr) : ()
+  
+  constant size_of_Cell_T : int
+  
+  axiom size_of_Cell_T_spec: 0 <= size_of_Cell_T
+  
+  function size_of_val_Cell_T [@inline:trivial] (val': t_Cell_T) : int = size_of_Cell_T
+  
+  meta "rewrite_def" function size_of_val_Cell_T
+  
+  axiom size_of_val_Cell_T_spec: forall val': t_Cell_T. 0 <= size_of_val_Cell_T val'
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Cell_T (_1: t_Cell_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Cell_T [inv_Cell_T x]. inv_Cell_T x = inv_T x.v
+  
+  predicate invariant_ref_Cell_T [@inline:trivial] (self: t_Cell_T) = inv_Cell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Cell_T
+  
+  predicate inv_ref_Cell_T [@inline:trivial] (_1: t_Cell_T) = invariant_ref_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Cell_T
+  
+  predicate invariant_PtrOwn_Cell_T (self: t_PtrOwn_Cell_T) =
+    not is_null_ptr_Cell_T (ptr_Cell_T self)
+    /\ ptr_is_aligned_opaque_Cell_T self
+    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (ptr_Cell_T self))
+    /\ size_of_val_Cell_T (val_Cell_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
+      <= UInt64.t'int const_MAX'0
+    /\ inv_ref_Cell_T (val_Cell_T self)
+  
+  predicate inv_PtrOwn_Cell_T (_1: t_PtrOwn_Cell_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PtrOwn_Cell_T [inv_PtrOwn_Cell_T x]. inv_PtrOwn_Cell_T x
+      = invariant_PtrOwn_Cell_T x
+  
+  predicate invariant_Box_PtrOwn_Cell_T_Global (self: t_PtrOwn_Cell_T) = inv_PtrOwn_Cell_T self
+  
+  predicate inv_Box_PtrOwn_Cell_T_Global [@inline:trivial] (_1: t_PtrOwn_Cell_T) = invariant_Box_PtrOwn_Cell_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_PtrOwn_Cell_T_Global
+  
+  predicate invariant_Seq_PtrOwn_Cell_T [@inline:trivial] (self: Seq.seq t_PtrOwn_Cell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_PtrOwn_Cell_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_PtrOwn_Cell_T
+  
+  predicate inv_Seq_PtrOwn_Cell_T [@inline:trivial] (_1: Seq.seq t_PtrOwn_Cell_T) = invariant_Seq_PtrOwn_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_PtrOwn_Cell_T
+  
+  predicate invariant_Ghost_Seq_PtrOwn_Cell_T [@inline:trivial] (self: Seq.seq t_PtrOwn_Cell_T) =
+    inv_Seq_PtrOwn_Cell_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Seq_PtrOwn_Cell_T
+  
+  predicate inv_Ghost_Seq_PtrOwn_Cell_T [@inline:trivial] (_1: Seq.seq t_PtrOwn_Cell_T) =
+    invariant_Ghost_Seq_PtrOwn_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Seq_PtrOwn_Cell_T
+  
+  predicate inv_List_T (_1: t_List_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
+      = (invariant_List_T x /\ inv_Ghost_Seq_PtrOwn_Cell_T x.seq)
+  
+  predicate invariant_ref_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
+    inv_List_T self.current /\ inv_List_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_List_T
+  
+  predicate inv_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_ref_List_T _1
+  
+  meta "rewrite_def" predicate inv_ref_List_T
+  
+  predicate resolve_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_List_T
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate invariant_ref_Ghost_Seq_PtrOwn_Cell_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) =
+    inv_Ghost_Seq_PtrOwn_Cell_T self.current /\ inv_Ghost_Seq_PtrOwn_Cell_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_Seq_PtrOwn_Cell_T
+  
+  predicate inv_ref_Ghost_Seq_PtrOwn_Cell_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) =
+    invariant_ref_Ghost_Seq_PtrOwn_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_Seq_PtrOwn_Cell_T
+  
+  predicate invariant_ref_Seq_PtrOwn_Cell_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) =
+    inv_Seq_PtrOwn_Cell_T self.current /\ inv_Seq_PtrOwn_Cell_T self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_PtrOwn_Cell_T
+  
+  predicate inv_ref_Seq_PtrOwn_Cell_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) =
+    invariant_ref_Seq_PtrOwn_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_PtrOwn_Cell_T
+  
+  let rec deref_mut_Ghost_Seq_PtrOwn_Cell_T (self: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T))
+    (return (x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T))) =
+    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_Seq_PtrOwn_Cell_T self}
+    any
+    [ return (result: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> {inv_ref_Seq_PtrOwn_Cell_T result}
+      {result = self}
+      (! return {result}) ]
+  
+  type t_Option_PtrOwn_Cell_T = None'0 | Some'0 t_PtrOwn_Cell_T
+  
+  predicate inv_Option_PtrOwn_Cell_T (_1: t_Option_PtrOwn_Cell_T)
+  
+  axiom inv_axiom'2 [@rewrite]:
+    forall x: t_Option_PtrOwn_Cell_T [inv_Option_PtrOwn_Cell_T x]. inv_Option_PtrOwn_Cell_T x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_PtrOwn_Cell_T f0
+        end
+  
+  function tail_PtrOwn_Cell_T (self: Seq.seq t_PtrOwn_Cell_T) : Seq.seq t_PtrOwn_Cell_T =
+    Seq.([..]) self 1 (Seq.length self)
+  
+  let rec pop_front_ghost_PtrOwn_Cell_T (self: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T))
+    (return (x: t_Option_PtrOwn_Cell_T)) =
+    {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_PtrOwn_Cell_T self}
+    any
+    [ return (result: t_Option_PtrOwn_Cell_T) -> {inv_Option_PtrOwn_Cell_T result}
+      {match result with
+        | None'0 -> self.current = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ self.current = self.final
+        | Some'0 r -> Seq.length self.current > 0
+        /\ r = Seq.get self.current 0 /\ self.final = tail_PtrOwn_Cell_T self.current
+        end}
+      (! return {result}) ]
+  
+  predicate resolve_ref_Seq_PtrOwn_Cell_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_Seq_PtrOwn_Cell_T
+  
+  let rec unwrap_PtrOwn_Cell_T (self_: t_Option_PtrOwn_Cell_T) (return (x: t_PtrOwn_Cell_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_PtrOwn_Cell_T self_}
+    {[@expl:unwrap requires] self_ <> None'0}
+    any [ return (result: t_PtrOwn_Cell_T) -> {inv_PtrOwn_Cell_T result} {Some'0 result = self_} (! return {result}) ]
+  
+  predicate invariant_Ghost_PtrOwn_Cell_T [@inline:trivial] (self: t_PtrOwn_Cell_T) = inv_PtrOwn_Cell_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_PtrOwn_Cell_T
+  
+  predicate inv_Ghost_PtrOwn_Cell_T [@inline:trivial] (_1: t_PtrOwn_Cell_T) = invariant_Ghost_PtrOwn_Cell_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_PtrOwn_Cell_T
+  
+  let rec new_PtrOwn_Cell_T (x: t_PtrOwn_Cell_T) (return (x'0: t_PtrOwn_Cell_T)) =
+    {[@expl:new 'x' type invariant] inv_PtrOwn_Cell_T x}
+    any [ return (result: t_PtrOwn_Cell_T) -> {inv_Ghost_PtrOwn_Cell_T result} {result = x} (! return {result}) ]
+  
+  predicate invariant_Box_Cell_T_Global (self: t_Cell_T) = inv_Cell_T self
+  
+  predicate inv_Box_Cell_T_Global [@inline:trivial] (_1: t_Cell_T) = invariant_Box_Cell_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Cell_T_Global
+  
+  let rec to_box_Cell_T (ptr: Opaque.ptr) (own: t_PtrOwn_Cell_T) (return (x: t_Cell_T)) =
+    {[@expl:to_box 'own' type invariant] inv_Ghost_PtrOwn_Cell_T own}
+    {[@expl:to_box requires] ptr = ptr_Cell_T own}
+    any [ return (result: t_Cell_T) -> {inv_Box_Cell_T_Global result} {result = val_Cell_T own} (! return {result}) ]
+  
+  predicate is_null_ptr_Cell_T'0 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  let rec null_mut_Cell_T (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {is_null_ptr_Cell_T'0 result} (! return {result}) ]
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  function seq_map_PtrOwn_Cell_T (s: Seq.seq t_PtrOwn_Cell_T) (f: Map.map t_PtrOwn_Cell_T t_T) : Seq.seq t_T =
+    Seq.create (Seq.length s) (fun (i: int) -> Map.get f (Seq.get s i))
+  
+  function view_List_T (self: t_List_T) : Seq.seq t_T =
+    seq_map_PtrOwn_Cell_T self.seq (fun (ptr_own: t_PtrOwn_Cell_T) -> (val_Cell_T ptr_own).v)
+  
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  
+  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
+    {[@expl:pop_front 'self' type invariant] inv_ref_List_T self}
+    (! bb0
+    [ bb0 = s0 [ s0 = is_null_Cell_T {self.current.first} (fun (_ret: bool) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_List_T self} s1
+      | s1 = -{resolve_ref_List_T self}- s2
+      | s2 = [ &_0 <- None ] s3
+      | s3 = bb17 ]
+    | bb3 = s0
+      [ s0 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
+        MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {self.current.seq}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 3}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
+            [ &_13 <- _ret ] -{inv_Ghost_Seq_PtrOwn_Cell_T _ret.final}-
+            [ &self <- { self with current = { self.current with seq = _ret.final } } ] s1)
+      | s1 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_13}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_12 <- _ret ] s2)
+      | s2 = bb4 ]
+    | bb4 = s0
+      [ s0 = {inv_Seq_PtrOwn_Cell_T _12.current}
+        MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {_12.current} {MutBorrow.get_id _12}
+          (fun (_ret: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
+            [ &_11 <- _ret ] -{inv_Seq_PtrOwn_Cell_T _ret.final}-
+            [ &_12 <- { _12 with current = _ret.final } ] s1)
+      | s1 = pop_front_ghost_PtrOwn_Cell_T {_11} (fun (_ret: t_Option_PtrOwn_Cell_T) -> [ &_10 <- _ret ] s2)
+      | s2 = bb5 ]
+    | bb5 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T _12} s1
+      | s1 = -{resolve_ref_Seq_PtrOwn_Cell_T _12}- s2
+      | s2 = unwrap_PtrOwn_Cell_T {_10} (fun (_ret: t_PtrOwn_Cell_T) -> [ &_9 <- _ret ] s3)
+      | s3 = bb6 ]
+    | bb6 = s0 [ s0 = new_PtrOwn_Cell_T {_9} (fun (_ret: t_PtrOwn_Cell_T) -> [ &own <- _ret ] s1) | s1 = bb7 ]
+    | bb7 = s0
+      [ s0 = [ &_16 <- self.current.first ] s1
+      | s1 = to_box_Cell_T {_16} {own} (fun (_ret: t_Cell_T) -> [ &_15 <- _ret ] s2)
+      | s2 = bb8 ]
+    | bb8 = s0 [ s0 = [ &cell <- _15 ] s1 | s1 = bb9 ]
+    | bb9 = s0
+      [ s0 = [ &self <- { self with current = { self.current with first = cell.next } } ] s1
+      | s1 = is_null_Cell_T {self.current.first} (fun (_ret: bool) -> [ &_21 <- _ret ] s2)
+      | s2 = bb10 ]
+    | bb10 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb11) ]
+    | bb11 = s0 [ s0 = null_mut_Cell_T (fun (_ret: Opaque.ptr) -> [ &_23 <- _ret ] s1) | s1 = bb12 ]
+    | bb12 = s0
+      [ s0 = [ &self <- { self with current = { self.current with last = _23 } } ] s1
+      | s1 = {[@expl:type invariant] inv_ref_List_T self} s2
+      | s2 = -{resolve_ref_List_T self}- s3
+      | s3 = bb14 ]
+    | bb13 = s0
+      [ s0 = {[@expl:type invariant] inv_ref_List_T self} s1 | s1 = -{resolve_ref_List_T self}- s2 | s2 = bb14 ]
+    | bb14 = s0 [ s0 = [ &_0 <- Some (cell.v) ] s1 | s1 = bb17 ]
+    | bb17 = return {_0} ]
+    [ & _0: t_Option_T = Any.any_l ()
+    | & self: MutBorrow.t t_List_T = self
+    | & _5: bool = Any.any_l ()
+    | & own: t_PtrOwn_Cell_T = Any.any_l ()
+    | & _9: t_PtrOwn_Cell_T = Any.any_l ()
+    | & _10: t_Option_PtrOwn_Cell_T = Any.any_l ()
+    | & _11: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T) = Any.any_l ()
+    | & _12: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T) = Any.any_l ()
+    | & _13: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T) = Any.any_l ()
+    | & cell: t_Cell_T = Any.any_l ()
+    | & _15: t_Cell_T = Any.any_l ()
+    | & _16: Opaque.ptr = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & _23: Opaque.ptr = Any.any_l () ])
+    [ return (result: t_Option_T) -> {[@expl:pop_front result type invariant] inv_Option_T result}
+      {[@expl:pop_front ensures] match result with
+        | None -> view_List_T self.current = (Seq.empty: Seq.seq t_T)
+        /\ view_List_T self.final = (Seq.empty: Seq.seq t_T)
+        | Some x -> Seq.length (view_List_T self.current) > 0
+        /\ x = Seq.get (view_List_T self.current) 0 /\ view_List_T self.final = pop_front_T (view_List_T self.current)
+        end}
       (! return {result}) ]
 end
