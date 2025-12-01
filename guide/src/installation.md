@@ -3,7 +3,7 @@
 This section explains how to install Creusot, what goes into the installation,
 and some configuration options.
 
-## Quick installation
+## Quick installation (using custom script)
 
 The `INSTALL` script installs Creusot and its accompanying tools.
 
@@ -26,6 +26,28 @@ The local switch will be located in `$XDG_DATA_HOME/creusot/_opam`
 (default on Linux: `~/.local/share/creusot/_opam`). We recommend having this local
 switch to prevent accidentally breaking your Creusot setup while working
 on other OCaml projects.
+
+## Quick installation (using `nix`)
+
+If you are using `nix`, you do not need to have a copy of this repository.
+
+We assume that you have nix installed on your system. Setup instructions can be found here: https://nixos.org/download
+
+You can use nix shell to enter an interactive subshell containing the project:
+```
+nix shell "github:creusot-rs/creusot"
+```
+The project lives in this subshell and will disappear as soon as you leave the subshell.
+
+If you do not have flakes enabled, you may get this error:
+```
+error: experimental Nix feature 'nix-command' is disabled; use ''--extra-experimental-features nix-command' to override
+```
+
+All you have to do is activate flakes temporarily by using `--extra-experimental-features 'nix-command flakes'`:
+```
+nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/creusot"
+```
 
 ## Manual installation
 
