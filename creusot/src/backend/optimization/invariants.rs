@@ -137,15 +137,15 @@ fn descendants(comps: &[Component<BasicBlock>]) -> IndexMap<BasicBlock, IndexSet
     fn inner(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
         for comp in comps {
             match comp {
-                Component::Vertex(_) => (),
-                Component::Component(l, members) => {
+                Component::Simple(_) => (),
+                Component::Complex(l, members) => {
                     inner(e, members);
                     for mem in members {
                         match mem {
-                            Component::Vertex(b) => {
+                            Component::Simple(b) => {
                                 e.entry(*l).or_default().insert(*b);
                             }
-                            Component::Component(b, _) => {
+                            Component::Complex(b, _) => {
                                 let s = e[b].clone();
                                 e.entry(*l).or_default().union(&s);
                             }
@@ -182,8 +182,8 @@ fn borrow_prophecy_analysis_inner<'a, 'tcx>(
     c: &Component<BasicBlock>,
 ) {
     match c {
-        Component::Vertex(b) => state_parent.visit_block(&body.blocks[b]),
-        Component::Component(h, l) => {
+        Component::Simple(b) => state_parent.visit_block(&body.blocks[b]),
+        Component::Complex(h, l) => {
             let mut state =
                 BorrowProph::initialize(ctx, &body.locals, state_parent.unchanged_prophs);
             state.visit_block(&body.blocks[h]);
@@ -212,7 +212,6 @@ fn borrow_prophecy_analysis_inner<'a, 'tcx>(
 
             state_parent.active_borrows.extend(state.active_borrows);
             state_parent.overwritten_values.extend(state.overwritten_values);
-
             state_parent.unchanged_prophs.insert(*h, unchanged_prophs_here);
         }
     }

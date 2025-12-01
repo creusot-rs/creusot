@@ -183,8 +183,7 @@ impl RValue<'_> {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Operand<'tcx> {
-    Move(Place<'tcx>),
-    Copy(Place<'tcx>),
+    Place(Place<'tcx>),
     Term(Term<'tcx>),
     /// Either:
     /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)
@@ -203,8 +202,7 @@ impl<'tcx> Operand<'tcx> {
 
     pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         match self {
-            Operand::Move(pl) => pl.ty(tcx, locals),
-            Operand::Copy(pl) => pl.ty(tcx, locals),
+            Operand::Place(pl) => pl.ty(tcx, locals),
             Operand::Term(t) => t.ty,
             Operand::InlineConst(_, _, _, ty) => *ty,
         }
@@ -549,12 +547,12 @@ pub(crate) fn super_visit_body<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, body
     }
 }
 
-pub(crate) fn super_visit_block<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, block: &Block<'tcx>) {
-    for stmt in &block.stmts {
-        visitor.visit_stmt(stmt);
-    }
-
-    visitor.visit_terminator(&block.terminator);
+pub(crate) fn super_visit_block<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, b: &Block<'tcx>) {
+    let Block { invariants, variant, stmts, terminator } = b;
+    invariants.iter().for_each(|t| visitor.visit_term(&t.body));
+    variant.iter().for_each(|v| visitor.visit_term(&v.term));
+    stmts.iter().for_each(|s| visitor.visit_stmt(s));
+    visitor.visit_terminator(terminator);
 }
 
 pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
@@ -566,9 +564,7 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        StatementKind::Assertion { cond, .. } => {
-            visitor.visit_term(cond);
-        }
+        StatementKind::Assertion { cond, .. } => visitor.visit_term(cond),
         StatementKind::Call(place, _, _, operands, _) => {
             visitor.visit_place(place);
             for operand in operands {
@@ -583,10 +579,9 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
     operand: &Operand<'tcx>,
 ) {
     match operand {
-        Operand::Copy(place) | Operand::Move(place) => {
-            visitor.visit_place(place);
-        }
-        Operand::Term(_) | Operand::InlineConst(_, _, _, _) => (),
+        Operand::Place(place) => visitor.visit_place(place),
+        Operand::Term(t) => visitor.visit_term(t),
+        Operand::InlineConst(..) => (),
     }
 }
 
@@ -598,9 +593,7 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 ) {
     match terminator {
         Terminator::Goto(_) => (),
-        Terminator::Switch(op, _) => {
-            visitor.visit_operand(op);
-        }
+        Terminator::Switch(op, _) => visitor.visit_operand(op),
         Terminator::Return => (),
         Terminator::Abort(_) => (),
     }
@@ -608,30 +601,20 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::Snapshot(term) => {
-            visitor.visit_term(term);
-        }
-        RValue::Borrow(_, place) => {
-            visitor.visit_place(place);
-        }
-        RValue::Operand(op) => {
-            visitor.visit_operand(op);
-        }
+        RValue::Snapshot(t) => visitor.visit_term(t),
+        RValue::Borrow(_, place) => visitor.visit_place(place),
+        RValue::Operand(op) => visitor.visit_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
         }
-        RValue::UnaryOp(_, op) => {
-            visitor.visit_operand(op);
-        }
+        RValue::UnaryOp(_, op) => visitor.visit_operand(op),
         RValue::Constructor(_, _, ops) => {
             for op in ops {
                 visitor.visit_operand(op);
             }
         }
-        RValue::Cast(op, _, _) => {
-            visitor.visit_operand(op);
-        }
+        RValue::Cast(op, _, _) => visitor.visit_operand(op),
         RValue::Tuple(ops) => {
             for op in ops {
                 visitor.visit_operand(op);
@@ -646,8 +629,140 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
         }
-        RValue::Ptr(pl) => {
-            visitor.visit_place(pl);
+        RValue::Ptr(pl) => visitor.visit_place(pl),
+    }
+}
+
+pub(crate) trait FmirVisitorMut<'tcx>: Sized {
+    fn visit_mut_body(&mut self, body: &mut Body<'tcx>) {
+        super_visit_mut_body(self, body);
+    }
+
+    fn visit_mut_block(&mut self, block: &mut Block<'tcx>) {
+        super_visit_mut_block(self, block);
+    }
+
+    fn visit_mut_stmt(&mut self, stmt: &mut Statement<'tcx>) {
+        super_visit_mut_stmt(self, stmt);
+    }
+
+    fn visit_mut_operand(&mut self, operand: &mut Operand<'tcx>) {
+        super_visit_mut_operand(self, operand);
+    }
+
+    fn visit_mut_place(&mut self, place: &mut Place<'tcx>) {
+        super_visit_mut_place(self, place);
+    }
+
+    fn visit_mut_terminator(&mut self, terminator: &mut Terminator<'tcx>) {
+        super_visit_mut_terminator(self, terminator);
+    }
+
+    fn visit_mut_term(&mut self, _: &mut Term<'tcx>) {}
+
+    fn visit_mut_rvalue(&mut self, rval: &mut RValue<'tcx>) {
+        super_visit_mut_rvalue(self, rval);
+    }
+}
+
+pub(crate) fn super_visit_mut_body<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    body: &mut Body<'tcx>,
+) {
+    for block in &mut body.blocks {
+        visitor.visit_mut_block(block.1);
+    }
+}
+
+pub(crate) fn super_visit_mut_block<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    b: &mut Block<'tcx>,
+) {
+    let Block { invariants, variant, stmts, terminator } = b;
+    invariants.iter_mut().for_each(|t| visitor.visit_mut_term(&mut t.body));
+    variant.iter_mut().for_each(|v| visitor.visit_mut_term(&mut v.term));
+    stmts.iter_mut().for_each(|s| visitor.visit_mut_stmt(s));
+    visitor.visit_mut_terminator(terminator);
+}
+
+pub(crate) fn super_visit_mut_stmt<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    stmt: &mut Statement<'tcx>,
+) {
+    match &mut stmt.kind {
+        StatementKind::Assignment(place, rval) => {
+            visitor.visit_mut_place(place);
+            visitor.visit_mut_rvalue(rval);
         }
+        StatementKind::Assertion { cond, .. } => visitor.visit_mut_term(cond),
+        StatementKind::Call(place, _, _, operands, _) => {
+            visitor.visit_mut_place(place);
+            for operand in operands {
+                visitor.visit_mut_operand(operand);
+            }
+        }
+    }
+}
+
+pub(crate) fn super_visit_mut_operand<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    operand: &mut Operand<'tcx>,
+) {
+    match operand {
+        Operand::Place(place) => visitor.visit_mut_place(place),
+        Operand::Term(t) => visitor.visit_mut_term(t),
+        Operand::InlineConst(_, _, _, _) => (),
+    }
+}
+
+pub(crate) fn super_visit_mut_place<'tcx, V: FmirVisitorMut<'tcx>>(_: &mut V, _: &mut Place<'tcx>) {
+}
+
+pub(crate) fn super_visit_mut_terminator<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    terminator: &mut Terminator<'tcx>,
+) {
+    match terminator {
+        Terminator::Goto(_) => (),
+        Terminator::Switch(op, _) => visitor.visit_mut_operand(op),
+        Terminator::Return => (),
+        Terminator::Abort(_) => (),
+    }
+}
+
+pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    rval: &mut RValue<'tcx>,
+) {
+    match rval {
+        RValue::Snapshot(term) => visitor.visit_mut_term(term),
+        RValue::Borrow(_, place) => visitor.visit_mut_place(place),
+        RValue::Operand(op) => visitor.visit_mut_operand(op),
+        RValue::BinOp(_, op1, op2) => {
+            visitor.visit_mut_operand(op1);
+            visitor.visit_mut_operand(op2);
+        }
+        RValue::UnaryOp(_, op) => visitor.visit_mut_operand(op),
+        RValue::Constructor(_, _, ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Cast(op, _, _) => visitor.visit_mut_operand(op),
+        RValue::Tuple(ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Array(ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Repeat(op1, op2) => {
+            visitor.visit_mut_operand(op1);
+            visitor.visit_mut_operand(op2);
+        }
+        RValue::Ptr(pl) => visitor.visit_mut_place(pl),
     }
 }

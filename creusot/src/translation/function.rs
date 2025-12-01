@@ -382,9 +382,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         span: Span,
     ) {
         let p = self.translate_place(rhs, span);
-
         let span = self.tcx().def_span(self.body_id.def_id);
-
         self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p), span);
     }
 
@@ -410,8 +408,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// Will error when trying to dereference a raw pointer.
     fn translate_operand(&self, operand: &Operand<'tcx>, span: Span) -> fmir::Operand<'tcx> {
         match operand {
-            &Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl, span)),
-            &Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl, span)),
+            &Operand::Copy(pl) | &Operand::Move(pl) => {
+                fmir::Operand::Place(self.translate_place(pl, span))
+            }
             Operand::Constant(c) => {
                 mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
             }

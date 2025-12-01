@@ -371,11 +371,11 @@ fn component_to_defn<'tcx>(
     let lower =
         LoweringState { ctx, names, locals: &body.locals, def_id, block_idents, return_ident };
     let (head, tl) = match c {
-        Component::Vertex(v) => {
-            let block = body.blocks.shift_remove(&v).unwrap();
+        Component::Simple(v) => {
+            let block = body.blocks.swap_remove(&v).unwrap();
             return block.into_why(&lower, recursive_calls, v);
         }
-        Component::Component(v, tls) => (v, tls),
+        Component::Complex(head, tl) => (head, tl),
     };
 
     let block = body.blocks.shift_remove(&head).unwrap();
@@ -519,7 +519,7 @@ impl<'tcx> Operand<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            Operand::Move(pl) | Operand::Copy(pl) => lower.rplace_to_expr(&pl, istmts),
+            Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts),
             Operand::Term(c) => lower_pure(lower.ctx, lower.names, &c.spanned()),
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
@@ -861,7 +861,7 @@ impl<'tcx> RValue<'tcx> {
                 Exp::var(res_ident)
             }
             RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t.spanned()),
-            RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
+            RValue::Borrow(_, _) => unreachable!(),
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -1365,7 +1365,7 @@ fn func_call_to_why3<'tcx>(
     // Eliminate "rust-call" ABI
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
-        let [arg, Operand::Move(pl)] = *args.into_array().unwrap() else { panic!() };
+        let [arg, Operand::Place(pl)] = *args.into_array().unwrap() else { panic!() };
 
         let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
@@ -1379,7 +1379,7 @@ fn func_call_to_why3<'tcx>(
                     .chain([ProjectionElem::Field(ix.into(), inp)])
                     .collect();
                 Arg::Term(
-                    Operand::Move(Place { projections: projection, ..pl }).into_why(lower, istmts),
+                    Operand::Place(Place { projections: projection, ..pl }).into_why(lower, istmts),
                 )
             }))
             .collect()

@@ -77,7 +77,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
-                    RValue::Operand(Operand::Copy(self.translate_place(pl, span)))
+                    RValue::Operand(Operand::Place(self.translate_place(pl, span)))
                 }
                 // Special case to support const-promoted `&mut []`
                 Mut { .. } if self.borrow_data.is_none() && is_mut_ref_empty(&ty) => {

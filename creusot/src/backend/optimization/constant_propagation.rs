@@ -124,7 +124,7 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
                 self.read_place(p)
             }
             RValue::Operand(op) => match op {
-                Operand::Move(p) | Operand::Copy(p) => {
+                Operand::Place(p) => {
                     self.read_place(p);
                     // self.move_chain(p.local);
                 }
@@ -149,10 +149,9 @@ impl<'tcx> LocalUsage<'_, 'tcx> {
 
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
         match op {
-            Operand::Move(p) => self.read_place(p),
-            Operand::Copy(p) => self.read_place(p),
+            Operand::Place(p) => self.read_place(p),
             Operand::Term(t) => self.visit_term(t),
-            Operand::InlineConst(_, _, _, _) => {}
+            Operand::InlineConst(..) => {}
         }
     }
 
@@ -273,7 +272,7 @@ impl<'tcx> SimplePropagator<'tcx> {
                      }
                 StatementKind::Assignment(_, RValue::Snapshot(_)) => {
                      out_stmts.push(s)
-                 }
+                }
                 StatementKind::Assignment(ref l, ref r) if self.should_erase(l.local) && r.is_pure() => {
                      self.dead.insert(l.local);
                  }
@@ -325,14 +324,15 @@ impl<'tcx> SimplePropagator<'tcx> {
 
     fn visit_operand(&mut self, op: &mut Operand<'tcx>) {
         match op {
-            Operand::Move(p) | Operand::Copy(p) => {
+            Operand::Place(p) => {
                 if let Some(l) = p.as_symbol()
                     && let Some(v) = self.prop.remove(&l)
                 {
                     *op = v;
                 }
             }
-            Operand::Term(_) | Operand::InlineConst(_, _, _, _) => {}
+            Operand::Term(t) => self.visit_term(t),
+            Operand::InlineConst(..) => {}
         }
     }
 
