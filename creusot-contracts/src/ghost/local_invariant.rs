@@ -98,7 +98,8 @@ pub struct Namespace(());
 /// To help passing it into functions, it may be [reborrowed](Self::reborrow),
 /// similarly to a normal borrow.
 #[opaque]
-pub struct Tokens<'a>(PhantomData<&'a ()>);
+// `*mut ()` so that Tokens are neither Send nor Sync
+pub struct Tokens<'a>(PhantomData<&'a ()>, PhantomData<*mut ()>);
 
 impl Tokens<'_> {
     /// Get the underlying set of namespaces of this token.
@@ -136,7 +137,7 @@ impl Tokens<'_> {
     #[ensures(result == *self && ^self == *self)]
     #[check(ghost)]
     pub fn reborrow<'a>(&'a mut self) -> Tokens<'a> {
-        Tokens(PhantomData)
+        Tokens(PhantomData, PhantomData)
     }
 
     /// Split the tokens in two, so that it can be used to access independant invariants.
@@ -173,7 +174,7 @@ impl Tokens<'_> {
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
-        (Tokens(PhantomData), Tokens(PhantomData))
+        (Tokens(PhantomData, PhantomData), Tokens(PhantomData, PhantomData))
     }
 
     #[logic(open)]
