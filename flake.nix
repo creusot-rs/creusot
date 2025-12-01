@@ -84,9 +84,15 @@
       inherit lib;
 
       packages = {
-        tools = pkgs.symlinkJoin {
+        tools = let
+          why3json = pkgs.writeTextFile {
+            name = "why3find.json";
+            text = builtins.readFile ./creusot-install/why3find.json;
+            destination = "/why3find.json";
+          };
+        in pkgs.symlinkJoin {
           name = "creusot-tools";
-          paths = tools.unfree;
+          paths = tools.unfree ++ [why3json];
           postBuild = "ln -s $out $out/creusot";
         };
 
