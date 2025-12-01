@@ -30,6 +30,7 @@ pub mod result;
 pub mod slice;
 pub mod string;
 mod sync;
+pub mod thread;
 pub mod time;
 mod tuples;
 pub mod vec;
