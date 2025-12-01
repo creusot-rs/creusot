@@ -67,6 +67,21 @@ jobs:
     - name: Run tests
       run: cargo test
     - run: cargo test --test why3 dummy-dummy-dummy # make sure its deps are in the cargo cache
+
+  build-nix:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - run: |
+        nix shell --impure -c cargo creusot new test-project
+        cd test-project
+        nix shell --impure -c cargo creusot prove
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+
   erasure-check:
     runs-on: ubuntu-latest
     steps:
