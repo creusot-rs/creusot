@@ -21,6 +21,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+pub mod atomic_invariant;
 mod fn_ghost;
 pub mod local_invariant;
 mod ptr_own;
