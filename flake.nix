@@ -83,34 +83,71 @@
     in rec {
       inherit lib;
 
-      packages = {
+      packages = let
+        src = pkgs.lib.cleanSourceWith {
+          name = "creusot-source";
+          src = ./.;
+
+          filter = path: type:
+            (rust.lib.filterCargoSources path type)
+            || (builtins.match ".*/rust-toolchain" path != null)
+            || (builtins.match ".*/messages.ftl" path != null)
+            || (builtins.match ".*/*.coma" path != null)
+            || (builtins.match ".*/*.json" path != null);
+        };
+      in {
         tools = let
           why3json = pkgs.writeTextFile {
-            name = "why3find.json";
-            text = builtins.readFile ./creusot-install/why3find.json;
             destination = "/why3find.json";
+            name = "why3find.json";
+            text = builtins.readFile ./why3find.json;
           };
-        in pkgs.symlinkJoin {
-          name = "creusot-tools";
-          paths = tools.unfree ++ [why3json];
-          postBuild = "ln -s $out $out/creusot";
-        };
+        in
+          pkgs.symlinkJoin {
+            name = "creusot-tools";
+            paths = tools.unfree ++ [why3json];
+            postBuild = "ln -s $out $out/creusot";
+          };
+
+        prelude = let
+          inherit (pins.creusot) meta version;
+          inherit src;
+
+          pname = "prelude-generator";
+          cargoExtraArgs = "--bin prelude-generator";
+
+          cargoArtifacts = rust.env.buildDepsOnly {
+            inherit (pins.creusot) meta version;
+            inherit cargoExtraArgs pname src;
+          };
+
+          preludeBinary = rust.env.buildPackage {
+            inherit cargoArtifacts cargoExtraArgs meta pname src version;
+
+            buildInputs = [rust.toolchain];
+            nativeBuildInputs = with pkgs;
+              lib.optionals stdenv.isDarwin [libiconv libzip];
+
+            doCheck = false;
+          };
+        in
+          pkgs.runCommand "prelude" {
+            nativeBuildInputs = [preludeBinary];
+          } ''
+            mkdir -p $out/{creusot,prelude-generator,target/creusot}
+            cp ${src}/why3find.json $out
+            find ${src}/prelude-generator -name "*.coma" -exec cp {} $out/prelude-generator \;
+
+            CARGO_MANIFEST_DIR=$out/target ${preludeBinary}/bin/prelude-generator
+            find $out/target -name "*.coma" -exec mv {} $out/creusot \;
+            rm -rf $out/prelude-generator $out/target $out/why3find.json
+          '';
 
         creusot = let
           inherit (pins.creusot) meta version;
 
-          src = pkgs.lib.cleanSourceWith {
-            name = "creusot-source";
-            src = ./.;
-
-            filter = path: type:
-              (rust.lib.filterCargoSources path type)
-              || (builtins.match ".*/rust-toolchain" path != null)
-              || (builtins.match ".*/messages.ftl" path != null);
-          };
-
           pname = "cargo-creusot";
-          cargoExtraArgs = "--workspace --exclude creusot-install";
+          cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
         in
           rust.env.buildPackage rec {
             inherit cargoExtraArgs meta pname src version;
@@ -144,7 +181,8 @@
           nativeBuildInputs = [pkgs.makeWrapper];
           postBuild = ''
             wrapProgram $out/bin/cargo-creusot \
-              --set CREUSOT_DATA_HOME "${packages.tools}"
+              --set CREUSOT_DATA_HOME "${packages.tools}" \
+              --set CREUSOT_PRELUDE "${packages.prelude}"
           '';
         };
       };
