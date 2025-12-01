@@ -138,7 +138,7 @@
           nativeBuildInputs = [pkgs.makeWrapper];
           postBuild = ''
             wrapProgram $out/bin/cargo-creusot \
-              --set XDG_DATA_HOME "${packages.tools}"
+              --set CREUSOT_DATA_HOME "${packages.tools}"
           '';
         };
       };
@@ -147,9 +147,9 @@
         inputsFrom = [packages.creusot];
         packages = [packages.tools];
 
+        CREUSOT_DATA_HOME = packages.tools;
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
         DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
-        XDG_DATA_HOME = packages.tools;
       };
 
       formatter = pkgs.alejandra;
