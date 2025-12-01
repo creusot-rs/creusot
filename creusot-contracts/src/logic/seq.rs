@@ -645,7 +645,7 @@ impl<T> Seq<T> {
     #[check(ghost)]
     #[ensures(match result {
         None => *self == Seq::empty() && *self == ^self,
-        Some(r) => *self == (^self).push_front(r)
+        Some(r) => (*self).len() > 0 && r == (*self)[0] && ^self == (*self).tail()
     })]
     pub fn pop_front_ghost(&mut self) -> Option<T> {
         panic!()
