@@ -12,6 +12,15 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+- [Explicit error message when failing to copy file](https://github.com/creusot-rs/creusot/pull/1841)
+- [Improve formatting of 'encountered a cycle' error message](https://github.com/creusot-rs/creusot/pull/1836)
+- [Update toolchain to 2025-11-13](https://github.com/creusot-rs/creusot/pull/1820)
+- [Add spans on function calls and operators](https://github.com/creusot-rs/creusot/pull/1833)
+- [Improve handling of spans in Pearlite terms](https://github.com/creusot-rs/creusot/pull/1832)
+- [Better error message when pattern matching on Int in Pearlite](https://github.com/creusot-rs/creusot/pull/1831)
+- [Update Why3](https://github.com/creusot-rs/creusot/pull/1830)
+- [Attempt at fixing #1828 by limiting the kinds of `DefId` that we consider for intrinsics](https://github.com/creusot-rs/creusot/pull/1829)
+
 ## [0.7.0] - 2025-11-03
 
 ### Features
