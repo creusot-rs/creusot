@@ -115,6 +115,7 @@ impl PurityVisitor<'_, '_> {
         if is_logic(self.ctx.tcx, func_did) {
             Purity::Logic { prophetic: is_prophetic(self.ctx.tcx, func_did) }
         } else if let Intrinsic::GhostIntoInner
+        | Intrinsic::GhostIntoInnerUnsized
         | Intrinsic::GhostNew
         | Intrinsic::GhostDeref
         | Intrinsic::GhostDerefMut = self.ctx.intrinsic(func_did)
@@ -236,7 +237,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             && matches!(self.context, Purity::Program { .. })
                         {
                             match self.ctx.intrinsic(func_did) {
-                                Intrinsic::GhostIntoInner => self
+                                Intrinsic::GhostIntoInner | Intrinsic::GhostIntoInnerUnsized => self
                                     .error(expr.span, "trying to access the contents of a ghost variable in program context").emit(),
                                 Intrinsic::GhostDeref | Intrinsic::GhostDerefMut => self
                                     .error(expr.span, "dereference of a ghost variable in program context").emit(),

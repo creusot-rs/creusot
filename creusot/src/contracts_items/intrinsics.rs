@@ -128,6 +128,7 @@ contracts_items! {
     "ghost_deref"               GhostDeref
     "ghost_deref_mut"           GhostDerefMut
     "ghost_into_inner"          GhostIntoInner
+    "ghost_into_inner_unsized"  GhostIntoInnerUnsized
     "ghost_new"                 GhostNew
     "hist_inv"                  HistInv
     "implication"               Implication

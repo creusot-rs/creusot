@@ -185,6 +185,19 @@ impl<T: ?Sized> Ghost<T> {
 
     /// Returns the inner value of the `Ghost`.
     ///
+    /// This does not require `T` to be `Sized`.
+    ///
+    /// This function can only be called in `ghost!` context.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(*result == *self)]
+    #[intrinsic("ghost_into_inner_unsized")]
+    pub fn into_inner_unsized(self) -> Box<T> {
+        panic!()
+    }
+
+    /// Returns the inner value of the `Ghost`.
+    ///
     /// You should prefer the dereference operator `*` instead.
     #[logic]
     #[builtin("identity")]
