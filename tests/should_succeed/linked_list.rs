@@ -15,7 +15,7 @@ pub struct List<T> {
 }
 
 impl<T> Invariant for List<T> {
-    #[logic]
+    #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
             (*self.seq == Seq::empty() &&
@@ -86,5 +86,22 @@ impl<T> List<T> {
             self.last = cell_ptr;
         }
         ghost! { self.seq.push_front_ghost(cell_own.into_inner()) };
+    }
+
+    #[ensures(match result {
+        None => (*self)@ == Seq::empty() && (^self)@ == Seq::empty(),
+        Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.pop_front()
+    })]
+    pub fn pop_front(&mut self) -> Option<T> {
+        if self.first.is_null() {
+            return None;
+        }
+        let own = ghost! { self.seq.pop_front_ghost().unwrap() };
+        let cell = unsafe { *PtrOwn::to_box(self.first as *mut Cell<T>, own) };
+        self.first = cell.next;
+        if self.first.is_null() {
+            self.last = std::ptr::null_mut();
+        }
+        Some(cell.v)
     }
 }

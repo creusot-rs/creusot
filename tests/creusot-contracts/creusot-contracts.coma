@@ -23625,9 +23625,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
         | Some f0 -> inv_T f0
         end
   
-  function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
-  
-  meta "rewrite_def" function push_front_T
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
   let rec pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
     {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_T self}
@@ -23635,7 +23633,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
     [ return (result: t_Option_T) -> {inv_Option_T result}
       {match result with
         | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
-        | Some r -> self.current = push_front_T self.final r
+        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
         end}
       (! return {result}) ]
   

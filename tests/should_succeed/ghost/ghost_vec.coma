@@ -86,10 +86,12 @@ module M_ghost_vec
   let rec push_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
     [ return (result: ()) -> {self.final = push_front_i32 self.current x} (! return {result}) ]
   
+  function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
+  
   let rec pop_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
-        | Some r -> self.current = push_front_i32 self.final r
+        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_i32 self.current
         end}
       (! return {result}) ]
   
