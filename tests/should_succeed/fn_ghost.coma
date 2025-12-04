@@ -33,6 +33,11 @@ module M_foo
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
+  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_closure0 self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
+  
   predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
   
   meta "rewrite_def" predicate resolve_closure0
@@ -67,37 +72,12 @@ module M_foo
     forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
-  function fn_hist_inv_closure0 (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_closure0_spec: forall self: (), res_state: (). hist_inv_closure0 self res_state = (self = res_state)
-  
-  predicate postcondition_closure0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure0'post'return self x result
-  
-  meta "rewrite_def" predicate postcondition_closure0
-  
-  function fn_once_closure0 (self: ()) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_closure0_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once_closure0 self args res
-      = (postcondition_closure0 self args res /\ resolve_closure0 self)
-  
-  function fn_mut_closure0 (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
-  
-  axiom fn_mut_closure0_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut_closure0 self args res_state res
-      = (postcondition_closure0 self args res /\ self = res_state)
-  
-  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: Int32.t) (result: Int32.t) =
-    postcondition_closure0 self.f0 args result
-  
-  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
-  
   predicate resolve_FnGhostWrapper_closure0 [@inline:trivial] (_1: t_FnGhostWrapper_closure0) = true
   
   meta "rewrite_def" predicate resolve_FnGhostWrapper_closure0
   
   predicate postcondition_mut_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: Int32.t) (result_state: t_FnGhostWrapper_closure0) (result: Int32.t) =
-    postcondition_closure0 self.f0 args result /\ self = result_state
+    postcondition_mut_closure0 self.f0 args result_state.f0 result
   
   meta "rewrite_def" predicate postcondition_mut_FnGhostWrapper_closure0
   
@@ -126,6 +106,26 @@ module M_foo
   axiom postcondition_mut_hist_inv_FnGhostWrapper_closure0_spec:
     forall self: t_FnGhostWrapper_closure0, args: Int32.t, res_state: t_FnGhostWrapper_closure0, res: Int32.t. postcondition_mut_FnGhostWrapper_closure0 self args res_state res
       -> hist_inv_FnGhostWrapper_closure0 self res_state
+  
+  function fn_hist_inv_closure0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_closure0_spec: forall self: (), res_state: (). hist_inv_closure0 self res_state = (self = res_state)
+  
+  predicate postcondition_closure0 [@inline:trivial] (self: ()) (args: Int32.t) (result: Int32.t) =
+    let x = args in closure0'post'return self x result
+  
+  meta "rewrite_def" predicate postcondition_closure0
+  
+  function fn_once_closure0 (self: ()) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_closure0_spec: forall self: (), args: Int32.t, res: Int32.t. postcondition_once_closure0 self args res
+      = (postcondition_closure0 self args res /\ resolve_closure0 self)
+  
+  function fn_mut_closure0 (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom fn_mut_closure0_spec:
+    forall self: (), args: Int32.t, res_state: (), res: Int32.t. postcondition_mut_closure0 self args res_state res
+      = (postcondition_closure0 self args res /\ self = res_state)
   
   function fn_hist_inv_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (res_state: t_FnGhostWrapper_closure0) : ()
   

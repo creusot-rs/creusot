@@ -745,7 +745,7 @@ fn postcondition_once_term<'tcx>(
             let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let post_fn = Intrinsic::Postcondition.get(ctx);
+            let post_fn = Intrinsic::PostconditionOnce.get(ctx);
             let post_args = [self_.proj(0usize.into(), closure_ty), args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
@@ -826,12 +826,14 @@ fn postcondition_mut_term<'tcx>(
             let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let post_fn = Intrinsic::Postcondition.get(ctx);
-            let post_args = [self_.clone().proj(0usize.into(), closure_ty), args, res];
-            Some(
-                Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
-                    .conj(self_.eq(ctx.tcx, result_state)),
-            )
+            let post_fn = Intrinsic::PostconditionMut.get(ctx);
+            let post_args = [
+                self_.clone().proj(0usize.into(), closure_ty),
+                args,
+                result_state.clone().proj(0usize.into(), closure_ty),
+                res,
+            ];
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let mut subst_postcond = subst.to_vec();
@@ -927,13 +929,8 @@ fn postcondition_term<'tcx>(
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
-            Some(Term::call(
-                ctx.tcx,
-                typing_env,
-                Intrinsic::Postcondition.get(ctx),
-                subst_postcond,
-                post_args,
-            ))
+            let post_fn = Intrinsic::Postcondition.get(ctx);
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::FnDef(mut did, mut subst) => {
             match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
