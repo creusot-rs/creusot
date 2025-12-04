@@ -34,22 +34,26 @@ pub struct NewInitArgs {
     #[clap(long)]
     pub tests: bool,
     /// Path to local creusot-contracts relative to the generated Cargo.toml
-    #[clap(long)]
+    #[clap(long, env = "CREUSOT_CONTRACTS")]
     pub creusot_contracts: Option<String>,
 }
 
-fn cargo_template(name: &str) -> String {
-    let version = Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap();
-    let patch = if version.pre.is_empty() {
-        "".to_string()
-    } else {
+fn cargo_template(name: &str, creusot_contracts: Option<String>) -> String {
+    let patch = if let Some(creusot_contracts) = creusot_contracts {
         format!(
             r#"
 [patch.crates-io]
 creusot-contracts = {{ path = "{}" }}
 "#,
-            creusot_contracts_path().display()
+            creusot_contracts
         )
+    } else {
+        if !Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap().pre.is_empty() {
+            eprintln!(
+                "Warning: using dev version of Creusot ({CREUSOT_CONTRACTS_VERSION}), you should set a local path to creusot-contracts.\nSuggestion: cargo creusot init --creusot-contracts <PATH>"
+            )
+        }
+        "".into()
     };
     format!(
         r#"[package]
@@ -135,7 +139,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     if cargo_toml.exists() {
         patch_dep(cargo_toml)?;
     } else {
-        write(cargo_toml, &cargo_template(&name));
+        write(cargo_toml, &cargo_template(&name, args.creusot_contracts));
         if args.tests {
             fs::create_dir_all("tests")?;
             write("tests/test.rs", TEST_TEMPLATE);
