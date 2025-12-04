@@ -923,7 +923,10 @@ pub(crate) fn run_with_specs<'tcx>(
             ClosureKind::FnMut => self_.clone().cur(),
             ClosureKind::FnOnce => self_.clone(),
         };
-        assert_eq!(ctx.erase_and_anonymize_regions(self_.ty), ty_env);
+        assert_eq!(
+            ctx.erase_and_anonymize_regions(self_.ty),
+            ctx.erase_and_anonymize_regions(ty_env)
+        );
         ClosSubst::pre_or_cur(tcx, def_id.expect_local(), self_)
     });
     let analysis_env = AnalysisEnv::new(tree, corenamer, &body_locals.locals, clos_subst);
