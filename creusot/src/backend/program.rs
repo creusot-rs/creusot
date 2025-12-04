@@ -520,7 +520,7 @@ impl<'tcx> Operand<'tcx> {
     ) -> Exp {
         match self {
             Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts),
-            Operand::Term(c) => lower_pure(lower.ctx, lower.names, &c.spanned()),
+            Operand::Term(c, _) => lower_pure(lower.ctx, lower.names, &c.spanned()),
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
                 let result = Ident::fresh_local("_const");
@@ -860,8 +860,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var(res_ident)
             }
-            RValue::Snapshot(t) => lower_pure(lower.ctx, lower.names, &t.spanned()),
-            RValue::Borrow(_, _) => unreachable!(),
+            RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {

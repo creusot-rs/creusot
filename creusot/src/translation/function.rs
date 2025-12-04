@@ -7,6 +7,7 @@ use crate::{
         projections::projections_term,
         ty_inv::{inv_call, is_tyinv_trivial},
     },
+    contracts_items::Intrinsic,
     ctx::*,
     translation::{
         constant::mirconst_to_operand,
@@ -387,7 +388,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(lhs, fmir::RValue::Snapshot(rhs), span)
+        let subst = self.ctx.mk_args(&[rhs.ty.into()]);
+        let ty =
+            Ty::new_adt(self.tcx(), self.ctx.adt_def(Intrinsic::Snapshot.get(self.ctx)), subst);
+
+        let rvalue = fmir::RValue::Operand(fmir::Operand::term(rhs.coerce(ty)));
+        self.emit_assignment(lhs, rvalue, span)
     }
 
     fn emit_assignment(&mut self, lhs: Place<'tcx>, rhs: RValue<'tcx>, span: Span) {

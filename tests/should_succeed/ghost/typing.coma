@@ -84,14 +84,11 @@ module M_snapshot_enter_ghost
   meta "select_lsinst" "all"
   
   let rec snapshot_enter_ghost (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &g_read <- { f0 = (1: Int32.t) } ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_6 <- { f0 = (3: Int32.t) } ] s1 | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &g_read <- { f0 = (1: Int32.t) } ] s1 | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &g_mut <- _6 ] s1
-      | s1 = {[@expl:assertion] view_NonCopy g_mut = 3} s2
-      | s2 = [ &_11 <- { f0 = (4: Int32.t) } ] s3
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = [ &g_mut <- _11 ] s1 | s1 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s2) | s2 = bb4 ]
+      [ s0 = [ &g_mut <- { f0 = (3: Int32.t) } ] s1 | s1 = {[@expl:assertion] view_NonCopy g_mut = 3} s2 | s2 = bb3 ]
+    | bb3 = s0
+      [ s0 = [ &g_mut <- { f0 = (4: Int32.t) } ] s1 | s1 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s2) | s2 = bb4 ]
     | bb4 = s0
       [ s0 = {[@expl:assertion] view_NonCopy g_read = 1} s1
       | s1 = {[@expl:assertion] view_NonCopy g_mut = 4} s2
@@ -100,9 +97,7 @@ module M_snapshot_enter_ghost
     | & g_read: t_NonCopy = Any.any_l ()
     | & g_mut: t_NonCopy = Any.any_l ()
     | & _4: () = Any.any_l ()
-    | & _5: () = Any.any_l ()
-    | & _6: t_NonCopy = Any.any_l ()
-    | & _11: t_NonCopy = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_copy_enter_ghost
   use creusot.int.Int32
@@ -120,10 +115,8 @@ module M_copy_enter_ghost
     [ bb0 = s0
       [ s0 = [ &x <- (2: Int32.t) ] s1
       | s1 = [ &pair <- { f0 = (6: Int32.t); f1 = (42: Int32.t) } ] s2
-      | s2 = [ &_x <- x ] s3
-      | s3 = [ &_pair <- pair ] s4
-      | s4 = new_unit {_5} (fun (_x'0: ()) -> [ &_4 <- _x'0 ] s5)
-      | s5 = bb1 ]
+      | s2 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s3 = bb1 ]
     | bb1 = s0
       [ s0 = {[@expl:assertion] Int32.to_int x = 2} s1
       | s1 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s2
@@ -132,7 +125,5 @@ module M_copy_enter_ghost
     | & x: Int32.t = Any.any_l ()
     | & pair: tup2_i32_i32 = Any.any_l ()
     | & _4: () = Any.any_l ()
-    | & _5: () = Any.any_l ()
-    | & _x: Int32.t = Any.any_l ()
-    | & _pair: tup2_i32_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

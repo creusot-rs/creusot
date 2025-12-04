@@ -1847,9 +1847,9 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
   
   type t_V
   
-  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  type t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
   with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  with t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
   
   predicate inv_K (_1: t_K)
   
@@ -2092,18 +2092,19 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
     {[@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Option_Box_Node_K_V_Global self.current.left.node}
+      [ s0 = [ &_23 <- self.current.color ] s1
+      | s1 = {inv_Option_Box_Node_K_V_Global self.current.left.node}
         MutBorrow.borrow_final <t_Option_Box_Node_K_V_Global> {self.current.left.node}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id self) 1) 1}
           (fun (_bor: MutBorrow.t t_Option_Box_Node_K_V_Global) ->
             [ &_26 <- _bor ] -{inv_Option_Box_Node_K_V_Global _bor.final}-
-            [ &self <- { self with current = { self.current with left = { node = _bor.final } } } ] s1)
-      | s1 = as_mut_Box_Node_K_V_Global {_26} (fun (_x: t_Option_ref_Box_Node_K_V_Global) -> [ &_25 <- _x ] s2)
-      | s2 = bb1 ]
+            [ &self <- { self with current = { self.current with left = { node = _bor.final } } } ] s2)
+      | s2 = as_mut_Box_Node_K_V_Global {_26} (fun (_x: t_Option_ref_Box_Node_K_V_Global) -> [ &_25 <- _x ] s3)
+      | s3 = bb1 ]
     | bb1 = s0
       [ s0 = unwrap_ref_Box_Node_K_V_Global {_25} (fun (_x: MutBorrow.t t_Node_K_V) -> [ &_24 <- _x ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = [ &_24 <- { _24 with current = { _24.current with color = self.current.color } } ] s1
+      [ s0 = [ &_24 <- { _24 with current = { _24.current with color = _23 } } ] s1
       | s1 = {[@expl:type invariant] inv_ref_Box_Node_K_V_Global _24} s2
       | s2 = -{resolve_ref_Box_Node_K_V_Global _24}- s3
       | s3 = MutBorrow.borrow_final <t_Color> {self.current.color} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
@@ -2139,6 +2140,7 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Node_K_V = self
+    | & _23: t_Color = Any.any_l ()
     | & _24: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _25: t_Option_ref_Box_Node_K_V_Global = Any.any_l ()
     | & _26: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()

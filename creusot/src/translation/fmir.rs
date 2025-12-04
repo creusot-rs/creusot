@@ -115,7 +115,6 @@ pub enum BorrowKind {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
-    Snapshot(Term<'tcx>),
     Borrow(BorrowKind, Place<'tcx>),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
@@ -128,63 +127,12 @@ pub enum RValue<'tcx> {
     Ptr(Place<'tcx>),
 }
 
-impl RValue<'_> {
-    /// Returns false if the expression generates verification conditions
-    pub fn is_pure(&self) -> bool {
-        match self {
-            RValue::Operand(_) => true,
-            RValue::BinOp(
-                BinOp::Add
-                | BinOp::AddUnchecked
-                | BinOp::Mul
-                | BinOp::MulUnchecked
-                | BinOp::Rem
-                | BinOp::Div
-                | BinOp::Sub
-                | BinOp::SubUnchecked
-                | BinOp::Shl
-                | BinOp::ShlUnchecked
-                | BinOp::Shr
-                | BinOp::ShrUnchecked
-                | BinOp::Offset,
-                _,
-                _,
-            ) => false,
-            RValue::BinOp(
-                BinOp::AddWithOverflow
-                | BinOp::SubWithOverflow
-                | BinOp::MulWithOverflow
-                | BinOp::BitAnd
-                | BinOp::BitOr
-                | BinOp::BitXor
-                | BinOp::Cmp
-                | BinOp::Eq
-                | BinOp::Ne
-                | BinOp::Lt
-                | BinOp::Le
-                | BinOp::Gt
-                | BinOp::Ge,
-                _,
-                _,
-            ) => true,
-            RValue::UnaryOp(UnOp::Neg, _) => false,
-            RValue::UnaryOp(UnOp::Not | UnOp::PtrMetadata, _) => true,
-            RValue::Constructor(_, _, _) => true,
-            RValue::Cast(_, _, _) => false,
-            RValue::Tuple(_) => true,
-            RValue::Array(_) => true,
-            RValue::Repeat(_, _) => true,
-            RValue::Snapshot(_) => true,
-            RValue::Borrow(_, _) => true,
-            RValue::Ptr(_) => true,
-        }
-    }
-}
-
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Operand<'tcx> {
     Place(Place<'tcx>),
-    Term(Term<'tcx>),
+    /// The Boolean is true if optimization::simplify_temps has detected that this is never read.
+    /// In this case, we want to keep this term, because it may put in the context interesting facts.
+    Term(Term<'tcx>, bool),
     /// Either:
     /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)
     /// - Promoted constants (`Option<Promoted>` is `Some` and `Option<GenericArgsRef>` is `None`)
@@ -192,6 +140,10 @@ pub enum Operand<'tcx> {
 }
 
 impl<'tcx> Operand<'tcx> {
+    pub fn term(t: Term<'tcx>) -> Self {
+        Operand::Term(t, false)
+    }
+
     pub fn inline_const(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
         Operand::InlineConst(def_id, None, Some(subst), ty)
     }
@@ -203,7 +155,7 @@ impl<'tcx> Operand<'tcx> {
     pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         match self {
             Operand::Place(pl) => pl.ty(tcx, locals),
-            Operand::Term(t) => t.ty,
+            Operand::Term(t, _) => t.ty,
             Operand::InlineConst(_, _, _, ty) => *ty,
         }
     }
@@ -580,7 +532,7 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
 ) {
     match operand {
         Operand::Place(place) => visitor.visit_place(place),
-        Operand::Term(t) => visitor.visit_term(t),
+        Operand::Term(t, _) => visitor.visit_term(t),
         Operand::InlineConst(..) => (),
     }
 }
@@ -601,7 +553,6 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::Snapshot(t) => visitor.visit_term(t),
         RValue::Borrow(_, place) => visitor.visit_place(place),
         RValue::Operand(op) => visitor.visit_operand(op),
         RValue::BinOp(_, op1, op2) => {
@@ -710,7 +661,7 @@ pub(crate) fn super_visit_mut_operand<'tcx, V: FmirVisitorMut<'tcx>>(
 ) {
     match operand {
         Operand::Place(place) => visitor.visit_mut_place(place),
-        Operand::Term(t) => visitor.visit_mut_term(t),
+        Operand::Term(t, _) => visitor.visit_mut_term(t),
         Operand::InlineConst(_, _, _, _) => (),
     }
 }
@@ -735,7 +686,6 @@ pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
     rval: &mut RValue<'tcx>,
 ) {
     match rval {
-        RValue::Snapshot(term) => visitor.visit_mut_term(term),
         RValue::Borrow(_, place) => visitor.visit_mut_place(place),
         RValue::Operand(op) => visitor.visit_mut_operand(op),
         RValue::BinOp(_, op1, op2) => {

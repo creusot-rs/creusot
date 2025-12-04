@@ -488,7 +488,6 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
       = index_Mapping_Element_Element result (index_Mapping_Element_Element result e))
 end
 module M_implementation__new
-  use set.Fset
   use creusot.prelude.Opaque
   use map.Map
   use creusot.prelude.Ptr
@@ -496,11 +495,12 @@ module M_implementation__new
   use mach.int.Int
   use creusot.int.Int64
   use map.Const
+  use set.Fset
   use creusot.prelude.Any
   
-  type t_Element = { f0: Opaque.ptr }
-  
   type t_FMap_Element_PtrOwn_Node_T
+  
+  type t_Element = { f0: Opaque.ptr }
   
   type t_PtrOwn_Node_T
   
@@ -681,17 +681,6 @@ module M_implementation__new
     forall p: Map.map (Map.map t_Element t_T) bool. (exists x: Map.map t_Element t_T. index_Mapping_Mapping_Element_T_bool p x)
       -> index_Mapping_Mapping_Element_T_bool p (such_that_Mapping_Element_T p)
   
-  predicate index_Mapping_Mapping_Element_Int_bool [@inline:trivial] (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Mapping_Element_Int_bool
-  
-  function such_that_Mapping_Element_Int (p: Map.map (Map.map t_Element int) bool) : Map.map t_Element int
-  
-  axiom such_that_Mapping_Element_Int_spec:
-    forall p: Map.map (Map.map t_Element int) bool. (exists x: Map.map t_Element int. index_Mapping_Mapping_Element_Int_bool p x)
-      -> index_Mapping_Mapping_Element_Int_bool p (such_that_Mapping_Element_Int p)
-  
   predicate index_Mapping_Mapping_Element_Element_bool [@inline:trivial] (self: Map.map (Map.map t_Element t_Element) bool) (a: Map.map t_Element t_Element) =
     Map.get self a
   
@@ -702,6 +691,17 @@ module M_implementation__new
   axiom such_that_Mapping_Element_Element_spec:
     forall p: Map.map (Map.map t_Element t_Element) bool. (exists x: Map.map t_Element t_Element. index_Mapping_Mapping_Element_Element_bool p x)
       -> index_Mapping_Mapping_Element_Element_bool p (such_that_Mapping_Element_Element p)
+  
+  predicate index_Mapping_Mapping_Element_Int_bool [@inline:trivial] (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Mapping_Element_Int_bool
+  
+  function such_that_Mapping_Element_Int (p: Map.map (Map.map t_Element int) bool) : Map.map t_Element int
+  
+  axiom such_that_Mapping_Element_Int_spec:
+    forall p: Map.map (Map.map t_Element int) bool. (exists x: Map.map t_Element int. index_Mapping_Mapping_Element_Int_bool p x)
+      -> index_Mapping_Mapping_Element_Int_bool p (such_that_Mapping_Element_Int p)
   
   type t_UFInner_T = {
     domain: Fset.fset t_Element;
@@ -792,20 +792,18 @@ module M_implementation__new
   meta "select_lsinst" "all"
   
   let rec new_T (return (x: t_UnionFind_T)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_4 <- Fset.empty: Fset.fset t_Element ] s1 | s1 = bb1 ]
+    [ bb0 = bb1
     | bb1 = s0 [ s0 = new_Element (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_7 <- _x ] s1) | s1 = bb2 ]
     | bb2 = s0
       [ s0 = into_inner_FMap_Element_PtrOwn_Node_T {_7} (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_6 <- _x ] s1)
-      | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_8 <- such_that_Mapping_Element_T (fun (__0: Map.map t_Element t_T) -> true) ] s1 | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_10 <- such_that_Mapping_Element_Int (fun (__0: Map.map t_Element int) -> true) ] s1 | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = [ &_12 <- such_that_Mapping_Element_Element (fun (__0: Map.map t_Element t_Element) -> true) ] s1
-      | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_14 <- 0 ] s1 | s1 = bb7 ]
+      | s1 = bb7 ]
     | bb7 = s0
-      [ s0 = [ &_3 <- { domain = _4; perms = _6; payloads = _8; roots = _12; depth = _10; max_depth = _14 } ] s1
+      [ s0 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Element;
+                        perms = _6;
+                        payloads = such_that_Mapping_Element_T (fun (__0: Map.map t_Element t_T) -> true);
+                        roots = such_that_Mapping_Element_Element (fun (__0: Map.map t_Element t_Element) -> true);
+                        depth = such_that_Mapping_Element_Int (fun (__0: Map.map t_Element int) -> true);
+                        max_depth = 0 } ] s1
       | s1 = [ &_2 <- { f0'1 = _3 } ] s2
       | s2 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s3)
       | s3 = bb8 ]
@@ -813,13 +811,8 @@ module M_implementation__new
     [ & _ret: t_UnionFind_T = Any.any_l ()
     | & _2: t_UnionFind_T = Any.any_l ()
     | & _3: t_UFInner_T = Any.any_l ()
-    | & _4: Fset.fset t_Element = Any.any_l ()
     | & _6: t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _7: t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _8: Map.map t_Element t_T = Any.any_l ()
-    | & _10: Map.map t_Element int = Any.any_l ()
-    | & _12: Map.map t_Element t_Element = Any.any_l ()
-    | & _14: int = Any.any_l () ])
+    | & _7: t_FMap_Element_PtrOwn_Node_T = Any.any_l () ])
     [ return (result: t_UnionFind_T) -> {[@expl:new result type invariant] inv_Ghost_UnionFind_T result}
       {[@expl:new ensures] Fset.is_empty (domain_T result)}
       (! return {result}) ]
@@ -1327,22 +1320,26 @@ module M_implementation__make
       | s1 = insert_ghost_Element {_52} {elt} {perm'0} (fun (_x: t_Option_PtrOwn_Node_T) -> [ &_51 <- _x ] s2)
       | s2 = {[@expl:type invariant] inv_Option_PtrOwn_Node_T _51} s3
       | s3 = -{resolve_Option_PtrOwn_Node_T _51}- s4
-      | s4 = bb17 ]
-    | bb17 = s0 [ s0 = [ &_55 <- insert_Element'0 uf'0.current.f0'2.domain elt ] s1 | s1 = bb18 ]
+      | s4 = bb18 ]
     | bb18 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = _55 } } } ] s1
-      | s1 = [ &_59 <- Map.set uf'0.current.f0'2.payloads elt payload_snap ] s2
-      | s2 = bb19 ]
+      [ s0 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Element'0 uf'0.current.f0'2.domain elt } } } ]
+        s1
+      | s1 = bb19 ]
     | bb19 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = _59 } } } ] s1
-      | s1 = [ &_64 <- Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth ] s2
-      | s2 = bb20 ]
+      [ s0 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
+        s1
+      | s1 = bb20 ]
     | bb20 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = _64 } } } ] s1
-      | s1 = [ &_69 <- Map.set uf'0.current.f0'2.roots elt elt ] s2
-      | s2 = bb21 ]
+      [ s0 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth } } } ]
+        s1
+      | s1 = bb21 ]
     | bb21 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = _69 } } } ] s1
+      [ s0 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = Map.set uf'0.current.f0'2.roots elt elt } } } ]
+        s1
       | s1 = {[@expl:type invariant] inv_ref_UnionFind_T uf'0} s2
       | s2 = -{resolve_ref_UnionFind_T uf'0}- s3
       | s3 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s4)
@@ -1378,11 +1375,7 @@ module M_implementation__make
     | & _48: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _49: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _51: t_Option_PtrOwn_Node_T = Any.any_l ()
-    | & _52: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _55: Fset.fset t_Element = Any.any_l ()
-    | & _59: Map.map t_Element t_T = Any.any_l ()
-    | & _64: Map.map t_Element int = Any.any_l ()
-    | & _69: Map.map t_Element t_Element = Any.any_l () ])
+    | & _52: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l () ])
     [ return (result: t_Element) -> {[@expl:make ensures #0] not in_domain_T uf.current result}
       {[@expl:make ensures #1] domain_T (fin_Ghost_ref_UnionFind_T uf) = insert_Element'0 (domain_T uf.current) result}
       {[@expl:make ensures #2] roots_map_T (fin_Ghost_ref_UnionFind_T uf)

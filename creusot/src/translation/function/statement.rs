@@ -161,7 +161,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::Repeat(op, len) => RValue::Repeat(
                 self.translate_operand(op, span),
-                Operand::Term(Term::const_(*len, Ty::new_uint(self.tcx(), UintTy::Usize), si.span)),
+                Operand::term(Term::const_(*len, Ty::new_uint(self.tcx(), UintTy::Usize), si.span)),
             ),
             Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), op, ty) => {
                 let Some(t) = ty.builtin_deref(true) else {

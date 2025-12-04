@@ -21,15 +21,15 @@ pub(crate) fn mirconst_to_operand<'tcx>(
 ) -> Operand<'tcx> {
     use mir::Const::*;
     match c.const_ {
-        Ty(ty, tyconst) => Operand::Term(Term::const_(tyconst, ty, c.span)),
+        Ty(ty, tyconst) => Operand::term(Term::const_(tyconst, ty, c.span)),
         Unevaluated(u, ty) if let Some(promoted) = u.promoted => {
             Operand::promoted(caller_id, promoted, ty)
         }
         Unevaluated(u, ty) if matches!(ctx.def_kind(u.def), DefKind::InlineConst) => {
             Operand::inline_const(u.def, u.args, ty)
         }
-        Unevaluated(u, ty) => Operand::Term(Term::item(u.def, u.args, ty).span(c.span)),
-        Val(const_value, ty) => Operand::Term(value_to_term(const_value, ty, ctx, env, c.span)),
+        Unevaluated(u, ty) => Operand::term(Term::item(u.def, u.args, ty).span(c.span)),
+        Val(const_value, ty) => Operand::term(value_to_term(const_value, ty, ctx, env, c.span)),
     }
 }
 

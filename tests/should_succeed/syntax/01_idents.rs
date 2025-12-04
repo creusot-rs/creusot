@@ -31,9 +31,10 @@ pub struct Ö {
 }
 
 #[allow(non_snake_case, unused_variables)]
-pub fn _ώ() {
+pub fn _ώ() -> (i32, Ö, i8, u16) {
     let A = 0;
     let Ω = Ö { Ø: Σ::Ω };
     let _0 = 2;
     let _1 = 3;
+    (A, Ω, _0, _1)
 }

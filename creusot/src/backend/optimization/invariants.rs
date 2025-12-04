@@ -13,7 +13,9 @@ use crate::{
     contracts_items::Intrinsic,
     ctx::TranslationCtx,
     translation::{
-        fmir::{self, Block, FmirVisitor, Place, RValue, Statement, StatementKind, Terminator},
+        fmir::{
+            self, Block, FmirVisitor, Operand, Place, RValue, Statement, StatementKind, Terminator,
+        },
         pearlite::{Ident, Term},
     },
 };
@@ -82,7 +84,7 @@ pub(crate) fn infer_proph_invariants<'tcx>(
                 prev_block.stmts.push(Statement {
                     kind: StatementKind::Assignment(
                         Place { local, projections: Box::new([]) },
-                        RValue::Snapshot(pterm.clone()),
+                        RValue::Operand(Operand::term(pterm.clone().coerce(ty))),
                     ),
                     span,
                 });

@@ -54,13 +54,10 @@ module M_ghost_copy
     [ bb0 = s0
       [ s0 = [ &a <- (0: Int32.t) ] s1
       | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_4 <- Seq.snoc _s a ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_s <- _4 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & a: Int32.t = Any.any_l ()
-    | & _s: Seq.seq Int32.t = Any.any_l ()
-    | & _4: Seq.seq Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+      | s2 = bb2 ]
+    | bb2 = s0 [ s0 = [ &_s <- Seq.snoc _s a ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & a: Int32.t = Any.any_l () | & _s: Seq.seq Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_is_copy
   use creusot.int.Int32
@@ -158,8 +155,6 @@ module M_takes_struct
   
   let rec takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) = {[@expl:takes_struct requires] UInt32.t'int x.g = 0}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_4 <- x.f ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &x <- { x with g = _4 } ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_MyStruct = Any.any_l () | & x: t_MyStruct = x | & _4: UInt32.t = Any.any_l () ])
-    [ return (result: t_MyStruct) -> (! return {result}) ]
+    [ bb0 = bb1 | bb1 = s0 [ s0 = [ &x <- { x with g = x.f } ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_MyStruct = Any.any_l () | & x: t_MyStruct = x ]) [ return (result: t_MyStruct) -> (! return {result}) ]
 end

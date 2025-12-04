@@ -60,9 +60,9 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   use mach.int.Int
   use creusot.prelude.Any
   
-  type t_K
-  
   type t_Vec_K_Global
+  
+  type t_K
   
   type t_VacantEntry_K = { map: MutBorrow.t t_Vec_K_Global; key: t_K; index: UInt64.t }
   
@@ -170,7 +170,10 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   let rec insert_K'0 (self: MutBorrow.t t_VacantEntry_K) (return (x: ())) =
     {[@expl:insert 'self' type invariant] inv_ref_VacantEntry_K self}
     (! bb0
-    [ bb0 = s0 [ s0 = clone_K {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s1) | s1 = bb1 ]
+    [ bb0 = s0
+      [ s0 = [ &_3 <- self.current.index ] s1
+      | s1 = clone_K {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s2)
+      | s2 = bb1 ]
     | bb1 = s0
       [ s0 = {inv_Vec_K_Global self.current.map.current}
         MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
@@ -178,7 +181,7 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
             [ &_2 <- _bor ] -{inv_Vec_K_Global _bor.final}-
             [ &self <- { self with current = { self.current with map = { self.current.map with current = _bor.final } } } ]
             s1)
-      | s1 = insert_K {_2} {self.current.index} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s1 = insert_K {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = bb2 ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_ref_VacantEntry_K self} s1
@@ -187,5 +190,6 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_VacantEntry_K = self
     | & _2: MutBorrow.t t_Vec_K_Global = Any.any_l ()
+    | & _3: UInt64.t = Any.any_l ()
     | & _4: t_K = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

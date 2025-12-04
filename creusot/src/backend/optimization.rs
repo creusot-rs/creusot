@@ -1,5 +1,6 @@
-mod constant_propagation;
 mod invariants;
+mod remove_dead_locals;
+mod simplify_temps;
 mod useless_goto;
 
 use crate::{ctx::TranslationCtx, translation::fmir::Body};
@@ -9,7 +10,8 @@ use crate::{ctx::TranslationCtx, translation::fmir::Body};
 /// - inference of prophetic invariants
 /// - remove useless gotos
 pub(crate) fn optimizations<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut Body<'tcx>) {
-    constant_propagation::propagate_constants(body);
+    simplify_temps::simplify_temporaries(ctx, body);
+    remove_dead_locals::remove_dead_locals(ctx, body);
     invariants::infer_proph_invariants(ctx, body);
     useless_goto::remove_useless_gotos(body);
 }
