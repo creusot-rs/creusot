@@ -1,7 +1,7 @@
 use anyhow::{Context as _, Result};
 use directories::ProjectDirs;
 use std::{
-    fs,
+    env, fs,
     io::Write as _,
     path::{Path, PathBuf},
     process::Command,
@@ -13,30 +13,47 @@ pub use tools::*;
 
 // CAUTION: on MacOS, [config_dir] and [data_dir] are in fact the same directory
 pub struct CreusotPaths {
-    project_dirs: ProjectDirs,
-    why3_conf: PathBuf,
-    bin: PathBuf,
+    cache_dir: PathBuf,
+    config_dir: PathBuf,
+    data_dir: PathBuf,
 }
 
 impl CreusotPaths {
-    pub fn config_dir(&self) -> &Path {
-        self.project_dirs.config_dir()
-    }
+    pub fn new(project_dirs: ProjectDirs) -> Self {
+        let data_dir = match env::var("CREUSOT_DATA_HOME").map(PathBuf::from) {
+            Ok(path) => path,
+            Err(_) => project_dirs.data_dir().to_path_buf(),
+        };
 
-    pub fn data_dir(&self) -> &Path {
-        self.project_dirs.data_dir()
+        Self {
+            cache_dir: project_dirs.cache_dir().to_path_buf(),
+            config_dir: project_dirs.config_dir().to_path_buf(),
+            data_dir,
+        }
     }
 
     pub fn cache_dir(&self) -> &Path {
-        self.project_dirs.cache_dir()
+        &self.cache_dir
     }
 
-    pub fn why3_conf(&self) -> &Path {
-        &self.why3_conf
+    pub fn config_dir(&self) -> &Path {
+        &self.config_dir
     }
 
-    pub fn bin(&self) -> &Path {
-        &self.bin
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
+    pub fn bin(&self) -> PathBuf {
+        self.data_dir().join("bin")
+    }
+
+    pub fn binary(&self, path: impl AsRef<Path>) -> PathBuf {
+        self.bin().join(path)
+    }
+
+    pub fn why3_conf(&self) -> PathBuf {
+        self.config_dir().join("why3.conf")
     }
 
     pub fn why3find_json(&self) -> PathBuf {
@@ -54,21 +71,12 @@ impl CreusotPaths {
     pub fn prelude(&self) -> PathBuf {
         self.data_dir().join("_opam/share/why3find/packages/creusot")
     }
-
-    pub fn binary(&self, path: impl AsRef<Path>) -> PathBuf {
-        self.bin().join(path)
-    }
 }
 
 pub fn creusot_paths() -> CreusotPaths {
     // arguments: qualifier, organization, application
     // unwrap can't fail because Creusot users have a home
-    let project_dirs = ProjectDirs::from("", "creusot", "creusot").unwrap();
-    CreusotPaths {
-        why3_conf: project_dirs.config_dir().join("why3.conf"),
-        bin: project_dirs.data_dir().join("bin"),
-        project_dirs,
-    }
+    CreusotPaths::new(ProjectDirs::from("", "creusot", "creusot").unwrap())
 }
 
 pub fn toolchain_dir(data_dir: &Path, toolchain: &str) -> PathBuf {
@@ -89,7 +97,7 @@ pub fn generate_why3_conf(paths: &CreusotPaths, parallelism: Option<usize>) -> R
     let mut why3 = Command::new(paths.why3());
     why3.args(["config", "detect", "-C"])
         .arg(&why3_conf)
-        .env("PATH", &paths.bin())
+        .env("PATH", paths.bin())
         .status()
         .context("'why3 config detect' failed")?;
     if let Some(saved_settings) = saved_settings {
@@ -109,7 +117,7 @@ fn generate_why3_stub(
     parallelism: Option<usize>,
 ) -> anyhow::Result<Option<String>> {
     let why3_conf = paths.why3_conf();
-    let parallelism = parallelism.unwrap_or_else(|| default_provers_parallelism());
+    let parallelism = parallelism.unwrap_or_else(default_provers_parallelism);
     let version = |tool: Binary| tool.detect_version(&paths.binary(tool.binary_name));
     let altergo = format!("Alt-Ergo,{}", version(ALTERGO)?);
     let z3 = format!("Z3,{}", version(Z3)?);
