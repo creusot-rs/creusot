@@ -2,7 +2,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use num_rational::BigRational;
-use std::{cmp::Ordering, marker::PhantomData};
+use core::{cmp::Ordering, marker::PhantomData};
 
 #[builtin("real.Real.real")]
 pub struct Real(PhantomData<*mut ()>);

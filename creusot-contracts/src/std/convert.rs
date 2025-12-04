@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::convert::*;
+use core::convert::*;
 
 extern_spec! {
     mod std {

@@ -1,11 +1,11 @@
 use crate::prelude::*;
-use std::clone::*;
+use core::clone::*;
 
 #[cfg(creusot)]
 pub use creusot_contracts_proc::Clone;
 
 #[cfg(not(creusot))]
-pub use std::clone::Clone;
+pub use core::clone::Clone;
 
 extern_spec! {
     mod std {
