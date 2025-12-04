@@ -13,14 +13,14 @@ module M_unsound
   let rec unsound (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &x <- true ] s1 | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <bool> {x} (fun (_ret: MutBorrow.t bool) -> [ &_4 <- _ret ] [ &x <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <bool> {x} (fun (_bor: MutBorrow.t bool) -> [ &_4 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = MutBorrow.borrow_final <bool> {_4.current} {MutBorrow.get_id _4}
-          (fun (_ret: MutBorrow.t bool) -> [ &xm <- _ret ] [ &_4 <- { _4 with current = _ret.final } ] s2)
+          (fun (_bor: MutBorrow.t bool) -> [ &xm <- _bor ] [ &_4 <- { _4 with current = _bor.final } ] s2)
       | s2 = -{resolve_ref_Snapshot_bool _4}- s3
       | s3 = MutBorrow.borrow_mut <bool> {xm.current}
-          (fun (_ret: MutBorrow.t bool) -> [ &_6 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s4)
+          (fun (_bor: MutBorrow.t bool) -> [ &_6 <- _bor ] [ &xm <- { xm with current = _bor.final } ] s4)
       | s4 = MutBorrow.borrow_final <bool> {_6.current} {MutBorrow.get_id _6}
-          (fun (_ret: MutBorrow.t bool) -> [ &b <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s5)
+          (fun (_bor: MutBorrow.t bool) -> [ &b <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s5)
       | s5 = -{resolve_ref_Snapshot_bool b}- s6
       | s6 = -{resolve_ref_Snapshot_bool _6}- s7
       | s7 = [ &bg <- b ] s8
@@ -28,9 +28,9 @@ module M_unsound
     | bb2 = s0
       [ s0 = {[@expl:assertion] bg.current = true /\ bg.final = true} s1
       | s1 = MutBorrow.borrow_final <bool> {xm.current} {MutBorrow.get_id xm}
-          (fun (_ret: MutBorrow.t bool) -> [ &_14 <- _ret ] [ &xm <- { xm with current = _ret.final } ] s2)
+          (fun (_bor: MutBorrow.t bool) -> [ &_14 <- _bor ] [ &xm <- { xm with current = _bor.final } ] s2)
       | s2 = MutBorrow.borrow_final <bool> {_14.current} {MutBorrow.get_id _14}
-          (fun (_ret: MutBorrow.t bool) -> [ &evil <- _ret ] [ &_14 <- { _14 with current = _ret.final } ] s3)
+          (fun (_bor: MutBorrow.t bool) -> [ &evil <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s3)
       | s3 = -{resolve_ref_Snapshot_bool _14}- s4
       | s4 = {[@expl:assertion] (evil = bg) = (evil.final = true)} s5
       | s5 = [ &_19 <- if evil = bg then false else true ] s6
@@ -41,8 +41,8 @@ module M_unsound
       | s2 = -{resolve_ref_Snapshot_bool xm}- s3
       | s3 = {[@expl:assertion] evil.current = (not evil.final)} s4
       | s4 = {[@expl:assertion] evil.current = (not evil.current)} s5
-      | s5 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: bool = Any.any_l ()
     | & xm: MutBorrow.t bool = Any.any_l ()
     | & _4: MutBorrow.t bool = Any.any_l ()

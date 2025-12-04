@@ -64,23 +64,23 @@ module M_all_zero
           [ s0 = elim_Cons {loop_l.current}
               (fun (r0: UInt32.t) (r1: t_List) ->
                 MutBorrow.borrow_final <UInt32.t> {r0} {MutBorrow.inherit_id (MutBorrow.get_id loop_l) 1}
-                  (fun (_ret: MutBorrow.t UInt32.t) ->
-                    [ &value <- _ret ] [ &loop_l <- { loop_l with current = Cons _ret.final r1 } ] s1))
+                  (fun (_bor: MutBorrow.t UInt32.t) ->
+                    [ &value <- _bor ] [ &loop_l <- { loop_l with current = Cons _bor.final r1 } ] s1))
           | s1 = elim_Cons {loop_l.current}
               (fun (r0: UInt32.t) (r1: t_List) ->
                 MutBorrow.borrow_final <t_List> {r1} {MutBorrow.inherit_id (MutBorrow.get_id loop_l) 2}
-                  (fun (_ret: MutBorrow.t t_List) ->
-                    [ &next <- _ret ] [ &loop_l <- { loop_l with current = Cons r0 _ret.final } ] s2))
+                  (fun (_bor: MutBorrow.t t_List) ->
+                    [ &next <- _bor ] [ &loop_l <- { loop_l with current = Cons r0 _bor.final } ] s2))
           | s2 = [ &value <- { value with current = (0: UInt32.t) } ] s3
           | s3 = -{resolve_ref_u32 value}- s4
           | s4 = MutBorrow.borrow_final <t_List> {next.current} {MutBorrow.get_id next}
-              (fun (_ret: MutBorrow.t t_List) -> [ &_21 <- _ret ] [ &next <- { next with current = _ret.final } ] s5)
+              (fun (_bor: MutBorrow.t t_List) -> [ &_21 <- _bor ] [ &next <- { next with current = _bor.final } ] s5)
           | s5 = -{resolve_ref_List loop_l}- s6
           | s6 = [ &loop_l <- _21 ] s7
           | s7 = -{resolve_ref_Box_List_Global next}- s8
           | s8 = bb2 ] ] ]
-    | bb6 = s0 [ s0 = -{resolve_ref_List loop_l}- s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+    | bb6 = s0 [ s0 = -{resolve_ref_List loop_l}- s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & l: MutBorrow.t t_List = l
     | & old_l: MutBorrow.t t_List = Any.any_l ()
     | & loop_l: MutBorrow.t t_List = Any.any_l ()

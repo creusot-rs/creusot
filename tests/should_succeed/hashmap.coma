@@ -86,8 +86,8 @@ module M_impl_Hash_for_usize__hash (* <usize as Hash> *)
   
   let rec hash_usize (self: UInt64.t) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.of_int {UInt64.t'int self} (fun (_ret_from: UInt64.t) -> [ &_0 <- _ret_from ] s1)
-      | s1 = return {_0} ] ] [ & _0: UInt64.t = Any.any_l () | & self: UInt64.t = self ])
+      [ s0 = UInt64.of_int {UInt64.t'int self} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & self: UInt64.t = self ])
     [ return (result: UInt64.t) -> {[@expl:hash ensures] UInt64.t'int result
       = hash_log_usize (deep_model_ref_usize self)}
       (! return {result}) ]
@@ -394,12 +394,12 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- Nil ] s1
-      | s1 = from_elem_List_tup2_K_V {_7} {size} (fun (_ret: t_Vec_List_tup2_K_V_Global) -> [ &_6 <- _ret ] s2)
+      | s1 = from_elem_List_tup2_K_V {_7} {size} (fun (_x: t_Vec_List_tup2_K_V_Global) -> [ &_6 <- _x ] s2)
       | s2 = bb1 ]
     | bb1 = s0 [ s0 = [ &res <- { buckets = _6 } ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_0 <- res ] s1 | s1 = bb3 ]
-    | bb3 = return {_0} ]
-    [ & _0: t_MyHashMap_K_V = Any.any_l ()
+    | bb2 = s0 [ s0 = [ &_ret <- res ] s1 | s1 = bb3 ]
+    | bb3 = return {_ret} ]
+    [ & _ret: t_MyHashMap_K_V = Any.any_l ()
     | & size: UInt64.t = size
     | & res: t_MyHashMap_K_V = Any.any_l ()
     | & _6: t_Vec_List_tup2_K_V_Global = Any.any_l ()
@@ -740,37 +740,36 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
     {[@expl:add 'val' type invariant] inv_V val'}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_ret: UInt64.t) -> [ &length <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = hash_K {key} (fun (_ret: UInt64.t) -> [ &_15 <- _ret ] s1) | s1 = bb3 ]
+    | bb1 = s0 [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &length <- _x ] s1) | s1 = bb2 ]
+    | bb2 = s0 [ s0 = hash_K {key} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = UInt64.of_int {UInt64.t'int _15} (fun (_ret_from: UInt64.t) -> [ &_14 <- _ret_from ] s1)
+      [ s0 = UInt64.of_int {UInt64.t'int _15} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s1)
       | s1 = [ &_17 <- length ] s2
       | s2 = [ &_18 <- _17 = (0: UInt64.t) ] s3
       | s3 = {[@expl:remainder by zero] not _18} s4
       | s4 = bb4 ]
     | bb4 = s0
-      [ s0 = UInt64.rem {_14} {_17} (fun (_ret: UInt64.t) -> [ &index <- _ret ] s1)
+      [ s0 = UInt64.rem {_14} {_17} (fun (_x: UInt64.t) -> [ &index <- _x ] s1)
       | s1 = {inv_Vec_List_tup2_K_V_Global self.current.buckets}
         MutBorrow.borrow_final <t_Vec_List_tup2_K_V_Global> {self.current.buckets}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_ret: MutBorrow.t t_Vec_List_tup2_K_V_Global) ->
-            [ &_22 <- _ret ] -{inv_Vec_List_tup2_K_V_Global _ret.final}-
-            [ &self <- { self with current = { buckets = _ret.final } } ] s2)
+          (fun (_bor: MutBorrow.t t_Vec_List_tup2_K_V_Global) ->
+            [ &_22 <- _bor ] -{inv_Vec_List_tup2_K_V_Global _bor.final}-
+            [ &self <- { self with current = { buckets = _bor.final } } ] s2)
       | s2 = index_mut_Vec_List_tup2_K_V_Global {_22} {index}
-          (fun (_ret: MutBorrow.t t_List_tup2_K_V) -> [ &_21 <- _ret ] s3)
+          (fun (_x: MutBorrow.t t_List_tup2_K_V) -> [ &_21 <- _x ] s3)
       | s3 = bb5 ]
     | bb5 = s0
       [ s0 = {inv_List_tup2_K_V _21.current}
         MutBorrow.borrow_final <t_List_tup2_K_V> {_21.current} {MutBorrow.get_id _21}
-          (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-            [ &_20 <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-            [ &_21 <- { _21 with current = _ret.final } ] s1)
+          (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+            [ &_20 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+            [ &_21 <- { _21 with current = _bor.final } ] s1)
       | s1 = {inv_List_tup2_K_V _20.current}
         MutBorrow.borrow_final <t_List_tup2_K_V> {_20.current} {MutBorrow.get_id _20}
-          (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-            [ &l <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-            [ &_20 <- { _20 with current = _ret.final } ] s2)
+          (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+            [ &l <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+            [ &_20 <- { _20 with current = _bor.final } ] s2)
       | s2 = {[@expl:type invariant] inv_ref_List_tup2_K_V _20} s3
       | s3 = -{resolve_ref_List_tup2_K_V _20}- s4
       | s4 = [ &old_l <- l ] s5
@@ -799,28 +798,28 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
                 {inv_K r0.f0}
                 MutBorrow.borrow_final <t_K> {r0.f0}
                   {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id l) 1) 1}
-                  (fun (_ret: MutBorrow.t t_K) ->
-                    [ &k <- _ret ] -{inv_K _ret.final}-
-                    [ &l <- { l with current = Cons ({ r0 with f0 = _ret.final }) r1 } ] s1))
+                  (fun (_bor: MutBorrow.t t_K) ->
+                    [ &k <- _bor ] -{inv_K _bor.final}-
+                    [ &l <- { l with current = Cons ({ r0 with f0 = _bor.final }) r1 } ] s1))
           | s1 = elim_Cons {l.current}
               (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) ->
                 {inv_V r0.f1}
                 MutBorrow.borrow_final <t_V> {r0.f1}
                   {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id l) 1) 2}
-                  (fun (_ret: MutBorrow.t t_V) ->
-                    [ &v <- _ret ] -{inv_V _ret.final}-
-                    [ &l <- { l with current = Cons ({ r0 with f1 = _ret.final }) r1 } ] s2))
+                  (fun (_bor: MutBorrow.t t_V) ->
+                    [ &v <- _bor ] -{inv_V _bor.final}-
+                    [ &l <- { l with current = Cons ({ r0 with f1 = _bor.final }) r1 } ] s2))
           | s2 = elim_Cons {l.current}
               (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) ->
                 {inv_Box_List_tup2_K_V_Global r1}
                 MutBorrow.borrow_final <t_List_tup2_K_V> {r1} {MutBorrow.inherit_id (MutBorrow.get_id l) 2}
-                  (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-                    [ &tl <- _ret ] -{inv_Box_List_tup2_K_V_Global _ret.final}-
-                    [ &l <- { l with current = Cons r0 _ret.final } ] s3))
+                  (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+                    [ &tl <- _bor ] -{inv_Box_List_tup2_K_V_Global _bor.final}-
+                    [ &l <- { l with current = Cons r0 _bor.final } ] s3))
           | s3 = [ &tl'0 <- tl ] s4
           | s4 = {[@expl:type invariant] inv_ref_K'0 k} s5
           | s5 = -{resolve_ref_K k}- s6
-          | s6 = eq_K {k.current} {key} (fun (_ret: bool) -> [ &_61 <- _ret ] s7)
+          | s6 = eq_K {k.current} {key} (fun (_x: bool) -> [ &_61 <- _x ] s7)
           | s7 = bb11 ]
         | bb11 = any [ br0 -> {_61 = false} (! bb13) | br1 -> {_61} (! bb12) ]
         | bb13 = s0
@@ -828,14 +827,14 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
           | s1 = -{resolve_ref_V v}- s2
           | s2 = {inv_List_tup2_K_V tl'0.current}
             MutBorrow.borrow_final <t_List_tup2_K_V> {tl'0.current} {MutBorrow.get_id tl'0}
-              (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-                [ &_67 <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-                [ &tl'0 <- { tl'0 with current = _ret.final } ] s3)
+              (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+                [ &_67 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+                [ &tl'0 <- { tl'0 with current = _bor.final } ] s3)
           | s3 = {inv_List_tup2_K_V _67.current}
             MutBorrow.borrow_final <t_List_tup2_K_V> {_67.current} {MutBorrow.get_id _67}
-              (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-                [ &_66 <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-                [ &_67 <- { _67 with current = _ret.final } ] s4)
+              (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+                [ &_66 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+                [ &_67 <- { _67 with current = _bor.final } ] s4)
           | s4 = {[@expl:type invariant] inv_ref_List_tup2_K_V l} s5
           | s5 = -{resolve_ref_List_tup2_K_V l}- s6
           | s6 = [ &l <- _66 ] s7
@@ -870,8 +869,8 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
       | s9 = {[@expl:type invariant] inv_ref_MyHashMap_K_V self} s10
       | s10 = -{resolve_ref_MyHashMap_K_V self}- s11
       | s11 = bb20 ]
-    | bb20 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+    | bb20 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_MyHashMap_K_V = self
     | & key: t_K = key
     | & val': t_V = val'
@@ -1143,15 +1142,15 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
     {[@expl:get 'self' type invariant] inv_ref_MyHashMap_K_V self}
     {[@expl:get 'key' type invariant] inv_K key}
     (! bb0
-    [ bb0 = s0 [ s0 = hash_K {key} (fun (_ret: UInt64.t) -> [ &_9 <- _ret ] s1) | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = hash_K {key} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = UInt64.of_int {UInt64.t'int _9} (fun (_ret_from: UInt64.t) -> [ &_8 <- _ret_from ] s1)
-      | s1 = len_List_tup2_K_V {self.buckets} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s2)
+      [ s0 = UInt64.of_int {UInt64.t'int _9} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s1)
+      | s1 = len_List_tup2_K_V {self.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s2)
       | s2 = bb2 ]
     | bb2 = s0 [ s0 = [ &_13 <- _11 = (0: UInt64.t) ] s1 | s1 = {[@expl:remainder by zero] not _13} s2 | s2 = bb3 ]
     | bb3 = s0
-      [ s0 = UInt64.rem {_8} {_11} (fun (_ret: UInt64.t) -> [ &index <- _ret ] s1)
-      | s1 = index_Vec_List_tup2_K_V_Global {self.buckets} {index} (fun (_ret: t_List_tup2_K_V) -> [ &_15 <- _ret ] s2)
+      [ s0 = UInt64.rem {_8} {_11} (fun (_x: UInt64.t) -> [ &index <- _x ] s1)
+      | s1 = index_Vec_List_tup2_K_V_Global {self.buckets} {index} (fun (_x: t_List_tup2_K_V) -> [ &_15 <- _x ] s2)
       | s2 = bb4 ]
     | bb4 = s0 [ s0 = [ &l <- _15 ] s1 | s1 = bb5 ]
     | bb5 = bb5
@@ -1165,14 +1164,14 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
           [ s0 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &k <- r0.f0 ] s1)
           | s1 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &v <- r0.f1 ] s2)
           | s2 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &tl <- r1 ] s3)
-          | s3 = eq_K {k} {key} (fun (_ret: bool) -> [ &_32 <- _ret ] s4)
+          | s3 = eq_K {k} {key} (fun (_x: bool) -> [ &_32 <- _x ] s4)
           | s4 = bb9 ]
         | bb9 = any [ br0 -> {_32 = false} (! bb11) | br1 -> {_32} (! bb10) ]
         | bb11 = s0 [ s0 = [ &_38 <- tl ] s1 | s1 = [ &l <- _38 ] s2 | s2 = bb5 ] ] ]
-    | bb12 = s0 [ s0 = [ &_0 <- None'0 ] s1 | s1 = bb13 ]
-    | bb10 = s0 [ s0 = [ &_0 <- Some'0 v ] s1 | s1 = bb13 ]
-    | bb13 = return {_0} ]
-    [ & _0: t_Option_ref_V = Any.any_l ()
+    | bb12 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb13 ]
+    | bb10 = s0 [ s0 = [ &_ret <- Some'0 v ] s1 | s1 = bb13 ]
+    | bb13 = return {_ret} ]
+    [ & _ret: t_Option_ref_V = Any.any_l ()
     | & self: t_MyHashMap_K_V = self
     | & key: t_K = key
     | & index: UInt64.t = Any.any_l ()
@@ -1481,11 +1480,10 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
     {[@expl:resize requires] Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets) < 1000}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s1) | s1 = bb2 ]
+    | bb1 = s0 [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = UInt64.mul {_11} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_10 <- _ret ] s1)
-      | s1 = new_K {_10} (fun (_ret: t_MyHashMap_K_V) -> [ &new <- _ret ] s2)
+      [ s0 = UInt64.mul {_11} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
+      | s1 = new_K {_10} (fun (_x: t_MyHashMap_K_V) -> [ &new <- _x ] s2)
       | s2 = bb3 ]
     | bb3 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = [ &old_4_0 <- self ] s2 | s2 = bb4 ]
     | bb4 = bb4
@@ -1507,31 +1505,31 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
         (! s0)
         [ s0 = bb5 ]
         [ bb5 = s0
-          [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_ret: UInt64.t) -> [ &_41 <- _ret ] s1) | s1 = bb6 ]
+          [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &_41 <- _x ] s1) | s1 = bb6 ]
         | bb6 = s0
           [ s0 = [ &_39 <- UInt64.lt i _41 ] s1 | s1 = any [ br0 -> {_39 = false} (! bb22) | br1 -> {_39} (! bb7) ] ]
         | bb7 = s0
           [ s0 = {inv_Vec_List_tup2_K_V_Global self.current.buckets}
             MutBorrow.borrow_mut <t_Vec_List_tup2_K_V_Global> {self.current.buckets}
-              (fun (_ret: MutBorrow.t t_Vec_List_tup2_K_V_Global) ->
-                [ &_47 <- _ret ] -{inv_Vec_List_tup2_K_V_Global _ret.final}-
-                [ &self <- { self with current = { buckets = _ret.final } } ] s1)
+              (fun (_bor: MutBorrow.t t_Vec_List_tup2_K_V_Global) ->
+                [ &_47 <- _bor ] -{inv_Vec_List_tup2_K_V_Global _bor.final}-
+                [ &self <- { self with current = { buckets = _bor.final } } ] s1)
           | s1 = index_mut_Vec_List_tup2_K_V_Global {_47} {i}
-              (fun (_ret: MutBorrow.t t_List_tup2_K_V) -> [ &_46 <- _ret ] s2)
+              (fun (_x: MutBorrow.t t_List_tup2_K_V) -> [ &_46 <- _x ] s2)
           | s2 = bb8 ]
         | bb8 = s0
           [ s0 = {inv_List_tup2_K_V _46.current}
             MutBorrow.borrow_final <t_List_tup2_K_V> {_46.current} {MutBorrow.get_id _46}
-              (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-                [ &_45 <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-                [ &_46 <- { _46 with current = _ret.final } ] s1)
+              (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+                [ &_45 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+                [ &_46 <- { _46 with current = _bor.final } ] s1)
           | s1 = [ &_49 <- Nil ] s2
           | s2 = {inv_List_tup2_K_V _45.current}
             MutBorrow.borrow_final <t_List_tup2_K_V> {_45.current} {MutBorrow.get_id _45}
-              (fun (_ret: MutBorrow.t t_List_tup2_K_V) ->
-                [ &_44 <- _ret ] -{inv_List_tup2_K_V _ret.final}-
-                [ &_45 <- { _45 with current = _ret.final } ] s3)
-          | s3 = replace_List_tup2_K_V {_44} {_49} (fun (_ret: t_List_tup2_K_V) -> [ &l <- _ret ] s4)
+              (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
+                [ &_44 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
+                [ &_45 <- { _45 with current = _bor.final } ] s3)
+          | s3 = replace_List_tup2_K_V {_44} {_49} (fun (_x: t_List_tup2_K_V) -> [ &l <- _x ] s4)
           | s4 = bb9 ]
         | bb9 = s0
           [ s0 = {[@expl:type invariant] inv_ref_List_tup2_K_V _46} s1
@@ -1566,10 +1564,10 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
               | s2 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &tl <- r1 ] s3)
               | s3 = {inv_MyHashMap_K_V new}
                 MutBorrow.borrow_mut <t_MyHashMap_K_V> {new}
-                  (fun (_ret: MutBorrow.t t_MyHashMap_K_V) ->
-                    [ &_80 <- _ret ] -{inv_MyHashMap_K_V _ret.final}-
-                    [ &new <- _ret.final ] s4)
-              | s4 = add_K {_80} {k} {v} (fun (_ret: ()) -> [ &_79 <- _ret ] s5)
+                  (fun (_bor: MutBorrow.t t_MyHashMap_K_V) ->
+                    [ &_80 <- _bor ] -{inv_MyHashMap_K_V _bor.final}-
+                    [ &new <- _bor.final ] s4)
+              | s4 = add_K {_80} {k} {v} (fun (_x: ()) -> [ &_79 <- _x ] s5)
               | s5 = bb15 ]
             | bb15 = s0 [ s0 = [ &l <- tl ] s1 | s1 = bb10 ] ] ]
         | bb18 = s0
@@ -1578,7 +1576,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
           | s2 = {[@expl:assertion] forall k'0: t_DeepModelTy. bucket_ix_K old_self.current k'0 = UInt64.t'int i
               -> Map.get (view_MyHashMap_K_V old_self.current) k'0 = Map.get (view_MyHashMap_K_V new) k'0}
             s3
-          | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s4)
+          | s3 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s4)
           | s4 = bb4 ] ] ]
     | bb22 = s0
       [ s0 = {[@expl:type invariant] inv_MyHashMap_K_V self.current} s1
@@ -1587,8 +1585,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
       | s3 = {[@expl:type invariant] inv_ref_MyHashMap_K_V self} s4
       | s4 = -{resolve_ref_MyHashMap_K_V self}- s5
       | s5 = bb25 ]
-    | bb25 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+    | bb25 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_MyHashMap_K_V = self
     | & old_self: MutBorrow.t t_MyHashMap_K_V = Any.any_l ()
     | & new: t_MyHashMap_K_V = Any.any_l ()
@@ -1781,69 +1779,69 @@ module M_main
   
   let rec main (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_usize {(17: UInt64.t)} (fun (_ret: t_MyHashMap_usize_isize) -> [ &h1 <- _ret ] s1) | s1 = bb1 ]
+      [ s0 = new_usize {(17: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h1 <- _x'0 ] s1) | s1 = bb1 ]
     | bb1 = s0
-      [ s0 = new_usize {(42: UInt64.t)} (fun (_ret: t_MyHashMap_usize_isize) -> [ &h2 <- _ret ] s1) | s1 = bb2 ]
+      [ s0 = new_usize {(42: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h2 <- _x'0 ] s1) | s1 = bb2 ]
     | bb2 = s0
-      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_x <- _ret ] s1) | s1 = bb3 ]
+      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_x <- _x'0 ] s1) | s1 = bb3 ]
     | bb3 = s0
-      [ s0 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_y <- _ret ] s1) | s1 = bb4 ]
+      [ s0 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_y <- _x'0 ] s1) | s1 = bb4 ]
     | bb4 = s0
-      [ s0 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_z <- _ret ] s1) | s1 = bb5 ]
+      [ s0 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_z <- _x'0 ] s1) | s1 = bb5 ]
     | bb5 = s0
-      [ s0 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_t <- _ret ] s1) | s1 = bb6 ]
+      [ s0 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_t <- _x'0 ] s1) | s1 = bb6 ]
     | bb6 = s0
       [ s0 = {inv_MyHashMap_usize_isize h1}
         MutBorrow.borrow_mut <t_MyHashMap_usize_isize> {h1}
-          (fun (_ret: MutBorrow.t t_MyHashMap_usize_isize) ->
-            [ &_12 <- _ret ] -{inv_MyHashMap_usize_isize _ret.final}-
-            [ &h1 <- _ret.final ] s1)
-      | s1 = add_usize {_12} {(1: UInt64.t)} {(17: Int64.t)} (fun (_ret: ()) -> [ &_11 <- _ret ] s2)
+          (fun (_bor: MutBorrow.t t_MyHashMap_usize_isize) ->
+            [ &_12 <- _bor ] -{inv_MyHashMap_usize_isize _bor.final}-
+            [ &h1 <- _bor.final ] s1)
+      | s1 = add_usize {_12} {(1: UInt64.t)} {(17: Int64.t)} (fun (_x'0: ()) -> [ &_11 <- _x'0 ] s2)
       | s2 = bb7 ]
     | bb7 = s0
-      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_13 <- _ret ] s1) | s1 = bb8 ]
+      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_13 <- _x'0 ] s1) | s1 = bb8 ]
     | bb8 = s0
       [ s0 = [ &_x <- _13 ] s1
-      | s1 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_15 <- _ret ] s2)
+      | s1 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_15 <- _x'0 ] s2)
       | s2 = bb9 ]
     | bb9 = s0
       [ s0 = [ &_y <- _15 ] s1
-      | s1 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_17 <- _ret ] s2)
+      | s1 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_17 <- _x'0 ] s2)
       | s2 = bb10 ]
     | bb10 = s0
       [ s0 = [ &_z <- _17 ] s1
-      | s1 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_19 <- _ret ] s2)
+      | s1 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_19 <- _x'0 ] s2)
       | s2 = bb11 ]
     | bb11 = s0
       [ s0 = [ &_t <- _19 ] s1
       | s1 = {inv_MyHashMap_usize_isize h2}
         MutBorrow.borrow_mut <t_MyHashMap_usize_isize> {h2}
-          (fun (_ret: MutBorrow.t t_MyHashMap_usize_isize) ->
-            [ &_22 <- _ret ] -{inv_MyHashMap_usize_isize _ret.final}-
-            [ &h2 <- _ret.final ] s2)
-      | s2 = add_usize {_22} {(1: UInt64.t)} {(42: Int64.t)} (fun (_ret: ()) -> [ &_21 <- _ret ] s3)
+          (fun (_bor: MutBorrow.t t_MyHashMap_usize_isize) ->
+            [ &_22 <- _bor ] -{inv_MyHashMap_usize_isize _bor.final}-
+            [ &h2 <- _bor.final ] s2)
+      | s2 = add_usize {_22} {(1: UInt64.t)} {(42: Int64.t)} (fun (_x'0: ()) -> [ &_21 <- _x'0 ] s3)
       | s3 = bb12 ]
     | bb12 = s0
-      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_23 <- _ret ] s1) | s1 = bb13 ]
+      [ s0 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_23 <- _x'0 ] s1) | s1 = bb13 ]
     | bb13 = s0
       [ s0 = [ &_x <- _23 ] s1
       | s1 = {[@expl:type invariant] inv_MyHashMap_usize_isize h1} s2
       | s2 = -{resolve_MyHashMap_usize_isize'0 h1}- s3
-      | s3 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_25 <- _ret ] s4)
+      | s3 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_25 <- _x'0 ] s4)
       | s4 = bb14 ]
     | bb14 = s0
       [ s0 = [ &_y <- _25 ] s1
-      | s1 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_27 <- _ret ] s2)
+      | s1 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_27 <- _x'0 ] s2)
       | s2 = bb15 ]
     | bb15 = s0
       [ s0 = [ &_z <- _27 ] s1
       | s1 = {[@expl:type invariant] inv_MyHashMap_usize_isize h2} s2
       | s2 = -{resolve_MyHashMap_usize_isize'0 h2}- s3
-      | s3 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_ret: t_Option_ref_isize) -> [ &_29 <- _ret ] s4)
+      | s3 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_29 <- _x'0 ] s4)
       | s4 = bb16 ]
     | bb16 = s0 [ s0 = [ &_t <- _29 ] s1 | s1 = bb18 ]
-    | bb18 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+    | bb18 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & h1: t_MyHashMap_usize_isize = Any.any_l ()
     | & h2: t_MyHashMap_usize_isize = Any.any_l ()
     | & _x: t_Option_ref_isize = Any.any_l ()

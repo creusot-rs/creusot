@@ -207,9 +207,9 @@ pub(crate) fn to_why<'tcx>(
                 .zip(&sig.prototype.params)
                 .map(|(ty, param)| Param::Term(param.as_term().0, ty))
                 .chain(std::iter::once(Param::Cont(
-                    Ident::fresh_local("_ret"),
+                    Ident::fresh_local("_k"),
                     [].into(),
-                    [Param::Term(Ident::fresh_local("_r"), ret_ty)].into(),
+                    [Param::Term(Ident::fresh_local("_ret"), ret_ty)].into(),
                 )))
                 .collect();
             let args: Box<[_]> = params
@@ -635,7 +635,7 @@ impl<'tcx> RValue<'tcx> {
                 match opkind {
                     Logic => Exp::qvar(fname).app(args),
                     Program => {
-                        let ret_ident = Ident::fresh_local("_ret");
+                        let ret_ident = Ident::fresh_local("_x");
                         istmts.push(IntermediateStmt::call_span(
                             ret_ident,
                             lower.ty(ty),
@@ -694,7 +694,7 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 let neg = lower.names.in_pre(prelude, "neg");
-                let ret_ident = Ident::fresh_local("_ret");
+                let ret_ident = Ident::fresh_local("_x");
                 let arg = Arg::Term(arg.into_why(lower, istmts));
                 istmts.push(IntermediateStmt::call(
                     ret_ident,
@@ -787,7 +787,7 @@ impl<'tcx> RValue<'tcx> {
                         };
 
                         // create final statement
-                        let of_ret_id = Ident::fresh_local("_ret_from");
+                        let of_ret_id = Ident::fresh_local("_x");
                         istmts.push(IntermediateStmt::call(
                             of_ret_id,
                             lower.ty(ty),
@@ -1272,7 +1272,7 @@ impl<'tcx> Statement<'tcx> {
                 }
 
                 let rhs_ty = rhs.ty(lower.ctx.tcx, lower.locals);
-                let ret_ident = Ident::fresh_local("_ret");
+                let ret_ident = Ident::fresh_local("_bor");
                 let reassign = Exp::var(ret_ident).field(Name::Global(name::final_()));
 
                 let inv_assume;
@@ -1334,7 +1334,7 @@ impl<'tcx> Statement<'tcx> {
                         recursive_calls.insert(fun_id, (fun_qname.clone(), params, ty.clone()));
                     }
                 }
-                let ret_ident = Ident::fresh_local("_ret");
+                let ret_ident = Ident::fresh_local("_x");
                 istmts.push(IntermediateStmt::call_span(ret_ident, ty, fun_qname, args, span));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }

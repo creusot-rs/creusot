@@ -182,22 +182,22 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
       | s1 = any [ br0 -> {_4 = false} (! bb3) | br1 -> {_4} (! bb1) ] ]
     | bb1 = s0
       [ s0 = UInt64.sub {self.current.n} {(1: UInt64.t)}
-          (fun (_ret: UInt64.t) -> [ &self <- { self with current = { self.current with n = _ret } } ] s1)
+          (fun (_x: UInt64.t) -> [ &self <- { self with current = { self.current with n = _x } } ] s1)
       | s1 = {inv_I self.current.iter}
         MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_ret: MutBorrow.t t_I) ->
-            [ &_6 <- _ret ] -{inv_I _ret.final}-
-            [ &self <- { self with current = { self.current with iter = _ret.final } } ] s2)
-      | s2 = next_I {_6} (fun (_ret: t_Option_Item) -> [ &_0 <- _ret ] s3)
+          (fun (_bor: MutBorrow.t t_I) ->
+            [ &_6 <- _bor ] -{inv_I _bor.final}-
+            [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
+      | s2 = next_I {_6} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
       | s3 = bb2 ]
     | bb2 = s0 [ s0 = {[@expl:type invariant] inv_ref_Take_I self} s1 | s1 = -{resolve_ref_Take_I self}- s2 | s2 = bb4 ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Take_I self} s1
       | s1 = -{resolve_ref_Take_I self}- s2
-      | s2 = [ &_0 <- None ] s3
+      | s2 = [ &_ret <- None ] s3
       | s3 = bb4 ]
-    | bb4 = return {_0} ]
-    [ & _0: t_Option_Item = Any.any_l ()
+    | bb4 = return {_ret} ]
+    [ & _ret: t_Option_Item = Any.any_l ()
     | & self: MutBorrow.t t_Take_I = self
     | & _4: bool = Any.any_l ()
     | & _6: MutBorrow.t t_I = Any.any_l () ])

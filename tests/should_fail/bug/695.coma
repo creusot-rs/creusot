@@ -88,15 +88,15 @@ module M_inversed_if
     [ bb0 = s0
       [ s0 = {[@expl:type invariant] inv_C cond} s1
       | s1 = -{resolve_C cond}- s2
-      | s2 = call_C {cond} {_11} (fun (_ret: bool) -> [ &_9 <- _ret ] s3)
+      | s2 = call_C {cond} {_11} (fun (_x: bool) -> [ &_9 <- _x ] s3)
       | s3 = bb1 ]
     | bb1 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ]
     | bb2 = s0
-      [ s0 = [ &_15 <- false ] s1 | s1 = call_once_B {branch} {_15} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
+      [ s0 = [ &_15 <- false ] s1 | s1 = call_once_B {branch} {_15} (fun (_x: ()) -> [ &_ret <- _x ] s2) | s2 = bb8 ]
     | bb3 = s0
-      [ s0 = [ &_13 <- true ] s1 | s1 = call_once_B {branch} {_13} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb8 ]
-    | bb8 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      [ s0 = [ &_13 <- true ] s1 | s1 = call_once_B {branch} {_13} (fun (_x: ()) -> [ &_ret <- _x ] s2) | s2 = bb8 ]
+    | bb8 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & cond: t_C = cond
     | & branch: t_B = branch
     | & _9: bool = Any.any_l ()
@@ -160,8 +160,8 @@ module M_valid
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   let rec closure1 (self: closure1) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &res <- UInt32.gt self.c0 (7: UInt32.t) ] s1 | s1 = [ &_0 <- res ] s2 | s2 = return {_0} ] ]
-    [ & _0: bool = Any.any_l () | & self: closure1 = self | & res: bool = Any.any_l () ])
+    [ bb0 = s0 [ s0 = [ &res <- UInt32.gt self.c0 (7: UInt32.t) ] s1 | s1 = [ &_ret <- res ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: closure1 = self | & res: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:closure ensures] result = UInt32.gt self.c0 (7: UInt32.t)} (! return {result}) ]
   
   type closure2 = { c0'0: MutBorrow.t UInt32.t }
@@ -222,8 +222,8 @@ module M_valid
     | bb3 = s0
       [ s0 = [ &self <- { self with current = { c0'0 = { self.current.c0'0 with current = _4 } } } ] s1
       | s1 = -{resolve_ref_closure2 self}- s2
-      | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
+      | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:closure ensures] b /\ self.final.c0'0.current = (2: UInt32.t)
       \/ not b /\ self.final.c0'0.current = (1: UInt32.t)}
       {[@expl:closure hist_inv post] hist_inv_closure2 self.current self.final}
@@ -312,12 +312,12 @@ module M_valid
       [ s0 = [ &r <- (0: UInt32.t) ] s1
       | s1 = [ &cond <- { c0 = n } ] s2
       | s2 = MutBorrow.borrow_mut <UInt32.t> {r}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_8 <- _ret ] [ &r <- _ret.final ] s3)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_8 <- _bor ] [ &r <- _bor.final ] s3)
       | s3 = [ &branch <- { c0'0 = _8 } ] s4
-      | s4 = inversed_if_closure1 {cond} {branch} (fun (_ret: ()) -> [ &_9 <- _ret ] s5)
+      | s4 = inversed_if_closure1 {cond} {branch} (fun (_x: ()) -> [ &_9 <- _x ] s5)
       | s5 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = [ &_0 <- r ] s2 | s2 = return {_0} ] ]
-    [ & _0: UInt32.t = Any.any_l ()
+    | bb1 = s0 [ s0 = {[@expl:assertion] false} s1 | s1 = [ &_ret <- r ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l ()
     | & n: UInt32.t = n
     | & r: UInt32.t = Any.any_l ()
     | & cond: closure1 = Any.any_l ()

@@ -108,7 +108,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                 }
             }
             &ProjectionElem::Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, subst) if def.is_enum() => {
+                TyKind::Adt(def, subst) if def.is_enum() || def.is_union() => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
                     let fields: Box<[_]> = variant
@@ -241,7 +241,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
             | ProjectionElem::Subslice { .. }
             | ProjectionElem::OpaqueCast(_)
             | ProjectionElem::UnwrapUnsafeBinder(_) => {
-                ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?}"))
+                ctx.dcx().span_bug(span, format!("Unsupported projection {elem:?}"))
             }
         }
     }

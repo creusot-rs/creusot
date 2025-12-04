@@ -88,9 +88,9 @@ module M_generic_closure
       [ s0 = {[@expl:type invariant] inv_F f} s1
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_4 <- a ] s3
-      | s3 = call_F {f} {_4} (fun (_ret: t_B) -> [ &_0 <- _ret ] s4)
+      | s3 = call_F {f} {_4} (fun (_x: t_B) -> [ &_ret <- _x ] s4)
       | s4 = bb4 ]
-    | bb4 = return {_0} ] [ & _0: t_B = Any.any_l () | & f: t_F = f | & a: t_A = a | & _4: t_A = Any.any_l () ])
+    | bb4 = return {_ret} ] [ & _ret: t_B = Any.any_l () | & f: t_F = f | & a: t_A = a | & _4: t_A = Any.any_l () ])
     [ return (result: t_B) -> {[@expl:generic_closure result type invariant] inv_B result} (! return {result}) ]
 end
 module M_mapper
@@ -103,8 +103,8 @@ module M_mapper
   predicate resolve_A (_1: t_A)
   
   let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) = bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_A _a} s1 | s1 = -{resolve_A _a}- s2 | s2 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & _a: t_A = _a ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_A _a} s1 | s1 = -{resolve_A _a}- s2 | s2 = bb1 ]
+    | bb1 = return {_ret} ] [ & _ret: () = Any.any_l () | & _a: t_A = _a ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -119,9 +119,8 @@ module M_mapper
   
   let rec mapper_A (x: t_A) (return (x'0: ())) = {[@expl:mapper 'x' type invariant] inv_A x}
     (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure_A {_3} {x} (fun (_ret: ()) -> [ &_2 <- _ret ] s2) | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: () = Any.any_l () | & x: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
+    [ bb0 = s0 [ s0 = [ &_3 <- () ] s1 | s1 = generic_closure_A {_3} {x} (fun (_x: ()) -> [ &_2 <- _x ] s2) | s2 = bb2 ]
+    | bb2 = return {_ret} ]
+    [ & _ret: () = Any.any_l () | & x: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

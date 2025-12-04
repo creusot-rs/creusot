@@ -17,8 +17,8 @@ module M_swap
   
   let rec swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@expl:swap 'x' type invariant] inv_tup2_T_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = bb3 ] | bb3 = return {_0} ]
-    [ & _0: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
     [ return (result: tup2_T_T) -> {[@expl:swap result type invariant] inv_tup2_T_T result}
       {[@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 }}
       (! return {result}) ]
@@ -49,13 +49,13 @@ module M_f
       | s1 = [ &a <- _3.f0 ] s2
       | s2 = [ &b <- _3.f1 ] s3
       | s3 = MutBorrow.borrow_mut <UInt32.t> {a}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_6 <- _ret ] [ &a <- _ret.final ] s4)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_6 <- _bor ] [ &a <- _bor.final ] s4)
       | s4 = MutBorrow.borrow_mut <UInt32.t> {b}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_8 <- _ret ] [ &b <- _ret.final ] s5)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_8 <- _bor ] [ &b <- _bor.final ] s5)
       | s5 = MutBorrow.borrow_final <UInt32.t> {_8.current} {MutBorrow.get_id _8}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s6)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s6)
       | s6 = [ &_5 <- { f0'0 = _6; f1'0 = _7 } ] s7
-      | s7 = swap_ref_u32 {_5} (fun (_ret: tup2_ref_u32_ref_u32) -> [ &p <- _ret ] s8)
+      | s7 = swap_ref_u32 {_5} (fun (_x: tup2_ref_u32_ref_u32) -> [ &p <- _x ] s8)
       | s8 = bb1 ]
     | bb1 = s0
       [ s0 = -{resolve_ref_u32 p.f1'0}- s1
@@ -64,8 +64,8 @@ module M_f
       | s3 = -{resolve_ref_u32 p.f0'0}- s4
       | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
       | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
-      | s6 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()
     | & b: UInt32.t = Any.any_l ()
     | & _3: tup2_u32_u32 = Any.any_l ()

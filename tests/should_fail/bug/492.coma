@@ -35,14 +35,14 @@ module M_reborrow_tuple
     [ bb0 = s0
       [ s0 = {inv_T x.current}
         MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_4 <- _ret ] -{inv_T _ret.final}-
-            [ &x <- { x with current = _ret.final } ] s1)
-      | s1 = [ &_0 <- { f0 = _4; f1 = (32: UInt32.t) } ] s2
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_4 <- _bor ] -{inv_T _bor.final}-
+            [ &x <- { x with current = _bor.final } ] s1)
+      | s1 = [ &_ret <- { f0 = _4; f1 = (32: UInt32.t) } ] s2
       | s2 = {[@expl:type invariant] inv_ref_T x} s3
       | s3 = -{resolve_ref_T x}- s4
-      | s4 = return {_0} ] ]
-    [ & _0: tup2_ref_T_u32 = Any.any_l () | & x: MutBorrow.t t_T = x | & _4: MutBorrow.t t_T = Any.any_l () ])
+      | s4 = return {_ret} ] ]
+    [ & _ret: tup2_ref_T_u32 = Any.any_l () | & x: MutBorrow.t t_T = x | & _4: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: tup2_ref_T_u32) -> {[@expl:reborrow_tuple result type invariant] inv_tup2_ref_T_u32 result}
       {[@expl:reborrow_tuple ensures] result.f0.current = x.current}
       (! return {result}) ]
@@ -70,10 +70,10 @@ module M_test
     [ bb0 = s0
       [ s0 = [ &x <- (5: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_6 <- _ret ] [ &x <- _ret.final ] s2)
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &_6 <- { _6 with current = _ret.final } ] s3)
-      | s3 = reborrow_tuple_i32 {_5} (fun (_ret: tup2_ref_i32_u32) -> [ &_4 <- _ret ] s4)
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
+      | s3 = reborrow_tuple_i32 {_5} (fun (_x: tup2_ref_i32_u32) -> [ &_4 <- _x ] s4)
       | s4 = bb1 ]
     | bb1 = s0
       [ s0 = [ &res <- _4.f0 ] s1
@@ -81,8 +81,8 @@ module M_test
       | s2 = {[@expl:assertion] res.final = (5: Int32.t)} s3
       | s3 = [ &res <- { res with current = (10: Int32.t) } ] s4
       | s4 = -{resolve_ref_i32 res}- s5
-      | s5 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & res: MutBorrow.t Int32.t = Any.any_l ()
     | & _4: tup2_ref_i32_u32 = Any.any_l ()

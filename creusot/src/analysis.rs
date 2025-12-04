@@ -969,10 +969,11 @@ impl<'tcx> BodyLocals<'tcx> {
             .filter(|(loc, _)| !erased_locals.contains(*loc))
             .map(|(loc, d)| {
                 let (mut temp, mut arg) = (false, false);
-                let ident;
-                if 0 < loc.index() && loc.index() <= body.arg_count {
+                let ident = if loc.index() == 0 {
+                    Ident::fresh(ctx.crate_name(), "_ret")
+                } else if 0 < loc.index() && loc.index() <= body.arg_count {
                     arg = true;
-                    ident = args[loc.index() - 1].0.0
+                    args[loc.index() - 1].0.0
                 } else if let Some(debug_info) =
                     body.var_debug_info.iter().find(|var_info| match var_info.value {
                         mir::VarDebugInfoContents::Place(p) => {
@@ -981,13 +982,10 @@ impl<'tcx> BodyLocals<'tcx> {
                         _ => false,
                     })
                 {
-                    ident = Ident::fresh(
-                        ctx.crate_name(),
-                        lowercase_prefix("v_", debug_info.name.as_str()),
-                    )
+                    Ident::fresh(ctx.crate_name(), lowercase_prefix("v_", debug_info.name.as_str()))
                 } else {
                     temp = true;
-                    ident = Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
+                    Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
                 };
                 let span = d.source_info.span;
                 ((ident, fmir::LocalDecl { span, ty: d.ty, temp, arg }), (loc, ident))
