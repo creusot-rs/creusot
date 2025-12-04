@@ -16,7 +16,7 @@
 //! [`Ghost`] and [`ghost!`] for more details.
 
 use crate::{logic::ops::Fin, prelude::*};
-use std::{
+use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };

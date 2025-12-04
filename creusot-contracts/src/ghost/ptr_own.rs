@@ -1,6 +1,6 @@
 //! Raw pointers with ghost code
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::prelude::*;
 #[cfg(creusot)]
