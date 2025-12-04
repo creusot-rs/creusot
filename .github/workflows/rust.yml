@@ -70,11 +70,16 @@ jobs:
 
   build-nix:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write # Allow to purge the cache
     steps:
     - uses: actions/checkout@v5
-    - uses: DeterminateSystems/nix-installer-action@main
-    - uses: DeterminateSystems/magic-nix-cache-action@main
-    - uses: DeterminateSystems/flake-checker-action@main
+    - uses: nixbuild/nix-quick-install-action@v34
+    - uses: nix-community/cache-nix-action@v6
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+        gc-max-store-size: 10G
+        purge: true
     - run: nix shell --impure --command bash -c "cd .. && cargo creusot new test-project && cd test-project && cargo creusot prove"
       env:
         NIXPKGS_ALLOW_UNFREE: 1
