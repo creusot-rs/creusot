@@ -5,7 +5,7 @@ use crate::{
     logic::{Mapping, ops::IndexLogic},
     prelude::*,
 };
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A type of sequence usable in pearlite and `ghost!` blocks.
 ///
@@ -683,7 +683,7 @@ impl<T> Seq<T> {
     }
 }
 
-impl<T> std::ops::Index<Int> for Seq<T> {
+impl<T> core::ops::Index<Int> for Seq<T> {
     type Output = T;
 
     #[check(ghost)]
@@ -693,7 +693,7 @@ impl<T> std::ops::Index<Int> for Seq<T> {
         self.get_ghost(index).unwrap()
     }
 }
-impl<T> std::ops::IndexMut<Int> for Seq<T> {
+impl<T> core::ops::IndexMut<Int> for Seq<T> {
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
     #[ensures((*self).len() == (^self).len())]
@@ -704,7 +704,7 @@ impl<T> std::ops::IndexMut<Int> for Seq<T> {
     }
 }
 
-impl<T> std::ops::Index<(Int, Int)> for Seq<T> {
+impl<T> core::ops::Index<(Int, Int)> for Seq<T> {
     type Output = (T, T);
 
     #[trusted]
@@ -717,7 +717,7 @@ impl<T> std::ops::Index<(Int, Int)> for Seq<T> {
     }
 }
 
-impl<T> std::ops::IndexMut<(Int, Int)> for Seq<T> {
+impl<T> core::ops::IndexMut<(Int, Int)> for Seq<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(0 <= index.0 && index.0 < self.len() && 0 <= index.1 && index.1 < self.len())]

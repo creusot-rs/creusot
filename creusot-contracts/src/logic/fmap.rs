@@ -4,7 +4,7 @@ use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
 };
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
 ///
@@ -515,7 +515,7 @@ impl<K, V> FMap<K, V> {
     }
 }
 
-impl<'a, K, V> std::ops::Index<&'a K> for FMap<K, V> {
+impl<'a, K, V> core::ops::Index<&'a K> for FMap<K, V> {
     type Output = V;
 
     #[check(ghost)]

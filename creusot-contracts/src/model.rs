@@ -72,8 +72,8 @@ impl View for String {
     }
 }
 
-impl DeepModel for std::cmp::Ordering {
-    type DeepModelTy = std::cmp::Ordering;
+impl DeepModel for core::cmp::Ordering {
+    type DeepModelTy = core::cmp::Ordering;
 
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {

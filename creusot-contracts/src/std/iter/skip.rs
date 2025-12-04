@@ -1,7 +1,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use std::iter::Skip;
+use core::iter::Skip;
 
 pub trait SkipExt<I> {
     #[logic]

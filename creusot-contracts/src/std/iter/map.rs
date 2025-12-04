@@ -1,7 +1,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use std::iter::Map;
+use core::iter::Map;
 
 pub trait MapExt<I, F> {
     #[logic]

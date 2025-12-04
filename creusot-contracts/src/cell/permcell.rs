@@ -6,7 +6,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{logic::Id, prelude::*};
-use std::{cell::UnsafeCell, marker::PhantomData};
+use core::{cell::UnsafeCell, marker::PhantomData};
 
 /// Cell with ghost permissions
 ///
@@ -141,7 +141,7 @@ impl<T> PermCell<T> {
     #[ensures(self.id() == (^perm).id())]
     pub unsafe fn replace(&self, perm: Ghost<&mut PermCellOwn<T>>, val: T) -> T {
         let _ = perm;
-        unsafe { std::ptr::replace(self.0.get(), val) }
+        unsafe { core::ptr::replace(self.0.get(), val) }
     }
 
     /// Unwraps the value, consuming the cell.

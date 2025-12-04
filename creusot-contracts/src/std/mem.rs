@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::mem::*;
+use core::mem::*;
 
 extern_spec! {
     mod std {

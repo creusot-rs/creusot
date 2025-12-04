@@ -49,7 +49,7 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-pub trait FusedIterator: std::iter::FusedIterator + IteratorSpec {
+pub trait FusedIterator: core::iter::FusedIterator + IteratorSpec {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
