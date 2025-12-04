@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{logic::Mapping, prelude::*};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
 ///

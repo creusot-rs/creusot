@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
-use std::iter::Cloned;
+use core::iter::Cloned;
 
 pub trait ClonedExt<I> {
     #[logic]

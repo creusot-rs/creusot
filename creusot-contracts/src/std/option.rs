@@ -5,8 +5,8 @@ use crate::{
     prelude::*,
 };
 #[cfg(creusot)]
-use std::marker::Destruct;
-use std::{cmp::Ordering, option::*};
+use core::marker::Destruct;
+use core::{cmp::Ordering, option::*};
 
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
@@ -118,7 +118,7 @@ extern_spec! {
                 fn as_slice(&self) -> &[T] {
                     match self {
                         None => &[],
-                        Some(t) => std::slice::from_ref(t),
+                        Some(t) => core::slice::from_ref(t),
                     }
                 }
 
@@ -133,7 +133,7 @@ extern_spec! {
                 fn as_mut_slice(&mut self) -> &mut [T] {
                     match self {
                         None => &mut [],
-                        Some(t) => std::slice::from_mut(t),
+                        Some(t) => core::slice::from_mut(t),
                     }
                 }
 
@@ -415,7 +415,7 @@ extern_spec! {
                 #[check(ghost)]
                 #[ensures(result == *self && ^self == None)]
                 fn take(&mut self) -> Option<T> {
-                    std::mem::replace(self, None)
+                    core::mem::replace(self, None)
                 }
 
                 #[requires(match *self {
@@ -442,7 +442,7 @@ extern_spec! {
                 #[check(ghost)]
                 #[ensures(result == *self && ^self == Some(value))]
                 fn replace(&mut self, value: T) -> Option<T> {
-                    std::mem::replace(self, Some(value))
+                    core::mem::replace(self, Some(value))
                 }
 
                 #[check(ghost)]

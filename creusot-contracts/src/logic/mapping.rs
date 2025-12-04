@@ -1,5 +1,5 @@
 use crate::{logic::ops::IndexLogic, prelude::*};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A mapping: map every value of type `A` to a value of type `B`.
 ///

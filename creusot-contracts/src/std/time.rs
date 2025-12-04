@@ -1,8 +1,10 @@
 use crate::prelude::*;
-use std::{
+use core::{
     ops::{Add, Sub},
     time::*,
 };
+
+use std::time::Instant;
 
 impl View for Duration {
     type ViewTy = Int;

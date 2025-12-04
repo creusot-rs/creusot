@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
-use std::iter::Take;
+use core::iter::Take;
 
 pub trait TakeExt<I> {
     #[logic]

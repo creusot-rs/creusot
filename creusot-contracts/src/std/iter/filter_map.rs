@@ -1,5 +1,5 @@
 use crate::{logic::Mapping, prelude::*, std::ops::*};
-use std::iter::FilterMap;
+use core::iter::FilterMap;
 
 pub trait FilterMapExt<I, F> {
     #[logic]

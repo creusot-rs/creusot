@@ -2,7 +2,7 @@
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
+use core::alloc::Allocator;
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {

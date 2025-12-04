@@ -1,7 +1,7 @@
 use crate::prelude::*;
 #[cfg(feature = "nightly")]
 use core::panicking::*;
-use std::{any::Any, fmt};
+use core::{any::Any, fmt};
 
 extern_spec! {
     mod core {

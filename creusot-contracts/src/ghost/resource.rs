@@ -45,7 +45,7 @@ mod m {
         },
         prelude::*,
     };
-    use std::marker::PhantomData;
+    use core::marker::PhantomData;
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;
@@ -153,9 +153,9 @@ mod m {
         #[ensures((^self)@ == *s)]
         #[ensures(result@ == *r)]
         pub fn split_off(&mut self, r: Snapshot<R>, s: Snapshot<R>) -> Self {
-            let this = std::mem::replace(self, Self::dummy());
+            let this = core::mem::replace(self, Self::dummy());
             let (r, this) = this.split(r, s);
-            let _ = std::mem::replace(self, this);
+            let _ = core::mem::replace(self, this);
             r
         }
 
@@ -181,9 +181,9 @@ mod m {
         #[ensures((^self).id() == self.id())]
         #[ensures(Some((^self)@) == self@.op(other@))]
         pub fn join_in(&mut self, other: Self) {
-            let this = std::mem::replace(self, Self::dummy());
+            let this = core::mem::replace(self, Self::dummy());
             let this = this.join(other);
-            let _ = std::mem::replace(self, this);
+            let _ = core::mem::replace(self, this);
         }
 
         /// Join two shared resources together.

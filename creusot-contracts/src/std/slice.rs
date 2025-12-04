@@ -2,8 +2,8 @@
 use crate::resolve::structural_resolve;
 use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
-use std::{
+use core::alloc::Allocator;
+use core::{
     ops::{
         Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
     },

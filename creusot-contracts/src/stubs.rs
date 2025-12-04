@@ -18,13 +18,13 @@ pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
 
 #[logic(opaque)]
 #[intrinsic("exists")]
-pub fn exists<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+pub fn exists<Tup: core::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     dead
 }
 
 #[logic(opaque)]
 #[intrinsic("forall")]
-pub fn forall<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+pub fn forall<Tup: core::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     dead
 }
 

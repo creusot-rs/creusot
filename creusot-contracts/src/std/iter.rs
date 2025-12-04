@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::iter::*;
+use core::iter::*;
 
 mod cloned;
 mod copied;

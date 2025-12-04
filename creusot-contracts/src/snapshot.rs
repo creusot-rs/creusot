@@ -2,9 +2,9 @@
 
 use crate::{ghost::Plain, logic::ops::Fin, prelude::*};
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 #[cfg(creusot)]
-use std::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
 
 /// A copyable snapshot, usable in pearlite.
 ///
