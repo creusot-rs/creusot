@@ -185,22 +185,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate resolve_Item (_1: t_Item)
-  
   predicate inv_I (_1: t_I)
-  
-  predicate inv_Skip_I (_1: t_Skip_I)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Skip_I [inv_Skip_I x]. inv_Skip_I x = inv_I x.iter
-  
-  predicate invariant_ref_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
-    inv_Skip_I self.current /\ inv_Skip_I self.final
-  
-  meta "rewrite_def" predicate invariant_ref_Skip_I
-  
-  predicate inv_ref_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_ref_Skip_I _1
-  
-  meta "rewrite_def" predicate inv_ref_Skip_I
   
   type t_Option_Item = None | Some t_Item
   
@@ -222,7 +207,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
       = match x with
         | None -> true
         | Some f0 -> inv_Item f0
@@ -242,6 +227,21 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+  
+  predicate resolve_Item (_1: t_Item)
+  
+  predicate inv_Skip_I (_1: t_Skip_I)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Skip_I [inv_Skip_I x]. inv_Skip_I x = inv_I x.iter
+  
+  predicate invariant_ref_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
+    inv_Skip_I self.current /\ inv_Skip_I self.final
+  
+  meta "rewrite_def" predicate invariant_ref_Skip_I
+  
+  predicate inv_ref_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_ref_Skip_I _1
+  
+  meta "rewrite_def" predicate inv_ref_Skip_I
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -277,17 +277,18 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   let rec next_Skip_I (self: MutBorrow.t t_Skip_I) (return (x: t_Option_Item)) =
     {[@expl:next 'self' type invariant] inv_ref_Skip_I self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_self <- self ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <UInt64.t> {self.current.n} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+    [ bb0 = s0
+      [ s0 = [ &old_self <- self ] s1
+      | s1 = MutBorrow.borrow_final <UInt64.t> {self.current.n} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t UInt64.t) ->
-            [ &_9 <- _bor ] [ &self <- { self with current = { self.current with n = _bor.final } } ] s1)
-      | s1 = MutBorrow.borrow_final <UInt64.t> {_9.current} {MutBorrow.get_id _9}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s2)
-      | s2 = take_usize {_8} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s3)
-      | s3 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve_ref_usize _9}- s1 | s1 = [ &skipped <- Seq.empty: Seq.seq t_Item ] s2 | s2 = bb3 ]
-    | bb3 = s0 [ s0 = [ &old_4_0 <- self ] s1 | s1 = bb4 ]
+            [ &_9 <- _bor ] [ &self <- { self with current = { self.current with n = _bor.final } } ] s2)
+      | s2 = MutBorrow.borrow_final <UInt64.t> {_9.current} {MutBorrow.get_id _9}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s3)
+      | s3 = take_usize {_8} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s4)
+      | s4 = -{resolve_ref_usize _9}- s5
+      | s5 = [ &skipped <- Seq.empty: Seq.seq t_Item ] s6
+      | s6 = [ &old_4_0 <- self ] s7
+      | s7 = bb4 ]
     | bb4 = bb4
       [ bb4 = {[@expl:mut invariant] old_4_0.final = self.final}
         {[@expl:loop invariant #0] inv_ref_Skip_I self}
@@ -296,38 +297,32 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
         {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length skipped -> resolve_Item (Seq.get skipped i)}
         {[@expl:loop invariant #4] UInt64.t'int self.current.n = 0}
         (! s0)
-        [ s0 = bb5 ]
-        [ bb5 = s0
-          [ s0 = {inv_I self.current.iter}
-            MutBorrow.borrow_mut <t_I> {self.current.iter}
-              (fun (_bor: MutBorrow.t t_I) ->
-                [ &_30 <- _bor ] -{inv_I _bor.final}-
-                [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
-          | s1 = next_I {_30} (fun (_x: t_Option_Item) -> [ &r <- _x ] s2)
-          | s2 = bb6 ]
-        | bb6 = s0
-          [ s0 = [ &_32 <- n'0 = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_32 = false} (! bb8) | br1 -> {_32} (! bb7) ] ]
-        | bb8 = any [ br0 -> {r = None} (! bb9) | br1 (x0: t_Item) -> {r = Some x0} (! bb11) ]
+        [ s0 = {inv_I self.current.iter}
+          MutBorrow.borrow_mut <t_I> {self.current.iter}
+            (fun (_bor: MutBorrow.t t_I) ->
+              [ &_30 <- _bor ] -{inv_I _bor.final}-
+              [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
+        | s1 = next_I {_30} (fun (_x: t_Option_Item) -> [ &r <- _x ] s2)
+        | s2 = [ &_32 <- n'0 = (0: UInt64.t) ] s3
+        | s3 = any [ br0 -> {_32 = false} (! bb8) | br1 -> {_32} (! bb7) ] ]
+        [ bb8 = any [ br0 -> {r = None} (! bb9) | br1 (x0: t_Item) -> {r = Some x0} (! bb11) ]
         | bb11 = s0
           [ s0 = elim_Some {r} (fun (r0: t_Item) -> [ &x <- r0 ] s1)
           | s1 = {[@expl:type invariant] inv_Item x} s2
           | s2 = -{resolve_Item x}- s3
-          | s3 = bb12 ]
-        | bb12 = s0
-          [ s0 = [ &skipped <- Seq.(++) skipped (Seq.singleton x) ] s1
-          | s1 = UInt64.sub {n'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s2)
-          | s2 = bb4 ] ] ]
+          | s3 = [ &skipped <- Seq.(++) skipped (Seq.singleton x) ] s4
+          | s4 = UInt64.sub {n'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s5)
+          | s5 = bb4 ] ] ]
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Skip_I self} s1
       | s1 = -{resolve_ref_Skip_I self}- s2
       | s2 = [ &_ret <- r ] s3
-      | s3 = bb16 ]
+      | s3 = return {_ret} ]
     | bb9 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Skip_I self} s1
       | s1 = -{resolve_ref_Skip_I self}- s2
       | s2 = [ &_ret <- r ] s3
-      | s3 = bb16 ]
-    | bb16 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_Item = Any.any_l ()
     | & self: MutBorrow.t t_Skip_I = self
     | & old_self: MutBorrow.t t_Skip_I = Any.any_l ()

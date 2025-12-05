@@ -50,15 +50,17 @@ module M_search
       {result = self_}
       (! return {result}) ]
   
-  function index_Vec_u8_Global [@inline:trivial] (self: t_Vec_u8_Global) (ix: int) : UInt8.t =
-    Seq.get (view_Vec_u8_Global self) ix
+  type t_Option_usize = None | Some UInt64.t
   
-  meta "rewrite_def" function index_Vec_u8_Global
+  predicate invariant_ref_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
+    inv_RangeInclusive_usize self.current /\ inv_RangeInclusive_usize self.final
   
-  predicate match_at (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (pos: int) (len: int) =
-    len <= Seq.length (view_Vec_u8_Global needle)
-    /\ pos <= Seq.length (view_Vec_u8_Global haystack) - len
-    /\ (forall i: int. 0 <= i /\ i < len -> index_Vec_u8_Global needle i = index_Vec_u8_Global haystack (pos + i))
+  meta "rewrite_def" predicate invariant_ref_RangeInclusive_usize
+  
+  predicate inv_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
+    invariant_ref_RangeInclusive_usize _1
+  
+  meta "rewrite_def" predicate inv_ref_RangeInclusive_usize
   
   function range_inclusive_len_usize (r: t_RangeInclusive_usize) : int = if is_empty_log_RangeInclusive_usize r then
       0
@@ -88,22 +90,6 @@ module M_search
   axiom produces_refl_RangeInclusive_usize_spec:
     forall self: t_RangeInclusive_usize. produces_RangeInclusive_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
-  
-  meta "rewrite_def" predicate inv_Seq_usize
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  predicate invariant_ref_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
-    inv_RangeInclusive_usize self.current /\ inv_RangeInclusive_usize self.final
-  
-  meta "rewrite_def" predicate invariant_ref_RangeInclusive_usize
-  
-  predicate inv_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
-    invariant_ref_RangeInclusive_usize _1
-  
-  meta "rewrite_def" predicate inv_ref_RangeInclusive_usize
-  
   predicate completed_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) =
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
@@ -120,6 +106,20 @@ module M_search
     _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_RangeInclusive_usize
+  
+  function index_Vec_u8_Global [@inline:trivial] (self: t_Vec_u8_Global) (ix: int) : UInt8.t =
+    Seq.get (view_Vec_u8_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_u8_Global
+  
+  predicate match_at (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (pos: int) (len: int) =
+    len <= Seq.length (view_Vec_u8_Global needle)
+    /\ pos <= Seq.length (view_Vec_u8_Global haystack) - len
+    /\ (forall i: int. 0 <= i /\ i < len -> index_Vec_u8_Global needle i = index_Vec_u8_Global haystack (pos + i))
+  
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
   
   let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
     [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
@@ -153,10 +153,6 @@ module M_search
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
-  
-  meta "rewrite_def" predicate inv_Range_usize
-  
   predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_Range_usize
@@ -170,6 +166,10 @@ module M_search
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
+  
+  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
+  
+  meta "rewrite_def" predicate inv_Range_usize
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt8.t) =
     UInt64.t'int self < Seq.length seq
@@ -195,16 +195,15 @@ module M_search
     {[@expl:search requires] Seq.length (view_Vec_u8_Global needle) >= 1
     /\ Seq.length (view_Vec_u8_Global needle) <= Seq.length (view_Vec_u8_Global haystack)}
     (! bb0
-    [ bb0 = s0 [ s0 = len_u8 {haystack} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_22 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.sub {_20} {_22} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s1)
-      | s1 = new_usize {(0: UInt64.t)} {_19} (fun (_x: t_RangeInclusive_usize) -> [ &_18 <- _x ] s2)
-      | s2 = bb3 ]
-    | bb3 = s0
-      [ s0 = into_iter_RangeInclusive_usize {_18} (fun (_x: t_RangeInclusive_usize) -> [ &iter <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ]
+    [ bb0 = s0
+      [ s0 = len_u8 {haystack} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+      | s1 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_22 <- _x ] s2)
+      | s2 = UInt64.sub {_20} {_22} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s3)
+      | s3 = new_usize {(0: UInt64.t)} {_19} (fun (_x: t_RangeInclusive_usize) -> [ &_18 <- _x ] s4)
+      | s4 = into_iter_RangeInclusive_usize {_18} (fun (_x: t_RangeInclusive_usize) -> [ &iter <- _x ] s5)
+      | s5 = [ &iter_old <- iter ] s6
+      | s6 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s7
+      | s7 = bb7 ]
     | bb7 = bb7
       [ bb7 = {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] inv_RangeInclusive_usize iter}
@@ -212,79 +211,63 @@ module M_search
         {[@expl:loop invariant] forall k: int. 0 <= k /\ k < Seq.length produced
           -> not match_at needle haystack k (Seq.length (view_Vec_u8_Global needle))}
         (! s0)
-        [ s0 = bb8 ]
-        [ bb8 = s0
-          [ s0 = {inv_RangeInclusive_usize iter}
-            MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter}
-              (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
-                [ &_45 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-                [ &iter <- _bor.final ] s1)
-          | s1 = {inv_RangeInclusive_usize _45.current}
-            MutBorrow.borrow_final <t_RangeInclusive_usize> {_45.current} {MutBorrow.get_id _45}
-              (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
-                [ &_44 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-                [ &_45 <- { _45 with current = _bor.final } ] s2)
-          | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
-          | s3 = bb9 ]
-        | bb9 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_RangeInclusive_usize _45} s1
-          | s1 = -{resolve_ref_RangeInclusive_usize _45}- s2
-          | s2 = any [ br0 -> {_43 = None} (! bb12) | br1 (x0: UInt64.t) -> {_43 = Some x0} (! bb13) ] ]
-        | bb13 = s0 [ s0 = elim_Some {_43} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1) | s1 = bb14 ]
-        | bb14 = s0
-          [ s0 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s1
-          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
-          | s2 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s3)
-          | s3 = bb15 ]
-        | bb15 = s0
-          [ s0 = [ &_56 <- { start = (0: UInt64.t); end' = _57 } ] s1
-          | s1 = into_iter_Range_usize {_56} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s2)
-          | s2 = bb16 ]
-        | bb16 = s0 [ s0 = [ &iter_old'0 <- iter'0 ] s1 | s1 = bb17 ]
-        | bb17 = s0 [ s0 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb19 ]
+        [ s0 = {inv_RangeInclusive_usize iter}
+          MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter}
+            (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
+              [ &_45 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
+              [ &iter <- _bor.final ] s1)
+        | s1 = {inv_RangeInclusive_usize _45.current}
+          MutBorrow.borrow_final <t_RangeInclusive_usize> {_45.current} {MutBorrow.get_id _45}
+            (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
+              [ &_44 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
+              [ &_45 <- { _45 with current = _bor.final } ] s2)
+        | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
+        | s3 = {[@expl:type invariant] inv_ref_RangeInclusive_usize _45} s4
+        | s4 = -{resolve_ref_RangeInclusive_usize _45}- s5
+        | s5 = any [ br0 -> {_43 = None} (! bb12) | br1 (x0: UInt64.t) -> {_43 = Some x0} (! bb13) ] ]
+        [ bb13 = s0
+          [ s0 = elim_Some {_43} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &i <- __creusot_proc_iter_elem ] s3
+          | s3 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s4)
+          | s4 = [ &_56 <- { start = (0: UInt64.t); end' = _57 } ] s5
+          | s5 = into_iter_Range_usize {_56} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s6)
+          | s6 = [ &iter_old'0 <- iter'0 ] s7
+          | s7 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s8
+          | s8 = bb19 ]
         | bb19 = bb19
           [ bb19 = {[@expl:for invariant] inv_Seq_usize produced'0}
             {[@expl:for invariant] inv_Range_usize iter'0}
             {[@expl:for invariant] produces_Range_usize iter_old'0 produced'0 iter'0}
             {[@expl:loop invariant] match_at needle haystack (UInt64.t'int i) (Seq.length produced'0)}
             (! s0)
-            [ s0 = bb20 ]
-            [ bb20 = s0
-              [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter'0}
-                  (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_80 <- _bor ] [ &iter'0 <- _bor.final ] s1)
-              | s1 = MutBorrow.borrow_final <t_Range_usize> {_80.current} {MutBorrow.get_id _80}
-                  (fun (_bor: MutBorrow.t t_Range_usize) ->
-                    [ &_79 <- _bor ] [ &_80 <- { _80 with current = _bor.final } ] s2)
-              | s2 = next_Range_usize {_79} (fun (_x: t_Option_usize) -> [ &_78 <- _x ] s3)
-              | s3 = bb21 ]
-            | bb21 = s0
-              [ s0 = -{resolve_ref_Range_usize _80}- s1
-              | s1 = any [ br0 -> {_78 = None} (! bb24) | br1 (x0: UInt64.t) -> {_78 = Some x0} (! bb25) ] ]
-            | bb25 = s0
-              [ s0 = elim_Some {_78} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1) | s1 = bb26 ]
-            | bb26 = s0
-              [ s0 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s1
-              | s1 = [ &j <- __creusot_proc_iter_elem'0 ] s2
-              | s2 = index_Vec_u8_Global'0 {needle} {j} (fun (_x: UInt8.t) -> [ &_90 <- _x ] s3)
-              | s3 = bb27 ]
-            | bb27 = s0
-              [ s0 = UInt64.add {i} {j} (fun (_x: UInt64.t) -> [ &_96 <- _x ] s1)
-              | s1 = index_Vec_u8_Global'0 {haystack} {_96} (fun (_x: UInt8.t) -> [ &_94 <- _x ] s2)
-              | s2 = bb28 ]
-            | bb28 = s0
-              [ s0 = [ &_88 <- _90 <> _94 ] s1
-              | s1 = any [ br0 -> {_88 = false} (! bb19) | br1 -> {_88} (! bb7) ] ] ] ] ] ]
+            [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter'0}
+                (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_80 <- _bor ] [ &iter'0 <- _bor.final ] s1)
+            | s1 = MutBorrow.borrow_final <t_Range_usize> {_80.current} {MutBorrow.get_id _80}
+                (fun (_bor: MutBorrow.t t_Range_usize) ->
+                  [ &_79 <- _bor ] [ &_80 <- { _80 with current = _bor.final } ] s2)
+            | s2 = next_Range_usize {_79} (fun (_x: t_Option_usize) -> [ &_78 <- _x ] s3)
+            | s3 = -{resolve_ref_Range_usize _80}- s4
+            | s4 = any [ br0 -> {_78 = None} (! bb24) | br1 (x0: UInt64.t) -> {_78 = Some x0} (! bb25) ] ]
+            [ bb25 = s0
+              [ s0 = elim_Some {_78} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+              | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+              | s2 = [ &j <- __creusot_proc_iter_elem'0 ] s3
+              | s3 = index_Vec_u8_Global'0 {needle} {j} (fun (_x: UInt8.t) -> [ &_90 <- _x ] s4)
+              | s4 = UInt64.add {i} {j} (fun (_x: UInt64.t) -> [ &_96 <- _x ] s5)
+              | s5 = index_Vec_u8_Global'0 {haystack} {_96} (fun (_x: UInt8.t) -> [ &_94 <- _x ] s6)
+              | s6 = [ &_88 <- _90 <> _94 ] s7
+              | s7 = any [ br0 -> {_88 = false} (! bb19) | br1 -> {_88} (! bb7) ] ] ] ] ] ]
     | bb24 = s0
       [ s0 = {[@expl:type invariant] inv_RangeInclusive_usize iter} s1
       | s1 = -{resolve_RangeInclusive_usize iter}- s2
       | s2 = [ &_ret <- i ] s3
-      | s3 = bb32 ]
+      | s3 = return {_ret} ]
     | bb12 = s0
       [ s0 = {[@expl:type invariant] inv_RangeInclusive_usize iter} s1
       | s1 = -{resolve_RangeInclusive_usize iter}- s2
       | s2 = len_u8 {haystack} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
-      | s3 = bb32 ]
-    | bb32 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & needle: t_Vec_u8_Global = needle
     | & haystack: t_Vec_u8_Global = haystack

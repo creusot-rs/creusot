@@ -132,10 +132,12 @@ module M_impl_List_T__new (* List<T> *)
   meta "select_lsinst" "all"
   
   let rec new_T (return (x: t_List_T)) = (! bb0
-    [ bb0 = s0 [ s0 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_2 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_3 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = new_PtrOwn_Cell_T (fun (_x: Seq.seq t_PtrOwn_Cell_T) -> [ &_4 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_ret <- { first = _2; last = _3; seq = _4 } ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_2 <- _x ] s1)
+      | s1 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_3 <- _x ] s2)
+      | s2 = new_PtrOwn_Cell_T (fun (_x: Seq.seq t_PtrOwn_Cell_T) -> [ &_4 <- _x ] s3)
+      | s3 = [ &_ret <- { first = _2; last = _3; seq = _4 } ] s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_List_T = Any.any_l ()
     | & _2: Opaque.ptr = Any.any_l ()
     | & _3: Opaque.ptr = Any.any_l ()
@@ -505,17 +507,15 @@ module M_impl_List_T__push_back (* List<T> *)
     {[@expl:push_back 'self' type invariant] inv_ref_List_T self}
     {[@expl:push_back 'x' type invariant] inv_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_9 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_7 <- { v = x; next = _9 } ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &cell <- _7 ] s1 | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = from_box_Cell_T {cell} (fun (_x: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> [ &_12 <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &cell_ptr <- _12.f0 ] s1
-      | s1 = [ &cell_own <- _12.f1 ] s2
-      | s2 = is_null_Cell_T {self.current.last} (fun (_x: bool) -> [ &_15 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = any [ br0 -> {_15 = false} (! bb7) | br1 -> {_15} (! bb6) ]
+    [ bb0 = s0
+      [ s0 = null_Cell_T (fun (_x: Opaque.ptr) -> [ &_9 <- _x ] s1)
+      | s1 = [ &_7 <- { v = x; next = _9 } ] s2
+      | s2 = [ &cell <- _7 ] s3
+      | s3 = from_box_Cell_T {cell} (fun (_x: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> [ &_12 <- _x ] s4)
+      | s4 = [ &cell_ptr <- _12.f0 ] s5
+      | s5 = [ &cell_own <- _12.f1 ] s6
+      | s6 = is_null_Cell_T {self.current.last} (fun (_x: bool) -> [ &_15 <- _x ] s7)
+      | s7 = any [ br0 -> {_15 = false} (! bb7) | br1 -> {_15} (! bb6) ] ]
     | bb6 = s0
       [ s0 = [ &self <- { self with current = { self.current with first = cell_ptr } } ] s1
       | s1 = [ &self <- { self with current = { self.current with last = cell_ptr } } ] s2
@@ -523,65 +523,54 @@ module M_impl_List_T__push_back (* List<T> *)
     | bb7 = s0
       [ s0 = [ &_21 <- self.current.last ] s1
       | s1 = deref_Ghost_Seq_PtrOwn_Cell_T {self.current.seq} (fun (_x: Seq.seq t_PtrOwn_Cell_T) -> [ &_29 <- _x ] s2)
-      | s2 = bb8 ]
-    | bb8 = s0 [ s0 = len_ghost_PtrOwn_Cell_T {_29} (fun (_x: int) -> [ &_27 <- _x ] s1) | s1 = bb9 ]
-    | bb9 = s0 [ s0 = new {(1: Int128.t)} (fun (_x: int) -> [ &_32 <- _x ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = into_inner_Int {_32} (fun (_x: int) -> [ &_31 <- _x ] s1) | s1 = bb11 ]
-    | bb11 = s0 [ s0 = sub_Int {_27} {_31} (fun (_x: int) -> [ &off <- _x ] s1) | s1 = bb12 ]
-    | bb12 = s0
-      [ s0 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
+      | s2 = len_ghost_PtrOwn_Cell_T {_29} (fun (_x: int) -> [ &_27 <- _x ] s3)
+      | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_32 <- _x ] s4)
+      | s4 = into_inner_Int {_32} (fun (_x: int) -> [ &_31 <- _x ] s5)
+      | s5 = sub_Int {_27} {_31} (fun (_x: int) -> [ &off <- _x ] s6)
+      | s6 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
         MutBorrow.borrow_mut <Seq.seq t_PtrOwn_Cell_T> {self.current.seq}
           (fun (_bor: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
             [ &_37 <- _bor ] -{inv_Ghost_Seq_PtrOwn_Cell_T _bor.final}-
-            [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
-      | s1 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_37}
-          (fun (_x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_36 <- _x ] s2)
-      | s2 = bb13 ]
-    | bb13 = s0
-      [ s0 = {inv_Seq_PtrOwn_Cell_T _36.current}
+            [ &self <- { self with current = { self.current with seq = _bor.final } } ] s7)
+      | s7 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_37}
+          (fun (_x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_36 <- _x ] s8)
+      | s8 = {inv_Seq_PtrOwn_Cell_T _36.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {_36.current} {MutBorrow.get_id _36}
           (fun (_bor: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
             [ &_35 <- _bor ] -{inv_Seq_PtrOwn_Cell_T _bor.final}-
-            [ &_36 <- { _36 with current = _bor.final } ] s1)
-      | s1 = get_mut_ghost_PtrOwn_Cell_T {_35} {off} (fun (_x: t_Option_ref_PtrOwn_Cell_T) -> [ &_34 <- _x ] s2)
-      | s2 = bb14 ]
-    | bb14 = s0
-      [ s0 = unwrap_ref_PtrOwn_Cell_T {_34} (fun (_x: MutBorrow.t t_PtrOwn_Cell_T) -> [ &_33 <- _x ] s1) | s1 = bb15 ]
-    | bb15 = s0
-      [ s0 = {inv_PtrOwn_Cell_T _33.current}
+            [ &_36 <- { _36 with current = _bor.final } ] s9)
+      | s9 = get_mut_ghost_PtrOwn_Cell_T {_35} {off} (fun (_x: t_Option_ref_PtrOwn_Cell_T) -> [ &_34 <- _x ] s10)
+      | s10 = unwrap_ref_PtrOwn_Cell_T {_34} (fun (_x: MutBorrow.t t_PtrOwn_Cell_T) -> [ &_33 <- _x ] s11)
+      | s11 = {inv_PtrOwn_Cell_T _33.current}
         MutBorrow.borrow_final <t_PtrOwn_Cell_T> {_33.current} {MutBorrow.get_id _33}
           (fun (_bor: MutBorrow.t t_PtrOwn_Cell_T) ->
             [ &_25 <- _bor ] -{inv_PtrOwn_Cell_T _bor.final}-
-            [ &_33 <- { _33 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T'0 _36} s2
-      | s2 = -{resolve_ref_Seq_PtrOwn_Cell_T _36}- s3
-      | s3 = {[@expl:type invariant] inv_ref_PtrOwn_Cell_T _33} s4
-      | s4 = -{resolve_ref_PtrOwn_Cell_T _33}- s5
-      | s5 = {inv_PtrOwn_Cell_T _25.current}
+            [ &_33 <- { _33 with current = _bor.final } ] s12)
+      | s12 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T'0 _36} s13
+      | s13 = -{resolve_ref_Seq_PtrOwn_Cell_T _36}- s14
+      | s14 = {[@expl:type invariant] inv_ref_PtrOwn_Cell_T _33} s15
+      | s15 = -{resolve_ref_PtrOwn_Cell_T _33}- s16
+      | s16 = {inv_PtrOwn_Cell_T _25.current}
         MutBorrow.borrow_final <t_PtrOwn_Cell_T> {_25.current} {MutBorrow.get_id _25}
           (fun (_bor: MutBorrow.t t_PtrOwn_Cell_T) ->
             [ &_24 <- _bor ] -{inv_PtrOwn_Cell_T _bor.final}-
-            [ &_25 <- { _25 with current = _bor.final } ] s6)
-      | s6 = new_ref_PtrOwn_Cell_T {_24} (fun (_x: MutBorrow.t t_PtrOwn_Cell_T) -> [ &_23 <- _x ] s7)
-      | s7 = bb16 ]
-    | bb16 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Cell_T _25} s1
-      | s1 = -{resolve_ref_PtrOwn_Cell_T _25}- s2
-      | s2 = as_mut_Cell_T {_21} {_23} (fun (_x: MutBorrow.t t_Cell_T) -> [ &_20 <- _x ] s3)
-      | s3 = bb17 ]
-    | bb17 = s0
-      [ s0 = {inv_Cell_T _20.current}
+            [ &_25 <- { _25 with current = _bor.final } ] s17)
+      | s17 = new_ref_PtrOwn_Cell_T {_24} (fun (_x: MutBorrow.t t_PtrOwn_Cell_T) -> [ &_23 <- _x ] s18)
+      | s18 = {[@expl:type invariant] inv_ref_PtrOwn_Cell_T _25} s19
+      | s19 = -{resolve_ref_PtrOwn_Cell_T _25}- s20
+      | s20 = as_mut_Cell_T {_21} {_23} (fun (_x: MutBorrow.t t_Cell_T) -> [ &_20 <- _x ] s21)
+      | s21 = {inv_Cell_T _20.current}
         MutBorrow.borrow_final <t_Cell_T> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_Cell_T) ->
             [ &cell_last <- _bor ] -{inv_Cell_T _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Cell_T'0 _20} s2
-      | s2 = -{resolve_ref_Cell_T _20}- s3
-      | s3 = [ &cell_last <- { cell_last with current = { cell_last.current with next = cell_ptr } } ] s4
-      | s4 = {[@expl:type invariant] inv_ref_Cell_T'0 cell_last} s5
-      | s5 = -{resolve_ref_Cell_T cell_last}- s6
-      | s6 = [ &self <- { self with current = { self.current with last = cell_ptr } } ] s7
-      | s7 = bb18 ]
+            [ &_20 <- { _20 with current = _bor.final } ] s22)
+      | s22 = {[@expl:type invariant] inv_ref_Cell_T'0 _20} s23
+      | s23 = -{resolve_ref_Cell_T _20}- s24
+      | s24 = [ &cell_last <- { cell_last with current = { cell_last.current with next = cell_ptr } } ] s25
+      | s25 = {[@expl:type invariant] inv_ref_Cell_T'0 cell_last} s26
+      | s26 = -{resolve_ref_Cell_T cell_last}- s27
+      | s27 = [ &self <- { self with current = { self.current with last = cell_ptr } } ] s28
+      | s28 = bb18 ]
     | bb18 = s0
       [ s0 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {self.current.seq}
@@ -591,25 +580,19 @@ module M_impl_List_T__push_back (* List<T> *)
             [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
       | s1 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_45}
           (fun (_x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_44 <- _x ] s2)
-      | s2 = bb19 ]
-    | bb19 = s0
-      [ s0 = into_inner_PtrOwn_Cell_T {cell_own} (fun (_x: t_PtrOwn_Cell_T) -> [ &_46 <- _x ] s1) | s1 = bb20 ]
-    | bb20 = s0
-      [ s0 = {inv_Seq_PtrOwn_Cell_T _44.current}
+      | s2 = into_inner_PtrOwn_Cell_T {cell_own} (fun (_x: t_PtrOwn_Cell_T) -> [ &_46 <- _x ] s3)
+      | s3 = {inv_Seq_PtrOwn_Cell_T _44.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {_44.current} {MutBorrow.get_id _44}
           (fun (_bor: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
             [ &_43 <- _bor ] -{inv_Seq_PtrOwn_Cell_T _bor.final}-
-            [ &_44 <- { _44 with current = _bor.final } ] s1)
-      | s1 = push_back_ghost_PtrOwn_Cell_T {_43} {_46} (fun (_x: ()) -> [ &_42 <- _x ] s2)
-      | s2 = bb21 ]
-    | bb21 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T'0 _44} s1
-      | s1 = -{resolve_ref_Seq_PtrOwn_Cell_T _44}- s2
-      | s2 = {[@expl:type invariant] inv_ref_List_T self} s3
-      | s3 = -{resolve_ref_List_T self}- s4
-      | s4 = new_unit {_42} (fun (_x: ()) -> [ &_41 <- _x ] s5)
-      | s5 = bb24 ]
-    | bb24 = return {_ret} ]
+            [ &_44 <- { _44 with current = _bor.final } ] s4)
+      | s4 = push_back_ghost_PtrOwn_Cell_T {_43} {_46} (fun (_x: ()) -> [ &_42 <- _x ] s5)
+      | s5 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T'0 _44} s6
+      | s6 = -{resolve_ref_Seq_PtrOwn_Cell_T _44}- s7
+      | s7 = {[@expl:type invariant] inv_ref_List_T self} s8
+      | s8 = -{resolve_ref_List_T self}- s9
+      | s9 = new_unit {_42} (fun (_x: ()) -> [ &_41 <- _x ] s10)
+      | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
     | & x: t_T = x
@@ -866,15 +849,14 @@ module M_impl_List_T__push_front (* List<T> *)
     {[@expl:push_front 'self' type invariant] inv_ref_List_T self}
     {[@expl:push_front 'x' type invariant] inv_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_9 <- { v = x; next = self.current.first } ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new_Cell_T {_9} (fun (_x: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> [ &_8 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &cell_ptr <- _8.f0 ] s1
-      | s1 = [ &cell_own <- _8.f1 ] s2
-      | s2 = [ &self <- { self with current = { self.current with first = cell_ptr } } ] s3
-      | s3 = is_null_Cell_T {self.current.last} (fun (_x: bool) -> [ &_14 <- _x ] s4)
-      | s4 = bb3 ]
-    | bb3 = any [ br0 -> {_14 = false} (! bb6) | br1 -> {_14} (! bb4) ]
+    [ bb0 = s0
+      [ s0 = [ &_9 <- { v = x; next = self.current.first } ] s1
+      | s1 = new_Cell_T {_9} (fun (_x: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> [ &_8 <- _x ] s2)
+      | s2 = [ &cell_ptr <- _8.f0 ] s3
+      | s3 = [ &cell_own <- _8.f1 ] s4
+      | s4 = [ &self <- { self with current = { self.current with first = cell_ptr } } ] s5
+      | s5 = is_null_Cell_T {self.current.last} (fun (_x: bool) -> [ &_14 <- _x ] s6)
+      | s6 = any [ br0 -> {_14 = false} (! bb6) | br1 -> {_14} (! bb4) ] ]
     | bb4 = s0 [ s0 = [ &self <- { self with current = { self.current with last = cell_ptr } } ] s1 | s1 = bb6 ]
     | bb6 = s0
       [ s0 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
@@ -885,24 +867,19 @@ module M_impl_List_T__push_front (* List<T> *)
             [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
       | s1 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_21}
           (fun (_x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_20 <- _x ] s2)
-      | s2 = bb7 ]
-    | bb7 = s0 [ s0 = into_inner_PtrOwn_Cell_T {cell_own} (fun (_x: t_PtrOwn_Cell_T) -> [ &_22 <- _x ] s1) | s1 = bb8 ]
-    | bb8 = s0
-      [ s0 = {inv_Seq_PtrOwn_Cell_T _20.current}
+      | s2 = into_inner_PtrOwn_Cell_T {cell_own} (fun (_x: t_PtrOwn_Cell_T) -> [ &_22 <- _x ] s3)
+      | s3 = {inv_Seq_PtrOwn_Cell_T _20.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
             [ &_19 <- _bor ] -{inv_Seq_PtrOwn_Cell_T _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s1)
-      | s1 = push_front_ghost_PtrOwn_Cell_T {_19} {_22} (fun (_x: ()) -> [ &_18 <- _x ] s2)
-      | s2 = bb9 ]
-    | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T _20} s1
-      | s1 = -{resolve_ref_Seq_PtrOwn_Cell_T _20}- s2
-      | s2 = {[@expl:type invariant] inv_ref_List_T self} s3
-      | s3 = -{resolve_ref_List_T self}- s4
-      | s4 = new_unit {_18} (fun (_x: ()) -> [ &_17 <- _x ] s5)
-      | s5 = bb11 ]
-    | bb11 = return {_ret} ]
+            [ &_20 <- { _20 with current = _bor.final } ] s4)
+      | s4 = push_front_ghost_PtrOwn_Cell_T {_19} {_22} (fun (_x: ()) -> [ &_18 <- _x ] s5)
+      | s5 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T _20} s6
+      | s6 = -{resolve_ref_Seq_PtrOwn_Cell_T _20}- s7
+      | s7 = {[@expl:type invariant] inv_ref_List_T self} s8
+      | s8 = -{resolve_ref_List_T self}- s9
+      | s9 = new_unit {_18} (fun (_x: ()) -> [ &_17 <- _x ] s10)
+      | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
     | & x: t_T = x
@@ -1172,13 +1149,14 @@ module M_impl_List_T__pop_front (* List<T> *)
   let rec pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
     {[@expl:pop_front 'self' type invariant] inv_ref_List_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = is_null_Cell_T {self.current.first} (fun (_x: bool) -> [ &_5 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = is_null_Cell_T {self.current.first} (fun (_x: bool) -> [ &_5 <- _x ] s1)
+      | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_ref_List_T self} s1
       | s1 = -{resolve_ref_List_T self}- s2
       | s2 = [ &_ret <- None ] s3
-      | s3 = bb17 ]
+      | s3 = return {_ret} ]
     | bb3 = s0
       [ s0 = {inv_Ghost_Seq_PtrOwn_Cell_T self.current.seq}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {self.current.seq}
@@ -1188,41 +1166,31 @@ module M_impl_List_T__pop_front (* List<T> *)
             [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
       | s1 = deref_mut_Ghost_Seq_PtrOwn_Cell_T {_13}
           (fun (_x: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) -> [ &_12 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_Seq_PtrOwn_Cell_T _12.current}
+      | s2 = {inv_Seq_PtrOwn_Cell_T _12.current}
         MutBorrow.borrow_final <Seq.seq t_PtrOwn_Cell_T> {_12.current} {MutBorrow.get_id _12}
           (fun (_bor: MutBorrow.t (Seq.seq t_PtrOwn_Cell_T)) ->
             [ &_11 <- _bor ] -{inv_Seq_PtrOwn_Cell_T _bor.final}-
-            [ &_12 <- { _12 with current = _bor.final } ] s1)
-      | s1 = pop_front_ghost_PtrOwn_Cell_T {_11} (fun (_x: t_Option_PtrOwn_Cell_T) -> [ &_10 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T _12} s1
-      | s1 = -{resolve_ref_Seq_PtrOwn_Cell_T _12}- s2
-      | s2 = unwrap_PtrOwn_Cell_T {_10} (fun (_x: t_PtrOwn_Cell_T) -> [ &_9 <- _x ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0 [ s0 = new_PtrOwn_Cell_T {_9} (fun (_x: t_PtrOwn_Cell_T) -> [ &own <- _x ] s1) | s1 = bb7 ]
-    | bb7 = s0
-      [ s0 = [ &_16 <- self.current.first ] s1
-      | s1 = to_box_Cell_T {_16} {own} (fun (_x: t_Cell_T) -> [ &_15 <- _x ] s2)
-      | s2 = bb8 ]
-    | bb8 = s0 [ s0 = [ &cell <- _15 ] s1 | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &self <- { self with current = { self.current with first = cell.next } } ] s1
-      | s1 = is_null_Cell_T {self.current.first} (fun (_x: bool) -> [ &_21 <- _x ] s2)
-      | s2 = bb10 ]
-    | bb10 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb11) ]
-    | bb11 = s0 [ s0 = null_mut_Cell_T (fun (_x: Opaque.ptr) -> [ &_23 <- _x ] s1) | s1 = bb12 ]
-    | bb12 = s0
-      [ s0 = [ &self <- { self with current = { self.current with last = _23 } } ] s1
-      | s1 = {[@expl:type invariant] inv_ref_List_T self} s2
-      | s2 = -{resolve_ref_List_T self}- s3
-      | s3 = bb14 ]
+            [ &_12 <- { _12 with current = _bor.final } ] s3)
+      | s3 = pop_front_ghost_PtrOwn_Cell_T {_11} (fun (_x: t_Option_PtrOwn_Cell_T) -> [ &_10 <- _x ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_Seq_PtrOwn_Cell_T _12} s5
+      | s5 = -{resolve_ref_Seq_PtrOwn_Cell_T _12}- s6
+      | s6 = unwrap_PtrOwn_Cell_T {_10} (fun (_x: t_PtrOwn_Cell_T) -> [ &_9 <- _x ] s7)
+      | s7 = new_PtrOwn_Cell_T {_9} (fun (_x: t_PtrOwn_Cell_T) -> [ &own <- _x ] s8)
+      | s8 = [ &_16 <- self.current.first ] s9
+      | s9 = to_box_Cell_T {_16} {own} (fun (_x: t_Cell_T) -> [ &_15 <- _x ] s10)
+      | s10 = [ &cell <- _15 ] s11
+      | s11 = [ &self <- { self with current = { self.current with first = cell.next } } ] s12
+      | s12 = is_null_Cell_T {self.current.first} (fun (_x: bool) -> [ &_21 <- _x ] s13)
+      | s13 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb11) ] ]
+    | bb11 = s0
+      [ s0 = null_mut_Cell_T (fun (_x: Opaque.ptr) -> [ &_23 <- _x ] s1)
+      | s1 = [ &self <- { self with current = { self.current with last = _23 } } ] s2
+      | s2 = {[@expl:type invariant] inv_ref_List_T self} s3
+      | s3 = -{resolve_ref_List_T self}- s4
+      | s4 = bb14 ]
     | bb13 = s0
       [ s0 = {[@expl:type invariant] inv_ref_List_T self} s1 | s1 = -{resolve_ref_List_T self}- s2 | s2 = bb14 ]
-    | bb14 = s0 [ s0 = [ &_ret <- Some (cell.v) ] s1 | s1 = bb17 ]
-    | bb17 = return {_ret} ]
+    | bb14 = s0 [ s0 = [ &_ret <- Some (cell.v) ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
     | & _5: bool = Any.any_l ()

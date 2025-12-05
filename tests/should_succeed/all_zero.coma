@@ -47,8 +47,7 @@ module M_all_zero
   meta "select_lsinst" "all"
   
   let rec all_zero (l: MutBorrow.t t_List) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &loop_l <- l ] s1 | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = [ &loop_l <- l ] s2 | s2 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:loop invariant #0] (forall i: int. 0 <= i /\ i < len loop_l.current
             -> get loop_l.final i = Some (0: UInt32.t))
@@ -56,11 +55,10 @@ module M_all_zero
         {[@expl:loop invariant #1] len loop_l.final = len loop_l.current
         -> len (fin_Snapshot_ref_List old_l) = len old_l.current}
         (! s0)
-        [ s0 = bb3 ]
-        [ bb3 = any
+        [ s0 = any
           [ br0 (x0: UInt32.t) (x1: t_List) -> {loop_l.current = Cons x0 x1} (! bb5)
-          | br1 -> {loop_l.current = Nil} (! bb6) ]
-        | bb5 = s0
+          | br1 -> {loop_l.current = Nil} (! bb6) ] ]
+        [ bb5 = s0
           [ s0 = elim_Cons {loop_l.current}
               (fun (r0: UInt32.t) (r1: t_List) ->
                 MutBorrow.borrow_final <UInt32.t> {r0} {MutBorrow.inherit_id (MutBorrow.get_id loop_l) 1}

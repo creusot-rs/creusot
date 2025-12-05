@@ -22,8 +22,8 @@ module M_implementation__impl_PartialEq_for_Element__eq (* <implementation::Elem
   meta "select_lsinst" "all"
   
   let rec eq_Element (self: t_Element) (other: t_Element) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = addr_eq_unit {self.f0} {other.f0} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = bb1 ]
-    | bb1 = return {_ret} ] [ & _ret: bool = Any.any_l () | & self: t_Element = self | & other: t_Element = other ])
+    [ bb0 = s0 [ s0 = addr_eq_unit {self.f0} {other.f0} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_Element = self | & other: t_Element = other ])
     [ return (result: bool) -> {[@expl:eq ensures] result
       = (deep_model_ref_Element self = deep_model_ref_Element other)}
       (! return {result}) ]
@@ -792,22 +792,18 @@ module M_implementation__new
   meta "select_lsinst" "all"
   
   let rec new_T (return (x: t_UnionFind_T)) = (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = new_Element (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_7 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = into_inner_FMap_Element_PtrOwn_Node_T {_7} (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_6 <- _x ] s1)
-      | s1 = bb7 ]
-    | bb7 = s0
-      [ s0 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Element;
+    [ bb0 = s0
+      [ s0 = new_Element (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_7 <- _x ] s1)
+      | s1 = into_inner_FMap_Element_PtrOwn_Node_T {_7} (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Element;
                         perms = _6;
                         payloads = such_that_Mapping_Element_T (fun (__0: Map.map t_Element t_T) -> true);
                         roots = such_that_Mapping_Element_Element (fun (__0: Map.map t_Element t_Element) -> true);
                         depth = such_that_Mapping_Element_Int (fun (__0: Map.map t_Element int) -> true);
-                        max_depth = 0 } ] s1
-      | s1 = [ &_2 <- { f0'1 = _3 } ] s2
-      | s2 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s3)
-      | s3 = bb8 ]
-    | bb8 = return {_ret} ]
+                        max_depth = 0 } ] s3
+      | s3 = [ &_2 <- { f0'1 = _3 } ] s4
+      | s4 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: t_UnionFind_T = Any.any_l ()
     | & _2: t_UnionFind_T = Any.any_l ()
     | & _3: t_UFInner_T = Any.any_l ()
@@ -1263,35 +1259,29 @@ module M_implementation__make
     {[@expl:make 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
     {[@expl:make 'payload' type invariant] inv_T payload}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &payload_snap <- payload ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new (fun (_x: t_PeanoInt) -> [ &_19 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_18 <- Root _19 payload ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_Node_T {_18} (fun (_x: tup2_ptr_Node_T_Ghost_PtrOwn_Node_T) -> [ &_17 <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &ptr <- _17.f0'1 ] s1
-      | s1 = [ &perm <- _17.f1'1 ] s2
-      | s2 = [ &_22 <- ptr ] s3
-      | s3 = [ &elt <- { f0'0 = _22 } ] s4
-      | s4 = into_inner_PtrOwn_Node_T {perm} (fun (_x: t_PtrOwn_Node_T) -> [ &_29 <- _x ] s5)
-      | s5 = bb5 ]
-    | bb5 = s0
-      [ s0 = into_inner_ref_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _x ] s1) | s1 = bb6 ]
-    | bb6 = s0
-      [ s0 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s1
-      | s1 = [ &perm'0 <- _28.f0'3 ] s2
-      | s2 = [ &uf'0 <- _28.f1'3 ] s3
-      | s3 = [ &other_elt_ptr_snap <- (such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
-        /\ deep_model_Element e = deep_model_Element elt)).f0'0 ] s4
-      | s4 = bb7 ]
-    | bb7 = s0 [ s0 = into_ghost_ptr_unit {other_elt_ptr_snap} (fun (_x: Opaque.ptr) -> [ &_39 <- _x ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = into_inner_ptr_unit {_39} (fun (_x: Opaque.ptr) -> [ &_38 <- _x ] s1) | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &other_elt <- { f0'0 = _38 } ] s1
-      | s1 = [ &_45 <- other_elt ] s2
-      | s2 = get_ghost_Element {uf'0.current.f0'2.perms} {_45}
-          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_42 <- _x ] s3)
-      | s3 = bb10 ]
-    | bb10 = any [ br0 -> {_42 = None'0} (! bb16) | br1 (x0: t_PtrOwn_Node_T) -> {_42 = Some'0 x0} (! bb13) ]
+    [ bb0 = s0
+      [ s0 = [ &payload_snap <- payload ] s1
+      | s1 = new (fun (_x: t_PeanoInt) -> [ &_19 <- _x ] s2)
+      | s2 = [ &_18 <- Root _19 payload ] s3
+      | s3 = new_Node_T {_18} (fun (_x: tup2_ptr_Node_T_Ghost_PtrOwn_Node_T) -> [ &_17 <- _x ] s4)
+      | s4 = [ &ptr <- _17.f0'1 ] s5
+      | s5 = [ &perm <- _17.f1'1 ] s6
+      | s6 = [ &_22 <- ptr ] s7
+      | s7 = [ &elt <- { f0'0 = _22 } ] s8
+      | s8 = into_inner_PtrOwn_Node_T {perm} (fun (_x: t_PtrOwn_Node_T) -> [ &_29 <- _x ] s9)
+      | s9 = into_inner_ref_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _x ] s10)
+      | s10 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s11
+      | s11 = [ &perm'0 <- _28.f0'3 ] s12
+      | s12 = [ &uf'0 <- _28.f1'3 ] s13
+      | s13 = [ &other_elt_ptr_snap <- (such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
+        /\ deep_model_Element e = deep_model_Element elt)).f0'0 ] s14
+      | s14 = into_ghost_ptr_unit {other_elt_ptr_snap} (fun (_x: Opaque.ptr) -> [ &_39 <- _x ] s15)
+      | s15 = into_inner_ptr_unit {_39} (fun (_x: Opaque.ptr) -> [ &_38 <- _x ] s16)
+      | s16 = [ &other_elt <- { f0'0 = _38 } ] s17
+      | s17 = [ &_45 <- other_elt ] s18
+      | s18 = get_ghost_Element {uf'0.current.f0'2.perms} {_45}
+          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_42 <- _x ] s19)
+      | s19 = any [ br0 -> {_42 = None'0} (! bb16) | br1 (x0: t_PtrOwn_Node_T) -> {_42 = Some'0 x0} (! bb13) ] ]
     | bb13 = s0
       [ s0 = elim_Some {_42} (fun (r0: t_PtrOwn_Node_T) -> [ &other_perm <- r0 ] s1)
       | s1 = {inv_PtrOwn_Node_T perm'0}
@@ -1305,11 +1295,9 @@ module M_implementation__make
             [ &_48 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
             [ &_49 <- { _49 with current = _bor.final } ] s3)
       | s3 = disjoint_lemma_Node_T {_48} {other_perm} (fun (_x: ()) -> [ &_41 <- _x ] s4)
-      | s4 = bb15 ]
-    | bb15 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _49} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _49}- s2
-      | s2 = bb16 ]
+      | s4 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _49} s5
+      | s5 = -{resolve_ref_PtrOwn_Node_T _49}- s6
+      | s6 = bb16 ]
     | bb16 = s0
       [ s0 = {inv_FMap_Element_PtrOwn_Node_T uf'0.current.f0'2.perms}
         MutBorrow.borrow_final <t_FMap_Element_PtrOwn_Node_T> {uf'0.current.f0'2.perms}
@@ -1320,32 +1308,23 @@ module M_implementation__make
       | s1 = insert_ghost_Element {_52} {elt} {perm'0} (fun (_x: t_Option_PtrOwn_Node_T) -> [ &_51 <- _x ] s2)
       | s2 = {[@expl:type invariant] inv_Option_PtrOwn_Node_T _51} s3
       | s3 = -{resolve_Option_PtrOwn_Node_T _51}- s4
-      | s4 = bb18 ]
-    | bb18 = s0
-      [ s0 =
+      | s4 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Element'0 uf'0.current.f0'2.domain elt } } } ]
-        s1
-      | s1 = bb19 ]
-    | bb19 = s0
-      [ s0 =
+        s5
+      | s5 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
-        s1
-      | s1 = bb20 ]
-    | bb20 = s0
-      [ s0 =
+        s6
+      | s6 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth } } } ]
-        s1
-      | s1 = bb21 ]
-    | bb21 = s0
-      [ s0 =
+        s7
+      | s7 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = Map.set uf'0.current.f0'2.roots elt elt } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_UnionFind_T uf'0} s2
-      | s2 = -{resolve_ref_UnionFind_T uf'0}- s3
-      | s3 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s4)
-      | s4 = bb22 ]
-    | bb22 = s0 [ s0 = [ &_ret <- elt ] s1 | s1 = bb23 ]
-    | bb23 = return {_ret} ]
+        s8
+      | s8 = {[@expl:type invariant] inv_ref_UnionFind_T uf'0} s9
+      | s9 = -{resolve_ref_UnionFind_T uf'0}- s10
+      | s10 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s11)
+      | s11 = [ &_ret <- elt ] s12
+      | s12 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & payload: t_T = payload
@@ -1982,20 +1961,17 @@ module M_implementation__find_inner
     {[@expl:find_inner requires] in_domain_T uf.current elem}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_26 <- elem ] s1
-      | s1 = get_ghost_Element {_23.current.f0'0.perms} {_26}
-          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_21 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = unwrap_ref_PtrOwn_Node_T {_21} (fun (_x: t_PtrOwn_Node_T) -> [ &_20 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_ref_PtrOwn_Node_T {_20} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_29 <- elem.f0 ] s1
-      | s1 = as_ref_Node_T {_29} {perm} (fun (_x: t_Node_T) -> [ &_27 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = any
-      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_27 = Root x0 x1} (! bb7) | br1 (x0: t_Element) -> {_27 = Link x0} (! bb8) ]
+      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _x ] s1)
+      | s1 = [ &_26 <- elem ] s2
+      | s2 = get_ghost_Element {_23.current.f0'0.perms} {_26}
+          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_21 <- _x ] s3)
+      | s3 = unwrap_ref_PtrOwn_Node_T {_21} (fun (_x: t_PtrOwn_Node_T) -> [ &_20 <- _x ] s4)
+      | s4 = new_ref_PtrOwn_Node_T {_20} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = [ &_29 <- elem.f0 ] s6
+      | s6 = as_ref_Node_T {_29} {perm} (fun (_x: t_Node_T) -> [ &_27 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_27 = Root x0 x1} (! bb7)
+        | br1 (x0: t_Element) -> {_27 = Link x0} (! bb8) ] ]
     | bb8 = s0
       [ s0 = elim_Link {_27} (fun (r0: t_Element) -> [ &e <- r0 ] s1)
       | s1 = {inv_Ghost_ref_UnionFind_T uf}
@@ -2005,111 +1981,92 @@ module M_implementation__find_inner
             [ &uf <- _bor.final ] s2)
       | s2 = deref_mut_Ghost_ref_UnionFind_T {_40}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_39 <- _x ] s3)
-      | s3 = bb10 ]
-    | bb10 = s0
-      [ s0 = {inv_UnionFind_T _39.current.current}
+      | s3 = {inv_UnionFind_T _39.current.current}
         MutBorrow.borrow_mut <t_UnionFind_T> {_39.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_38 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_39 <- { _39 with current = { _39.current with current = _bor.final } } ] s1)
-      | s1 = {inv_UnionFind_T _38.current}
+            [ &_39 <- { _39 with current = { _39.current with current = _bor.final } } ] s4)
+      | s4 = {inv_UnionFind_T _38.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_38.current} {MutBorrow.get_id _38}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_37 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_38 <- { _38 with current = _bor.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _39} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _39}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _38} s5
-      | s5 = -{resolve_ref_UnionFind_T _38}- s6
-      | s6 = {inv_UnionFind_T _37.current}
+            [ &_38 <- { _38 with current = _bor.final } ] s5)
+      | s5 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _39} s6
+      | s6 = -{resolve_ref_ref_UnionFind_T _39}- s7
+      | s7 = {[@expl:type invariant] inv_ref_UnionFind_T _38} s8
+      | s8 = -{resolve_ref_UnionFind_T _38}- s9
+      | s9 = {inv_UnionFind_T _37.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_36 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_37 <- { _37 with current = _bor.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_36} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_35 <- _x ] s8)
-      | s8 = bb11 ]
-    | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _37} s1
-      | s1 = -{resolve_ref_UnionFind_T _37}- s2
-      | s2 = find_inner_T {_35} {e} (fun (_x: t_Element) -> [ &root <- _x ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
+            [ &_37 <- { _37 with current = _bor.final } ] s10)
+      | s10 = new_ref_UnionFind_T {_36} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_35 <- _x ] s11)
+      | s11 = {[@expl:type invariant] inv_ref_UnionFind_T _37} s12
+      | s12 = -{resolve_ref_UnionFind_T _37}- s13
+      | s13 = find_inner_T {_35} {e} (fun (_x: t_Element) -> [ &root <- _x ] s14)
+      | s14 = {inv_Ghost_ref_UnionFind_T uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_44 <- _bor ] -{inv_Ghost_ref_UnionFind_T _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_44}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_43 <- _x ] s2)
-      | s2 = bb13 ]
-    | bb13 = s0
-      [ s0 = {inv_UFInner_T _43.current.current.f0'0}
+            [ &uf <- _bor.final ] s15)
+      | s15 = deref_mut_Ghost_ref_UnionFind_T {_44}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_43 <- _x ] s16)
+      | s16 = {inv_UFInner_T _43.current.current.f0'0}
         MutBorrow.borrow_mut <t_UFInner_T> {_43.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp <- _bor ] -{inv_UFInner_T _bor.final}-
-            [ &_43 <- { _43 with current = { _43.current with current = { f0'0 = _bor.final } } } ] s1)
-      | s1 = new_ref_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s2)
-      | s2 = bb14 ]
-    | bb14 = s0
-      [ s0 = {[@expl:assertion] index_Mapping_Element_Int uf'0.current.depth elem
+            [ &_43 <- { _43 with current = { _43.current with current = { f0'0 = _bor.final } } } ] s17)
+      | s17 = new_ref_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s18)
+      | s18 = {[@expl:assertion] index_Mapping_Element_Int uf'0.current.depth elem
         < index_Mapping_Element_Int uf'0.current.depth root}
-        s1
-      | s1 = {inv_Ghost_ref_UFInner_T uf'0}
+        s19
+      | s19 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_58 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s2)
-      | s2 = deref_mut_Ghost_ref_UFInner_T {_58} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_57 <- _x ] s3)
-      | s3 = bb15 ]
-    | bb15 = s0
-      [ s0 = [ &_60 <- elem ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _57.current.current.perms}
+            [ &uf'0 <- _bor.final ] s20)
+      | s20 = deref_mut_Ghost_ref_UFInner_T {_58}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_57 <- _x ] s21)
+      | s21 = [ &_60 <- elem ] s22
+      | s22 = {inv_FMap_Element_PtrOwn_Node_T _57.current.current.perms}
         MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_57.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
             [ &_56 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
             [ &_57 <- { _57 with current = { _57.current with current = { _57.current.current with perms = _bor.final } } } ]
-            s2)
-      | s2 = get_mut_ghost_Element {_56} {_60} (fun (_x: t_Option_ref_PtrOwn_Node_T'0) -> [ &_55 <- _x ] s3)
-      | s3 = bb16 ]
-    | bb16 = s0
-      [ s0 = unwrap_ref_PtrOwn_Node_T'0 {_55} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_54 <- _x ] s1) | s1 = bb17 ]
-    | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_ref_UFInner_T _57} s1
-      | s1 = -{resolve_ref_ref_UFInner_T _57}- s2
-      | s2 = {inv_PtrOwn_Node_T _54.current}
+            s23)
+      | s23 = get_mut_ghost_Element {_56} {_60} (fun (_x: t_Option_ref_PtrOwn_Node_T'0) -> [ &_55 <- _x ] s24)
+      | s24 = unwrap_ref_PtrOwn_Node_T'0 {_55} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_54 <- _x ] s25)
+      | s25 = {[@expl:type invariant] inv_ref_ref_UFInner_T _57} s26
+      | s26 = -{resolve_ref_ref_UFInner_T _57}- s27
+      | s27 = {inv_PtrOwn_Node_T _54.current}
         MutBorrow.borrow_final <t_PtrOwn_Node_T> {_54.current} {MutBorrow.get_id _54}
           (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
             [ &_53 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
-            [ &_54 <- { _54 with current = _bor.final } ] s3)
-      | s3 = new_ref_PtrOwn_Node_T'0 {_53} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &mut_perm <- _x ] s4)
-      | s4 = bb18 ]
-    | bb18 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _54} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _54}- s2
-      | s2 = [ &_62 <- Link root ] s3
-      | s3 = [ &_65 <- elem.f0 ] s4
-      | s4 = as_mut_Node_T {_65} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_64 <- _x ] s5)
-      | s5 = bb20 ]
-    | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T _64.current} s1
-      | s1 = -{resolve_Node_T _64.current}- s2
-      | s2 = [ &_64 <- { _64 with current = _62 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 _64} s4
-      | s4 = -{resolve_ref_Node_T _64}- s5
-      | s5 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s6
-      | s6 = -{resolve_Ghost_ref_UFInner_T uf'0}- s7
-      | s7 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _43} s8
-      | s8 = -{resolve_ref_ref_UnionFind_T _43}- s9
-      | s9 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s10
-      | s10 = -{resolve_Ghost_ref_UnionFind_T uf}- s11
-      | s11 = bb22 ]
-    | bb22 = s0 [ s0 = [ &_ret <- root ] s1 | s1 = bb23 ]
+            [ &_54 <- { _54 with current = _bor.final } ] s28)
+      | s28 = new_ref_PtrOwn_Node_T'0 {_53} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &mut_perm <- _x ] s29)
+      | s29 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _54} s30
+      | s30 = -{resolve_ref_PtrOwn_Node_T _54}- s31
+      | s31 = [ &_62 <- Link root ] s32
+      | s32 = [ &_65 <- elem.f0 ] s33
+      | s33 = as_mut_Node_T {_65} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_64 <- _x ] s34)
+      | s34 = {[@expl:type invariant] inv_Node_T _64.current} s35
+      | s35 = -{resolve_Node_T _64.current}- s36
+      | s36 = [ &_64 <- { _64 with current = _62 } ] s37
+      | s37 = {[@expl:type invariant] inv_ref_Node_T'0 _64} s38
+      | s38 = -{resolve_ref_Node_T _64}- s39
+      | s39 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s40
+      | s40 = -{resolve_Ghost_ref_UFInner_T uf'0}- s41
+      | s41 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _43} s42
+      | s42 = -{resolve_ref_ref_UnionFind_T _43}- s43
+      | s43 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s44
+      | s44 = -{resolve_Ghost_ref_UnionFind_T uf}- s45
+      | s45 = [ &_ret <- root ] s46
+      | s46 = return {_ret} ]
     | bb7 = s0
       [ s0 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s1
       | s1 = -{resolve_Ghost_ref_UnionFind_T uf}- s2
-      | s2 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_ret <- elem ] s1 | s1 = bb23 ]
-    | bb23 = return {_ret} ]
+      | s2 = [ &_ret <- elem ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & elem: t_Element = elem
@@ -2427,8 +2384,7 @@ module M_implementation__find
     {[@expl:find 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
     {[@expl:find requires] in_domain_T uf.current elem}
     (! bb0
-    [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_x: t_Element) -> [ &_ret <- _x ] s1) | s1 = bb1 ]
-    | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_x: t_Element) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l () | & uf: MutBorrow.t t_UnionFind_T = uf | & elem: t_Element = elem ])
     [ return (result: t_Element) -> {[@expl:find ensures #0] result = root_T uf.current elem}
       {[@expl:find ensures #1] unchanged_T uf}
@@ -2789,19 +2745,17 @@ module M_implementation__get
     {[@expl:get requires #0] in_domain_T uf elem}
     {[@expl:get requires #1] root_T uf elem = elem}
     (! bb0
-    [ bb0 = s0 [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: t_UnionFind_T) -> [ &_16 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_19 <- elem ] s1
-      | s1 = get_ghost_Element {_16.f0'0.perms} {_19} (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_14 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = unwrap_ref_PtrOwn_Node_T {_14} (fun (_x: t_PtrOwn_Node_T) -> [ &_13 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_ref_PtrOwn_Node_T {_13} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_22 <- elem.f0 ] s1
-      | s1 = as_ref_Node_T {_22} {perm} (fun (_x: t_Node_T) -> [ &_20 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = any
-      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_20 = Root x0 x1} (! bb8) | br1 (x0: t_Element) -> {_20 = Link x0} (! bb6) ]
+    [ bb0 = s0
+      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: t_UnionFind_T) -> [ &_16 <- _x ] s1)
+      | s1 = [ &_19 <- elem ] s2
+      | s2 = get_ghost_Element {_16.f0'0.perms} {_19} (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_14 <- _x ] s3)
+      | s3 = unwrap_ref_PtrOwn_Node_T {_14} (fun (_x: t_PtrOwn_Node_T) -> [ &_13 <- _x ] s4)
+      | s4 = new_ref_PtrOwn_Node_T {_13} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = [ &_22 <- elem.f0 ] s6
+      | s6 = as_ref_Node_T {_22} {perm} (fun (_x: t_Node_T) -> [ &_20 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_20 = Root x0 x1} (! bb8)
+        | br1 (x0: t_Element) -> {_20 = Link x0} (! bb6) ] ]
     | bb6 = {false} any
     | bb8 = s0
       [ s0 = elim_Root {_20} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
@@ -3146,37 +3100,32 @@ module M_implementation__equiv
             [ &uf <- _bor.final ] s1)
       | s1 = deref_mut_Ghost_ref_UnionFind_T {_22}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_21 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_UnionFind_T _21.current.current}
+      | s2 = {inv_UnionFind_T _21.current.current}
         MutBorrow.borrow_mut <t_UnionFind_T> {_21.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_20 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_21 <- { _21 with current = { _21.current with current = _bor.final } } ] s1)
-      | s1 = {inv_UnionFind_T _20.current}
+            [ &_21 <- { _21 with current = { _21.current with current = _bor.final } } ] s3)
+      | s3 = {inv_UnionFind_T _20.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_19 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _21} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _21}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _20} s5
-      | s5 = -{resolve_ref_UnionFind_T _20}- s6
-      | s6 = {inv_UnionFind_T _19.current}
+            [ &_20 <- { _20 with current = _bor.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _21} s5
+      | s5 = -{resolve_ref_ref_UnionFind_T _21}- s6
+      | s6 = {[@expl:type invariant] inv_ref_UnionFind_T _20} s7
+      | s7 = -{resolve_ref_UnionFind_T _20}- s8
+      | s8 = {inv_UnionFind_T _19.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_19.current} {MutBorrow.get_id _19}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_18 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_19 <- { _19 with current = _bor.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_18} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _x ] s8)
-      | s8 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _19} s1
-      | s1 = -{resolve_ref_UnionFind_T _19}- s2
-      | s2 = find_T {_17} {e1} (fun (_x: t_Element) -> [ &r1 <- _x ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = find_T {uf} {e2} (fun (_x: t_Element) -> [ &r2 <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = eq_Element {r1} {r2} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+            [ &_19 <- { _19 with current = _bor.final } ] s9)
+      | s9 = new_ref_UnionFind_T {_18} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _x ] s10)
+      | s10 = {[@expl:type invariant] inv_ref_UnionFind_T _19} s11
+      | s11 = -{resolve_ref_UnionFind_T _19}- s12
+      | s12 = find_T {_17} {e1} (fun (_x: t_Element) -> [ &r1 <- _x ] s13)
+      | s13 = find_T {uf} {e2} (fun (_x: t_Element) -> [ &r2 <- _x ] s14)
+      | s14 = eq_Element {r1} {r2} (fun (_x: bool) -> [ &_ret <- _x ] s15)
+      | s15 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & e1: t_Element = e1
@@ -3896,13 +3845,14 @@ module M_implementation__link
     {[@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y}
     {[@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_Element {x} {y} (fun (_x: bool) -> [ &_25 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_25 = false} (! bb3) | br1 -> {_25} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = eq_Element {x} {y} (fun (_x: bool) -> [ &_25 <- _x ] s1)
+      | s1 = any [ br0 -> {_25 = false} (! bb3) | br1 -> {_25} (! bb2) ] ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s1
       | s1 = -{resolve_Ghost_ref_UnionFind_T uf}- s2
       | s2 = [ &_ret <- x ] s3
-      | s3 = bb51 ]
+      | s3 = return {_ret} ]
     | bb3 = s0
       [ s0 = {inv_Ghost_ref_UnionFind_T uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
@@ -3911,109 +3861,86 @@ module M_implementation__link
             [ &uf <- _bor.final ] s1)
       | s1 = deref_mut_Ghost_ref_UnionFind_T {_31}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_30 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_UFInner_T _30.current.current.f0'0}
+      | s2 = {inv_UFInner_T _30.current.current.f0'0}
         MutBorrow.borrow_mut <t_UFInner_T> {_30.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp <- _bor ] -{inv_UFInner_T _bor.final}-
-            [ &_30 <- { _30 with current = { _30.current with current = { f0'0 = _bor.final } } } ] s1)
-      | s1 = new_ref_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+            [ &_30 <- { _30 with current = { _30.current with current = { f0'0 = _bor.final } } } ] s3)
+      | s3 = new_ref_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s4)
+      | s4 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_41 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_41} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_40 <- _x ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0
-      [ s0 = [ &_43 <- x ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _40.current.current.perms}
+            [ &uf'0 <- _bor.final ] s5)
+      | s5 = deref_mut_Ghost_ref_UFInner_T {_41} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_40 <- _x ] s6)
+      | s6 = [ &_43 <- x ] s7
+      | s7 = {inv_FMap_Element_PtrOwn_Node_T _40.current.current.perms}
         MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_40.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
             [ &_39 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
             [ &_40 <- { _40 with current = { _40.current with current = { _40.current.current with perms = _bor.final } } } ]
-            s2)
-      | s2 = split_mut_ghost_Element {_39} {_43}
-          (fun (_x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_38 <- _x ] s3)
-      | s3 = bb7 ]
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_ref_UFInner_T _40} s1
-      | s1 = -{resolve_ref_ref_UFInner_T _40}- s2
-      | s2 = new_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T {_38}
-          (fun (_x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_37 <- _x ] s3)
-      | s3 = bb8 ]
-    | bb8 = s0
-      [ s0 = split_ref_PtrOwn_Node_T {_37}
-          (fun (_x: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T) -> [ &_36 <- _x ] s1)
-      | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &perm_x <- _36.f0'3 ] s1
-      | s1 = [ &m <- _36.f1'3 ] s2
-      | s2 = [ &_46 <- x.f0 ] s3
-      | s3 = as_mut_Node_T {_46} {perm_x} (fun (_x: MutBorrow.t t_Node_T) -> [ &_45 <- _x ] s4)
-      | s4 = bb10 ]
-    | bb10 = s0
-      [ s0 = {inv_Node_T _45.current}
+            s8)
+      | s8 = split_mut_ghost_Element {_39} {_43}
+          (fun (_x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_38 <- _x ] s9)
+      | s9 = {[@expl:type invariant] inv_ref_ref_UFInner_T _40} s10
+      | s10 = -{resolve_ref_ref_UFInner_T _40}- s11
+      | s11 = new_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T {_38}
+          (fun (_x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_37 <- _x ] s12)
+      | s12 = split_ref_PtrOwn_Node_T {_37}
+          (fun (_x: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T) -> [ &_36 <- _x ] s13)
+      | s13 = [ &perm_x <- _36.f0'3 ] s14
+      | s14 = [ &m <- _36.f1'3 ] s15
+      | s15 = [ &_46 <- x.f0 ] s16
+      | s16 = as_mut_Node_T {_46} {perm_x} (fun (_x: MutBorrow.t t_Node_T) -> [ &_45 <- _x ] s17)
+      | s17 = {inv_Node_T _45.current}
         MutBorrow.borrow_final <t_Node_T> {_45.current} {MutBorrow.get_id _45}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &bx <- _bor ] -{inv_Node_T _bor.final}-
-            [ &_45 <- { _45 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 _45} s2
-      | s2 = -{resolve_ref_Node_T _45}- s3
-      | s3 = [ &_51 <- y.f0 ] s4
-      | s4 = {inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m}
+            [ &_45 <- { _45 with current = _bor.final } ] s18)
+      | s18 = {[@expl:type invariant] inv_ref_Node_T'0 _45} s19
+      | s19 = -{resolve_ref_Node_T _45}- s20
+      | s20 = [ &_51 <- y.f0 ] s21
+      | s21 = {inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m}
         MutBorrow.borrow_mut <MutBorrow.t t_FMap_Element_PtrOwn_Node_T> {m}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) ->
             [ &_60 <- _bor ] -{inv_Ghost_ref_FMap_Element_PtrOwn_Node_T _bor.final}-
-            [ &m <- _bor.final ] s5)
-      | s5 = deref_mut_Ghost_ref_FMap_Element_PtrOwn_Node_T {_60}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) -> [ &_59 <- _x ] s6)
-      | s6 = bb11 ]
-    | bb11 = s0
-      [ s0 = [ &_62 <- y ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _59.current.current}
+            [ &m <- _bor.final ] s22)
+      | s22 = deref_mut_Ghost_ref_FMap_Element_PtrOwn_Node_T {_60}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) -> [ &_59 <- _x ] s23)
+      | s23 = [ &_62 <- y ] s24
+      | s24 = {inv_FMap_Element_PtrOwn_Node_T _59.current.current}
         MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_59.current.current}
           (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
             [ &_58 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
-            [ &_59 <- { _59 with current = { _59.current with current = _bor.final } } ] s2)
-      | s2 = get_mut_ghost_Element {_58} {_62} (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_57 <- _x ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0
-      [ s0 = unwrap_ref_PtrOwn_Node_T {_57} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_56 <- _x ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = {inv_PtrOwn_Node_T _56.current}
+            [ &_59 <- { _59 with current = { _59.current with current = _bor.final } } ] s25)
+      | s25 = get_mut_ghost_Element {_58} {_62} (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_57 <- _x ] s26)
+      | s26 = unwrap_ref_PtrOwn_Node_T {_57} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_56 <- _x ] s27)
+      | s27 = {inv_PtrOwn_Node_T _56.current}
         MutBorrow.borrow_final <t_PtrOwn_Node_T> {_56.current} {MutBorrow.get_id _56}
           (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
             [ &_55 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
-            [ &_56 <- { _56 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_ref_FMap_Element_PtrOwn_Node_T _59} s2
-      | s2 = -{resolve_ref_ref_FMap_Element_PtrOwn_Node_T _59}- s3
-      | s3 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _56} s4
-      | s4 = -{resolve_ref_PtrOwn_Node_T _56}- s5
-      | s5 = {inv_PtrOwn_Node_T _55.current}
+            [ &_56 <- { _56 with current = _bor.final } ] s28)
+      | s28 = {[@expl:type invariant] inv_ref_ref_FMap_Element_PtrOwn_Node_T _59} s29
+      | s29 = -{resolve_ref_ref_FMap_Element_PtrOwn_Node_T _59}- s30
+      | s30 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _56} s31
+      | s31 = -{resolve_ref_PtrOwn_Node_T _56}- s32
+      | s32 = {inv_PtrOwn_Node_T _55.current}
         MutBorrow.borrow_final <t_PtrOwn_Node_T> {_55.current} {MutBorrow.get_id _55}
           (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
             [ &_54 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
-            [ &_55 <- { _55 with current = _bor.final } ] s6)
-      | s6 = new_ref_PtrOwn_Node_T {_54} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_53 <- _x ] s7)
-      | s7 = bb14 ]
-    | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _55} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _55}- s2
-      | s2 = as_mut_Node_T {_51} {_53} (fun (_x: MutBorrow.t t_Node_T) -> [ &_50 <- _x ] s3)
-      | s3 = bb15 ]
-    | bb15 = s0
-      [ s0 = {inv_Node_T _50.current}
+            [ &_55 <- { _55 with current = _bor.final } ] s33)
+      | s33 = new_ref_PtrOwn_Node_T {_54} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_53 <- _x ] s34)
+      | s34 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _55} s35
+      | s35 = -{resolve_ref_PtrOwn_Node_T _55}- s36
+      | s36 = as_mut_Node_T {_51} {_53} (fun (_x: MutBorrow.t t_Node_T) -> [ &_50 <- _x ] s37)
+      | s37 = {inv_Node_T _50.current}
         MutBorrow.borrow_final <t_Node_T> {_50.current} {MutBorrow.get_id _50}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &by' <- _bor ] -{inv_Node_T _bor.final}-
-            [ &_50 <- { _50 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 _50} s2
-      | s2 = -{resolve_ref_Node_T _50}- s3
-      | s3 = any
+            [ &_50 <- { _50 with current = _bor.final } ] s38)
+      | s38 = {[@expl:type invariant] inv_ref_Node_T'0 _50} s39
+      | s39 = -{resolve_ref_Node_T _50}- s40
+      | s40 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {bx.current = Root x0 x1} (! bb18)
         | br1 (x0: t_Element) -> {bx.current = Link x0} (! bb16) ] ]
     | bb16 = s0
@@ -4043,8 +3970,7 @@ module M_implementation__link
               (fun (_bor: MutBorrow.t t_PeanoInt) ->
                 [ &ry <- _bor ] [ &by' <- { by' with current = Root _bor.final rpayload } ] s1))
       | s1 = lt_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_69 <- _x ] s2)
-      | s2 = bb22 ]
-    | bb22 = any [ br0 -> {_69 = false} (! bb34) | br1 -> {_69} (! bb23) ]
+      | s2 = any [ br0 -> {_69 = false} (! bb34) | br1 -> {_69} (! bb23) ] ]
     | bb23 = s0
       [ s0 = -{resolve_ref_PeanoInt ry}- s1
       | s1 = -{resolve_ref_PeanoInt rx}- s2
@@ -4053,169 +3979,141 @@ module M_implementation__link
       | s4 = {[@expl:type invariant] inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m} s5
       | s5 = -{resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T m}- s6
       | s6 = [ &_72 <- Link y ] s7
-      | s7 = bb24 ]
-    | bb24 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T bx.current} s1
-      | s1 = -{resolve_Node_T bx.current}- s2
-      | s2 = [ &bx <- { bx with current = _72 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s4
-      | s4 = -{resolve_ref_Node_T bx}- s5
-      | s5 = bb26 ]
-    | bb26 = s0
-      [ s0 = [ &_76 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = x then
+      | s7 = {[@expl:type invariant] inv_Node_T bx.current} s8
+      | s8 = -{resolve_Node_T bx.current}- s9
+      | s9 = [ &bx <- { bx with current = _72 } ] s10
+      | s10 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s11
+      | s11 = -{resolve_ref_Node_T bx}- s12
+      | s12 = [ &_76 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = x then
           y
         else
           index_Mapping_Element_Element uf'0.current.roots z
-         ] s1
-      | s1 = bb27 ]
-    | bb27 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+         ] s13
+      | s13 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_82 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_82} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_81 <- _x ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0
-      [ s0 = [ &_81 <- { _81 with current = { _81.current with current = { _81.current.current with roots = _76 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _81} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _81}- s3
-      | s3 = [ &_83 <- uf'0.current.max_depth + 1 ] s4
-      | s4 = bb29 ]
-    | bb29 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+            [ &uf'0 <- _bor.final ] s14)
+      | s14 = deref_mut_Ghost_ref_UFInner_T {_82}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_81 <- _x ] s15)
+      | s15 = [ &_81 <- { _81 with current = { _81.current with current = { _81.current.current with roots = _76 } } } ]
+        s16
+      | s16 = {[@expl:type invariant] inv_ref_ref_UFInner_T _81} s17
+      | s17 = -{resolve_ref_ref_UFInner_T _81}- s18
+      | s18 = [ &_83 <- uf'0.current.max_depth + 1 ] s19
+      | s19 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_87 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_87} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_86 <- _x ] s2)
-      | s2 = bb30 ]
-    | bb30 = s0
-      [ s0 =
+            [ &uf'0 <- _bor.final ] s20)
+      | s20 = deref_mut_Ghost_ref_UFInner_T {_87}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_86 <- _x ] s21)
+      | s21 =
         [ &_86 <- { _86 with current = { _86.current with current = { _86.current.current with max_depth = _83 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _86} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _86}- s3
-      | s3 = [ &_88 <- Map.set uf'0.current.depth y (1
+        s22
+      | s22 = {[@expl:type invariant] inv_ref_ref_UFInner_T _86} s23
+      | s23 = -{resolve_ref_ref_UFInner_T _86}- s24
+      | s24 = [ &_88 <- Map.set uf'0.current.depth y (1
         + MinMax.max (index_Mapping_Element_Int uf'0.current.depth x) (index_Mapping_Element_Int uf'0.current.depth y)) ]
-        s4
-      | s4 = bb31 ]
-    | bb31 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+        s25
+      | s25 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_94 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_94} (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_93 <- _x ] s2)
-      | s2 = bb32 ]
-    | bb32 = s0
-      [ s0 = [ &_93 <- { _93 with current = { _93.current with current = { _93.current.current with depth = _88 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _93} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _93}- s3
-      | s3 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s4
-      | s4 = -{resolve_Ghost_ref_UFInner_T uf'0}- s5
-      | s5 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s6
-      | s6 = -{resolve_ref_ref_UnionFind_T _30}- s7
-      | s7 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s8
-      | s8 = -{resolve_Ghost_ref_UnionFind_T uf}- s9
-      | s9 = new_unit {_75} (fun (_x: ()) -> [ &_74 <- _x ] s10)
-      | s10 = bb33 ]
-    | bb33 = s0 [ s0 = [ &_ret <- y ] s1 | s1 = bb51 ]
+            [ &uf'0 <- _bor.final ] s26)
+      | s26 = deref_mut_Ghost_ref_UFInner_T {_94}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_93 <- _x ] s27)
+      | s27 = [ &_93 <- { _93 with current = { _93.current with current = { _93.current.current with depth = _88 } } } ]
+        s28
+      | s28 = {[@expl:type invariant] inv_ref_ref_UFInner_T _93} s29
+      | s29 = -{resolve_ref_ref_UFInner_T _93}- s30
+      | s30 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s31
+      | s31 = -{resolve_Ghost_ref_UFInner_T uf'0}- s32
+      | s32 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s33
+      | s33 = -{resolve_ref_ref_UnionFind_T _30}- s34
+      | s34 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s35
+      | s35 = -{resolve_Ghost_ref_UnionFind_T uf}- s36
+      | s36 = new_unit {_75} (fun (_x: ()) -> [ &_74 <- _x ] s37)
+      | s37 = [ &_ret <- y ] s38
+      | s38 = return {_ret} ]
     | bb34 = s0
       [ s0 = -{resolve_ref_PeanoInt ry}- s1
       | s1 = eq_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_96 <- _x ] s2)
-      | s2 = bb35 ]
-    | bb35 = any [ br0 -> {_96 = false} (! bb38) | br1 -> {_96} (! bb36) ]
+      | s2 = any [ br0 -> {_96 = false} (! bb38) | br1 -> {_96} (! bb36) ] ]
     | bb36 = s0
       [ s0 = -{resolve_ref_PeanoInt rx}- s1
       | s1 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_99 <- _x ] s2)
-      | s2 = bb37 ]
-    | bb37 = s0 [ s0 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s1 | s1 = -{resolve_ref_Node_T bx}- s2 | s2 = bb39 ]
+      | s2 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s3
+      | s3 = -{resolve_ref_Node_T bx}- s4
+      | s4 = bb39 ]
     | bb38 = s0
       [ s0 = -{resolve_ref_PeanoInt rx}- s1
       | s1 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s2
       | s2 = -{resolve_ref_Node_T bx}- s3
       | s3 = bb39 ]
-    | bb39 = s0 [ s0 = [ &_101 <- Link x ] s1 | s1 = bb40 ]
-    | bb40 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T by'.current} s1
-      | s1 = -{resolve_Node_T by'.current}- s2
-      | s2 = [ &by' <- { by' with current = _101 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s4
-      | s4 = -{resolve_ref_Node_T by'}- s5
-      | s5 = {[@expl:type invariant] inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m} s6
-      | s6 = -{resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T m}- s7
-      | s7 = bb42 ]
-    | bb42 = s0
-      [ s0 = [ &_105 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = y then
+    | bb39 = s0
+      [ s0 = [ &_101 <- Link x ] s1
+      | s1 = {[@expl:type invariant] inv_Node_T by'.current} s2
+      | s2 = -{resolve_Node_T by'.current}- s3
+      | s3 = [ &by' <- { by' with current = _101 } ] s4
+      | s4 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s5
+      | s5 = -{resolve_ref_Node_T by'}- s6
+      | s6 = {[@expl:type invariant] inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m} s7
+      | s7 = -{resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T m}- s8
+      | s8 = [ &_105 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = y then
           x
         else
           index_Mapping_Element_Element uf'0.current.roots z
-         ] s1
-      | s1 = bb43 ]
-    | bb43 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+         ] s9
+      | s9 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_111 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_111}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_110 <- _x ] s2)
-      | s2 = bb44 ]
-    | bb44 = s0
-      [ s0 =
+            [ &uf'0 <- _bor.final ] s10)
+      | s10 = deref_mut_Ghost_ref_UFInner_T {_111}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_110 <- _x ] s11)
+      | s11 =
         [ &_110 <- { _110 with current = { _110.current with current = { _110.current.current with roots = _105 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _110} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _110}- s3
-      | s3 = [ &_112 <- uf'0.current.max_depth + 1 ] s4
-      | s4 = bb45 ]
-    | bb45 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+        s12
+      | s12 = {[@expl:type invariant] inv_ref_ref_UFInner_T _110} s13
+      | s13 = -{resolve_ref_ref_UFInner_T _110}- s14
+      | s14 = [ &_112 <- uf'0.current.max_depth + 1 ] s15
+      | s15 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_116 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_116}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_115 <- _x ] s2)
-      | s2 = bb46 ]
-    | bb46 = s0
-      [ s0 =
+            [ &uf'0 <- _bor.final ] s16)
+      | s16 = deref_mut_Ghost_ref_UFInner_T {_116}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_115 <- _x ] s17)
+      | s17 =
         [ &_115 <- { _115 with current = { _115.current with current = { _115.current.current with max_depth = _112 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _115} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _115}- s3
-      | s3 = [ &_117 <- Map.set uf'0.current.depth x (1
+        s18
+      | s18 = {[@expl:type invariant] inv_ref_ref_UFInner_T _115} s19
+      | s19 = -{resolve_ref_ref_UFInner_T _115}- s20
+      | s20 = [ &_117 <- Map.set uf'0.current.depth x (1
         + MinMax.max (index_Mapping_Element_Int uf'0.current.depth x) (index_Mapping_Element_Int uf'0.current.depth y)) ]
-        s4
-      | s4 = bb47 ]
-    | bb47 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
+        s21
+      | s21 = {inv_Ghost_ref_UFInner_T uf'0}
         MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
             [ &_123 <- _bor ] -{inv_Ghost_ref_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_123}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_122 <- _x ] s2)
-      | s2 = bb48 ]
-    | bb48 = s0
-      [ s0 =
+            [ &uf'0 <- _bor.final ] s22)
+      | s22 = deref_mut_Ghost_ref_UFInner_T {_123}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_122 <- _x ] s23)
+      | s23 =
         [ &_122 <- { _122 with current = { _122.current with current = { _122.current.current with depth = _117 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _122} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _122}- s3
-      | s3 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s4
-      | s4 = -{resolve_Ghost_ref_UFInner_T uf'0}- s5
-      | s5 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s6
-      | s6 = -{resolve_ref_ref_UnionFind_T _30}- s7
-      | s7 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s8
-      | s8 = -{resolve_Ghost_ref_UnionFind_T uf}- s9
-      | s9 = new_unit {_104} (fun (_x: ()) -> [ &_103 <- _x ] s10)
-      | s10 = bb49 ]
-    | bb49 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = bb51 ]
-    | bb51 = return {_ret} ]
+        s24
+      | s24 = {[@expl:type invariant] inv_ref_ref_UFInner_T _122} s25
+      | s25 = -{resolve_ref_ref_UFInner_T _122}- s26
+      | s26 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s27
+      | s27 = -{resolve_Ghost_ref_UFInner_T uf'0}- s28
+      | s28 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s29
+      | s29 = -{resolve_ref_ref_UnionFind_T _30}- s30
+      | s30 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s31
+      | s31 = -{resolve_Ghost_ref_UnionFind_T uf}- s32
+      | s32 = new_unit {_104} (fun (_x: ()) -> [ &_103 <- _x ] s33)
+      | s33 = [ &_ret <- x ] s34
+      | s34 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & x: t_Element = x
@@ -4631,72 +4529,61 @@ module M_implementation__union
             [ &uf <- _bor.final ] s1)
       | s1 = deref_mut_Ghost_ref_UnionFind_T {_24}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_23 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_UnionFind_T _23.current.current}
+      | s2 = {inv_UnionFind_T _23.current.current}
         MutBorrow.borrow_mut <t_UnionFind_T> {_23.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_22 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_23 <- { _23 with current = { _23.current with current = _bor.final } } ] s1)
-      | s1 = {inv_UnionFind_T _22.current}
+            [ &_23 <- { _23 with current = { _23.current with current = _bor.final } } ] s3)
+      | s3 = {inv_UnionFind_T _22.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_22.current} {MutBorrow.get_id _22}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_21 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_22 <- { _22 with current = _bor.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _23} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _23}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _22} s5
-      | s5 = -{resolve_ref_UnionFind_T _22}- s6
-      | s6 = {inv_UnionFind_T _21.current}
+            [ &_22 <- { _22 with current = _bor.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _23} s5
+      | s5 = -{resolve_ref_ref_UnionFind_T _23}- s6
+      | s6 = {[@expl:type invariant] inv_ref_UnionFind_T _22} s7
+      | s7 = -{resolve_ref_UnionFind_T _22}- s8
+      | s8 = {inv_UnionFind_T _21.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_20 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_21 <- { _21 with current = _bor.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_20} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _x ] s8)
-      | s8 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _21} s1
-      | s1 = -{resolve_ref_UnionFind_T _21}- s2
-      | s2 = find_T {_19} {x} (fun (_x: t_Element) -> [ &rx <- _x ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
+            [ &_21 <- { _21 with current = _bor.final } ] s9)
+      | s9 = new_ref_UnionFind_T {_20} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _x ] s10)
+      | s10 = {[@expl:type invariant] inv_ref_UnionFind_T _21} s11
+      | s11 = -{resolve_ref_UnionFind_T _21}- s12
+      | s12 = find_T {_19} {x} (fun (_x: t_Element) -> [ &rx <- _x ] s13)
+      | s13 = {inv_Ghost_ref_UnionFind_T uf}
         MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_32 <- _bor ] -{inv_Ghost_ref_UnionFind_T _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_32}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_31 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_UnionFind_T _31.current.current}
+            [ &uf <- _bor.final ] s14)
+      | s14 = deref_mut_Ghost_ref_UnionFind_T {_32}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_31 <- _x ] s15)
+      | s15 = {inv_UnionFind_T _31.current.current}
         MutBorrow.borrow_mut <t_UnionFind_T> {_31.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_30 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_31 <- { _31 with current = { _31.current with current = _bor.final } } ] s1)
-      | s1 = {inv_UnionFind_T _30.current}
+            [ &_31 <- { _31 with current = { _31.current with current = _bor.final } } ] s16)
+      | s16 = {inv_UnionFind_T _30.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_30.current} {MutBorrow.get_id _30}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_29 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_30 <- { _30 with current = _bor.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _31} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _31}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _30} s5
-      | s5 = -{resolve_ref_UnionFind_T _30}- s6
-      | s6 = {inv_UnionFind_T _29.current}
+            [ &_30 <- { _30 with current = _bor.final } ] s17)
+      | s17 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _31} s18
+      | s18 = -{resolve_ref_ref_UnionFind_T _31}- s19
+      | s19 = {[@expl:type invariant] inv_ref_UnionFind_T _30} s20
+      | s20 = -{resolve_ref_UnionFind_T _30}- s21
+      | s21 = {inv_UnionFind_T _29.current}
         MutBorrow.borrow_final <t_UnionFind_T> {_29.current} {MutBorrow.get_id _29}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
             [ &_28 <- _bor ] -{inv_UnionFind_T _bor.final}-
-            [ &_29 <- { _29 with current = _bor.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_28} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_27 <- _x ] s8)
-      | s8 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _29} s1
-      | s1 = -{resolve_ref_UnionFind_T _29}- s2
-      | s2 = find_T {_27} {y} (fun (_x: t_Element) -> [ &ry <- _x ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0 [ s0 = link_T {uf} {rx} {ry} (fun (_x: t_Element) -> [ &_ret <- _x ] s1) | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+            [ &_29 <- { _29 with current = _bor.final } ] s22)
+      | s22 = new_ref_UnionFind_T {_28} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_27 <- _x ] s23)
+      | s23 = {[@expl:type invariant] inv_ref_UnionFind_T _29} s24
+      | s24 = -{resolve_ref_UnionFind_T _29}- s25
+      | s25 = find_T {_27} {y} (fun (_x: t_Element) -> [ &ry <- _x ] s26)
+      | s26 = link_T {uf} {rx} {ry} (fun (_x: t_Element) -> [ &_ret <- _x ] s27)
+      | s27 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & x: t_Element = x
@@ -4953,46 +4840,43 @@ module M_example
   meta "select_lsinst" "all"
   
   let rec example (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = new_i32 (fun (_x: t_UnionFind_i32) -> [ &uf <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
+    [ bb0 = s0
+      [ s0 = new_i32 (fun (_x: t_UnionFind_i32) -> [ &uf <- _x ] s1)
+      | s1 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_4 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_4} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Element) -> [ &x <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
+            [ &uf <- _bor.final ] s2)
+      | s2 = borrow_mut_UnionFind_i32 {_4} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _x ] s3)
+      | s3 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Element) -> [ &x <- _x ] s4)
+      | s4 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_7 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_7} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0 [ s0 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Element) -> [ &y <- _x ] s1) | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
+            [ &uf <- _bor.final ] s5)
+      | s5 = borrow_mut_UnionFind_i32 {_7} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _x ] s6)
+      | s6 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Element) -> [ &y <- _x ] s7)
+      | s7 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_10 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_10} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _x ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0 [ s0 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Element) -> [ &z <- _x ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_15 <- _x ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = get_i32 {_15} {x} (fun (_x: Int32.t) -> [ &_14 <- _x ] s1) | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &_12 <- _14 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
-    | bb10 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_23 <- _x ] s1) | s1 = bb12 ]
-    | bb12 = s0 [ s0 = get_i32 {_23} {y} (fun (_x: Int32.t) -> [ &_22 <- _x ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = [ &_20 <- _22 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
-    | bb14 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_31 <- _x ] s1) | s1 = bb16 ]
-    | bb16 = s0 [ s0 = get_i32 {_31} {z} (fun (_x: Int32.t) -> [ &_30 <- _x ] s1) | s1 = bb17 ]
-    | bb17 = s0
-      [ s0 = [ &_28 <- _30 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_28 = false} (! bb19) | br1 -> {_28} (! bb18) ] ]
+            [ &uf <- _bor.final ] s8)
+      | s8 = borrow_mut_UnionFind_i32 {_10} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _x ] s9)
+      | s9 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Element) -> [ &z <- _x ] s10)
+      | s10 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_15 <- _x ] s11)
+      | s11 = get_i32 {_15} {x} (fun (_x: Int32.t) -> [ &_14 <- _x ] s12)
+      | s12 = [ &_12 <- _14 = (1: Int32.t) ] s13
+      | s13 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
+    | bb10 = s0
+      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_23 <- _x ] s1)
+      | s1 = get_i32 {_23} {y} (fun (_x: Int32.t) -> [ &_22 <- _x ] s2)
+      | s2 = [ &_20 <- _22 = (2: Int32.t) ] s3
+      | s3 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
+    | bb14 = s0
+      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_31 <- _x ] s1)
+      | s1 = get_i32 {_31} {z} (fun (_x: Int32.t) -> [ &_30 <- _x ] s2)
+      | s2 = [ &_28 <- _30 = (3: Int32.t) ] s3
+      | s3 = any [ br0 -> {_28 = false} (! bb19) | br1 -> {_28} (! bb18) ] ]
     | bb18 = s0
       [ s0 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
@@ -5000,18 +4884,15 @@ module M_example
             [ &_37 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s1)
       | s1 = borrow_mut_UnionFind_i32 {_37} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_36 <- _x ] s2)
-      | s2 = bb20 ]
-    | bb20 = s0 [ s0 = union_i32 {_36} {x} {y} (fun (_x: t_Element) -> [ &_35 <- _x ] s1) | s1 = bb21 ]
-    | bb21 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
+      | s2 = union_i32 {_36} {x} {y} (fun (_x: t_Element) -> [ &_35 <- _x ] s3)
+      | s3 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_43 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_43} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_42 <- _x ] s2)
-      | s2 = bb22 ]
-    | bb22 = s0 [ s0 = equiv_i32 {_42} {x} {y} (fun (_x: bool) -> [ &_41 <- _x ] s1) | s1 = bb23 ]
-    | bb23 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ]
+            [ &uf <- _bor.final ] s4)
+      | s4 = borrow_mut_UnionFind_i32 {_43} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_42 <- _x ] s5)
+      | s5 = equiv_i32 {_42} {x} {y} (fun (_x: bool) -> [ &_41 <- _x ] s6)
+      | s6 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ] ]
     | bb24 = s0
       [ s0 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
@@ -5019,30 +4900,27 @@ module M_example
             [ &_49 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s1)
       | s1 = borrow_mut_UnionFind_i32 {_49} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_48 <- _x ] s2)
-      | s2 = bb26 ]
-    | bb26 = s0 [ s0 = find_i32 {_48} {x} (fun (_x: t_Element) -> [ &xr <- _x ] s1) | s1 = bb27 ]
-    | bb27 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
+      | s2 = find_i32 {_48} {x} (fun (_x: t_Element) -> [ &xr <- _x ] s3)
+      | s3 = {inv_Ghost_UnionFind_i32 uf}
         MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_53 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_53} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_52 <- _x ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0 [ s0 = find_i32 {_52} {y} (fun (_x: t_Element) -> [ &yr <- _x ] s1) | s1 = bb29 ]
-    | bb29 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_59 <- _x ] s1) | s1 = bb30 ]
-    | bb30 = s0 [ s0 = get_i32 {_59} {xr} (fun (_x: Int32.t) -> [ &_58 <- _x ] s1) | s1 = bb31 ]
-    | bb31 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_64 <- _x ] s1) | s1 = bb32 ]
-    | bb32 = s0 [ s0 = get_i32 {_64} {yr} (fun (_x: Int32.t) -> [ &_63 <- _x ] s1) | s1 = bb33 ]
-    | bb33 = s0 [ s0 = [ &_56 <- _58 = _63 ] s1 | s1 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
+            [ &uf <- _bor.final ] s4)
+      | s4 = borrow_mut_UnionFind_i32 {_53} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_52 <- _x ] s5)
+      | s5 = find_i32 {_52} {y} (fun (_x: t_Element) -> [ &yr <- _x ] s6)
+      | s6 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_59 <- _x ] s7)
+      | s7 = get_i32 {_59} {xr} (fun (_x: Int32.t) -> [ &_58 <- _x ] s8)
+      | s8 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_64 <- _x ] s9)
+      | s9 = get_i32 {_64} {yr} (fun (_x: Int32.t) -> [ &_63 <- _x ] s10)
+      | s10 = [ &_56 <- _58 = _63 ] s11
+      | s11 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
     | bb34 = s0
       [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_72 <- _x ] s3)
-      | s3 = bb36 ]
-    | bb36 = s0 [ s0 = get_i32 {_72} {z} (fun (_x: Int32.t) -> [ &_71 <- _x ] s1) | s1 = bb37 ]
-    | bb37 = s0
-      [ s0 = [ &_69 <- _71 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
+      | s3 = get_i32 {_72} {z} (fun (_x: Int32.t) -> [ &_71 <- _x ] s4)
+      | s4 = [ &_69 <- _71 = (3: Int32.t) ] s5
+      | s5 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
     | bb38 = return {_ret}
     | bb39 = {false} any
     | bb35 = s0
@@ -5174,9 +5052,10 @@ module M_example_addrs_eq
     {[@expl:example_addrs_eq 'e2' type invariant] inv_Element e2}
     {[@expl:example_addrs_eq requires] in_domain_T uf e1 /\ in_domain_T uf e2}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_Element {e1} {e2} (fun (_x: bool) -> [ &_8 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb2) ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] e1 = e2} s1 | s1 = bb4 ]
+    [ bb0 = s0
+      [ s0 = eq_Element {e1} {e2} (fun (_x: bool) -> [ &_8 <- _x ] s1)
+      | s1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb2) ] ]
+    | bb2 = s0 [ s0 = {[@expl:assertion] e1 = e2} s1 | s1 = return {_ret} ]
     | bb4 = return {_ret} ]
     [ & _ret: () = Any.any_l () | & e1: t_Element = e1 | & e2: t_Element = e2 | & _8: bool = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

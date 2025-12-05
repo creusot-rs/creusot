@@ -10,9 +10,8 @@ module M_max
   let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = {[@expl:max requires] true}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_7 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_7 = false} (! bb2) | br1 -> {_7} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = bb3 ]
-    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = bb3 ]
-    | bb3 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _7: bool = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:max ensures] UInt64.t'int result
       = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
@@ -367,14 +366,12 @@ module M_knapsack01_dyn
     [ bb0 = s0
       [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s1)
       | s1 = from_elem_usize {(0: UInt64.t)} {_11} (fun (_x: t_Vec_usize_Global) -> [ &_10 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.add {_14} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s1)
-      | s1 = from_elem_Vec_usize_Global {_10} {_13}
-          (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _x ] s2)
-      | s2 = bb3 ]
-    | bb3 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = bb4 ]
+      | s2 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s3)
+      | s3 = UInt64.add {_14} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s4)
+      | s4 = from_elem_Vec_usize_Global {_10} {_13}
+          (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _x ] s5)
+      | s5 = [ &i <- (0: UInt64.t) ] s6
+      | s6 = bb4 ]
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant #0] Seq.length (view_Vec_Item_Name_Global items) + 1
         = Seq.length (view_Vec_Vec_usize_Global_Global best_value)}
@@ -391,13 +388,14 @@ module M_knapsack01_dyn
           -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
           <= 10000000 * ii}
         (! s0)
-        [ s0 = bb5 ]
-        [ bb5 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s1) | s1 = bb6 ]
-        | bb6 = s0
-          [ s0 = [ &_35 <- UInt64.lt i _37 ] s1 | s1 = any [ br0 -> {_35 = false} (! bb25) | br1 -> {_35} (! bb7) ] ]
-        | bb7 = s0
-          [ s0 = index_Vec_Item_Name_Global {items} {i} (fun (_x: t_Item_Name) -> [ &_40 <- _x ] s1) | s1 = bb8 ]
-        | bb8 = s0 [ s0 = [ &it <- _40 ] s1 | s1 = [ &w <- (0: UInt64.t) ] s2 | s2 = bb9 ]
+        [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s1)
+        | s1 = [ &_35 <- UInt64.lt i _37 ] s2
+        | s2 = any [ br0 -> {_35 = false} (! bb25) | br1 -> {_35} (! bb7) ] ]
+        [ bb7 = s0
+          [ s0 = index_Vec_Item_Name_Global {items} {i} (fun (_x: t_Item_Name) -> [ &_40 <- _x ] s1)
+          | s1 = [ &it <- _40 ] s2
+          | s2 = [ &w <- (0: UInt64.t) ] s3
+          | s3 = bb9 ]
         | bb9 = bb9
           [ bb9 = {[@expl:loop invariant #0] Seq.length (view_Vec_Item_Name_Global items) + 1
             = Seq.length (view_Vec_Vec_usize_Global_Global best_value)}
@@ -418,38 +416,28 @@ module M_knapsack01_dyn
               -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
               <= 10000000 * ii}
             (! s0)
-            [ s0 = bb10 ]
-            [ bb10 = s0
-              [ s0 = [ &_66 <- UInt64.le w max_weight ] s1
-              | s1 = any [ br0 -> {_66 = false} (! bb24) | br1 -> {_66} (! bb11) ] ]
-            | bb11 = s0
+            [ s0 = [ &_66 <- UInt64.le w max_weight ] s1
+            | s1 = any [ br0 -> {_66 = false} (! bb24) | br1 -> {_66} (! bb11) ] ]
+            [ bb11 = s0
               [ s0 = [ &_70 <- UInt64.gt it.weight w ] s1
               | s1 = any [ br0 -> {_70 = false} (! bb15) | br1 -> {_70} (! bb12) ] ]
             | bb12 = s0
               [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
                   (fun (_x: t_Vec_usize_Global) -> [ &_75 <- _x ] s1)
-              | s1 = bb13 ]
-            | bb13 = s0
-              [ s0 = index_Vec_usize_Global'0 {_75} {w} (fun (_x: UInt64.t) -> [ &_73 <- _x ] s1) | s1 = bb14 ]
-            | bb14 = s0 [ s0 = [ &_69 <- _73 ] s1 | s1 = bb21 ]
+              | s1 = index_Vec_usize_Global'0 {_75} {w} (fun (_x: UInt64.t) -> [ &_73 <- _x ] s2)
+              | s2 = [ &_69 <- _73 ] s3
+              | s3 = bb21 ]
             | bb15 = s0
               [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
                   (fun (_x: t_Vec_usize_Global) -> [ &_82 <- _x ] s1)
-              | s1 = bb16 ]
-            | bb16 = s0
-              [ s0 = index_Vec_usize_Global'0 {_82} {w} (fun (_x: UInt64.t) -> [ &_80 <- _x ] s1) | s1 = bb17 ]
-            | bb17 = s0
-              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
-                  (fun (_x: t_Vec_usize_Global) -> [ &_90 <- _x ] s1)
-              | s1 = bb18 ]
-            | bb18 = s0
-              [ s0 = UInt64.sub {w} {it.weight} (fun (_x: UInt64.t) -> [ &_93 <- _x ] s1)
-              | s1 = index_Vec_usize_Global'0 {_90} {_93} (fun (_x: UInt64.t) -> [ &_88 <- _x ] s2)
-              | s2 = bb19 ]
-            | bb19 = s0
-              [ s0 = UInt64.add {_88} {it.value} (fun (_x: UInt64.t) -> [ &_86 <- _x ] s1)
-              | s1 = max {_80} {_86} (fun (_x: UInt64.t) -> [ &_69 <- _x ] s2)
-              | s2 = bb21 ]
+              | s1 = index_Vec_usize_Global'0 {_82} {w} (fun (_x: UInt64.t) -> [ &_80 <- _x ] s2)
+              | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+                  (fun (_x: t_Vec_usize_Global) -> [ &_90 <- _x ] s3)
+              | s3 = UInt64.sub {w} {it.weight} (fun (_x: UInt64.t) -> [ &_93 <- _x ] s4)
+              | s4 = index_Vec_usize_Global'0 {_90} {_93} (fun (_x: UInt64.t) -> [ &_88 <- _x ] s5)
+              | s5 = UInt64.add {_88} {it.value} (fun (_x: UInt64.t) -> [ &_86 <- _x ] s6)
+              | s6 = max {_80} {_86} (fun (_x: UInt64.t) -> [ &_69 <- _x ] s7)
+              | s7 = bb21 ]
             | bb21 = s0
               [ s0 = MutBorrow.borrow_mut <t_Vec_Vec_usize_Global_Global> {best_value}
                   (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
@@ -457,57 +445,42 @@ module M_knapsack01_dyn
               | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_101 <- _x ] s2)
               | s2 = index_mut_Vec_Vec_usize_Global_Global {_100} {_101}
                   (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_99 <- _x ] s3)
-              | s3 = bb22 ]
-            | bb22 = s0
-              [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {_99.current} {MutBorrow.get_id _99}
+              | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_99.current} {MutBorrow.get_id _99}
                   (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
-                    [ &_98 <- _bor ] [ &_99 <- { _99 with current = _bor.final } ] s1)
-              | s1 = index_mut_Vec_usize_Global {_98} {w} (fun (_x: MutBorrow.t UInt64.t) -> [ &_97 <- _x ] s2)
-              | s2 = bb23 ]
-            | bb23 = s0
-              [ s0 = [ &_97 <- { _97 with current = _69 } ] s1
-              | s1 = -{resolve_ref_usize _97}- s2
-              | s2 = -{resolve_ref_Vec_usize_Global _99}- s3
-              | s3 = UInt64.add {w} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &w <- _x ] s4)
-              | s4 = bb9 ] ] ]
+                    [ &_98 <- _bor ] [ &_99 <- { _99 with current = _bor.final } ] s4)
+              | s4 = index_mut_Vec_usize_Global {_98} {w} (fun (_x: MutBorrow.t UInt64.t) -> [ &_97 <- _x ] s5)
+              | s5 = [ &_97 <- { _97 with current = _69 } ] s6
+              | s6 = -{resolve_ref_usize _97}- s7
+              | s7 = -{resolve_ref_Vec_usize_Global _99}- s8
+              | s8 = UInt64.add {w} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &w <- _x ] s9)
+              | s9 = bb9 ] ] ]
         | bb24 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s1) | s1 = bb4 ] ] ]
-    | bb25 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_107 <- _x ] s1) | s1 = bb26 ]
-    | bb26 = s0
-      [ s0 = with_capacity_ref_Item_Name {_107} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s1)
-      | s1 = bb27 ]
-    | bb27 = s0
-      [ s0 = [ &left_weight <- max_weight ] s1
-      | s1 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &j <- _x ] s2)
-      | s2 = bb29 ]
+    | bb25 = s0
+      [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_107 <- _x ] s1)
+      | s1 = with_capacity_ref_Item_Name {_107} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s2)
+      | s2 = [ &left_weight <- max_weight ] s3
+      | s3 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
+      | s4 = bb29 ]
     | bb29 = bb29
       [ bb29 = {[@expl:loop invariant #0] inv_Vec_ref_Item_Name_Global result}
         {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view_Vec_Item_Name_Global items)}
         {[@expl:loop invariant #2] UInt64.t'int left_weight <= UInt64.t'int max_weight}
         (! s0)
-        [ s0 = bb30 ]
-        [ bb30 = s0
-          [ s0 = [ &_122 <- UInt64.lt (0: UInt64.t) j ] s1
-          | s1 = any [ br0 -> {_122 = false} (! bb41) | br1 -> {_122} (! bb31) ] ]
-        | bb31 = s0
+        [ s0 = [ &_122 <- UInt64.lt (0: UInt64.t) j ] s1
+        | s1 = any [ br0 -> {_122 = false} (! bb41) | br1 -> {_122} (! bb31) ] ]
+        [ bb31 = s0
           [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &j <- _x ] s1)
           | s1 = index_Vec_Item_Name_Global {items} {j} (fun (_x: t_Item_Name) -> [ &_125 <- _x ] s2)
-          | s2 = bb32 ]
-        | bb32 = s0
-          [ s0 = [ &it'0 <- _125 ] s1
-          | s1 = UInt64.add {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_134 <- _x ] s2)
-          | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_134}
-              (fun (_x: t_Vec_usize_Global) -> [ &_132 <- _x ] s3)
-          | s3 = bb33 ]
-        | bb33 = s0
-          [ s0 = index_Vec_usize_Global'0 {_132} {left_weight} (fun (_x: UInt64.t) -> [ &_130 <- _x ] s1) | s1 = bb34 ]
-        | bb34 = s0
-          [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
-              (fun (_x: t_Vec_usize_Global) -> [ &_140 <- _x ] s1)
-          | s1 = bb35 ]
-        | bb35 = s0
-          [ s0 = index_Vec_usize_Global'0 {_140} {left_weight} (fun (_x: UInt64.t) -> [ &_138 <- _x ] s1) | s1 = bb36 ]
-        | bb36 = s0
-          [ s0 = [ &_128 <- _130 <> _138 ] s1 | s1 = any [ br0 -> {_128 = false} (! bb29) | br1 -> {_128} (! bb37) ] ]
+          | s2 = [ &it'0 <- _125 ] s3
+          | s3 = UInt64.add {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_134 <- _x ] s4)
+          | s4 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_134}
+              (fun (_x: t_Vec_usize_Global) -> [ &_132 <- _x ] s5)
+          | s5 = index_Vec_usize_Global'0 {_132} {left_weight} (fun (_x: UInt64.t) -> [ &_130 <- _x ] s6)
+          | s6 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
+              (fun (_x: t_Vec_usize_Global) -> [ &_140 <- _x ] s7)
+          | s7 = index_Vec_usize_Global'0 {_140} {left_weight} (fun (_x: UInt64.t) -> [ &_138 <- _x ] s8)
+          | s8 = [ &_128 <- _130 <> _138 ] s9
+          | s9 = any [ br0 -> {_128 = false} (! bb29) | br1 -> {_128} (! bb37) ] ]
         | bb37 = s0
           [ s0 = {inv_Vec_ref_Item_Name_Global result}
             MutBorrow.borrow_mut <t_Vec_ref_Item_Name_Global> {result}
@@ -515,12 +488,9 @@ module M_knapsack01_dyn
                 [ &_145 <- _bor ] -{inv_Vec_ref_Item_Name_Global _bor.final}-
                 [ &result <- _bor.final ] s1)
           | s1 = push_ref_Item_Name {_145} {it'0} (fun (_x: ()) -> [ &_144 <- _x ] s2)
-          | s2 = bb38 ]
-        | bb38 = s0
-          [ s0 = UInt64.sub {left_weight} {it'0.weight} (fun (_x: UInt64.t) -> [ &left_weight <- _x ] s1)
-          | s1 = bb29 ] ] ]
-    | bb41 = s0 [ s0 = [ &_ret <- result ] s1 | s1 = bb43 ]
-    | bb43 = return {_ret} ]
+          | s2 = UInt64.sub {left_weight} {it'0.weight} (fun (_x: UInt64.t) -> [ &left_weight <- _x ] s3)
+          | s3 = bb29 ] ] ]
+    | bb41 = s0 [ s0 = [ &_ret <- result ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Vec_ref_Item_Name_Global = Any.any_l ()
     | & items: t_Vec_Item_Name_Global = items
     | & max_weight: UInt64.t = max_weight

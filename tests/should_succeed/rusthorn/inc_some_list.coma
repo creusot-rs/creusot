@@ -49,14 +49,13 @@ module M_impl_List__sum_x (* List *)
   let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
     (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) (x1: t_List) -> {self = Cons x0 x1} (! bb4) | br1 -> {self = Nil} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = bb6 ]
+    | bb3 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &a <- r0 ] s1)
       | s1 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &l <- r1 ] s2)
       | s2 = sum_x {l} (fun (_x: UInt32.t) -> [ &_10 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0 [ s0 = UInt32.add {a} {_10} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+      | s3 = UInt32.add {a} {_10} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & self: t_List = self
     | & a: UInt32.t = Any.any_l ()
@@ -127,9 +126,8 @@ module M_impl_List__take_some (* List *)
               (fun (_bor: MutBorrow.t t_List) ->
                 [ &ml <- _bor ] [ &self <- { self with current = Cons r0 _bor.final } ] s2))
       | s2 = [ &_12 <- lemma_sum_nonneg ml.current ] s3
-      | s3 = bb5 ]
-    | bb5 = s0 [ s0 = random (fun (_x: bool) -> [ &_16 <- _x ] s1) | s1 = bb6 ]
-    | bb6 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb7) ]
+      | s3 = random (fun (_x: bool) -> [ &_16 <- _x ] s4)
+      | s4 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb7) ] ]
     | bb7 = s0
       [ s0 = -{resolve_ref_Box_List_Global ml}- s1
       | s1 = MutBorrow.borrow_final <UInt32.t> {ma.current} {MutBorrow.get_id ma}
@@ -143,12 +141,10 @@ module M_impl_List__take_some (* List *)
       | s1 = MutBorrow.borrow_final <t_List> {ml.current} {MutBorrow.get_id ml}
           (fun (_bor: MutBorrow.t t_List) -> [ &_19 <- _bor ] [ &ml <- { ml with current = _bor.final } ] s2)
       | s2 = take_some {_19} (fun (_x: MutBorrow.t UInt32.t) -> [ &_18 <- _x ] s3)
-      | s3 = bb9 ]
-    | bb9 = s0
-      [ s0 = MutBorrow.borrow_final <UInt32.t> {_18.current} {MutBorrow.get_id _18}
-          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_15 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s1)
-      | s1 = -{resolve_ref_u32 _18}- s2
-      | s2 = bb10 ]
+      | s3 = MutBorrow.borrow_final <UInt32.t> {_18.current} {MutBorrow.get_id _18}
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_15 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s4)
+      | s4 = -{resolve_ref_u32 _18}- s5
+      | s5 = bb10 ]
     | bb10 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_11 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s1)
@@ -218,21 +214,17 @@ module M_inc_some_list
       + UInt32.t'int k
     <= 1000000}
     (! bb0
-    [ bb0 = s0 [ s0 = sum_x {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <t_List> {l}
-          (fun (_bor: MutBorrow.t t_List) -> [ &_9 <- _bor ] [ &l <- _bor.final ] s1)
-      | s1 = take_some {_9} (fun (_x: MutBorrow.t UInt32.t) -> [ &ma <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt32.add {ma.current} {k} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s1)
-      | s1 = -{resolve_ref_u32 ma}- s2
-      | s2 = sum_x {l} (fun (_x: UInt32.t) -> [ &_13 <- _x ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = UInt32.add {sum0} {k} (fun (_x: UInt32.t) -> [ &_15 <- _x ] s1)
-      | s1 = [ &_12 <- _13 = _15 ] s2
-      | s2 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb6) ] ]
+    [ bb0 = s0
+      [ s0 = sum_x {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_List> {l}
+          (fun (_bor: MutBorrow.t t_List) -> [ &_9 <- _bor ] [ &l <- _bor.final ] s2)
+      | s2 = take_some {_9} (fun (_x: MutBorrow.t UInt32.t) -> [ &ma <- _x ] s3)
+      | s3 = UInt32.add {ma.current} {k} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s4)
+      | s4 = -{resolve_ref_u32 ma}- s5
+      | s5 = sum_x {l} (fun (_x: UInt32.t) -> [ &_13 <- _x ] s6)
+      | s6 = UInt32.add {sum0} {k} (fun (_x: UInt32.t) -> [ &_15 <- _x ] s7)
+      | s7 = [ &_12 <- _13 = _15 ] s8
+      | s8 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb6) ] ]
     | bb6 = return {_ret}
     | bb5 = {false} any ]
     [ & _ret: () = Any.any_l ()

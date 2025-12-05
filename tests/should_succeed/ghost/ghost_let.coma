@@ -49,18 +49,16 @@ module M_foo
   let rec foo (g: MutBorrow.t t_WithInv) (return (x: ())) = {[@expl:foo 'g' type invariant] inv_Ghost_ref_WithInv g}
     {[@expl:foo requires] true}
     (! bb0
-    [ bb0 = s0 [ s0 = into_inner_ref_WithInv {g} (fun (_x: MutBorrow.t t_WithInv) -> [ &_4 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <Int32.t> {_4.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
+    [ bb0 = s0
+      [ s0 = into_inner_ref_WithInv {g} (fun (_x: MutBorrow.t t_WithInv) -> [ &_4 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <Int32.t> {_4.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
           (fun (_bor: MutBorrow.t Int32.t) ->
-            [ &__temp <- _bor ] [ &_4 <- { _4 with current = { f0 = _bor.final } } ] s1)
-      | s1 = new_ref_i32 {__temp} (fun (_x: MutBorrow.t Int32.t) -> [ &g2 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = bar {g2} (fun (_x: ()) -> [ &_8 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_WithInv _4} s1
-      | s1 = -{resolve_ref_WithInv _4}- s2
-      | s2 = return {_ret} ] ]
+            [ &__temp <- _bor ] [ &_4 <- { _4 with current = { f0 = _bor.final } } ] s2)
+      | s2 = new_ref_i32 {__temp} (fun (_x: MutBorrow.t Int32.t) -> [ &g2 <- _x ] s3)
+      | s3 = bar {g2} (fun (_x: ()) -> [ &_8 <- _x ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_WithInv _4} s5
+      | s5 = -{resolve_ref_WithInv _4}- s6
+      | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & g: MutBorrow.t t_WithInv = g
     | & __temp: MutBorrow.t Int32.t = Any.any_l ()
@@ -100,14 +98,11 @@ module M_bar
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {g2}
           (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_7 <- _bor ] [ &g2 <- _bor.final ] s1)
       | s1 = deref_mut_Ghost_ref_i32 {_7} (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_6 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_6 <- { _6 with current = { _6.current with current = (1: Int32.t) } } ] s1
-      | s1 = -{resolve_ref_ref_i32 _6}- s2
-      | s2 = -{resolve_Ghost_ref_i32 g2}- s3
-      | s3 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s4)
-      | s4 = bb2 ]
-    | bb2 = return {_ret} ]
+      | s2 = [ &_6 <- { _6 with current = { _6.current with current = (1: Int32.t) } } ] s3
+      | s3 = -{resolve_ref_ref_i32 _6}- s4
+      | s4 = -{resolve_Ghost_ref_i32 g2}- s5
+      | s5 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s6)
+      | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & g2: MutBorrow.t Int32.t = g2
     | & _4: () = Any.any_l ()

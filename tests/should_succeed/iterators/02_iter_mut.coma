@@ -249,11 +249,9 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
             [ &_4 <- _bor ] -{inv_ref_slice_T _bor.final}-
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
       | s1 = split_off_first_mut_T {_4} (fun (_x: t_Option_ref_T) -> [ &_ret <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_IterMut_T self} s1
-      | s1 = -{resolve_ref_IterMut_T self}- s2
-      | s2 = return {_ret} ] ]
+      | s2 = {[@expl:type invariant] inv_ref_IterMut_T self} s3
+      | s3 = -{resolve_ref_IterMut_T self}- s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Option_ref_T = Any.any_l ()
     | & self: MutBorrow.t t_IterMut_T = self
     | & _4: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = Any.any_l () ])
@@ -445,26 +443,24 @@ module M_iter_mut
             [ &v <- { v with current = _bor.final } ] s1)
       | s1 = [ &_12 <- () ] s2
       | s2 = index_mut_Vec_T_Global {_11} {_12} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_10 <- _x ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_slice_T _10.current}
+      | s3 = {inv_slice_T _10.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_9 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &_10 <- { _10 with current = _bor.final } ] s1)
-      | s1 = {inv_slice_T _9.current}
+            [ &_10 <- { _10 with current = _bor.final } ] s4)
+      | s4 = {inv_slice_T _9.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_9.current} {MutBorrow.get_id _9}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_8 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &_9 <- { _9 with current = _bor.final } ] s2)
-      | s2 = [ &_ret <- { inner = _8 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_slice_T _10} s4
-      | s4 = -{resolve_ref_slice_T _10}- s5
-      | s5 = {[@expl:type invariant] inv_ref_slice_T _9} s6
-      | s6 = -{resolve_ref_slice_T _9}- s7
-      | s7 = {[@expl:type invariant] inv_ref_Vec_T_Global v} s8
-      | s8 = -{resolve_ref_Vec_T_Global v}- s9
-      | s9 = return {_ret} ] ]
+            [ &_9 <- { _9 with current = _bor.final } ] s5)
+      | s5 = [ &_ret <- { inner = _8 } ] s6
+      | s6 = {[@expl:type invariant] inv_ref_slice_T _10} s7
+      | s7 = -{resolve_ref_slice_T _10}- s8
+      | s8 = {[@expl:type invariant] inv_ref_slice_T _9} s9
+      | s9 = -{resolve_ref_slice_T _9}- s10
+      | s10 = {[@expl:type invariant] inv_ref_Vec_T_Global v} s11
+      | s11 = -{resolve_ref_Vec_T_Global v}- s12
+      | s12 = return {_ret} ] ]
     [ & _ret: t_IterMut_T = Any.any_l ()
     | & v: MutBorrow.t t_Vec_T_Global = v
     | & _8: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
@@ -615,32 +611,29 @@ module M_all_zero
       [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_8 <- _bor ] [ &v <- { v with current = _bor.final } ] s1)
       | s1 = iter_mut_usize {_8} (fun (_x: t_IterMut_usize) -> [ &_7 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = into_iter_usize {_7} (fun (_x: t_IterMut_usize) -> [ &it <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &iter_old <- it ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq (MutBorrow.t UInt64.t) ] s1 | s1 = bb5 ]
+      | s2 = into_iter_usize {_7} (fun (_x: t_IterMut_usize) -> [ &it <- _x ] s3)
+      | s3 = [ &iter_old <- it ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq (MutBorrow.t UInt64.t) ] s5
+      | s5 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] inv_IterMut_usize it}
         {[@expl:loop invariant #1] produces_IterMut_usize iter_old produced it}
         {[@expl:loop invariant #2] forall i: int. 0 <= i /\ i < Seq.length produced
           -> UInt64.t'int (Seq.get produced i).final = 0}
         (! s0)
-        [ s0 = bb6 ]
-        [ bb6 = s0
-          [ s0 = {inv_IterMut_usize it}
-            MutBorrow.borrow_mut <t_IterMut_usize> {it}
-              (fun (_bor: MutBorrow.t t_IterMut_usize) ->
-                [ &_25 <- _bor ] -{inv_IterMut_usize _bor.final}-
-                [ &it <- _bor.final ] s1)
-          | s1 = next_IterMut_usize {_25} (fun (_x: t_Option_ref_usize) -> [ &_24 <- _x ] s2)
-          | s2 = bb7 ]
-        | bb7 = any [ br0 -> {_24 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_24 = Some x0} (! bb11) ]
-        | bb11 = s0 [ s0 = elim_Some {_24} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1) | s1 = bb12 ]
-        | bb12 = s0
-          [ s0 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s1
-          | s1 = [ &x <- { x with current = (0: UInt64.t) } ] s2
-          | s2 = -{resolve_ref_usize x}- s3
-          | s3 = bb5 ] ] ]
+        [ s0 = {inv_IterMut_usize it}
+          MutBorrow.borrow_mut <t_IterMut_usize> {it}
+            (fun (_bor: MutBorrow.t t_IterMut_usize) ->
+              [ &_25 <- _bor ] -{inv_IterMut_usize _bor.final}-
+              [ &it <- _bor.final ] s1)
+        | s1 = next_IterMut_usize {_25} (fun (_x: t_Option_ref_usize) -> [ &_24 <- _x ] s2)
+        | s2 = any [ br0 -> {_24 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_24 = Some x0} (! bb11) ] ]
+        [ bb11 = s0
+          [ s0 = elim_Some {_24} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
+          | s2 = [ &x <- { x with current = (0: UInt64.t) } ] s3
+          | s3 = -{resolve_ref_usize x}- s4
+          | s4 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = {[@expl:type invariant] inv_IterMut_usize it} s1
       | s1 = -{resolve_IterMut_usize it}- s2

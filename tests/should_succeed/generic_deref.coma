@@ -101,8 +101,11 @@ module M_deref_wrap
   let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv_ref_T x}
     {[@expl:deref_wrap requires] precondition_deref () x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_8 <- x ] s1 | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- _6 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &_8 <- x ] s1
+      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- _6 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
     [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv_ref_Target result}
       {[@expl:deref_wrap ensures] postcondition_deref () x result}
@@ -238,27 +241,25 @@ module M_deref_mut_wrap
             [ &_8 <- _bor ] -{inv_T _bor.final}-
             [ &_9 <- { _9 with current = _bor.final } ] s2)
       | s2 = deref_mut_T {_8} (fun (_x: MutBorrow.t t_Target) -> [ &_7 <- _x ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Target _7.current}
+      | s3 = {inv_Target _7.current}
         MutBorrow.borrow_final <t_Target> {_7.current} {MutBorrow.get_id _7}
           (fun (_bor: MutBorrow.t t_Target) ->
             [ &_2 <- _bor ] -{inv_Target _bor.final}-
-            [ &_7 <- { _7 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T _9} s2
-      | s2 = -{resolve_ref_T _9}- s3
-      | s3 = {[@expl:type invariant] inv_ref_Target _7} s4
-      | s4 = -{resolve_ref_Target _7}- s5
-      | s5 = {inv_Target _2.current}
+            [ &_7 <- { _7 with current = _bor.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_T _9} s5
+      | s5 = -{resolve_ref_T _9}- s6
+      | s6 = {[@expl:type invariant] inv_ref_Target _7} s7
+      | s7 = -{resolve_ref_Target _7}- s8
+      | s8 = {inv_Target _2.current}
         MutBorrow.borrow_final <t_Target> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t t_Target) ->
             [ &_ret <- _bor ] -{inv_Target _bor.final}-
-            [ &_2 <- { _2 with current = _bor.final } ] s6)
-      | s6 = {[@expl:type invariant] inv_ref_Target _2} s7
-      | s7 = -{resolve_ref_Target _2}- s8
-      | s8 = {[@expl:type invariant] inv_ref_T x} s9
-      | s9 = -{resolve_ref_T x}- s10
-      | s10 = return {_ret} ] ]
+            [ &_2 <- { _2 with current = _bor.final } ] s9)
+      | s9 = {[@expl:type invariant] inv_ref_Target _2} s10
+      | s10 = -{resolve_ref_Target _2}- s11
+      | s11 = {[@expl:type invariant] inv_ref_T x} s12
+      | s12 = -{resolve_ref_T x}- s13
+      | s13 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_Target = Any.any_l ()
     | & x: MutBorrow.t t_T = x
     | & _2: MutBorrow.t t_Target = Any.any_l ()

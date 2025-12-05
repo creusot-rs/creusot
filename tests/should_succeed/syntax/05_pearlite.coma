@@ -51,7 +51,7 @@ module M_ghost_closure
   meta "select_lsinst" "all"
   
   let rec ghost_closure (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_x <- fun (a: UInt32.t) -> a ] s1 | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_x <- fun (a: UInt32.t) -> a ] s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _x: Map.map UInt32.t UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
@@ -80,8 +80,7 @@ module M_caller
   meta "select_lsinst" "all"
   
   let rec caller (return (x: ())) = (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = pearlite_closure {fun (_a: UInt32.t) -> true} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0
+      [ s0 = pearlite_closure {fun (_a: UInt32.t) -> true} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

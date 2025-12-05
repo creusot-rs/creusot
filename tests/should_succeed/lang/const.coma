@@ -75,15 +75,13 @@ module M_array
             [ & _ret'0: Slice64.array Int32.t = Any.any_l () ]
             [ _const_ret (_const: Slice64.array Int32.t) -> [ &_11 <- _const ] s1 ]
           | s1 = len_i32 {_11} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s2)
-          | s2 = bb1 ]
-        | bb1 = s0
-          [ s0 = bb0'0
+          | s2 = bb0'0
             [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- const_Y ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
             [ & _ret'0: Slice64.array Int32.t = Any.any_l () ]
-            [ _const_ret (_const: Slice64.array Int32.t) -> [ &_10 <- _const ] s1 ]
-          | s1 = len_i32 {_10} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s2)
-          | s2 = bb2 ]
-        | bb2 = s0 [ s0 = UInt64.add {_2} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+            [ _const_ret (_const: Slice64.array Int32.t) -> [ &_10 <- _const ] s3 ]
+          | s3 = len_i32 {_10} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s4)
+          | s4 = UInt64.add {_2} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
+          | s5 = return {_ret} ] ]
         [ & _ret: UInt64.t = Any.any_l ()
         | & _2: UInt64.t = Any.any_l ()
         | & _6: UInt64.t = Any.any_l ()
@@ -116,8 +114,7 @@ module M_array_param
           | s1'0 = _const_ret {_ret'0} ] ] [ & _ret'0: Slice64.array UInt32.t = Any.any_l () ]
         [ _const_ret (_const: Slice64.array UInt32.t) -> [ &x <- _const ] s1 ]
       | s1 = len_u32 {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = return {_ret} ] [ & _ret: UInt64.t = Any.any_l () | & x: Slice64.array UInt32.t = Any.any_l () ])
+      | s2 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & x: Slice64.array UInt32.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:array_param ensures] result = const_N} (! return {result}) ]
 end
 module M_add_one
@@ -188,9 +185,8 @@ module M_add_one
           [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_N (1: UInt64.t) in { f0 = _fst;
                                                                                                    f1 = _snd } ] s1'0
           | s1'0 = {[@expl:Add overflow] not _1.f1} s2
-          | s2 = bb1 ]
-        | bb1 = s0'0 [ s0'0 = [ &_ret'0 <- _1.f0 ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
+          | s2 = [ &_ret'0 <- _1.f0 ] s3
+          | s3 = _const_ret {_ret'0} ] ] [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
         [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:add_one ensures] UInt64.t'int result = UInt64.t'int const_N + 1}
@@ -261,7 +257,7 @@ module M_add_one_2
   
   let rec add_one_2 (return (x: UInt64.t)) = {[@expl:add_one_2 requires] UInt64.lt const_M const_MAX}
     (! bb0
-    [ bb0 = s0 [ s0 = add_one (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = add_one (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:add_one_2 ensures] UInt64.t'int result = add_one'0} (! return {result}) ]
 end
@@ -334,9 +330,9 @@ module M_nat_i
   let rec nat_i_T (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = nat_I_T_U (fun (_x: UInt64.t) -> [ &_ret'0 <- _x ] s1'0) | s1'0 = bb1 ]
-        | bb1 = _const_ret {_ret'0} ] [ & _ret'0: UInt64.t = Any.any_l () ]
-        [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
+        [ bb0'0 = s0'0
+          [ s0'0 = nat_I_T_U (fun (_x: UInt64.t) -> [ &_ret'0 <- _x ] s1'0) | s1'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: UInt64.t = Any.any_l () ] [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:nat_i ensures] result = const_N} (! return {result}) ]
 end
@@ -415,9 +411,8 @@ module M_nat_i3
           [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_VALUE const_VALUE in { f0 = _fst;
                                                                                                      f1 = _snd } ] s1'0
           | s1'0 = {[@expl:Add overflow] not _1.f1} s2
-          | s2 = bb1 ]
-        | bb1 = s0'0 [ s0'0 = [ &_ret'0 <- _1.f0 ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
+          | s2 = [ &_ret'0 <- _1.f0 ] s3
+          | s3 = _const_ret {_ret'0} ] ] [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
         [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ]
     [ return (_const: UInt64.t) -> -{const_VALUE'0 = _const}- return ]
@@ -450,9 +445,8 @@ module M_nat_i3_logic
           [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt64.add_with_overflow const_VALUE const_VALUE in { f0 = _fst;
                                                                                                      f1 = _snd } ] s1'0
           | s1'0 = {[@expl:Add overflow] not _1.f1} s2
-          | s2 = bb1 ]
-        | bb1 = s0'0 [ s0'0 = [ &_ret'0 <- _1.f0 ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
+          | s2 = [ &_ret'0 <- _1.f0 ] s3
+          | s3 = _const_ret {_ret'0} ] ] [ & _ret'0: UInt64.t = Any.any_l () | & _1: tup2_usize_bool = Any.any_l () ]
         [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ]
     [ return (_const: UInt64.t) -> -{const_VALUE'0 = _const}- return ]
@@ -553,10 +547,9 @@ module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
       [ s0 = elim_S {self} (fun (r0: t_Peano) -> [ &v0_1 <- r0 ] s1)
       | s1 = [ &_9 <- v0_1 ] s2
       | s2 = clone_ref_Peano {_9} (fun (_x: t_Peano) -> [ &_7 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- S _7 ] s1 | s1 = bb6 ]
-    | bb4 = s0 [ s0 = [ &_ret <- Z ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+      | s3 = [ &_ret <- S _7 ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- Z ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Peano = Any.any_l ()
     | & self: t_Peano = self
     | & v0_1: t_Peano = Any.any_l ()
@@ -623,8 +616,8 @@ module M_zero
         | s1 = [ &_3 <- (0: UInt64.t) ] s2
         | s2 = [ &_4 <- UInt64.lt _3 (2: UInt64.t) ] s3
         | s3 = {[@expl:index in bounds] _4} s4
-        | s4 = bb1 ]
-      | bb1 = s0 [ s0 = Slice64.get <t_Peano> {_2} {_3} (fun (r: t_Peano) -> [ &_ret <- r ] s1) | s1 = return {_ret} ] ]
+        | s4 = Slice64.get <t_Peano> {_2} {_3} (fun (r: t_Peano) -> [ &_ret <- r ] s5)
+        | s5 = return {_ret} ] ]
       [ & _ret: t_Peano = Any.any_l ()
       | & _2: Slice64.array t_Peano = Any.any_l ()
       | & _3: UInt64.t = Any.any_l ()
@@ -693,9 +686,8 @@ module M_is_zst_z
   let rec is_zst_z (return (x: bool)) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = is_zst_Z (fun (_x: bool) -> [ &_ret'0 <- _x ] s1'0) | s1'0 = bb1 ]
-        | bb1 = _const_ret {_ret'0} ] [ & _ret'0: bool = Any.any_l () ]
-        [ _const_ret (_const: bool) -> [ &_ret <- _const ] s1 ]
+        [ bb0'0 = s0'0 [ s0'0 = is_zst_Z (fun (_x: bool) -> [ &_ret'0 <- _x ] s1'0) | s1'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: bool = Any.any_l () ] [ _const_ret (_const: bool) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:is_zst_z ensures] result} (! return {result}) ]
 end
@@ -744,8 +736,8 @@ module M_fn_pointer_test
         [ _const_ret (_const: ()) -> [ &_8 <- _const ] s1 ]
       | s1 = [ &x <- _8 ] s2
       | s2 = some_fn_pointer (fun (_x: Int32.t) -> [ &y <- _x ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] Int32.to_int y = 2} s1 | s1 = return {_ret} ] ]
+      | s3 = {[@expl:assertion] Int32.to_int y = 2} s4
+      | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: () = Any.any_l () | & y: Int32.t = Any.any_l () | & _8: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

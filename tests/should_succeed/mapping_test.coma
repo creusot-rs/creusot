@@ -23,12 +23,12 @@ module M_incr
   let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int t.current.a}
     {[@expl:incr requires #1] Int32.to_int t.current.a < 1000}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_t <- t ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = Int32.add {t.current.a} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &t <- { t with current = { a = _x } } ] s1)
-      | s1 = -{resolve_ref_T t}- s2
-      | s2 = {[@expl:assertion] view_T t.final = Map.set (view_T old_t.current) (Int32.to_int old_t.current.a) 1} s3
-      | s3 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &old_t <- t ] s1
+      | s1 = Int32.add {t.current.a} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &t <- { t with current = { a = _x } } ] s2)
+      | s2 = -{resolve_ref_T t}- s3
+      | s3 = {[@expl:assertion] view_T t.final = Map.set (view_T old_t.current) (Int32.to_int old_t.current.a) 1} s4
+      | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & t: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: ()) -> {[@expl:incr ensures] view_T t.final
       = Map.set (view_T t.current) (Int32.to_int t.current.a) 1}
@@ -71,12 +71,10 @@ module M_f
       | s4 = MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_T) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
       | s5 = incr {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
-      | s6 = bb1 ]
-    | bb1 = s0
-      [ s0 = -{resolve_ref_T _10}- s1
-      | s1 = {[@expl:assertion] Map.get (view_T x) 13 = 1} s2
-      | s2 = {[@expl:assertion] Map.get (view_T x) 42 = 1} s3
-      | s3 = return {_ret} ] ]
+      | s6 = -{resolve_ref_T _10}- s7
+      | s7 = {[@expl:assertion] Map.get (view_T x) 13 = 1} s8
+      | s8 = {[@expl:assertion] Map.get (view_T x) 42 = 1} s9
+      | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_T = Any.any_l ()
     | & _8: () = Any.any_l ()

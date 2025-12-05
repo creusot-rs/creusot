@@ -17,7 +17,7 @@ module M_swap
   
   let rec swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@expl:swap 'x' type invariant] inv_tup2_T_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
     [ return (result: tup2_T_T) -> {[@expl:swap result type invariant] inv_tup2_T_T result}
       {[@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 }}
@@ -56,15 +56,13 @@ module M_f
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s6)
       | s6 = [ &_5 <- { f0'0 = _6; f1'0 = _7 } ] s7
       | s7 = swap_ref_u32 {_5} (fun (_x: tup2_ref_u32_ref_u32) -> [ &p <- _x ] s8)
-      | s8 = bb1 ]
-    | bb1 = s0
-      [ s0 = -{resolve_ref_u32 p.f1'0}- s1
-      | s1 = -{resolve_ref_u32 _8}- s2
-      | s2 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s3
-      | s3 = -{resolve_ref_u32 p.f0'0}- s4
-      | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
-      | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
-      | s6 = return {_ret} ] ]
+      | s8 = -{resolve_ref_u32 p.f1'0}- s9
+      | s9 = -{resolve_ref_u32 _8}- s10
+      | s10 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s11
+      | s11 = -{resolve_ref_u32 p.f0'0}- s12
+      | s12 = {[@expl:assertion] b = (10: UInt32.t)} s13
+      | s13 = {[@expl:assertion] a = (0: UInt32.t)} s14
+      | s14 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()
     | & b: UInt32.t = Any.any_l ()

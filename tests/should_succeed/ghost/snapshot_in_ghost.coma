@@ -8,9 +8,11 @@ module M_foo
   meta "select_lsinst" "all"
   
   let rec foo (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] x = 1} s1 | s1 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s2) | s2 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = [ &x <- 1 ] s1
+      | s1 = {[@expl:assertion] x = 1} s2
+      | s2 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
+      | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () | & x: int = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
@@ -22,8 +24,7 @@ module M_is_ghost
   meta "select_lsinst" "all"
   
   let rec is_ghost (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] x = 1} s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = {[@expl:assertion] x = 1} s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_bar
@@ -37,13 +38,12 @@ module M_bar
   meta "select_lsinst" "all"
   
   let rec bar (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &x <- (1: Int32.t) ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_4 <- x ] s1 | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:assertion] exists y: Int32.t. x = y} s1
-      | s1 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = [ &x <- (1: Int32.t) ] s1
+      | s1 = [ &_4 <- x ] s2
+      | s2 = {[@expl:assertion] exists y: Int32.t. x = y} s3
+      | s3 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
+      | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()

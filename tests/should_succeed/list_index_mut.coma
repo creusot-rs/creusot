@@ -1,8 +1,8 @@
 module M_index_mut
+  use creusot.int.UInt64
   use mach.int.Int
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
-  use creusot.int.UInt64
   use creusot.prelude.Any
   
   type t_Option_Box_List_Global = None | Some t_List
@@ -103,8 +103,7 @@ module M_index_mut
   let rec index_mut (l: MutBorrow.t t_List) (ix: UInt64.t) (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] UInt64.t'int ix < len l.current}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_ix <- ix ] s1 | s1 = bb3 ]
+    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = [ &old_ix <- ix ] s2 | s2 = bb3 ]
     | bb3 = bb3
       [ bb3 = {[@expl:loop invariant #0] UInt64.le (0: UInt64.t) ix /\ UInt64.t'int ix < len l.current}
         {[@expl:loop invariant #1] get l.current (UInt64.t'int ix) = get old_l.current (UInt64.t'int old_ix)}
@@ -115,27 +114,22 @@ module M_index_mut
         -> (forall i: int. 0 <= i /\ i < len old_l.current /\ i <> UInt64.t'int old_ix
           -> get old_l.final i = get old_l.current i)}
         (! s0)
-        [ s0 = bb4 ]
-        [ bb4 = s0
-          [ s0 = [ &_48 <- UInt64.gt ix (0: UInt64.t) ] s1
-          | s1 = any [ br0 -> {_48 = false} (! bb8) | br1 -> {_48} (! bb5) ] ]
-        | bb5 = s0
+        [ s0 = [ &_48 <- UInt64.gt ix (0: UInt64.t) ] s1
+        | s1 = any [ br0 -> {_48 = false} (! bb8) | br1 -> {_48} (! bb5) ] ]
+        [ bb5 = s0
           [ s0 = MutBorrow.borrow_final <t_Option_Box_List_Global> {l.current.f1}
               {MutBorrow.inherit_id (MutBorrow.get_id l) 2}
               (fun (_bor: MutBorrow.t t_Option_Box_List_Global) ->
                 [ &_53 <- _bor ] [ &l <- { l with current = { l.current with f1 = _bor.final } } ] s1)
           | s1 = as_mut_Box_List_Global {_53} (fun (_x: t_Option_ref_Box_List_Global) -> [ &_52 <- _x ] s2)
-          | s2 = bb6 ]
-        | bb6 = s0
-          [ s0 = unwrap_ref_Box_List_Global {_52} (fun (_x: MutBorrow.t t_List) -> [ &_51 <- _x ] s1) | s1 = bb7 ]
-        | bb7 = s0
-          [ s0 = MutBorrow.borrow_final <t_List> {_51.current} {MutBorrow.get_id _51}
-              (fun (_bor: MutBorrow.t t_List) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s1)
-          | s1 = -{resolve_ref_List l}- s2
-          | s2 = [ &l <- _50 ] s3
-          | s3 = -{resolve_ref_Box_List_Global _51}- s4
-          | s4 = UInt64.sub {ix} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &ix <- _x ] s5)
-          | s5 = bb3 ] ] ]
+          | s2 = unwrap_ref_Box_List_Global {_52} (fun (_x: MutBorrow.t t_List) -> [ &_51 <- _x ] s3)
+          | s3 = MutBorrow.borrow_final <t_List> {_51.current} {MutBorrow.get_id _51}
+              (fun (_bor: MutBorrow.t t_List) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s4)
+          | s4 = -{resolve_ref_List l}- s5
+          | s5 = [ &l <- _50 ] s6
+          | s6 = -{resolve_ref_Box_List_Global _51}- s7
+          | s7 = UInt64.sub {ix} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &ix <- _x ] s8)
+          | s8 = bb3 ] ] ]
     | bb8 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {l.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id l) 1}
           (fun (_bor: MutBorrow.t UInt32.t) ->
@@ -223,12 +217,10 @@ module M_write
       [ s0 = MutBorrow.borrow_final <t_List> {l.current} {MutBorrow.get_id l}
           (fun (_bor: MutBorrow.t t_List) -> [ &_18 <- _bor ] [ &l <- { l with current = _bor.final } ] s1)
       | s1 = index_mut {_18} {ix} (fun (_x: MutBorrow.t UInt32.t) -> [ &_17 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_17 <- { _17 with current = v } ] s1
-      | s1 = -{resolve_ref_u32 _17}- s2
-      | s2 = -{resolve_ref_List l}- s3
-      | s3 = return {_ret} ] ]
+      | s2 = [ &_17 <- { _17 with current = v } ] s3
+      | s3 = -{resolve_ref_u32 _17}- s4
+      | s4 = -{resolve_ref_List l}- s5
+      | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & l: MutBorrow.t t_List = l
     | & ix: UInt64.t = ix
@@ -285,18 +277,18 @@ module M_f
   meta "select_lsinst" "all"
   
   let rec f (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_5 <- None ] s1 | s1 = [ &_4 <- { f0 = (10: UInt32.t); f1 = _5 } ] s2 | s2 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_2 <- Some _4 ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &l <- { f0 = (1: UInt32.t); f1 = _2 } ] s1 | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_List> {l}
-          (fun (_bor: MutBorrow.t t_List) -> [ &_8 <- _bor ] [ &l <- _bor.final ] s1)
-      | s1 = MutBorrow.borrow_final <t_List> {_8.current} {MutBorrow.get_id _8}
-          (fun (_bor: MutBorrow.t t_List) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s2)
-      | s2 = write {_7} {(0: UInt64.t)} {(2: UInt32.t)} (fun (_x: ()) -> [ &_6 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0 [ s0 = -{resolve_ref_List _8}- s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = [ &_5 <- None ] s1
+      | s1 = [ &_4 <- { f0 = (10: UInt32.t); f1 = _5 } ] s2
+      | s2 = [ &_2 <- Some _4 ] s3
+      | s3 = [ &l <- { f0 = (1: UInt32.t); f1 = _2 } ] s4
+      | s4 = MutBorrow.borrow_mut <t_List> {l}
+          (fun (_bor: MutBorrow.t t_List) -> [ &_8 <- _bor ] [ &l <- _bor.final ] s5)
+      | s5 = MutBorrow.borrow_final <t_List> {_8.current} {MutBorrow.get_id _8}
+          (fun (_bor: MutBorrow.t t_List) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s6)
+      | s6 = write {_7} {(0: UInt64.t)} {(2: UInt32.t)} (fun (_x: ()) -> [ &_6 <- _x ] s7)
+      | s7 = -{resolve_ref_List _8}- s8
+      | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & l: t_List = Any.any_l ()
     | & _2: t_Option_Box_List_Global = Any.any_l ()

@@ -61,8 +61,7 @@ module M_test_string_len
       [ s0 = {[@expl:type invariant] inv_String s} s1
       | s1 = -{resolve_String s}- s2
       | s2 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
-      | s3 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: UInt64.t = Any.any_l () | & s: t_String = s ])
+      | s3 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & s: t_String = s ])
     [ return (result: UInt64.t) -> {[@expl:test_string_len ensures] UInt64.t'int result = 2} (! return {result}) ]
 end
 module M_test_str_len
@@ -106,7 +105,7 @@ module M_test_str_len
     = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_str_len requires #1] to_utf8_char (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & s: string = s ])
     [ return (result: UInt64.t) -> {[@expl:test_str_len ensures] UInt64.t'int result = 2} (! return {result}) ]
 end
@@ -164,12 +163,12 @@ module M_test_split_at
     = Seq.create 1 [|Char.of_int 195|]}
     {[@expl:test_split_at requires #1] to_utf8_char (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_7 <- flat_map_singleton_char ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:assertion] Seq.([..]) (view_str s) 0 1 = view_str s} s1
-      | s1 = split_at {s} {(2: UInt64.t)} (fun (_x: tup2_ref_str_ref_str) -> [ &_ret <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: tup2_ref_str_ref_str = Any.any_l () | & s: string = s | & _7: () = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = [ &_7 <- flat_map_singleton_char ] s1
+      | s1 = {[@expl:assertion] Seq.([..]) (view_str s) 0 1 = view_str s} s2
+      | s2 = split_at {s} {(2: UInt64.t)} (fun (_x: tup2_ref_str_ref_str) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: tup2_ref_str_ref_str = Any.any_l () | & s: string = s | & _7: () = Any.any_l () ])
     [ return (result: tup2_ref_str_ref_str) -> {[@expl:test_split_at ensures] view_str result.f0 = view_str s
       /\ view_str result.f1 = (Seq.empty: Seq.seq Char.t)}
       (! return {result}) ]

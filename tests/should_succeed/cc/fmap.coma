@@ -95,11 +95,17 @@ module M_resolves
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
-  function fin_Snapshot_ref_usize [@inline:trivial] (self: MutBorrow.t UInt64.t) : UInt64.t = self.final
-  
-  meta "rewrite_def" function fin_Snapshot_ref_usize
-  
   type t_Option_tup2_ref_usize_ref_usize = None'0 | Some'0 tup2_ref_usize_ref_usize
+  
+  predicate invariant_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    inv_FMapIter_ref_usize_ref_usize self.current /\ inv_FMapIter_ref_usize_ref_usize self.final
+  
+  meta "rewrite_def" predicate invariant_ref_FMapIter_ref_usize_ref_usize
+  
+  predicate inv_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (_1: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
+    invariant_ref_FMapIter_ref_usize_ref_usize _1
+  
+  meta "rewrite_def" predicate inv_ref_FMapIter_ref_usize_ref_usize
   
   function get_tup2_ref_usize_ref_usize (self: Seq.seq tup2_ref_usize_ref_usize) (ix: int) : t_Option_tup2_ref_usize_ref_usize
    = if 0 <= ix /\ ix < Seq.length self then Some'0 (Seq.get self ix) else None'0
@@ -128,20 +134,6 @@ module M_resolves
   axiom produces_refl_FMapIter_ref_usize_ref_usize_spec:
     forall self: t_FMapIter_ref_usize_ref_usize. produces_FMapIter_ref_usize_ref_usize self (Seq.empty: Seq.seq tup2_ref_usize_ref_usize) self
   
-  predicate inv_Seq_tup2_ref_usize_ref_usize [@inline:trivial] (_1: Seq.seq tup2_ref_usize_ref_usize) = true
-  
-  meta "rewrite_def" predicate inv_Seq_tup2_ref_usize_ref_usize
-  
-  predicate invariant_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
-    inv_FMapIter_ref_usize_ref_usize self.current /\ inv_FMapIter_ref_usize_ref_usize self.final
-  
-  meta "rewrite_def" predicate invariant_ref_FMapIter_ref_usize_ref_usize
-  
-  predicate inv_ref_FMapIter_ref_usize_ref_usize [@inline:trivial] (_1: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
-    invariant_ref_FMapIter_ref_usize_ref_usize _1
-  
-  meta "rewrite_def" predicate inv_ref_FMapIter_ref_usize_ref_usize
-  
   predicate completed_FMapIter_ref_usize_ref_usize (self: MutBorrow.t t_FMapIter_ref_usize_ref_usize) =
     is_empty_ref_usize (view_FMapIter_ref_usize_ref_usize self.current)
   
@@ -162,6 +154,14 @@ module M_resolves
     _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_ref_FMapIter_ref_usize_ref_usize
+  
+  function fin_Snapshot_ref_usize [@inline:trivial] (self: MutBorrow.t UInt64.t) : UInt64.t = self.final
+  
+  meta "rewrite_def" function fin_Snapshot_ref_usize
+  
+  predicate inv_Seq_tup2_ref_usize_ref_usize [@inline:trivial] (_1: Seq.seq tup2_ref_usize_ref_usize) = true
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_ref_usize_ref_usize
   
   let rec elim_Some (_x: t_Option_tup2_ref_usize_ref_usize) (return (f0'0: tup2_ref_usize_ref_usize)) = any
     [ _k (f0'0: tup2_ref_usize_ref_usize) -> {Some'0 f0'0 = _x} (! return {f0'0})
@@ -202,29 +202,21 @@ module M_resolves
       [ s0 = [ &k <- (0: UInt64.t) ] s1
       | s1 = [ &v <- (0: UInt64.t) ] s2
       | s2 = new_ref_usize (fun (_x: t_FMap_ref_usize_ref_usize) -> [ &_6 <- _x ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = into_inner_FMap_ref_usize_ref_usize {_6} (fun (_x: t_FMap_ref_usize_ref_usize) -> [ &s <- _x ] s1)
-      | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt64.t> {k}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &bor_k <- _bor ] [ &k <- _bor.final ] s1)
-      | s1 = MutBorrow.borrow_mut <UInt64.t> {v}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &bor_v <- _bor ] [ &v <- _bor.final ] s2)
-      | s2 = [ &snap_k <- bor_k ] s3
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = [ &snap_v <- bor_v ] s1 | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_FMap_ref_usize_ref_usize> {s}
-          (fun (_bor: MutBorrow.t t_FMap_ref_usize_ref_usize) -> [ &_16 <- _bor ] [ &s <- _bor.final ] s1)
-      | s1 = insert_ghost_ref_usize {_16} {bor_k} {bor_v} (fun (_x: t_Option_ref_usize) -> [ &_15 <- _x ] s2)
-      | s2 = -{resolve_Option_ref_usize _15}- s3
-      | s3 = bb5 ]
-    | bb5 = s0
-      [ s0 = into_iter_FMap_ref_usize_ref_usize {s} (fun (_x: t_FMapIter_ref_usize_ref_usize) -> [ &iter <- _x ] s1)
-      | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq tup2_ref_usize_ref_usize ] s1 | s1 = bb9 ]
+      | s3 = into_inner_FMap_ref_usize_ref_usize {_6} (fun (_x: t_FMap_ref_usize_ref_usize) -> [ &s <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <UInt64.t> {k}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &bor_k <- _bor ] [ &k <- _bor.final ] s5)
+      | s5 = MutBorrow.borrow_mut <UInt64.t> {v}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &bor_v <- _bor ] [ &v <- _bor.final ] s6)
+      | s6 = [ &snap_k <- bor_k ] s7
+      | s7 = [ &snap_v <- bor_v ] s8
+      | s8 = MutBorrow.borrow_mut <t_FMap_ref_usize_ref_usize> {s}
+          (fun (_bor: MutBorrow.t t_FMap_ref_usize_ref_usize) -> [ &_16 <- _bor ] [ &s <- _bor.final ] s9)
+      | s9 = insert_ghost_ref_usize {_16} {bor_k} {bor_v} (fun (_x: t_Option_ref_usize) -> [ &_15 <- _x ] s10)
+      | s10 = -{resolve_Option_ref_usize _15}- s11
+      | s11 = into_iter_FMap_ref_usize_ref_usize {s} (fun (_x: t_FMapIter_ref_usize_ref_usize) -> [ &iter <- _x ] s12)
+      | s12 = [ &iter_old <- iter ] s13
+      | s13 = [ &produced <- Seq.empty: Seq.seq tup2_ref_usize_ref_usize ] s14
+      | s14 = bb9 ]
     | bb9 = bb9invariant
       [ bb9 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb9 (1 - Seq.length produced)} bb9invariant
       | bb9invariant = {[@expl:for invariant] inv_Seq_tup2_ref_usize_ref_usize produced}
@@ -234,45 +226,38 @@ module M_resolves
         {[@expl:loop invariant #1] Seq.length produced = 0
         \/ fin_Snapshot_ref_usize snap_k = (1: UInt64.t) /\ fin_Snapshot_ref_usize snap_v = (1: UInt64.t)}
         (! [ &variant_old_bb9 <- 1 - Seq.length produced ] s0)
-        [ s0 = bb10 ]
-        [ bb10 = s0
-          [ s0 = {inv_FMapIter_ref_usize_ref_usize iter}
-            MutBorrow.borrow_mut <t_FMapIter_ref_usize_ref_usize> {iter}
-              (fun (_bor: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
-                [ &_47 <- _bor ] -{inv_FMapIter_ref_usize_ref_usize _bor.final}-
-                [ &iter <- _bor.final ] s1)
-          | s1 = {inv_FMapIter_ref_usize_ref_usize _47.current}
-            MutBorrow.borrow_final <t_FMapIter_ref_usize_ref_usize> {_47.current} {MutBorrow.get_id _47}
-              (fun (_bor: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
-                [ &_46 <- _bor ] -{inv_FMapIter_ref_usize_ref_usize _bor.final}-
-                [ &_47 <- { _47 with current = _bor.final } ] s2)
-          | s2 = next_FMapIter_ref_usize_ref_usize {_46}
-              (fun (_x: t_Option_tup2_ref_usize_ref_usize) -> [ &_45 <- _x ] s3)
-          | s3 = bb11 ]
-        | bb11 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_FMapIter_ref_usize_ref_usize _47} s1
-          | s1 = -{resolve_ref_FMapIter_ref_usize_ref_usize _47}- s2
-          | s2 = any
-            [ br0 -> {_45 = None'0} (! bb14) | br1 (x0: tup2_ref_usize_ref_usize) -> {_45 = Some'0 x0} (! bb15) ] ]
-        | bb15 = s0
+        [ s0 = {inv_FMapIter_ref_usize_ref_usize iter}
+          MutBorrow.borrow_mut <t_FMapIter_ref_usize_ref_usize> {iter}
+            (fun (_bor: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
+              [ &_47 <- _bor ] -{inv_FMapIter_ref_usize_ref_usize _bor.final}-
+              [ &iter <- _bor.final ] s1)
+        | s1 = {inv_FMapIter_ref_usize_ref_usize _47.current}
+          MutBorrow.borrow_final <t_FMapIter_ref_usize_ref_usize> {_47.current} {MutBorrow.get_id _47}
+            (fun (_bor: MutBorrow.t t_FMapIter_ref_usize_ref_usize) ->
+              [ &_46 <- _bor ] -{inv_FMapIter_ref_usize_ref_usize _bor.final}-
+              [ &_47 <- { _47 with current = _bor.final } ] s2)
+        | s2 = next_FMapIter_ref_usize_ref_usize {_46}
+            (fun (_x: t_Option_tup2_ref_usize_ref_usize) -> [ &_45 <- _x ] s3)
+        | s3 = {[@expl:type invariant] inv_ref_FMapIter_ref_usize_ref_usize _47} s4
+        | s4 = -{resolve_ref_FMapIter_ref_usize_ref_usize _47}- s5
+        | s5 = any
+          [ br0 -> {_45 = None'0} (! bb14) | br1 (x0: tup2_ref_usize_ref_usize) -> {_45 = Some'0 x0} (! bb15) ] ]
+        [ bb15 = s0
           [ s0 = elim_Some {_45} (fun (r0: tup2_ref_usize_ref_usize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = bb16 ]
-        | bb16 = s0
-          [ s0 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s1
-          | s1 = [ &k2 <- __creusot_proc_iter_elem.f0 ] s2
-          | s2 = [ &v2 <- __creusot_proc_iter_elem.f1 ] s3
-          | s3 = [ &k2 <- { k2 with current = (1: UInt64.t) } ] s4
-          | s4 = -{resolve_ref_usize k2}- s5
-          | s5 = [ &v2 <- { v2 with current = (1: UInt64.t) } ] s6
-          | s6 = -{resolve_ref_usize v2}- s7
-          | s7 = bb9 ] ] ]
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &k2 <- __creusot_proc_iter_elem.f0 ] s3
+          | s3 = [ &v2 <- __creusot_proc_iter_elem.f1 ] s4
+          | s4 = [ &k2 <- { k2 with current = (1: UInt64.t) } ] s5
+          | s5 = -{resolve_ref_usize k2}- s6
+          | s6 = [ &v2 <- { v2 with current = (1: UInt64.t) } ] s7
+          | s7 = -{resolve_ref_usize v2}- s8
+          | s8 = bb9 ] ] ]
     | bb14 = s0
       [ s0 = {[@expl:type invariant] inv_FMapIter_ref_usize_ref_usize iter} s1
       | s1 = -{resolve_FMapIter_ref_usize_ref_usize'0 iter}- s2
       | s2 = UInt64.add {k} {v} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s3)
       | s3 = new_usize {_2} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
-      | s4 = bb17 ]
-    | bb17 = return {_ret} ]
+      | s4 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()
     | & k: UInt64.t = Any.any_l ()

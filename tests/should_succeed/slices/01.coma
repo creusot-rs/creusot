@@ -18,8 +18,8 @@ module M_index_slice
       | s1 = [ &_5 <- Slice64.length a ] s2
       | s2 = [ &_6 <- UInt64.lt _4 _5 ] s3
       | s3 = {[@expl:index in bounds] _6} s4
-      | s4 = bb1 ]
-    | bb1 = s0 [ s0 = Slice64.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s1) | s1 = return {_ret} ] ]
+      | s4 = Slice64.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & a: Slice64.slice UInt32.t = a
     | & _4: UInt64.t = Any.any_l ()
@@ -58,12 +58,10 @@ module M_index_mut_slice
       | s2 = [ &_8 <- Slice64.slice_ptr_len _7 ] s3
       | s3 = [ &_9 <- UInt64.lt _6 _8 ] s4
       | s4 = {[@expl:index in bounds] _9} s5
-      | s5 = bb1 ]
-    | bb1 = s0
-      [ s0 = Slice64.set <UInt32.t> {a.current} {_6} {(3: UInt32.t)}
-          (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s1)
-      | s1 = -{resolve_ref_slice_u32 a}- s2
-      | s2 = return {_ret} ] ]
+      | s5 = Slice64.set <UInt32.t> {a.current} {_6} {(3: UInt32.t)}
+          (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s6)
+      | s6 = -{resolve_ref_slice_u32 a}- s7
+      | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a
     | & _6: UInt64.t = Any.any_l ()
@@ -146,19 +144,19 @@ module M_slice_first
   let rec slice_first_T (a: Slice64.slice t_T) (return (x: t_Option_ref_T)) =
     {[@expl:slice_first 'a' type invariant] inv_ref_slice_T a}
     (! bb0
-    [ bb0 = s0 [ s0 = len_T {a} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_4 <- UInt64.gt _5 (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb2) ] ]
+    [ bb0 = s0
+      [ s0 = len_T {a} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1)
+      | s1 = [ &_4 <- UInt64.gt _5 (0: UInt64.t) ] s2
+      | s2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_9 <- (0: UInt64.t) ] s1
       | s1 = [ &_10 <- Slice64.length a ] s2
       | s2 = [ &_11 <- UInt64.lt _9 _10 ] s3
       | s3 = {[@expl:index in bounds] _11} s4
-      | s4 = bb3 ]
-    | bb3 = s0
-      [ s0 = Slice64.get <t_T> {a} {_9} (fun (r: t_T) -> [ &_8 <- r ] s1) | s1 = [ &_ret <- Some _8 ] s2 | s2 = bb5 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+      | s4 = Slice64.get <t_T> {a} {_9} (fun (r: t_T) -> [ &_8 <- r ] s5)
+      | s5 = [ &_ret <- Some _8 ] s6
+      | s6 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_ref_T = Any.any_l ()
     | & a: Slice64.slice t_T = a
     | & _4: bool = Any.any_l ()

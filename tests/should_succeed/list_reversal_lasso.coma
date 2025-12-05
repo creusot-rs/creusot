@@ -47,8 +47,11 @@ module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
   let rec index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:index requires] nonnull_ptr self i}
     (! bb0
-    [ bb0 = s0 [ s0 = index_Vec_usize_Global {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_9 <- _10 ] s1 | s1 = [ &_ret <- _9 ] s2 | s2 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = index_Vec_usize_Global {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
+      | s1 = [ &_9 <- _10 ] s2
+      | s2 = [ &_ret <- _9 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: t_Memory = self
     | & i: UInt64.t = i
@@ -131,19 +134,17 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
             [ &_20 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
       | s1 = index_mut_Vec_usize_Global {_20} {i} (fun (_x: MutBorrow.t UInt64.t) -> [ &_19 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <UInt64.t> {_19.current} {MutBorrow.get_id _19}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s1)
-      | s1 = MutBorrow.borrow_final <UInt64.t> {_18.current} {MutBorrow.get_id _18}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_3 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s2)
-      | s2 = -{resolve_ref_usize _19}- s3
-      | s3 = -{resolve_ref_usize _18}- s4
-      | s4 = MutBorrow.borrow_final <UInt64.t> {_3.current} {MutBorrow.get_id _3}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_ret <- _bor ] [ &_3 <- { _3 with current = _bor.final } ] s5)
-      | s5 = -{resolve_ref_usize _3}- s6
-      | s6 = -{resolve_ref_Memory self}- s7
-      | s7 = return {_ret} ] ]
+      | s2 = MutBorrow.borrow_final <UInt64.t> {_19.current} {MutBorrow.get_id _19}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s3)
+      | s3 = MutBorrow.borrow_final <UInt64.t> {_18.current} {MutBorrow.get_id _18}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_3 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s4)
+      | s4 = -{resolve_ref_usize _19}- s5
+      | s5 = -{resolve_ref_usize _18}- s6
+      | s6 = MutBorrow.borrow_final <UInt64.t> {_3.current} {MutBorrow.get_id _3}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_ret <- _bor ] [ &_3 <- { _3 with current = _bor.final } ] s7)
+      | s7 = -{resolve_ref_usize _3}- s8
+      | s8 = -{resolve_ref_Memory self}- s9
+      | s9 = return {_ret} ] ]
     [ & _ret: MutBorrow.t UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self
     | & i: UInt64.t = i
@@ -231,24 +232,18 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
         {[@expl:loop invariant #1] l = const_NULL \/ nonnull_ptr self.current l}
         {[@expl:loop invariant #2] mem_is_well_formed self.current}
         (! s0)
-        [ s0 = bb2 ]
-        [ bb2 = s0
-          [ s0 = [ &_21 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_21 = false} (! bb6) | br1 -> {_21} (! bb3) ] ]
-        | bb3 = s0
+        [ s0 = [ &_21 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_21 = false} (! bb6) | br1 -> {_21} (! bb3) ] ]
+        [ bb3 = s0
           [ s0 = [ &tmp <- l ] s1
           | s1 = index_Memory'0 {self.current} {l} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s2)
-          | s2 = bb4 ]
-        | bb4 = s0
-          [ s0 = [ &l <- _25 ] s1
-          | s1 = MutBorrow.borrow_mut <t_Memory> {self.current}
-              (fun (_bor: MutBorrow.t t_Memory) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
-          | s2 = index_mut_Memory {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s3)
-          | s3 = bb5 ]
-        | bb5 = s0
-          [ s0 = [ &_29 <- { _29 with current = r } ] s1
-          | s1 = -{resolve_ref_usize _29}- s2
-          | s2 = [ &r <- tmp ] s3
-          | s3 = bb1 ] ] ]
+          | s2 = [ &l <- _25 ] s3
+          | s3 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_bor: MutBorrow.t t_Memory) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s4)
+          | s4 = index_mut_Memory {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s5)
+          | s5 = [ &_29 <- { _29 with current = r } ] s6
+          | s6 = -{resolve_ref_usize _29}- s7
+          | s7 = [ &r <- tmp ] s8
+          | s8 = bb1 ] ] ]
     | bb6 = s0 [ s0 = -{resolve_ref_Memory self}- s1 | s1 = [ &_ret <- r ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self
@@ -331,8 +326,7 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
   let rec list_reversal_list (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
     {[@expl:list_reversal_list requires] list self.current l s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1 | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = [ &old_2_0 <- self ] s3 | s3 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
         {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s}
@@ -340,32 +334,27 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
         {[@expl:loop invariant #2] list_seg self.current r (Reverse.reverse s) const_NULL (Seq.length s
         - n) (Seq.length s)}
         (! s0)
-        [ s0 = bb3 ]
-        [ bb3 = s0
-          [ s0 = [ &_31 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_31 = false} (! bb9) | br1 -> {_31} (! bb4) ] ]
-        | bb4 = s0
+        [ s0 = [ &_31 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_31 = false} (! bb9) | br1 -> {_31} (! bb4) ] ]
+        [ bb4 = s0
           [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) -> [ &_37 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
           | s1 = index_mut_Memory {_37} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_36 <- _x ] s2)
-          | s2 = bb5 ]
-        | bb5 = s0
-          [ s0 = MutBorrow.borrow_final <UInt64.t> {_36.current} {MutBorrow.get_id _36}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_35 <- _bor ] [ &_36 <- { _36 with current = _bor.final } ] s1)
-          | s1 = MutBorrow.borrow_mut <UInt64.t> {r}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_41 <- _bor ] [ &r <- _bor.final ] s2)
-          | s2 = MutBorrow.borrow_final <UInt64.t> {_41.current} {MutBorrow.get_id _41}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s3)
-          | s3 = replace_usize {_40} {l} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s4)
-          | s4 = bb6 ]
-        | bb6 = s0
-          [ s0 = -{resolve_ref_usize _41}- s1
-          | s1 = MutBorrow.borrow_final <UInt64.t> {_35.current} {MutBorrow.get_id _35}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s2)
-          | s2 = replace_usize {_34} {_39} (fun (_x: UInt64.t) -> [ &_33 <- _x ] s3)
-          | s3 = bb7 ]
-        | bb7 = s0
-          [ s0 = -{resolve_ref_usize _36}- s1 | s1 = -{resolve_ref_usize _35}- s2 | s2 = [ &l <- _33 ] s3 | s3 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- n + 1 ] s1 | s1 = bb2 ] ] ]
+          | s2 = MutBorrow.borrow_final <UInt64.t> {_36.current} {MutBorrow.get_id _36}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_35 <- _bor ] [ &_36 <- { _36 with current = _bor.final } ] s3)
+          | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_41 <- _bor ] [ &r <- _bor.final ] s4)
+          | s4 = MutBorrow.borrow_final <UInt64.t> {_41.current} {MutBorrow.get_id _41}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s5)
+          | s5 = replace_usize {_40} {l} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s6)
+          | s6 = -{resolve_ref_usize _41}- s7
+          | s7 = MutBorrow.borrow_final <UInt64.t> {_35.current} {MutBorrow.get_id _35}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s8)
+          | s8 = replace_usize {_34} {_39} (fun (_x: UInt64.t) -> [ &_33 <- _x ] s9)
+          | s9 = -{resolve_ref_usize _36}- s10
+          | s10 = -{resolve_ref_usize _35}- s11
+          | s11 = [ &l <- _33 ] s12
+          | s12 = [ &n <- n + 1 ] s13
+          | s13 = bb2 ] ] ]
     | bb9 = s0 [ s0 = -{resolve_ref_Memory self}- s1 | s1 = [ &_ret <- r ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self
@@ -462,8 +451,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
     {[@expl:list_reversal_loop requires #0] Seq.length s > 0}
     {[@expl:list_reversal_loop requires #1] loop_ self.current l s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1 | s1 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = [ &old_2_0 <- self ] s3 | s3 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
         {[@expl:loop invariant #0] 0 <= n /\ n <= Seq.length s + 1}
@@ -477,33 +465,28 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
         {[@expl:loop invariant #3] n <= Seq.length s
         -> list_seg self.current r (Reverse.reverse s) const_NULL (Seq.length s - n) (Seq.length s)}
         (! s0)
-        [ s0 = bb3 ]
-        [ bb3 = s0
-          [ s0 = [ &_39 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_39 = false} (! bb9) | br1 -> {_39} (! bb4) ] ]
-        | bb4 = s0
+        [ s0 = [ &_39 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_39 = false} (! bb9) | br1 -> {_39} (! bb4) ] ]
+        [ bb4 = s0
           [ s0 = {[@expl:assertion] n = Seq.length s -> l = Seq.get (Reverse.reverse s) (Seq.length s - 1)} s1
           | s1 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) -> [ &_50 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
           | s2 = index_mut_Memory {_50} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_49 <- _x ] s3)
-          | s3 = bb5 ]
-        | bb5 = s0
-          [ s0 = MutBorrow.borrow_final <UInt64.t> {_49.current} {MutBorrow.get_id _49}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_48 <- _bor ] [ &_49 <- { _49 with current = _bor.final } ] s1)
-          | s1 = MutBorrow.borrow_mut <UInt64.t> {r}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_54 <- _bor ] [ &r <- _bor.final ] s2)
-          | s2 = MutBorrow.borrow_final <UInt64.t> {_54.current} {MutBorrow.get_id _54}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_53 <- _bor ] [ &_54 <- { _54 with current = _bor.final } ] s3)
-          | s3 = replace_usize {_53} {l} (fun (_x: UInt64.t) -> [ &_52 <- _x ] s4)
-          | s4 = bb6 ]
-        | bb6 = s0
-          [ s0 = -{resolve_ref_usize _54}- s1
-          | s1 = MutBorrow.borrow_final <UInt64.t> {_48.current} {MutBorrow.get_id _48}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_47 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s2)
-          | s2 = replace_usize {_47} {_52} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s3)
-          | s3 = bb7 ]
-        | bb7 = s0
-          [ s0 = -{resolve_ref_usize _49}- s1 | s1 = -{resolve_ref_usize _48}- s2 | s2 = [ &l <- _46 ] s3 | s3 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- n + 1 ] s1 | s1 = bb2 ] ] ]
+          | s3 = MutBorrow.borrow_final <UInt64.t> {_49.current} {MutBorrow.get_id _49}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_48 <- _bor ] [ &_49 <- { _49 with current = _bor.final } ] s4)
+          | s4 = MutBorrow.borrow_mut <UInt64.t> {r}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_54 <- _bor ] [ &r <- _bor.final ] s5)
+          | s5 = MutBorrow.borrow_final <UInt64.t> {_54.current} {MutBorrow.get_id _54}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_53 <- _bor ] [ &_54 <- { _54 with current = _bor.final } ] s6)
+          | s6 = replace_usize {_53} {l} (fun (_x: UInt64.t) -> [ &_52 <- _x ] s7)
+          | s7 = -{resolve_ref_usize _54}- s8
+          | s8 = MutBorrow.borrow_final <UInt64.t> {_48.current} {MutBorrow.get_id _48}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_47 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s9)
+          | s9 = replace_usize {_47} {_52} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s10)
+          | s10 = -{resolve_ref_usize _49}- s11
+          | s11 = -{resolve_ref_usize _48}- s12
+          | s12 = [ &l <- _46 ] s13
+          | s13 = [ &n <- n + 1 ] s14
+          | s14 = bb2 ] ] ]
     | bb9 = s0
       [ s0 = -{resolve_ref_Memory self}- s1
       | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length s
@@ -606,8 +589,7 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   let rec list_reversal_lasso (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t)
     (return (x: UInt64.t)) = {[@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = bb1 ]
-    | bb1 = s0 [ s0 = [ &old_2_0 <- self ] s1'0 | s1'0 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = [ &old_2_0 <- self ] s3 | s3 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:mut invariant] old_2_0.final = self.final}
         {[@expl:loop invariant #0] 0 <= n /\ n <= 2 * Seq.length s1 + Seq.length s2}
@@ -633,36 +615,28 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
         /\ list_seg self.current r s1 mid (2 * Seq.length s1 + Seq.length s2 - n) (Seq.length s1)
         /\ list_seg self.current mid (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)}
         (! s0)
-        [ s0 = bb3 ]
-        [ bb3 = s0
-          [ s0 = [ &_46 <- l <> const_NULL ] s1'0 | s1'0 = any [ br0 -> {_46 = false} (! bb9) | br1 -> {_46} (! bb4) ] ]
-        | bb4 = s0
+        [ s0 = [ &_46 <- l <> const_NULL ] s1'0 | s1'0 = any [ br0 -> {_46 = false} (! bb9) | br1 -> {_46} (! bb4) ] ]
+        [ bb4 = s0
           [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) ->
                 [ &_52 <- _bor ] [ &self <- { self with current = _bor.final } ] s1'0)
           | s1'0 = index_mut_Memory {_52} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_51 <- _x ] s2'0)
-          | s2'0 = bb5 ]
-        | bb5 = s0
-          [ s0 = MutBorrow.borrow_final <UInt64.t> {_51.current} {MutBorrow.get_id _51}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s1'0)
-          | s1'0 = MutBorrow.borrow_mut <UInt64.t> {r}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_56 <- _bor ] [ &r <- _bor.final ] s2'0)
-          | s2'0 = MutBorrow.borrow_final <UInt64.t> {_56.current} {MutBorrow.get_id _56}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s3)
-          | s3 = replace_usize {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s4)
-          | s4 = bb6 ]
-        | bb6 = s0
-          [ s0 = -{resolve_ref_usize _56}- s1'0
-          | s1'0 = MutBorrow.borrow_final <UInt64.t> {_50.current} {MutBorrow.get_id _50}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_49 <- _bor ] [ &_50 <- { _50 with current = _bor.final } ] s2'0)
-          | s2'0 = replace_usize {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s3)
-          | s3 = bb7 ]
-        | bb7 = s0
-          [ s0 = -{resolve_ref_usize _51}- s1'0
-          | s1'0 = -{resolve_ref_usize _50}- s2'0
-          | s2'0 = [ &l <- _48 ] s3
-          | s3 = bb8 ]
-        | bb8 = s0 [ s0 = [ &n <- n + 1 ] s1'0 | s1'0 = bb2 ] ] ]
+          | s2'0 = MutBorrow.borrow_final <UInt64.t> {_51.current} {MutBorrow.get_id _51}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s3)
+          | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_56 <- _bor ] [ &r <- _bor.final ] s4)
+          | s4 = MutBorrow.borrow_final <UInt64.t> {_56.current} {MutBorrow.get_id _56}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s5)
+          | s5 = replace_usize {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s6)
+          | s6 = -{resolve_ref_usize _56}- s7
+          | s7 = MutBorrow.borrow_final <UInt64.t> {_50.current} {MutBorrow.get_id _50}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_49 <- _bor ] [ &_50 <- { _50 with current = _bor.final } ] s8)
+          | s8 = replace_usize {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s9)
+          | s9 = -{resolve_ref_usize _51}- s10
+          | s10 = -{resolve_ref_usize _50}- s11
+          | s11 = [ &l <- _48 ] s12
+          | s12 = [ &n <- n + 1 ] s13
+          | s13 = bb2 ] ] ]
     | bb9 = s0 [ s0 = -{resolve_ref_Memory self}- s1'0 | s1'0 = [ &_ret <- r ] s2'0 | s2'0 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self

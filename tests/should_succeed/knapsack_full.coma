@@ -9,9 +9,8 @@ module M_max
   
   let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_6 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = bb3 ]
-    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = bb3 ]
-    | bb3 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _6: bool = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:max ensures] UInt64.t'int result
       = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
@@ -236,8 +235,8 @@ module M_knapsack01_dyn
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use int.MinMax
   use creusot.prelude.MutBorrow
+  use int.MinMax
   use creusot.prelude.Any
   
   type t_Vec_usize_Global
@@ -340,6 +339,45 @@ module M_knapsack01_dyn
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
   
+  type t_Option_usize = None | Some UInt64.t
+  
+  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_usize
+  
+  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
+    self.end' = o.end'
+    /\ deep_model_usize self.start <= deep_model_usize o.start
+    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
+  
+  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
+  
+  axiom produces_trans_Range_usize_spec:
+    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
+      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_usize (self: t_Range_usize) : ()
+  
+  axiom produces_refl_Range_usize_spec:
+    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
+  
+  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_Range_usize
+  
+  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
+    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+  
+  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+    [ return (result: t_Option_usize) -> {match result with
+        | None -> completed_Range_usize self_
+        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
   predicate subseq_rev_Item_Name (s1: Seq.seq t_Item_Name) (i1: int) (s2: Seq.seq t_Item_Name) (i2: int)
   
   axiom subseq_rev_Item_Name_def: forall s1: Seq.seq t_Item_Name, i1: int, s2: Seq.seq t_Item_Name, i2: int. 0 <= i1
@@ -393,29 +431,6 @@ module M_knapsack01_dyn
           /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
         -> sum_values_Name s j <= m_Name items i w)
   
-  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
-  
-  meta "rewrite_def" function deep_model_usize
-  
-  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
-    self.end' = o.end'
-    /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
-    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
-  
-  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
-  
-  axiom produces_trans_Range_usize_spec:
-    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
-      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range_usize (self: t_Range_usize) : ()
-  
-  axiom produces_refl_Range_usize_spec:
-    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
-  
   predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
   
   meta "rewrite_def" predicate inv_Range_usize
@@ -423,22 +438,6 @@ module M_knapsack01_dyn
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
   meta "rewrite_def" predicate inv_Seq_usize
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_Range_usize
-  
-  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
-  
-  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
-        | None -> completed_Range_usize self_
-        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
-        end}
-      (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
     [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
@@ -502,6 +501,16 @@ module M_knapsack01_dyn
       {result = self_}
       (! return {result}) ]
   
+  predicate invariant_ref_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
+    inv_RangeInclusive_usize self.current /\ inv_RangeInclusive_usize self.final
+  
+  meta "rewrite_def" predicate invariant_ref_RangeInclusive_usize
+  
+  predicate inv_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
+    invariant_ref_RangeInclusive_usize _1
+  
+  meta "rewrite_def" predicate inv_ref_RangeInclusive_usize
+  
   function range_inclusive_len_usize (r: t_RangeInclusive_usize) : int = if is_empty_log_RangeInclusive_usize r then
       0
     else
@@ -529,16 +538,6 @@ module M_knapsack01_dyn
   
   axiom produces_refl_RangeInclusive_usize_spec:
     forall self: t_RangeInclusive_usize. produces_RangeInclusive_usize self (Seq.empty: Seq.seq UInt64.t) self
-  
-  predicate invariant_ref_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
-    inv_RangeInclusive_usize self.current /\ inv_RangeInclusive_usize self.final
-  
-  meta "rewrite_def" predicate invariant_ref_RangeInclusive_usize
-  
-  predicate inv_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
-    invariant_ref_RangeInclusive_usize _1
-  
-  meta "rewrite_def" predicate inv_ref_RangeInclusive_usize
   
   predicate completed_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) =
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
@@ -714,20 +713,16 @@ module M_knapsack01_dyn
     [ bb0 = s0
       [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
       | s1 = from_elem_usize {(0: UInt64.t)} {_18} (fun (_x: t_Vec_usize_Global) -> [ &_17 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.add {_21} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
-      | s1 = from_elem_Vec_usize_Global {_17} {_20}
-          (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _x ] s2)
-      | s2 = bb3 ]
-    | bb3 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_26 <- _x ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_25 <- { start = (0: UInt64.t); end' = _26 } ] s1
-      | s1 = into_iter_Range_usize {_25} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb8 ]
+      | s2 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s3)
+      | s3 = UInt64.add {_21} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s4)
+      | s4 = from_elem_Vec_usize_Global {_17} {_20}
+          (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _x ] s5)
+      | s5 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_26 <- _x ] s6)
+      | s6 = [ &_25 <- { start = (0: UInt64.t); end' = _26 } ] s7
+      | s7 = into_iter_Range_usize {_25} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s8)
+      | s8 = [ &iter_old <- iter ] s9
+      | s9 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s10
+      | s10 = bb8 ]
     | bb8 = bb8
       [ bb8 = {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] inv_Range_usize iter}
@@ -747,33 +742,24 @@ module M_knapsack01_dyn
           -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
           <= 10000000 * ii}
         (! s0)
-        [ s0 = bb9 ]
-        [ bb9 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
-              (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_60 <- _bor ] [ &iter <- _bor.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_usize> {_60.current} {MutBorrow.get_id _60}
-              (fun (_bor: MutBorrow.t t_Range_usize) ->
-                [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s2)
-          | s2 = next_Range_usize {_59} (fun (_x: t_Option_usize) -> [ &_58 <- _x ] s3)
-          | s3 = bb10 ]
-        | bb10 = s0
-          [ s0 = -{resolve_ref_Range_usize _60}- s1
-          | s1 = any [ br0 -> {_58 = None} (! bb13) | br1 (x0: UInt64.t) -> {_58 = Some x0} (! bb14) ] ]
-        | bb14 = s0 [ s0 = elim_Some {_58} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1) | s1 = bb15 ]
-        | bb15 = s0
-          [ s0 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s1
-          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
-          | s2 = index_Vec_Item_Name_Global {items} {i} (fun (_x: t_Item_Name) -> [ &_69 <- _x ] s3)
-          | s3 = bb16 ]
-        | bb16 = s0
-          [ s0 = [ &it <- _69 ] s1
-          | s1 = new_usize {(0: UInt64.t)} {max_weight} (fun (_x: t_RangeInclusive_usize) -> [ &_73 <- _x ] s2)
-          | s2 = bb17 ]
-        | bb17 = s0
-          [ s0 = into_iter_RangeInclusive_usize {_73} (fun (_x: t_RangeInclusive_usize) -> [ &iter'0 <- _x ] s1)
-          | s1 = bb18 ]
-        | bb18 = s0 [ s0 = [ &iter_old'0 <- iter'0 ] s1 | s1 = bb19 ]
-        | bb19 = s0 [ s0 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb21 ]
+        [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_60 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_usize> {_60.current} {MutBorrow.get_id _60}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s2)
+        | s2 = next_Range_usize {_59} (fun (_x: t_Option_usize) -> [ &_58 <- _x ] s3)
+        | s3 = -{resolve_ref_Range_usize _60}- s4
+        | s4 = any [ br0 -> {_58 = None} (! bb13) | br1 (x0: UInt64.t) -> {_58 = Some x0} (! bb14) ] ]
+        [ bb14 = s0
+          [ s0 = elim_Some {_58} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &i <- __creusot_proc_iter_elem ] s3
+          | s3 = index_Vec_Item_Name_Global {items} {i} (fun (_x: t_Item_Name) -> [ &_69 <- _x ] s4)
+          | s4 = [ &it <- _69 ] s5
+          | s5 = new_usize {(0: UInt64.t)} {max_weight} (fun (_x: t_RangeInclusive_usize) -> [ &_73 <- _x ] s6)
+          | s6 = into_iter_RangeInclusive_usize {_73} (fun (_x: t_RangeInclusive_usize) -> [ &iter'0 <- _x ] s7)
+          | s7 = [ &iter_old'0 <- iter'0 ] s8
+          | s8 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s9
+          | s9 = bb21 ]
         | bb21 = bb21
           [ bb21 = {[@expl:for invariant] inv_Seq_usize produced'0}
             {[@expl:for invariant] inv_RangeInclusive_usize iter'0}
@@ -797,56 +783,43 @@ module M_knapsack01_dyn
               -> UInt64.t'int (Seq.get (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global best_value ii)) ww)
               <= 10000000 * ii}
             (! s0)
-            [ s0 = bb22 ]
-            [ bb22 = s0
-              [ s0 = {inv_RangeInclusive_usize iter'0}
-                MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter'0}
-                  (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
-                    [ &_111 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-                    [ &iter'0 <- _bor.final ] s1)
-              | s1 = {inv_RangeInclusive_usize _111.current}
-                MutBorrow.borrow_final <t_RangeInclusive_usize> {_111.current} {MutBorrow.get_id _111}
-                  (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
-                    [ &_110 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-                    [ &_111 <- { _111 with current = _bor.final } ] s2)
-              | s2 = next_RangeInclusive_usize {_110} (fun (_x: t_Option_usize) -> [ &_109 <- _x ] s3)
-              | s3 = bb23 ]
-            | bb23 = s0
-              [ s0 = {[@expl:type invariant] inv_ref_RangeInclusive_usize _111} s1
-              | s1 = -{resolve_ref_RangeInclusive_usize _111}- s2
-              | s2 = any [ br0 -> {_109 = None} (! bb26) | br1 (x0: UInt64.t) -> {_109 = Some x0} (! bb27) ] ]
-            | bb27 = s0
-              [ s0 = elim_Some {_109} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1) | s1 = bb28 ]
-            | bb28 = s0
-              [ s0 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s1
-              | s1 = [ &w <- __creusot_proc_iter_elem'0 ] s2
-              | s2 = [ &_120 <- UInt64.gt it.weight w ] s3
-              | s3 = any [ br0 -> {_120 = false} (! bb32) | br1 -> {_120} (! bb29) ] ]
+            [ s0 = {inv_RangeInclusive_usize iter'0}
+              MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter'0}
+                (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
+                  [ &_111 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
+                  [ &iter'0 <- _bor.final ] s1)
+            | s1 = {inv_RangeInclusive_usize _111.current}
+              MutBorrow.borrow_final <t_RangeInclusive_usize> {_111.current} {MutBorrow.get_id _111}
+                (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
+                  [ &_110 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
+                  [ &_111 <- { _111 with current = _bor.final } ] s2)
+            | s2 = next_RangeInclusive_usize {_110} (fun (_x: t_Option_usize) -> [ &_109 <- _x ] s3)
+            | s3 = {[@expl:type invariant] inv_ref_RangeInclusive_usize _111} s4
+            | s4 = -{resolve_ref_RangeInclusive_usize _111}- s5
+            | s5 = any [ br0 -> {_109 = None} (! bb26) | br1 (x0: UInt64.t) -> {_109 = Some x0} (! bb27) ] ]
+            [ bb27 = s0
+              [ s0 = elim_Some {_109} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+              | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+              | s2 = [ &w <- __creusot_proc_iter_elem'0 ] s3
+              | s3 = [ &_120 <- UInt64.gt it.weight w ] s4
+              | s4 = any [ br0 -> {_120 = false} (! bb32) | br1 -> {_120} (! bb29) ] ]
             | bb29 = s0
               [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
                   (fun (_x: t_Vec_usize_Global) -> [ &_125 <- _x ] s1)
-              | s1 = bb30 ]
-            | bb30 = s0
-              [ s0 = index_Vec_usize_Global'0 {_125} {w} (fun (_x: UInt64.t) -> [ &_123 <- _x ] s1) | s1 = bb31 ]
-            | bb31 = s0 [ s0 = [ &_119 <- _123 ] s1 | s1 = bb38 ]
+              | s1 = index_Vec_usize_Global'0 {_125} {w} (fun (_x: UInt64.t) -> [ &_123 <- _x ] s2)
+              | s2 = [ &_119 <- _123 ] s3
+              | s3 = bb38 ]
             | bb32 = s0
               [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
                   (fun (_x: t_Vec_usize_Global) -> [ &_132 <- _x ] s1)
-              | s1 = bb33 ]
-            | bb33 = s0
-              [ s0 = index_Vec_usize_Global'0 {_132} {w} (fun (_x: UInt64.t) -> [ &_130 <- _x ] s1) | s1 = bb34 ]
-            | bb34 = s0
-              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
-                  (fun (_x: t_Vec_usize_Global) -> [ &_140 <- _x ] s1)
-              | s1 = bb35 ]
-            | bb35 = s0
-              [ s0 = UInt64.sub {w} {it.weight} (fun (_x: UInt64.t) -> [ &_143 <- _x ] s1)
-              | s1 = index_Vec_usize_Global'0 {_140} {_143} (fun (_x: UInt64.t) -> [ &_138 <- _x ] s2)
-              | s2 = bb36 ]
-            | bb36 = s0
-              [ s0 = UInt64.add {_138} {it.value} (fun (_x: UInt64.t) -> [ &_136 <- _x ] s1)
-              | s1 = max {_130} {_136} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s2)
-              | s2 = bb38 ]
+              | s1 = index_Vec_usize_Global'0 {_132} {w} (fun (_x: UInt64.t) -> [ &_130 <- _x ] s2)
+              | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+                  (fun (_x: t_Vec_usize_Global) -> [ &_140 <- _x ] s3)
+              | s3 = UInt64.sub {w} {it.weight} (fun (_x: UInt64.t) -> [ &_143 <- _x ] s4)
+              | s4 = index_Vec_usize_Global'0 {_140} {_143} (fun (_x: UInt64.t) -> [ &_138 <- _x ] s5)
+              | s5 = UInt64.add {_138} {it.value} (fun (_x: UInt64.t) -> [ &_136 <- _x ] s6)
+              | s6 = max {_130} {_136} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s7)
+              | s7 = bb38 ]
             | bb38 = s0
               [ s0 = MutBorrow.borrow_mut <t_Vec_Vec_usize_Global_Global> {best_value}
                   (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
@@ -854,30 +827,24 @@ module M_knapsack01_dyn
               | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_151 <- _x ] s2)
               | s2 = index_mut_Vec_Vec_usize_Global_Global {_150} {_151}
                   (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_149 <- _x ] s3)
-              | s3 = bb39 ]
-            | bb39 = s0
-              [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {_149.current} {MutBorrow.get_id _149}
+              | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_149.current} {MutBorrow.get_id _149}
                   (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
-                    [ &_148 <- _bor ] [ &_149 <- { _149 with current = _bor.final } ] s1)
-              | s1 = index_mut_Vec_usize_Global {_148} {w} (fun (_x: MutBorrow.t UInt64.t) -> [ &_147 <- _x ] s2)
-              | s2 = bb40 ]
-            | bb40 = s0
-              [ s0 = [ &_147 <- { _147 with current = _119 } ] s1
-              | s1 = -{resolve_ref_usize _147}- s2
-              | s2 = -{resolve_ref_Vec_usize_Global _149}- s3
-              | s3 = bb21 ] ] ]
+                    [ &_148 <- _bor ] [ &_149 <- { _149 with current = _bor.final } ] s4)
+              | s4 = index_mut_Vec_usize_Global {_148} {w} (fun (_x: MutBorrow.t UInt64.t) -> [ &_147 <- _x ] s5)
+              | s5 = [ &_147 <- { _147 with current = _119 } ] s6
+              | s6 = -{resolve_ref_usize _147}- s7
+              | s7 = -{resolve_ref_Vec_usize_Global _149}- s8
+              | s8 = bb21 ] ] ]
         | bb26 = s0
           [ s0 = {[@expl:type invariant] inv_RangeInclusive_usize iter'0} s1
           | s1 = -{resolve_RangeInclusive_usize iter'0}- s2
           | s2 = bb8 ] ] ]
-    | bb13 = s0 [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_157 <- _x ] s1) | s1 = bb41 ]
-    | bb41 = s0
-      [ s0 = with_capacity_ref_Item_Name {_157} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s1)
-      | s1 = bb42 ]
-    | bb42 = s0
-      [ s0 = [ &left_weight <- max_weight ] s1
-      | s1 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &j <- _x ] s2)
-      | s2 = bb44 ]
+    | bb13 = s0
+      [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_157 <- _x ] s1)
+      | s1 = with_capacity_ref_Item_Name {_157} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s2)
+      | s2 = [ &left_weight <- max_weight ] s3
+      | s3 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
+      | s4 = bb44 ]
     | bb44 = bb44
       [ bb44 = {[@expl:loop invariant #0] inv_Vec_ref_Item_Name_Global result}
         {[@expl:loop invariant #1] UInt64.t'int j <= Seq.length (view_Vec_Item_Name_Global items)}
@@ -903,30 +870,21 @@ module M_knapsack01_dyn
             /\ subseq_rev_Item_Name r (Seq.length (view_Vec_ref_Item_Name_Global result)) (view_Vec_Item_Name_Global items) (UInt64.t'int j)
           -> subseq_rev_Item_Name r 0 (view_Vec_Item_Name_Global items) (Seq.length (view_Vec_Item_Name_Global items))}
         (! s0)
-        [ s0 = bb45 ]
-        [ bb45 = s0
-          [ s0 = [ &_186 <- UInt64.lt (0: UInt64.t) j ] s1
-          | s1 = any [ br0 -> {_186 = false} (! bb56) | br1 -> {_186} (! bb46) ] ]
-        | bb46 = s0
+        [ s0 = [ &_186 <- UInt64.lt (0: UInt64.t) j ] s1
+        | s1 = any [ br0 -> {_186 = false} (! bb56) | br1 -> {_186} (! bb46) ] ]
+        [ bb46 = s0
           [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &j <- _x ] s1)
           | s1 = index_Vec_Item_Name_Global {items} {j} (fun (_x: t_Item_Name) -> [ &_189 <- _x ] s2)
-          | s2 = bb47 ]
-        | bb47 = s0
-          [ s0 = [ &it'0 <- _189 ] s1
-          | s1 = UInt64.add {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_198 <- _x ] s2)
-          | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_198}
-              (fun (_x: t_Vec_usize_Global) -> [ &_196 <- _x ] s3)
-          | s3 = bb48 ]
-        | bb48 = s0
-          [ s0 = index_Vec_usize_Global'0 {_196} {left_weight} (fun (_x: UInt64.t) -> [ &_194 <- _x ] s1) | s1 = bb49 ]
-        | bb49 = s0
-          [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
-              (fun (_x: t_Vec_usize_Global) -> [ &_204 <- _x ] s1)
-          | s1 = bb50 ]
-        | bb50 = s0
-          [ s0 = index_Vec_usize_Global'0 {_204} {left_weight} (fun (_x: UInt64.t) -> [ &_202 <- _x ] s1) | s1 = bb51 ]
-        | bb51 = s0
-          [ s0 = [ &_192 <- _194 <> _202 ] s1 | s1 = any [ br0 -> {_192 = false} (! bb44) | br1 -> {_192} (! bb52) ] ]
+          | s2 = [ &it'0 <- _189 ] s3
+          | s3 = UInt64.add {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_198 <- _x ] s4)
+          | s4 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_198}
+              (fun (_x: t_Vec_usize_Global) -> [ &_196 <- _x ] s5)
+          | s5 = index_Vec_usize_Global'0 {_196} {left_weight} (fun (_x: UInt64.t) -> [ &_194 <- _x ] s6)
+          | s6 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
+              (fun (_x: t_Vec_usize_Global) -> [ &_204 <- _x ] s7)
+          | s7 = index_Vec_usize_Global'0 {_204} {left_weight} (fun (_x: UInt64.t) -> [ &_202 <- _x ] s8)
+          | s8 = [ &_192 <- _194 <> _202 ] s9
+          | s9 = any [ br0 -> {_192 = false} (! bb44) | br1 -> {_192} (! bb52) ] ]
         | bb52 = s0
           [ s0 = {inv_Vec_ref_Item_Name_Global result}
             MutBorrow.borrow_mut <t_Vec_ref_Item_Name_Global> {result}
@@ -934,12 +892,9 @@ module M_knapsack01_dyn
                 [ &_209 <- _bor ] -{inv_Vec_ref_Item_Name_Global _bor.final}-
                 [ &result <- _bor.final ] s1)
           | s1 = push_ref_Item_Name {_209} {it'0} (fun (_x: ()) -> [ &_208 <- _x ] s2)
-          | s2 = bb53 ]
-        | bb53 = s0
-          [ s0 = UInt64.sub {left_weight} {it'0.weight} (fun (_x: UInt64.t) -> [ &left_weight <- _x ] s1)
-          | s1 = bb44 ] ] ]
-    | bb56 = s0 [ s0 = [ &_ret <- result ] s1 | s1 = bb58 ]
-    | bb58 = return {_ret} ]
+          | s2 = UInt64.sub {left_weight} {it'0.weight} (fun (_x: UInt64.t) -> [ &left_weight <- _x ] s3)
+          | s3 = bb44 ] ] ]
+    | bb56 = s0 [ s0 = [ &_ret <- result ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Vec_ref_Item_Name_Global = Any.any_l ()
     | & items: t_Vec_Item_Name_Global = items
     | & max_weight: UInt64.t = max_weight

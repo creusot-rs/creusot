@@ -236,8 +236,7 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
             [ &_5 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
       | s1 = next_I {_5} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = any [ br0 -> {_4 = None} (! bb3) | br1 (x0: t_Item) -> {_4 = Some x0} (! bb4) ]
+      | s2 = any [ br0 -> {_4 = None} (! bb3) | br1 (x0: t_Item) -> {_4 = Some x0} (! bb4) ] ]
     | bb4 = s0
       [ s0 = elim_Some {_4} (fun (r0: t_Item) -> [ &x <- r0 ] s1)
       | s1 = [ &n <- self.current.count ] s2
@@ -246,14 +245,13 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
       | s3 = {[@expl:type invariant] inv_ref_Enumerate_I self} s4
       | s4 = -{resolve_ref_Enumerate_I self}- s5
       | s5 = [ &_9 <- { f0 = n; f1 = x } ] s6
-      | s6 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some'0 _9 ] s1 | s1 = bb10 ]
+      | s6 = [ &_ret <- Some'0 _9 ] s7
+      | s7 = return {_ret} ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Enumerate_I self} s1
       | s1 = -{resolve_ref_Enumerate_I self}- s2
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+      | s2 = [ &_ret <- None'0 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_usize_Item = Any.any_l ()
     | & self: MutBorrow.t t_Enumerate_I = self
     | & _4: t_Option_Item = Any.any_l ()
@@ -319,7 +317,7 @@ module M_enumerate
     {[@expl:enumerate requires #1] forall s: Seq.seq t_Item, i: t_I. produces_I iter'0 s i
       -> Seq.length s < UInt64.t'int const_MAX}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; count = (0: UInt64.t) } ] s1 | s1 = bb2 ] | bb2 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; count = (0: UInt64.t) } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Enumerate_I = Any.any_l () | & iter'0: t_I = iter'0 ])
     [ return (result: t_Enumerate_I) -> {[@expl:enumerate result type invariant] inv_Enumerate_I result}
       {[@expl:enumerate ensures] result.iter = iter'0 /\ UInt64.t'int result.count = 0}

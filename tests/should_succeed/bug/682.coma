@@ -135,14 +135,14 @@ module M_foo
   
   let rec foo (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@expl:foo requires] a.current = (3: UInt64.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &a_p <- a.current ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <UInt64.t> {a.current} {MutBorrow.get_id a}
-          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_10 <- _bor ] [ &a <- { a with current = _bor.final } ] s1)
-      | s1 = add_some {_10} (fun (_x: ()) -> [ &_9 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = -{resolve_ref_u64 a}- s1 | s1 = {[@expl:assertion] UInt64.gt a.current a_p} s2 | s2 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &a_p <- a.current ] s1
+      | s1 = MutBorrow.borrow_final <UInt64.t> {a.current} {MutBorrow.get_id a}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_10 <- _bor ] [ &a <- { a with current = _bor.final } ] s2)
+      | s2 = add_some {_10} (fun (_x: ()) -> [ &_9 <- _x ] s3)
+      | s3 = -{resolve_ref_u64 a}- s4
+      | s4 = {[@expl:assertion] UInt64.gt a.current a_p} s5
+      | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t UInt64.t = a
     | & a_p: UInt64.t = Any.any_l ()

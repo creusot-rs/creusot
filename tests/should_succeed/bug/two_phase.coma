@@ -36,13 +36,13 @@ module M_test
   meta "select_lsinst" "all"
   
   let rec test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
-          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s1)
-      | s1 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve_ref_Vec_usize_Global v}- s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s2)
+      | s2 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s3 = -{resolve_ref_Vec_usize_Global v}- s4
+      | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec_usize_Global = v
     | & _4: () = Any.any_l ()
@@ -173,20 +173,16 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
     [ bb0 = s0
       [ s0 = [ &_3 <- self.current.index ] s1
       | s1 = clone_K {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Vec_K_Global self.current.map.current}
+      | s2 = {inv_Vec_K_Global self.current.map.current}
         MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
           (fun (_bor: MutBorrow.t t_Vec_K_Global) ->
             [ &_2 <- _bor ] -{inv_Vec_K_Global _bor.final}-
             [ &self <- { self with current = { self.current with map = { self.current.map with current = _bor.final } } } ]
-            s1)
-      | s1 = insert_K {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_VacantEntry_K self} s1
-      | s1 = -{resolve_ref_VacantEntry_K self}- s2
-      | s2 = return {_ret} ] ]
+            s3)
+      | s3 = insert_K {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_VacantEntry_K self} s5
+      | s5 = -{resolve_ref_VacantEntry_K self}- s6
+      | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_VacantEntry_K = self
     | & _2: MutBorrow.t t_Vec_K_Global = Any.any_l ()

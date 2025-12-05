@@ -18,12 +18,11 @@ module M_test
   
   let rec test (o: t_Option_u32) (return (x: bool)) = (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o = Some x0} (! bb4) | br1 -> {o = None} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb5 ]
+    | bb3 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Some {o} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1)
       | s1 = [ &_ret <- UInt32.gt x (0: UInt32.t) ] s2
-      | s2 = bb5 ]
-    | bb5 = return {_ret} ] [ & _ret: bool = Any.any_l () | & o: t_Option_u32 = o | & x: UInt32.t = Any.any_l () ])
+      | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & o: t_Option_u32 = o | & x: UInt32.t = Any.any_l () ])
     [ return (result: bool) -> (! return {result}) ]
 end
 module M_test2
@@ -48,9 +47,9 @@ module M_test2
   
   let rec test2 (o: tup2_Option_u32_u32) (return (x: UInt32.t)) = (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o.f0 = Some x0} (! bb4) | br1 -> {o.f0 = None} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_ret <- o.f1 ] s1 | s1 = bb5 ]
-    | bb4 = s0 [ s0 = elim_Some {o.f0} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = bb5 ]
-    | bb5 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_ret <- o.f1 ] s1 | s1 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Some {o.f0} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & o: tup2_Option_u32_u32 = o | & x: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
 end

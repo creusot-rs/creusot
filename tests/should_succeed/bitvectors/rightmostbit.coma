@@ -67,9 +67,10 @@ module M_rightmost_bit_8
   meta "select_lsinst" "all"
   
   let rec rightmost_bit_8 (x: Int8BW.t) (return (x'0: Int8BW.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_neg {x} (fun (_x: Int8BW.t) -> [ &_13 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- Int8BW.bw_and x _13 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: Int8BW.t = Any.any_l () | & x: Int8BW.t = x | & _13: Int8BW.t = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = wrapping_neg {x} (fun (_x: Int8BW.t) -> [ &_13 <- _x ] s1)
+      | s1 = [ &_ret <- Int8BW.bw_and x _13 ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int8BW.t = Any.any_l () | & x: Int8BW.t = x | & _13: Int8BW.t = Any.any_l () ])
     [ return (result: Int8BW.t) -> {[@expl:rightmost_bit_8 ensures #0] Int8BW.ge x (0: Int8BW.t)
       -> Int8BW.le (0: Int8BW.t) result /\ Int8BW.le result x}
       {[@expl:rightmost_bit_8 ensures #1] Int8BW.le x (0: Int8BW.t) /\ Int8BW.gt x const_MIN
@@ -140,8 +141,10 @@ module M_rightmost_bit_64
   meta "select_lsinst" "all"
   
   let rec rightmost_bit_64 (x: Int64BW.t) (return (x'0: Int64BW.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_neg {x} (fun (_x: Int64BW.t) -> [ &_11 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- Int64BW.bw_and x _11 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = wrapping_neg {x} (fun (_x: Int64BW.t) -> [ &_11 <- _x ] s1)
+      | s1 = [ &_ret <- Int64BW.bw_and x _11 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: Int64BW.t = Any.any_l () | & x: Int64BW.t = x | & _11: Int64BW.t = Any.any_l () ])
     [ return (result: Int64BW.t) -> {[@expl:rightmost_bit_64 ensures #0] Int64BW.ge x (0: Int64BW.t)
       -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.le result x}

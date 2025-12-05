@@ -48,13 +48,12 @@ module M_copy_out_of_sum
       [ s0 = elim_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s1)
       | s1 = -{resolve_ref_u32 y}- s2
       | s2 = [ &_ret <- y.current ] s3
-      | s3 = bb5 ]
+      | s3 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s1)
       | s1 = -{resolve_ref_u32 x'0}- s2
       | s2 = [ &_ret <- x'0.current ] s3
-      | s3 = bb5 ]
-    | bb5 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & x: t_Result_ref_u32_ref_u32 = x
     | & x'0: MutBorrow.t UInt32.t = Any.any_l ()
@@ -97,9 +96,8 @@ module M_write_into_sum
       | s1 = [ &y <- { y with current = (10: UInt32.t) } ] s2
       | s2 = -{resolve_ref_u32 y}- s3
       | s3 = -{resolve_ref_Option_u32 x}- s4
-      | s4 = bb5 ]
-    | bb3 = s0 [ s0 = -{resolve_ref_Option_u32 x}- s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb3 = s0 [ s0 = -{resolve_ref_Option_u32 x}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Option_u32 = x | & y: MutBorrow.t UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
@@ -125,7 +123,7 @@ module M_f
     [ bb0 = s0
       [ s0 = [ &_2 <- Some (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_2 = None} (! bb5) | br1 (x0: Int32.t) -> {_2 = Some x0} (! bb4) ] ]
-    | bb4 = s0 [ s0 = elim_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = bb5 ]
+    | bb4 = s0 [ s0 = elim_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = return {_ret} ]
     | bb5 = return {_ret} ]
     [ & _ret: () = Any.any_l () | & _2: t_Option_i32 = Any.any_l () | & x: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

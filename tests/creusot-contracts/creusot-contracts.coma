@@ -27,9 +27,8 @@ module M_cell__permcell__impl_PermCellOwn_T__id_ghost (* cell::permcell::PermCel
   let rec id_ghost_T (self: t_PermCellOwn_T) (return (x: t_Id)) =
     {[@expl:id_ghost 'self' type invariant] inv_ref_PermCellOwn_T self}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: t_Id = Any.any_l () | & self: t_PermCellOwn_T = self ])
+    [ bb0 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Id = Any.any_l () | & self: t_PermCellOwn_T = self ])
     [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_T self} (! return {result}) ]
 end
 module M_cell__permcell__impl_PermCell_T_1__id_ghost (* cell::permcell::PermCell<T> *)
@@ -49,9 +48,8 @@ module M_cell__permcell__impl_PermCell_T_1__id_ghost (* cell::permcell::PermCell
   meta "select_lsinst" "all"
   
   let rec id_ghost_T (self: t_PermCell_T) (return (x: t_Id)) = (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: t_Id = Any.any_l () | & self: t_PermCell_T = self ])
+    [ bb0 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Id = Any.any_l () | & self: t_PermCell_T = self ])
     [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_T self} (! return {result}) ]
 end
 module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> *)
@@ -207,9 +205,10 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
     {[@expl:take 'perm' type invariant] inv_Ghost_ref_PermCellOwn_T perm}
     {[@expl:take requires] id_T self = id_T'0 perm.current}
     (! bb0
-    [ bb0 = s0 [ s0 = default_T (fun (_x: t_T) -> [ &_15 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = replace_T {self} {perm} {_15} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = default_T (fun (_x: t_T) -> [ &_15 <- _x ] s1)
+      | s1 = replace_T {self} {perm} {_15} (fun (_x: t_T) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_PermCell_T = self
     | & perm: MutBorrow.t t_PermCellOwn_T = perm
@@ -329,9 +328,10 @@ module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone (* <ghost::fn_g
   let rec clone_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (return (x: t_FnGhostWrapper_F)) =
     {[@expl:clone 'self' type invariant] inv_ref_FnGhostWrapper_F self}
     (! bb0
-    [ bb0 = s0 [ s0 = clone_F {self.f0} (fun (_x: t_F) -> [ &_4 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- { f0 = _4 } ] s1 | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = clone_F {self.f0} (fun (_x: t_F) -> [ &_4 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = _4 } ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & self: t_FnGhostWrapper_F = self | & _4: t_F = Any.any_l () ])
     [ return (result: t_FnGhostWrapper_F) -> {[@expl:clone result type invariant] inv_FnGhostWrapper_F result}
       {[@expl:clone ensures] postcondition_clone () (view_FnGhostWrapper_F self) (view_FnGhostWrapper_F result)}
@@ -360,7 +360,7 @@ module M_ghost__fn_ghost__impl_FnGhostWrapper_F__new (* ghost::fn_ghost::FnGhost
   
   let rec __new_F (f: t_F) (return (x: t_FnGhostWrapper_F)) = {[@expl:__new 'f' type invariant] inv_F f}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = f } ] s1 | s1 = bb2 ] | bb2 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = f } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & f: t_F = f ])
     [ return (result: t_FnGhostWrapper_F) -> {[@expl:__new result type invariant] inv_FnGhostWrapper_F result}
       {[@expl:__new ensures] view_FnGhostWrapper_F result = f}
@@ -453,8 +453,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
       -> precondition_F f t
       /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_ref_T t) (public_T self))}
     (! bb0
-    [ bb0 = s0 [ s0 = open_T {self} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0 [ s0 = open_T {self} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_A = Any.any_l () | & self: t_LocalInvariant_T = self | & tokens: t_Tokens = tokens | & f: t_F = f ])
     [ return (result: t_A) -> {[@expl:open result type invariant] inv_A result}
       {[@expl:open ensures] exists t: MutBorrow.t t_T. protocol_T t.current (public_T self)
@@ -703,11 +702,12 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_T__open (*
       -> precondition_open () { f0 = new_ref_Target'0 this; f1 = tokens; f2 = f }}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_20 <- self ] s1 | s1 = deref_Ghost_ref_T {_20} (fun (_x: t_T) -> [ &_18 <- _x ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = deref_T {_18} (fun (_x: t_Target) -> [ &_16 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = new_ref_Target {_16} (fun (_x: t_Target) -> [ &this <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = open_Ghost_ref_Target {this} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+      [ s0 = [ &_20 <- self ] s1
+      | s1 = deref_Ghost_ref_T {_20} (fun (_x: t_T) -> [ &_18 <- _x ] s2)
+      | s2 = deref_T {_18} (fun (_x: t_Target) -> [ &_16 <- _x ] s3)
+      | s3 = new_ref_Target {_16} (fun (_x: t_Target) -> [ &this <- _x ] s4)
+      | s4 = open_Ghost_ref_Target {this} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: t_A = Any.any_l ()
     | & self: t_T = self
     | & tokens: t_Tokens = tokens
@@ -867,9 +867,10 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_ref_Ghost_L__open (*
     {[@expl:open 'f' type invariant] inv_F f}
     {[@expl:open requires] precondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f }}
     (! bb0
-    [ bb0 = s0 [ s0 = borrow_L {self} (fun (_x: t_L) -> [ &_12 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = open_Ghost_ref_L {_12} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = bb3 ]
-    | bb3 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = borrow_L {self} (fun (_x: t_L) -> [ &_12 <- _x ] s1)
+      | s1 = open_Ghost_ref_L {_12} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
     [ & _ret: t_A = Any.any_l ()
     | & self: t_L = self
     | & tokens: t_Tokens = tokens
@@ -996,9 +997,9 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   
   let rec new_T (v: t_T) (return (x: tup2_ptr_T_Ghost_PtrOwn_T)) = {[@expl:new 'v' type invariant] inv_T v}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = from_box_T {v} (fun (_x: tup2_ptr_T_Ghost_PtrOwn_T) -> [ &_ret <- _x ] s1) | s1 = bb3 ]
-    | bb3 = return {_ret} ] [ & _ret: tup2_ptr_T_Ghost_PtrOwn_T = Any.any_l () | & v: t_T = v ])
+    [ bb0 = s0
+      [ s0 = from_box_T {v} (fun (_x: tup2_ptr_T_Ghost_PtrOwn_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_PtrOwn_T = Any.any_l () | & v: t_T = v ])
     [ return (result: tup2_ptr_T_Ghost_PtrOwn_T) ->
     {[@expl:new result type invariant] inv_tup2_ptr_T_Ghost_PtrOwn_T result}
       {[@expl:new ensures] ptr_T result.f1 = result.f0 /\ val_T result.f1 = v}
@@ -1103,9 +1104,11 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
     {[@expl:drop 'own' type invariant] inv_Ghost_PtrOwn_T own}
     {[@expl:drop requires] ptr = ptr_T own}
     (! bb0
-    [ bb0 = s0 [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_Box_T_Global _6} s1 | s1 = -{resolve_Box_T_Global _6}- s2 | s2 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
+      | s1 = {[@expl:type invariant] inv_Box_T_Global _6} s2
+      | s2 = -{resolve_Box_T_Global _6}- s3
+      | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & ptr: Opaque.ptr = ptr | & own: t_PtrOwn_T = own | & _6: t_T = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
@@ -1551,23 +1554,16 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__new (* ghost::resource:
   meta "select_lsinst" "all"
   
   let rec new_K (return (x: t_Authority_K_V)) = (! bb0
-    [ bb0 = bb1
-    | bb1 = s0
+    [ bb0 = s0
       [ s0 = alloc_View_AuthViewRel_FMap_K_Ag_V {new_auth_AuthViewRel_FMap_K_Ag_V empty_K}
           (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_5 <- _x ] s1)
-      | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = into_inner_Resource_View_AuthViewRel_FMap_K_Ag_V {_5}
-          (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_4 <- _x ] s1)
-      | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = [ &_3 <- { f0'2 = _4 } ] s1
-      | s1 = new_Authority_K_V {_3} (fun (_x: t_Authority_K_V) -> [ &r <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {[@expl:assertion] ext_eq_K (view_Authority_K_V r) empty_K'0} s1
-      | s1 = [ &_ret <- r ] s2
-      | s2 = return {_ret} ] ]
+      | s1 = into_inner_Resource_View_AuthViewRel_FMap_K_Ag_V {_5}
+          (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_4 <- _x ] s2)
+      | s2 = [ &_3 <- { f0'2 = _4 } ] s3
+      | s3 = new_Authority_K_V {_3} (fun (_x: t_Authority_K_V) -> [ &r <- _x ] s4)
+      | s4 = {[@expl:assertion] ext_eq_K (view_Authority_K_V r) empty_K'0} s5
+      | s5 = [ &_ret <- r ] s6
+      | s6 = return {_ret} ] ]
     [ & _ret: t_Authority_K_V = Any.any_l ()
     | & r: t_Authority_K_V = Any.any_l ()
     | & _3: t_Authority_K_V = Any.any_l ()
@@ -2135,24 +2131,22 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__insert (* ghost::resour
     {[@expl:insert 'self' type invariant] inv_ref_Authority_K_V self}
     {[@expl:insert requires] not contains_K'0 (view_Authority_K_V self.current) k}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &s <- self.current ] s1 | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_24 <- { f0'0 = k; f1'0 = { f0 = v } } ] s1
-      | s1 = [ &_23 <- { f0'1 = _24 } ] s2
-      | s2 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_FMap_K_Ag_V> {self.current.f0'2}
+    [ bb0 = s0
+      [ s0 = [ &s <- self.current ] s1
+      | s1 = [ &_24 <- { f0'0 = k; f1'0 = { f0 = v } } ] s2
+      | s2 = [ &_23 <- { f0'1 = _24 } ] s3
+      | s3 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_FMap_K_Ag_V> {self.current.f0'2}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_FMap_K_Ag_V) ->
-            [ &_22 <- _bor ] [ &self <- { self with current = { f0'2 = _bor.final } } ] s3)
-      | s3 = update_View_AuthViewRel_FMap_K_Ag_V {_22} {_23} (fun (_x: ()) -> [ &_21 <- _x ] s4)
-      | s4 = bb3 ]
-    | bb3 = s0
-      [ s0 = {[@expl:assertion] ext_eq_K (view_Authority_K_V self.current) (insert_K'0 (view_Authority_K_V s) k v)} s1
-      | s1 = {[@expl:type invariant] inv_ref_Authority_K_V self} s2
-      | s2 = -{resolve_ref_Authority_K_V self}- s3
-      | s3 = core_View_AuthViewRel_FMap_K_Ag_V'0 {self.current.f0'2}
-          (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_35 <- _x ] s4)
-      | s4 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- { f0'7 = _35; f1'7 = k; f2'7 = v } ] s1 | s1 = return {_ret} ] ]
+            [ &_22 <- _bor ] [ &self <- { self with current = { f0'2 = _bor.final } } ] s4)
+      | s4 = update_View_AuthViewRel_FMap_K_Ag_V {_22} {_23} (fun (_x: ()) -> [ &_21 <- _x ] s5)
+      | s5 = {[@expl:assertion] ext_eq_K (view_Authority_K_V self.current) (insert_K'0 (view_Authority_K_V s) k v)} s6
+      | s6 = {[@expl:type invariant] inv_ref_Authority_K_V self} s7
+      | s7 = -{resolve_ref_Authority_K_V self}- s8
+      | s8 = core_View_AuthViewRel_FMap_K_Ag_V'0 {self.current.f0'2}
+          (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_35 <- _x ] s9)
+      | s9 = [ &_ret <- { f0'7 = _35; f1'7 = k; f2'7 = v } ] s10
+      | s10 = return {_ret} ] ]
     [ & _ret: t_Fragment_K_V = Any.any_l ()
     | & self: MutBorrow.t t_Authority_K_V = self
     | & k: t_K = k
@@ -2630,13 +2624,11 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__contains (* ghost::reso
       [ s0 = [ &_12 <- frag.f0 ] s1
       | s1 = join_shared_View_AuthViewRel_FMap_K_Ag_V {self.f0'0} {_12}
           (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &new_resource <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 =
+      | s2 =
         {[@expl:assertion] get_K (frag_AuthViewRel_FMap_K_Ag_V (view_Resource_View_AuthViewRel_FMap_K_Ag_V new_resource)) (view_Fragment_K_V frag).f0'5
         = Some'1 { f0'1 = (view_Fragment_K_V frag).f1'5 }}
-        s1
-      | s1 = return {_ret} ] ]
+        s3
+      | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: t_Authority_K_V = self
     | & frag: t_Fragment_K_V = frag
@@ -3038,8 +3030,8 @@ module M_ghost__resource__fmap_view__impl_Clone_for_Fragment_K_V__clone (* <ghos
     [ bb0 = s0
       [ s0 = core_View_AuthViewRel_FMap_K_Ag_V'0 {self.f0}
           (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_6 <- _x ] s1)
-      | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- { f0 = _6; f1 = self.f1; f2 = self.f2 } ] s1 | s1 = return {_ret} ] ]
+      | s1 = [ &_ret <- { f0 = _6; f1 = self.f1; f2 = self.f2 } ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: t_Fragment_K_V = Any.any_l ()
     | & self: t_Fragment_K_V = self
     | & _6: t_Resource_View_AuthViewRel_FMap_K_Ag_V = Any.any_l () ])
@@ -3142,25 +3134,21 @@ module M_ghost__resource__m__impl_Resource_R__split_off (* ghost::resource::m::R
   let rec split_off_R (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
     {[@expl:split_off requires] incl_eq_op_R r s (view_Resource_R self.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-      | s1 = replace_Resource_R {_16} {_17} (fun (_x: t_Resource_R) -> [ &this <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = split_R {this} {r} {s} (fun (_x: tup2_Resource_R_Resource_R) -> [ &_20 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = [ &r'0 <- _20.f0 ] s1
-      | s1 = [ &this'0 <- _20.f1 ] s2
-      | s2 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_25 <- _bor ] [ &self <- { self with current = _bor.final } ] s3)
-      | s3 = replace_Resource_R {_25} {this'0} (fun (_x: t_Resource_R) -> [ &_24 <- _x ] s4)
-      | s4 = bb4 ]
-    | bb4 = s0
-      [ s0 = -{resolve_ref_Resource_R self}- s1
-      | s1 = -{resolve_Resource_R _24}- s2
-      | s2 = [ &_ret <- r'0 ] s3
-      | s3 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+      | s2 = replace_Resource_R {_16} {_17} (fun (_x: t_Resource_R) -> [ &this <- _x ] s3)
+      | s3 = split_R {this} {r} {s} (fun (_x: tup2_Resource_R_Resource_R) -> [ &_20 <- _x ] s4)
+      | s4 = [ &r'0 <- _20.f0 ] s5
+      | s5 = [ &this'0 <- _20.f1 ] s6
+      | s6 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_25 <- _bor ] [ &self <- { self with current = _bor.final } ] s7)
+      | s7 = replace_Resource_R {_25} {this'0} (fun (_x: t_Resource_R) -> [ &_24 <- _x ] s8)
+      | s8 = -{resolve_ref_Resource_R self}- s9
+      | s9 = -{resolve_Resource_R _24}- s10
+      | s10 = [ &_ret <- r'0 ] s11
+      | s11 = return {_ret} ] ]
     [ & _ret: t_Resource_R = Any.any_l ()
     | & self: MutBorrow.t t_Resource_R = self
     | & r: t_R = r
@@ -3262,19 +3250,18 @@ module M_ghost__resource__m__impl_Resource_R__join_in (* ghost::resource::m::Res
   let rec join_in_R (self: MutBorrow.t t_Resource_R) (other: t_Resource_R) (return (x: ())) =
     {[@expl:join_in requires] id_R self.current = id_R other}
     (! bb0
-    [ bb0 = s0 [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_13 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_12 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-      | s1 = replace_Resource_R {_12} {_13} (fun (_x: t_Resource_R) -> [ &this <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = join_R {this} {other} (fun (_x: t_Resource_R) -> [ &this'0 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_18 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-      | s1 = replace_Resource_R {_18} {this'0} (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0 [ s0 = -{resolve_ref_Resource_R self}- s1 | s1 = -{resolve_Resource_R _17}- s2 | s2 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_13 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_12 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+      | s2 = replace_Resource_R {_12} {_13} (fun (_x: t_Resource_R) -> [ &this <- _x ] s3)
+      | s3 = join_R {this} {other} (fun (_x: t_Resource_R) -> [ &this'0 <- _x ] s4)
+      | s4 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_18 <- _bor ] [ &self <- { self with current = _bor.final } ] s5)
+      | s5 = replace_Resource_R {_18} {this'0} (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s6)
+      | s6 = -{resolve_ref_Resource_R self}- s7
+      | s7 = -{resolve_Resource_R _17}- s8
+      | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Resource_R = self
     | & other: t_Resource_R = other
@@ -3390,14 +3377,14 @@ module M_ghost__resource__m__impl_Resource_R__weaken (* ghost::resource::m::Reso
   let rec weaken_R (self: MutBorrow.t t_Resource_R) (target: t_R) (return (x: ())) =
     {[@expl:weaken requires] incl_R target (view_Resource_R self.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &f <- unwrap_Option_R (factor_R (view_Resource_R self.current) target) ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-      | s1 = split_off_R {_16} {f} {target} (fun (_x: t_Resource_R) -> [ &_15 <- _x ] s2)
-      | s2 = -{resolve_Resource_R _15}- s3
-      | s3 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve_ref_Resource_R self}- s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &f <- unwrap_Option_R (factor_R (view_Resource_R self.current) target) ] s1
+      | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+      | s2 = split_off_R {_16} {f} {target} (fun (_x: t_Resource_R) -> [ &_15 <- _x ] s3)
+      | s3 = -{resolve_Resource_R _15}- s4
+      | s4 = -{resolve_ref_Resource_R self}- s5
+      | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Resource_R = self
     | & target: t_R = target
@@ -3553,26 +3540,19 @@ module M_ghost__resource__m__impl_Resource_R__update (* ghost::resource::m::Reso
       [ s0 = {[@expl:type invariant] inv_U upd} s1
       | s1 = -{resolve_U upd}- s2
       | s2 = [ &v <- view_Resource_R self.current ] s3
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = [ &target_s <- fun (r'0: t_R) -> exists ch: t_Choice. update_U upd v ch = r'0 ] s1 | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:assertion] contains_R target_s (update_U upd v (such_that_Choice (fun (__0: t_Choice) -> true)))}
-        s1
-      | s1 = {[@expl:assertion] forall f: t_R. op_R v f <> None
+      | s3 = [ &target_s <- fun (r'0: t_R) -> exists ch: t_Choice. update_U upd v ch = r'0 ] s4
+      | s4 = {[@expl:assertion] contains_R target_s (update_U upd v (such_that_Choice (fun (__0: t_Choice) -> true)))}
+        s5
+      | s5 = {[@expl:assertion] forall f: t_R. op_R v f <> None
           -> (exists ch: t_Choice. op_R (update_U upd v ch) f <> None)}
-        s2
-      | s2 = [ &_27 <- () ] s3
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-      | s1 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = -{resolve_ref_Resource_R self}- s1
-      | s1 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s2
-      | s2 = bb6 ]
-    | bb6 = return {_ret} ]
+        s6
+      | s6 = [ &_27 <- () ] s7
+      | s7 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s8)
+      | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
+      | s9 = -{resolve_ref_Resource_R self}- s10
+      | s10 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s11
+      | s11 = return {_ret} ] ]
     [ & _ret: t_Choice = Any.any_l ()
     | & self: MutBorrow.t t_Resource_R = self
     | & upd: t_U = upd
@@ -3632,9 +3612,10 @@ module M_ghost__impl_Clone_for_Ghost_T__clone (* <ghost::Ghost<T> as std::clone:
   
   let rec clone_Ghost_T (self: t_T) (return (x: t_T)) = {[@expl:clone 'self' type invariant] inv_ref_Ghost_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = deref_Ghost_T {self} (fun (_x: t_T) -> [ &_5 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new_T {_5} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ] [ & _ret: t_T = Any.any_l () | & self: t_T = self | & _5: t_T = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = deref_Ghost_T {self} (fun (_x: t_T) -> [ &_5 <- _x ] s1)
+      | s1 = new_T {_5} (fun (_x: t_T) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: t_T = Any.any_l () | & self: t_T = self | & _5: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:clone result type invariant] inv_Ghost_T result}
       {[@expl:clone ensures] result = self}
       (! return {result}) ]
@@ -3757,11 +3738,12 @@ module M_invariant__impl_Clone_for_Subset_T__clone (* <invariant::Subset<T> as s
   meta "select_lsinst" "all"
   
   let rec clone_Subset_T (self: t_Subset_T) (return (x: t_Subset_T)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_4 <- () ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = deref_Subset_T {self} (fun (_x: t_T) -> [ &_8 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = clone_T {_8} (fun (_x: t_T) -> [ &_6 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_T'0 {_6} (fun (_x: t_Subset_T) -> [ &_ret <- _x ] s1) | s1 = bb4 ]
-    | bb4 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = [ &_4 <- () ] s1
+      | s1 = deref_Subset_T {self} (fun (_x: t_T) -> [ &_8 <- _x ] s2)
+      | s2 = clone_T {_8} (fun (_x: t_T) -> [ &_6 <- _x ] s3)
+      | s3 = new_T'0 {_6} (fun (_x: t_Subset_T) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Subset_T = Any.any_l ()
     | & self: t_Subset_T = self
     | & _4: () = Any.any_l ()
@@ -4020,9 +4002,10 @@ module M_logic__fmap__impl_FMap_K_V_0__contains_ghost (* logic::fmap::FMap<K, V>
     {[@expl:contains_ghost 'self' type invariant] inv_ref_FMap_K_V self}
     {[@expl:contains_ghost 'key' type invariant] inv_ref_K key}
     (! bb0
-    [ bb0 = s0 [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = is_some_ref_V {_7} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1)
+      | s1 = is_some_ref_V {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_FMap_K_V = self
     | & key: t_K = key
@@ -4151,9 +4134,11 @@ module M_logic__fmap__impl_Index_for_FMap_K_V__index (* <logic::fmap::FMap<K, V>
     {[@expl:index 'key' type invariant] inv_ref_K key}
     {[@expl:index requires] contains_K self key}
     (! bb0
-    [ bb0 = s0 [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = unwrap_ref_V {_10} (fun (_x: t_V) -> [ &_9 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_ret <- _9 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1)
+      | s1 = unwrap_ref_V {_10} (fun (_x: t_V) -> [ &_9 <- _x ] s2)
+      | s2 = [ &_ret <- _9 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_V = Any.any_l ()
     | & self: t_FMap_K_V = self
     | & key: t_K = key
@@ -4433,11 +4418,9 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
             [ &_4 <- _bor ] -{inv_FMap_K_V _bor.final}-
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
       | s1 = remove_one_ghost_K {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_FMapIter_K_V self} s1
-      | s1 = -{resolve_ref_FMapIter_K_V self}- s2
-      | s2 = return {_ret} ] ]
+      | s2 = {[@expl:type invariant] inv_ref_FMapIter_K_V self} s3
+      | s3 = -{resolve_ref_FMapIter_K_V self}- s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_K_V = Any.any_l ()
     | & self: MutBorrow.t t_FMapIter_K_V = self
     | & _4: MutBorrow.t t_FMap_K_V = Any.any_l () ])
@@ -4781,13 +4764,13 @@ module M_logic__fmap__impl_IntoIterator_for_ref_FMap_K_V__into_iter (* <&'a logi
   let rec into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMapIterRef_K_V)) =
     {[@expl:into_iter 'self' type invariant] inv_ref_FMap_K_V self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_self <- self ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_8 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &result <- { inner = _8 } ] s1
-      | s1 = {[@expl:assertion] ext_eq_K (view_FMapIterRef_K_V result) _self} s2
-      | s2 = [ &_ret <- result ] s3
-      | s3 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &_self <- self ] s1
+      | s1 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_8 <- _x ] s2)
+      | s2 = [ &result <- { inner = _8 } ] s3
+      | s3 = {[@expl:assertion] ext_eq_K (view_FMapIterRef_K_V result) _self} s4
+      | s4 = [ &_ret <- result ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_FMapIterRef_K_V = Any.any_l ()
     | & self: t_FMap_K_V = self
     | & _self: t_FMap_K_V = Any.any_l ()
@@ -6084,8 +6067,10 @@ module M_logic__id__impl_PartialEq_for_Id__ne (* <logic::id::Id as std::cmp::Par
   meta "select_lsinst" "all"
   
   let rec ne_Id (self: t_Id) (other: t_Id) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = eq_Id {self} {other} (fun (_x: bool) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- not _6 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = eq_Id {self} {other} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- not _6 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: t_Id = self | & other: t_Id = other | & _6: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:ne ensures] result <> (self = other)} (! return {result}) ]
 end
@@ -23376,9 +23361,11 @@ module M_logic__seq__impl_Index_for_Seq_T__index (* <logic::seq::Seq<T> as std::
     {[@expl:index 'self' type invariant] inv_ref_Seq_T self}
     {[@expl:index requires] 0 <= index /\ index < Seq.length self}
     (! bb0
-    [ bb0 = s0 [ s0 = get_ghost_T {self} {index} (fun (_x: t_Option_ref_T) -> [ &_10 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = unwrap_ref_T {_10} (fun (_x: t_T) -> [ &_9 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_ret <- _9 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = get_ghost_T {self} {index} (fun (_x: t_Option_ref_T) -> [ &_10 <- _x ] s1)
+      | s1 = unwrap_ref_T {_10} (fun (_x: t_T) -> [ &_9 <- _x ] s2)
+      | s2 = [ &_ret <- _9 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: Seq.seq t_T = self
     | & index: int = index
@@ -23492,26 +23479,24 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
             [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
       | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_ref_T) -> [ &_16 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = unwrap_ref_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = {inv_T _15.current}
+      | s2 = unwrap_ref_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
+      | s3 = {inv_T _15.current}
         MutBorrow.borrow_final <t_T> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
-            [ &_15 <- { _15 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T _15} s2
-      | s2 = -{resolve_ref_T _15}- s3
-      | s3 = {inv_T _3.current}
+            [ &_15 <- { _15 with current = _bor.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_T _15} s5
+      | s5 = -{resolve_ref_T _15}- s6
+      | s6 = {inv_T _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
-            [ &_3 <- { _3 with current = _bor.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_T _3} s5
-      | s5 = -{resolve_ref_T _3}- s6
-      | s6 = {[@expl:type invariant] inv_ref_Seq_T self} s7
-      | s7 = -{resolve_ref_Seq_T self}- s8
-      | s8 = return {_ret} ] ]
+            [ &_3 <- { _3 with current = _bor.final } ] s7)
+      | s7 = {[@expl:type invariant] inv_ref_T _3} s8
+      | s8 = -{resolve_ref_T _3}- s9
+      | s9 = {[@expl:type invariant] inv_ref_Seq_T self} s10
+      | s10 = -{resolve_ref_Seq_T self}- s11
+      | s11 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self: MutBorrow.t (Seq.seq t_T) = self
     | & index: int = index
@@ -23686,11 +23671,9 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
             [ &_4 <- _bor ] -{inv_Seq_T _bor.final}-
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
       | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_SeqIter_T self} s1
-      | s1 = -{resolve_ref_SeqIter_T self}- s2
-      | s2 = return {_ret} ] ]
+      | s2 = {[@expl:type invariant] inv_ref_SeqIter_T self} s3
+      | s3 = -{resolve_ref_SeqIter_T self}- s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_SeqIter_T = self
     | & _4: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
@@ -23824,10 +23807,12 @@ module M_logic__seq__impl_IntoIterator_for_ref_Seq_T__into_iter (* <&'a logic::s
   let rec into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_SeqIterRef_T)) =
     {[@expl:into_iter 'self' type invariant] inv_ref_Seq_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_8 <- _x ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = sub_Int {_6} {_8} (fun (_x: int) -> [ &_5 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_ret <- { inner = self; index = _5 } ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_6 <- _x ] s1)
+      | s1 = len_ghost_T {self} (fun (_x: int) -> [ &_8 <- _x ] s2)
+      | s2 = sub_Int {_6} {_8} (fun (_x: int) -> [ &_5 <- _x ] s3)
+      | s3 = [ &_ret <- { inner = self; index = _5 } ] s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_SeqIterRef_T = Any.any_l ()
     | & self: Seq.seq t_T = self
     | & _5: int = Any.any_l ()
@@ -23973,32 +23958,28 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   let rec next_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) (return (x: t_Option_ref_T)) =
     {[@expl:next 'self' type invariant] inv_ref_SeqIterRef_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_before <- view_SeqIterRef_T self.current ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = get_ghost_T {self.current.inner} {self.current.index} (fun (_x: t_Option_ref_T) -> [ &_7 <- _x ] s1)
-      | s1 = bb2 ]
-    | bb2 = any [ br0 -> {_7 = None} (! bb6) | br1 (x0: t_T) -> {_7 = Some x0} (! bb4) ]
+    [ bb0 = s0
+      [ s0 = [ &_before <- view_SeqIterRef_T self.current ] s1
+      | s1 = get_ghost_T {self.current.inner} {self.current.index} (fun (_x: t_Option_ref_T) -> [ &_7 <- _x ] s2)
+      | s2 = any [ br0 -> {_7 = None} (! bb6) | br1 (x0: t_T) -> {_7 = Some x0} (! bb4) ] ]
     | bb6 = s0
       [ s0 = {[@expl:type invariant] inv_ref_SeqIterRef_T self} s1
       | s1 = -{resolve_ref_SeqIterRef_T self}- s2
       | s2 = {[@expl:assertion] self.current.index = Seq.length self.current.inner} s3
       | s3 = {[@expl:assertion] view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)} s4
       | s4 = [ &_ret <- None ] s5
-      | s5 = bb7 ]
+      | s5 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Some {_7} (fun (r0: t_T) -> [ &res <- r0 ] s1)
       | s1 = MutBorrow.borrow_final <int> {self.current.index} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t int) ->
             [ &_13 <- _bor ] [ &self <- { self with current = { self.current with index = _bor.final } } ] s2)
       | s2 = incr_ghost {_13} (fun (_x: ()) -> [ &_12 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_SeqIterRef_T self} s1
-      | s1 = -{resolve_ref_SeqIterRef_T self}- s2
-      | s2 = {[@expl:assertion] view_SeqIterRef_T self.current = tail_T _before} s3
-      | s3 = [ &_ret <- Some res ] s4
-      | s4 = bb7 ]
-    | bb7 = return {_ret} ]
+      | s3 = {[@expl:type invariant] inv_ref_SeqIterRef_T self} s4
+      | s4 = -{resolve_ref_SeqIterRef_T self}- s5
+      | s5 = {[@expl:assertion] view_SeqIterRef_T self.current = tail_T _before} s6
+      | s6 = [ &_ret <- Some res ] s7
+      | s7 = return {_ret} ] ]
     [ & _ret: t_Option_ref_T = Any.any_l ()
     | & self: MutBorrow.t t_SeqIterRef_T = self
     | & _before: Seq.seq t_T = Any.any_l ()
@@ -27579,8 +27560,11 @@ module M_peano__impl_Clone_for_PeanoInt__clone (* <peano::PeanoInt as std::clone
   meta "select_lsinst" "all"
   
   let rec clone_PeanoInt (self: t_PeanoInt) (return (x: t_PeanoInt)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- self.f0 ] s1 | s1 = clone_u64 {_6} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- { f0 = _4 } ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = [ &_6 <- self.f0 ] s1
+      | s1 = clone_u64 {_6} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _4 } ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_PeanoInt = Any.any_l ()
     | & self: t_PeanoInt = self
     | & _4: UInt64.t = Any.any_l ()
@@ -27664,9 +27648,10 @@ module M_peano__impl_Default_for_PeanoInt__default (* <peano::PeanoInt as std::d
   meta "select_lsinst" "all"
   
   let rec default_PeanoInt (return (x: t_PeanoInt)) = (! bb0
-    [ bb0 = s0 [ s0 = default_u64 (fun (_x: UInt64.t) -> [ &_2 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- { f0 = _2 } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_PeanoInt = Any.any_l () | & _2: UInt64.t = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = default_u64 (fun (_x: UInt64.t) -> [ &_2 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = _2 } ] s2
+      | s2 = return {_ret} ] ] [ & _ret: t_PeanoInt = Any.any_l () | & _2: UInt64.t = Any.any_l () ])
     [ return (result: t_PeanoInt) -> {[@expl:default ensures] true /\ postcondition_default () () result.f0}
       (! return {result}) ]
 end
@@ -28464,8 +28449,10 @@ module M_peano__impl_PartialOrd_for_PeanoInt__partial_cmp (* <peano::PeanoInt as
   meta "select_lsinst" "all"
   
   let rec partial_cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Option_Ordering)) = (! bb0
-    [ bb0 = s0 [ s0 = cmp_PeanoInt {self} {other} (fun (_x: t_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- Some _6 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = cmp_PeanoInt {self} {other} (fun (_x: t_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- Some _6 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: t_Option_Ordering = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -28613,14 +28600,14 @@ module M_peano__impl_PartialOrd_for_PeanoInt__lt (* <peano::PeanoInt as std::cmp
   meta "select_lsinst" "all"
   
   let rec lt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -28768,14 +28755,14 @@ module M_peano__impl_PartialOrd_for_PeanoInt__le (* <peano::PeanoInt as std::cmp
   meta "select_lsinst" "all"
   
   let rec le_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -28923,14 +28910,14 @@ module M_peano__impl_PartialOrd_for_PeanoInt__gt (* <peano::PeanoInt as std::cmp
   meta "select_lsinst" "all"
   
   let rec gt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -29078,14 +29065,14 @@ module M_peano__impl_PartialOrd_for_PeanoInt__ge (* <peano::PeanoInt as std::cmp
   meta "select_lsinst" "all"
   
   let rec ge_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -29271,8 +29258,7 @@ module M_peano__impl_Ord_for_PeanoInt__cmp (* <peano::PeanoInt as std::cmp::Ord>
     [ bb0 = s0
       [ s0 = [ &_8 <- other.f0 ] s1
       | s1 = cmp_u64 {self.f0} {_8} (fun (_x: t_Ordering) -> [ &_ret <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = return {_ret} ]
+      | s2 = return {_ret} ] ]
     [ & _ret: t_Ordering = Any.any_l ()
     | & self: t_PeanoInt = self
     | & other: t_PeanoInt = other
@@ -29398,7 +29384,7 @@ module M_peano__impl_From_for_u64__from (* <u64 as std::convert::From<peano::Pea
   meta "select_lsinst" "all"
   
   let rec from_u64 (val': t_PeanoInt) (return (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = to_u64 {val'} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = to_u64 {val'} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & val': t_PeanoInt = val' ])
     [ return (result: UInt64.t) -> {[@expl:from ensures] result = val'.f0} (! return {result}) ]
 end
@@ -29421,7 +29407,7 @@ module M_peano__impl_From_for_i64__from (* <i64 as std::convert::From<peano::Pea
   meta "select_lsinst" "all"
   
   let rec from_i64 (val': t_PeanoInt) (return (x: Int64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = to_i64 {val'} (fun (_x: Int64.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = to_i64 {val'} (fun (_x: Int64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int64.t = Any.any_l () | & val': t_PeanoInt = val' ])
     [ return (result: Int64.t) -> {[@expl:from ensures] Int64.to_int result = UInt64.t'int val'.f0}
       (! return {result}) ]
@@ -29445,7 +29431,7 @@ module M_peano__impl_From_for_u128__from (* <u128 as std::convert::From<peano::P
   meta "select_lsinst" "all"
   
   let rec from_u128 (val': t_PeanoInt) (return (x: UInt128.t)) = (! bb0
-    [ bb0 = s0 [ s0 = to_u128 {val'} (fun (_x: UInt128.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = to_u128 {val'} (fun (_x: UInt128.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt128.t = Any.any_l () | & val': t_PeanoInt = val' ])
     [ return (result: UInt128.t) -> {[@expl:from ensures] UInt128.t'int result = UInt64.t'int val'.f0}
       (! return {result}) ]
@@ -29469,7 +29455,7 @@ module M_peano__impl_From_for_i128__from (* <i128 as std::convert::From<peano::P
   meta "select_lsinst" "all"
   
   let rec from_i128 (val': t_PeanoInt) (return (x: Int128.t)) = (! bb0
-    [ bb0 = s0 [ s0 = to_i128 {val'} (fun (_x: Int128.t) -> [ &_ret <- _x ] s1) | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = to_i128 {val'} (fun (_x: Int128.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int128.t = Any.any_l () | & val': t_PeanoInt = val' ])
     [ return (result: Int128.t) -> {[@expl:from ensures] Int128.to_int result = UInt64.t'int val'.f0}
       (! return {result}) ]
@@ -30896,8 +30882,10 @@ module M_std__cmp__extern_spec_std_cmp_PartialEq_Rhs_ne_body
     {[@expl:extern_spec_std_cmp_PartialEq_Rhs_ne_body 'self_' type invariant] inv_ref_Self_ self_}
     {[@expl:extern_spec_std_cmp_PartialEq_Rhs_ne_body 'rhs' type invariant] inv_ref_Rhs rhs}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_ref_Self_ {self_} {rhs} (fun (_x: bool) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- not _6 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = eq_ref_Self_ {self_} {rhs} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- not _6 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self_: t_Self_ = self_ | & rhs: t_Rhs = rhs | & _6: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_std_cmp_PartialEq_Rhs_ne_body ensures] result
       = (deep_model_ref_Self_ self_ <> deep_model_ref_Rhs rhs)}
@@ -31043,14 +31031,14 @@ module M_std__cmp__extern_spec_std_cmp_PartialOrd_Rhs_lt_body
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'self_' type invariant] inv_ref_Self_ self_}
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_lt_body 'other' type invariant] inv_ref_Rhs other}
     (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Self_ = self_
     | & other: t_Rhs = other
@@ -31199,14 +31187,14 @@ module M_std__cmp__extern_spec_std_cmp_PartialOrd_Rhs_le_body
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'self_' type invariant] inv_ref_Self_ self_}
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_le_body 'other' type invariant] inv_ref_Rhs other}
     (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Self_ = self_
     | & other: t_Rhs = other
@@ -31355,14 +31343,14 @@ module M_std__cmp__extern_spec_std_cmp_PartialOrd_Rhs_gt_body
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'self_' type invariant] inv_ref_Self_ self_}
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_gt_body 'other' type invariant] inv_ref_Rhs other}
     (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Self_ = self_
     | & other: t_Rhs = other
@@ -31511,14 +31499,14 @@ module M_std__cmp__extern_spec_std_cmp_PartialOrd_Rhs_ge_body
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'self_' type invariant] inv_ref_Self_ self_}
     {[@expl:extern_spec_std_cmp_PartialOrd_Rhs_ge_body 'other' type invariant] inv_ref_Rhs other}
     (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Self_ = self_
     | & other: t_Rhs = other
@@ -31639,19 +31627,19 @@ module M_std__cmp__extern_spec_std_cmp_Ord_max_body
     {[@expl:extern_spec_std_cmp_Ord_max_body 'self_' type invariant] inv_Self_ self_}
     {[@expl:extern_spec_std_cmp_Ord_max_body 'o' type invariant] inv_Self_ o}
     (! bb0
-    [ bb0 = s0 [ s0 = le_Self_ {self_} {o} (fun (_x: bool) -> [ &_16 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_16 = false} (! bb3) | br1 -> {_16} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = le_Self_ {self_} {o} (fun (_x: bool) -> [ &_16 <- _x ] s1)
+      | s1 = any [ br0 -> {_16 = false} (! bb3) | br1 -> {_16} (! bb2) ] ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ self_} s1
       | s1 = -{resolve_Self_ self_}- s2
       | s2 = [ &_ret <- o ] s3
-      | s3 = bb6 ]
+      | s3 = return {_ret} ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ o} s1
       | s1 = -{resolve_Self_ o}- s2
       | s2 = [ &_ret <- self_ ] s3
-      | s3 = bb6 ]
-    | bb6 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Self_ = Any.any_l () | & self_: t_Self_ = self_ | & o: t_Self_ = o | & _16: bool = Any.any_l () ])
     [ return (result: t_Self_) -> {[@expl:extern_spec_std_cmp_Ord_max_body result type invariant] inv_Self_ result}
       {[@expl:extern_spec_std_cmp_Ord_max_body ensures #0] ge_log_DeepModelTy (deep_model_Self_ result) (deep_model_Self_ self_)}
@@ -31775,19 +31763,19 @@ module M_std__cmp__extern_spec_std_cmp_Ord_min_body
     {[@expl:extern_spec_std_cmp_Ord_min_body 'self_' type invariant] inv_Self_ self_}
     {[@expl:extern_spec_std_cmp_Ord_min_body 'o' type invariant] inv_Self_ o}
     (! bb0
-    [ bb0 = s0 [ s0 = lt_Self_ {self_} {o} (fun (_x: bool) -> [ &_16 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_16 = false} (! bb3) | br1 -> {_16} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = lt_Self_ {self_} {o} (fun (_x: bool) -> [ &_16 <- _x ] s1)
+      | s1 = any [ br0 -> {_16 = false} (! bb3) | br1 -> {_16} (! bb2) ] ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ o} s1
       | s1 = -{resolve_Self_ o}- s2
       | s2 = [ &_ret <- self_ ] s3
-      | s3 = bb6 ]
+      | s3 = return {_ret} ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ self_} s1
       | s1 = -{resolve_Self_ self_}- s2
       | s2 = [ &_ret <- o ] s3
-      | s3 = bb6 ]
-    | bb6 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Self_ = Any.any_l () | & self_: t_Self_ = self_ | & o: t_Self_ = o | & _16: bool = Any.any_l () ])
     [ return (result: t_Self_) -> {[@expl:extern_spec_std_cmp_Ord_min_body result type invariant] inv_Self_ result}
       {[@expl:extern_spec_std_cmp_Ord_min_body ensures #0] le_log_DeepModelTy (deep_model_Self_ result) (deep_model_Self_ self_)}
@@ -31930,32 +31918,31 @@ module M_std__cmp__extern_spec_std_cmp_Ord_clamp_body
     {[@expl:extern_spec_std_cmp_Ord_clamp_body 'max' type invariant] inv_Self_ max}
     {[@expl:extern_spec_std_cmp_Ord_clamp_body requires] le_log_DeepModelTy (deep_model_Self_ min) (deep_model_Self_ max)}
     (! bb0
-    [ bb0 = s0 [ s0 = gt_Self_ {self_} {max} (fun (_x: bool) -> [ &_19 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_19 = false} (! bb3) | br1 -> {_19} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = gt_Self_ {self_} {max} (fun (_x: bool) -> [ &_19 <- _x ] s1)
+      | s1 = any [ br0 -> {_19 = false} (! bb3) | br1 -> {_19} (! bb2) ] ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ min} s1
       | s1 = -{resolve_Self_ min}- s2
       | s2 = {[@expl:type invariant] inv_Self_ self_} s3
       | s3 = -{resolve_Self_ self_}- s4
       | s4 = [ &_ret <- max ] s5
-      | s5 = bb11 ]
+      | s5 = return {_ret} ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ max} s1
       | s1 = -{resolve_Self_ max}- s2
       | s2 = lt_Self_ {self_} {min} (fun (_x: bool) -> [ &_22 <- _x ] s3)
-      | s3 = bb4 ]
-    | bb4 = any [ br0 -> {_22 = false} (! bb6) | br1 -> {_22} (! bb5) ]
+      | s3 = any [ br0 -> {_22 = false} (! bb6) | br1 -> {_22} (! bb5) ] ]
     | bb5 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ self_} s1
       | s1 = -{resolve_Self_ self_}- s2
       | s2 = [ &_ret <- min ] s3
-      | s3 = bb11 ]
+      | s3 = return {_ret} ]
     | bb6 = s0
       [ s0 = {[@expl:type invariant] inv_Self_ min} s1
       | s1 = -{resolve_Self_ min}- s2
       | s2 = [ &_ret <- self_ ] s3
-      | s3 = bb11 ]
-    | bb11 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Self_ = Any.any_l ()
     | & self_: t_Self_ = self_
     | & min: t_Self_ = min
@@ -32075,7 +32062,7 @@ module M_std__cmp__extern_spec_std_cmp_max_body
     {[@expl:extern_spec_std_cmp_max_body 'v1' type invariant] inv_T v1}
     {[@expl:extern_spec_std_cmp_max_body 'v2' type invariant] inv_T v2}
     (! bb0
-    [ bb0 = s0 [ s0 = max_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ bb0 = s0 [ s0 = max_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & v1: t_T = v1 | & v2: t_T = v2 ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_cmp_max_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_cmp_max_body ensures #0] ge_log_DeepModelTy (deep_model_T result) (deep_model_T v1)}
@@ -32189,7 +32176,7 @@ module M_std__cmp__extern_spec_std_cmp_min_body
     {[@expl:extern_spec_std_cmp_min_body 'v1' type invariant] inv_T v1}
     {[@expl:extern_spec_std_cmp_min_body 'v2' type invariant] inv_T v2}
     (! bb0
-    [ bb0 = s0 [ s0 = min_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ bb0 = s0 [ s0 = min_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & v1: t_T = v1 | & v2: t_T = v2 ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_cmp_min_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_cmp_min_body ensures #0] le_log_DeepModelTy (deep_model_T result) (deep_model_T v1)}
@@ -32282,14 +32269,14 @@ module M_std__cmp__extern_spec_PartialOrd_i8_i8_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i8_i8_lt_body (self_: Int8.t) (other: Int8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int8.t = self_
     | & other: Int8.t = other
@@ -32379,14 +32366,14 @@ module M_std__cmp__extern_spec_PartialOrd_i8_i8_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i8_i8_le_body (self_: Int8.t) (other: Int8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int8.t = self_
     | & other: Int8.t = other
@@ -32476,14 +32463,14 @@ module M_std__cmp__extern_spec_PartialOrd_i8_i8_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i8_i8_gt_body (self_: Int8.t) (other: Int8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int8.t = self_
     | & other: Int8.t = other
@@ -32573,14 +32560,14 @@ module M_std__cmp__extern_spec_PartialOrd_i8_i8_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i8_i8_ge_body (self_: Int8.t) (other: Int8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int8.t = self_
     | & other: Int8.t = other
@@ -32670,14 +32657,14 @@ module M_std__cmp__extern_spec_PartialOrd_i16_i16_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i16_i16_lt_body (self_: Int16.t) (other: Int16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int16.t = self_
     | & other: Int16.t = other
@@ -32767,14 +32754,14 @@ module M_std__cmp__extern_spec_PartialOrd_i16_i16_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i16_i16_le_body (self_: Int16.t) (other: Int16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int16.t = self_
     | & other: Int16.t = other
@@ -32864,14 +32851,14 @@ module M_std__cmp__extern_spec_PartialOrd_i16_i16_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i16_i16_gt_body (self_: Int16.t) (other: Int16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int16.t = self_
     | & other: Int16.t = other
@@ -32961,14 +32948,14 @@ module M_std__cmp__extern_spec_PartialOrd_i16_i16_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i16_i16_ge_body (self_: Int16.t) (other: Int16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int16.t = self_
     | & other: Int16.t = other
@@ -33058,14 +33045,14 @@ module M_std__cmp__extern_spec_PartialOrd_i32_i32_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i32_i32_lt_body (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int32.t = self_
     | & other: Int32.t = other
@@ -33155,14 +33142,14 @@ module M_std__cmp__extern_spec_PartialOrd_i32_i32_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i32_i32_le_body (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int32.t = self_
     | & other: Int32.t = other
@@ -33252,14 +33239,14 @@ module M_std__cmp__extern_spec_PartialOrd_i32_i32_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i32_i32_gt_body (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int32.t = self_
     | & other: Int32.t = other
@@ -33349,14 +33336,14 @@ module M_std__cmp__extern_spec_PartialOrd_i32_i32_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i32_i32_ge_body (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int32.t = self_
     | & other: Int32.t = other
@@ -33446,14 +33433,14 @@ module M_std__cmp__extern_spec_PartialOrd_i64_i64_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i64_i64_lt_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -33543,14 +33530,14 @@ module M_std__cmp__extern_spec_PartialOrd_i64_i64_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i64_i64_le_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -33640,14 +33627,14 @@ module M_std__cmp__extern_spec_PartialOrd_i64_i64_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i64_i64_gt_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -33737,14 +33724,14 @@ module M_std__cmp__extern_spec_PartialOrd_i64_i64_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i64_i64_ge_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -33834,14 +33821,14 @@ module M_std__cmp__extern_spec_PartialOrd_i128_i128_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i128_i128_lt_body (self_: Int128.t) (other: Int128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int128.t = self_
     | & other: Int128.t = other
@@ -33931,14 +33918,14 @@ module M_std__cmp__extern_spec_PartialOrd_i128_i128_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i128_i128_le_body (self_: Int128.t) (other: Int128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int128.t = self_
     | & other: Int128.t = other
@@ -34028,14 +34015,14 @@ module M_std__cmp__extern_spec_PartialOrd_i128_i128_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i128_i128_gt_body (self_: Int128.t) (other: Int128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int128.t = self_
     | & other: Int128.t = other
@@ -34125,14 +34112,14 @@ module M_std__cmp__extern_spec_PartialOrd_i128_i128_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_i128_i128_ge_body (self_: Int128.t) (other: Int128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_i128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int128.t = self_
     | & other: Int128.t = other
@@ -34223,14 +34210,14 @@ module M_std__cmp__extern_spec_PartialOrd_isize_isize_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_isize_isize_lt_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -34321,14 +34308,14 @@ module M_std__cmp__extern_spec_PartialOrd_isize_isize_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_isize_isize_le_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -34419,14 +34406,14 @@ module M_std__cmp__extern_spec_PartialOrd_isize_isize_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_isize_isize_gt_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -34517,14 +34504,14 @@ module M_std__cmp__extern_spec_PartialOrd_isize_isize_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_isize_isize_ge_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_isize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Int64.t = self_
     | & other: Int64.t = other
@@ -34614,14 +34601,14 @@ module M_std__cmp__extern_spec_PartialOrd_u8_u8_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u8_u8_lt_body (self_: UInt8.t) (other: UInt8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt8.t = self_
     | & other: UInt8.t = other
@@ -34711,14 +34698,14 @@ module M_std__cmp__extern_spec_PartialOrd_u8_u8_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u8_u8_le_body (self_: UInt8.t) (other: UInt8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt8.t = self_
     | & other: UInt8.t = other
@@ -34808,14 +34795,14 @@ module M_std__cmp__extern_spec_PartialOrd_u8_u8_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u8_u8_gt_body (self_: UInt8.t) (other: UInt8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt8.t = self_
     | & other: UInt8.t = other
@@ -34905,14 +34892,14 @@ module M_std__cmp__extern_spec_PartialOrd_u8_u8_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u8_u8_ge_body (self_: UInt8.t) (other: UInt8.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u8 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt8.t = self_
     | & other: UInt8.t = other
@@ -35002,14 +34989,14 @@ module M_std__cmp__extern_spec_PartialOrd_u16_u16_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u16_u16_lt_body (self_: UInt16.t) (other: UInt16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt16.t = self_
     | & other: UInt16.t = other
@@ -35099,14 +35086,14 @@ module M_std__cmp__extern_spec_PartialOrd_u16_u16_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u16_u16_le_body (self_: UInt16.t) (other: UInt16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt16.t = self_
     | & other: UInt16.t = other
@@ -35196,14 +35183,14 @@ module M_std__cmp__extern_spec_PartialOrd_u16_u16_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u16_u16_gt_body (self_: UInt16.t) (other: UInt16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt16.t = self_
     | & other: UInt16.t = other
@@ -35293,14 +35280,14 @@ module M_std__cmp__extern_spec_PartialOrd_u16_u16_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u16_u16_ge_body (self_: UInt16.t) (other: UInt16.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u16 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt16.t = self_
     | & other: UInt16.t = other
@@ -35390,14 +35377,14 @@ module M_std__cmp__extern_spec_PartialOrd_u32_u32_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u32_u32_lt_body (self_: UInt32.t) (other: UInt32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt32.t = self_
     | & other: UInt32.t = other
@@ -35487,14 +35474,14 @@ module M_std__cmp__extern_spec_PartialOrd_u32_u32_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u32_u32_le_body (self_: UInt32.t) (other: UInt32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt32.t = self_
     | & other: UInt32.t = other
@@ -35584,14 +35571,14 @@ module M_std__cmp__extern_spec_PartialOrd_u32_u32_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u32_u32_gt_body (self_: UInt32.t) (other: UInt32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt32.t = self_
     | & other: UInt32.t = other
@@ -35681,14 +35668,14 @@ module M_std__cmp__extern_spec_PartialOrd_u32_u32_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u32_u32_ge_body (self_: UInt32.t) (other: UInt32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt32.t = self_
     | & other: UInt32.t = other
@@ -35778,14 +35765,14 @@ module M_std__cmp__extern_spec_PartialOrd_u64_u64_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u64_u64_lt_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -35875,14 +35862,14 @@ module M_std__cmp__extern_spec_PartialOrd_u64_u64_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u64_u64_le_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -35972,14 +35959,14 @@ module M_std__cmp__extern_spec_PartialOrd_u64_u64_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u64_u64_gt_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -36069,14 +36056,14 @@ module M_std__cmp__extern_spec_PartialOrd_u64_u64_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u64_u64_ge_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -36166,14 +36153,14 @@ module M_std__cmp__extern_spec_PartialOrd_u128_u128_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u128_u128_lt_body (self_: UInt128.t) (other: UInt128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt128.t = self_
     | & other: UInt128.t = other
@@ -36263,14 +36250,14 @@ module M_std__cmp__extern_spec_PartialOrd_u128_u128_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u128_u128_le_body (self_: UInt128.t) (other: UInt128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt128.t = self_
     | & other: UInt128.t = other
@@ -36360,14 +36347,14 @@ module M_std__cmp__extern_spec_PartialOrd_u128_u128_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u128_u128_gt_body (self_: UInt128.t) (other: UInt128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt128.t = self_
     | & other: UInt128.t = other
@@ -36457,14 +36444,14 @@ module M_std__cmp__extern_spec_PartialOrd_u128_u128_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_u128_u128_ge_body (self_: UInt128.t) (other: UInt128.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_u128 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt128.t = self_
     | & other: UInt128.t = other
@@ -36555,14 +36542,14 @@ module M_std__cmp__extern_spec_PartialOrd_usize_usize_lt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_usize_usize_lt_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -36653,14 +36640,14 @@ module M_std__cmp__extern_spec_PartialOrd_usize_usize_le_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_usize_usize_le_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -36751,14 +36738,14 @@ module M_std__cmp__extern_spec_PartialOrd_usize_usize_gt_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_usize_usize_gt_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -36849,14 +36836,14 @@ module M_std__cmp__extern_spec_PartialOrd_usize_usize_ge_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_PartialOrd_usize_usize_ge_body (self_: UInt64.t) (other: UInt64.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ]
+    [ bb0 = s0
+      [ s0 = partial_cmp_usize {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
     | bb3 = elim_Some {_6}
         (fun (r0: t_Ordering) ->
           any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb5) ])
-    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb6 ]
-    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: UInt64.t = self_
     | & other: UInt64.t = other
@@ -37683,7 +37670,7 @@ module M_std__hint__extern_spec_std_hint_black_box_body
   let rec extern_spec_std_hint_black_box_body_T (dummy: t_T) (return (x: t_T)) =
     {[@expl:extern_spec_std_hint_black_box_body 'dummy' type invariant] inv_T dummy}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- dummy ] s1 | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- dummy ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & dummy: t_T = dummy ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_hint_black_box_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_hint_black_box_body ensures] result = dummy}
@@ -37745,7 +37732,7 @@ module M_std__hint__extern_spec_std_hint_must_use_body
   let rec extern_spec_std_hint_must_use_body_T (value: t_T) (return (x: t_T)) =
     {[@expl:extern_spec_std_hint_must_use_body 'value' type invariant] inv_T value}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- value ] s1 | s1 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- value ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & value: t_T = value ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_hint_must_use_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_hint_must_use_body ensures] result = value}
@@ -39779,47 +39766,39 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   let rec next_MapInv_I_F (self: MutBorrow.t t_MapInv_I_F) (return (x: t_Option_B)) =
     {[@expl:next 'self' type invariant] inv_ref_MapInv_I_F self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_self <- self.current ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_I self.current.iter}
+    [ bb0 = s0
+      [ s0 = [ &old_self <- self.current ] s1
+      | s1 = {inv_I self.current.iter}
         MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_8 <- _bor ] -{inv_I _bor.final}-
-            [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
-      | s1 = next_I {_8} (fun (_x: t_Option_Item) -> [ &_7 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = any [ br0 -> {_7 = None} (! bb14) | br1 (x0: t_Item) -> {_7 = Some x0} (! bb6) ]
+            [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
+      | s2 = next_I {_8} (fun (_x: t_Option_Item) -> [ &_7 <- _x ] s3)
+      | s3 = any [ br0 -> {_7 = None} (! bb14) | br1 (x0: t_Item) -> {_7 = Some x0} (! bb6) ] ]
     | bb6 = s0
       [ s0 = elim_Some {_7} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
       | s1 = {[@expl:assertion] precondition_F self.current.func { f0 = v; f1 = self.current.produced }} s2
       | s2 = [ &produced'0 <- Seq.snoc self.current.produced v ] s3
-      | s3 = bb7 ]
-    | bb7 = s0
-      [ s0 = {inv_F self.current.func}
+      | s3 = {inv_F self.current.func}
         MutBorrow.borrow_final <t_F> {self.current.func} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t t_F) ->
             [ &_21 <- _bor ] -{inv_F _bor.final}-
-            [ &self <- { self with current = { self.current with func = _bor.final } } ] s1)
-      | s1 = [ &_22 <- { f0 = v; f1 = self.current.produced } ] s2
-      | s2 = call_mut_F {_21} {_22} (fun (_x: t_B) -> [ &r <- _x ] s3)
-      | s3 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &self <- { self with current = { self.current with produced = produced'0 } } ] s1
-      | s1 = [ &_26 <- () ] s2
-      | s2 = bb10 ]
-    | bb10 = s0
-      [ s0 = {[@expl:assertion] produces_one_I old_self r self.current} s1
-      | s1 = {[@expl:type invariant] inv_ref_MapInv_I_F self} s2
-      | s2 = -{resolve_ref_MapInv_I_F self}- s3
-      | s3 = [ &_ret <- Some'0 r ] s4
-      | s4 = bb16 ]
+            [ &self <- { self with current = { self.current with func = _bor.final } } ] s4)
+      | s4 = [ &_22 <- { f0 = v; f1 = self.current.produced } ] s5
+      | s5 = call_mut_F {_21} {_22} (fun (_x: t_B) -> [ &r <- _x ] s6)
+      | s6 = [ &self <- { self with current = { self.current with produced = produced'0 } } ] s7
+      | s7 = [ &_26 <- () ] s8
+      | s8 = {[@expl:assertion] produces_one_I old_self r self.current} s9
+      | s9 = {[@expl:type invariant] inv_ref_MapInv_I_F self} s10
+      | s10 = -{resolve_ref_MapInv_I_F self}- s11
+      | s11 = [ &_ret <- Some'0 r ] s12
+      | s12 = return {_ret} ]
     | bb14 = s0
       [ s0 = [ &self <- { self with current = { self.current with produced = Seq.empty: Seq.seq t_Item } } ] s1
       | s1 = {[@expl:type invariant] inv_ref_MapInv_I_F self} s2
       | s2 = -{resolve_ref_MapInv_I_F self}- s3
       | s3 = [ &_ret <- None'0 ] s4
-      | s4 = bb16 ]
-    | bb16 = return {_ret} ]
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
     | & self: MutBorrow.t t_MapInv_I_F = self
     | & old_self: t_MapInv_I_F = Any.any_l ()
@@ -41384,9 +41363,10 @@ module M_std__iter__trait_IteratorSpec__map_inv
     {[@expl:map_inv requires #1] reinitialize_Self}
     {[@expl:map_inv requires #2] preservation_Self self func'0}
     (! bb0
-    [ bb0 = bb2
-    | bb2 = s0 [ s0 = [ &_ret <- { iter = self; func = func'0; produced = Seq.empty: Seq.seq t_Item } ] s1 | s1 = bb6 ]
-    | bb6 = return {_ret} ] [ & _ret: t_MapInv_Self_F = Any.any_l () | & self: t_Self = self | & func'0: t_F = func'0 ])
+    [ bb0 = s0
+      [ s0 = [ &_ret <- { iter = self; func = func'0; produced = Seq.empty: Seq.seq t_Item } ] s1
+      | s1 = return {_ret} ] ]
+    [ & _ret: t_MapInv_Self_F = Any.any_l () | & self: t_Self = self | & func'0: t_F = func'0 ])
     [ return (result: t_MapInv_Self_F) -> {[@expl:map_inv result type invariant] inv_MapInv_Self_F result}
       {[@expl:map_inv ensures] result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
       (! return {result}) ]
@@ -41525,15 +41505,12 @@ module M_std__mem__extern_spec_std_mem_replace_body
             [ &_11 <- _bor ] -{inv_T _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s4)
       | s4 = swap_T {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s5)
-      | s5 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_T _12} s1
-      | s1 = -{resolve_ref_T _12}- s2
-      | s2 = {[@expl:type invariant] inv_ref_T dest} s3
-      | s3 = -{resolve_ref_T dest}- s4
-      | s4 = [ &_ret <- src'0 ] s5
-      | s5 = bb3 ]
-    | bb3 = return {_ret} ]
+      | s5 = {[@expl:type invariant] inv_ref_T _12} s6
+      | s6 = -{resolve_ref_T _12}- s7
+      | s7 = {[@expl:type invariant] inv_ref_T dest} s8
+      | s8 = -{resolve_ref_T dest}- s9
+      | s9 = [ &_ret <- src'0 ] s10
+      | s10 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & dest: MutBorrow.t t_T = dest
     | & src: t_T = src
@@ -41652,17 +41629,17 @@ module M_std__mem__extern_spec_std_mem_take_body
   let rec extern_spec_std_mem_take_body_T (dest: MutBorrow.t t_T) (return (x: t_T)) =
     {[@expl:extern_spec_std_mem_take_body 'dest' type invariant] inv_ref_T dest}
     (! bb0
-    [ bb0 = s0 [ s0 = default_T (fun (_x: t_T) -> [ &_7 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_T dest.current}
+    [ bb0 = s0
+      [ s0 = default_T (fun (_x: t_T) -> [ &_7 <- _x ] s1)
+      | s1 = {inv_T dest.current}
         MutBorrow.borrow_final <t_T> {dest.current} {MutBorrow.get_id dest}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_6 <- _bor ] -{inv_T _bor.final}-
-            [ &dest <- { dest with current = _bor.final } ] s1)
-      | s1 = replace_T {_6} {_7} (fun (_x: t_T) -> [ &_ret <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_T dest} s1 | s1 = -{resolve_ref_T dest}- s2 | s2 = return {_ret} ] ]
+            [ &dest <- { dest with current = _bor.final } ] s2)
+      | s2 = replace_T {_6} {_7} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
+      | s3 = {[@expl:type invariant] inv_ref_T dest} s4
+      | s4 = -{resolve_ref_T dest}- s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & dest: MutBorrow.t t_T = dest
     | & _6: MutBorrow.t t_T = Any.any_l ()
@@ -41692,7 +41669,7 @@ module M_std__mem__extern_spec_std_mem_drop_body
   let rec extern_spec_std_mem_drop_body_T (t: t_T) (return (x: ())) =
     {[@expl:extern_spec_std_mem_drop_body 't' type invariant] inv_T t}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T t} s1 | s1 = -{resolve_T t}- s2 | s2 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T t} s1 | s1 = -{resolve_T t}- s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & t: t_T = t ])
     [ return (result: ()) -> {[@expl:extern_spec_std_mem_drop_body ensures] resolve_T t} (! return {result}) ]
 end
@@ -41716,7 +41693,7 @@ module M_std__mem__extern_spec_std_mem_forget_body
   let rec extern_spec_std_mem_forget_body_T (t: t_T) (return (x: ())) =
     {[@expl:extern_spec_std_mem_forget_body 't' type invariant] inv_T t}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T t} s1 | s1 = -{resolve_T t}- s2 | s2 = bb1 ] | bb1 = return {_ret} ]
+    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_T t} s1 | s1 = -{resolve_T t}- s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & t: t_T = t ])
     [ return (result: ()) -> {[@expl:extern_spec_std_mem_forget_body ensures] resolve_T t} (! return {result}) ]
 end
@@ -42166,7 +42143,7 @@ module M_std__ops__extern_spec_core_option_T_Try_Option_T_from_output_body
   let rec extern_spec_core_option_T_Try_Option_T_from_output_body_T (output: t_T) (return (x: t_Option_T)) =
     {[@expl:extern_spec_core_option_T_Try_Option_T_from_output_body 'output' type invariant] inv_T output}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Some output ] s1 | s1 = bb2 ] | bb2 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- Some output ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l () | & output: t_T = output ])
     [ return (result: t_Option_T) ->
     {[@expl:extern_spec_core_option_T_Try_Option_T_from_output_body result type invariant] inv_Option_T result}
@@ -42237,9 +42214,10 @@ module M_std__ops__extern_spec_core_option_T_Try_Option_T_branch_body
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
     | bb4 = s0
-      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_ret <- Continue v ] s2 | s2 = bb8 ]
-    | bb3 = s0 [ s0 = [ &_7 <- None'0 ] s1 | s1 = [ &_ret <- Break _7 ] s2 | s2 = bb8 ]
-    | bb8 = return {_ret} ]
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1)
+      | s1 = [ &_ret <- Continue v ] s2
+      | s2 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_7 <- None'0 ] s1 | s1 = [ &_ret <- Break _7 ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_ControlFlow_Option_Infallible_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & v: t_T = Any.any_l ()
@@ -42334,7 +42312,7 @@ module M_std__ops__extern_spec_core_result_T_E_Try_Result_T_E_from_output_body
   let rec extern_spec_core_result_T_E_Try_Result_T_E_from_output_body_T (output: t_T) (return (x: t_Result_T_E)) =
     {[@expl:extern_spec_core_result_T_E_Try_Result_T_E_from_output_body 'output' type invariant] inv_T output}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Ok output ] s1 | s1 = bb2 ] | bb2 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- Ok output ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Result_T_E = Any.any_l () | & output: t_T = output ])
     [ return (result: t_Result_T_E) ->
     {[@expl:extern_spec_core_result_T_E_Try_Result_T_E_from_output_body result type invariant] inv_Result_T_E result}
@@ -42416,10 +42394,15 @@ module M_std__ops__extern_spec_core_result_T_E_Try_Result_T_E_branch_body
     {[@expl:extern_spec_core_result_T_E_Try_Result_T_E_branch_body 'self_' type invariant] inv_Result_T_E self_}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self_ = Ok x0} (! bb4) | br1 (x0: t_E) -> {self_ = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self_} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_8 <- Err'0 e ] s2 | s2 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_ret <- Break _8 ] s1 | s1 = bb11 ]
-    | bb4 = s0 [ s0 = elim_Ok {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_ret <- Continue v ] s2 | s2 = bb11 ]
-    | bb11 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = elim_Err {self_} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      | s1 = [ &_8 <- Err'0 e ] s2
+      | s2 = [ &_ret <- Break _8 ] s3
+      | s3 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1)
+      | s1 = [ &_ret <- Continue v ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()
     | & self_: t_Result_T_E = self_
     | & v: t_T = Any.any_l ()
@@ -42566,9 +42549,8 @@ module M_std__ops__extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_
     [ bb0 = s0
       [ s0 = elim_Err {residual} (fun (r0: t_E) -> [ &e <- r0 ] s1)
       | s1 = from_F {e} (fun (_x: t_F) -> [ &_5 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- Err'0 _5 ] s1 | s1 = bb4 ]
-    | bb4 = return {_ret} ]
+      | s2 = [ &_ret <- Err'0 _5 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Result_T_F = Any.any_l ()
     | & residual: t_Result_Infallible_E = residual
     | & e: t_E = Any.any_l ()
@@ -42684,11 +42666,10 @@ module M_std__option__extern_spec_T_PartialEq_Option_T_eq_body
       [ s0 = elim_Some {_6.f0} (fun (r0: t_T) -> [ &x <- r0 ] s1)
       | s1 = elim_Some {_6.f1} (fun (r0: t_T) -> [ &y <- r0 ] s2)
       | s2 = eq_ref_T {x} {y} (fun (_x: bool) -> [ &_ret <- _x ] s3)
-      | s3 = bb9 ]
+      | s3 = return {_ret} ]
     | bb2 = any [ br0 -> {_6.f1 = None} (! bb7) | br1 (x0: t_T) -> {_6.f1 = Some x0} (! bb1) ]
-    | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb9 ]
-    | bb7 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb9 ]
-    | bb9 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb7 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Option_T = self_
     | & rhs: t_Option_T = rhs
@@ -42826,10 +42807,9 @@ module M_std__option__extern_spec_T_Clone_Option_T_clone_body
     | bb3 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &x <- r0 ] s1)
       | s1 = clone_T {x} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- Some _6 ] s1 | s1 = bb7 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+      | s2 = [ &_ret <- Some _6 ] s3
+      | s3 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & x: t_T = Any.any_l ()
@@ -42880,9 +42860,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_is_some_body
     {[@expl:extern_spec_std_option_T_Option_T_is_some_body 'self_' type invariant] inv_ref_Option_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
-    | bb4 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = bb5 ]
-    | bb3 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ] [ & _ret: bool = Any.any_l () | & self_: t_Option_T = self_ ])
+    | bb4 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self_: t_Option_T = self_ ])
     [ return (result: bool) -> {[@expl:extern_spec_std_option_T_Option_T_is_some_body ensures] result = (self_ <> None)}
       (! return {result}) ]
 end
@@ -42952,20 +42932,18 @@ module M_std__option__extern_spec_std_option_T_Option_T_is_some_and_body
       | Some t -> precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f t
       end}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
+    [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
     | bb4 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = [ &_13 <- t ] s2
       | s2 = call_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct {f} {_13}
           (fun (_x: bool) -> [ &_ret <- _x ] s3)
-      | s3 = bb11 ]
+      | s3 = return {_ret} ]
     | bb3 = s0
       [ s0 = {[@expl:type invariant] inv_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f} s1
       | s1 = -{resolve_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f}- s2
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb11 ]
-    | bb11 = return {_ret} ]
+      | s2 = [ &_ret <- false ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct = f
@@ -43017,8 +42995,10 @@ module M_std__option__extern_spec_std_option_T_Option_T_is_none_body
   let rec extern_spec_std_option_T_Option_T_is_none_body_T (self_: t_Option_T) (return (x: bool)) =
     {[@expl:extern_spec_std_option_T_Option_T_is_none_body 'self_' type invariant] inv_ref_Option_T self_}
     (! bb0
-    [ bb0 = s0 [ s0 = is_some_T {self_} (fun (_x: bool) -> [ &_6 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_ret <- not _6 ] s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = is_some_T {self_} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- not _6 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self_: t_Option_T = self_ | & _6: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_std_option_T_Option_T_is_none_body ensures] result = (self_ = None)}
       (! return {result}) ]
@@ -43086,9 +43066,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_ref_body
     {[@expl:extern_spec_std_option_T_Option_T_as_ref_body 'self_' type invariant] inv_ref_Option_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
-    | bb4 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Some'0 t ] s2 | s2 = bb5 ]
-    | bb3 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Some'0 t ] s2 | s2 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_ref_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_Option_ref_T) ->
     {[@expl:extern_spec_std_option_T_Option_T_as_ref_body result type invariant] inv_Option_ref_T result}
@@ -43304,8 +43284,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_slice_body
     | bb3 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = from_ref_T {t} (fun (_x: Slice64.slice t_T) -> [ &_10 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_4 <- _10 ] s1 | s1 = bb6 ]
+      | s2 = [ &_4 <- _10 ] s3
+      | s3 = bb6 ]
     | bb4 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -43481,22 +43461,20 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
             [ &_12 <- _bor ] -{inv_T _bor.final}-
             [ &t <- { t with current = _bor.final } ] s2)
       | s2 = from_mut_T {_12} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_11 <- _x ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv_slice_T _11.current}
+      | s3 = {inv_slice_T _11.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_5 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &_11 <- { _11 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_slice_T _11} s2
-      | s2 = -{resolve_ref_slice_T _11}- s3
-      | s3 = {[@expl:type invariant] inv_ref_T t} s4
-      | s4 = -{resolve_ref_T t}- s5
-      | s5 = bb6 ]
+            [ &_11 <- { _11 with current = _bor.final } ] s4)
+      | s4 = {[@expl:type invariant] inv_ref_slice_T _11} s5
+      | s5 = -{resolve_ref_slice_T _11}- s6
+      | s6 = {[@expl:type invariant] inv_ref_T t} s7
+      | s7 = -{resolve_ref_T t}- s8
+      | s8 = bb6 ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = bb0'0
+      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
+      | s1 = -{resolve_ref_Option_T self_}- s2
+      | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
             [ any_ (__arr_temp: Slice64.array t_T) -> (! -{Seq.length __arr_temp.Slice64.elts = 0}-
@@ -43508,23 +43486,23 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
                 [ &_1 <- _bor.final ] s2'0)
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: MutBorrow.t (Slice64.array t_T) = Any.any_l () | & _1: Slice64.array t_T = Any.any_l () ]
-        [ _const_ret (_const: MutBorrow.t (Slice64.array t_T)) -> [ &_13 <- _const ] s1 ]
-      | s1 = {inv_array_T_0 _13.current}
+        [ _const_ret (_const: MutBorrow.t (Slice64.array t_T)) -> [ &_13 <- _const ] s3 ]
+      | s3 = {inv_array_T_0 _13.current}
         MutBorrow.borrow_final <Slice64.array t_T> {_13.current} {MutBorrow.get_id _13}
           (fun (_bor: MutBorrow.t (Slice64.array t_T)) ->
             [ &_8 <- _bor ] -{inv_array_T_0 _bor.final}-
-            [ &_13 <- { _13 with current = _bor.final } ] s2)
-      | s2 = {inv_array_T_0 _8.current}
+            [ &_13 <- { _13 with current = _bor.final } ] s4)
+      | s4 = {inv_array_T_0 _8.current}
         MutBorrow.borrow_final <Slice64.array t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t (Slice64.array t_T)) ->
             [ &_7 <- _bor ] -{inv_array_T_0 _bor.final}-
-            [ &_8 <- { _8 with current = _bor.final } ] s3)
-      | s3 = [ &_5 <- _7 ] s4
-      | s4 = {[@expl:type invariant] inv_ref_array_T_0 _8} s5
-      | s5 = -{resolve_ref_array_T_0 _8}- s6
-      | s6 = bb8 ]
-    | bb8 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_array_T_0 _13} s1 | s1 = -{resolve_ref_array_T_0 _13}- s2 | s2 = bb6 ]
+            [ &_8 <- { _8 with current = _bor.final } ] s5)
+      | s5 = [ &_5 <- _7 ] s6
+      | s6 = {[@expl:type invariant] inv_ref_array_T_0 _8} s7
+      | s7 = -{resolve_ref_array_T_0 _8}- s8
+      | s8 = {[@expl:type invariant] inv_ref_array_T_0 _13} s9
+      | s9 = -{resolve_ref_array_T_0 _13}- s10
+      | s10 = bb6 ]
     | bb6 = s0
       [ s0 = {inv_slice_T _5.current}
         MutBorrow.borrow_final <Slice64.slice t_T> {_5.current} {MutBorrow.get_id _5}
@@ -43603,8 +43581,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_expect_body
     {[@expl:extern_spec_std_option_T_Option_T_expect_body requires] self_ <> None}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb6 ]
-    | bb6 = return {_ret}
+    | bb3 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
     | bb4 = {false} any ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_option_T_Option_T_expect_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_option_T_Option_T_expect_body ensures] Some result = self_}
@@ -43648,8 +43626,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_unwrap_body
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_body requires] self_ <> None}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb6 ]
-    | bb6 = return {_ret}
+    | bb3 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
     | bb4 = {false} any ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:extern_spec_std_option_T_Option_T_unwrap_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_option_T_Option_T_unwrap_body ensures] Some result = self_}
@@ -43694,12 +43672,14 @@ module M_std__option__extern_spec_std_option_T_Option_T_unwrap_or_body
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_body 'self_' type invariant] inv_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_body 'default' type invariant] inv_T default}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv_T default} s1 | s1 = -{resolve_T default}- s2 | s2 = bb5 ]
-    | bb5 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb9 ]
-    | bb4 = s0 [ s0 = [ &_ret <- default ] s1 | s1 = bb9 ]
-    | bb9 = return {_ret} ]
+    [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv_T default} s1
+      | s1 = -{resolve_T default}- s2
+      | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
+      | s3 = [ &_ret <- t ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- default ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & default: t_T = default | & t: t_T = Any.any_l () ])
     [ return (result: t_T) ->
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_body result type invariant] inv_T result}
@@ -43760,12 +43740,14 @@ module M_std__option__extern_spec_std_option_T_Option_T_unwrap_or_else_body
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_else_body 'f' type invariant] inv_F f}
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_else_body requires] self_ = None -> precondition_F f ()}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb5 ]
-    | bb5 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb10 ]
-    | bb4 = s0 [ s0 = call_once_F {f} {_13} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+    [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
+      | s3 = [ &_ret <- t ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = call_once_F {f} {_13} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: t_F = f
@@ -43884,11 +43866,11 @@ module M_std__option__extern_spec_std_option_T_Option_T_unwrap_or_default_body
   let rec extern_spec_std_option_T_Option_T_unwrap_or_default_body_T (self_: t_Option_T) (return (x: t_T)) =
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_default_body 'self_' type invariant] inv_Option_T self_}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb5) ]
-    | bb5 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb8 ]
-    | bb4 = s0 [ s0 = default_T (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = bb8 ]
-    | bb8 = return {_ret} ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
+    [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb5) ]
+    | bb5 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
+    | bb4 = s0 [ s0 = default_T (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_T) ->
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_default_body result type invariant] inv_T result}
       {[@expl:extern_spec_std_option_T_Option_T_unwrap_or_default_body ensures #0] self_ = None
@@ -43934,8 +43916,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_unwrap_unchecked_body
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_unchecked_body requires] self_ <> None}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = bb6 ]
-    | bb6 = return {_ret}
+    | bb3 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
     | bb4 = {false} any ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_T) ->
     {[@expl:extern_spec_std_option_T_Option_T_unwrap_unchecked_body result type invariant] inv_T result}
@@ -44016,17 +43998,18 @@ module M_std__option__extern_spec_std_option_T_Option_T_map_body
       | Some t -> precondition_F f t
       end}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb5) ]
+    [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb5) ]
     | bb5 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = [ &_14 <- t ] s2
       | s2 = call_once_F {f} {_14} (fun (_x: t_U) -> [ &_12 <- _x ] s3)
-      | s3 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_ret <- Some'0 _12 ] s1 | s1 = bb12 ]
+      | s3 = [ &_ret <- Some'0 _12 ] s4
+      | s4 = return {_ret} ]
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = [ &_ret <- None'0 ] s3 | s3 = bb12 ]
-    | bb12 = return {_ret} ]
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = [ &_ret <- None'0 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_U = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: t_F = f
@@ -44115,11 +44098,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_inspect_body
       | s1 = [ &_17 <- t ] s2
       | s2 = [ &_15 <- _17 ] s3
       | s3 = call_once_F {f} {_15} (fun (_x: ()) -> [ &_13 <- _x ] s4)
-      | s4 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = bb10 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+      | s4 = [ &_ret <- Some t ] s5
+      | s5 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = [ &_ret <- None ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: t_F = f
@@ -44211,10 +44196,12 @@ module M_std__option__extern_spec_std_option_T_Option_T_map_or_body
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_14 <- t ] s4
       | s4 = call_once_F {f} {_14} (fun (_x: t_U) -> [ &_ret <- _x ] s5)
-      | s5 = bb11 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- default ] s1 | s1 = bb11 ]
-    | bb11 = return {_ret} ]
+      | s5 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = [ &_ret <- default ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_U = Any.any_l ()
     | & self_: t_Option_T = self_
     | & default: t_U = default
@@ -44315,10 +44302,12 @@ module M_std__option__extern_spec_std_option_T_Option_T_map_or_else_body
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_17 <- t ] s4
       | s4 = call_once_F {f} {_17} (fun (_x: t_U) -> [ &_ret <- _x ] s5)
-      | s5 = bb12 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = call_once_D {default} {_14} (fun (_x: t_U) -> [ &_ret <- _x ] s1) | s1 = bb12 ]
-    | bb12 = return {_ret} ]
+      | s5 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = call_once_D {default} {_14} (fun (_x: t_U) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
     [ & _ret: t_U = Any.any_l ()
     | & self_: t_Option_T = self_
     | & default: t_D = default
@@ -44393,9 +44382,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_ok_or_body
       | s1 = -{resolve_E err}- s2
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_ret <- Ok t ] s4
-      | s4 = bb10 ]
-    | bb4 = s0 [ s0 = [ &_ret <- Err err ] s1 | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- Err err ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Result_T_E = Any.any_l () | & self_: t_Option_T = self_ | & err: t_E = err | & t: t_T = Any.any_l () ])
     [ return (result: t_Result_T_E) ->
     {[@expl:extern_spec_std_option_T_Option_T_ok_or_body result type invariant] inv_Result_T_E result}
@@ -44478,10 +44466,11 @@ module M_std__option__extern_spec_std_option_T_Option_T_ok_or_else_body
       | s1 = -{resolve_F err}- s2
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_ret <- Ok t ] s4
-      | s4 = bb11 ]
-    | bb4 = s0 [ s0 = call_once_F {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- Err _10 ] s1 | s1 = bb11 ]
-    | bb11 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = call_once_F {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s1)
+      | s1 = [ &_ret <- Err _10 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: t_Result_T_E = Any.any_l ()
     | & self_: t_Option_T = self_
     | & err: t_F = err
@@ -44564,15 +44553,14 @@ module M_std__option__extern_spec_std_option_T_Option_T_and_body
       [ s0 = {[@expl:type invariant] inv_Option_T self_} s1
       | s1 = -{resolve_Option_T self_}- s2
       | s2 = [ &_ret <- optb ] s3
-      | s3 = bb7 ]
+      | s3 = return {_ret} ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_Option_U optb} s1
       | s1 = -{resolve_Option_U optb}- s2
       | s2 = {[@expl:type invariant] inv_Option_T self_} s3
       | s3 = -{resolve_Option_T self_}- s4
-      | s4 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_U = Any.any_l () | & self_: t_Option_T = self_ | & optb: t_Option_U = optb ])
     [ return (result: t_Option_U) ->
     {[@expl:extern_spec_std_option_T_Option_T_and_body result type invariant] inv_Option_U result}
@@ -44663,10 +44651,12 @@ module M_std__option__extern_spec_std_option_T_Option_T_and_then_body
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = [ &_12 <- t ] s2
       | s2 = call_once_F {f} {_12} (fun (_x: t_Option_U) -> [ &_ret <- _x ] s3)
-      | s3 = bb10 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+      | s3 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_F f} s1
+      | s1 = -{resolve_F f}- s2
+      | s2 = [ &_ret <- None'0 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_U = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: t_F = f
@@ -44758,14 +44748,18 @@ module M_std__option__extern_spec_std_option_T_Option_T_filter_body
       | s1 = [ &_15 <- t ] s2
       | s2 = [ &_13 <- _15 ] s3
       | s3 = call_once_P {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
-      | s4 = bb5 ]
-    | bb5 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = bb14 ]
-    | bb8 = s0 [ s0 = {[@expl:type invariant] inv_T t} s1 | s1 = -{resolve_T t}- s2 | s2 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb14 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_P predicate'} s1 | s1 = -{resolve_P predicate'}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb14 ]
-    | bb14 = return {_ret} ]
+      | s4 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = return {_ret} ]
+    | bb8 = s0
+      [ s0 = {[@expl:type invariant] inv_T t} s1
+      | s1 = -{resolve_T t}- s2
+      | s2 = [ &_ret <- None ] s3
+      | s3 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = {[@expl:type invariant] inv_P predicate'} s1
+      | s1 = -{resolve_P predicate'}- s2
+      | s2 = [ &_ret <- None ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & predicate': t_P = predicate'
@@ -44837,9 +44831,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_or_body
       | s1 = -{resolve_Option_T optb}- s2
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_ret <- Some t ] s4
-      | s4 = bb9 ]
-    | bb4 = s0 [ s0 = [ &_ret <- optb ] s1 | s1 = bb9 ]
-    | bb9 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- optb ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & optb: t_Option_T = optb
@@ -44911,9 +44904,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_or_else_body
       | s1 = -{resolve_F f}- s2
       | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
       | s3 = [ &_ret <- Some t ] s4
-      | s4 = bb10 ]
-    | bb4 = s0 [ s0 = call_once_F {f} {_11} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s1) | s1 = bb10 ]
-    | bb10 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = call_once_F {f} {_11} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & f: t_F = f
@@ -44976,8 +44968,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_xor_body
     {[@expl:extern_spec_std_option_T_Option_T_xor_body 'self_' type invariant] inv_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_xor_body 'optb' type invariant] inv_Option_T optb}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- { f0 = self_; f1 = optb } ] s1 | s1 = bb2 ]
-    | bb2 = any [ br0 -> {_6.f0 = None} (! bb6) | br1 (x0: t_T) -> {_6.f0 = Some x0} (! bb4) ]
+    [ bb0 = s0
+      [ s0 = [ &_6 <- { f0 = self_; f1 = optb } ] s1
+      | s1 = any [ br0 -> {_6.f0 = None} (! bb6) | br1 (x0: t_T) -> {_6.f0 = Some x0} (! bb4) ] ]
     | bb4 = s0
       [ s0 = {[@expl:type invariant] inv_Option_T _6.f1} s1
       | s1 = -{resolve_Option_T _6.f1}- s2
@@ -45008,10 +45001,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_xor_body
           end}-
         s2
       | s2 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb16 ]
+    | bb3 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ]
     | bb8 = s0 [ s0 = elim_Some {_6.f1} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = bb16 ]
-    | bb16 = return {_ret} ]
+    | bb10 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_T = self_
     | & optb: t_Option_T = optb
@@ -45101,13 +45093,12 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
     {[@expl:extern_spec_std_option_T_Option_T_insert_body 'self_' type invariant] inv_ref_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_insert_body 'value' type invariant] inv_T value}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_9 <- Some value ] s1 | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_Option_T self_.current} s1
-      | s1 = -{resolve_Option_T self_.current}- s2
-      | s2 = [ &self_ <- { self_ with current = _9 } ] s3
-      | s3 = bb4 ]
-    | bb4 = any [ br0 -> {self_.current = None} (! bb6) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb7) ]
+    [ bb0 = s0
+      [ s0 = [ &_9 <- Some value ] s1
+      | s1 = {[@expl:type invariant] inv_Option_T self_.current} s2
+      | s2 = -{resolve_Option_T self_.current}- s3
+      | s3 = [ &self_ <- { self_ with current = _9 } ] s4
+      | s4 = any [ br0 -> {self_.current = None} (! bb6) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb7) ] ]
     | bb7 = s0
       [ s0 = elim_Some {self_.current}
           (fun (r0: t_T) ->
@@ -45137,14 +45128,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
             [ &_3 <- { _3 with current = _bor.final } ] s8)
       | s8 = {[@expl:type invariant] inv_ref_T _3} s9
       | s9 = -{resolve_ref_T _3}- s10
-      | s10 = bb9 ]
-    | bb9 = s0
+      | s10 = {[@expl:type invariant] inv_ref_Option_T self_} s11
+      | s11 = -{resolve_ref_Option_T self_}- s12
+      | s12 = return {_ret} ]
+    | bb6 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
       | s1 = -{resolve_ref_Option_T self_}- s2
-      | s2 = return {_ret} ]
-    | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb8 ]
-    | bb8 = {false} any ]
+      | s2 = {false} any ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & value: t_T = value
@@ -45238,12 +45228,12 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
     (! bb0
     [ bb0 = any [ br0 -> {self_.current = None} (! bb4) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb3) ]
     | bb3 = s0 [ s0 = {[@expl:type invariant] inv_T value} s1 | s1 = -{resolve_T value}- s2 | s2 = bb9 ]
-    | bb4 = s0 [ s0 = [ &_9 <- Some value ] s1 | s1 = bb6 ]
-    | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv_Option_T self_.current} s1
-      | s1 = -{resolve_Option_T self_.current}- s2
-      | s2 = [ &self_ <- { self_ with current = _9 } ] s3
-      | s3 = bb9 ]
+    | bb4 = s0
+      [ s0 = [ &_9 <- Some value ] s1
+      | s1 = {[@expl:type invariant] inv_Option_T self_.current} s2
+      | s2 = -{resolve_Option_T self_.current}- s3
+      | s3 = [ &self_ <- { self_ with current = _9 } ] s4
+      | s4 = bb9 ]
     | bb9 = any [ br0 -> {self_.current = None} (! bb11) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb12) ]
     | bb12 = s0
       [ s0 = elim_Some {self_.current}
@@ -45274,14 +45264,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
             [ &_3 <- { _3 with current = _bor.final } ] s8)
       | s8 = {[@expl:type invariant] inv_ref_T _3} s9
       | s9 = -{resolve_ref_T _3}- s10
-      | s10 = bb14 ]
-    | bb14 = s0
+      | s10 = {[@expl:type invariant] inv_ref_Option_T self_} s11
+      | s11 = -{resolve_ref_Option_T self_}- s12
+      | s12 = return {_ret} ]
+    | bb11 = s0
       [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
       | s1 = -{resolve_ref_Option_T self_}- s2
-      | s2 = return {_ret} ]
-    | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb13 ]
-    | bb13 = {false} any ]
+      | s2 = {false} any ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & value: t_T = value
@@ -45431,38 +45420,34 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
       | s4 = {[@expl:type invariant] inv_ref_T t} s5
       | s5 = -{resolve_ref_T t}- s6
       | s6 = bb12 ]
-    | bb4 = s0 [ s0 = call_once_F {f} {_16} (fun (_x: t_T) -> [ &_14 <- _x ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_13 <- Some _14 ] s1 | s1 = bb7 ]
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv_Option_T self_.current} s1
-      | s1 = -{resolve_Option_T self_.current}- s2
-      | s2 = [ &self_ <- { self_ with current = _13 } ] s3
-      | s3 = bb9 ]
-    | bb9 = s0
-      [ s0 = {inv_Option_T self_.current}
+    | bb4 = s0
+      [ s0 = call_once_F {f} {_16} (fun (_x: t_T) -> [ &_14 <- _x ] s1)
+      | s1 = [ &_13 <- Some _14 ] s2
+      | s2 = {[@expl:type invariant] inv_Option_T self_.current} s3
+      | s3 = -{resolve_Option_T self_.current}- s4
+      | s4 = [ &self_ <- { self_ with current = _13 } ] s5
+      | s5 = {inv_Option_T self_.current}
         MutBorrow.borrow_final <t_Option_T> {self_.current} {MutBorrow.get_id self_}
           (fun (_bor: MutBorrow.t t_Option_T) ->
             [ &_19 <- _bor ] -{inv_Option_T _bor.final}-
-            [ &self_ <- { self_ with current = _bor.final } ] s1)
-      | s1 = as_mut_T {_19} (fun (_x: t_Option_ref_T) -> [ &_18 <- _x ] s2)
-      | s2 = bb10 ]
-    | bb10 = s0 [ s0 = unwrap_ref_T {_18} (fun (_x: MutBorrow.t t_T) -> [ &_17 <- _x ] s1) | s1 = bb11 ]
-    | bb11 = s0
-      [ s0 = {inv_T _17.current}
+            [ &self_ <- { self_ with current = _bor.final } ] s6)
+      | s6 = as_mut_T {_19} (fun (_x: t_Option_ref_T) -> [ &_18 <- _x ] s7)
+      | s7 = unwrap_ref_T {_18} (fun (_x: MutBorrow.t t_T) -> [ &_17 <- _x ] s8)
+      | s8 = {inv_T _17.current}
         MutBorrow.borrow_final <t_T> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_12 <- _bor ] -{inv_T _bor.final}-
-            [ &_17 <- { _17 with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T _17} s2
-      | s2 = -{resolve_ref_T _17}- s3
-      | s3 = {inv_T _12.current}
+            [ &_17 <- { _17 with current = _bor.final } ] s9)
+      | s9 = {[@expl:type invariant] inv_ref_T _17} s10
+      | s10 = -{resolve_ref_T _17}- s11
+      | s11 = {inv_T _12.current}
         MutBorrow.borrow_final <t_T> {_12.current} {MutBorrow.get_id _12}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_10 <- _bor ] -{inv_T _bor.final}-
-            [ &_12 <- { _12 with current = _bor.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_T _12} s5
-      | s5 = -{resolve_ref_T _12}- s6
-      | s6 = bb12 ]
+            [ &_12 <- { _12 with current = _bor.final } ] s12)
+      | s12 = {[@expl:type invariant] inv_ref_T _12} s13
+      | s13 = -{resolve_ref_T _12}- s14
+      | s14 = bb12 ]
     | bb12 = s0
       [ s0 = {inv_T _10.current}
         MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
@@ -45478,11 +45463,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
             [ &_3 <- { _3 with current = _bor.final } ] s4)
       | s4 = {[@expl:type invariant] inv_ref_T _3} s5
       | s5 = -{resolve_ref_T _3}- s6
-      | s6 = bb13 ]
-    | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
-      | s1 = -{resolve_ref_Option_T self_}- s2
-      | s2 = return {_ret} ] ]
+      | s6 = {[@expl:type invariant] inv_ref_Option_T self_} s7
+      | s7 = -{resolve_ref_Option_T self_}- s8
+      | s8 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & f: t_F = f
@@ -45563,11 +45546,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_body
             [ &_4 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s2)
       | s2 = replace_Option_T {_4} {_5} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
-      | s1 = -{resolve_ref_Option_T self_}- s2
-      | s2 = return {_ret} ] ]
+      | s3 = {[@expl:type invariant] inv_ref_Option_T self_} s4
+      | s4 = -{resolve_ref_Option_T self_}- s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & _4: MutBorrow.t t_Option_T = Any.any_l ()
@@ -45688,11 +45669,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
             [ &t <- { t with current = _bor.final } ] s2)
       | s2 = [ &_13 <- _14 ] s3
       | s3 = call_once_P {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
-      | s4 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_T t} s1
-      | s1 = -{resolve_ref_T t}- s2
-      | s2 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
+      | s4 = {[@expl:type invariant] inv_ref_T t} s5
+      | s5 = -{resolve_ref_T t}- s6
+      | s6 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
       [ s0 = {inv_Option_T self_.current}
         MutBorrow.borrow_final <t_Option_T> {self_.current} {MutBorrow.get_id self_}
@@ -45700,20 +45679,21 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
             [ &_15 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s1)
       | s1 = take_T {_15} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = bb7 ]
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb12 ]
+      | s2 = {[@expl:type invariant] inv_ref_Option_T self_} s3
+      | s3 = -{resolve_ref_Option_T self_}- s4
+      | s4 = return {_ret} ]
     | bb8 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb12 ]
+      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1
+      | s1 = -{resolve_ref_Option_T self_}- s2
+      | s2 = [ &_ret <- None ] s3
+      | s3 = return {_ret} ]
     | bb2 = s0
       [ s0 = {[@expl:type invariant] inv_P predicate'} s1
       | s1 = -{resolve_P predicate'}- s2
       | s2 = {[@expl:type invariant] inv_ref_Option_T self_} s3
       | s3 = -{resolve_ref_Option_T self_}- s4
-      | s4 = bb4 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb12 ]
-    | bb12 = return {_ret} ]
+      | s4 = [ &_ret <- None ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & predicate': t_P = predicate'
@@ -45790,18 +45770,17 @@ module M_std__option__extern_spec_std_option_T_Option_T_replace_body
     {[@expl:extern_spec_std_option_T_Option_T_replace_body 'self_' type invariant] inv_ref_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_replace_body 'value' type invariant] inv_T value}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_7 <- Some value ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Option_T self_.current}
+    [ bb0 = s0
+      [ s0 = [ &_7 <- Some value ] s1
+      | s1 = {inv_Option_T self_.current}
         MutBorrow.borrow_final <t_Option_T> {self_.current} {MutBorrow.get_id self_}
           (fun (_bor: MutBorrow.t t_Option_T) ->
             [ &_6 <- _bor ] -{inv_Option_T _bor.final}-
-            [ &self_ <- { self_ with current = _bor.final } ] s1)
-      | s1 = replace_Option_T {_6} {_7} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Option_T self_} s1 | s1 = -{resolve_ref_Option_T self_}- s2 | s2 = bb3 ]
-    | bb3 = return {_ret} ]
+            [ &self_ <- { self_ with current = _bor.final } ] s2)
+      | s2 = replace_Option_T {_6} {_7} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
+      | s3 = {[@expl:type invariant] inv_ref_Option_T self_} s4
+      | s4 = -{resolve_ref_Option_T self_}- s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & value: t_T = value
@@ -45911,8 +45890,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_zip_body
     {[@expl:extern_spec_std_option_T_Option_T_zip_body 'self_' type invariant] inv_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_zip_body 'other' type invariant] inv_Option_U other}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_6 <- { f0 = self_; f1 = other } ] s1 | s1 = bb2 ]
-    | bb2 = any [ br0 -> {_6.f0 = None} (! bb25) | br1 (x0: t_T) -> {_6.f0 = Some x0} (! bb4) ]
+    [ bb0 = s0
+      [ s0 = [ &_6 <- { f0 = self_; f1 = other } ] s1
+      | s1 = any [ br0 -> {_6.f0 = None} (! bb25) | br1 (x0: t_T) -> {_6.f0 = Some x0} (! bb4) ] ]
     | bb25 = s0
       [ s0 = {[@expl:type invariant] inv_Option_U _6.f1} s1
       | s1 = -{resolve_Option_U _6.f1}- s2
@@ -45950,14 +45930,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_zip_body
           end}-
         s4
       | s4 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_ret <- None'1 ] s1 | s1 = bb15 ]
+    | bb3 = s0 [ s0 = [ &_ret <- None'1 ] s1 | s1 = return {_ret} ]
     | bb6 = s0
       [ s0 = elim_Some {_6.f0} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = elim_Some'0 {_6.f1} (fun (r0: t_U) -> [ &u <- r0 ] s2)
       | s2 = [ &_13 <- { f0'0 = t; f1'0 = u } ] s3
-      | s3 = bb8 ]
-    | bb8 = s0 [ s0 = [ &_ret <- Some'1 _13 ] s1 | s1 = bb15 ]
-    | bb15 = return {_ret} ]
+      | s3 = [ &_ret <- Some'1 _13 ] s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_T_U = Any.any_l ()
     | & self_: t_Option_T = self_
     | & other: t_Option_U = other
@@ -46053,15 +46032,14 @@ module M_std__option__extern_spec_std_option_T_U_Option_tuple2_T_U_unzip_body
       [ s0 = elim_Some {self_} (fun (r0: tup2_T_U) -> [ &t <- r0.f0 ] s1)
       | s1 = elim_Some {self_} (fun (r0: tup2_T_U) -> [ &u <- r0.f1 ] s2)
       | s2 = [ &_7 <- Some'0 t ] s3
-      | s3 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_9 <- Some'1 u ] s1 | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- { f0'0 = _7; f1'0 = _9 } ] s1 | s1 = bb14 ]
+      | s3 = [ &_9 <- Some'1 u ] s4
+      | s4 = [ &_ret <- { f0'0 = _7; f1'0 = _9 } ] s5
+      | s5 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &_11 <- None'0 ] s1
       | s1 = [ &_12 <- None'1 ] s2
       | s2 = [ &_ret <- { f0'0 = _11; f1'0 = _12 } ] s3
-      | s3 = bb14 ]
-    | bb14 = return {_ret} ]
+      | s3 = return {_ret} ] ]
     [ & _ret: tup2_Option_T_Option_U = Any.any_l ()
     | & self_: t_Option_tup2_T_U = self_
     | & t: t_T = Any.any_l ()
@@ -46133,9 +46111,9 @@ module M_std__option__extern_spec_std_option_T_Option_ref_T_copied_body
     {[@expl:extern_spec_std_option_T_Option__ref_T_copied_body 'self_' type invariant] inv_Option_ref_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Some'0 t ] s2 | s2 = bb5 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Some'0 t ] s2 | s2 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_ref_T = self_ | & t: t_T = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@expl:extern_spec_std_option_T_Option__ref_T_copied_body result type invariant] inv_Option_T result}
@@ -46274,10 +46252,9 @@ module M_std__option__extern_spec_std_option_T_Option_ref_T_cloned_body
     | bb3 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
       | s1 = clone_T {t} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- Some'0 _6 ] s1 | s1 = bb7 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+      | s2 = [ &_ret <- Some'0 _6 ] s3
+      | s3 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_ref_T = self_
     | & t: t_T = Any.any_l ()
@@ -46356,9 +46333,8 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_copied_body
       | s1 = {[@expl:type invariant] inv_ref_T t} s2
       | s2 = -{resolve_ref_T t}- s3
       | s3 = [ &_ret <- Some'0 (t.current) ] s4
-      | s4 = bb5 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb5 ]
-    | bb5 = return {_ret} ]
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_ref_T = self_ | & t: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@expl:extern_spec_std_option_T_Option__refmut_T_copied_body result type invariant] inv_Option_T result}
@@ -46512,10 +46488,9 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
       | s1 = {[@expl:type invariant] inv_ref_T t} s2
       | s2 = -{resolve_ref_T t}- s3
       | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
-      | s4 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_ret <- Some'0 _6 ] s1 | s1 = bb7 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+      | s4 = [ &_ret <- Some'0 _6 ] s5
+      | s5 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: t_Option_ref_T = self_
     | & t: MutBorrow.t t_T = Any.any_l ()
@@ -46623,14 +46598,13 @@ module M_std__option__extern_spec_std_option_T_E_Option_Result_T_E_transpose_bod
     | bb5 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Err {r0} (fun (r0'0: t_E) -> [ &err <- r0'0 ] s1))
       | s1 = [ &_ret <- Err'0 err ] s2
-      | s2 = bb15 ]
+      | s2 = return {_ret} ]
     | bb6 = s0
       [ s0 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Ok {r0} (fun (r0'0: t_T) -> [ &ok <- r0'0 ] s1))
       | s1 = [ &_8 <- Some'0 ok ] s2
-      | s2 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_ret <- Ok'0 _8 ] s1 | s1 = bb15 ]
-    | bb7 = s0 [ s0 = [ &_6 <- None'0 ] s1 | s1 = [ &_ret <- Ok'0 _6 ] s2 | s2 = bb15 ]
-    | bb15 = return {_ret} ]
+      | s2 = [ &_ret <- Ok'0 _8 ] s3
+      | s3 = return {_ret} ]
+    | bb7 = s0 [ s0 = [ &_6 <- None'0 ] s1 | s1 = [ &_ret <- Ok'0 _6 ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_Result_Option_T_E = Any.any_l ()
     | & self_: t_Option_Result_T_E = self_
     | & _6: t_Option_T = Any.any_l ()
@@ -46694,9 +46668,10 @@ module M_std__option__extern_spec_std_option_T_Option_Option_T_flatten_body
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None'0} (! bb4) | br1 (x0: t_Option_T) -> {self_ = Some'0 x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = elim_Some {self_} (fun (r0: t_Option_T) -> [ &opt <- r0 ] s1) | s1 = [ &_ret <- opt ] s2 | s2 = bb7 ]
-    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb7 ]
-    | bb7 = return {_ret} ]
+      [ s0 = elim_Some {self_} (fun (r0: t_Option_T) -> [ &opt <- r0 ] s1)
+      | s1 = [ &_ret <- opt ] s2
+      | s2 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_Option_T = self_ | & opt: t_Option_T = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@expl:extern_spec_std_option_T_Option_Option_T_flatten_body result type invariant] inv_Option_T result}
@@ -47728,9 +47703,10 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_T__ptrconst_T_is_aligned_body_T (self_: Opaque.ptr) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = is_aligned_to_T {self_} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1)
+      | s1 = is_aligned_to_T {self_} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self_: Opaque.ptr = self_ | & _7: UInt64.t = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_T__ptrconst_T_is_aligned_body ensures] result
       = is_aligned_ptr_T self_}
@@ -47842,14 +47818,15 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
     {[@expl:extern_spec_T__ptrconst_T_is_aligned_to_body requires] align <> (0: UInt64BW.t)
     /\ UInt64BW.bw_and align (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ]
-    | bb2 = s0 [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1) | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s1)
-      | s1 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s2
-      | s2 = [ &_ret <- _21 = (0: UInt64BW.t) ] s3
-      | s3 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1)
+      | s1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1)
+      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s2)
+      | s2 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s3
+      | s3 = [ &_ret <- _21 = (0: UInt64BW.t) ] s4
+      | s4 = return {_ret} ]
     | bb3 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -47864,8 +47841,7 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
         [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
       | s1 = [ &_19 <- _26 ] s2
       | s2 = new_const {_19} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s3)
-      | s3 = bb4 ]
-    | bb4 = {false} any ]
+      | s3 = {false} any ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
@@ -47947,9 +47923,10 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_T__ptrmut_T_is_aligned_body_T (self_: Opaque.ptr) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = is_aligned_to_T {self_} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = bb2 ]
-    | bb2 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1)
+      | s1 = is_aligned_to_T {self_} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self_: Opaque.ptr = self_ | & _7: UInt64.t = Any.any_l () ])
     [ return (result: bool) -> {[@expl:extern_spec_T__ptrmut_T_is_aligned_body ensures] result = is_aligned_ptr_T self_}
       (! return {result}) ]
@@ -48060,14 +48037,15 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
     {[@expl:extern_spec_T__ptrmut_T_is_aligned_to_body requires] align <> (0: UInt64BW.t)
     /\ UInt64BW.bw_and align (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ]
-    | bb2 = s0 [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1) | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s1)
-      | s1 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s2
-      | s2 = [ &_ret <- _21 = (0: UInt64BW.t) ] s3
-      | s3 = return {_ret} ]
+    [ bb0 = s0
+      [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1)
+      | s1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1)
+      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s2)
+      | s2 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s3
+      | s3 = [ &_ret <- _21 = (0: UInt64BW.t) ] s4
+      | s4 = return {_ret} ]
     | bb3 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -48082,8 +48060,7 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
         [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
       | s1 = [ &_19 <- _26 ] s2
       | s2 = new_const {_19} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s3)
-      | s3 = bb4 ]
-    | bb4 = {false} any ]
+      | s3 = {false} any ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
@@ -48165,9 +48142,8 @@ module M_std__range__extern_spec_T_From_Range_T_legacy_Range_T_from_body
   let rec extern_spec_T_From_Range_T_legacy_Range_T_from_body_T (value: t_Range_T) (return (x: t_Range_T'0)) =
     {[@expl:extern_spec_T_From_Range_T_legacy_Range_T_from_body 'value' type invariant] inv_Range_T value}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = [ &_ret <- { start'0 = value.start; end''0 = value.end' } ] s1 | s1 = bb4 ]
-    | bb4 = return {_ret} ] [ & _ret: t_Range_T'0 = Any.any_l () | & value: t_Range_T = value ])
+    [ bb0 = s0 [ s0 = [ &_ret <- { start'0 = value.start; end''0 = value.end' } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Range_T'0 = Any.any_l () | & value: t_Range_T = value ])
     [ return (result: t_Range_T'0) ->
     {[@expl:extern_spec_T_From_Range_T_legacy_Range_T_from_body result type invariant] inv_Range_T'0 result}
       {[@expl:extern_spec_T_From_Range_T_legacy_Range_T_from_body ensures] result
@@ -48205,9 +48181,8 @@ module M_std__range__extern_spec_T_From_legacy_Range_T_Range_T_from_body
   let rec extern_spec_T_From_legacy_Range_T_Range_T_from_body_T (value: t_Range_T) (return (x: t_Range_T'0)) =
     {[@expl:extern_spec_T_From_legacy_Range_T_Range_T_from_body 'value' type invariant] inv_Range_T value}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = [ &_ret <- { start'0 = value.start; end''0 = value.end' } ] s1 | s1 = bb4 ]
-    | bb4 = return {_ret} ] [ & _ret: t_Range_T'0 = Any.any_l () | & value: t_Range_T = value ])
+    [ bb0 = s0 [ s0 = [ &_ret <- { start'0 = value.start; end''0 = value.end' } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Range_T'0 = Any.any_l () | & value: t_Range_T = value ])
     [ return (result: t_Range_T'0) ->
     {[@expl:extern_spec_T_From_legacy_Range_T_Range_T_from_body result type invariant] inv_Range_T'0 result}
       {[@expl:extern_spec_T_From_legacy_Range_T_Range_T_from_body ensures] result
@@ -48245,7 +48220,7 @@ module M_std__range__extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body
     (return (x: t_RangeFrom_T'0)) =
     {[@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body 'value' type invariant] inv_RangeFrom_T value}
     (! bb0
-    [ bb0 = bb1 | bb1 = s0 [ s0 = [ &_ret <- { start'0 = value.start } ] s1 | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- { start'0 = value.start } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_RangeFrom_T'0 = Any.any_l () | & value: t_RangeFrom_T = value ])
     [ return (result: t_RangeFrom_T'0) ->
     {[@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body result type invariant] inv_RangeFrom_T'0 result}
@@ -48283,7 +48258,7 @@ module M_std__range__extern_spec_T_From_legacy_RangeFrom_T_RangeFrom_T_from_body
     (return (x: t_RangeFrom_T'0)) =
     {[@expl:extern_spec_T_From_legacy_RangeFrom_T_RangeFrom_T_from_body 'value' type invariant] inv_RangeFrom_T value}
     (! bb0
-    [ bb0 = bb1 | bb1 = s0 [ s0 = [ &_ret <- { start'0 = value.start } ] s1 | s1 = bb3 ] | bb3 = return {_ret} ]
+    [ bb0 = s0 [ s0 = [ &_ret <- { start'0 = value.start } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_RangeFrom_T'0 = Any.any_l () | & value: t_RangeFrom_T = value ])
     [ return (result: t_RangeFrom_T'0) ->
     {[@expl:extern_spec_T_From_legacy_RangeFrom_T_RangeFrom_T_from_body result type invariant] inv_RangeFrom_T'0 result}
@@ -48399,10 +48374,9 @@ module M_std__range__extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T
     (return (x: t_RangeInclusive_T'0)) =
     {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body 'value' type invariant] inv_RangeInclusive_T'0 value}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0
-      [ s0 = new_T {value.start} {value.last} (fun (_x: t_RangeInclusive_T'0) -> [ &_ret <- _x ] s1) | s1 = bb3 ]
-    | bb3 = return {_ret} ] [ & _ret: t_RangeInclusive_T'0 = Any.any_l () | & value: t_RangeInclusive_T = value ])
+    [ bb0 = s0
+      [ s0 = new_T {value.start} {value.last} (fun (_x: t_RangeInclusive_T'0) -> [ &_ret <- _x ] s1)
+      | s1 = return {_ret} ] ] [ & _ret: t_RangeInclusive_T'0 = Any.any_l () | & value: t_RangeInclusive_T = value ])
     [ return (result: t_RangeInclusive_T'0) ->
     {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body result type invariant] inv_RangeInclusive_T result}
       {[@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #0] start_log_RangeInclusive_T result
@@ -48555,13 +48529,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
     (! bb0
     [ bb0 = s0
       [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) -> [ &_9 <- _x ] s1)
-      | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &ptr <- _9.f0 ] s1
-      | s1 = [ &own <- _9.f1 ] s2
-      | s2 = [ &_11 <- Opaque.thin ptr ] s3
-      | s3 = [ &_ret <- { f0'0 = _11; f1'0 = own } ] s4
-      | s4 = return {_ret} ] ]
+      | s1 = [ &ptr <- _9.f0 ] s2
+      | s2 = [ &own <- _9.f1 ] s3
+      | s3 = [ &_11 <- Opaque.thin ptr ] s4
+      | s4 = [ &_ret <- { f0'0 = _11; f1'0 = own } ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
     | & self: Slice64.slice t_T = self
     | & ptr: Opaque.ptr = Any.any_l ()
@@ -48745,15 +48717,13 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
             [ &_12 <- _bor ] -{inv_slice_T _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
       | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) -> [ &_11 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &ptr <- _11.f0 ] s1
-      | s1 = [ &own <- _11.f1 ] s2
-      | s2 = [ &_13 <- Opaque.thin ptr ] s3
-      | s3 = [ &_ret <- { f0'0 = _13; f1'0 = own } ] s4
-      | s4 = {[@expl:type invariant] inv_ref_slice_T self} s5
-      | s5 = -{resolve_ref_slice_T self}- s6
-      | s6 = return {_ret} ] ]
+      | s2 = [ &ptr <- _11.f0 ] s3
+      | s3 = [ &own <- _11.f1 ] s4
+      | s4 = [ &_13 <- Opaque.thin ptr ] s5
+      | s5 = [ &_ret <- { f0'0 = _13; f1'0 = own } ] s6
+      | s6 = {[@expl:type invariant] inv_ref_slice_T self} s7
+      | s7 = -{resolve_ref_slice_T self}- s8
+      | s8 = return {_ret} ] ]
     [ & _ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
     | & self: MutBorrow.t (Slice64.slice t_T) = self
     | & ptr: Opaque.ptr = Any.any_l ()

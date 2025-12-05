@@ -159,24 +159,20 @@ module M_peek_bit_array8
     {[@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_10 <- (8: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _10} s2 | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = UInt64.div {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s1)
-      | s1 = get_u8 {addr} {_8} (fun (_x: t_Option_ref_u8) -> [ &_6 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = any [ br0 -> {_6 = None} (! bb5) | br1 (x0: UInt8.t) -> {_6 = Some x0} (! bb6) ]
+      [ s0 = [ &_10 <- (8: UInt64.t) = (0: UInt64.t) ] s1
+      | s1 = {[@expl:division by zero] not _10} s2
+      | s2 = UInt64.div {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s3)
+      | s3 = get_u8 {addr} {_8} (fun (_x: t_Option_ref_u8) -> [ &_6 <- _x ] s4)
+      | s4 = any [ br0 -> {_6 = None} (! bb5) | br1 (x0: UInt8.t) -> {_6 = Some x0} (! bb6) ] ]
     | bb6 = s0
       [ s0 = elim_Some {_6} (fun (r0: UInt8.t) -> [ &v <- r0 ] s1)
       | s1 = [ &_16 <- (8: UInt64.t) = (0: UInt64.t) ] s2
       | s2 = {[@expl:remainder by zero] not _16} s3
-      | s3 = bb7 ]
-    | bb7 = s0
-      [ s0 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s1)
-      | s1 = peek_bit_u8 {v} {_14} (fun (_x: bool) -> [ &_ret <- _x ] s2)
-      | s2 = bb11 ]
+      | s3 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s4)
+      | s4 = peek_bit_u8 {v} {_14} (fun (_x: bool) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ]
     | bb5 = any [ br0 -> {false = false} (! bb9) | br1 -> {false} (! bb10) ]
-    | bb10 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = bb11 ]
-    | bb11 = return {_ret}
+    | bb10 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
     | bb9 = {false} any ]
     [ & _ret: bool = Any.any_l ()
     | & addr: Slice64.slice UInt8.t = addr
@@ -248,9 +244,9 @@ module M_poke_bit_64
       [ s0 = UInt64.sub {(63: UInt64.t)} {left} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1)
       | s1 = UInt64.shl {(1: UInt64.t)} {UInt64.t'int _7} (fun (_x: UInt64.t) -> [ &mask <- _x ] s2)
       | s2 = any [ br0 -> {flag = false} (! bb2) | br1 -> {flag} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- UInt64.bw_or value mask ] s1 | s1 = bb3 ]
-    | bb2 = s0 [ s0 = [ &_15 <- UInt64.bw_not mask ] s1 | s1 = [ &_ret <- UInt64.bw_and value _15 ] s2 | s2 = bb3 ]
-    | bb3 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- UInt64.bw_or value mask ] s1 | s1 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = [ &_15 <- UInt64.bw_not mask ] s1 | s1 = [ &_ret <- UInt64.bw_and value _15 ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & value: UInt64.t = value
     | & left: UInt64.t = left
@@ -335,11 +331,9 @@ module M_peek
     [ bb0 = s0
       [ s0 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s1)
       | s1 = len_u8 {addr} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = UInt64.mul {(8: UInt64.t)} {_19} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
-      | s1 = [ &_14 <- UInt64.gt _15 _18 ] s2
-      | s2 = any [ br0 -> {_14 = false} (! bb3) | br1 -> {_14} (! bb2) ] ]
+      | s2 = UInt64.mul {(8: UInt64.t)} {_19} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s3)
+      | s3 = [ &_14 <- UInt64.gt _15 _18 ] s4
+      | s4 = any [ br0 -> {_14 = false} (! bb3) | br1 -> {_14} (! bb2) ] ]
     | bb2 = {false} any
     | bb3 = s0 [ s0 = [ &retval <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb5 ]
     | bb5 = bb5
@@ -348,16 +342,12 @@ module M_peek
         [ bb6 = s0
           [ s0 = UInt64.add {start} {i} (fun (_x: UInt64.t) -> [ &_31 <- _x ] s1)
           | s1 = peek_bit_array8 {addr} {_31} (fun (_x: bool) -> [ &flag <- _x ] s2)
-          | s2 = bb7 ]
-        | bb7 = s0
-          [ s0 = UInt64.sub {length} {i} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s1)
-          | s1 = UInt64.sub {(64: UInt64.t)} {_37} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s2)
-          | s2 = poke_bit_64 {retval} {_36} {flag} (fun (_x: UInt64.t) -> [ &_34 <- _x ] s3)
-          | s3 = bb8 ]
-        | bb8 = s0
-          [ s0 = [ &retval <- _34 ] s1
-          | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s2)
-          | s2 = bb5 ] ] ]
+          | s2 = UInt64.sub {length} {i} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s3)
+          | s3 = UInt64.sub {(64: UInt64.t)} {_37} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s4)
+          | s4 = poke_bit_64 {retval} {_36} {flag} (fun (_x: UInt64.t) -> [ &_34 <- _x ] s5)
+          | s5 = [ &retval <- _34 ] s6
+          | s6 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s7)
+          | s7 = bb5 ] ] ]
     | bb9 = s0 [ s0 = [ &_ret <- retval ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & start: UInt64.t = start
@@ -506,9 +496,9 @@ module M_poke_8bit
       [ s0 = UInt64.sub {(7: UInt64.t)} {left} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1)
       | s1 = UInt8.shl {(1: UInt8.t)} {UInt64.t'int _7} (fun (_x: UInt8.t) -> [ &mask <- _x ] s2)
       | s2 = any [ br0 -> {flag = false} (! bb2) | br1 -> {flag} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- UInt8.bw_or byte mask ] s1 | s1 = bb3 ]
-    | bb2 = s0 [ s0 = [ &_15 <- UInt8.bw_not mask ] s1 | s1 = [ &_ret <- UInt8.bw_and byte _15 ] s2 | s2 = bb3 ]
-    | bb3 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- UInt8.bw_or byte mask ] s1 | s1 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = [ &_15 <- UInt8.bw_not mask ] s1 | s1 = [ &_ret <- UInt8.bw_and byte _15 ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l ()
     | & byte: UInt8.t = byte
     | & left: UInt64.t = left
@@ -588,38 +578,30 @@ module M_poke_8bit_array
     {[@expl:poke_8bit_array requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr.current)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_11 <- (8: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _11} s2 | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = UInt64.div {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s1)
-      | s1 = [ &_14 <- (8: UInt64.t) = (0: UInt64.t) ] s2
-      | s2 = {[@expl:remainder by zero] not _14} s3
-      | s3 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &k <- _x ] s1)
-      | s1 = [ &_17 <- i ] s2
-      | s2 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_18 <- _ptr ] s3)
-      | s3 = [ &_19 <- Slice64.slice_ptr_len _18 ] s4
-      | s4 = [ &_20 <- UInt64.lt _17 _19 ] s5
-      | s5 = {[@expl:index in bounds] _20} s6
-      | s6 = bb3 ]
-    | bb3 = s0
-      [ s0 = Slice64.get <UInt8.t> {addr.current} {_17} (fun (r: UInt8.t) -> [ &_16 <- r ] s1)
-      | s1 = poke_8bit {_16} {k} {flag} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_23 <- i ] s1
-      | s1 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_24 <- _ptr ] s2)
-      | s2 = [ &_25 <- Slice64.slice_ptr_len _24 ] s3
-      | s3 = [ &_26 <- UInt64.lt _23 _25 ] s4
-      | s4 = {[@expl:index in bounds] _26} s5
-      | s5 = bb5 ]
-    | bb5 = s0
-      [ s0 = Slice64.set <UInt8.t> {addr.current} {_23} {_15}
-          (fun (r: Slice64.slice UInt8.t) -> [ &addr <- { addr with current = r } ] s1)
-      | s1 = -{resolve_ref_slice_u8 addr}- s2
-      | s2 = return {_ret} ] ]
+      [ s0 = [ &_11 <- (8: UInt64.t) = (0: UInt64.t) ] s1
+      | s1 = {[@expl:division by zero] not _11} s2
+      | s2 = UInt64.div {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s3)
+      | s3 = [ &_14 <- (8: UInt64.t) = (0: UInt64.t) ] s4
+      | s4 = {[@expl:remainder by zero] not _14} s5
+      | s5 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &k <- _x ] s6)
+      | s6 = [ &_17 <- i ] s7
+      | s7 = Opaque.fresh_ptr
+          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_18 <- _ptr ] s8)
+      | s8 = [ &_19 <- Slice64.slice_ptr_len _18 ] s9
+      | s9 = [ &_20 <- UInt64.lt _17 _19 ] s10
+      | s10 = {[@expl:index in bounds] _20} s11
+      | s11 = Slice64.get <UInt8.t> {addr.current} {_17} (fun (r: UInt8.t) -> [ &_16 <- r ] s12)
+      | s12 = poke_8bit {_16} {k} {flag} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s13)
+      | s13 = [ &_23 <- i ] s14
+      | s14 = Opaque.fresh_ptr
+          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_24 <- _ptr ] s15)
+      | s15 = [ &_25 <- Slice64.slice_ptr_len _24 ] s16
+      | s16 = [ &_26 <- UInt64.lt _23 _25 ] s17
+      | s17 = {[@expl:index in bounds] _26} s18
+      | s18 = Slice64.set <UInt8.t> {addr.current} {_23} {_15}
+          (fun (r: Slice64.slice UInt8.t) -> [ &addr <- { addr with current = r } ] s19)
+      | s19 = -{resolve_ref_slice_u8 addr}- s20
+      | s20 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & addr: MutBorrow.t (Slice64.slice UInt8.t) = addr
     | & left: UInt64.t = left
@@ -723,16 +705,14 @@ module M_poke
     {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
     {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &ghost_len <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
-      | s1 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &_24 <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.mul {(8: UInt64.t)} {_24} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s1)
-      | s1 = [ &_19 <- UInt64.gt _20 _23 ] s2
-      | s2 = any [ br0 -> {_19 = false} (! bb4) | br1 -> {_19} (! bb3) ] ]
-    | bb3 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-1: Int8.t) ] s2 | s2 = bb16 ]
+    [ bb0 = s0
+      [ s0 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &ghost_len <- _x ] s1)
+      | s1 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s2)
+      | s2 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &_24 <- _x ] s3)
+      | s3 = UInt64.mul {(8: UInt64.t)} {_24} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s4)
+      | s4 = [ &_19 <- UInt64.gt _20 _23 ] s5
+      | s5 = any [ br0 -> {_19 = false} (! bb4) | br1 -> {_19} (! bb3) ] ]
+    | bb3 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-1: Int8.t) ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = [ &_28 <- UInt64.lt length (64: UInt64.t) ] s1
       | s1 = any [ br0 -> {_28 = false} (! bb9) | br1 -> {_28} (! bb5) ] ]
@@ -740,7 +720,7 @@ module M_poke
       [ s0 = UInt64.shl {(1: UInt64.t)} {UInt64.t'int length} (fun (_x: UInt64.t) -> [ &_32 <- _x ] s1)
       | s1 = [ &_30 <- UInt64.ge value _32 ] s2
       | s2 = any [ br0 -> {_30 = false} (! bb9) | br1 -> {_30} (! bb7) ] ]
-    | bb7 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-2: Int8.t) ] s2 | s2 = bb16 ]
+    | bb7 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-2: Int8.t) ] s2 | s2 = return {_ret} ]
     | bb9 = s0
       [ s0 = UInt64.sub {(64: UInt64.t)} {length} (fun (_x: UInt64.t) -> [ &lstart <- _x ] s1)
       | s1 = [ &i <- (0: UInt64.t) ] s2
@@ -751,28 +731,20 @@ module M_poke
         {[@expl:loop invariant #0] UInt64.le i length}
         {[@expl:loop invariant #1] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len}
         (! s0)
-        [ s0 = bb11 ]
-        [ bb11 = s0
-          [ s0 = [ &_47 <- UInt64.lt i length ] s1
-          | s1 = any [ br0 -> {_47 = false} (! bb15) | br1 -> {_47} (! bb12) ] ]
-        | bb12 = s0
+        [ s0 = [ &_47 <- UInt64.lt i length ] s1 | s1 = any [ br0 -> {_47 = false} (! bb15) | br1 -> {_47} (! bb12) ] ]
+        [ bb12 = s0
           [ s0 = {[@expl:assertion] UInt64.t'int i < UInt64.t'int length} s1
           | s1 = UInt64.add {lstart} {i} (fun (_x: UInt64.t) -> [ &_56 <- _x ] s2)
           | s2 = peek_64bit {value} {_56} (fun (_x: bool) -> [ &flag <- _x ] s3)
-          | s3 = bb13 ]
-        | bb13 = s0
-          [ s0 = UInt64.add {start} {i} (fun (_x: UInt64.t) -> [ &_61 <- _x ] s1)
-          | s1 = MutBorrow.borrow_mut <Slice64.slice UInt8.t> {addr.current}
+          | s3 = UInt64.add {start} {i} (fun (_x: UInt64.t) -> [ &_61 <- _x ] s4)
+          | s4 = MutBorrow.borrow_mut <Slice64.slice UInt8.t> {addr.current}
               (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
-                [ &_60 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s2)
-          | s2 = poke_8bit_array {_60} {_61} {flag} (fun (_x: ()) -> [ &_59 <- _x ] s3)
-          | s3 = bb14 ]
-        | bb14 = s0
-          [ s0 = {[@expl:assertion] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len} s1
-          | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s2)
-          | s2 = bb10 ] ] ]
-    | bb15 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (0: Int8.t) ] s2 | s2 = bb16 ]
-    | bb16 = return {_ret} ]
+                [ &_60 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s5)
+          | s5 = poke_8bit_array {_60} {_61} {flag} (fun (_x: ()) -> [ &_59 <- _x ] s6)
+          | s6 = {[@expl:assertion] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len} s7
+          | s7 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s8)
+          | s8 = bb10 ] ] ]
+    | bb15 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (0: Int8.t) ] s2 | s2 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l ()
     | & start: UInt64.t = start
     | & length: UInt64.t = length
@@ -882,14 +854,15 @@ module M_peekthenpoke
     {[@expl:peekthenpoke requires #2] UInt64.t'int start + UInt64.t'int length
     <= 8 * Seq.length (Slice64.view addr.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &value <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {addr.current} {MutBorrow.get_id addr}
+    [ bb0 = s0
+      [ s0 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &value <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {addr.current} {MutBorrow.get_id addr}
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
-            [ &_19 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s1)
-      | s1 = poke {start} {length} {_19} {value} (fun (_x: Int8.t) -> [ &res <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- res ] s2 | s2 = return {_ret} ] ]
+            [ &_19 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s2)
+      | s2 = poke {start} {length} {_19} {value} (fun (_x: Int8.t) -> [ &res <- _x ] s3)
+      | s3 = -{resolve_ref_slice_u8 addr}- s4
+      | s4 = [ &_ret <- res ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l ()
     | & start: UInt64.t = start
     | & length: UInt64.t = length
@@ -987,12 +960,10 @@ module M_pokethenpeek
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
             [ &_16 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s1)
       | s1 = poke {start} {length} {_16} {value} (fun (_x: Int8.t) -> [ &_res <- _x ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = -{resolve_ref_slice_u8 addr}- s1
-      | s1 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &peek_result <- _x ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_ret <- peek_result ] s1 | s1 = return {_ret} ] ]
+      | s2 = -{resolve_ref_slice_u8 addr}- s3
+      | s3 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &peek_result <- _x ] s4)
+      | s4 = [ &_ret <- peek_result ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & start: UInt64.t = start
     | & length: UInt64.t = length

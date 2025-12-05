@@ -100,20 +100,11 @@ module M_lemma_num_of_pos_strictly_increasing
 end
 module M_m
   use creusot.int.UInt64
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
-  
-  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
-  
-  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t. num_of_pos i j t
-      = (if i >= j then
-        0
-      else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-      )
   
   type t_Vec_i32_Global
   
@@ -126,6 +117,15 @@ module M_m
   
   let rec len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+  
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  
+  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t. num_of_pos i j t
+      = (if i >= j then
+        0
+      else
+        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+      )
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -194,31 +194,32 @@ module M_m
         {[@expl:loop invariant #1] UInt64.t'int count <= UInt64.t'int i}
         {[@expl:loop invariant #2] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view_Vec_i32_Global t)}
         (! s0)
-        [ s0 = bb2 ]
-        [ bb2 = s0 [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1) | s1 = bb3 ]
-        | bb3 = s0
-          [ s0 = [ &_18 <- UInt64.lt i _20 ] s1 | s1 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
-        | bb4 = s0 [ s0 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_25 <- _x ] s1) | s1 = bb5 ]
-        | bb5 = s0
-          [ s0 = [ &_23 <- Int32.gt _25 (0: Int32.t) ] s1
-          | s1 = any [ br0 -> {_23 = false} (! bb8) | br1 -> {_23} (! bb6) ] ]
+        [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+        | s1 = [ &_18 <- UInt64.lt i _20 ] s2
+        | s2 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
+        [ bb4 = s0
+          [ s0 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_25 <- _x ] s1)
+          | s1 = [ &_23 <- Int32.gt _25 (0: Int32.t) ] s2
+          | s2 = any [ br0 -> {_23 = false} (! bb8) | br1 -> {_23} (! bb6) ] ]
         | bb6 = s0 [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s1) | s1 = bb8 ]
         | bb8 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s1) | s1 = bb1 ] ] ]
-    | bb9 = s0 [ s0 = from_elem_i32 {(0: Int32.t)} {count} (fun (_x: t_Vec_i32_Global) -> [ &u <- _x ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb11 ]
+    | bb9 = s0
+      [ s0 = from_elem_i32 {(0: Int32.t)} {count} (fun (_x: t_Vec_i32_Global) -> [ &u <- _x ] s1)
+      | s1 = [ &count <- (0: UInt64.t) ] s2
+      | s2 = [ &i <- (0: UInt64.t) ] s3
+      | s3 = bb11 ]
     | bb11 = bb11
       [ bb11 = {[@expl:loop invariant #0] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view_Vec_i32_Global t)}
         {[@expl:loop invariant #1] Seq.length (view_Vec_i32_Global u)
         = num_of_pos 0 (Seq.length (view_Vec_i32_Global t)) (view_Vec_i32_Global t)}
         (! s0)
-        [ s0 = bb12 ]
-        [ bb12 = s0 [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s1) | s1 = bb13 ]
-        | bb13 = s0
-          [ s0 = [ &_40 <- UInt64.lt i _42 ] s1 | s1 = any [ br0 -> {_40 = false} (! bb21) | br1 -> {_40} (! bb14) ] ]
-        | bb14 = s0 [ s0 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_47 <- _x ] s1) | s1 = bb15 ]
-        | bb15 = s0
-          [ s0 = [ &_45 <- Int32.gt _47 (0: Int32.t) ] s1
-          | s1 = any [ br0 -> {_45 = false} (! bb20) | br1 -> {_45} (! bb16) ] ]
+        [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s1)
+        | s1 = [ &_40 <- UInt64.lt i _42 ] s2
+        | s2 = any [ br0 -> {_40 = false} (! bb21) | br1 -> {_40} (! bb14) ] ]
+        [ bb14 = s0
+          [ s0 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_47 <- _x ] s1)
+          | s1 = [ &_45 <- Int32.gt _47 (0: Int32.t) ] s2
+          | s2 = any [ br0 -> {_45 = false} (! bb20) | br1 -> {_45} (! bb16) ] ]
         | bb16 = s0
           [ s0 =
             {[@expl:assertion] let _ = lemma_num_of_pos_strictly_increasing (UInt64.t'int i) (view_Vec_i32_Global u) in num_of_pos 0 (UInt64.t'int i) (view_Vec_i32_Global t)
@@ -229,20 +230,15 @@ module M_m
             < Seq.length (view_Vec_i32_Global u)}
             s2
           | s2 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_62 <- _x ] s3)
-          | s3 = bb17 ]
-        | bb17 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {u}
-              (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_66 <- _bor ] [ &u <- _bor.final ] s1)
-          | s1 = index_mut_Vec_i32_Global {_66} {count} (fun (_x: MutBorrow.t Int32.t) -> [ &_65 <- _x ] s2)
-          | s2 = bb18 ]
-        | bb18 = s0
-          [ s0 = [ &_65 <- { _65 with current = _62 } ] s1
-          | s1 = -{resolve_ref_i32 _65}- s2
-          | s2 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s3)
-          | s3 = bb20 ]
+          | s3 = MutBorrow.borrow_mut <t_Vec_i32_Global> {u}
+              (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_66 <- _bor ] [ &u <- _bor.final ] s4)
+          | s4 = index_mut_Vec_i32_Global {_66} {count} (fun (_x: MutBorrow.t Int32.t) -> [ &_65 <- _x ] s5)
+          | s5 = [ &_65 <- { _65 with current = _62 } ] s6
+          | s6 = -{resolve_ref_i32 _65}- s7
+          | s7 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s8)
+          | s8 = bb20 ]
         | bb20 = s0 [ s0 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s1) | s1 = bb11 ] ] ]
-    | bb21 = s0 [ s0 = [ &_ret <- u ] s1 | s1 = bb23 ]
-    | bb23 = return {_ret} ]
+    | bb21 = s0 [ s0 = [ &_ret <- u ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Vec_i32_Global = Any.any_l ()
     | & t: t_Vec_i32_Global = t
     | & count: UInt64.t = Any.any_l ()

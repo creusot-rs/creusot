@@ -58,13 +58,12 @@ module M_main
   meta "select_lsinst" "all"
   
   let rec main (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = returns_iterator (fun (_x: opaque) -> [ &_4 <- _x ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_opaque _4} s1
-      | s1 = -{resolve_opaque _4}- s2
-      | s2 = a_opaque {_4} (fun (_x: bool) -> [ &x <- _x ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:assertion] x} s1 | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = returns_iterator (fun (_x: opaque) -> [ &_4 <- _x ] s1)
+      | s1 = {[@expl:type invariant] inv_opaque _4} s2
+      | s2 = -{resolve_opaque _4}- s3
+      | s3 = a_opaque {_4} (fun (_x: bool) -> [ &x <- _x ] s4)
+      | s4 = {[@expl:assertion] x} s5
+      | s5 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
     [ return (result: ()) -> {[@expl:main ensures] true} (! return {result}) ]
 end
