@@ -67,7 +67,8 @@ module M_test
   let rec test_T (x: MutBorrow.t t_Vec_T) (return (x'0: ())) = {[@expl:test 'x' type invariant] inv_ref_Vec_T x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Vec_T x} s1 | s1 = -{resolve_ref_Vec_T x}- s2 | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Vec_T = x ])
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T x} any) ]
+      | s1 = -{resolve_ref_Vec_T x}- s2
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Vec_T = x ])
     [ return (result: ()) -> {[@expl:test ensures] view_Vec_T x.current = view_Vec_T x.current} (! return {result}) ]
 end

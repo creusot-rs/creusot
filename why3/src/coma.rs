@@ -152,7 +152,7 @@ pub struct Module(pub Box<[Decl]>);
 
 impl Defn {
     pub fn simple(name: Ident, body: Expr) -> Self {
-        Defn { prototype: Prototype { name: name, attrs: vec![], params: Box::new([]) }, body }
+        Defn { prototype: Prototype { name, attrs: vec![], params: Box::new([]) }, body }
     }
 }
 

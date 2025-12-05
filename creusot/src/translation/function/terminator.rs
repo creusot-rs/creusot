@@ -171,7 +171,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
                 let msg = Some(self.get_explanation(msg));
                 self.emit_statement(Statement {
-                    kind: fmir::StatementKind::Assertion { cond, msg, trusted: false },
+                    kind: fmir::StatementKind::Assertion { cond, msg, check: true, assume: true },
                     span,
                 });
                 Terminator::Goto(*target)

@@ -1135,28 +1135,22 @@ where
         }
         IntermediateStmt::Assume(e) => Expr::assume(e, tail),
         IntermediateStmt::Assert(e) => Expr::assert(e, tail),
+        IntermediateStmt::Check(e) => Expr::Defn(
+            tail.boxed(),
+            false,
+            [Defn::simple(Ident::fresh_local("_ck"), Expr::assert(e, Expr::Any).black_box())]
+                .into(),
+        ),
         IntermediateStmt::Expr(expr, k, x, ty) => Expr::Defn(
             expr.into(),
             false,
-            [Defn {
-                prototype: Prototype {
-                    name: k,
-                    attrs: vec![],
-                    params: [Param::Term(x, ty)].into(),
-                },
-                body: tail,
-            }]
-            .into(),
+            [Defn { prototype: Prototype::new(k, [Param::Term(x, ty)]), body: tail }].into(),
         ),
         IntermediateStmt::Any(id, ty) => Expr::Defn(
             Expr::Any.boxed(),
             false,
             [Defn {
-                prototype: Prototype {
-                    name: Ident::fresh_local("any_"),
-                    attrs: vec![],
-                    params: [Param::Term(id, ty)].into(),
-                },
+                prototype: Prototype::new(Ident::fresh_local("any_"), [Param::Term(id, ty)]),
                 body: tail.black_box(),
             }]
             .into(),
@@ -1166,7 +1160,7 @@ where
 
 #[derive(Debug)]
 pub(crate) enum IntermediateStmt {
-    // [ id = E] K
+    // [id = E] K
     Assign(Ident, Exp),
     // E [ARGS] (id: ty -> K)
     Call(Box<[Param]>, Name, Box<[Arg]>, Option<Span>),
@@ -1176,6 +1170,8 @@ pub(crate) enum IntermediateStmt {
     Assume(Exp),
     // { E } K
     Assert(Exp),
+    // K [ _ck -> ! {E} any ]
+    Check(Exp),
 
     Any(Ident, Type),
 }
@@ -1337,15 +1333,16 @@ impl<'tcx> Statement<'tcx> {
                 istmts.push(IntermediateStmt::call_span(ret_ident, ty, fun_qname, args, span));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);
             }
-            StatementKind::Assertion { cond, msg, trusted } => {
+            StatementKind::Assertion { cond, msg, check, assume } => {
                 let mut e = lower_pure(lower.ctx, lower.names, &cond.spanned());
                 if let Some(msg) = msg {
                     e = e.with_attr(Attribute::Attr(msg))
                 }
-                if trusted {
-                    istmts.push(IntermediateStmt::Assume(e))
-                } else {
-                    istmts.push(IntermediateStmt::Assert(e))
+                match (check, assume) {
+                    (true, true) => istmts.push(IntermediateStmt::Assert(e)),
+                    (true, false) => istmts.push(IntermediateStmt::Check(e)),
+                    (false, true) => istmts.push(IntermediateStmt::Assume(e)),
+                    (false, false) => (),
                 }
             }
         }

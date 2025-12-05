@@ -31,16 +31,16 @@ module M_not_final_borrow
           (fun (_bor: MutBorrow.t t_T) ->
             [ &b1 <- _bor ] -{inv_T _bor.final}-
             [ &bor <- { bor with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T b1} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T b1} any) ]
       | s2 = -{resolve_ref_T b1}- s3
       | s3 = {inv_T bor.current}
         MutBorrow.borrow_final <t_T> {bor.current} {MutBorrow.get_id bor}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_b2 <- _bor ] -{inv_T _bor.final}-
             [ &bor <- { bor with current = _bor.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_T _b2} s5
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T _b2} any) ]
       | s5 = -{resolve_ref_T _b2}- s6
-      | s6 = {[@expl:type invariant] inv_ref_T bor} s7
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_T bor} any) ]
       | s7 = -{resolve_ref_T bor}- s8
       | s8 = {[@expl:assertion] b1 = bor} s9
       | s9 = return {_ret} ] ]
@@ -82,11 +82,11 @@ module M_store_changes_prophecy
           (fun (_bor: MutBorrow.t t_T) ->
             [ &b1 <- _bor ] -{inv_T _bor.final}-
             [ &bor <- { bor with current = _bor.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T b1} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T b1} any) ]
       | s2 = -{resolve_ref_T b1}- s3
       | s3 = [ &val' <- b1.current ] s4
       | s4 = [ &bor <- { bor with current = val' } ] s5
-      | s5 = {[@expl:type invariant] inv_ref_T bor} s6
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_T bor} any) ]
       | s6 = -{resolve_ref_T bor}- s7
       | s7 = {[@expl:assertion] b1 = bor} s8
       | s8 = return {_ret} ] ]
@@ -130,10 +130,10 @@ module M_store_changes_prophecy_2
             [ &b1 <- _bor ] -{inv_T _bor.final}-
             [ &bor <- { bor with current = _bor.final } ] s1)
       | s1 = [ &b1 <- { b1 with current = x } ] s2
-      | s2 = {[@expl:type invariant] inv_ref_T b1} s3
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_T b1} any) ]
       | s3 = -{resolve_ref_T b1}- s4
       | s4 = [ &bor <- { bor with current = x } ] s5
-      | s5 = {[@expl:type invariant] inv_ref_T bor} s6
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_T bor} any) ]
       | s6 = -{resolve_ref_T bor}- s7
       | s7 = {[@expl:assertion] b1 = bor} s8
       | s8 = return {_ret} ] ]
@@ -266,7 +266,7 @@ module M_move_place_without_deref
           (fun (_bor: MutBorrow.t t_T) ->
             [ &b1 <- _bor ] -{inv_T _bor.final}-
             [ &bor <- { bor with current = _bor.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_T b1} s3
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_T b1} any) ]
       | s3 = -{resolve_ref_T b1}- s4
       | s4 = inner_T {bor} (fun (_x: ()) -> [ &_6 <- _x ] s5)
       | s5 = {[@expl:assertion] b1.current = bor_snap.current /\ b1.final = bor_snap.final} s6

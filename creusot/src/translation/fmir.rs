@@ -89,7 +89,8 @@ pub enum StatementKind<'tcx> {
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
         msg: Option<String>,
-        trusted: bool,
+        check: bool,  // Whether we generate a VC for this assertion
+        assume: bool, // Whether this assertion stays in context
     },
     Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
 }

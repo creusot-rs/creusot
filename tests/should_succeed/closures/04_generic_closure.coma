@@ -85,7 +85,7 @@ module M_generic_closure
     {[@expl:generic_closure 'a' type invariant] inv_A a}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_4 <- a ] s3
       | s3 = call_F {f} {_4} (fun (_x: t_B) -> [ &_ret <- _x ] s4)
@@ -102,7 +102,8 @@ module M_mapper
   predicate resolve_A (_1: t_A)
   
   let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) = bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_A _a} s1 | s1 = -{resolve_A _a}- s2 | s2 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_A _a} any) ] | s1 = -{resolve_A _a}- s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _a: t_A = _a ]
   
   meta "rewrite_def" predicate closure0'pre

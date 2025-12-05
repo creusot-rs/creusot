@@ -321,7 +321,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 kind: fmir::StatementKind::Assertion {
                     cond,
                     msg: Some("expl:type invariant".to_string()),
-                    trusted: false,
+                    check: true,
+                    assume: false,
                 },
                 span,
             })
@@ -354,7 +355,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
         if !res_triv {
             dest.push(fmir::Statement {
-                kind: fmir::StatementKind::Assertion { cond, msg: None, trusted: true },
+                kind: fmir::StatementKind::Assertion {
+                    cond,
+                    msg: None,
+                    check: false,
+                    assume: true,
+                },
                 span,
             })
         }

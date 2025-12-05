@@ -109,20 +109,21 @@ module M_rev
           | s5 = [ &head <- next ] s6
           | s6 = bb3 ] ] ]
     | bb18 = s0
-      [ s0 = {[@expl:type invariant] match head with
-          | Cons x -> inv_Box_tup2_T_List_T_Global x
-          | _ -> true
-          end}
-        s1
+      [ s0 = s1
+        [ _ck -> (! {[@expl:type invariant] match head with
+            | Cons x -> inv_Box_tup2_T_List_T_Global x
+            | _ -> true
+            end}
+          any) ]
       | s1 = -{match head with
           | Cons x -> resolve_Box_tup2_T_List_T_Global x
           | _ -> true
           end}-
         s2
-      | s2 = {[@expl:type invariant] inv_List_T l.current} s3
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_List_T l.current} any) ]
       | s3 = -{resolve_List_T l.current}- s4
       | s4 = [ &l <- { l with current = prev } ] s5
-      | s5 = {[@expl:type invariant] inv_ref_List_T l} s6
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_List_T l} any) ]
       | s6 = -{resolve_ref_List_T l}- s7
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

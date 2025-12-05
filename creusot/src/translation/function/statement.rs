@@ -121,7 +121,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                         kind: fmir::StatementKind::Assertion {
                                             cond,
                                             msg: Some(msg),
-                                            trusted: false,
+                                            check: true,
+                                            assume: true,
                                         },
                                         span,
                                     });
@@ -137,7 +138,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 kind: fmir::StatementKind::Assertion {
                                     cond: assertion,
                                     msg: Some("expl:assertion".to_owned()),
-                                    trusted: false,
+                                    check: true,
+                                    assume: true,
                                 },
                                 span,
                             });
