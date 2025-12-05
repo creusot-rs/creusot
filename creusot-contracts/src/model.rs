@@ -63,6 +63,7 @@ impl DeepModel for Int {
     }
 }
 
+#[cfg(feature = "std")]
 impl View for String {
     type ViewTy = Seq<char>;
 
