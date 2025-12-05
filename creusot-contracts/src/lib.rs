@@ -70,6 +70,7 @@
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate creusot_contracts_proc as base_macros;
 extern crate self as creusot_contracts;
@@ -538,8 +539,10 @@ mod base_prelude {
         clone::Clone,
         cmp::PartialEq,
         default::Default,
-        vec::vec,
     };
+
+    #[cfg(feature = "std")]
+    pub use crate::std::vec::vec;
 
     // Export extension traits anonymously
     pub use crate::std::{

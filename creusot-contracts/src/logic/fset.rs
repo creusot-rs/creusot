@@ -370,6 +370,7 @@ impl<T> FSet<T> {
     }
 
     /// Same as [`Self::insert_ghost`], but for unsized values.
+    #[cfg(feature = "std")]
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == (*self).insert(*value))]

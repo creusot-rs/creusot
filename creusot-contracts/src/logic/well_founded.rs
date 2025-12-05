@@ -92,6 +92,7 @@ impl<T: WellFounded> WellFounded for &T {
     }
 }
 
+#[cfg(feature = "std")]
 impl<T: WellFounded> WellFounded for Box<T> {
     #[logic(open, inline)]
     fn well_founded_relation(self, other: Self) -> bool {

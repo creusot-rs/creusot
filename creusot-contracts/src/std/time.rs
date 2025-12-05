@@ -4,6 +4,7 @@ use core::{
     time::*,
 };
 
+#[cfg(feature = "std")]
 use std::time::Instant;
 
 impl View for Duration {
@@ -45,6 +46,7 @@ pub fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
 
+#[cfg(feature = "std")]
 impl View for Instant {
     type ViewTy = Int;
 
@@ -56,6 +58,7 @@ impl View for Instant {
     }
 }
 
+#[cfg(feature = "std")]
 impl DeepModel for Instant {
     type DeepModelTy = Int;
 
