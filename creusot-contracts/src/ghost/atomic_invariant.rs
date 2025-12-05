@@ -27,6 +27,13 @@ impl AtomicI32Own {
     pub fn val(self) -> i32 {
         dead
     }
+
+    #[ensures(result.1.val() == val)]
+    #[ensures(result.1.id() == result.0)]
+    #[trusted]
+    pub fn new(val: i32) -> (AtomicI32, Ghost<AtomicI32Own>) {
+        (AtomicI32(std::sync::atomic::AtomicI32::new(val)), Ghost::conjure())
+    }
 }
 
 impl Committer {
@@ -80,9 +87,9 @@ impl AtomicI32 {
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn store<A, F>(&self, val: i32, f: Ghost<F>) -> Ghost<A>
+    pub fn store<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> Ghost<A>
     where
-        F: FnGhost + FnOnce(&mut Committer) -> A,
+        F: FnGhost + FnOnce(&'a mut Committer) -> A,
     {
         self.0.store(val, std::sync::atomic::Ordering::SeqCst);
         Ghost::conjure()
