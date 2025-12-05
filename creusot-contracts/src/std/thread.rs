@@ -36,7 +36,7 @@ extern_spec! {
 ///
 /// The only difference is that the closure gives access to a fresh
 #[requires(forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,)))]
-#[ensures(exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r))]
+#[ensures(exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r))]
 #[trusted]
 pub fn spawn<F, T>(f: F) -> JoinHandle<T>
 where
