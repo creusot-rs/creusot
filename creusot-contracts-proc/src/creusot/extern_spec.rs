@@ -1,3 +1,5 @@
+mod display;
+
 use crate::creusot::doc::DocItemName;
 use pearlite_syn::term::*;
 use proc_macro::{Diagnostic, Level, TokenStream as TS1};
@@ -108,6 +110,7 @@ struct FlatSpec {
     signature: Signature,
     doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
+    /// Expression that can be used to refer to the function being specified
     path: ExprPath,
     impl_data: Option<ImplData>,
     body: Option<Block>,
@@ -134,14 +137,12 @@ impl ExternSpecs {
     }
 }
 
-fn self_escape<T: Parse>(mut span: Span) -> T {
-    span = span.resolved_at(Span::mixed_site());
-    parse_quote_spanned! { span => self_ }
+fn self_escape<T: Parse>(span: Span) -> T {
+    parse_quote_spanned! {span=> self_ }
 }
 
-fn self_type_escape<T: Parse>(mut span: Span) -> T {
-    span = span.resolved_at(Span::mixed_site());
-    parse_quote_spanned! { span => Self_ }
+fn self_type_escape<T: Parse>(span: Span) -> T {
+    parse_quote_spanned! {span=> Self_ }
 }
 
 impl FlatSpec {
@@ -261,6 +262,8 @@ impl FlatSpec {
             paren_token: Paren::default(),
             args,
         });
+
+        // If the function was given a body to check, it is generated here.
         let f_with_body = if let Some(mut b) = self.body {
             let attrs = attrs.clone();
             if has_erasure {
@@ -280,13 +283,49 @@ impl FlatSpec {
             None
         };
 
+        let doc = {
+            let mut path = String::new();
+            if let Some(qself) = &self.path.qself {
+                path.push_str(&format!("{}", display::DisplayType(&qself.ty)));
+            }
+            if self.path.path.leading_colon.is_none() && self.path.qself.is_some() {
+                path.push_str("::");
+            }
+
+            path.push_str(&format!("{}", display::DisplayPath(&self.path.path)));
+            format!("extern spec for [`{path}`]")
+        };
+        // only used in documentation
+        let f_doc = ItemFn {
+            attrs: attrs.clone(),
+            vis: parse_quote!(pub),
+            sig: {
+                let mut sig = sig.clone();
+                sig.ident = Ident::new(&self.doc_item_name.0.to_string(), sig.ident.span());
+                sig
+            },
+            block: Box::new(Block { brace_token: Brace(span), stmts: vec![parse_quote!(loop {})] }),
+        };
+
         let block = Block {
             brace_token: Brace(span), // This sets the span of the function's DefId
             stmts: vec![Stmt::Expr(call, None)],
         };
         let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
 
-        quote_spanned! {span=> #[creusot::no_translate] #[creusot::extern_spec] #f #f_with_body }
+        quote_spanned! {span=>
+            #[creusot::no_translate] #[creusot::extern_spec]
+            #f
+
+            #[cfg(doc)]
+            #[doc = #doc]
+            #[doc = ""]
+            #[doc = "This is not a real function: its only use is for documentation."]
+            #[doc = ""]
+            #f_doc
+
+            #f_with_body
+        }
     }
 }
 
@@ -453,7 +492,7 @@ fn escape_self_in_term(t: &mut Term, replacer: &mut SelfTypeEscaper) {
             for arm in arms {
                 replacer.visit_pat_mut(&mut arm.pat);
                 if let Some(guard) = &mut arm.guard {
-                    escape_self_in_term(&mut *guard.1, replacer);
+                    escape_self_in_term(&mut guard.1, replacer);
                 }
                 escape_self_in_term(&mut arm.body, replacer)
             }
@@ -614,13 +653,10 @@ fn flatten(
                 prefix.path.leading_colon = Some(Default::default());
             }
             let mut ty = impl_.self_ty;
-            loop {
-                match *ty {
-                    Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) => {
-                        ty = elem
-                    }
-                    _ => break,
-                }
+            while let Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) =
+                *ty
+            {
+                ty = elem
             }
             if prefix.path.segments.is_empty() {
                 prefix.qself = Some(QSelf {
@@ -845,7 +881,7 @@ impl Parse for ExternImpl {
             while let Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) =
                 first_ty_ref
             {
-                first_ty_ref = &elem;
+                first_ty_ref = elem;
             }
             if let Type::Path(_) = first_ty_ref {
                 while let Type::Group(TypeGroup { elem, .. })

@@ -69,6 +69,7 @@
         decl_macro
     )
 )]
+#![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
 
 extern crate creusot_contracts_proc as base_macros;
 extern crate self as creusot_contracts;
