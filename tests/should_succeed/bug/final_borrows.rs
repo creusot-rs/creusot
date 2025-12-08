@@ -98,6 +98,17 @@ pub fn write_inner_borrow<'a, T>(x: &mut &'a mut T, b: &'a mut T, value: T) {
     proof_assert!(r == *snap);
 }
 
+#[allow(unused)]
+pub fn rebor_in_pair() {
+    let mut x = 12;
+    let mut y = 13;
+    let mut p = (&mut x, 12);
+    let s = snapshot!(p.0);
+    let b = &mut *p.0;
+    proof_assert!(*s == b);
+    p.0 = &mut y;
+}
+
 //=============================
 //=========== BOXES ===========
 //=============================

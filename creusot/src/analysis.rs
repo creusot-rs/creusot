@@ -254,7 +254,7 @@ pub struct Analysis<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
     /// Places to resolve before and after the current statement
     current_resolved: Resolves<'tcx>,
-    not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
+    not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'a, 'tcx>>,
     /// `&mut` because we also rename assertions here
     body_specs: &'a mut BodySpecs<'tcx>,
     data: BorrowData<'tcx>,

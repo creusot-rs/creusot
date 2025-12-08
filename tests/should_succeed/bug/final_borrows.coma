@@ -900,6 +900,53 @@ module M_write_inner_borrow
     | & snap: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
+module M_rebor_in_pair
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type tup2_ref_i32_i32 = { f0: MutBorrow.t Int32.t; f1: Int32.t }
+  
+  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_ref_i32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec rebor_in_pair (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- (12: Int32.t) ] s1
+      | s1 = [ &y <- (13: Int32.t) ] s2
+      | s2 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_4 <- _bor ] [ &x <- _bor.final ] s3)
+      | s3 = [ &p <- { f0 = _4; f1 = (12: Int32.t) } ] s4
+      | s4 = [ &s <- p.f0 ] s5
+      | s5 = MutBorrow.borrow_final <Int32.t> {p.f0.current} {MutBorrow.get_id p.f0}
+          (fun (_bor: MutBorrow.t Int32.t) ->
+            [ &b <- _bor ] [ &p <- { p with f0 = { p.f0 with current = _bor.final } } ] s6)
+      | s6 = -{resolve_ref_i32 b}- s7
+      | s7 = -{resolve_ref_i32 p.f0}- s8
+      | s8 = {[@expl:assertion] s = b} s9
+      | s9 = MutBorrow.borrow_mut <Int32.t> {y}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_14 <- _bor ] [ &y <- _bor.final ] s10)
+      | s10 = MutBorrow.borrow_final <Int32.t> {_14.current} {MutBorrow.get_id _14}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s11)
+      | s11 = [ &p <- { p with f0 = _13 } ] s12
+      | s12 = -{resolve_ref_i32 p.f0}- s13
+      | s13 = -{resolve_ref_i32 _14}- s14
+      | s14 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = Any.any_l ()
+    | & y: Int32.t = Any.any_l ()
+    | & p: tup2_ref_i32_i32 = Any.any_l ()
+    | & _4: MutBorrow.t Int32.t = Any.any_l ()
+    | & s: MutBorrow.t Int32.t = Any.any_l ()
+    | & b: MutBorrow.t Int32.t = Any.any_l ()
+    | & _13: MutBorrow.t Int32.t = Any.any_l ()
+    | & _14: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_box_deref
   use creusot.prelude.Any
   
