@@ -92,7 +92,7 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod iter {
             trait Iterator
                 where Self: IteratorSpec {
@@ -154,7 +154,7 @@ extern_spec! {
                 #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
                 #[requires(forall<i: &mut Self> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
-                #[requires(forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() < std::usize::MAX@)]
+                #[requires(forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() < core::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n()@ == 0)]
                 fn enumerate(self) -> Enumerate<Self>
                     where Self: Sized;

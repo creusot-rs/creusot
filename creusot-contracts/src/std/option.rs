@@ -47,7 +47,7 @@ extern_spec! {
         }
     }
 
-    mod std {
+    mod core {
         mod option {
             impl<T> Option<T> {
                 #[check(ghost)]

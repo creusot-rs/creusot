@@ -14,7 +14,7 @@ impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod result {
             impl<T, E> Result<T, E> {
                 #[check(ghost)]

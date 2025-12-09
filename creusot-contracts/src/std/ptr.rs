@@ -383,7 +383,7 @@ extern_spec! {
         fn len(self) -> usize;
     }
 
-    mod std {
+    mod core {
         mod ptr {
             #[check(ghost)]
             #[ensures(result.is_null_logic())]

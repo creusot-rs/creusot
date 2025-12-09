@@ -449,7 +449,7 @@ extern_spec! {
         fn clone(&self) -> Box<[T], A>;
     }
 
-    mod std {
+    mod core {
         mod slice {
             #[check(ghost)]
             #[ensures(result@.len() == 1)]

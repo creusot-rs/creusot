@@ -35,7 +35,7 @@ impl<T> IteratorSpec for Once<T> {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod iter {
             impl<T> Iterator for Once<T> {
                 #[check(ghost)]

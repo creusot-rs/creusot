@@ -170,7 +170,7 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod ops {
             trait FnOnce<Args> where Args: Tuple {
                 #[requires(self.precondition(arg))]
@@ -260,7 +260,7 @@ pub fn upper_bound<T: OrdLogic>(item: T, hi: Bound<T>) -> bool {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod ops {
             trait RangeBounds<T>
             where
@@ -581,7 +581,7 @@ impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod ops {
             impl<Idx> RangeInclusive<Idx> {
                 #[ensures(result.start_log() == start)]

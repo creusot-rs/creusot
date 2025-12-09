@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod hint {
             #[check(ghost)]
             #[requires(cond)]
