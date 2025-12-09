@@ -8,7 +8,7 @@ pub use creusot_contracts_proc::PartialEq;
 pub use core::cmp::PartialEq;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod cmp {
             trait PartialEq<Rhs> {
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]
