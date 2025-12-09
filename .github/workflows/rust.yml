@@ -80,7 +80,12 @@ jobs:
         primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
         gc-max-store-size: 10G
         purge: true
-    - run: nix shell --impure --command bash -c "cd .. && cargo creusot new test-project && cd test-project && cargo creusot prove"
+    - name: Build
+      run: nix build --impure . --print-build-logs
+      env:
+        NIXPKGS_ALLOW_UNFREE: 1
+    - name: Run tests
+      run: nix shell --impure --command bash -c "cd .. && cargo creusot new test-project && cd test-project && cargo creusot prove"
       env:
         NIXPKGS_ALLOW_UNFREE: 1
 

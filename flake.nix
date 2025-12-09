@@ -165,8 +165,12 @@
             doNotRemoveReferencesToRustToolchain = true;
 
             postInstall = with lib.strings; ''
+              mkdir $out/share
+              cp -r creusot-contracts $out/share/.
+
               wrapProgram $out/bin/cargo-creusot \
-                --set CREUSOT_RUSTC $out/bin/creusot-rustc
+                --set CREUSOT_CONTRACTS $out/share/creusot-contracts \
+                --set CREUSOT_RUSTC $out/bin/creusot-rustc \
 
               wrapProgram $out/bin/creusot-rustc \
                 --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}" \
