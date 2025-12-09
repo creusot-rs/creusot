@@ -8,7 +8,7 @@ pub use creusot_contracts_proc::Default;
 pub use core::default::Default;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod default {
             trait Default {
                 // #[requires(true)]
