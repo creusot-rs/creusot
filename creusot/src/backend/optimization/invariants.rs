@@ -1,67 +1,65 @@
 //! fMIR transformations
 //!
 //! This module defines a fMIR transformation which analyzes the body for
-//! 1. types with invariants being mutated inside of a loop
-//! 2. mutable borrows being mutated inside of a loop.
+//! 1- Places or prophecies of places that are unchanged during loops.
+
+use std::assert_matches::assert_matches;
 
 use crate::{
     backend::{
         program::node_graph,
-        projections::projection_ty,
+        projections::iter_projections_ty,
+        ty::{AdtKind, classify_adt},
         wto::{Component, weak_topological_order},
     },
-    contracts_items::Intrinsic,
     ctx::TranslationCtx,
     translation::{
         fmir::{
-            self, Block, FmirVisitor, Operand, Place, RValue, Statement, StatementKind, Terminator,
+            Block, Body, FmirVisitor, Invariant, LocalDecl, Operand, Place, ProjectionElem, RValue,
+            Statement, StatementKind, Terminator,
         },
         pearlite::{Ident, Term},
     },
 };
-use indexmap::{IndexMap, IndexSet};
+use indexmap::{IndexMap, map::Entry};
+use itertools::Itertools;
 use petgraph::Direction;
+use rustc_abi::FieldIdx;
+use rustc_ast::Mutability;
+use rustc_hir::def_id::DefId;
+use rustc_index::IndexVec;
 use rustc_middle::{
-    mir::{BasicBlock, PlaceTy, ProjectionElem, START_BLOCK},
-    ty::{Ty, TyCtxt},
+    mir::{BasicBlock, PlaceTy, START_BLOCK},
+    ty::{Ty, TyKind},
 };
 use rustc_span::DUMMY_SP;
 
 /// Add loop invariants to `body` for each mutable borrow that is _not_ modified in a loop.
-pub(crate) fn infer_proph_invariants<'tcx>(
+pub(crate) fn infer_invariant_places<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    body: &mut fmir::Body<'tcx>,
+    body: &mut Body<'tcx>,
+    scope: DefId,
 ) {
     let graph = node_graph(body);
 
     let wto = weak_topological_order(&graph, START_BLOCK);
-    let backs = descendants(&wto);
+    let dates = traverse_wto(&wto);
 
-    let res = borrow_prophecy_analysis(ctx, body, &wto);
-
-    for (k, unchanged) in res.iter() {
-        let inc = graph.neighbors_directed(*k, Direction::Incoming);
-        let incoming = &inc.collect::<IndexSet<_>>() - &backs[k];
-
-        for (ix, u) in unchanged.iter().enumerate() {
-            let Some(pterm) = place_to_term(u, ctx.tcx, &body.locals) else { continue };
-
-            let local = Ident::fresh_local(format!("old_{}_{ix}", k.as_u32()));
-            let subst = ctx.mk_args(&[u.ty(ctx.tcx, &body.locals).into()]);
-            let ty = Ty::new_adt(ctx.tcx, ctx.adt_def(Intrinsic::Snapshot.get(ctx)), subst);
-
+    for (k, unchanged) in unchanged_places_analysis(ctx, body, scope, &wto).into_iter() {
+        for u in unchanged {
+            let local = Ident::fresh_local("_old");
             body.locals
-                .insert(local, fmir::LocalDecl { span: DUMMY_SP, ty, temp: true, arg: false });
+                .insert(local, LocalDecl { span: DUMMY_SP, ty: u.ty, temp: true, arg: false });
 
-            for p in &incoming {
-                let mut prev_block = body.blocks.get_mut(p).unwrap();
+            for p in
+                graph.neighbors_directed(k, Direction::Incoming).filter(|p| dates[p] > dates[&k])
+            {
+                let mut prev_block = body.blocks.get_mut(&p).unwrap();
                 if let Terminator::Switch(_, branches) = &mut prev_block.terminator {
                     let new_block = BasicBlock::from(body.fresh);
                     body.fresh += 1;
-                    for tgt in branches.targets_mut() {
-                        if *tgt == *k {
-                            *tgt = new_block;
-                        }
+                    for tgt in branches.targets_mut().filter(|tgt| **tgt == k) {
+                        *tgt = new_block;
                     }
                     body.blocks.insert(
                         new_block,
@@ -69,34 +67,26 @@ pub(crate) fn infer_proph_invariants<'tcx>(
                             invariants: vec![],
                             variant: None,
                             stmts: vec![],
-                            terminator: Terminator::Goto(*k),
+                            terminator: Terminator::Goto(k),
                         },
                     );
                     prev_block = body.blocks.get_mut(&new_block).unwrap();
                 }
-                if let Terminator::Goto(t) = prev_block.terminator
-                    && t == *k
-                {
-                } else {
-                    panic!()
-                }
-                let span = body.block_spans[p];
+                assert_matches!(prev_block.terminator, Terminator::Goto(t) if t == k);
                 prev_block.stmts.push(Statement {
                     kind: StatementKind::Assignment(
                         Place { local, projection: Box::new([]) },
-                        RValue::Operand(Operand::term(pterm.clone().coerce(ty))),
+                        RValue::Operand(Operand::term(u.clone())),
                     ),
-                    span,
+                    span: body.block_spans[&p],
                 });
             }
 
-            let old = Term::var(local, ty);
-            let blk = body.blocks.get_mut(k).unwrap();
-
+            let blk = body.blocks.get_mut(&k).unwrap();
             blk.invariants.insert(
                 0,
-                fmir::Invariant {
-                    body: old.coerce(u.ty(ctx.tcx, &body.locals)).fin().eq(ctx.tcx, pterm.fin()),
+                Invariant {
+                    body: Term::var(local, u.ty).eq(ctx.tcx, u),
                     expl: "expl:mut invariant".to_string(),
                 },
             );
@@ -104,178 +94,245 @@ pub(crate) fn infer_proph_invariants<'tcx>(
     }
 }
 
-fn place_to_term<'tcx>(
-    p: &Place<'tcx>,
-    tcx: TyCtxt<'tcx>,
-    locals: &fmir::LocalDecls<'tcx>,
-) -> Option<Term<'tcx>> {
-    let mut t = Term::var(p.local, locals[&p.local].ty);
-    let mut pty = PlaceTy::from_ty(locals[&p.local].ty);
-
-    for proj in &p.projection {
-        let res_ty = projection_ty(pty, tcx, proj);
-        match proj {
-            ProjectionElem::Deref => {
-                if pty.ty.is_mutable_ptr() {
-                    t = t.cur();
+fn traverse_wto(comps: &[Component<BasicBlock>]) -> IndexMap<BasicBlock, u32> {
+    fn inner(e: &mut IndexMap<BasicBlock, u32>, date: &mut u32, comps: &[Component<BasicBlock>]) {
+        for comp in comps.iter().rev() {
+            let bb = match comp {
+                &Component::Simple(bb) => bb,
+                &Component::Complex(bb, ref members) => {
+                    inner(e, date, members);
+                    bb
                 }
-            }
-            ProjectionElem::Field(ix, _) => t = t.proj(*ix, res_ty.ty),
-            ProjectionElem::Index(_) => return None,
-            ProjectionElem::ConstantIndex { .. } => return None,
-            ProjectionElem::Subslice { .. } => return None,
-            ProjectionElem::Downcast(_, _) => return None,
-            ProjectionElem::OpaqueCast(_) => return None,
-            ProjectionElem::UnwrapUnsafeBinder(_) => return None,
-        }
-
-        pty = res_ty;
-    }
-
-    Some(t)
-}
-
-fn descendants(comps: &[Component<BasicBlock>]) -> IndexMap<BasicBlock, IndexSet<BasicBlock>> {
-    fn inner(e: &mut IndexMap<BasicBlock, IndexSet<BasicBlock>>, comps: &[Component<BasicBlock>]) {
-        for comp in comps {
-            match comp {
-                Component::Simple(_) => (),
-                Component::Complex(l, members) => {
-                    inner(e, members);
-                    for mem in members {
-                        match mem {
-                            Component::Simple(b) => {
-                                e.entry(*l).or_default().insert(*b);
-                            }
-                            Component::Complex(b, _) => {
-                                let s = e[b].clone();
-                                e.entry(*l).or_default().union(&s);
-                            }
-                        }
-                    }
-                }
-            }
+            };
+            e.insert(bb, *date);
+            *date += 1;
         }
     }
     let mut result = IndexMap::new();
-    inner(&mut result, comps);
+    inner(&mut result, &mut 0, comps);
     result
 }
 
-fn borrow_prophecy_analysis<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    body: &fmir::Body<'tcx>,
-    c: &[Component<BasicBlock>],
-) -> IndexMap<BasicBlock, IndexSet<Place<'tcx>>> {
-    let mut unchanged_prophs = Default::default();
-    let mut state = BorrowProph::initialize(ctx, &body.locals, &mut unchanged_prophs);
-
-    for comp in c {
-        borrow_prophecy_analysis_inner(&mut state, ctx, body, comp);
-    }
-
-    unchanged_prophs
+enum ChangedPlacesTree {
+    Changed,
+    DerefBox(Box<ChangedPlacesTree>),
+    DerefRefMut(Box<ChangedPlacesTree>),
+    Fields(IndexVec<FieldIdx, Option<ChangedPlacesTree>>),
 }
 
-fn borrow_prophecy_analysis_inner<'a, 'tcx>(
-    state_parent: &mut BorrowProph<'a, 'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    body: &'a fmir::Body<'tcx>,
-    c: &Component<BasicBlock>,
-) {
-    match c {
-        Component::Simple(b) => state_parent.visit_block(&body.blocks[b]),
-        Component::Complex(h, l) => {
-            let mut state =
-                BorrowProph::initialize(ctx, &body.locals, state_parent.unchanged_prophs);
-            state.visit_block(&body.blocks[h]);
-
-            for b in l {
-                borrow_prophecy_analysis_inner(&mut state, ctx, body, b)
+impl ChangedPlacesTree {
+    fn to_unchanged_term_vec<'tcx>(
+        &self,
+        ctx: &TranslationCtx<'tcx>,
+        scope: DefId,
+        t: Term<'tcx>,
+        acc: &mut Vec<Term<'tcx>>,
+    ) {
+        match self {
+            Self::Changed => (),
+            Self::DerefBox(c) => c.to_unchanged_term_vec(ctx, scope, t.deref(), acc),
+            Self::DerefRefMut(c) => {
+                acc.push(t.clone().fin());
+                c.to_unchanged_term_vec(ctx, scope, t.cur(), acc);
             }
-
-            let mut unchanged_prophs_here = IndexSet::new();
-            'active_borrows: for b in &state.active_borrows {
-                let mut p = b.clone();
-                loop {
-                    if state.overwritten_values.contains(&p) {
-                        continue 'active_borrows;
-                    }
-
-                    p.projection = if let Some((_, tl)) = p.projection.split_last() {
-                        tl.iter().cloned().collect()
-                    } else {
-                        break;
+            Self::Fields(c) => match t.ty.kind() {
+                TyKind::Closure(_, subst) => {
+                    for ((idx, c), ty) in c.iter_enumerated().zip_eq(subst.as_closure().upvar_tys())
+                    {
+                        if let Some(c) = c {
+                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                        } else {
+                            acc.push(t.clone().proj(idx, ty));
+                        }
                     }
                 }
+                TyKind::Tuple(tys) => {
+                    for ((idx, c), ty) in c.iter_enumerated().zip_eq(tys.iter()) {
+                        if let Some(c) = c {
+                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                        } else {
+                            acc.push(t.clone().proj(idx, ty));
+                        }
+                    }
+                }
+                TyKind::Adt(def, subst) => {
+                    let AdtKind::Struct { .. } = classify_adt(ctx, scope, *def, subst) else {
+                        unreachable!()
+                    };
+                    for ((idx, fdef), c) in
+                        def.non_enum_variant().fields.iter_enumerated().zip_eq(c)
+                    {
+                        let ty = fdef.ty(ctx.tcx, subst);
+                        if let Some(c) = c {
+                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                        } else if fdef.vis.is_accessible_from(scope, ctx.tcx) {
+                            acc.push(t.clone().proj(idx, ty));
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            },
+        }
+    }
 
-                unchanged_prophs_here.insert(b.clone());
+    fn record_write<'tcx>(
+        ctx: &TranslationCtx<'tcx>,
+        proj: &[ProjectionElem<'tcx>],
+        ty: Ty<'tcx>,
+    ) -> Self {
+        let mut res = Self::Changed;
+        for (elem, place_ty) in iter_projections_ty(ctx, proj, &mut PlaceTy::from_ty(ty))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+        {
+            match elem {
+                ProjectionElem::Deref => match place_ty.ty.kind() {
+                    TyKind::Adt(def, _) if def.is_box() => res = Self::DerefBox(Box::new(res)),
+                    TyKind::Ref(_, _, Mutability::Mut) => res = Self::DerefRefMut(Box::new(res)),
+                    _ => unreachable!(),
+                },
+                ProjectionElem::Field(idx, _) => {
+                    let n = match place_ty.ty.kind() {
+                        TyKind::Closure(_, subst) => subst.as_closure().upvar_tys().len(),
+                        TyKind::Tuple(tys) => tys.len(),
+                        TyKind::Adt(def, _) if def.is_struct() => {
+                            def.non_enum_variant().fields.len()
+                        }
+                        _ => {
+                            res = Self::Changed;
+                            continue;
+                        }
+                    };
+                    let mut v = IndexVec::from_fn_n(|_| None, n);
+                    v[*idx] = Some(res);
+                    res = Self::Fields(v)
+                }
+                _ => res = Self::Changed,
             }
+        }
+        res
+    }
 
-            state_parent.active_borrows.extend(state.active_borrows);
-            state_parent.overwritten_values.extend(state.overwritten_values);
-            state_parent.unchanged_prophs.insert(*h, unchanged_prophs_here);
+    fn merge(&mut self, t: Self) {
+        match (self, t) {
+            (Self::Changed, _) => (),
+            (s, Self::Changed) => *s = Self::Changed,
+            (Self::DerefBox(box s), Self::DerefBox(box t))
+            | (Self::DerefRefMut(box s), Self::DerefRefMut(box t)) => s.merge(t),
+            (Self::Fields(flds), Self::Fields(fldt)) => {
+                for (s, t) in flds.iter_mut().zip_eq(fldt) {
+                    match (s, t) {
+                        (_, None) => (),
+                        (s @ None, t) => *s = t,
+                        (Some(s), Some(t)) => s.merge(t),
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn merge_in_entry<K>(self, e: Entry<K, ChangedPlacesTree>) {
+        match e {
+            Entry::Occupied(mut e) => e.get_mut().merge(self),
+            Entry::Vacant(e) => {
+                e.insert(self);
+            }
         }
     }
 }
 
-struct BorrowProph<'a, 'tcx> {
-    active_borrows: IndexSet<Place<'tcx>>,
-    overwritten_values: IndexSet<Place<'tcx>>,
-    locals: &'a fmir::LocalDecls<'tcx>,
-    unchanged_prophs: &'a mut IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
-    tcx: TyCtxt<'tcx>,
+struct UnchangedPlaces<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
+    body: &'a Body<'tcx>,
+    scope: DefId,
+    writes: IndexMap<Ident, ChangedPlacesTree>,
+    unchanged: &'a mut IndexMap<BasicBlock, Vec<Term<'tcx>>>,
 }
 
-impl<'tcx> BorrowProph<'_, 'tcx> {
+impl<'a, 'tcx> UnchangedPlaces<'a, 'tcx> {
+    fn initialize(
+        ctx: &'a TranslationCtx<'tcx>,
+        body: &'a Body<'tcx>,
+        scope: DefId,
+        unchanged: &'a mut IndexMap<BasicBlock, Vec<Term<'tcx>>>,
+    ) -> Self {
+        Self { ctx, body, scope, writes: Default::default(), unchanged }
+    }
+
     fn record_write_to(&mut self, pl: &Place<'tcx>) {
-        self.overwritten_values.insert(pl.clone());
-
-        let mut bty = PlaceTy::from_ty(self.locals[&pl.local].ty);
-        let mut proj = vec![];
-        for pr in &pl.projection {
-            let b = Place { projection: proj.clone().into(), ..*pl };
-            if matches!(pr, ProjectionElem::Deref) && bty.ty.is_ref() && bty.ty.is_mutable_ptr() {
-                self.active_borrows.insert(b.clone());
-            }
-            proj.push(*pr);
-            bty = projection_ty(bty, self.tcx, pr);
-        }
+        let t = ChangedPlacesTree::record_write(
+            self.ctx,
+            &pl.projection,
+            self.body.locals[&pl.local].ty,
+        );
+        t.merge_in_entry(self.writes.entry(pl.local))
     }
 }
 
-impl<'tcx> FmirVisitor<'tcx> for BorrowProph<'_, 'tcx> {
-    fn visit_stmt(&mut self, stmt: &fmir::Statement<'tcx>) {
+impl<'tcx> FmirVisitor<'tcx> for UnchangedPlaces<'_, 'tcx> {
+    fn visit_stmt(&mut self, stmt: &Statement<'tcx>) {
         match &stmt.kind {
-            fmir::StatementKind::Assignment(l, r) => {
+            StatementKind::Assignment(l, r) => {
                 self.record_write_to(l);
-
                 if let RValue::Borrow(_, r) = r {
                     self.record_write_to(r);
                 }
             }
-            fmir::StatementKind::Call(r, _, _, _, _) => {
-                self.record_write_to(r);
-            }
+            StatementKind::Call(r, _, _, _, _) => self.record_write_to(r),
             _ => (),
         }
     }
 }
 
-impl<'a, 'tcx> BorrowProph<'a, 'tcx> {
-    fn initialize(
-        ctx: &TranslationCtx<'tcx>,
-        locals: &'a fmir::LocalDecls<'tcx>,
-        unchanged_prophs: &'a mut IndexMap<BasicBlock, IndexSet<Place<'tcx>>>,
-    ) -> Self {
-        {
-            Self {
-                tcx: ctx.tcx,
-                locals,
-                active_borrows: Default::default(),
-                overwritten_values: Default::default(),
-                unchanged_prophs,
+fn unchanged_places_analysis_inner<'a, 'tcx>(
+    state_parent: &mut UnchangedPlaces<'a, 'tcx>,
+    c: &Component<BasicBlock>,
+) {
+    match c {
+        Component::Simple(b) => state_parent.visit_block(&state_parent.body.blocks[b]),
+        Component::Complex(h, l) => {
+            let mut state = UnchangedPlaces::initialize(
+                state_parent.ctx,
+                &state_parent.body,
+                state_parent.scope,
+                state_parent.unchanged,
+            );
+            state.visit_block(&state_parent.body.blocks[h]);
+
+            for b in l {
+                unchanged_places_analysis_inner(&mut state, b)
             }
+
+            let mut unchanged_here = vec![];
+            for (l, t) in state.writes {
+                t.to_unchanged_term_vec(
+                    state.ctx,
+                    state.scope,
+                    Term::var(l, state.body.locals[&l].ty),
+                    &mut unchanged_here,
+                );
+                t.merge_in_entry(state_parent.writes.entry(l));
+            }
+
+            state_parent.unchanged.insert(*h, unchanged_here);
         }
     }
+}
+
+fn unchanged_places_analysis<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    body: &Body<'tcx>,
+    scope: DefId,
+    c: &[Component<BasicBlock>],
+) -> IndexMap<BasicBlock, Vec<Term<'tcx>>> {
+    let mut unchanged = Default::default();
+    let mut state = UnchangedPlaces::initialize(ctx, body, scope, &mut unchanged);
+
+    for comp in c {
+        unchanged_places_analysis_inner(&mut state, comp);
+    }
+
+    unchanged
 }

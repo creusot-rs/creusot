@@ -59,14 +59,6 @@ impl<'tcx> Place<'tcx> {
             (base, *proj)
         })
     }
-
-    pub fn last_projection(&self) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
-        if let &[ref proj_base @ .., elem] = &self.projection[..] {
-            Some((PlaceRef { local: self.local, projection: proj_base }, elem))
-        } else {
-            None
-        }
-    }
 }
 
 impl<'tcx> PlaceRef<'_, 'tcx> {

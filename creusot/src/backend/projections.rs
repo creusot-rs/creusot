@@ -63,12 +63,16 @@ pub(crate) fn iter_projections_ty<'tcx, 'a, V: Debug>(
     proj.iter().map(move |elem| {
         // Code in pearlite.rs does not insert a projection when seeing
         // a deref of a snapshot. Thus we remove this from the type if a snapshot appears.
+        //
+        // Note: this is only relevant for place projections in Pearlite terms, for logical
+        // reborrowing
         while let TyKind::Adt(d, subst) = place_ty.ty.kind()
             && Intrinsic::Snapshot.is(ctx, d.did())
         {
             assert_matches!(place_ty.variant_index, None);
             place_ty.ty = subst.type_at(0);
         }
+
         let r = (elem, *place_ty);
         *place_ty = projection_ty(*place_ty, ctx.tcx, elem);
         r

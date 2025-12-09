@@ -1,8 +1,8 @@
 module M_gnome_sort
   use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   use seq.Permut
   use creusot.slice.Slice64
   use creusot.prelude.Any
@@ -244,9 +244,9 @@ module M_gnome_sort
   let rec gnome_sort_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
     {[@expl:gnome_sort 'v' type invariant] inv_ref_Vec_T_Global'0 v}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &old_2_0 <- v ] s3 | s3 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+      [ bb2 = {[@expl:mut invariant] _old = v.final}
         {[@expl:loop invariant #0] sorted_range_DeepModelTy (deep_model_ref_Vec_T_Global v) 0 (UInt64.t'int i)}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #2] inv_ref_Vec_T_Global'0 v}
@@ -301,7 +301,7 @@ module M_gnome_sort
     | & _38: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _39: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _40: UInt64.t = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
+    | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:gnome_sort ensures #0] sorted_DeepModelTy (deep_model_Vec_T_Global v.final)}
       {[@expl:gnome_sort ensures #1] permutation_of_T (view_Vec_T_Global v.final) (view_Vec_T_Global v.current)}
       (! return {result}) ]

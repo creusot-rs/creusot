@@ -308,7 +308,7 @@ pub fn why_body<'tcx>(
         .map(|(i, k)| (k, i))
         .collect::<HashMap<_, _>>();
 
-    optimizations(ctx, &mut body);
+    optimizations(ctx, &mut body, body_id.def_id);
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 

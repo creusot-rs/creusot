@@ -87,10 +87,10 @@ module M_heap_frag_max
     )
 end
 module M_sift_down
+  use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use mach.int.Int
   use seq.Seq
-  use creusot.prelude.MutBorrow
   use seq.Permut
   use creusot.slice.Slice64
   use creusot.prelude.Any
@@ -348,9 +348,9 @@ module M_sift_down
     {[@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end'}
     {[@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- start ] s2 | s2 = [ &old_2_0 <- v ] s3 | s3 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- start ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+      [ bb2 = {[@expl:mut invariant] _old = v.final}
         {[@expl:loop invariant #0] inv_ref_Vec_T_Global v}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #2] UInt64.t'int start <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int end'}
@@ -443,7 +443,7 @@ module M_sift_down
     | & _106: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _107: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _108: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
+    | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) ->
     {[@expl:sift_down ensures #0] heap_frag_DeepModelTy (deep_model_Vec_T_Global v.final) (UInt64.t'int start) (UInt64.t'int end')}
       {[@expl:sift_down ensures #1] permutation_of_T (view_Vec_T_Global v.final) (view_Vec_T_Global v.current)}
@@ -695,10 +695,10 @@ module M_heap_sort
       | s2 = [ &_12 <- (2: UInt64.t) = (0: UInt64.t) ] s3
       | s3 = {[@expl:division by zero] not _12} s4
       | s4 = UInt64.div {_10} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &start <- _x ] s5)
-      | s5 = [ &old_4_0 <- v ] s6
+      | s5 = [ &_old <- v.final ] s6
       | s6 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:mut invariant] old_4_0.final = v.final}
+      [ bb4 = {[@expl:mut invariant] _old = v.final}
         {[@expl:loop invariant #0] inv_ref_Vec_T_Global'0 v}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #2] heap_frag_DeepModelTy (deep_model_ref_Vec_T_Global v) (UInt64.t'int start) (Seq.length (view_Vec_T_Global v.current))}
@@ -717,9 +717,9 @@ module M_heap_sort
           | s3 = sift_down_T {_30} {start} {_32} (fun (_x: ()) -> [ &_29 <- _x ] s4)
           | s4 = bb4 ] ] ]
     | bb9 = s0
-      [ s0 = len_T {v.current} (fun (_x: UInt64.t) -> [ &end' <- _x ] s1) | s1 = [ &old_11_0 <- v ] s2 | s2 = bb11 ]
+      [ s0 = len_T {v.current} (fun (_x: UInt64.t) -> [ &end' <- _x ] s1) | s1 = [ &_old'0 <- v.final ] s2 | s2 = bb11 ]
     | bb11 = bb11
-      [ bb11 = {[@expl:mut invariant] old_11_0.final = v.final}
+      [ bb11 = {[@expl:mut invariant] _old'0 = v.final}
         {[@expl:loop invariant #0] inv_ref_Vec_T_Global'0 v}
         {[@expl:loop invariant #1] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current)}
         {[@expl:loop invariant #2] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
@@ -782,8 +782,8 @@ module M_heap_sort
     | & _60: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _66: () = Any.any_l ()
     | & _67: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & old_4_0: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & old_11_0: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
+    | & _old: t_Vec_T_Global = Any.any_l ()
+    | & _old'0: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:heap_sort ensures #0] sorted_DeepModelTy (deep_model_Vec_T_Global v.final)}
       {[@expl:heap_sort ensures #1] permutation_of_T (view_Vec_T_Global v.final) (view_Vec_T_Global v.current)}
       (! return {result}) ]

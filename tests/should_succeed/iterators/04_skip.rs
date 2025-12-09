@@ -64,7 +64,6 @@ where
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i> 0 <= i && i < skipped.len() ==> resolve(skipped[i]))]
-        #[invariant((*self).n@ == 0)]
         loop {
             let r = self.iter.next();
             if n == 0 {

@@ -1,8 +1,8 @@
 module M_right_pad
+  use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Vec_T_Global
@@ -85,9 +85,9 @@ module M_right_pad
     {[@expl:right_pad 'str' type invariant] inv_ref_Vec_T_Global'0 str}
     {[@expl:right_pad 'pad' type invariant] inv_T pad}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &old_2_0 <- str ] s2 | s2 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &_old <- str.final ] s2 | s2 = bb2 ]
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] old_2_0.final = str.final}
+      [ bb2 = {[@expl:mut invariant] _old = str.final}
         {[@expl:loop invariant #0] Seq.length (view_Vec_T_Global old_str.current)
         <= Seq.length (view_Vec_T_Global str.current)}
         {[@expl:loop invariant #1] Seq.length (view_Vec_T_Global old_str.current) < UInt64.t'int len
@@ -124,7 +124,7 @@ module M_right_pad
     | & _48: UInt64.t = Any.any_l ()
     | & _51: () = Any.any_l ()
     | & _52: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
+    | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:right_pad ensures #0] Seq.length (view_Vec_T_Global str.final) >= UInt64.t'int len
       /\ Seq.length (view_Vec_T_Global str.final) >= Seq.length (view_Vec_T_Global str.current)}
       {[@expl:right_pad ensures #1] Seq.length (view_Vec_T_Global str.final) = UInt64.t'int len
@@ -140,10 +140,10 @@ module M_right_pad
       (! return {result}) ]
 end
 module M_left_pad
+  use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Vec_T_Global
@@ -232,9 +232,9 @@ module M_left_pad
     {[@expl:left_pad 'str' type invariant] inv_ref_Vec_T_Global'0 str}
     {[@expl:left_pad 'pad' type invariant] inv_T pad}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &c <- 0 ] s2 | s2 = [ &old_3_0 <- str ] s3 | s3 = bb3 ]
+    [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &c <- 0 ] s2 | s2 = [ &_old <- str.final ] s3 | s3 = bb3 ]
     | bb3 = bb3
-      [ bb3 = {[@expl:mut invariant] old_3_0.final = str.final}
+      [ bb3 = {[@expl:mut invariant] _old = str.final}
         {[@expl:loop invariant #0] Seq.length (view_Vec_T_Global old_str.current)
         <= Seq.length (view_Vec_T_Global str.current)}
         {[@expl:loop invariant #1] Seq.length (view_Vec_T_Global old_str.current) < UInt64.t'int len
@@ -274,7 +274,7 @@ module M_left_pad
     | & _48: UInt64.t = Any.any_l ()
     | & _51: () = Any.any_l ()
     | & _52: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & old_3_0: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
+    | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:left_pad ensures #0] Seq.length (view_Vec_T_Global str.final) >= UInt64.t'int len
       /\ Seq.length (view_Vec_T_Global str.final) >= Seq.length (view_Vec_T_Global str.current)}
       {[@expl:left_pad ensures #1] Seq.length (view_Vec_T_Global str.final) = UInt64.t'int len

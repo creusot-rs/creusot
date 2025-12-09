@@ -18,10 +18,10 @@ module M_f
       [ s0 = [ &a <- Some (10: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <t_Option_i32> {a}
           (fun (_bor: MutBorrow.t t_Option_i32) -> [ &b <- _bor ] [ &a <- _bor.final ] s2)
-      | s2 = [ &old_1_0 <- b ] s3
+      | s2 = [ &_old <- b.final ] s3
       | s3 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] old_1_0.final = b.final}
+      [ bb1 = {[@expl:mut invariant] _old = b.final}
         {[@expl:loop invariant] true}
         (! s0)
         [ s0 = any [ br0 -> {b.current = None} (! bb5) | br1 (x0: Int32.t) -> {b.current = Some x0} (! bb4) ] ]
@@ -31,5 +31,5 @@ module M_f
     | & a: t_Option_i32 = Any.any_l ()
     | & b: MutBorrow.t t_Option_i32 = Any.any_l ()
     | & _7: t_Option_i32 = Any.any_l ()
-    | & old_1_0: MutBorrow.t t_Option_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _old: t_Option_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

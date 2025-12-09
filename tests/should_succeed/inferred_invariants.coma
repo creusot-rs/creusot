@@ -55,9 +55,9 @@ module M_simple
   
   let rec simple_T (x: MutBorrow.t t_T) (return (x'0: ())) = {[@expl:simple 'x' type invariant] inv_ref_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_1_0 <- x ] s1 | s1 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &_old <- x.final ] s1 | s1 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
+      [ bb1 = {[@expl:mut invariant] _old = x.final}
         {[@expl:loop invariant] inv_ref_T x}
         (! s0)
         [ s0 = {inv_T x.current}
@@ -70,7 +70,7 @@ module M_simple
     [ & x: MutBorrow.t t_T = x
     | & _4: () = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l ()
-    | & old_1_0: MutBorrow.t t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _old: t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_swapper
   use creusot.prelude.MutBorrow
@@ -210,10 +210,10 @@ module M_temp_move
 end
 module M_y
   use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.int.Int32
   use mach.int.Int
-  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_Vec_i32_Global
@@ -266,9 +266,9 @@ module M_y
   meta "select_lsinst" "all"
   
   let rec y (v: MutBorrow.t t_Vec_i32_Global) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &old_2_0 <- v ] s3 | s3 = bb2 ]
+    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
-      [ bb2 = {[@expl:mut invariant] old_2_0.final = v.final}
+      [ bb2 = {[@expl:mut invariant] _old = v.final}
         {[@expl:loop invariant #0] Seq.length (view_Vec_i32_Global old_v.current)
         = Seq.length (view_Vec_i32_Global v.current)}
         {[@expl:loop invariant #1] UInt64.t'int i <= 10}
@@ -298,7 +298,7 @@ module M_y
     | & _18: MutBorrow.t Int32.t = Any.any_l ()
     | & _19: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & old_2_0: MutBorrow.t t_Vec_i32_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _old: t_Vec_i32_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested_loops
   use creusot.int.Int32
@@ -316,9 +316,9 @@ module M_nested_loops
   let rec nested_loops (x: MutBorrow.t Int32.t) (return (x'0: ())) = {[@expl:nested_loops requires] x.current
     = (0: Int32.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x ] s2 | s2 = bb1 ]
+    [ bb0 = s0 [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &_old'0 <- x.final ] s2 | s2 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] old_1_0.final = x.final}
+      [ bb1 = {[@expl:mut invariant] _old'0 = x.final}
         {[@expl:loop invariant] x.current = (0: Int32.t)}
         (! s0)
         [ s0 = [ &_12 <- Int32.gt i (10: Int32.t) ] s1
@@ -326,10 +326,10 @@ module M_nested_loops
         [ bb4 = s0
           [ s0 = Int32.add {i} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &i <- _x ] s1)
           | s1 = [ &j <- (0: Int32.t) ] s2
-          | s2 = [ &old_5_0 <- x ] s3
+          | s2 = [ &_old <- x.final ] s3
           | s3 = bb5 ]
         | bb5 = bb5
-          [ bb5 = {[@expl:mut invariant] old_5_0.final = x.final}
+          [ bb5 = {[@expl:mut invariant] _old = x.final}
             {[@expl:loop invariant] x.current = (0: Int32.t)}
             (! s0)
             [ s0 = [ &_20 <- Int32.gt j (10: Int32.t) ] s1
@@ -345,8 +345,8 @@ module M_nested_loops
     | & _12: bool = Any.any_l ()
     | & j: Int32.t = Any.any_l ()
     | & _20: bool = Any.any_l ()
-    | & old_5_0: MutBorrow.t Int32.t = Any.any_l ()
-    | & old_1_0: MutBorrow.t Int32.t = Any.any_l () ])
+    | & _old: Int32.t = Any.any_l ()
+    | & _old'0: Int32.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:nested_loops ensures] x.final = (0: Int32.t)} (! return {result}) ]
 end
 module M_nested_borrows
@@ -374,10 +374,13 @@ module M_nested_borrows
     {[@expl:nested_borrows requires] x.current.current = (0: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &old_1_0 <- x ] s2 | s2 = [ &old_1_1 <- x.current ] s3 | s3 = bb1 ]
+      [ s0 = [ &i <- (0: Int32.t) ] s1
+      | s1 = [ &_old <- x.final ] s2
+      | s2 = [ &_old'0 <- x.current.final ] s3
+      | s3 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:mut invariant] old_1_1.final = x.current.final}
-        {[@expl:mut invariant] old_1_0.final = x.final}
+      [ bb1 = {[@expl:mut invariant] _old'0 = x.current.final}
+        {[@expl:mut invariant] _old = x.final}
         {[@expl:loop invariant] x.current.current = (0: Int32.t)}
         (! s0)
         [ s0 = [ &_17 <- Int32.gt i (10: Int32.t) ] s1
@@ -406,8 +409,8 @@ module M_nested_borrows
     | & b: MutBorrow.t Int32.t = Any.any_l ()
     | & _21: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
     | & _22: MutBorrow.t Int32.t = Any.any_l ()
-    | & old_1_0: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
-    | & old_1_1: MutBorrow.t Int32.t = Any.any_l () ])
+    | & _old: MutBorrow.t Int32.t = Any.any_l ()
+    | & _old'0: Int32.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:nested_borrows ensures #0] x.final = y}
       {[@expl:nested_borrows ensures #1] x.current.final = (1: Int32.t)}
       (! return {result}) ]
