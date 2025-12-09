@@ -26,7 +26,7 @@ pub struct Place<'tcx> {
     #[type_visitable(ignore)]
     #[type_foldable(identity)]
     pub(crate) local: Ident,
-    pub(crate) projections: Box<[ProjectionElem<'tcx>]>,
+    pub(crate) projection: Box<[ProjectionElem<'tcx>]>,
 }
 
 /// The equivalent of [`mir::PlaceRef`], but for fMIR
@@ -40,7 +40,7 @@ impl<'tcx> Place<'tcx> {
     pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
-        for p in self.projections.iter() {
+        for p in self.projection.iter() {
             ty = projection_ty(ty, tcx, p);
         }
 
@@ -48,20 +48,20 @@ impl<'tcx> Place<'tcx> {
     }
 
     pub(crate) fn as_symbol(&self) -> Option<Ident> {
-        if self.projections.is_empty() { Some(self.local) } else { None }
+        if self.projection.is_empty() { Some(self.local) } else { None }
     }
 
     pub(crate) fn iter_projections(
         &self,
     ) -> impl DoubleEndedIterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> + '_ {
-        self.projections.iter().enumerate().map(move |(i, proj)| {
-            let base = PlaceRef { local: self.local, projection: &self.projections[..i] };
+        self.projection.iter().enumerate().map(move |(i, proj)| {
+            let base = PlaceRef { local: self.local, projection: &self.projection[..i] };
             (base, *proj)
         })
     }
 
     pub fn last_projection(&self) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
-        if let &[ref proj_base @ .., elem] = &self.projections[..] {
+        if let &[ref proj_base @ .., elem] = &self.projection[..] {
             Some((PlaceRef { local: self.local, projection: proj_base }, elem))
         } else {
             None

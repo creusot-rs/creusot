@@ -302,7 +302,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 self.ctx,
                 self.typing_env(),
                 Term::var(pl.local, self.vars[&pl.local].ty),
-                &pl.projections,
+                &pl.projection,
                 |e| match rpl {
                     ResolvedPlace::All(_) => {
                         inv_call(self.ctx, self.typing_env(), self.body_id.def_id, e).unwrap()
@@ -334,7 +334,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.ctx,
             self.typing_env(),
             Term::var(pl.local, self.vars[&pl.local].ty),
-            &pl.projections,
+            &pl.projection,
             |e| {
                 let r = match rpl {
                     ResolvedPlace::All(_) => {
@@ -461,7 +461,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             })
             .collect::<Box<[_]>>();
-        fmir::Place { local: self.locals[&pl.local], projections }
+        fmir::Place { local: self.locals[&pl.local], projection: projections }
     }
 }
 

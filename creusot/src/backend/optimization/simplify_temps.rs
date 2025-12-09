@@ -123,14 +123,14 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads {
         if let Operand::Place(p) = op
             && let Some(r) = self.0.get_mut(&p.local)
         {
-            if p.projections.len() == 0 { r.inc() } else { *r = Reads::NotSubstitutable }
+            if p.projection.len() == 0 { r.inc() } else { *r = Reads::NotSubstitutable }
         }
         super_visit_operand(self, op)
     }
 
     fn visit_place(&mut self, p: &Place<'tcx>) {
         super_visit_place(self, p);
-        for e in &p.projections {
+        for e in &p.projection {
             if let ProjectionElem::Index(PIdent(l)) = e
                 && let Some(r) = self.0.get_mut(l)
             {
@@ -258,7 +258,7 @@ impl<'tcx> FmirVisitorMut<'tcx> for BlockPropagator<'_, 'tcx> {
             return;
         }
         while let Operand::Place(p) = op
-            && p.projections.len() == 0
+            && p.projection.len() == 0
             && let Some(LocalState::Op(op_new, _)) = self.state.0.get(&p.local)
         {
             *op = op_new.clone();
@@ -268,7 +268,7 @@ impl<'tcx> FmirVisitorMut<'tcx> for BlockPropagator<'_, 'tcx> {
     fn visit_mut_stmt(&mut self, stmt: &mut Statement<'tcx>) {
         super_visit_mut_stmt(self, stmt);
         let lhs = match &mut stmt.kind {
-            StatementKind::Assignment(lhs, RValue::Operand(rhs)) if lhs.projections.len() == 0 => {
+            StatementKind::Assignment(lhs, RValue::Operand(rhs)) if lhs.projection.len() == 0 => {
                 if self.state.0.contains_key(&lhs.local) {
                     let (locals, ctx) = (self.locals, self.ctx);
                     let mut pure = PurityVisitor { locals, ctx, span: stmt.span, pure: true };

@@ -155,7 +155,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     self.ctx,
                     self.typing_env(),
                     Term::var(pl.local, self.vars[&pl.local].ty),
-                    &pl.projections,
+                    &pl.projection,
                     |e| e,
                     None,
                     |id| Term::var(*id, self.tcx().types.usize),

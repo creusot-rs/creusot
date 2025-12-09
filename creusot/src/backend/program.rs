@@ -489,7 +489,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             &mut PlaceTy::from_ty(self.locals[&lhs.local].ty),
             Focus::new(|_| Exp::var(lhs.local)),
             Box::new(|_, x| x),
-            &lhs.projections,
+            &lhs.projection,
             span,
         );
 
@@ -505,7 +505,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             &mut PlaceTy::from_ty(self.locals[&pl.local].ty),
             Focus::new(|_| Exp::var(pl.local)),
             Box::new(|_, _| unreachable!()),
-            &pl.projections,
+            &pl.projection,
             self.ctx.tcx.def_span(self.def_id),
         );
         rhs.call(istmts)
@@ -1224,7 +1224,7 @@ impl<'tcx> Statement<'tcx> {
                         &mut place_ty,
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
-                        &rhs.projections[..deref_index],
+                        &rhs.projection[..deref_index],
                         self.span,
                     );
                     let (foc, constr) = projections_to_expr(
@@ -1234,7 +1234,7 @@ impl<'tcx> Statement<'tcx> {
                         &mut place_ty,
                         original_borrow.clone(),
                         original_borrow_constr,
-                        &rhs.projections[deref_index..],
+                        &rhs.projection[deref_index..],
                         self.span,
                     );
                     rhs_rplace = foc.call(&mut istmts);
@@ -1245,7 +1245,7 @@ impl<'tcx> Statement<'tcx> {
                         lower.names,
                         original_borrow.call(&mut istmts),
                         self.span,
-                        &rhs.projections[deref_index + 1..],
+                        &rhs.projection[deref_index + 1..],
                         |sym| (Exp::var(sym.0), lower.ctx.types.usize),
                     );
 
@@ -1258,7 +1258,7 @@ impl<'tcx> Statement<'tcx> {
                         &mut place_ty,
                         Focus::new(|_| Exp::var(rhs.local)),
                         Box::new(|_, x| x),
-                        &rhs.projections,
+                        &rhs.projection,
                         self.span,
                     );
                     rhs_rplace = foc.call(&mut istmts);
@@ -1369,14 +1369,12 @@ fn func_call_to_why3<'tcx>(
             .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
                 let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
-                    .projections
+                    .projection
                     .iter()
                     .copied()
                     .chain([ProjectionElem::Field(ix.into(), inp)])
                     .collect();
-                Arg::Term(
-                    Operand::Place(Place { projections: projection, ..pl }).into_why(lower, istmts),
-                )
+                Arg::Term(Operand::Place(Place { projection, ..pl }).into_why(lower, istmts))
             }))
             .collect()
     } else {

@@ -93,7 +93,7 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
 
     fn visit_place(&mut self, p: &Place<'tcx>) {
         super_visit_place(self, p);
-        p.projections.iter().for_each(|p| {
+        p.projection.iter().for_each(|p| {
             if let ProjectionElem::Index(PIdent(l)) = p {
                 self.live.insert(*l);
             }
@@ -129,7 +129,7 @@ pub(super) struct PurityVisitor<'a, 'tcx> {
 impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
     fn visit_place(&mut self, pl: &Place<'tcx>) {
         let mut place_ty = PlaceTy::from_ty(self.locals[&pl.local].ty);
-        for (elem, place_ty) in iter_projections_ty(self.ctx, &pl.projections, &mut place_ty) {
+        for (elem, place_ty) in iter_projections_ty(self.ctx, &pl.projection, &mut place_ty) {
             match elem {
                 ProjectionElem::Deref => (),
                 ProjectionElem::Field(..) => match place_ty.ty.kind() {
