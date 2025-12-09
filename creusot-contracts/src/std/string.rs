@@ -10,6 +10,7 @@ impl View for str {
     }
 }
 
+#[cfg(feature = "std")]
 extern_spec! {
     mod std {
         mod string {

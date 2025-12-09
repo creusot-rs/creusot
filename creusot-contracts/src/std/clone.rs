@@ -8,7 +8,7 @@ pub use creusot_contracts_proc::Clone;
 pub use core::clone::Clone;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod clone {
             trait Clone {
                 #[requires(true)]

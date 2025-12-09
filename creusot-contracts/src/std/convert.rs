@@ -2,7 +2,7 @@ use crate::prelude::*;
 use core::convert::*;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod convert {
             trait From<T> where Self: From<T> {
                 // #[requires(true)]

@@ -6,7 +6,7 @@ use core::borrow::Borrow;
 // https://doc.rust-lang.org/std/borrow/trait.Borrow.html
 
 extern_spec! {
-    mod std {
+    mod core {
         mod borrow {
             trait Borrow<Borrowed>
             where Borrowed: ?Sized

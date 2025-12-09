@@ -43,7 +43,10 @@ extern_spec! {
 
         }
     }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
     mod std {
         mod rt {
             #[check(ghost)]
