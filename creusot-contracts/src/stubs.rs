@@ -40,12 +40,14 @@ pub fn implication(_: bool, _: bool) -> bool {
     dead
 }
 
+#[cfg(feature = "std")]
 #[logic(opaque)]
 #[intrinsic("old")]
 pub fn old<T: ?Sized>(_: T) -> Box<T> {
     dead
 }
 
+#[cfg(feature = "std")]
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
