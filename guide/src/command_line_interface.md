@@ -109,7 +109,7 @@ which ensures that the Coma artifacts are always up to date.
 ### `new`
 
 ```
-cargo creusot new <NAME> [--main]
+cargo creusot new <NAME> [--main] [--creusot-contracts <PATH>]
 ```
 
 Create or update package named `<NAME>`.
@@ -119,6 +119,7 @@ Create directory `<NAME>` if it doesn't already exist, and run `cargo creusot in
 #### Options
 
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
+- `--creusot-contracts <PATH>`: Path to local `creusot-contracts` used to set the `[patch.crates-io]` section of `Cargo.toml`.
 
 ### `init`
 
@@ -151,6 +152,7 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 
 - `<NAME>`: Name of the package. (By default, it is the name of the directory.)
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
+- `--creusot-contracts <PATH>`: Path to local `creusot-contracts` used to set the `[patch.crates-io]` section of `Cargo.toml`.
 
 ## Configuration
 

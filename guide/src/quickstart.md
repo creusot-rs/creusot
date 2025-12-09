@@ -12,6 +12,15 @@ Create a new project with this command:
 cargo creusot new project-name
 ```
 
+> [!NOTE]
+> If you are using the development version of Creusot (`master` branch), you
+> should also point your project to your local copy of `creusot-contracts`,
+> using the `--creusot-contracts` option (otherwise the default is to use the
+> released version on crates.io). To avoid hard-coding local paths in your
+> configuration, one approach is to set `--creusot-contracts creusot-contracts`,
+> and make a symbolic link `creusot-contracts` pointing to your local
+> `creusot-contracts`.
+
 That command creates a directory `package-name` containing the basic elements of a Rust project verified with Creusot. The file `src/lib.rs` is initialized with an example function annotated with a contract:
 
 ```rust
