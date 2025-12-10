@@ -27,5 +27,5 @@ pub fn wrong_ptr_own_permission() {
     let (_, perm) = PtrOwn::new(1i32);
 
     // does not work: we know that `perm` is not `ptr`'s permission
-    let _ = unsafe { PtrOwn::as_ref(ptr, perm.borrow()) };
+    let _ = unsafe { PtrOwn::as_ref(ptr, ghost! { &*perm }) };
 }
