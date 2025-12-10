@@ -33,11 +33,10 @@ module M_reborrow_tuple
     {[@expl:reborrow_tuple 'x' type invariant] inv_ref_T x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_T x.current}
-        MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
+      [ s0 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_4 <- _bor ] -{inv_T _bor.final}-
-            [ &x <- { x with current = _bor.final } ] s1)
+            [ &x <- { x with current = _bor.final } ] s1) [ _ck -> (! {inv_T x.current} any) ]
       | s1 = [ &_ret <- { f0 = _4; f1 = (32: UInt32.t) } ] s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_T x} any) ]
       | s3 = -{resolve_ref_T x}- s4

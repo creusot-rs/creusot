@@ -156,26 +156,23 @@ module M_foo
       | s3 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_6 <- _x ] s4)
       | s4 = [ &p2 <- _6.f0 ] s5
       | s5 = [ &own2 <- _6.f1 ] s6
-      | s6 = {inv_Ghost_PtrOwn_i32 own1}
-        MutBorrow.borrow_mut <t_PtrOwn_i32> {own1}
+      | s6 = MutBorrow.borrow_mut <t_PtrOwn_i32> {own1}
           (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
             [ &_13 <- _bor ] -{inv_Ghost_PtrOwn_i32 _bor.final}-
-            [ &own1 <- _bor.final ] s7)
-      | s7 = {inv_Ghost_PtrOwn_i32 _13.current}
-        MutBorrow.borrow_final <t_PtrOwn_i32> {_13.current} {MutBorrow.get_id _13}
+            [ &own1 <- _bor.final ] s7) [ _ck -> (! {inv_Ghost_PtrOwn_i32 own1} any) ]
+      | s7 = MutBorrow.borrow_final <t_PtrOwn_i32> {_13.current} {MutBorrow.get_id _13}
           (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
             [ &_12 <- _bor ] -{inv_Ghost_PtrOwn_i32 _bor.final}-
-            [ &_13 <- { _13 with current = _bor.final } ] s8)
+            [ &_13 <- { _13 with current = _bor.final } ] s8) [ _ck -> (! {inv_Ghost_PtrOwn_i32 _13.current} any) ]
       | s8 = deref_mut_Ghost_PtrOwn_i32 {_12} (fun (_x: MutBorrow.t t_PtrOwn_i32) -> [ &_11 <- _x ] s9)
       | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Ghost_PtrOwn_i32 own2} any) ]
       | s10 = -{resolve_Ghost_PtrOwn_i32 own2}- s11
       | s11 = [ &_17 <- own2 ] s12
       | s12 = deref_Ghost_PtrOwn_i32 {_17} (fun (_x: t_PtrOwn_i32) -> [ &_15 <- _x ] s13)
-      | s13 = {inv_PtrOwn_i32 _11.current}
-        MutBorrow.borrow_final <t_PtrOwn_i32> {_11.current} {MutBorrow.get_id _11}
+      | s13 = MutBorrow.borrow_final <t_PtrOwn_i32> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
             [ &_10 <- _bor ] -{inv_PtrOwn_i32 _bor.final}-
-            [ &_11 <- { _11 with current = _bor.final } ] s14)
+            [ &_11 <- { _11 with current = _bor.final } ] s14) [ _ck -> (! {inv_PtrOwn_i32 _11.current} any) ]
       | s14 = disjoint_lemma_i32 {_10} {_15} (fun (_x: ()) -> [ &_9 <- _x ] s15)
       | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_ref_Ghost_PtrOwn_i32 _13} any) ]
       | s16 = -{resolve_ref_Ghost_PtrOwn_i32 _13}- s17

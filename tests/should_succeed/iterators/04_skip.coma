@@ -298,11 +298,11 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
         {[@expl:loop invariant #2] produces_I old_self.current.iter skipped self.current.iter}
         {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length skipped -> resolve_Item (Seq.get skipped i)}
         (! s0)
-        [ s0 = {inv_I self.current.iter}
-          MutBorrow.borrow_mut <t_I> {self.current.iter}
+        [ s0 = MutBorrow.borrow_mut <t_I> {self.current.iter}
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_28 <- _bor ] -{inv_I _bor.final}-
               [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
+          [ _ck -> (! {inv_I self.current.iter} any) ]
         | s1 = next_I {_28} (fun (_x: t_Option_Item) -> [ &r <- _x ] s2)
         | s2 = [ &_30 <- n'0 = (0: UInt64.t) ] s3
         | s3 = any [ br0 -> {_30 = false} (! bb8) | br1 -> {_30} (! bb7) ] ]

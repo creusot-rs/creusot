@@ -104,11 +104,10 @@ module M_right_pad
         | s1 = [ &_47 <- UInt64.lt _48 len ] s2
         | s2 = any [ br0 -> {_47 = false} (! bb7) | br1 -> {_47} (! bb5) ] ]
         [ bb5 = s0
-          [ s0 = {inv_Vec_T_Global str.current}
-            MutBorrow.borrow_mut <t_Vec_T_Global> {str.current}
+          [ s0 = MutBorrow.borrow_mut <t_Vec_T_Global> {str.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_52 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &str <- { str with current = _bor.final } ] s1)
+                [ &str <- { str with current = _bor.final } ] s1) [ _ck -> (! {inv_Vec_T_Global str.current} any) ]
           | s1 = push_T {_52} {pad} (fun (_x: ()) -> [ &_51 <- _x ] s2)
           | s2 = bb2 ] ] ]
     | bb7 = s0
@@ -252,11 +251,10 @@ module M_left_pad
         | s1 = [ &_47 <- UInt64.lt _48 len ] s2
         | s2 = any [ br0 -> {_47 = false} (! bb9) | br1 -> {_47} (! bb6) ] ]
         [ bb6 = s0
-          [ s0 = {inv_Vec_T_Global str.current}
-            MutBorrow.borrow_mut <t_Vec_T_Global> {str.current}
+          [ s0 = MutBorrow.borrow_mut <t_Vec_T_Global> {str.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_52 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &str <- { str with current = _bor.final } ] s1)
+                [ &str <- { str with current = _bor.final } ] s1) [ _ck -> (! {inv_Vec_T_Global str.current} any) ]
           | s1 = insert_T {_52} {(0: UInt64.t)} {pad} (fun (_x: ()) -> [ &_51 <- _x ] s2)
           | s2 = [ &c <- 1 + c ] s3
           | s3 = bb3 ] ] ]
@@ -600,14 +598,13 @@ module M_insert_unique
         {[@expl:loop invariant] forall j: int. 0 <= j /\ j < Seq.length produced
           -> deep_model_ref_T (Seq.get produced j) <> deep_model_T elem}
         (! s0)
-        [ s0 = {inv_Iter_T iter}
-          MutBorrow.borrow_mut <t_Iter_T> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
             (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_50 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Iter_T _50.current}
-          MutBorrow.borrow_final <t_Iter_T> {_50.current} {MutBorrow.get_id _50}
+          [ _ck -> (! {inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_50.current} {MutBorrow.get_id _50}
             (fun (_bor: MutBorrow.t t_Iter_T) ->
               [ &_49 <- _bor ] -{inv_Iter_T _bor.final}-
-              [ &_50 <- { _50 with current = _bor.final } ] s2)
+              [ &_50 <- { _50 with current = _bor.final } ] s2) [ _ck -> (! {inv_Iter_T _50.current} any) ]
         | s2 = next_Iter_T {_49} (fun (_x: t_Option_ref_T) -> [ &_48 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Iter_T _50} any) ]
         | s4 = -{resolve_ref_Iter_T _50}- s5
@@ -634,11 +631,10 @@ module M_insert_unique
       | s2 = {[@expl:assertion] vec.final = ghost_vec.final} s3
       | s3 = {[@expl:assertion] is_unique_DeepModelTy (Seq.snoc (deep_model_ref_Vec_T_Global vec) (deep_model_T elem))}
         s4
-      | s4 = {inv_Vec_T_Global vec.current}
-        MutBorrow.borrow_final <t_Vec_T_Global> {vec.current} {MutBorrow.get_id vec}
+      | s4 = MutBorrow.borrow_final <t_Vec_T_Global> {vec.current} {MutBorrow.get_id vec}
           (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
             [ &_82 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-            [ &vec <- { vec with current = _bor.final } ] s5)
+            [ &vec <- { vec with current = _bor.final } ] s5) [ _ck -> (! {inv_Vec_T_Global vec.current} any) ]
       | s5 = push_T {_82} {elem} (fun (_x: ()) -> [ &_81 <- _x ] s6)
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T_Global'0 vec} any) ]
       | s7 = -{resolve_ref_Vec_T_Global vec}- s8
@@ -909,16 +905,14 @@ module M_unique
           | s5 = [ &_54 <- UInt64.lt _52 _53 ] s6
           | s6 = {[@expl:index in bounds] _54} s7
           | s7 = Slice64.get <t_T> {str} {_52} (fun (r: t_T) -> [ &elem <- r ] s8)
-          | s8 = {inv_Vec_T_Global unique}
-            MutBorrow.borrow_mut <t_Vec_T_Global> {unique}
+          | s8 = MutBorrow.borrow_mut <t_Vec_T_Global> {unique}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_57 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &unique <- _bor.final ] s9)
-          | s9 = {inv_Vec_T_Global _57.current}
-            MutBorrow.borrow_final <t_Vec_T_Global> {_57.current} {MutBorrow.get_id _57}
+                [ &unique <- _bor.final ] s9) [ _ck -> (! {inv_Vec_T_Global unique} any) ]
+          | s9 = MutBorrow.borrow_final <t_Vec_T_Global> {_57.current} {MutBorrow.get_id _57}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_56 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &_57 <- { _57 with current = _bor.final } ] s10)
+                [ &_57 <- { _57 with current = _bor.final } ] s10) [ _ck -> (! {inv_Vec_T_Global _57.current} any) ]
           | s10 = insert_unique_T {_56} {elem} (fun (_x: ()) -> [ &_55 <- _x ] s11)
           | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T_Global _57} any) ]
           | s12 = -{resolve_ref_Vec_T_Global _57}- s13
@@ -1291,16 +1285,14 @@ module M_fulcrum
         {[@expl:loop invariant #0] UInt32.t'int total = sum_range (Slice64.view s) 0 (Seq.length produced)}
         {[@expl:loop invariant #1] UInt32.t'int total <= sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))}
         (! s0)
-        [ s0 = {inv_Iter_u32 iter}
-          MutBorrow.borrow_mut <t_Iter_u32> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Iter_u32> {iter}
             (fun (_bor: MutBorrow.t t_Iter_u32) ->
               [ &_38 <- _bor ] -{inv_Iter_u32 _bor.final}-
-              [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Iter_u32 _38.current}
-          MutBorrow.borrow_final <t_Iter_u32> {_38.current} {MutBorrow.get_id _38}
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_Iter_u32 iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_u32> {_38.current} {MutBorrow.get_id _38}
             (fun (_bor: MutBorrow.t t_Iter_u32) ->
               [ &_37 <- _bor ] -{inv_Iter_u32 _bor.final}-
-              [ &_38 <- { _38 with current = _bor.final } ] s2)
+              [ &_38 <- { _38 with current = _bor.final } ] s2) [ _ck -> (! {inv_Iter_u32 _38.current} any) ]
         | s2 = next_Iter_u32 {_37} (fun (_x: t_Option_ref_u32) -> [ &_36 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Iter_u32 _38} any) ]
         | s4 = -{resolve_ref_Iter_u32 _38}- s5

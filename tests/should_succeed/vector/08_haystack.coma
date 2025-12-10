@@ -211,16 +211,15 @@ module M_search
         {[@expl:loop invariant] forall k: int. 0 <= k /\ k < Seq.length produced
           -> not match_at needle haystack k (Seq.length (view_Vec_u8_Global needle))}
         (! s0)
-        [ s0 = {inv_RangeInclusive_usize iter}
-          MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter}
             (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
               [ &_45 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-              [ &iter <- _bor.final ] s1)
-        | s1 = {inv_RangeInclusive_usize _45.current}
-          MutBorrow.borrow_final <t_RangeInclusive_usize> {_45.current} {MutBorrow.get_id _45}
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_RangeInclusive_usize iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_RangeInclusive_usize> {_45.current} {MutBorrow.get_id _45}
             (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
               [ &_44 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
               [ &_45 <- { _45 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_RangeInclusive_usize _45.current} any) ]
         | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_RangeInclusive_usize _45} any) ]
         | s4 = -{resolve_ref_RangeInclusive_usize _45}- s5

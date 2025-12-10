@@ -156,25 +156,23 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
     {[@expl:next 'self' type invariant] inv_ref_Fuse_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Option_I self.current.iter}
-        MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
+      [ s0 = MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
           (fun (_bor: MutBorrow.t t_Option_I) ->
             [ &_4 <- _bor ] -{inv_Option_I _bor.final}-
             [ &self <- { self with current = { iter = _bor.final } } ] s1)
+        [ _ck -> (! {inv_Option_I self.current.iter} any) ]
       | s1 = any [ br0 -> {_4.current = None} (! bb2) | br1 (x0: t_I) -> {_4.current = Some x0} (! bb3) ] ]
     | bb3 = s0
       [ s0 = elim_Some {_4.current}
           (fun (r0: t_I) ->
-            {inv_I r0}
             MutBorrow.borrow_final <t_I> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
               (fun (_bor: MutBorrow.t t_I) ->
                 [ &iter'0 <- _bor ] -{inv_I _bor.final}-
-                [ &_4 <- { _4 with current = Some _bor.final } ] s1))
-      | s1 = {inv_I iter'0.current}
-        MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
+                [ &_4 <- { _4 with current = Some _bor.final } ] s1) [ _ck -> (! {inv_I r0} any) ])
+      | s1 = MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_8 <- _bor ] -{inv_I _bor.final}-
-            [ &iter'0 <- { iter'0 with current = _bor.final } ] s2)
+            [ &iter'0 <- { iter'0 with current = _bor.final } ] s2) [ _ck -> (! {inv_I iter'0.current} any) ]
       | s2 = next_I {_8} (fun (_x: t_Option_Item) -> [ &_7 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_I iter'0} any) ]
       | s4 = -{resolve_ref_I iter'0}- s5

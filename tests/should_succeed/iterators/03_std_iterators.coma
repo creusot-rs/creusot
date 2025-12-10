@@ -168,14 +168,13 @@ module M_slice_iter
         {[@expl:for invariant] produces_Iter_T iter_old produced iter}
         {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
         (! s0)
-        [ s0 = {inv_Iter_T iter}
-          MutBorrow.borrow_mut <t_Iter_T> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
             (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_31 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Iter_T _31.current}
-          MutBorrow.borrow_final <t_Iter_T> {_31.current} {MutBorrow.get_id _31}
+          [ _ck -> (! {inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_31.current} {MutBorrow.get_id _31}
             (fun (_bor: MutBorrow.t t_Iter_T) ->
               [ &_30 <- _bor ] -{inv_Iter_T _bor.final}-
-              [ &_31 <- { _31 with current = _bor.final } ] s2)
+              [ &_31 <- { _31 with current = _bor.final } ] s2) [ _ck -> (! {inv_Iter_T _31.current} any) ]
         | s2 = next_Iter_T {_30} (fun (_x: t_Option_ref_T) -> [ &_29 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Iter_T _31} any) ]
         | s4 = -{resolve_ref_Iter_T _31}- s5
@@ -381,14 +380,13 @@ module M_vec_iter
         {[@expl:for invariant] produces_Iter_T iter_old produced iter}
         {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
         (! s0)
-        [ s0 = {inv_Iter_T iter}
-          MutBorrow.borrow_mut <t_Iter_T> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
             (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_30 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Iter_T _30.current}
-          MutBorrow.borrow_final <t_Iter_T> {_30.current} {MutBorrow.get_id _30}
+          [ _ck -> (! {inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_30.current} {MutBorrow.get_id _30}
             (fun (_bor: MutBorrow.t t_Iter_T) ->
               [ &_29 <- _bor ] -{inv_Iter_T _bor.final}-
-              [ &_30 <- { _30 with current = _bor.final } ] s2)
+              [ &_30 <- { _30 with current = _bor.final } ] s2) [ _ck -> (! {inv_Iter_T _30.current} any) ]
         | s2 = next_Iter_T {_29} (fun (_x: t_Option_ref_T) -> [ &_28 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Iter_T _30} any) ]
         | s4 = -{resolve_ref_Iter_T _30}- s5
@@ -581,16 +579,14 @@ module M_all_zero
         {[@expl:loop invariant] forall i: int. 0 <= i /\ i < Seq.length produced
           -> UInt64.t'int (Seq.get produced i).final = 0}
         (! s0)
-        [ s0 = {inv_IterMut_usize iter}
-          MutBorrow.borrow_mut <t_IterMut_usize> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_IterMut_usize> {iter}
             (fun (_bor: MutBorrow.t t_IterMut_usize) ->
               [ &_30 <- _bor ] -{inv_IterMut_usize _bor.final}-
-              [ &iter <- _bor.final ] s1)
-        | s1 = {inv_IterMut_usize _30.current}
-          MutBorrow.borrow_final <t_IterMut_usize> {_30.current} {MutBorrow.get_id _30}
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_IterMut_usize iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_IterMut_usize> {_30.current} {MutBorrow.get_id _30}
             (fun (_bor: MutBorrow.t t_IterMut_usize) ->
               [ &_29 <- _bor ] -{inv_IterMut_usize _bor.final}-
-              [ &_30 <- { _30 with current = _bor.final } ] s2)
+              [ &_30 <- { _30 with current = _bor.final } ] s2) [ _ck -> (! {inv_IterMut_usize _30.current} any) ]
         | s2 = next_IterMut_usize {_29} (fun (_x: t_Option_ref_usize) -> [ &_28 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_IterMut_usize _30} any) ]
         | s4 = -{resolve_ref_IterMut_usize _30}- s5
@@ -831,11 +827,10 @@ module M_skip_take
     [ bb0 = s0
       [ s0 = take_I {iter} {n} (fun (_x: t_Take_I) -> [ &_6 <- _x ] s1)
       | s1 = skip_Take_I {_6} {n} (fun (_x: t_Skip_Take_I) -> [ &_5 <- _x ] s2)
-      | s2 = {inv_Skip_Take_I _5}
-        MutBorrow.borrow_mut <t_Skip_Take_I> {_5}
+      | s2 = MutBorrow.borrow_mut <t_Skip_Take_I> {_5}
           (fun (_bor: MutBorrow.t t_Skip_Take_I) ->
             [ &_4 <- _bor ] -{inv_Skip_Take_I _bor.final}-
-            [ &_5 <- _bor.final ] s3)
+            [ &_5 <- _bor.final ] s3) [ _ck -> (! {inv_Skip_Take_I _5} any) ]
       | s3 = next_Skip_Take_I {_4} (fun (_x: t_Option_Item) -> [ &res <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Skip_Take_I _5} any) ]
       | s5 = -{resolve_Skip_Take_I'0 _5}- s6
@@ -1475,16 +1470,15 @@ module M_enumerate_range
         {[@expl:loop invariant] forall i: int. 0 <= i /\ i < Seq.length produced
           -> (Seq.get produced i).f0 = (Seq.get produced i).f1}
         (! s0)
-        [ s0 = {inv_Enumerate_Range_usize iter}
-          MutBorrow.borrow_mut <t_Enumerate_Range_usize> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Enumerate_Range_usize> {iter}
             (fun (_bor: MutBorrow.t t_Enumerate_Range_usize) ->
               [ &_23 <- _bor ] -{inv_Enumerate_Range_usize _bor.final}-
-              [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Enumerate_Range_usize _23.current}
-          MutBorrow.borrow_final <t_Enumerate_Range_usize> {_23.current} {MutBorrow.get_id _23}
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_Enumerate_Range_usize iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Enumerate_Range_usize> {_23.current} {MutBorrow.get_id _23}
             (fun (_bor: MutBorrow.t t_Enumerate_Range_usize) ->
               [ &_22 <- _bor ] -{inv_Enumerate_Range_usize _bor.final}-
               [ &_23 <- { _23 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_Enumerate_Range_usize _23.current} any) ]
         | s2 = next_Enumerate_Range_usize {_22} (fun (_x: t_Option_tup2_usize_usize) -> [ &_21 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Enumerate_Range_usize _23} any) ]
         | s4 = -{resolve_ref_Enumerate_Range_usize _23}- s5
@@ -1842,16 +1836,15 @@ module M_my_reverse
         {[@expl:loop invariant #3] equiv_reverse_range_T (Slice64.view slice.current) old_v (UInt64.t'int n
         - Seq.length produced) (UInt64.t'int n) (UInt64.t'int n - 1)}
         (! s0)
-        [ s0 = {inv_Zip_Range_usize_Range_usize iter}
-          MutBorrow.borrow_mut <t_Zip_Range_usize_Range_usize> {iter}
+        [ s0 = MutBorrow.borrow_mut <t_Zip_Range_usize_Range_usize> {iter}
             (fun (_bor: MutBorrow.t t_Zip_Range_usize_Range_usize) ->
               [ &_54 <- _bor ] -{inv_Zip_Range_usize_Range_usize _bor.final}-
-              [ &iter <- _bor.final ] s1)
-        | s1 = {inv_Zip_Range_usize_Range_usize _54.current}
-          MutBorrow.borrow_final <t_Zip_Range_usize_Range_usize> {_54.current} {MutBorrow.get_id _54}
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_Zip_Range_usize_Range_usize iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Zip_Range_usize_Range_usize> {_54.current} {MutBorrow.get_id _54}
             (fun (_bor: MutBorrow.t t_Zip_Range_usize_Range_usize) ->
               [ &_53 <- _bor ] -{inv_Zip_Range_usize_Range_usize _bor.final}-
               [ &_54 <- { _54 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_Zip_Range_usize_Range_usize _54.current} any) ]
         | s2 = next_Zip_Range_usize_Range_usize {_53} (fun (_x: t_Option_tup2_usize_usize) -> [ &_52 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Zip_Range_usize_Range_usize _54} any) ]
         | s4 = -{resolve_ref_Zip_Range_usize_Range_usize _54}- s5
@@ -1863,11 +1856,10 @@ module M_my_reverse
           | s3 = [ &j <- __creusot_proc_iter_elem.f1 ] s4
           | s4 = UInt64.sub {n} {j} (fun (_x: UInt64.t) -> [ &_67 <- _x ] s5)
           | s5 = UInt64.sub {_67} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_66 <- _x ] s6)
-          | s6 = {inv_slice_T slice.current}
-            MutBorrow.borrow_mut <Slice64.slice t_T> {slice.current}
+          | s6 = MutBorrow.borrow_mut <Slice64.slice t_T> {slice.current}
               (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
                 [ &_64 <- _bor ] -{inv_slice_T _bor.final}-
-                [ &slice <- { slice with current = _bor.final } ] s7)
+                [ &slice <- { slice with current = _bor.final } ] s7) [ _ck -> (! {inv_slice_T slice.current} any) ]
           | s7 = swap_T {_64} {i} {_66} (fun (_x: ()) -> [ &_63 <- _x ] s8)
           | s8 = {[@expl:assertion] i = j} s9
           | s9 = {[@expl:assertion] Seq.get (Slice64.view slice.current) (UInt64.t'int i)

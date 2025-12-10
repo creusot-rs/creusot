@@ -1281,7 +1281,7 @@ impl<'tcx> Statement<'tcx> {
                     let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
-                    istmts.push(IntermediateStmt::Assert(inv.clone().app([rhs_rplace.clone()])));
+                    istmts.push(IntermediateStmt::Check(inv.clone().app([rhs_rplace.clone()])));
                     inv_assume = Some(IntermediateStmt::Assume(inv.app([reassign.clone()])))
                 } else {
                     inv_assume = None

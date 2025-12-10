@@ -60,11 +60,10 @@ module M_simple
       [ bb1 = {[@expl:mut invariant] _old = x.final}
         {[@expl:loop invariant] inv_ref_T x}
         (! s0)
-        [ s0 = {inv_T x.current}
-          MutBorrow.borrow_mut <t_T> {x.current}
+        [ s0 = MutBorrow.borrow_mut <t_T> {x.current}
             (fun (_bor: MutBorrow.t t_T) ->
               [ &_7 <- _bor ] -{inv_T _bor.final}-
-              [ &x <- { x with current = _bor.final } ] s1)
+              [ &x <- { x with current = _bor.final } ] s1) [ _ck -> (! {inv_T x.current} any) ]
         | s1 = f_T {_7} (fun (_x: ()) -> [ &_4 <- _x ] s2)
         | s2 = bb1 ] ] ]
     [ & x: MutBorrow.t t_T = x
@@ -105,17 +104,15 @@ module M_swapper
         {[@expl:loop invariant #1] inv_ref_T y}
         (! s0)
         [ s0 = [ &c <- x ] s1
-        | s1 = {inv_T y.current}
-          MutBorrow.borrow_final <t_T> {y.current} {MutBorrow.get_id y}
+        | s1 = MutBorrow.borrow_final <t_T> {y.current} {MutBorrow.get_id y}
             (fun (_bor: MutBorrow.t t_T) ->
               [ &_11 <- _bor ] -{inv_T _bor.final}-
-              [ &y <- { y with current = _bor.final } ] s2)
+              [ &y <- { y with current = _bor.final } ] s2) [ _ck -> (! {inv_T y.current} any) ]
         | s2 = [ &x <- _11 ] s3
-        | s3 = {inv_T c.current}
-          MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
+        | s3 = MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
             (fun (_bor: MutBorrow.t t_T) ->
               [ &_12 <- _bor ] -{inv_T _bor.final}-
-              [ &c <- { c with current = _bor.final } ] s4)
+              [ &c <- { c with current = _bor.final } ] s4) [ _ck -> (! {inv_T c.current} any) ]
         | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T y} any) ]
         | s5 = -{resolve_ref_T y}- s6
         | s6 = [ &y <- _12 ] s7
@@ -196,11 +193,10 @@ module M_temp_move
       [ bb0 = {[@expl:loop invariant] inv_ref_T x}
         (! s0)
         [ s0 = [ &c <- x ] s1
-        | s1 = {inv_T c.current}
-          MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
+        | s1 = MutBorrow.borrow_final <t_T> {c.current} {MutBorrow.get_id c}
             (fun (_bor: MutBorrow.t t_T) ->
               [ &_8 <- _bor ] -{inv_T _bor.final}-
-              [ &c <- { c with current = _bor.final } ] s2)
+              [ &c <- { c with current = _bor.final } ] s2) [ _ck -> (! {inv_T c.current} any) ]
         | s2 = [ &x <- _8 ] s3
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_T c} any) ]
         | s4 = -{resolve_ref_T c}- s5

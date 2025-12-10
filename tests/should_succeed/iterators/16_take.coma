@@ -183,11 +183,11 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
     | bb1 = s0
       [ s0 = UInt64.sub {self.current.n} {(1: UInt64.t)}
           (fun (_x: UInt64.t) -> [ &self <- { self with current = { self.current with n = _x } } ] s1)
-      | s1 = {inv_I self.current.iter}
-        MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      | s1 = MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_6 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
+        [ _ck -> (! {inv_I self.current.iter} any) ]
       | s2 = next_I {_6} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Take_I self} any) ]
       | s4 = -{resolve_ref_Take_I self}- s5

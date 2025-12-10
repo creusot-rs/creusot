@@ -173,12 +173,11 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
     [ bb0 = s0
       [ s0 = [ &_3 <- self.current.index ] s1
       | s1 = clone_K {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s2)
-      | s2 = {inv_Vec_K_Global self.current.map.current}
-        MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
+      | s2 = MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
           (fun (_bor: MutBorrow.t t_Vec_K_Global) ->
             [ &_2 <- _bor ] -{inv_Vec_K_Global _bor.final}-
             [ &self <- { self with current = { self.current with map = { self.current.map with current = _bor.final } } } ]
-            s3)
+            s3) [ _ck -> (! {inv_Vec_K_Global self.current.map.current} any) ]
       | s3 = insert_K {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_VacantEntry_K self} any) ]
       | s5 = -{resolve_ref_VacantEntry_K self}- s6

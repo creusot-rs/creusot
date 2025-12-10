@@ -323,21 +323,21 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
     {[@expl:next 'self' type invariant] inv_ref_Zip_A_B self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_A self.current.a}
-        MutBorrow.borrow_final <t_A> {self.current.a} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = MutBorrow.borrow_final <t_A> {self.current.a} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_A) ->
             [ &_6 <- _bor ] -{inv_A _bor.final}-
             [ &self <- { self with current = { self.current with a = _bor.final } } ] s1)
+        [ _ck -> (! {inv_A self.current.a} any) ]
       | s1 = next_A {_6} (fun (_x: t_Option_Item) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = None} (! bb3) | br1 (x0: t_Item) -> {_5 = Some x0} (! bb4) ] ]
     | bb4 = s0
       [ s0 = elim_Some {_5} (fun (r0: t_Item) -> [ &x'0 <- r0 ] s1)
       | s1 = [ &x <- x'0 ] s2
-      | s2 = {inv_B self.current.b}
-        MutBorrow.borrow_final <t_B> {self.current.b} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+      | s2 = MutBorrow.borrow_final <t_B> {self.current.b} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t t_B) ->
             [ &_12 <- _bor ] -{inv_B _bor.final}-
             [ &self <- { self with current = { self.current with b = _bor.final } } ] s3)
+        [ _ck -> (! {inv_B self.current.b} any) ]
       | s3 = next_B {_12} (fun (_x: t_Option_Item'0) -> [ &_11 <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_Zip_A_B self} any) ]
       | s5 = -{resolve_ref_Zip_A_B self}- s6

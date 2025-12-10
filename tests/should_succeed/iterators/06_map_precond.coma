@@ -441,22 +441,22 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     {[@expl:next 'self' type invariant] inv_ref_Map_I_F self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_I self.current.iter}
-        MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+      [ s0 = MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_5 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
+        [ _ck -> (! {inv_I self.current.iter} any) ]
       | s1 = next_I {_5} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s2)
       | s2 = any [ br0 -> {_4 = None} (! bb13) | br1 (x0: t_Item) -> {_4 = Some x0} (! bb5) ] ]
     | bb5 = s0
       [ s0 = elim_Some {_4} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
       | s1 = {[@expl:assertion] precondition_F self.current.func { f0 = v; f1 = self.current.produced }} s2
       | s2 = [ &produced'0 <- Seq.snoc self.current.produced v ] s3
-      | s3 = {inv_F self.current.func}
-        MutBorrow.borrow_final <t_F> {self.current.func} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+      | s3 = MutBorrow.borrow_final <t_F> {self.current.func} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t t_F) ->
             [ &_18 <- _bor ] -{inv_F _bor.final}-
             [ &self <- { self with current = { self.current with func = _bor.final } } ] s4)
+        [ _ck -> (! {inv_F self.current.func} any) ]
       | s4 = [ &_19 <- { f0 = v; f1 = self.current.produced } ] s5
       | s5 = call_mut_F {_18} {_19} (fun (_x: t_B) -> [ &r <- _x ] s6)
       | s6 = [ &self <- { self with current = { self.current with produced = produced'0 } } ] s7

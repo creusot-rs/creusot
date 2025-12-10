@@ -62,11 +62,10 @@ module M_trait_Trait__goo
   let rec goo_Self (self: MutBorrow.t t_Self) (return (x: ())) = {[@expl:goo 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Self self.current}
-        MutBorrow.borrow_final <t_Self> {self.current} {MutBorrow.get_id self}
+      [ s0 = MutBorrow.borrow_final <t_Self> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Self) ->
             [ &_2 <- _bor ] -{inv_Self _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1)
+            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Self self.current} any) ]
       | s1 = f_Self {_2} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_Self self} any) ]
       | s3 = -{resolve_ref_Self self}- s4

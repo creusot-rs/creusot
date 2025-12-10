@@ -209,18 +209,16 @@ module M_knuth_shuffle
           | s3 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s4)
           | s4 = UInt64.sub {_42} {n} (fun (_x: UInt64.t) -> [ &upper <- _x ] s5)
           | s5 = rand_in_range {(0: UInt64.t)} {upper} (fun (_x: UInt64.t) -> [ &i <- _x ] s6)
-          | s6 = {inv_Vec_T_Global v.current}
-            MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
+          | s6 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_50 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &v <- { v with current = _bor.final } ] s7)
+                [ &v <- { v with current = _bor.final } ] s7) [ _ck -> (! {inv_Vec_T_Global v.current} any) ]
           | s7 = deref_mut_Vec_T_Global {_50} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_49 <- _x ] s8)
           | s8 = UInt64.sub {upper} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_52 <- _x ] s9)
-          | s9 = {inv_slice_T _49.current}
-            MutBorrow.borrow_final <Slice64.slice t_T> {_49.current} {MutBorrow.get_id _49}
+          | s9 = MutBorrow.borrow_final <Slice64.slice t_T> {_49.current} {MutBorrow.get_id _49}
               (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
                 [ &_48 <- _bor ] -{inv_slice_T _bor.final}-
-                [ &_49 <- { _49 with current = _bor.final } ] s10)
+                [ &_49 <- { _49 with current = _bor.final } ] s10) [ _ck -> (! {inv_slice_T _49.current} any) ]
           | s10 = swap_T {_48} {i} {_52} (fun (_x: ()) -> [ &_47 <- _x ] s11)
           | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T _49} any) ]
           | s12 = -{resolve_ref_slice_T _49}- s13

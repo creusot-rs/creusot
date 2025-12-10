@@ -195,11 +195,10 @@ module M_hard
     {[@expl:hard requires #1] Int32.to_int x.current.f0 <> - 1}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_NonZero x.current}
-        MutBorrow.borrow_final <t_NonZero> {x.current} {MutBorrow.get_id x}
+      [ s0 = MutBorrow.borrow_final <t_NonZero> {x.current} {MutBorrow.get_id x}
           (fun (_bor: MutBorrow.t t_NonZero) ->
             [ &_9 <- _bor ] -{inv_NonZero _bor.final}-
-            [ &x <- { x with current = _bor.final } ] s1)
+            [ &x <- { x with current = _bor.final } ] s1) [ _ck -> (! {inv_NonZero x.current} any) ]
       | s1 = inner_mut {_9} (fun (_x: MutBorrow.t Int32.t) -> [ &_8 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s3)
@@ -491,11 +490,10 @@ module M_frozen_dead
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Int32.t> {x.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_a <- _bor ] [ &x <- { x with current = { f0 = _bor.final } } ] s1)
-      | s1 = {inv_NonZero y.current}
-        MutBorrow.borrow_final <t_NonZero> {y.current} {MutBorrow.get_id y}
+      | s1 = MutBorrow.borrow_final <t_NonZero> {y.current} {MutBorrow.get_id y}
           (fun (_bor: MutBorrow.t t_NonZero) ->
             [ &_8 <- _bor ] -{inv_NonZero _bor.final}-
-            [ &y <- { y with current = _bor.final } ] s2)
+            [ &y <- { y with current = _bor.final } ] s2) [ _ck -> (! {inv_NonZero y.current} any) ]
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_NonZero x} any) ]
       | s3 = -{resolve_ref_NonZero x}- s4
       | s4 = [ &x <- _8 ] s5

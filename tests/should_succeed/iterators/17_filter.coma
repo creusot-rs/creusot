@@ -382,22 +382,22 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         {[@expl:loop invariant #3] produces_I old_self.current.iter produced self.current.iter}
         {[@expl:loop invariant #4] hist_inv_F old_self.current.func self.current.func}
         (! s0)
-        [ s0 = {inv_I self.current.iter}
-          MutBorrow.borrow_mut <t_I> {self.current.iter}
+        [ s0 = MutBorrow.borrow_mut <t_I> {self.current.iter}
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_28 <- _bor ] -{inv_I _bor.final}-
               [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
+          [ _ck -> (! {inv_I self.current.iter} any) ]
         | s1 = next_I {_28} (fun (_x: t_Option_Item) -> [ &_27 <- _x ] s2)
         | s2 = any [ br0 -> {_27 = None} (! bb13) | br1 (x0: t_Item) -> {_27 = Some x0} (! bb7) ] ]
         [ bb7 = s0
           [ s0 = elim_Some {_27} (fun (r0: t_Item) -> [ &n <- r0 ] s1)
           | s1 = [ &produced <- Seq.snoc produced n ] s2
           | s2 = {[@expl:assertion] produces_I old_self.current.iter produced self.current.iter} s3
-          | s3 = {inv_F self.current.func}
-            MutBorrow.borrow_mut <t_F> {self.current.func}
+          | s3 = MutBorrow.borrow_mut <t_F> {self.current.func}
               (fun (_bor: MutBorrow.t t_F) ->
                 [ &_41 <- _bor ] -{inv_F _bor.final}-
                 [ &self <- { self with current = { self.current with func = _bor.final } } ] s4)
+            [ _ck -> (! {inv_F self.current.func} any) ]
           | s4 = [ &_44 <- n ] s5
           | s5 = [ &_42 <- _44 ] s6
           | s6 = call_mut_F {_41} {_42} (fun (_x: bool) -> [ &_40 <- _x ] s7)
