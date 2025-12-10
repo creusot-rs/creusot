@@ -12,6 +12,37 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.8.0] - 2025-12-12
+
+### Tooling
+
+- [Add Nix support](https://github.com/creusot-rs/creusot/pull/1843)
+- [Allow setting path to creusot-contracts in cargo creusot new](https://github.com/creusot-rs/creusot/pull/1850)
+- [Update toolchain to 2025-11-13](https://github.com/creusot-rs/creusot/pull/1820)
+- [Update Why3](https://github.com/creusot-rs/creusot/pull/1830)
+
+### Documentation
+
+- [Document extern specs in generated documentation](https://github.com/creusot-rs/creusot/pull/1851)
+
+### Improved spans
+
+- [Add spans on function calls and operators](https://github.com/creusot-rs/creusot/pull/1833)
+- [Improve handling of spans in Pearlite terms](https://github.com/creusot-rs/creusot/pull/1832)
+
+### Error messages
+
+- [Replace panic with proper error when trait resolution fails in normalize](https://github.com/creusot-rs/creusot/pull/1845)
+- [Explicit error message when failing to copy file](https://github.com/creusot-rs/creusot/pull/1841)
+- [Improve formatting of 'encountered a cycle' error message](https://github.com/creusot-rs/creusot/pull/1836)
+- [Better error message when pattern matching on Int in Pearlite](https://github.com/creusot-rs/creusot/pull/1831)
+
+### Other fixes
+
+- [`FnGhost` uses now `FnOnce`/`Fn`/`FnMut` correctly](https://github.com/creusot-rs/creusot/pull/1847)
+- [Change spec of `Seq::pop_front_ghost` to be friendlier to triggers](https://github.com/creusot-rs/creusot/pull/1842)
+- [Limit the kinds of `DefId` that we consider for intrinsics](https://github.com/creusot-rs/creusot/pull/1829)
+
 ## [0.7.0] - 2025-11-03
 
 ### Features
