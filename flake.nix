@@ -166,7 +166,8 @@
 
             postInstall = with lib.strings; ''
               mkdir $out/share
-              cp -r creusot-contracts $out/share/.
+              cp {Cargo.toml,Cargo.lock} $out/share/.
+              cp -r {creusot-contracts,creusot-contracts-proc,pearlite-syn} $out/share/.
 
               wrapProgram $out/bin/cargo-creusot \
                 --set CREUSOT_CONTRACTS $out/share/creusot-contracts \
