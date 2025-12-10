@@ -520,6 +520,7 @@ impl<'tcx> Operand<'tcx> {
     ) -> Exp {
         match self {
             Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts),
+            Operand::ShrBorrow(op) => op.into_why(lower, istmts),
             Operand::Term(c, _) => lower_pure(lower.ctx, lower.names, &c.spanned()),
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
@@ -860,7 +861,7 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var(res_ident)
             }
-            RValue::Borrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
+            RValue::MutBorrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -1210,7 +1211,7 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
-            StatementKind::Assignment(lhs, RValue::Borrow(bor_kind, rhs)) => {
+            StatementKind::Assignment(lhs, RValue::MutBorrow(bor_kind, rhs)) => {
                 let bor_id_arg;
                 let rhs_rplace;
                 let rhs_constr;

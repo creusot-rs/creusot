@@ -79,7 +79,7 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
 
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
-        if let RValue::Borrow(_, p) | RValue::Ptr(p) = r {
+        if let RValue::MutBorrow(_, p) | RValue::Ptr(p) = r {
             self.live.insert(p.local);
         }
     }
@@ -152,7 +152,7 @@ impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
         super_visit_operand(self, op);
         match op {
-            Operand::Place(_) | Operand::Term(..) => {}
+            Operand::Place(_) | Operand::ShrBorrow(_) | Operand::Term(..) => {}
             _ => self.pure = false,
         }
     }
@@ -183,7 +183,7 @@ impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
             | RValue::Tuple(_)
             | RValue::Array(_)
             | RValue::Repeat(_, _)
-            | RValue::Borrow(_, _)
+            | RValue::MutBorrow(_, _)
             | RValue::Ptr(_) => {}
             _ => self.pure = false,
         }

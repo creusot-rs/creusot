@@ -381,7 +381,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// # Parameters
     ///
     /// `is_final` signals that the emitted borrow should be final: see [`NotFinalPlaces`].
-    fn emit_borrow(
+    fn emit_mut_borrow(
         &mut self,
         lhs: Place<'tcx>,
         rhs: Place<'tcx>,
@@ -390,7 +390,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ) {
         let p = self.translate_place(rhs, span);
         let span = self.tcx().def_span(self.body_id.def_id);
-        self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p), span);
+        self.emit_assignment(lhs, fmir::RValue::MutBorrow(is_final, p), span);
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {

@@ -4,6 +4,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use rustc_abi::VariantIdx;
+use rustc_ast::Mutability;
 use rustc_ast_ir::{try_visit, visit::VisitorResult};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -108,7 +109,7 @@ pub enum BorrowKind {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
-    Borrow(BorrowKind, Place<'tcx>),
+    MutBorrow(BorrowKind, Place<'tcx>),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -123,6 +124,8 @@ pub enum RValue<'tcx> {
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Operand<'tcx> {
     Place(Place<'tcx>),
+    /// Only for typing: translated into identity.
+    ShrBorrow(Box<Operand<'tcx>>),
     /// The Boolean is true if optimization::simplify_temps has detected that this is never read.
     /// In this case, we want to keep this term, because it may put in the context interesting facts.
     Term(Term<'tcx>, bool),
@@ -148,6 +151,9 @@ impl<'tcx> Operand<'tcx> {
     pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         match self {
             Operand::Place(pl) => pl.ty(tcx, locals),
+            Operand::ShrBorrow(op) => {
+                Ty::new_ref(tcx, tcx.lifetimes.re_erased, op.ty(tcx, locals), Mutability::Not)
+            }
             Operand::Term(t, _) => t.ty,
             Operand::InlineConst(_, _, _, ty) => *ty,
         }
@@ -525,6 +531,7 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
 ) {
     match operand {
         Operand::Place(place) => visitor.visit_place(place),
+        Operand::ShrBorrow(op) => visitor.visit_operand(op),
         Operand::Term(t, _) => visitor.visit_term(t),
         Operand::InlineConst(..) => (),
     }
@@ -546,7 +553,7 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::Borrow(_, place) => visitor.visit_place(place),
+        RValue::MutBorrow(_, place) => visitor.visit_place(place),
         RValue::Operand(op) => visitor.visit_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
@@ -654,6 +661,7 @@ pub(crate) fn super_visit_mut_operand<'tcx, V: FmirVisitorMut<'tcx>>(
 ) {
     match operand {
         Operand::Place(place) => visitor.visit_mut_place(place),
+        Operand::ShrBorrow(op) => visitor.visit_mut_operand(op),
         Operand::Term(t, _) => visitor.visit_mut_term(t),
         Operand::InlineConst(_, _, _, _) => (),
     }
@@ -679,7 +687,7 @@ pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
     rval: &mut RValue<'tcx>,
 ) {
     match rval {
-        RValue::Borrow(_, place) => visitor.visit_mut_place(place),
+        RValue::MutBorrow(_, place) => visitor.visit_mut_place(place),
         RValue::Operand(op) => visitor.visit_mut_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_mut_operand(op1);

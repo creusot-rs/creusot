@@ -77,11 +77,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     if self.erased_locals.contains(pl.local) {
                         return;
                     }
-                    RValue::Operand(Operand::Place(self.translate_place(pl, span)))
+                    RValue::Operand(Operand::ShrBorrow(Box::new(Operand::Place(
+                        self.translate_place(pl, span),
+                    ))))
                 }
                 // Special case to support const-promoted `&mut []`
                 Mut { .. } if self.borrow_data.is_none() && is_mut_ref_empty(&ty) => {
-                    self.emit_borrow(place, pl, fmir::BorrowKind::Mut, span);
+                    self.emit_mut_borrow(place, pl, fmir::BorrowKind::Mut, span);
                     // No need to resolve: the length of the final value is set to 0 by the type invariant
                     return;
                 }
@@ -91,7 +93,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         return;
                     }
                     let is_final = borrow_data.is_final_at(loc);
-                    self.emit_borrow(place, pl, is_final, span);
+                    self.emit_mut_borrow(place, pl, is_final, span);
                     return;
                 }
             },
@@ -222,7 +224,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             return;
         };
         for (lhs, rhs, is_final) in borrow_data.remove_two_phase_activated_at(loc) {
-            self.emit_borrow(lhs, rhs, is_final, span)
+            self.emit_mut_borrow(lhs, rhs, is_final, span)
         }
     }
 

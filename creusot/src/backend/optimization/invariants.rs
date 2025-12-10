@@ -276,7 +276,7 @@ impl<'tcx> FmirVisitor<'tcx> for UnchangedPlaces<'_, 'tcx> {
         match &stmt.kind {
             StatementKind::Assignment(l, r) => {
                 self.record_write_to(l);
-                if let RValue::Borrow(_, r) = r {
+                if let RValue::MutBorrow(_, r) = r {
                     self.record_write_to(r);
                 }
             }

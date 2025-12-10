@@ -39,12 +39,12 @@ pub(crate) fn simplify_temporaries<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut 
             .collect(),
     );
     let mut states = HashMap::from([(START_BLOCK, ini_state)]);
-
-    let graph = node_graph(body);
-    let wto = weak_topological_order(&graph, START_BLOCK);
-    for c in &wto {
-        analyze_component(ctx, c, body, &mut states);
-    }
+    analyze_component(
+        ctx,
+        body,
+        &weak_topological_order(&node_graph(body), START_BLOCK),
+        &mut states,
+    );
 
     for (bb, block) in &mut body.blocks {
         for s in block.stmts.iter_mut() {
@@ -112,7 +112,7 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads {
 
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
-        if let RValue::Borrow(_, p) | RValue::Ptr(p) = r
+        if let RValue::MutBorrow(_, p) | RValue::Ptr(p) = r
             && let Some(r) = self.0.get_mut(&p.local)
         {
             *r = Reads::NotSubstitutable
@@ -197,22 +197,22 @@ impl<'tcx> State<'tcx> {
 /// Compute the fixed point of the abstract state for one WTO component
 fn analyze_component<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    component: &Component<BasicBlock>,
     body: &mut Body<'tcx>,
+    component: &[Component<BasicBlock>],
     states: &mut HashMap<BasicBlock, State<'tcx>>,
 ) {
-    match component {
-        Component::Simple(v) => propagate_temporaries_bb(ctx, v, body, states, true),
-        Component::Complex(head, rest) => {
-            loop {
-                let state_ini = states[head].clone();
-                propagate_temporaries_bb(ctx, head, body, states, true);
-                for c in rest {
-                    analyze_component(ctx, c, body, states);
-                }
-                if states[head] == state_ini {
-                    // We expect the iteration to converge in 2 steps in most of the cases
-                    break;
+    for c in component {
+        match c {
+            Component::Simple(v) => propagate_temporaries_bb(ctx, body, *v, states, true),
+            Component::Complex(head, rest) => {
+                loop {
+                    let state_ini = states[head].clone();
+                    propagate_temporaries_bb(ctx, body, *head, states, true);
+                    analyze_component(ctx, body, rest, states);
+                    if states[head] == state_ini {
+                        // We expect the iteration to converge in 2 steps in most of the cases
+                        break;
+                    }
                 }
             }
         }
@@ -224,13 +224,13 @@ fn analyze_component<'tcx>(
 /// found in the abstract state
 fn propagate_temporaries_bb<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    bb: &BasicBlock,
     body: &mut Body<'tcx>,
+    bb: BasicBlock,
     states: &mut HashMap<BasicBlock, State<'tcx>>,
     readonly: bool,
 ) {
-    let Some(mut state) = states.get(bb).cloned() else { return };
-    let block = &mut body.blocks[bb];
+    let Some(mut state) = states.get(&bb).cloned() else { return };
+    let block = &mut body.blocks[&bb];
     BlockPropagator { ctx, locals: &body.locals, state: &mut state, readonly }
         .visit_mut_block(block);
     for tgt in block.terminator.targets() {
@@ -299,7 +299,7 @@ impl<'tcx> FmirVisitorMut<'tcx> for BlockPropagator<'_, 'tcx> {
 
     fn visit_mut_rvalue(&mut self, rval: &mut RValue<'tcx>) {
         super_visit_mut_rvalue(self, rval);
-        if let RValue::Borrow(_, pl) = rval {
+        if let RValue::MutBorrow(_, pl) = rval {
             self.erase_dependant(pl);
         }
     }
@@ -308,12 +308,18 @@ impl<'tcx> FmirVisitorMut<'tcx> for BlockPropagator<'_, 'tcx> {
 impl<'tcx> BlockPropagator<'_, 'tcx> {
     fn erase_dependant(&mut self, pl: &Place<'tcx>) {
         for (_, st) in self.state.0.iter_mut() {
-            match st {
-                // TODO: use a less coarse-grain criterion to determine that p
-                // and pl do not overlap.
-                LocalState::Op(Operand::Place(p), _) if p.local == pl.local => {}
-                LocalState::Op(Operand::Term(t, _), _) if t.free_vars().contains(&pl.local) => {}
-                _ => continue,
+            if let LocalState::Op(op, _) = st {
+                let mut op = op;
+                while let Operand::ShrBorrow(box o) = op {
+                    op = o
+                }
+                match op {
+                    // TODO: use a less coarse-grain criterion to determine that p
+                    // and pl do not overlap.
+                    Operand::Place(p) if p.local == pl.local => {}
+                    Operand::Term(t, _) if t.free_vars().contains(&pl.local) => {}
+                    _ => continue
+                }
             }
             *st = LocalState::Top
         }
