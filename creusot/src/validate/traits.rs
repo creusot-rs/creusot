@@ -78,8 +78,8 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
 
             if let Some(open_inv_trait) = ctx.params_open_inv(trait_item) {
                 let open_inv_impl = ctx.params_open_inv(impl_item).unwrap();
-                for &i in open_inv_trait {
-                    if !open_inv_impl.contains(&i) {
+                for i in open_inv_trait.iter() {
+                    if !open_inv_impl.contains(i) {
                         let name_param = match ctx.fn_arg_idents(impl_item)[i] {
                             Some(ident) => ident.to_string(),
                             None => "_".into(),
