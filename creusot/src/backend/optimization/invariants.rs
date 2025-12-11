@@ -15,8 +15,8 @@ use crate::{
     ctx::TranslationCtx,
     translation::{
         fmir::{
-            Block, Body, FmirVisitor, Invariant, LocalDecl, Operand, Place, ProjectionElem, RValue,
-            Statement, StatementKind, Terminator,
+            Block, Body, FmirVisitor, Invariant, LocalDecl, LocalKind, Operand, Place,
+            ProjectionElem, RValue, Statement, StatementKind, Terminator,
         },
         pearlite::{Ident, Term},
     },
@@ -49,7 +49,7 @@ pub(crate) fn infer_invariant_places<'tcx>(
         for u in unchanged {
             let local = Ident::fresh_local("_old");
             body.locals
-                .insert(local, LocalDecl { span: DUMMY_SP, ty: u.ty, temp: true, arg: false });
+                .insert(local, LocalDecl { span: DUMMY_SP, ty: u.ty, kind: LocalKind::Temp });
 
             for p in
                 graph.neighbors_directed(k, Direction::Incoming).filter(|p| dates[p] > dates[&k])

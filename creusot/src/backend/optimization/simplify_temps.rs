@@ -13,10 +13,10 @@ use crate::{
     ctx::TranslationCtx,
     translation::{
         fmir::{
-            Body, FmirVisitor, FmirVisitorMut, LocalDecls, Operand, Place, ProjectionElem, RValue,
-            Statement, StatementKind, Terminator, super_visit_mut_operand, super_visit_mut_stmt,
-            super_visit_operand, super_visit_place, super_visit_rvalue, super_visit_stmt,
-            super_visit_terminator,
+            Body, FmirVisitor, FmirVisitorMut, LocalDecls, LocalKind, Operand, Place,
+            ProjectionElem, RValue, Statement, StatementKind, Terminator, super_visit_mut_operand,
+            super_visit_mut_stmt, super_visit_operand, super_visit_place, super_visit_rvalue,
+            super_visit_stmt, super_visit_terminator,
         },
         pearlite::{
             Ident, PIdent, Term, TermKind,
@@ -34,7 +34,8 @@ pub(crate) fn simplify_temporaries<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut 
         reads
             .iter()
             .filter_map(|(&l, &r)| {
-                (body.locals[&l].temp && r == Reads::One).then_some((l, LocalState::Top))
+                (body.locals[&l].kind == LocalKind::Temp && r == Reads::One)
+                    .then_some((l, LocalState::Top))
             })
             .collect(),
     );

@@ -32,8 +32,8 @@ use crate::{
     translated_item::FileModule,
     translation::{
         fmir::{
-            Block, Body, BorrowKind, Branches, LocalDecls, Operand, Place, RValue, Statement,
-            StatementKind, Terminator,
+            Block, Body, BorrowKind, Branches, LocalDecls, LocalKind, Operand, Place, RValue,
+            Statement, StatementKind, Terminator,
         },
         pearlite::Term,
         traits::TraitResolved,
@@ -299,11 +299,11 @@ pub fn why_body<'tcx>(
         .map(|(blk, _)| (*blk, Ident::fresh_local(format!("bb{}", blk.as_usize()))))
         .collect();
 
-    // Remember the index of every argument before removing unused variables in simplify_fmir
+    // Remember the index of every argument before removing unused variables in optimizations
     let arg_index = body
         .locals
         .iter()
-        .flat_map(|(id, decl)| if decl.arg { Some(*id) } else { None })
+        .flat_map(|(id, decl)| if decl.kind == LocalKind::Param { Some(*id) } else { None })
         .enumerate()
         .map(|(i, k)| (k, i))
         .collect::<HashMap<_, _>>();
@@ -334,7 +334,7 @@ pub fn why_body<'tcx>(
         .into_iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let init = if decl.arg {
+            let init = if decl.kind == LocalKind::Param {
                 Exp::var(params[arg_index[&id]])
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])

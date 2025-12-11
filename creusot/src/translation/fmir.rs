@@ -279,15 +279,22 @@ pub struct Block<'tcx> {
 
 pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LocalKind {
+    Param,
+    Return,
+    Temp,
+    User,
+}
+
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct LocalDecl<'tcx> {
     // Original MIR local
     pub(crate) span: Span,
     pub(crate) ty: Ty<'tcx>,
-    // Is this a MIR temporary?
-    pub(crate) temp: bool,
-    // Is this declaration a function argument or return place?
-    pub(crate) arg: bool,
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
+    pub(crate) kind: LocalKind,
 }
 
 #[derive(Clone, Debug)]

@@ -44,7 +44,7 @@ use crate::{
     },
     naming::lowercase_prefix,
     translation::{
-        fmir::{self, BorrowKind},
+        fmir::{self, BorrowKind, LocalKind},
         function::discriminator_for_switch,
         pearlite::{Term, TermKind},
     },
@@ -968,12 +968,10 @@ impl<'tcx> BodyLocals<'tcx> {
             .iter_enumerated()
             .filter(|(loc, _)| !erased_locals.contains(*loc))
             .map(|(loc, d)| {
-                let (mut temp, mut arg) = (false, false);
-                let ident = if loc.index() == 0 {
-                    Ident::fresh(ctx.crate_name(), "_ret")
+                let (ident, kind) = if loc.index() == 0 {
+                    (Ident::fresh(ctx.crate_name(), "_ret"), LocalKind::Return)
                 } else if 0 < loc.index() && loc.index() <= body.arg_count {
-                    arg = true;
-                    args[loc.index() - 1].0.0
+                    (args[loc.index() - 1].0.0, LocalKind::Param)
                 } else if let Some(debug_info) =
                     body.var_debug_info.iter().find(|var_info| match var_info.value {
                         mir::VarDebugInfoContents::Place(p) => {
@@ -982,13 +980,18 @@ impl<'tcx> BodyLocals<'tcx> {
                         _ => false,
                     })
                 {
-                    Ident::fresh(ctx.crate_name(), lowercase_prefix("v_", debug_info.name.as_str()))
+                    let ident = Ident::fresh(
+                        ctx.crate_name(),
+                        lowercase_prefix("v_", debug_info.name.as_str()),
+                    );
+                    (ident, LocalKind::User)
                 } else {
-                    temp = true;
-                    Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
+                    (Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index())), LocalKind::Temp)
                 };
-                let span = d.source_info.span;
-                ((ident, fmir::LocalDecl { span, ty: d.ty, temp, arg }), (loc, ident))
+                (
+                    (ident, fmir::LocalDecl { span: d.source_info.span, ty: d.ty, kind }),
+                    (loc, ident),
+                )
             })
             .unzip();
         BodyLocals { vars, locals }
