@@ -9,14 +9,16 @@ module M_take_first_mut
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -130,16 +132,16 @@ module M_take_first_mut
   
   type t_Option_tup2_ref_T_ref_slice_T = None | Some tup2_ref_T_ref_slice_T
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_ref_T'0 [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_ref_T'0
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T'0 _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_ref_T'0
   
   predicate inv_tup2_ref_T_ref_slice_T [@inline:trivial] (_1: tup2_ref_T_ref_slice_T) =
-    inv_ref_T _1.f0 /\ inv_ref_slice_T _1.f1
+    inv_ref_T'0 _1.f0 /\ inv_ref_slice_T _1.f1
   
   meta "rewrite_def" predicate inv_tup2_ref_T_ref_slice_T
   
@@ -200,7 +202,7 @@ module M_take_first_mut
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
       = match x with
         | None'0 -> true
-        | Some'0 f0'0 -> inv_ref_T f0'0
+        | Some'0 f0'0 -> inv_ref_T'0 f0'0
         end
   
   meta "compute_max_steps" 1000000
@@ -248,7 +250,7 @@ module M_take_first_mut
       | s9 = [ &_0 <- Some'0 _13 ] s10
       | s10 = {[@expl:type invariant] inv_ref_slice_T rem} s11
       | s11 = -{resolve_ref_slice_T rem}- s12
-      | s12 = {[@expl:type invariant] inv_ref_T first} s13
+      | s12 = {[@expl:type invariant] inv_ref_T'0 first} s13
       | s13 = -{resolve_ref_T first}- s14
       | s14 = {[@expl:type invariant] inv_ref_slice_T _6} s15
       | s15 = -{resolve_ref_slice_T _6}- s16

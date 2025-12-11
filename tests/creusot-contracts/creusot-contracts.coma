@@ -23306,14 +23306,16 @@ module M_logic__seq__impl_Index_for_Seq_T__index (* <logic::seq::Seq<T> as std::
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23328,14 +23330,6 @@ module M_logic__seq__impl_Index_for_Seq_T__index (* <logic::seq::Seq<T> as std::
   predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
   
   meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
@@ -23402,14 +23396,16 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23428,20 +23424,20 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
   
   meta "rewrite_def" predicate inv_ref_Seq_T
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_ref_T'0 [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_ref_T'0
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T'0 _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_ref_T'0
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_ref_T f0
+        | Some f0 -> inv_ref_T'0 f0
         end
   
   type t_Option_T = None'0 | Some'0 t_T
@@ -23467,7 +23463,7 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
   let rec unwrap_ref_T (self_: t_Option_ref_T) (return (x: MutBorrow.t t_T)) =
     {[@expl:unwrap 'self_' type invariant] inv_Option_ref_T self_}
     {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: MutBorrow.t t_T) -> {inv_ref_T result} {Some result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_T) -> {inv_ref_T'0 result} {Some result = self_} (! return {result}) ]
   
   predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
@@ -23500,14 +23496,14 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_3 <- _ret ] -{inv_T _ret.final}-
             [ &_15 <- { _15 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T _15} s2
+      | s1 = {[@expl:type invariant] inv_ref_T'0 _15} s2
       | s2 = -{resolve_ref_T _15}- s3
       | s3 = {inv_T _3.current}
         MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_ret: MutBorrow.t t_T) ->
             [ &_0 <- _ret ] -{inv_T _ret.final}-
             [ &_3 <- { _3 with current = _ret.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_T _3} s5
+      | s4 = {[@expl:type invariant] inv_ref_T'0 _3} s5
       | s5 = -{resolve_ref_T _3}- s6
       | s6 = {[@expl:type invariant] inv_ref_Seq_T self} s7
       | s7 = -{resolve_ref_Seq_T self}- s8
@@ -23519,7 +23515,7 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
     | & _15: MutBorrow.t t_T = Any.any_l ()
     | & _16: t_Option_ref_T = Any.any_l ()
     | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:index_mut result type invariant] inv_ref_T result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:index_mut result type invariant] inv_ref_T'0 result}
       {[@expl:index_mut ensures #0] Seq.length self.current = Seq.length self.final}
       {[@expl:index_mut ensures #1] result.current = Seq.get self.current index
       /\ result.final = Seq.get self.final index}
@@ -23541,14 +23537,16 @@ module M_logic__seq__impl_IntoIterator_for_Seq_T__into_iter (* <logic::seq::Seq<
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23591,14 +23589,16 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23775,14 +23775,16 @@ module M_logic__seq__impl_IntoIterator_for_ref_Seq_T__into_iter (* <&'a logic::s
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23858,14 +23860,16 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -23880,14 +23884,6 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
   
   meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
@@ -27499,174 +27495,6 @@ module M_logic__well_founded__first_component_decr
      in [@expl:first_component_decr ensures] forall i: int. 0 <= i
       -> well_founded_relation_T1 (index_Mapping_Int_T1 result i) (index_Mapping_Int_T1 result (i + 1)))
 end
-module M_peano__impl_Clone_for_PeanoInt__clone (* <peano::PeanoInt as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  let rec clone_u64 (self_: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = self_} (! return {result}) ]
-  
-  predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: UInt64.t) (result: UInt64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_clone
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone [@inline:trivial] (self: ()) (args: UInt64.t) (result_state: ()) (result: UInt64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_clone
-  
-  function fn_mut_once_clone (self: ()) (args: UInt64.t) (res: UInt64.t) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: UInt64.t, res: UInt64.t. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: UInt64.t) (res_state: ()) (res: UInt64.t) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: UInt64.t, res_state: (), res: UInt64.t. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone [@inline:trivial] (self: ()) (args: UInt64.t) (result: UInt64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_clone
-  
-  function fn_once_clone (self: ()) (args: UInt64.t) (res: UInt64.t) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: UInt64.t, res: UInt64.t. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: UInt64.t) (res_state: ()) (res: UInt64.t) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: UInt64.t, res_state: (), res: UInt64.t. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec clone_PeanoInt (self: t_PeanoInt) (return (x: t_PeanoInt)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_6 <- self.f0 ] s1 | s1 = clone_u64 {_6} (fun (_ret: UInt64.t) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- { f0 = _4 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_PeanoInt = Any.any_l ()
-    | & self: t_PeanoInt = self
-    | & _4: UInt64.t = Any.any_l ()
-    | & _6: UInt64.t = Any.any_l () ])
-    [ return (result: t_PeanoInt) -> {[@expl:clone ensures] postcondition_clone () self.f0 result.f0}
-      (! return {result}) ]
-end
-module M_peano__impl_Default_for_PeanoInt__default (* <peano::PeanoInt as std::default::Default> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  let rec default_u64 (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = (0: UInt64.t)} (! return {result}) ]
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: UInt64.t) =
-    let () = args in result = (0: UInt64.t)
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: UInt64.t) =
-    let () = args in result = (0: UInt64.t)
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: UInt64.t) : ()
-  
-  axiom fn_mut_once_default_spec: forall self: (), args: (), res: UInt64.t. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: UInt64.t) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: UInt64.t. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
-  
-  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: UInt64.t) =
-    let () = args in result = (0: UInt64.t)
-  
-  meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: UInt64.t) : ()
-  
-  axiom fn_once_default_spec: forall self: (), args: (), res: UInt64.t. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: UInt64.t) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: UInt64.t. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec default_PeanoInt (return (x: t_PeanoInt)) = (! bb0
-    [ bb0 = s0 [ s0 = default_u64 (fun (_ret: UInt64.t) -> [ &_2 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- { f0 = _2 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_PeanoInt = Any.any_l () | & _2: UInt64.t = Any.any_l () ])
-    [ return (result: t_PeanoInt) -> {[@expl:default ensures] true /\ postcondition_default () () result.f0}
-      (! return {result}) ]
-end
 module M_peano__impl_Eq_for_PeanoInt__assert_receiver_is_total_eq (* <peano::PeanoInt as std::cmp::Eq> *)
   type namespace_other
   
@@ -27683,6 +27511,48 @@ module M_peano__impl_Eq_for_PeanoInt__assert_receiver_is_total_eq (* <peano::Pea
   
   let rec assert_receiver_is_total_eq_PeanoInt (self: t_PeanoInt) (return (x: ())) = (! bb0
     [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_peano__impl_Clone_for_PeanoInt__clone (* <peano::PeanoInt as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_PeanoInt (self: t_PeanoInt) (return (x: t_PeanoInt)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = self.f0 } ] s1 | s1 = return {_0} ] ]
+    [ & _0: t_PeanoInt = Any.any_l () | & self: t_PeanoInt = self ])
+    [ return (result: t_PeanoInt) -> (! return {result}) ]
+end
+module M_peano__impl_Default_for_PeanoInt__default (* <peano::PeanoInt as std::default::Default> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  let rec default_u64 (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {result = (0: UInt64.t)} (! return {result}) ]
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec default_PeanoInt (return (x: t_PeanoInt)) = (! bb0
+    [ bb0 = s0 [ s0 = default_u64 (fun (_ret: UInt64.t) -> [ &_1 <- _ret ] s1) | s1 = bb1 ]
+    | bb1 = s0 [ s0 = [ &_0 <- { f0 = _1 } ] s1 | s1 = return {_0} ] ]
+    [ & _0: t_PeanoInt = Any.any_l () | & _1: UInt64.t = Any.any_l () ])
+    [ return (result: t_PeanoInt) -> (! return {result}) ]
 end
 module M_peano__impl_OrdLogic_for_PeanoInt__cmp_le_log (* <peano::PeanoInt as logic::ord::OrdLogic> *)
   type namespace_other
@@ -41739,14 +41609,8 @@ module M_std__option__extern_spec_core_option_T_Option_T_as_slice_body
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
-  
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_T_Global
-  
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -41863,14 +41727,16 @@ module M_std__option__extern_spec_core_option_T_Option_T_as_mut_slice_body
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T'0 [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T'0
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T'0 [@inline:trivial] (_1: t_T) = invariant_ref_T'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_T'0
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T'0 (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -46804,14 +46670,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -46962,14 +46830,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -48930,14 +48800,16 @@ module M_logic__seq__impl_Resolve_for_Seq_T__resolve_coherence__refines (* <logi
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -48986,14 +48858,16 @@ module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence__refines (* <
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -49118,14 +48992,16 @@ module M_std__array__impl_Resolve_for_array_T_n__resolve_coherence__refines (* <
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -49363,14 +49239,16 @@ module M_std__slice__impl_Resolve_for_slice_T__resolve_coherence__refines (* <[T
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -49483,14 +49361,16 @@ module M_std__deque__impl_Resolve_for_VecDeque_T_A__resolve_coherence__refines (
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -49548,14 +49428,16 @@ module M_std__vec__impl_Resolve_for_Vec_T_A__resolve_coherence__refines (* <std:
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -50185,14 +50067,16 @@ module M_logic__seq__impl_Clone_for_Seq_T__clone__refines (* <logic::seq::Seq<T>
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -50887,14 +50771,16 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -50977,14 +50863,16 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next__refines (* <logic::se
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -51015,14 +50903,6 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next__refines (* <logic::se
   meta "rewrite_def" predicate inv_ref_SeqIterRef_T
   
   type t_Option_ref_T = None | Some t_T
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
@@ -55343,6 +55223,154 @@ module M_logic__int__impl_PartialOrd_for_Int__lt__refines (* <logic::int::Int as
   goal refines: forall self_: int. forall other: int. forall result: bool. result = (self_ < other)
           -> result = (deep_model_ref_Int self_ < deep_model_ref_Int other)
 end
+module M_peano__impl_PartialOrd_for_PeanoInt__gt__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function deep_model_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+  
+  meta "rewrite_def" function deep_model_PeanoInt
+  
+  function deep_model_ref_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = deep_model_PeanoInt self
+  
+  meta "rewrite_def" function deep_model_ref_PeanoInt
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
+            = UInt64.gt (view_PeanoInt self_) (view_PeanoInt other)
+          -> result = UInt64.gt (deep_model_ref_PeanoInt self_) (deep_model_ref_PeanoInt other)
+end
+module M_peano__impl_PartialOrd_for_PeanoInt__ge__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function deep_model_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+  
+  meta "rewrite_def" function deep_model_PeanoInt
+  
+  function deep_model_ref_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = deep_model_PeanoInt self
+  
+  meta "rewrite_def" function deep_model_ref_PeanoInt
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
+            = UInt64.ge (view_PeanoInt self_) (view_PeanoInt other)
+          -> result = UInt64.ge (deep_model_ref_PeanoInt self_) (deep_model_ref_PeanoInt other)
+end
 module M_peano__impl_PartialOrd_for_PeanoInt__partial_cmp__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
   type namespace_other
   
@@ -55621,154 +55649,6 @@ module M_peano__impl_PartialOrd_for_PeanoInt__lt__refines (* <peano::PeanoInt as
   goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
             = UInt64.lt (view_PeanoInt self_) (view_PeanoInt other)
           -> result = UInt64.lt (deep_model_ref_PeanoInt self_) (deep_model_ref_PeanoInt other)
-end
-module M_peano__impl_PartialOrd_for_PeanoInt__gt__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function deep_model_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
-  
-  meta "rewrite_def" function deep_model_PeanoInt
-  
-  function deep_model_ref_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = deep_model_PeanoInt self
-  
-  meta "rewrite_def" function deep_model_ref_PeanoInt
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.gt (view_PeanoInt self_) (view_PeanoInt other)
-          -> result = UInt64.gt (deep_model_ref_PeanoInt self_) (deep_model_ref_PeanoInt other)
-end
-module M_peano__impl_PartialOrd_for_PeanoInt__ge__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function deep_model_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
-  
-  meta "rewrite_def" function deep_model_PeanoInt
-  
-  function deep_model_ref_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = deep_model_PeanoInt self
-  
-  meta "rewrite_def" function deep_model_ref_PeanoInt
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_PeanoInt. forall other: t_PeanoInt. forall result: bool. result
-            = UInt64.ge (view_PeanoInt self_) (view_PeanoInt other)
-          -> result = UInt64.ge (deep_model_ref_PeanoInt self_) (deep_model_ref_PeanoInt other)
 end
 module M_logic__ord__impl_OrdLogic_for_ref_T__cmp_ge_log__refines (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
@@ -60787,76 +60667,7 @@ module M_peano__impl_OrdLogic_for_PeanoInt__trans__refines (* <peano::PeanoInt a
             -> cmp_log_PeanoInt x y = o
             /\ cmp_log_PeanoInt y z = o /\ (forall result: (). cmp_log_PeanoInt x z = o -> cmp_log_PeanoInt x z = o)
 end
-module M_peano__impl_OrdLogic_for_PeanoInt__cmp_ge_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  predicate ge_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.ge self.f0 o.f0
-  
-  meta "rewrite_def" predicate ge_log_PeanoInt
-  
-  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
-  
-  meta "rewrite_def" function cmp_log_PeanoInt
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). ge_log_PeanoInt x y
-            = (cmp_log_PeanoInt x y <> Less) -> ge_log_PeanoInt x y = (cmp_log_PeanoInt x y <> Less)
-end
-module M_peano__impl_OrdLogic_for_PeanoInt__antisym1__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
+module M_peano__impl_OrdLogic_for_PeanoInt__eq_cmp__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -60918,78 +60729,8 @@ module M_peano__impl_OrdLogic_for_PeanoInt__antisym1__refines (* <peano::PeanoIn
   
   meta "select_lsinst" "all"
   
-  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. cmp_log_PeanoInt x y = Less
-        -> cmp_log_PeanoInt x y = Less
-        /\ (forall result: (). cmp_log_PeanoInt y x = Greater -> cmp_log_PeanoInt y x = Greater)
-end
-module M_peano__impl_OrdLogic_for_PeanoInt__cmp_lt_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
-  
-  meta "rewrite_def" predicate lt_log_PeanoInt
-  
-  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
-  
-  meta "rewrite_def" function cmp_log_PeanoInt
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). lt_log_PeanoInt x y
-            = (cmp_log_PeanoInt x y = Less) -> lt_log_PeanoInt x y = (cmp_log_PeanoInt x y = Less)
+  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). (x = y) = (cmp_log_PeanoInt x y = Equal)
+          -> (x = y) = (cmp_log_PeanoInt x y = Equal)
 end
 module M_peano__impl_OrdLogic_for_PeanoInt__cmp_le_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
   type namespace_other
@@ -61060,6 +60801,210 @@ module M_peano__impl_OrdLogic_for_PeanoInt__cmp_le_log__refines (* <peano::Peano
   goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). le_log_PeanoInt x y
             = (cmp_log_PeanoInt x y <> Greater) -> le_log_PeanoInt x y = (cmp_log_PeanoInt x y <> Greater)
 end
+module M_peano__impl_OrdLogic_for_PeanoInt__cmp_lt_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+  
+  meta "rewrite_def" predicate lt_log_PeanoInt
+  
+  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
+  
+  meta "rewrite_def" function cmp_log_PeanoInt
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). lt_log_PeanoInt x y
+            = (cmp_log_PeanoInt x y = Less) -> lt_log_PeanoInt x y = (cmp_log_PeanoInt x y = Less)
+end
+module M_peano__impl_OrdLogic_for_PeanoInt__antisym1__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
+  
+  meta "rewrite_def" function cmp_log_PeanoInt
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. cmp_log_PeanoInt x y = Less
+        -> cmp_log_PeanoInt x y = Less
+        /\ (forall result: (). cmp_log_PeanoInt y x = Greater -> cmp_log_PeanoInt y x = Greater)
+end
+module M_peano__impl_OrdLogic_for_PeanoInt__cmp_ge_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  type t_PeanoInt = { f0: UInt64.t }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  predicate ge_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.ge self.f0 o.f0
+  
+  meta "rewrite_def" predicate ge_log_PeanoInt
+  
+  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
+  
+  meta "rewrite_def" function cmp_log_PeanoInt
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). ge_log_PeanoInt x y
+            = (cmp_log_PeanoInt x y <> Less) -> ge_log_PeanoInt x y = (cmp_log_PeanoInt x y <> Less)
+end
 module M_peano__impl_OrdLogic_for_PeanoInt__refl__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
   type namespace_other
   
@@ -61123,71 +61068,6 @@ module M_peano__impl_OrdLogic_for_PeanoInt__refl__refines (* <peano::PeanoInt as
   meta "select_lsinst" "all"
   
   goal refines: forall x: t_PeanoInt. forall result: (). cmp_log_PeanoInt x x = Equal -> cmp_log_PeanoInt x x = Equal
-end
-module M_peano__impl_OrdLogic_for_PeanoInt__eq_cmp__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.int.UInt64
-  
-  type t_PeanoInt = { f0: UInt64.t }
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function cmp_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) : t_Ordering = cmp_log_u64 self.f0 o.f0
-  
-  meta "rewrite_def" function cmp_log_PeanoInt
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall x: t_PeanoInt. forall y: t_PeanoInt. forall result: (). (x = y) = (cmp_log_PeanoInt x y = Equal)
-          -> (x = y) = (cmp_log_PeanoInt x y = Equal)
 end
 module M_peano__impl_OrdLogic_for_PeanoInt__cmp_gt_log__refines (* <peano::PeanoInt as logic::ord::OrdLogic> *)
   type namespace_other
@@ -73465,14 +73345,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -73610,14 +73492,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
