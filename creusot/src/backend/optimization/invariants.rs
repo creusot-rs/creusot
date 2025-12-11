@@ -274,11 +274,10 @@ impl<'a, 'tcx> UnchangedPlaces<'a, 'tcx> {
 impl<'tcx> FmirVisitor<'tcx> for UnchangedPlaces<'_, 'tcx> {
     fn visit_stmt(&mut self, stmt: &Statement<'tcx>) {
         match &stmt.kind {
-            StatementKind::Assignment(l, r) => {
+            StatementKind::Assignment(l, _) => self.record_write_to(l),
+            StatementKind::MutBorrow(_, l, r) => {
                 self.record_write_to(l);
-                if let RValue::MutBorrow(_, r) = r {
-                    self.record_write_to(r);
-                }
+                self.record_write_to(r);
             }
             StatementKind::Call(r, _, _, _, _) => self.record_write_to(r),
             _ => (),

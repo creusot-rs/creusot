@@ -74,9 +74,22 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
     }
 }
 
+#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub enum BorrowKind {
+    /// Ordinary mutable borrows
+    Mut,
+    /// The source of this borrow is not used after the reborrow, and thus we can
+    /// inherit the prophecy identifier.
+    ///
+    /// The second field is an index in `place.projection`: see
+    /// [`NotFinalPlaces::is_final_at`](crate::analysis::NotFinalPlaces::is_final_at).
+    Final(usize),
+}
+
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum StatementKind<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
+    MutBorrow(BorrowKind, Place<'tcx>, Place<'tcx>),
     Assertion {
         cond: Term<'tcx>,
         #[type_visitable(ignore)]
@@ -94,22 +107,8 @@ pub(crate) struct Statement<'tcx> {
     pub(crate) span: Span,
 }
 
-// TODO: Add shared borrows?
-#[derive(Clone, Copy, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
-pub enum BorrowKind {
-    /// Ordinary mutable borrows
-    Mut,
-    /// The source of this borrow is not used after the reborrow, and thus we can
-    /// inherit the prophecy identifier.
-    ///
-    /// The second field is an index in `place.projection`: see
-    /// [`NotFinalPlaces::is_final_at`](crate::analysis::NotFinalPlaces::is_final_at).
-    Final(usize),
-}
-
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
-    MutBorrow(BorrowKind, Place<'tcx>),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -515,6 +514,10 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
+        StatementKind::MutBorrow(_, lhs, rhs) => {
+            visitor.visit_place(lhs);
+            visitor.visit_place(rhs);
+        }
         StatementKind::Assertion { cond, .. } => visitor.visit_term(cond),
         StatementKind::Call(place, _, _, operands, _) => {
             visitor.visit_place(place);
@@ -553,7 +556,6 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::MutBorrow(_, place) => visitor.visit_place(place),
         RValue::Operand(op) => visitor.visit_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
@@ -645,6 +647,10 @@ pub(crate) fn super_visit_mut_stmt<'tcx, V: FmirVisitorMut<'tcx>>(
             visitor.visit_mut_place(place);
             visitor.visit_mut_rvalue(rval);
         }
+        StatementKind::MutBorrow(_, lhs, rhs) => {
+            visitor.visit_mut_place(lhs);
+            visitor.visit_mut_place(rhs);
+        }
         StatementKind::Assertion { cond, .. } => visitor.visit_mut_term(cond),
         StatementKind::Call(place, _, _, operands, _) => {
             visitor.visit_mut_place(place);
@@ -687,7 +693,6 @@ pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
     rval: &mut RValue<'tcx>,
 ) {
     match rval {
-        RValue::MutBorrow(_, place) => visitor.visit_mut_place(place),
         RValue::Operand(op) => visitor.visit_mut_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_mut_operand(op1);

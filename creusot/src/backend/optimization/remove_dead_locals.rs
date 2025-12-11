@@ -70,6 +70,10 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
                 }
                 l
             }
+            StatementKind::MutBorrow(_, l, r) => {
+                self.live.insert(r.local);
+                l
+            }
             StatementKind::Call(l, _, _, _, _) => l,
             _ => return,
         };
@@ -79,9 +83,6 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
 
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
-        if let RValue::MutBorrow(_, p) | RValue::Ptr(p) = r {
-            self.live.insert(p.local);
-        }
     }
 
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
@@ -114,7 +115,7 @@ impl<'tcx> TermVisitor<'tcx> for LocalReads<'_, 'tcx> {
     }
 }
 
-/// Visitor for rvalues that determines if the RValue generales a verification condition.
+/// Visitor for rvalues that determines if the RValue generates a verification condition.
 /// Note that, in some cases, the VC that will be generated is always guaranteed to hold (ex:
 /// `ProjectionElem::Field``), but we still choose to consider this as non-pure, as a matter of
 /// coherence. If on day we change the translation of these construct to not emit a VC, then we
@@ -183,7 +184,6 @@ impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
             | RValue::Tuple(_)
             | RValue::Array(_)
             | RValue::Repeat(_, _)
-            | RValue::MutBorrow(_, _)
             | RValue::Ptr(_) => {}
             _ => self.pure = false,
         }

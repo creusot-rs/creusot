@@ -861,7 +861,6 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var(res_ident)
             }
-            RValue::MutBorrow(_, _) => unreachable!(), // Handled in StatementKind::to_why
             RValue::UnaryOp(UnOp::PtrMetadata, op) => {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
@@ -1211,7 +1210,7 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<IntermediateStmt> {
         let mut istmts = Vec::new();
         match self.kind {
-            StatementKind::Assignment(lhs, RValue::MutBorrow(bor_kind, rhs)) => {
+            StatementKind::MutBorrow(bor_kind, lhs, rhs) => {
                 let bor_id_arg;
                 let rhs_rplace;
                 let rhs_constr;

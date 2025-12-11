@@ -14,8 +14,8 @@ use crate::{
     translation::{
         fmir::{
             Body, FmirVisitor, FmirVisitorMut, LocalDecls, Operand, Place, ProjectionElem, RValue,
-            Statement, StatementKind, Terminator, super_visit_mut_operand, super_visit_mut_rvalue,
-            super_visit_mut_stmt, super_visit_operand, super_visit_place, super_visit_rvalue,
+            Statement, StatementKind, Terminator, super_visit_mut_operand, super_visit_mut_stmt,
+            super_visit_operand, super_visit_place, super_visit_rvalue, super_visit_stmt,
             super_visit_terminator,
         },
         pearlite::{
@@ -110,9 +110,18 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads {
         // in `self.0`` anyway
     }
 
+    fn visit_stmt(&mut self, s: &Statement<'tcx>) {
+        super_visit_stmt(self, s);
+        if let StatementKind::MutBorrow(_, _, p) = &s.kind
+            && let Some(r) = self.0.get_mut(&p.local)
+        {
+            *r = Reads::NotSubstitutable
+        }
+    }
+
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
-        if let RValue::MutBorrow(_, p) | RValue::Ptr(p) = r
+        if let RValue::Ptr(p) = r
             && let Some(r) = self.0.get_mut(&p.local)
         {
             *r = Reads::NotSubstitutable
@@ -243,7 +252,7 @@ fn propagate_temporaries_bb<'tcx>(
     }
 }
 
-/// The visitor that does all the had work of `propagate_temporaries_bb`.
+/// The visitor that does all the hard work of `propagate_temporaries_bb`.
 struct BlockPropagator<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     locals: &'a LocalDecls<'tcx>,
@@ -290,18 +299,18 @@ impl<'tcx> FmirVisitorMut<'tcx> for BlockPropagator<'_, 'tcx> {
                 }
                 lhs
             }
+            StatementKind::MutBorrow(_, lhs, rhs) => {
+                if let Some(r) = self.state.0.get_mut(&lhs.local) {
+                    *r = LocalState::Top
+                }
+                self.erase_dependant(rhs);
+                lhs
+            }
             StatementKind::Assertion { .. } => return,
         };
 
         /* Erase mappings which are invalidated by that write */
         self.erase_dependant(lhs);
-    }
-
-    fn visit_mut_rvalue(&mut self, rval: &mut RValue<'tcx>) {
-        super_visit_mut_rvalue(self, rval);
-        if let RValue::MutBorrow(_, pl) = rval {
-            self.erase_dependant(pl);
-        }
     }
 }
 
@@ -318,7 +327,7 @@ impl<'tcx> BlockPropagator<'_, 'tcx> {
                     // and pl do not overlap.
                     Operand::Place(p) if p.local == pl.local => {}
                     Operand::Term(t, _) if t.free_vars().contains(&pl.local) => {}
-                    _ => continue
+                    _ => continue,
                 }
             }
             *st = LocalState::Top

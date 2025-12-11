@@ -388,9 +388,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         is_final: fmir::BorrowKind,
         span: Span,
     ) {
-        let p = self.translate_place(rhs, span);
-        let span = self.tcx().def_span(self.body_id.def_id);
-        self.emit_assignment(lhs, fmir::RValue::MutBorrow(is_final, p), span);
+        let rhs = self.translate_place(rhs, span);
+        let lhs = self.translate_place(lhs, span);
+        self.emit_statement(fmir::Statement {
+            kind: fmir::StatementKind::MutBorrow(is_final, lhs, rhs),
+            span,
+        })
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
