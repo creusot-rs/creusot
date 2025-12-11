@@ -47,7 +47,6 @@ pub fn old<T: ?Sized>(_: T) -> &'static T {
     dead
 }
 
-#[cfg(feature = "std")]
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
