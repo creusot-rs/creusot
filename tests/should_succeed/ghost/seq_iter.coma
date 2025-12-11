@@ -9,14 +9,16 @@ module M_reverse_ghost
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -251,14 +253,16 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate invariant_Box_ref_T_Global (self: t_T) = inv_ref_T self
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
   
-  predicate inv_Box_ref_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_ref_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_ref_T
   
-  meta "rewrite_def" predicate inv_Box_ref_T_Global
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
   
   predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_ref_T
   
@@ -283,14 +287,8 @@ module M_reverse_ghost_ref
     {[@expl:into_inner 'self' type invariant] inv_Ghost_Seq_ref_T self}
     any [ return (result: Seq.seq t_T) -> {inv_Seq_ref_T result} {result = self} (! return {result}) ]
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
-  
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_T_Global
-  
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
