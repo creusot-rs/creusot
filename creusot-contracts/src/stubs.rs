@@ -47,11 +47,10 @@ pub fn old<T: ?Sized>(_: T) -> Box<T> {
     dead
 }
 
-#[cfg(feature = "std")]
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
-pub fn dead<T: ?Sized>() -> Box<T> {
+pub fn dead<T: ?Sized>() -> &'static T {
     dead
 }
 

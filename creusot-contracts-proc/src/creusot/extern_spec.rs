@@ -216,7 +216,7 @@ impl FlatSpec {
                 let selfty = self_type_escape(span);
                 where_clause
                     .predicates
-                    .push(parse_quote_spanned! {span=> #selfty : ?::std::marker::Sized + #trait_name #generics });
+                    .push(parse_quote_spanned! {span=> #selfty : ?::core::marker::Sized + #trait_name #generics });
 
                 self.signature.generics.params.insert(0, selfty);
 
