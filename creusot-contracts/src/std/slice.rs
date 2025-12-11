@@ -375,10 +375,6 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
-        #[check(terminates)] // can OOM (?)
-        #[ensures(result@ == self_@)]
-        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
-
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         unsafe fn get_unchecked<I: SliceIndexSpec<[T]>>(&self, ix: I)
@@ -443,12 +439,6 @@ extern_spec! {
         fn default() -> &'a [T];
     }
 
-    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
-        fn clone(&self) -> Box<[T], A>;
-    }
-
     mod core {
         mod slice {
             #[check(ghost)]
@@ -463,6 +453,21 @@ extern_spec! {
             #[ensures((^result)@[0] == ^s)]
             fn from_mut<T>(s: &mut T) -> &mut [T];
         }
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<T> [T] {
+        #[check(terminates)] // can OOM (?)
+        #[ensures(result@ == self_@)]
+        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+    }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> Box<[T], A>;
     }
 }
 
