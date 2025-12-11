@@ -27,17 +27,32 @@
 
 use crate::{
     logic::ord::ord_laws_impl,
-    prelude::{Clone, Default, *},
+    //prelude::{Clone, Default, *},
+    prelude::*,
 };
 use core::cmp::Ordering;
 
 /// A peano integer wrapping a 64-bits integer.
 ///
 /// See the [module](crate::peano) explanation.
-#[derive(Clone, Copy, Default, Eq)]
+#[derive(Copy, Eq)] // TODO: derive(Clone, Default) complains when compiling with no_std
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct PeanoInt(pub u64);
+
+#[allow(clippy::non_canonical_clone_impl)]
+impl Clone for PeanoInt {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for PeanoInt {
+    fn default() -> Self {
+        Self(u64::default())
+    }
+}
 
 impl DeepModel for PeanoInt {
     type DeepModelTy = u64;
