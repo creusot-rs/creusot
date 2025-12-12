@@ -1,4 +1,4 @@
-use crate::{ghost::local_invariant::Tokens, prelude::*};
+use crate::{ghost::invariant::Tokens, prelude::*};
 use ::std::thread::{self, JoinHandle, ScopedJoinHandle, ThreadId};
 
 /// Extension trait for [`JoinHandle`].

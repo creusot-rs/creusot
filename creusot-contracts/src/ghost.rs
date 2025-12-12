@@ -23,7 +23,7 @@ use std::{
 
 pub mod atomic_invariant;
 mod fn_ghost;
-pub mod local_invariant;
+pub mod invariant;
 mod ptr_own;
 pub mod resource;
 pub use fn_ghost::{FnGhost, FnGhostWrapper};
