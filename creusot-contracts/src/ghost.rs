@@ -21,7 +21,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-pub mod atomic_invariant;
 mod fn_ghost;
 pub mod invariant;
 mod ptr_own;
@@ -226,3 +225,45 @@ impl<T> Plain for *const T {}
 
 #[trusted]
 impl<T> Plain for *mut T {}
+
+/// Wrapper around a single atomic operation, where multiple ghost steps can be
+/// performed.
+#[opaque]
+pub struct Committer;
+
+impl Committer {
+    /// Status of the committer
+    #[logic(opaque)]
+    pub fn shot(self) -> bool {
+        dead
+    }
+
+    /// Identity of the committer
+    ///
+    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
+    #[logic(opaque)]
+    pub fn id(self) -> crate::std::sync::AtomicI32 {
+        dead
+    }
+
+    /// Value that will be written to the [`AtomicOwn`]
+    #[logic(opaque)]
+    pub fn final_value(self) -> i32 {
+        dead
+    }
+
+    /// 'Shoot' the committer
+    ///
+    /// This does the write on the atomic in ghost code, and can only be called once.
+    #[requires(!self.shot())]
+    #[requires(self.id() == own.id())]
+    #[ensures((^self).shot())]
+    #[ensures((^own).id() == (*own).id())]
+    #[ensures((^own).val() == self.final_value())]
+    #[check(ghost)]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn shoot(&mut self, own: &mut crate::std::sync::AtomicI32Own) {
+        panic!("Should not be called outside ghost code")
+    }
+}

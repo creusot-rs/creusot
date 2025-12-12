@@ -5,13 +5,28 @@ use ::std::thread::{self, JoinHandle, ScopedJoinHandle};
 pub trait JoinHandleExt<T> {
     /// Predicate that specifies the valid return results for the handle.
     #[logic]
-    fn valid_result(self, x: T) -> bool;
+    fn valid_result(self, x: T) -> bool; // TODO: [VL] Rename valid_result.
+
+    /// This function is a wrapper `self.join().unwrap()`.
+    ///
+    /// This functions panics only on stack-overflow or OOM on the spawned thread.
+    // NOTE: This is a way to avoid ::std::thread::Result, which :
+    //  - contains a dyn;
+    //  - we don't know how to handle the Err case in Creusot.
+    #[ensures(self.valid_result(result))]
+    fn join_unwrap(self) -> T;
 }
 
 impl<T> JoinHandleExt<T> for JoinHandle<T> {
     #[logic(opaque)]
     fn valid_result(self, _x: T) -> bool {
         dead
+    }
+
+    #[ensures(self.valid_result(result))]
+    #[trusted]
+    fn join_unwrap(self) -> T {
+        self.join().unwrap()
     }
 }
 
@@ -20,29 +35,23 @@ impl<T> JoinHandleExt<T> for ScopedJoinHandle<'_, T> {
     fn valid_result(self, _x: T) -> bool {
         dead
     }
+
+    #[ensures(self.valid_result(result))]
+    #[trusted]
+    fn join_unwrap(self) -> T {
+        self.join().unwrap()
+    }
 }
 
 extern_spec! {
     mod std {
         mod thread {
             impl<T> JoinHandle<T> {
-                #[ensures(match result {
-                    Ok(res) => self.valid_result(res),
-                    Err(_) => true,
-                })]
-                fn join(self) -> ::std::thread::Result<T>;
-
                 #[ensures(true)] // no spec, but you can call this if you want
                 fn is_finished(&self) -> bool;
             }
 
             impl<T> ScopedJoinHandle<'_, T> {
-                #[ensures(match result {
-                    Ok(res) => self.valid_result(res),
-                    Err(_) => true,
-                })]
-                fn join(self) -> ::std::thread::Result<T>;
-
                 #[ensures(true)] // no spec, but you can call this if you want
                 fn is_finished(&self) -> bool;
             }
