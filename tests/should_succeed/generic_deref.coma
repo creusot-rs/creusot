@@ -128,40 +128,40 @@ module M_deref_mut_wrap
   
   predicate inv_Target (_1: t_Target)
   
-  predicate invariant_ref_Target [@inline:trivial] (self: MutBorrow.t t_Target) =
+  predicate invariant_refmut_Target [@inline:trivial] (self: MutBorrow.t t_Target) =
     inv_Target self.current /\ inv_Target self.final
   
-  meta "rewrite_def" predicate invariant_ref_Target
+  meta "rewrite_def" predicate invariant_refmut_Target
   
-  predicate inv_ref_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invariant_ref_Target _1
+  predicate inv_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invariant_refmut_Target _1
   
-  meta "rewrite_def" predicate inv_ref_Target
+  meta "rewrite_def" predicate inv_refmut_Target
   
   predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_once_deref_mut () args res]. postcondition_once_deref_mut () args res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   let rec deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
     {[@expl:deref_mut requires] precondition_deref_mut () self_}
     any [ return (result: MutBorrow.t t_Target) -> {postcondition_once_deref_mut () self_ result} (! return {result}) ]
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate resolve_ref_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = _1.final = _1.current
+  predicate resolve_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Target
+  meta "rewrite_def" predicate resolve_refmut_Target
   
   predicate resolve_deref_mut [@inline:trivial] (_1: ()) = true
   
@@ -171,7 +171,7 @@ module M_deref_mut_wrap
   
   axiom postcondition_fndef'0:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_mut_deref_mut () args () res]. postcondition_mut_deref_mut () args () res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   function fn_mut_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
   
@@ -207,7 +207,7 @@ module M_deref_mut_wrap
   
   axiom postcondition_fndef'1:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   function fn_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
   
@@ -226,7 +226,7 @@ module M_deref_mut_wrap
   meta "select_lsinst" "all"
   
   let rec deref_mut_wrap_T (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_Target)) =
-    {[@expl:deref_mut_wrap 'x' type invariant] inv_ref_T x}
+    {[@expl:deref_mut_wrap 'x' type invariant] inv_refmut_T x}
     {[@expl:deref_mut_wrap requires] forall y: MutBorrow.t t_T. y.current = x.current -> precondition_deref_mut () y}
     (! bb0
     [ bb0 = s0
@@ -243,18 +243,18 @@ module M_deref_mut_wrap
           (fun (_bor: MutBorrow.t t_Target) ->
             [ &_2 <- _bor ] -{inv_Target _bor.final}-
             [ &_7 <- { _7 with current = _bor.final } ] s4) [ _ck -> (! {inv_Target _7.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T _9} any) ]
-      | s5 = -{resolve_ref_T _9}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Target _7} any) ]
-      | s7 = -{resolve_ref_Target _7}- s8
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _9} any) ]
+      | s5 = -{resolve_refmut_T _9}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Target _7} any) ]
+      | s7 = -{resolve_refmut_Target _7}- s8
       | s8 = MutBorrow.borrow_final <t_Target> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t t_Target) ->
             [ &_ret <- _bor ] -{inv_Target _bor.final}-
             [ &_2 <- { _2 with current = _bor.final } ] s9) [ _ck -> (! {inv_Target _2.current} any) ]
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_ref_Target _2} any) ]
-      | s10 = -{resolve_ref_Target _2}- s11
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_ref_T x} any) ]
-      | s12 = -{resolve_ref_T x}- s13
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Target _2} any) ]
+      | s10 = -{resolve_refmut_Target _2}- s11
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_T x} any) ]
+      | s12 = -{resolve_refmut_T x}- s13
       | s13 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_Target = Any.any_l ()
     | & x: MutBorrow.t t_T = x
@@ -262,7 +262,7 @@ module M_deref_mut_wrap
     | & _7: MutBorrow.t t_Target = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut_wrap result type invariant] inv_ref_Target result}
+    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut_wrap result type invariant] inv_refmut_Target result}
       {[@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result}
       (! return {result}) ]
 end

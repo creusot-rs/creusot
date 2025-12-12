@@ -58,9 +58,9 @@ module M_ghost_map
       {result = get_i32 self.current key}
       (! return {result}) ]
   
-  predicate resolve_ref_FMap_i32_i32 [@inline:trivial] (_1: MutBorrow.t t_FMap_i32_i32) = _1.final = _1.current
+  predicate resolve_refmut_FMap_i32_i32 [@inline:trivial] (_1: MutBorrow.t t_FMap_i32_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_FMap_i32_i32
+  meta "rewrite_def" predicate resolve_refmut_FMap_i32_i32
   
   let rec deref_Ghost_FMap_i32_i32 (self: t_FMap_i32_i32) (return (x: t_FMap_i32_i32)) = any
     [ return (result: t_FMap_i32_i32) -> {result = self} (! return {result}) ]
@@ -87,14 +87,14 @@ module M_ghost_map
   
   meta "rewrite_def" function lookup_i32
   
-  type t_Option_ref_i32 = None'0 | Some'0 (MutBorrow.t Int32.t)
+  type t_Option_refmut_i32 = None'0 | Some'0 (MutBorrow.t Int32.t)
   
   function index_FMap_i32_i32 [@inline:trivial] (self: t_FMap_i32_i32) (key: Int32.t) : Int32.t = lookup_i32 self key
   
   meta "rewrite_def" function index_FMap_i32_i32
   
-  let rec get_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {if contains_i32 self.current key then
+  let rec get_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_refmut_i32)) = any
+    [ return (result: t_Option_refmut_i32) -> {if contains_i32 self.current key then
         match result with
           | None'0 -> false
           | Some'0 r -> contains_i32 self.final key
@@ -107,11 +107,11 @@ module M_ghost_map
       {len_i32 self.current = len_i32 self.final}
       (! return {result}) ]
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec elim_Some (_x: t_Option_ref_i32) (return (f0: MutBorrow.t Int32.t)) = any
+  let rec elim_Some (_x: t_Option_refmut_i32) (return (f0: MutBorrow.t Int32.t)) = any
     [ _k (f0: MutBorrow.t Int32.t) -> {Some'0 f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Some'0 _ -> true
@@ -119,7 +119,7 @@ module M_ghost_map
         end}
       any) ]
   
-  type tup2_ref_i32_ref_FMap_i32_i32 = { f0: MutBorrow.t Int32.t; f1: MutBorrow.t t_FMap_i32_i32 }
+  type tup2_refmut_i32_refmut_FMap_i32_i32 = { f0: MutBorrow.t Int32.t; f1: MutBorrow.t t_FMap_i32_i32 }
   
   function remove_i32 (self: t_FMap_i32_i32) (k: Int32.t) : t_FMap_i32_i32
   
@@ -130,9 +130,9 @@ module M_ghost_map
       = (if contains_i32 self k then len_i32 self - 1 else len_i32 self)
   
   let rec split_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t)
-    (return (x: tup2_ref_i32_ref_FMap_i32_i32)) = {[@expl:split_mut_ghost requires] contains_i32 self.current key}
+    (return (x: tup2_refmut_i32_refmut_FMap_i32_i32)) = {[@expl:split_mut_ghost requires] contains_i32 self.current key}
     any
-    [ return (result: tup2_ref_i32_ref_FMap_i32_i32) -> {result.f1.current = remove_i32 self.current key}
+    [ return (result: tup2_refmut_i32_refmut_FMap_i32_i32) -> {result.f1.current = remove_i32 self.current key}
       {index_FMap_i32_i32 self.current key = result.f0.current
       /\ self.final = insert_i32 result.f1.final key result.f0.final}
       (! return {result}) ]
@@ -145,15 +145,15 @@ module M_ghost_map
   let rec contains_ghost_i32 (self: t_FMap_i32_i32) (key: Int32.t) (return (x: bool)) = any
     [ return (result: bool) -> {result = contains_i32 self key} (! return {result}) ]
   
-  type t_Option_ref_i32'0 = None'1 | Some'1 Int32.t
+  type t_Option_ref_i32 = None'1 | Some'1 Int32.t
   
-  function map_Option_i32 (self: t_Option_i32) (f: Map.map Int32.t Int32.t) : t_Option_ref_i32'0 = match self with
+  function map_Option_i32 (self: t_Option_i32) (f: Map.map Int32.t Int32.t) : t_Option_ref_i32 = match self with
       | None -> None'1
       | Some x -> Some'1 (Map.get f x)
       end
   
-  let rec get_ghost_i32 (self: t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_ref_i32'0)) = any
-    [ return (result: t_Option_ref_i32'0) -> {result = map_Option_i32 (get_i32 self key) (fun (v: Int32.t) -> v)}
+  let rec get_ghost_i32 (self: t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_ref_i32)) = any
+    [ return (result: t_Option_ref_i32) -> {result = map_Option_i32 (get_i32 self key) (fun (v: Int32.t) -> v)}
       (! return {result}) ]
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
@@ -172,7 +172,7 @@ module M_ghost_map
       | s4 = MutBorrow.borrow_final <t_FMap_i32_i32> {_9.current} {MutBorrow.get_id _9}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s5)
       | s5 = insert_ghost_i32 {_8} {(1: Int32.t)} {(21: Int32.t)} (fun (_x: t_Option_i32) -> [ &_7 <- _x ] s6)
-      | s6 = -{resolve_ref_FMap_i32_i32 _9}- s7
+      | s6 = -{resolve_refmut_FMap_i32_i32 _9}- s7
       | s7 = deref_Ghost_FMap_i32_i32 {map} (fun (_x: t_FMap_i32_i32) -> [ &_13 <- _x ] s8)
       | s8 = len_ghost_i32 {_13} (fun (_x: int) -> [ &length1 <- _x ] s9)
       | s9 = {[@expl:assertion] lookup_i32 map (1: Int32.t) = (21: Int32.t)} s10
@@ -186,21 +186,21 @@ module M_ghost_map
       | s14 = [ &_27 <- _183 ] s15
       | s15 = MutBorrow.borrow_final <t_FMap_i32_i32> {_24.current} {MutBorrow.get_id _24}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_23 <- _bor ] [ &_24 <- { _24 with current = _bor.final } ] s16)
-      | s16 = get_mut_ghost_i32 {_23} {_27} (fun (_x: t_Option_ref_i32) -> [ &_22 <- _x ] s17)
+      | s16 = get_mut_ghost_i32 {_23} {_27} (fun (_x: t_Option_refmut_i32) -> [ &_22 <- _x ] s17)
       | s17 = any [ br0 -> {_22 = None'0} (! bb10) | br1 (x0: MutBorrow.t Int32.t) -> {_22 = Some'0 x0} (! bb9) ] ]
     | bb10 = s0
       [ s0 = -{match _22 with
-          | Some'0 x'1 -> resolve_ref_i32 x'1
+          | Some'0 x'1 -> resolve_refmut_i32 x'1
           | _ -> true
           end}-
         s1
-      | s1 = -{resolve_ref_FMap_i32_i32 _24}- s2
+      | s1 = -{resolve_refmut_FMap_i32_i32 _24}- s2
       | s2 = bb11 ]
     | bb9 = s0
       [ s0 = elim_Some {_22} (fun (r0: MutBorrow.t Int32.t) -> [ &x <- r0 ] s1)
       | s1 = [ &x <- { x with current = (43: Int32.t) } ] s2
-      | s2 = -{resolve_ref_i32 x}- s3
-      | s3 = -{resolve_ref_FMap_i32_i32 _24}- s4
+      | s2 = -{resolve_refmut_i32 x}- s3
+      | s3 = -{resolve_refmut_FMap_i32_i32 _24}- s4
       | s4 = bb11 ]
     | bb11 = s0
       [ s0 = {[@expl:assertion] lookup_i32 map (1: Int32.t) = (43: Int32.t)} s1
@@ -211,7 +211,7 @@ module M_ghost_map
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_35 <- _bor ] [ &_36 <- { _36 with current = _bor.final } ] s4)
       | s4 = insert_ghost_i32 {_35} {(2: Int32.t)} {(50: Int32.t)}
           (fun (_x: t_Option_i32) -> [ &inserted_none <- _x ] s5)
-      | s5 = -{resolve_ref_FMap_i32_i32 _36}- s6
+      | s5 = -{resolve_refmut_FMap_i32_i32 _36}- s6
       | s6 = MutBorrow.borrow_mut <t_FMap_i32_i32> {map}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_41 <- _bor ] [ &map <- _bor.final ] s7)
       | s7 = deref_mut_Ghost_FMap_i32_i32 {_41} (fun (_x: MutBorrow.t t_FMap_i32_i32) -> [ &_40 <- _x ] s8)
@@ -219,7 +219,7 @@ module M_ghost_map
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_39 <- _bor ] [ &_40 <- { _40 with current = _bor.final } ] s9)
       | s9 = insert_ghost_i32 {_39} {(2: Int32.t)} {(100: Int32.t)}
           (fun (_x: t_Option_i32) -> [ &inserted_some <- _x ] s10)
-      | s10 = -{resolve_ref_FMap_i32_i32 _40}- s11
+      | s10 = -{resolve_refmut_FMap_i32_i32 _40}- s11
       | s11 = deref_Ghost_FMap_i32_i32 {map} (fun (_x: t_FMap_i32_i32) -> [ &_44 <- _x ] s12)
       | s12 = len_ghost_i32 {_44} (fun (_x: int) -> [ &length2 <- _x ] s13)
       | s13 = {[@expl:assertion] inserted_none = None} s14
@@ -236,12 +236,12 @@ module M_ghost_map
       | s21 = [ &_68 <- _182 ] s22
       | s22 = MutBorrow.borrow_final <t_FMap_i32_i32> {_65.current} {MutBorrow.get_id _65}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_64 <- _bor ] [ &_65 <- { _65 with current = _bor.final } ] s23)
-      | s23 = split_mut_ghost_i32 {_64} {_68} (fun (_x: tup2_ref_i32_ref_FMap_i32_i32) -> [ &_63 <- _x ] s24)
+      | s23 = split_mut_ghost_i32 {_64} {_68} (fun (_x: tup2_refmut_i32_refmut_FMap_i32_i32) -> [ &_63 <- _x ] s24)
       | s24 = [ &x'0 <- _63.f0 ] s25
       | s25 = [ &map2 <- _63.f1 ] s26
-      | s26 = -{resolve_ref_FMap_i32_i32 _65}- s27
+      | s26 = -{resolve_refmut_FMap_i32_i32 _65}- s27
       | s27 = [ &x'0 <- { x'0 with current = (42: Int32.t) } ] s28
-      | s28 = -{resolve_ref_i32 x'0}- s29
+      | s28 = -{resolve_refmut_i32 x'0}- s29
       | s29 = MutBorrow.borrow_mut <t_FMap_i32_i32> {map2.current}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) ->
             [ &_71 <- _bor ] [ &map2 <- { map2 with current = _bor.final } ] s30)
@@ -250,7 +250,7 @@ module M_ghost_map
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) ->
             [ &_73 <- _bor ] [ &map2 <- { map2 with current = _bor.final } ] s32)
       | s32 = insert_ghost_i32 {_73} {(1: Int32.t)} {(56: Int32.t)} (fun (_x: t_Option_i32) -> [ &_72 <- _x ] s33)
-      | s33 = -{resolve_ref_FMap_i32_i32 map2}- s34
+      | s33 = -{resolve_refmut_FMap_i32_i32 map2}- s34
       | s34 = {[@expl:assertion] lookup_i32 map (1: Int32.t) = (42: Int32.t)} s35
       | s35 = {[@expl:assertion] lookup_i32 map (2: Int32.t) = (200: Int32.t)} s36
       | s36 = MutBorrow.borrow_mut <t_FMap_i32_i32> {map}
@@ -263,7 +263,7 @@ module M_ghost_map
       | s40 = MutBorrow.borrow_final <t_FMap_i32_i32> {_82.current} {MutBorrow.get_id _82}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s41)
       | s41 = remove_ghost_i32 {_81} {_85} (fun (_x: t_Option_i32) -> [ &remove_none1 <- _x ] s42)
-      | s42 = -{resolve_ref_FMap_i32_i32 _82}- s43
+      | s42 = -{resolve_refmut_FMap_i32_i32 _82}- s43
       | s43 = MutBorrow.borrow_mut <t_FMap_i32_i32> {map}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_90 <- _bor ] [ &map <- _bor.final ] s44)
       | s44 = deref_mut_Ghost_FMap_i32_i32 {_90} (fun (_x: MutBorrow.t t_FMap_i32_i32) -> [ &_89 <- _x ] s45)
@@ -274,7 +274,7 @@ module M_ghost_map
       | s47 = MutBorrow.borrow_final <t_FMap_i32_i32> {_89.current} {MutBorrow.get_id _89}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_88 <- _bor ] [ &_89 <- { _89 with current = _bor.final } ] s48)
       | s48 = remove_ghost_i32 {_88} {_92} (fun (_x: t_Option_i32) -> [ &remove_some <- _x ] s49)
-      | s49 = -{resolve_ref_FMap_i32_i32 _89}- s50
+      | s49 = -{resolve_refmut_FMap_i32_i32 _89}- s50
       | s50 = MutBorrow.borrow_mut <t_FMap_i32_i32> {map}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_97 <- _bor ] [ &map <- _bor.final ] s51)
       | s51 = deref_mut_Ghost_FMap_i32_i32 {_97} (fun (_x: MutBorrow.t t_FMap_i32_i32) -> [ &_96 <- _x ] s52)
@@ -285,7 +285,7 @@ module M_ghost_map
       | s54 = MutBorrow.borrow_final <t_FMap_i32_i32> {_96.current} {MutBorrow.get_id _96}
           (fun (_bor: MutBorrow.t t_FMap_i32_i32) -> [ &_95 <- _bor ] [ &_96 <- { _96 with current = _bor.final } ] s55)
       | s55 = remove_ghost_i32 {_95} {_99} (fun (_x: t_Option_i32) -> [ &remove_none2 <- _x ] s56)
-      | s56 = -{resolve_ref_FMap_i32_i32 _96}- s57
+      | s56 = -{resolve_refmut_FMap_i32_i32 _96}- s57
       | s57 = {[@expl:assertion] remove_none1 = None} s58
       | s58 = {[@expl:assertion] remove_some = Some (200: Int32.t)} s59
       | s59 = {[@expl:assertion] remove_none2 = None} s60
@@ -316,19 +316,19 @@ module M_ghost_map
         [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- (1: Int32.t) ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Int32.t = Any.any_l () ] [ _const_ret (_const: Int32.t) -> [ &_175 <- _const ] s78 ]
       | s78 = [ &_148 <- _175 ] s79
-      | s79 = get_ghost_i32 {_145} {_148} (fun (_x: t_Option_ref_i32'0) -> [ &get1 <- _x ] s80)
+      | s79 = get_ghost_i32 {_145} {_148} (fun (_x: t_Option_ref_i32) -> [ &get1 <- _x ] s80)
       | s80 = deref_Ghost_FMap_i32_i32 {map} (fun (_x: t_FMap_i32_i32) -> [ &_152 <- _x ] s81)
       | s81 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- (2: Int32.t) ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Int32.t = Any.any_l () ] [ _const_ret (_const: Int32.t) -> [ &_174 <- _const ] s82 ]
       | s82 = [ &_155 <- _174 ] s83
-      | s83 = get_ghost_i32 {_152} {_155} (fun (_x: t_Option_ref_i32'0) -> [ &get2 <- _x ] s84)
+      | s83 = get_ghost_i32 {_152} {_155} (fun (_x: t_Option_ref_i32) -> [ &get2 <- _x ] s84)
       | s84 = deref_Ghost_FMap_i32_i32 {map} (fun (_x: t_FMap_i32_i32) -> [ &_159 <- _x ] s85)
       | s85 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- (3: Int32.t) ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Int32.t = Any.any_l () ] [ _const_ret (_const: Int32.t) -> [ &_173 <- _const ] s86 ]
       | s86 = [ &_162 <- _173 ] s87
-      | s87 = get_ghost_i32 {_159} {_162} (fun (_x: t_Option_ref_i32'0) -> [ &get3 <- _x ] s88)
+      | s87 = get_ghost_i32 {_159} {_162} (fun (_x: t_Option_ref_i32) -> [ &get3 <- _x ] s88)
       | s88 = {[@expl:assertion] get1 = Some'1 (42: Int32.t)} s89
       | s89 = {[@expl:assertion] get2 = None'1} s90
       | s90 = {[@expl:assertion] get3 = None'1} s91
@@ -344,7 +344,7 @@ module M_ghost_map
     | & _10: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
     | & length1: int = Any.any_l ()
     | & _13: t_FMap_i32_i32 = Any.any_l ()
-    | & _22: t_Option_ref_i32 = Any.any_l ()
+    | & _22: t_Option_refmut_i32 = Any.any_l ()
     | & _23: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
     | & _24: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
     | & _25: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
@@ -362,7 +362,7 @@ module M_ghost_map
     | & _44: t_FMap_i32_i32 = Any.any_l ()
     | & x'0: MutBorrow.t Int32.t = Any.any_l ()
     | & map2: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
-    | & _63: tup2_ref_i32_ref_FMap_i32_i32 = Any.any_l ()
+    | & _63: tup2_refmut_i32_refmut_FMap_i32_i32 = Any.any_l ()
     | & _64: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
     | & _65: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
     | & _66: MutBorrow.t t_FMap_i32_i32 = Any.any_l ()
@@ -395,13 +395,13 @@ module M_ghost_map
     | & contains3: bool = Any.any_l ()
     | & _129: t_FMap_i32_i32 = Any.any_l ()
     | & _132: Int32.t = Any.any_l ()
-    | & get1: t_Option_ref_i32'0 = Any.any_l ()
+    | & get1: t_Option_ref_i32 = Any.any_l ()
     | & _145: t_FMap_i32_i32 = Any.any_l ()
     | & _148: Int32.t = Any.any_l ()
-    | & get2: t_Option_ref_i32'0 = Any.any_l ()
+    | & get2: t_Option_ref_i32 = Any.any_l ()
     | & _152: t_FMap_i32_i32 = Any.any_l ()
     | & _155: Int32.t = Any.any_l ()
-    | & get3: t_Option_ref_i32'0 = Any.any_l ()
+    | & get3: t_Option_ref_i32 = Any.any_l ()
     | & _159: t_FMap_i32_i32 = Any.any_l ()
     | & _162: Int32.t = Any.any_l ()
     | & _173: Int32.t = Any.any_l ()

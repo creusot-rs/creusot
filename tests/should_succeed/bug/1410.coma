@@ -35,12 +35,12 @@ module M_bar
   axiom produces_refl_Range_i32_spec:
     forall self: t_Range_i32. produces_Range_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve_ref_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
+  predicate resolve_refmut_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_i32
+  meta "rewrite_def" predicate resolve_refmut_Range_i32
   
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_ref_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {match result with
@@ -71,13 +71,13 @@ module M_bar
         end}
       any) ]
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate postcondition_once_F (self: t_F) (args: ()) (result: ())
   
@@ -108,7 +108,7 @@ module M_bar
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any [ return (result: ()) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
@@ -137,7 +137,7 @@ module M_bar
         | s1 = MutBorrow.borrow_final <t_Range_i32> {_28.current} {MutBorrow.get_id _28}
             (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s2)
         | s2 = next_Range_i32 {_27} (fun (_x: t_Option_i32) -> [ &_26 <- _x ] s3)
-        | s3 = -{resolve_ref_Range_i32 _28}- s4
+        | s3 = -{resolve_refmut_Range_i32 _28}- s4
         | s4 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int32.t) -> {_26 = Some x0} (! bb10) ] ]
         [ bb10 = s0
           [ s0 = elim_Some {_26} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

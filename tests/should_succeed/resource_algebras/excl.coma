@@ -51,10 +51,10 @@ module M_exclusivity
       {op_Excl_i32 (view_Resource_Excl_i32 self.current) (view_Resource_Excl_i32 other) <> None}
       (! return {result}) ]
   
-  predicate resolve_ref_Resource_Excl_i32 [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_i32) =
+  predicate resolve_refmut_Resource_Excl_i32 [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_i32) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Resource_Excl_i32
+  meta "rewrite_def" predicate resolve_refmut_Resource_Excl_i32
   
   meta "compute_max_steps" 1000000
   
@@ -70,11 +70,11 @@ module M_exclusivity
       [ s0 = MutBorrow.borrow_final <t_Resource_Excl_i32> {x.current} {MutBorrow.get_id x}
           (fun (_bor: MutBorrow.t t_Resource_Excl_i32) -> [ &_16 <- _bor ] [ &x <- { x with current = _bor.final } ] s1)
       | s1 = valid_shared_Excl_i32 {_16} {y} (fun (_x: ()) -> [ &_15 <- _x ] s2)
-      | s2 = -{resolve_ref_Resource_Excl_i32 x}- s3
+      | s2 = -{resolve_refmut_Resource_Excl_i32 x}- s3
       | s3 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
     | bb9 = return {_ret}
     | bb6 = {false} any
-    | bb8 = s0 [ s0 = -{resolve_ref_Resource_Excl_i32 x}- s1 | s1 = return {_ret} ] ]
+    | bb8 = s0 [ s0 = -{resolve_refmut_Resource_Excl_i32 x}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: MutBorrow.t t_Resource_Excl_i32 = x
     | & y: t_Resource_Excl_i32 = y

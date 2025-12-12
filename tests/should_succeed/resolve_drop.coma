@@ -3,9 +3,9 @@ module M_f
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
   meta "compute_max_steps" 1000000
   
@@ -18,7 +18,7 @@ module M_f
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_3 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = [ &b <- _3 ] s3
       | s3 = Int32.add {b.current} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &b <- { b with current = _x } ] s4)
-      | s4 = -{resolve_ref_i32 b}- s5
+      | s4 = -{resolve_refmut_i32 b}- s5
       | s5 = {[@expl:assertion] Int32.to_int x = 13} s6
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

@@ -7,20 +7,20 @@ module M_disjoint_captures
   
   type closure2 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_ref_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
+  predicate resolve_refmut_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure2
+  meta "rewrite_def" predicate resolve_refmut_closure2
   
   predicate postcondition_once_closure2 [@inline:trivial] (self: closure2) (args: ()) (result: ()) =
     Int32.to_int self.c0.final = 1
   
   meta "rewrite_def" predicate postcondition_once_closure2
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_ref_i32 _1.c0
+  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_refmut_i32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure2
   
@@ -57,7 +57,7 @@ module M_disjoint_captures
   let rec closure2 (self: MutBorrow.t closure2) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (1: Int32.t) } } } ] s1
-      | s1 = -{resolve_ref_closure2 self}- s2
+      | s1 = -{resolve_refmut_closure2 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.final.c0.current = 1}
       {[@expl:closure hist_inv post] hist_inv_closure2 self.current self.final}

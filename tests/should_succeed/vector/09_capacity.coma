@@ -39,34 +39,35 @@ module M_change_capacity
   
   axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
   
-  predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
+  predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
   
-  meta "rewrite_def" predicate invariant_ref_Vec_T_Global
+  meta "rewrite_def" predicate invariant_refmut_Vec_T_Global
   
-  predicate inv_ref_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = invariant_ref_Vec_T_Global _1
+  predicate inv_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) =
+    invariant_refmut_Vec_T_Global _1
   
-  meta "rewrite_def" predicate inv_ref_Vec_T_Global
+  meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
   let rec reserve_T (self_: MutBorrow.t t_Vec_T_Global) (additional: UInt64.t) (return (x: ())) =
-    {[@expl:reserve 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:reserve 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
   
   let rec reserve_exact_T (self_: MutBorrow.t t_Vec_T_Global) (additional: UInt64.t) (return (x: ())) =
-    {[@expl:reserve_exact 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:reserve_exact 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
   
   let rec shrink_to_fit_T (self_: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-    {[@expl:shrink_to_fit 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:shrink_to_fit 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
   
   let rec shrink_to_T (self_: MutBorrow.t t_Vec_T_Global) (min_capacity: UInt64.t) (return (x: ())) =
-    {[@expl:shrink_to 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:shrink_to 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
   
-  predicate resolve_ref_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_T_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
   function index_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) (ix: int) : t_T =
     Seq.get (view_Vec_T_Global self) ix
@@ -78,7 +79,7 @@ module M_change_capacity
   meta "select_lsinst" "all"
   
   let rec change_capacity_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-    {[@expl:change_capacity 'v' type invariant] inv_ref_Vec_T_Global v}
+    {[@expl:change_capacity 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
@@ -101,8 +102,8 @@ module M_change_capacity
             [ &_13 <- _bor ] -{inv_Vec_T_Global _bor.final}-
             [ &v <- { v with current = _bor.final } ] s7) [ _ck -> (! {inv_Vec_T_Global v.current} any) ]
       | s7 = shrink_to_T {_13} {(1: UInt64.t)} (fun (_x: ()) -> [ &_12 <- _x ] s8)
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T_Global v} any) ]
-      | s9 = -{resolve_ref_Vec_T_Global v}- s10
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global v} any) ]
+      | s9 = -{resolve_refmut_Vec_T_Global v}- s10
       | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec_T_Global = v
@@ -161,29 +162,30 @@ module M_clear_vec
   
   axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
   
-  predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
+  predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
   
-  meta "rewrite_def" predicate invariant_ref_Vec_T_Global
+  meta "rewrite_def" predicate invariant_refmut_Vec_T_Global
   
-  predicate inv_ref_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = invariant_ref_Vec_T_Global _1
+  predicate inv_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) =
+    invariant_refmut_Vec_T_Global _1
   
-  meta "rewrite_def" predicate inv_ref_Vec_T_Global
+  meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
   let rec clear_T (self_: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-    {[@expl:clear 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    {[@expl:clear 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any [ return (result: ()) -> {Seq.length (view_Vec_T_Global self_.final) = 0} (! return {result}) ]
   
-  predicate resolve_ref_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_T_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec clear_vec_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-    {[@expl:clear_vec 'v' type invariant] inv_ref_Vec_T_Global v}
+    {[@expl:clear_vec 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_T_Global> {v.current} {MutBorrow.get_id v}
@@ -191,8 +193,8 @@ module M_clear_vec
             [ &_5 <- _bor ] -{inv_Vec_T_Global _bor.final}-
             [ &v <- { v with current = _bor.final } ] s1) [ _ck -> (! {inv_Vec_T_Global v.current} any) ]
       | s1 = clear_T {_5} (fun (_x: ()) -> [ &_4 <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T_Global v} any) ]
-      | s3 = -{resolve_ref_Vec_T_Global v}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global v} any) ]
+      | s3 = -{resolve_refmut_Vec_T_Global v}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec_T_Global = v

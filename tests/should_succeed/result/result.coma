@@ -44,28 +44,28 @@ module M_test_result
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'0 e}
     any [ return (result: Int32.t) -> {Err'0 result = self_} (! return {result}) ]
   
-  type t_Result_ref_i32_ref_i32'0 = Ok'1 (MutBorrow.t Int32.t) | Err'1 (MutBorrow.t Int32.t)
+  type t_Result_refmut_i32_refmut_i32 = Ok'1 (MutBorrow.t Int32.t) | Err'1 (MutBorrow.t Int32.t)
   
-  let rec as_mut_i32 (self_: MutBorrow.t t_Result_i32_i32) (return (x: t_Result_ref_i32_ref_i32'0)) = any
-    [ return (result: t_Result_ref_i32_ref_i32'0) -> {exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
+  let rec as_mut_i32 (self_: MutBorrow.t t_Result_i32_i32) (return (x: t_Result_refmut_i32_refmut_i32)) = any
+    [ return (result: t_Result_refmut_i32_refmut_i32) -> {exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
           /\ self_.final = Ok (t.final) /\ result = Ok'1 t
         \/ (exists e: MutBorrow.t Int32.t. self_.current = Err (e.current)
           /\ self_.final = Err (e.final) /\ result = Err'1 e)}
       (! return {result}) ]
   
-  let rec unwrap_ref_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap requires] exists t: MutBorrow.t Int32.t. self_ = Ok'1 t}
     any [ return (result: MutBorrow.t Int32.t) -> {Ok'1 result = self_} (! return {result}) ]
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
   let rec unwrap_i32'0 (self_: t_Result_i32_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok t}
     any [ return (result: Int32.t) -> {Ok result = self_} (! return {result}) ]
   
-  let rec unwrap_err_ref_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_err_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'1 e}
     any [ return (result: MutBorrow.t Int32.t) -> {Err'1 result = self_} (! return {result}) ]
   
@@ -169,19 +169,19 @@ module M_test_result
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'2 e}
     any [ return (result: Int32.t) -> {Err'2 result = self_} (! return {result}) ]
   
-  type t_Result_i32_ref_i32'0 = Ok'3 Int32.t | Err'3 (MutBorrow.t Int32.t)
+  type t_Result_i32_refmut_i32 = Ok'3 Int32.t | Err'3 (MutBorrow.t Int32.t)
   
-  let rec copied_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: t_Result_i32_ref_i32'0)) = any
-    [ return (result: t_Result_i32_ref_i32'0) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_ref_i32 t}
+  let rec copied_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
+    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
+        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
       {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
       (! return {result}) ]
   
-  let rec unwrap_i32'2 (self_: t_Result_i32_ref_i32'0) (return (x: Int32.t)) =
+  let rec unwrap_i32'2 (self_: t_Result_i32_refmut_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok'3 t}
     any [ return (result: Int32.t) -> {Ok'3 result = self_} (! return {result}) ]
   
-  let rec unwrap_err_i32'1 (self_: t_Result_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_err_i32'1 (self_: t_Result_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'3 e}
     any [ return (result: MutBorrow.t Int32.t) -> {Err'3 result = self_} (! return {result}) ]
   
@@ -190,9 +190,9 @@ module M_test_result
       {forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e}
       (! return {result}) ]
   
-  let rec cloned_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: t_Result_i32_ref_i32'0)) = any
-    [ return (result: t_Result_i32_ref_i32'0) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_ref_i32 t}
+  let rec cloned_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
+    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
+        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
       {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
       (! return {result}) ]
   
@@ -263,40 +263,40 @@ module M_test_result
     | bb37 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_55 <- _bor ] [ &ok <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_55} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_54 <- _x ] s2)
-      | s2 = unwrap_ref_i32'0 {_54} (fun (_x: MutBorrow.t Int32.t) -> [ &_53 <- _x ] s3)
+      | s1 = as_mut_i32 {_55} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_54 <- _x ] s2)
+      | s2 = unwrap_refmut_i32 {_54} (fun (_x: MutBorrow.t Int32.t) -> [ &_53 <- _x ] s3)
       | s3 = [ &_53 <- { _53 with current = (0: Int32.t) } ] s4
-      | s4 = -{resolve_ref_i32 _53}- s5
+      | s4 = -{resolve_refmut_i32 _53}- s5
       | s5 = unwrap_i32'0 {ok} (fun (_x: Int32.t) -> [ &_58 <- _x ] s6)
       | s6 = [ &_57 <- _58 = (0: Int32.t) ] s7
       | s7 = any [ br0 -> {_57 = false} (! bb43) | br1 -> {_57} (! bb42) ] ]
     | bb42 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_63 <- _bor ] [ &ok <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_63} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_62 <- _x ] s2)
-      | s2 = unwrap_ref_i32'0 {_62} (fun (_x: MutBorrow.t Int32.t) -> [ &_61 <- _x ] s3)
+      | s1 = as_mut_i32 {_63} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_62 <- _x ] s2)
+      | s2 = unwrap_refmut_i32 {_62} (fun (_x: MutBorrow.t Int32.t) -> [ &_61 <- _x ] s3)
       | s3 = [ &_61 <- { _61 with current = (1: Int32.t) } ] s4
-      | s4 = -{resolve_ref_i32 _61}- s5
+      | s4 = -{resolve_refmut_i32 _61}- s5
       | s5 = unwrap_i32'0 {ok} (fun (_x: Int32.t) -> [ &_66 <- _x ] s6)
       | s6 = [ &_65 <- _66 = (1: Int32.t) ] s7
       | s7 = any [ br0 -> {_65 = false} (! bb48) | br1 -> {_65} (! bb47) ] ]
     | bb47 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_71 <- _bor ] [ &err <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_71} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_70 <- _x ] s2)
-      | s2 = unwrap_err_ref_i32'0 {_70} (fun (_x: MutBorrow.t Int32.t) -> [ &_69 <- _x ] s3)
+      | s1 = as_mut_i32 {_71} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_70 <- _x ] s2)
+      | s2 = unwrap_err_refmut_i32 {_70} (fun (_x: MutBorrow.t Int32.t) -> [ &_69 <- _x ] s3)
       | s3 = [ &_69 <- { _69 with current = (0: Int32.t) } ] s4
-      | s4 = -{resolve_ref_i32 _69}- s5
+      | s4 = -{resolve_refmut_i32 _69}- s5
       | s5 = unwrap_err_i32 {err} (fun (_x: Int32.t) -> [ &_74 <- _x ] s6)
       | s6 = [ &_73 <- _74 = (0: Int32.t) ] s7
       | s7 = any [ br0 -> {_73 = false} (! bb53) | br1 -> {_73} (! bb52) ] ]
     | bb52 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_79 <- _bor ] [ &err <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_79} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_78 <- _x ] s2)
-      | s2 = unwrap_err_ref_i32'0 {_78} (fun (_x: MutBorrow.t Int32.t) -> [ &_77 <- _x ] s3)
+      | s1 = as_mut_i32 {_79} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_78 <- _x ] s2)
+      | s2 = unwrap_err_refmut_i32 {_78} (fun (_x: MutBorrow.t Int32.t) -> [ &_77 <- _x ] s3)
       | s3 = [ &_77 <- { _77 with current = (-1: Int32.t) } ] s4
-      | s4 = -{resolve_ref_i32 _77}- s5
+      | s4 = -{resolve_refmut_i32 _77}- s5
       | s5 = unwrap_err_i32 {err} (fun (_x: Int32.t) -> [ &_82 <- _x ] s6)
       | s6 = [ &_81 <- _82 = (-1: Int32.t) ] s7
       | s7 = any [ br0 -> {_81 = false} (! bb58) | br1 -> {_81} (! bb57) ] ]
@@ -387,18 +387,18 @@ module M_test_result
     | bb117 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_191 <- _bor ] [ &ok <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_191} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_190 <- _x ] s2)
-      | s2 = copied_i32'0 {_190} (fun (_x: t_Result_i32_ref_i32'0) -> [ &_189 <- _x ] s3)
+      | s1 = as_mut_i32 {_191} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_190 <- _x ] s2)
+      | s2 = copied_i32'0 {_190} (fun (_x: t_Result_i32_refmut_i32) -> [ &_189 <- _x ] s3)
       | s3 = unwrap_i32'2 {_189} (fun (_x: Int32.t) -> [ &_188 <- _x ] s4)
       | s4 = [ &_187 <- _188 = (1: Int32.t) ] s5
       | s5 = any [ br0 -> {_187 = false} (! bb123) | br1 -> {_187} (! bb122) ] ]
     | bb122 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_199 <- _bor ] [ &err <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_199} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_198 <- _x ] s2)
-      | s2 = copied_i32'0 {_198} (fun (_x: t_Result_i32_ref_i32'0) -> [ &_197 <- _x ] s3)
+      | s1 = as_mut_i32 {_199} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_198 <- _x ] s2)
+      | s2 = copied_i32'0 {_198} (fun (_x: t_Result_i32_refmut_i32) -> [ &_197 <- _x ] s3)
       | s3 = unwrap_err_i32'1 {_197} (fun (_x: MutBorrow.t Int32.t) -> [ &_196 <- _x ] s4)
-      | s4 = -{resolve_ref_i32 _196}- s5
+      | s4 = -{resolve_refmut_i32 _196}- s5
       | s5 = [ &_194 <- _196.current = (-1: Int32.t) ] s6
       | s6 = any [ br0 -> {_194 = false} (! bb128) | br1 -> {_194} (! bb127) ] ]
     | bb127 = s0
@@ -416,18 +416,18 @@ module M_test_result
     | bb137 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_221 <- _bor ] [ &ok <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_221} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_220 <- _x ] s2)
-      | s2 = cloned_i32'0 {_220} (fun (_x: t_Result_i32_ref_i32'0) -> [ &_219 <- _x ] s3)
+      | s1 = as_mut_i32 {_221} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_220 <- _x ] s2)
+      | s2 = cloned_i32'0 {_220} (fun (_x: t_Result_i32_refmut_i32) -> [ &_219 <- _x ] s3)
       | s3 = unwrap_i32'2 {_219} (fun (_x: Int32.t) -> [ &_218 <- _x ] s4)
       | s4 = [ &_217 <- _218 = (1: Int32.t) ] s5
       | s5 = any [ br0 -> {_217 = false} (! bb143) | br1 -> {_217} (! bb142) ] ]
     | bb142 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
           (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_229 <- _bor ] [ &err <- _bor.final ] s1)
-      | s1 = as_mut_i32 {_229} (fun (_x: t_Result_ref_i32_ref_i32'0) -> [ &_228 <- _x ] s2)
-      | s2 = cloned_i32'0 {_228} (fun (_x: t_Result_i32_ref_i32'0) -> [ &_227 <- _x ] s3)
+      | s1 = as_mut_i32 {_229} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_228 <- _x ] s2)
+      | s2 = cloned_i32'0 {_228} (fun (_x: t_Result_i32_refmut_i32) -> [ &_227 <- _x ] s3)
       | s3 = unwrap_err_i32'1 {_227} (fun (_x: MutBorrow.t Int32.t) -> [ &_226 <- _x ] s4)
-      | s4 = -{resolve_ref_i32 _226}- s5
+      | s4 = -{resolve_refmut_i32 _226}- s5
       | s5 = [ &_224 <- _226.current = (-1: Int32.t) ] s6
       | s6 = any [ br0 -> {_224 = false} (! bb148) | br1 -> {_224} (! bb147) ] ]
     | bb147 = s0
@@ -513,22 +513,22 @@ module M_test_result
     | & _49: Int32.t = Any.any_l ()
     | & _50: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _53: MutBorrow.t Int32.t = Any.any_l ()
-    | & _54: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _54: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _55: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _57: bool = Any.any_l ()
     | & _58: Int32.t = Any.any_l ()
     | & _61: MutBorrow.t Int32.t = Any.any_l ()
-    | & _62: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _62: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _63: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _65: bool = Any.any_l ()
     | & _66: Int32.t = Any.any_l ()
     | & _69: MutBorrow.t Int32.t = Any.any_l ()
-    | & _70: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _70: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _71: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _73: bool = Any.any_l ()
     | & _74: Int32.t = Any.any_l ()
     | & _77: MutBorrow.t Int32.t = Any.any_l ()
-    | & _78: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _78: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _79: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _81: bool = Any.any_l ()
     | & _82: Int32.t = Any.any_l ()
@@ -586,13 +586,13 @@ module M_test_result
     | & _183: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _187: bool = Any.any_l ()
     | & _188: Int32.t = Any.any_l ()
-    | & _189: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _190: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _189: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _190: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _191: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _194: bool = Any.any_l ()
     | & _196: MutBorrow.t Int32.t = Any.any_l ()
-    | & _197: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _198: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _197: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _198: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _199: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _202: bool = Any.any_l ()
     | & _203: Int32.t = Any.any_l ()
@@ -604,13 +604,13 @@ module M_test_result
     | & _213: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _217: bool = Any.any_l ()
     | & _218: Int32.t = Any.any_l ()
-    | & _219: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _220: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _219: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _220: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _221: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _224: bool = Any.any_l ()
     | & _226: MutBorrow.t Int32.t = Any.any_l ()
-    | & _227: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _228: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _227: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _228: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _229: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & res: t_Result_Option_i32_i32 = Any.any_l ()
     | & _232: t_Option_i32 = Any.any_l ()

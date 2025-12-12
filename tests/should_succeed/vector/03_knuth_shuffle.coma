@@ -84,12 +84,12 @@ module M_knuth_shuffle
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {match result with
@@ -100,14 +100,15 @@ module M_knuth_shuffle
   
   predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
   
-  predicate invariant_ref_Vec_T_Global'0 [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
+  predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
   
-  meta "rewrite_def" predicate invariant_ref_Vec_T_Global'0
+  meta "rewrite_def" predicate invariant_refmut_Vec_T_Global
   
-  predicate inv_ref_Vec_T_Global'0 [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = invariant_ref_Vec_T_Global'0 _1
+  predicate inv_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) =
+    invariant_refmut_Vec_T_Global _1
   
-  meta "rewrite_def" predicate inv_ref_Vec_T_Global'0
+  meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
   predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
   
@@ -137,25 +138,25 @@ module M_knuth_shuffle
   
   meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   let rec deref_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:deref_mut 'self_' type invariant] inv_ref_Vec_T_Global'0 self_}
+    {[@expl:deref_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_}
     any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_ref_slice_T result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_refmut_slice_T result}
       {Slice64.view result.current = view_Vec_T_Global self_.current}
       {Slice64.view result.final = view_Vec_T_Global self_.final}
       (! return {result}) ]
   
   let rec swap_T (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
-    {[@expl:swap 'self_' type invariant] inv_ref_slice_T self_}
+    {[@expl:swap 'self_' type invariant] inv_refmut_slice_T self_}
     {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
     {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
     any
@@ -163,20 +164,20 @@ module M_knuth_shuffle
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_T
+  meta "rewrite_def" predicate resolve_refmut_slice_T
   
-  predicate resolve_ref_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_T_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec knuth_shuffle_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-    {[@expl:knuth_shuffle 'v' type invariant] inv_ref_Vec_T_Global'0 v}
+    {[@expl:knuth_shuffle 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_v <- v ] s1
@@ -192,7 +193,7 @@ module M_knuth_shuffle
         {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] inv_Range_usize iter}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
-        {[@expl:loop invariant #0] inv_ref_Vec_T_Global'0 v}
+        {[@expl:loop invariant #0] inv_refmut_Vec_T_Global v}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
@@ -200,7 +201,7 @@ module M_knuth_shuffle
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_33.current} {MutBorrow.get_id _33}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
         | s2 = next_Range_usize {_32} (fun (_x: t_Option_usize) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_ref_Range_usize _33}- s4
+        | s3 = -{resolve_refmut_Range_usize _33}- s4
         | s4 = any [ br0 -> {_31 = None} (! bb11) | br1 (x0: UInt64.t) -> {_31 = Some x0} (! bb12) ] ]
         [ bb12 = s0
           [ s0 = elim_Some {_31} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -220,12 +221,12 @@ module M_knuth_shuffle
                 [ &_48 <- _bor ] -{inv_slice_T _bor.final}-
                 [ &_49 <- { _49 with current = _bor.final } ] s10) [ _ck -> (! {inv_slice_T _49.current} any) ]
           | s10 = swap_T {_48} {i} {_52} (fun (_x: ()) -> [ &_47 <- _x ] s11)
-          | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T _49} any) ]
-          | s12 = -{resolve_ref_slice_T _49}- s13
+          | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _49} any) ]
+          | s12 = -{resolve_refmut_slice_T _49}- s13
           | s13 = bb6 ] ] ]
     | bb11 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Vec_T_Global'0 v} any) ]
-      | s1 = -{resolve_ref_Vec_T_Global v}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global v} any) ]
+      | s1 = -{resolve_refmut_Vec_T_Global v}- s2
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec_T_Global = v

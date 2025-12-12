@@ -152,18 +152,18 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_A [@inline:trivial] (self: MutBorrow.t t_A) = inv_A self.current /\ inv_A self.final
+  predicate invariant_refmut_A [@inline:trivial] (self: MutBorrow.t t_A) = inv_A self.current /\ inv_A self.final
   
-  meta "rewrite_def" predicate invariant_ref_A
+  meta "rewrite_def" predicate invariant_refmut_A
   
-  predicate inv_ref_A [@inline:trivial] (_1: MutBorrow.t t_A) = invariant_ref_A _1
+  predicate inv_refmut_A [@inline:trivial] (_1: MutBorrow.t t_A) = invariant_refmut_A _1
   
-  meta "rewrite_def" predicate inv_ref_A
+  meta "rewrite_def" predicate inv_refmut_A
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_A)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_A [precondition_next () args]. (let self = args in inv_ref_A self)
+    forall args: MutBorrow.t t_A [precondition_next () args]. (let self = args in inv_refmut_A self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -217,18 +217,18 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   type t_Option_Item'0 = None'0 | Some'0 t_Item'0
   
-  predicate invariant_ref_B [@inline:trivial] (self: MutBorrow.t t_B) = inv_B self.current /\ inv_B self.final
+  predicate invariant_refmut_B [@inline:trivial] (self: MutBorrow.t t_B) = inv_B self.current /\ inv_B self.final
   
-  meta "rewrite_def" predicate invariant_ref_B
+  meta "rewrite_def" predicate invariant_refmut_B
   
-  predicate inv_ref_B [@inline:trivial] (_1: MutBorrow.t t_B) = invariant_ref_B _1
+  predicate inv_refmut_B [@inline:trivial] (_1: MutBorrow.t t_B) = invariant_refmut_B _1
   
-  meta "rewrite_def" predicate inv_ref_B
+  meta "rewrite_def" predicate inv_refmut_B
   
   predicate precondition_next'0 (self: ()) (args: MutBorrow.t t_B)
   
   axiom precondition_fndef'0:
-    forall args: MutBorrow.t t_B [precondition_next'0 () args]. (let self = args in inv_ref_B self)
+    forall args: MutBorrow.t t_B [precondition_next'0 () args]. (let self = args in inv_refmut_B self)
       -> precondition_next'0 () args
   
   predicate inv_Item'0 (_1: t_Item'0)
@@ -261,18 +261,18 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
   
-  predicate invariant_ref_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
+  predicate invariant_refmut_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
     inv_Zip_A_B self.current /\ inv_Zip_A_B self.final
   
-  meta "rewrite_def" predicate invariant_ref_Zip_A_B
+  meta "rewrite_def" predicate invariant_refmut_Zip_A_B
   
-  predicate inv_ref_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = invariant_ref_Zip_A_B _1
+  predicate inv_refmut_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = invariant_refmut_Zip_A_B _1
   
-  meta "rewrite_def" predicate inv_ref_Zip_A_B
+  meta "rewrite_def" predicate inv_refmut_Zip_A_B
   
-  predicate resolve_ref_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = _1.final = _1.current
+  predicate resolve_refmut_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Zip_A_B
+  meta "rewrite_def" predicate resolve_refmut_Zip_A_B
   
   let rec elim_Some'0 (_x: t_Option_Item'0) (return (f0: t_Item'0)) = any
     [ _k (f0: t_Item'0) -> {Some'0 f0 = _x} (! return {f0})
@@ -320,7 +320,7 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Zip_A_B (self: MutBorrow.t t_Zip_A_B) (return (x: t_Option_tup2_Item_Item)) =
-    {[@expl:next 'self' type invariant] inv_ref_Zip_A_B self}
+    {[@expl:next 'self' type invariant] inv_refmut_Zip_A_B self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_A> {self.current.a} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -339,8 +339,8 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
             [ &self <- { self with current = { self.current with b = _bor.final } } ] s3)
         [ _ck -> (! {inv_B self.current.b} any) ]
       | s3 = next_B {_12} (fun (_x: t_Option_Item'0) -> [ &_11 <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_Zip_A_B self} any) ]
-      | s5 = -{resolve_ref_Zip_A_B self}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Zip_A_B self} any) ]
+      | s5 = -{resolve_refmut_Zip_A_B self}- s6
       | s6 = any [ br0 -> {_11 = None'0} (! bb10) | br1 (x0: t_Item'0) -> {_11 = Some'0 x0} (! bb11) ] ]
     | bb11 = s0
       [ s0 = elim_Some'0 {_11} (fun (r0: t_Item'0) -> [ &y'0 <- r0 ] s1)
@@ -354,8 +354,8 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
       | s2 = [ &_ret <- None'1 ] s3
       | s3 = return {_ret} ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Zip_A_B self} any) ]
-      | s1 = -{resolve_ref_Zip_A_B self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Zip_A_B self} any) ]
+      | s1 = -{resolve_refmut_Zip_A_B self}- s2
       | s2 = [ &_ret <- None'1 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_Item_Item = Any.any_l ()
@@ -395,14 +395,14 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
   
   axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
   
-  predicate invariant_ref_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
+  predicate invariant_refmut_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
     inv_Zip_A_B self.current /\ inv_Zip_A_B self.final
   
-  meta "rewrite_def" predicate invariant_ref_Zip_A_B
+  meta "rewrite_def" predicate invariant_refmut_Zip_A_B
   
-  predicate inv_ref_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = invariant_ref_Zip_A_B _1
+  predicate inv_refmut_Zip_A_B [@inline:trivial] (_1: MutBorrow.t t_Zip_A_B) = invariant_refmut_Zip_A_B _1
   
-  meta "rewrite_def" predicate inv_ref_Zip_A_B
+  meta "rewrite_def" predicate inv_refmut_Zip_A_B
   
   type t_Item
   
@@ -477,8 +477,8 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Zip_A_B. inv_ref_Zip_A_B self
-      -> inv_ref_Zip_A_B self
+  goal refines: forall self: MutBorrow.t t_Zip_A_B. inv_refmut_Zip_A_B self
+      -> inv_refmut_Zip_A_B self
       /\ (forall result: t_Option_tup2_Item_Item. inv_Option_tup2_Item_Item result
           /\ match result with
             | None -> completed_Zip_A_B self

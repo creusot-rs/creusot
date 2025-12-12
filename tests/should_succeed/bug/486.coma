@@ -5,9 +5,9 @@ module M_test
   
   type t_HasMutRef_u32 = { f0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
   meta "compute_max_steps" 1000000
   
@@ -16,7 +16,7 @@ module M_test
   let rec test (x: t_HasMutRef_u32) (return (x'0: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- { f0 = { x.f0 with current = (5: UInt32.t) } } ] s1
-      | s1 = -{resolve_ref_u32 x.f0}- s2
+      | s1 = -{resolve_refmut_u32 x.f0}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: t_HasMutRef_u32 = x ])
     [ return (result: ()) -> {[@expl:test ensures] UInt32.t'int x.f0.final = 5} (! return {result}) ]
 end

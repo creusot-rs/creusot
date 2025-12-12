@@ -168,9 +168,9 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
       {postcondition_default () () dest.final}
       (! return {result}) ]
   
-  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_usize
+  meta "rewrite_def" predicate resolve_refmut_usize
   
   type t_Item
   
@@ -189,18 +189,18 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -234,14 +234,14 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Skip_I [inv_Skip_I x]. inv_Skip_I x = inv_I x.iter
   
-  predicate invariant_ref_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
+  predicate invariant_refmut_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
     inv_Skip_I self.current /\ inv_Skip_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Skip_I
+  meta "rewrite_def" predicate invariant_refmut_Skip_I
   
-  predicate inv_ref_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_ref_Skip_I _1
+  predicate inv_refmut_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_refmut_Skip_I _1
   
-  meta "rewrite_def" predicate inv_ref_Skip_I
+  meta "rewrite_def" predicate inv_refmut_Skip_I
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -251,9 +251,9 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
         end}
       any) ]
   
-  predicate resolve_ref_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = _1.final = _1.current
+  predicate resolve_refmut_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Skip_I
+  meta "rewrite_def" predicate resolve_refmut_Skip_I
   
   predicate completed_Skip_I (self: MutBorrow.t t_Skip_I) =
     UInt64.t'int self.final.n = 0
@@ -275,7 +275,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Skip_I (self: MutBorrow.t t_Skip_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_ref_Skip_I self}
+    {[@expl:next 'self' type invariant] inv_refmut_Skip_I self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -285,7 +285,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
       | s2 = MutBorrow.borrow_final <UInt64.t> {_9.current} {MutBorrow.get_id _9}
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s3)
       | s3 = take_usize {_8} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s4)
-      | s4 = -{resolve_ref_usize _9}- s5
+      | s4 = -{resolve_refmut_usize _9}- s5
       | s5 = [ &skipped <- Seq.empty: Seq.seq t_Item ] s6
       | s6 = [ &_old <- self.final ] s7
       | s7 = [ &_old'0 <- self.current.n ] s8
@@ -293,7 +293,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
     | bb4 = bb4
       [ bb4 = {[@expl:mut invariant] _old'0 = self.current.n}
         {[@expl:mut invariant] _old = self.final}
-        {[@expl:loop invariant #0] inv_ref_Skip_I self}
+        {[@expl:loop invariant #0] inv_refmut_Skip_I self}
         {[@expl:loop invariant #1] Seq.length skipped + UInt64.t'int n'0 = UInt64.t'int old_self.current.n}
         {[@expl:loop invariant #2] produces_I old_self.current.iter skipped self.current.iter}
         {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length skipped -> resolve_Item (Seq.get skipped i)}
@@ -315,13 +315,13 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
           | s4 = UInt64.sub {n'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &n'0 <- _x ] s5)
           | s5 = bb4 ] ] ]
     | bb7 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Skip_I self} any) ]
-      | s1 = -{resolve_ref_Skip_I self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Skip_I self} any) ]
+      | s1 = -{resolve_refmut_Skip_I self}- s2
       | s2 = [ &_ret <- r ] s3
       | s3 = return {_ret} ]
     | bb9 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Skip_I self} any) ]
-      | s1 = -{resolve_ref_Skip_I self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Skip_I self} any) ]
+      | s1 = -{resolve_refmut_Skip_I self}- s2
       | s2 = [ &_ret <- r ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_Item = Any.any_l ()
@@ -360,14 +360,14 @@ module M_impl_Iterator_for_Skip_I__next__refines (* <Skip<I> as common::Iterator
   
   axiom inv_axiom [@rewrite]: forall x: t_Skip_I [inv_Skip_I x]. inv_Skip_I x = inv_I x.iter
   
-  predicate invariant_ref_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
+  predicate invariant_refmut_Skip_I [@inline:trivial] (self: MutBorrow.t t_Skip_I) =
     inv_Skip_I self.current /\ inv_Skip_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Skip_I
+  meta "rewrite_def" predicate invariant_refmut_Skip_I
   
-  predicate inv_ref_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_ref_Skip_I _1
+  predicate inv_refmut_Skip_I [@inline:trivial] (_1: MutBorrow.t t_Skip_I) = invariant_refmut_Skip_I _1
   
-  meta "rewrite_def" predicate inv_ref_Skip_I
+  meta "rewrite_def" predicate inv_refmut_Skip_I
   
   type t_Item
   
@@ -417,8 +417,8 @@ module M_impl_Iterator_for_Skip_I__next__refines (* <Skip<I> as common::Iterator
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Skip_I. inv_ref_Skip_I self
-      -> inv_ref_Skip_I self
+  goal refines: forall self: MutBorrow.t t_Skip_I. inv_refmut_Skip_I self
+      -> inv_refmut_Skip_I self
       /\ (forall result: t_Option_Item. inv_Option_Item result
           /\ match result with
             | None -> completed_Skip_I self

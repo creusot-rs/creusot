@@ -208,18 +208,18 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -294,14 +294,14 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   axiom inv_axiom'0 [@rewrite]: forall x: t_Filter_I_F [inv_Filter_I_F x]. inv_Filter_I_F x
       = (invariant_Filter_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_Filter_I_F [@inline:trivial] (self: MutBorrow.t t_Filter_I_F) =
+  predicate invariant_refmut_Filter_I_F [@inline:trivial] (self: MutBorrow.t t_Filter_I_F) =
     inv_Filter_I_F self.current /\ inv_Filter_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_Filter_I_F
+  meta "rewrite_def" predicate invariant_refmut_Filter_I_F
   
-  predicate inv_ref_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = invariant_ref_Filter_I_F _1
+  predicate inv_refmut_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = invariant_refmut_Filter_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_Filter_I_F
+  meta "rewrite_def" predicate inv_refmut_Filter_I_F
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -311,13 +311,13 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         end}
       any) ]
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
   
@@ -332,16 +332,16 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   meta "rewrite_def" predicate inv_tup1_ref_Item
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: t_Item) (return (x: bool)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut 'arg' type invariant] inv_tup1_ref_Item arg}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any [ return (result: bool) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
   predicate resolve_Item (_1: t_Item)
   
-  predicate resolve_ref_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = _1.final = _1.current
+  predicate resolve_refmut_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Filter_I_F
+  meta "rewrite_def" predicate resolve_refmut_Filter_I_F
   
   predicate completed_Filter_I_F (self: MutBorrow.t t_Filter_I_F) =
     (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces_I self.current.iter s e.current
@@ -366,7 +366,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   meta "select_lsinst" "all"
   
   let rec next_Filter_I_F (self: MutBorrow.t t_Filter_I_F) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_ref_Filter_I_F self}
+    {[@expl:next 'self' type invariant] inv_refmut_Filter_I_F self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -375,7 +375,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
       | s3 = bb3 ]
     | bb3 = bb3
       [ bb3 = {[@expl:mut invariant] _old = self.final}
-        {[@expl:loop invariant #0] inv_ref_Filter_I_F self}
+        {[@expl:loop invariant #0] inv_refmut_Filter_I_F self}
         {[@expl:loop invariant #1] self.current.func = old_self.current.func}
         {[@expl:loop invariant #2] forall i: int. 0 <= i /\ i < Seq.length produced
           -> postcondition_mut_F self.current.func (Seq.get produced i) self.current.func false}
@@ -416,13 +416,13 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
           | _ -> true
           end}-
         s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_Filter_I_F self} any) ]
-      | s3 = -{resolve_ref_Filter_I_F self}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Filter_I_F self} any) ]
+      | s3 = -{resolve_refmut_Filter_I_F self}- s4
       | s4 = [ &_ret <- None ] s5
       | s5 = return {_ret} ]
     | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Filter_I_F self} any) ]
-      | s1 = -{resolve_ref_Filter_I_F self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Filter_I_F self} any) ]
+      | s1 = -{resolve_refmut_Filter_I_F self}- s2
       | s2 = [ &_ret <- Some n ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_Item = Any.any_l ()
@@ -564,9 +564,9 @@ module M_less_than
   
   type closure2 = { c0: UInt32.t }
   
-  predicate resolve_ref_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
+  predicate resolve_refmut_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure2
+  meta "rewrite_def" predicate resolve_refmut_closure2
   
   type t_Ordering = Less | Equal | Greater
   
@@ -654,7 +654,7 @@ module M_less_than
   
   let rec closure2 (self: MutBorrow.t closure2) (i: UInt32.t) (return (x: bool)) = (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve_ref_closure2 self}- s1
+      [ s0 = -{resolve_refmut_closure2 self}- s1
       | s1 = [ &res <- UInt32.lt i self.current.c0 ] s2
       | s2 = [ &_ret <- res ] s3
       | s3 = return {_ret} ] ]
@@ -758,13 +758,13 @@ module M_less_than
   axiom produces_refl_Filter_IntoIter_u32_Global_closure2_spec:
     forall self: t_Filter_IntoIter_u32_Global_closure2. produces_Filter_IntoIter_u32_Global_closure2 self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate resolve_ref_IntoIter_u32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_u32_Global) =
+  predicate resolve_refmut_IntoIter_u32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_u32_Global) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_u32_Global
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_u32_Global
   
   predicate completed_IntoIter_u32_Global (self: MutBorrow.t t_IntoIter_u32_Global) =
-    resolve_ref_IntoIter_u32_Global self /\ view_IntoIter_u32_Global self.current = (Seq.empty: Seq.seq UInt32.t)
+    resolve_refmut_IntoIter_u32_Global self /\ view_IntoIter_u32_Global self.current = (Seq.empty: Seq.seq UInt32.t)
   
   predicate completed_Filter_IntoIter_u32_Global_closure2 (self: MutBorrow.t t_Filter_IntoIter_u32_Global_closure2) =
     (exists s: Seq.seq UInt32.t, e: MutBorrow.t t_IntoIter_u32_Global. produces_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure2 self.current) s e.current
@@ -892,14 +892,14 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   axiom inv_axiom [@rewrite]: forall x: t_Filter_I_F [inv_Filter_I_F x]. inv_Filter_I_F x
       = (invariant_Filter_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_Filter_I_F [@inline:trivial] (self: MutBorrow.t t_Filter_I_F) =
+  predicate invariant_refmut_Filter_I_F [@inline:trivial] (self: MutBorrow.t t_Filter_I_F) =
     inv_Filter_I_F self.current /\ inv_Filter_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_Filter_I_F
+  meta "rewrite_def" predicate invariant_refmut_Filter_I_F
   
-  predicate inv_ref_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = invariant_ref_Filter_I_F _1
+  predicate inv_refmut_Filter_I_F [@inline:trivial] (_1: MutBorrow.t t_Filter_I_F) = invariant_refmut_Filter_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_Filter_I_F
+  meta "rewrite_def" predicate inv_refmut_Filter_I_F
   
   type t_Option_Item = None | Some t_Item
   
@@ -937,8 +937,8 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Filter_I_F. inv_ref_Filter_I_F self
-      -> inv_ref_Filter_I_F self
+  goal refines: forall self: MutBorrow.t t_Filter_I_F. inv_refmut_Filter_I_F self
+      -> inv_refmut_Filter_I_F self
       /\ (forall result: t_Option_Item. inv_Option_Item result
           /\ match result with
             | None -> completed_Filter_I_F self

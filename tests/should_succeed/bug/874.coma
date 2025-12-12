@@ -40,15 +40,15 @@ module M_can_extend
       {view_Vec_i32_Global self_ = view_IntoIter_i32_Global result}
       (! return {result}) ]
   
-  predicate invariant_ref_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
+  predicate invariant_refmut_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
     inv_IntoIter_i32_Global self.current /\ inv_IntoIter_i32_Global self.final
   
-  meta "rewrite_def" predicate invariant_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_i32_Global
   
-  predicate inv_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
-    invariant_ref_IntoIter_i32_Global _1
+  predicate inv_refmut_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+    invariant_refmut_IntoIter_i32_Global _1
   
-  meta "rewrite_def" predicate inv_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate inv_refmut_IntoIter_i32_Global
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -130,20 +130,20 @@ module M_can_extend
   axiom produces_refl_IntoIter_i32_Global_spec:
     forall self: t_IntoIter_i32_Global. produces_IntoIter_i32_Global self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+  predicate resolve_refmut_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_i32_Global
   
   predicate completed_IntoIter_i32_Global (self: MutBorrow.t t_IntoIter_i32_Global) =
-    resolve_ref_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
+    resolve_refmut_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
     {[@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
     {exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
-        /\ inv_ref_IntoIter_i32_Global done'
+        /\ inv_refmut_IntoIter_i32_Global done'
         /\ inv_Seq_i32 prod
         /\ postcondition_into_iter () iter start_
         /\ completed_IntoIter_i32_Global done'

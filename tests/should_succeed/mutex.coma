@@ -88,9 +88,9 @@ module M_concurrent
   let rec leak_Mutex_u32_Even (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
     [ return (result: MutBorrow.t t_Mutex_u32_Even) -> {result.current = b} (! return {result}) ]
   
-  predicate resolve_ref_Mutex_u32_Even [@inline:trivial] (_1: MutBorrow.t t_Mutex_u32_Even) = _1.final = _1.current
+  predicate resolve_refmut_Mutex_u32_Even [@inline:trivial] (_1: MutBorrow.t t_Mutex_u32_Even) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Mutex_u32_Even
+  meta "rewrite_def" predicate resolve_refmut_Mutex_u32_Even
   
   type t_AddsTwo = { mutex: t_Mutex_u32_Even }
   
@@ -128,7 +128,7 @@ module M_concurrent
       [ s0 = [ &_5 <- () ] s1
       | s1 = new_u32 {(0: UInt32.t)} {_5} (fun (_x: t_Mutex_u32_Even) -> [ &_4 <- _x ] s2)
       | s2 = leak_Mutex_u32_Even {_4} (fun (_x: MutBorrow.t t_Mutex_u32_Even) -> [ &_2 <- _x ] s3)
-      | s3 = -{resolve_ref_Mutex_u32_Even _2}- s4
+      | s3 = -{resolve_refmut_Mutex_u32_Even _2}- s4
       | s4 = [ &m <- _2.current ] s5
       | s5 = [ &_8 <- m ] s6
       | s6 = [ &t1 <- { mutex = _8 } ] s7

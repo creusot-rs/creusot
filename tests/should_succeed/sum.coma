@@ -37,15 +37,15 @@ module M_sum_first_n
   
   type t_Option_u32 = None | Some UInt32.t
   
-  predicate invariant_ref_RangeInclusive_u32 [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_u32) =
+  predicate invariant_refmut_RangeInclusive_u32 [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_u32) =
     inv_RangeInclusive_u32 self.current /\ inv_RangeInclusive_u32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_RangeInclusive_u32
+  meta "rewrite_def" predicate invariant_refmut_RangeInclusive_u32
   
-  predicate inv_ref_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
-    invariant_ref_RangeInclusive_u32 _1
+  predicate inv_refmut_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
+    invariant_refmut_RangeInclusive_u32 _1
   
-  meta "rewrite_def" predicate inv_ref_RangeInclusive_u32
+  meta "rewrite_def" predicate inv_refmut_RangeInclusive_u32
   
   function range_inclusive_len_u32 (r: t_RangeInclusive_u32) : int = if is_empty_log_RangeInclusive_u32 r then
       0
@@ -79,7 +79,7 @@ module M_sum_first_n
     is_empty_log_RangeInclusive_u32 self.current /\ is_empty_log_RangeInclusive_u32 self.final
   
   let rec next_RangeInclusive_u32 (self_: MutBorrow.t t_RangeInclusive_u32) (return (x: t_Option_u32)) =
-    {[@expl:next 'self_' type invariant] inv_ref_RangeInclusive_u32 self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_u32 self_}
     any
     [ return (result: t_Option_u32) -> {match result with
         | None -> completed_RangeInclusive_u32 self_
@@ -87,10 +87,10 @@ module M_sum_first_n
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
+  predicate resolve_refmut_RangeInclusive_u32 [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_u32) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_RangeInclusive_u32
+  meta "rewrite_def" predicate resolve_refmut_RangeInclusive_u32
   
   predicate inv_Seq_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
@@ -134,8 +134,8 @@ module M_sum_first_n
               [ &_30 <- _bor ] -{inv_RangeInclusive_u32 _bor.final}-
               [ &_31 <- { _31 with current = _bor.final } ] s2) [ _ck -> (! {inv_RangeInclusive_u32 _31.current} any) ]
         | s2 = next_RangeInclusive_u32 {_30} (fun (_x: t_Option_u32) -> [ &_29 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_RangeInclusive_u32 _31} any) ]
-        | s4 = -{resolve_ref_RangeInclusive_u32 _31}- s5
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_u32 _31} any) ]
+        | s4 = -{resolve_refmut_RangeInclusive_u32 _31}- s5
         | s5 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: UInt32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
           [ s0 = elim_Some {_29} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

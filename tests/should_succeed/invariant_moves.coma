@@ -26,9 +26,9 @@ module M_test_invariant_move
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_Vec_u32_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_u32_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_u32_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_u32_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_u32_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_u32_Global
   
   meta "compute_max_steps" 1000000
   
@@ -43,7 +43,7 @@ module M_test_invariant_move
         | s1 = MutBorrow.borrow_final <t_Vec_u32_Global> {_8.current} {MutBorrow.get_id _8}
             (fun (_bor: MutBorrow.t t_Vec_u32_Global) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s2)
         | s2 = pop_u32 {_7} (fun (_x: t_Option_u32) -> [ &_6 <- _x ] s3)
-        | s3 = -{resolve_ref_Vec_u32_Global _8}- s4
+        | s3 = -{resolve_refmut_Vec_u32_Global _8}- s4
         | s4 = any [ br0 -> {_6 = None} (! bb7) | br1 (x0: UInt32.t) -> {_6 = Some x0} (! bb0) ] ] ]
     | bb7 = return {_ret} ]
     [ & _ret: () = Any.any_l ()

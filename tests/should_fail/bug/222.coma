@@ -31,17 +31,17 @@ module M_uses_invariant
         | Some f0'0 -> inv_T f0'0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
   let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:take 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
       {result = self_.current /\ self_.final = None}
@@ -61,18 +61,18 @@ module M_uses_invariant
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Once_T [inv_Once_T x]. inv_Once_T x = inv_Option_T x.f0
   
-  predicate invariant_ref_Once_T [@inline:trivial] (self: MutBorrow.t t_Once_T) =
+  predicate invariant_refmut_Once_T [@inline:trivial] (self: MutBorrow.t t_Once_T) =
     inv_Once_T self.current /\ inv_Once_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Once_T
+  meta "rewrite_def" predicate invariant_refmut_Once_T
   
-  predicate inv_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = invariant_ref_Once_T _1
+  predicate inv_refmut_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = invariant_refmut_Once_T _1
   
-  meta "rewrite_def" predicate inv_ref_Once_T
+  meta "rewrite_def" predicate inv_refmut_Once_T
   
-  predicate resolve_ref_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = _1.final = _1.current
+  predicate resolve_refmut_Once_T [@inline:trivial] (_1: MutBorrow.t t_Once_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Once_T
+  meta "rewrite_def" predicate resolve_refmut_Once_T
   
   predicate invariant_Once_T (self: t_Once_T) = true
   
@@ -81,7 +81,7 @@ module M_uses_invariant
   meta "select_lsinst" "all"
   
   let rec uses_invariant_T (x: MutBorrow.t t_Once_T) (return (x'0: ())) =
-    {[@expl:uses_invariant 'x' type invariant] inv_ref_Once_T x}
+    {[@expl:uses_invariant 'x' type invariant] inv_refmut_Once_T x}
     {[@expl:uses_invariant requires] invariant_Once_T x.current}
     (! bb0
     [ bb0 = s0
@@ -92,8 +92,8 @@ module M_uses_invariant
       | s1 = take_T {_7} (fun (_x: t_Option_T) -> [ &_6 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_T _6} any) ]
       | s3 = -{resolve_Option_T _6}- s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_Once_T x} any) ]
-      | s5 = -{resolve_ref_Once_T x}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Once_T x} any) ]
+      | s5 = -{resolve_refmut_Once_T x}- s6
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: MutBorrow.t t_Once_T = x

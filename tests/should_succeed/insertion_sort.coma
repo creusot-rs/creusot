@@ -42,12 +42,12 @@ module M_insertion_sort
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {match result with
@@ -184,9 +184,9 @@ module M_insertion_sort
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_i32
+  meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   predicate sorted_i32 (s: Seq.seq Int32.t) = sorted_range_i32 s 0 (Seq.length s)
   
@@ -218,7 +218,7 @@ module M_insertion_sort
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_41.current} {MutBorrow.get_id _41}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s2)
         | s2 = next_Range_usize {_40} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
-        | s3 = -{resolve_ref_Range_usize _41}- s4
+        | s3 = -{resolve_refmut_Range_usize _41}- s4
         | s4 = any [ br0 -> {_39 = None} (! bb11) | br1 (x0: UInt64.t) -> {_39 = Some x0} (! bb12) ] ]
         [ bb12 = s0
           [ s0 = elim_Some {_39} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -271,7 +271,7 @@ module M_insertion_sort
               | s3 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
               | s4 = bb14 ] ] ] ] ]
     | bb11 = s0
-      [ s0 = -{resolve_ref_slice_i32 array}- s1
+      [ s0 = -{resolve_refmut_slice_i32 array}- s1
       | s1 =
         {[@expl:assertion] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length (Slice64.view array.current))}
         s2

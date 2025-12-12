@@ -349,19 +349,19 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   
   predicate inv_E (_1: t_E)
   
-  type t_OwnResult_ref_T_ref_E = Ok'0 (MutBorrow.t t_T) | Err'0 (MutBorrow.t t_E)
+  type t_OwnResult_refmut_T_refmut_E = Ok'0 (MutBorrow.t t_T) | Err'0 (MutBorrow.t t_E)
   
-  predicate invariant_ref_E [@inline:trivial] (self: MutBorrow.t t_E) = inv_E self.current /\ inv_E self.final
+  predicate invariant_refmut_E [@inline:trivial] (self: MutBorrow.t t_E) = inv_E self.current /\ inv_E self.final
   
-  meta "rewrite_def" predicate invariant_ref_E
+  meta "rewrite_def" predicate invariant_refmut_E
   
-  predicate inv_ref_E [@inline:trivial] (_1: MutBorrow.t t_E) = invariant_ref_E _1
+  predicate inv_refmut_E [@inline:trivial] (_1: MutBorrow.t t_E) = invariant_refmut_E _1
   
-  meta "rewrite_def" predicate inv_ref_E
+  meta "rewrite_def" predicate inv_refmut_E
   
-  predicate resolve_ref_E [@inline:trivial] (_1: MutBorrow.t t_E) = _1.final = _1.current
+  predicate resolve_refmut_E [@inline:trivial] (_1: MutBorrow.t t_E) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_E
+  meta "rewrite_def" predicate resolve_refmut_E
   
   let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
@@ -373,17 +373,17 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
   
@@ -393,34 +393,35 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
         | Err f0 -> inv_E f0
         end
   
-  predicate invariant_ref_OwnResult_T_E [@inline:trivial] (self: MutBorrow.t t_OwnResult_T_E) =
+  predicate invariant_refmut_OwnResult_T_E [@inline:trivial] (self: MutBorrow.t t_OwnResult_T_E) =
     inv_OwnResult_T_E self.current /\ inv_OwnResult_T_E self.final
   
-  meta "rewrite_def" predicate invariant_ref_OwnResult_T_E
+  meta "rewrite_def" predicate invariant_refmut_OwnResult_T_E
   
-  predicate inv_ref_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = invariant_ref_OwnResult_T_E _1
+  predicate inv_refmut_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) =
+    invariant_refmut_OwnResult_T_E _1
   
-  meta "rewrite_def" predicate inv_ref_OwnResult_T_E
+  meta "rewrite_def" predicate inv_refmut_OwnResult_T_E
   
-  predicate resolve_ref_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = _1.final = _1.current
+  predicate resolve_refmut_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_OwnResult_T_E
+  meta "rewrite_def" predicate resolve_refmut_OwnResult_T_E
   
-  predicate inv_OwnResult_ref_T_ref_E (_1: t_OwnResult_ref_T_ref_E)
+  predicate inv_OwnResult_refmut_T_refmut_E (_1: t_OwnResult_refmut_T_refmut_E)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall x: t_OwnResult_ref_T_ref_E [inv_OwnResult_ref_T_ref_E x]. inv_OwnResult_ref_T_ref_E x
+    forall x: t_OwnResult_refmut_T_refmut_E [inv_OwnResult_refmut_T_refmut_E x]. inv_OwnResult_refmut_T_refmut_E x
       = match x with
-        | Ok'0 f0 -> inv_ref_T f0
-        | Err'0 f0 -> inv_ref_E f0
+        | Ok'0 f0 -> inv_refmut_T f0
+        | Err'0 f0 -> inv_refmut_E f0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_mut_T (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
-    {[@expl:as_mut 'self' type invariant] inv_ref_OwnResult_T_E self}
+  let rec as_mut_T (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_refmut_T_refmut_E)) =
+    {[@expl:as_mut 'self' type invariant] inv_refmut_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self.current = Ok x0} (! bb4) | br1 (x0: t_E) -> {self.current = Err x0} (! bb3) ]
     | bb3 = s0
@@ -435,8 +436,8 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
             [ &_8 <- _bor ] -{inv_E _bor.final}-
             [ &x'0 <- { x'0 with current = _bor.final } ] s2) [ _ck -> (! {inv_E x'0.current} any) ]
       | s2 = [ &_ret <- Err'0 _8 ] s3
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_E x'0} any) ]
-      | s4 = -{resolve_ref_E x'0}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_E x'0} any) ]
+      | s4 = -{resolve_refmut_E x'0}- s5
       | s5 = bb5 ]
     | bb4 = s0
       [ s0 = elim_Ok {self.current}
@@ -450,21 +451,21 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
             [ &_6 <- _bor ] -{inv_T _bor.final}-
             [ &x <- { x with current = _bor.final } ] s2) [ _ck -> (! {inv_T x.current} any) ]
       | s2 = [ &_ret <- Ok'0 _6 ] s3
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_T x} any) ]
-      | s4 = -{resolve_ref_T x}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T x} any) ]
+      | s4 = -{resolve_refmut_T x}- s5
       | s5 = bb5 ]
     | bb5 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_OwnResult_T_E self} any) ]
-      | s1 = -{resolve_ref_OwnResult_T_E self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_OwnResult_T_E self} any) ]
+      | s1 = -{resolve_refmut_OwnResult_T_E self}- s2
       | s2 = return {_ret} ] ]
-    [ & _ret: t_OwnResult_ref_T_ref_E = Any.any_l ()
+    [ & _ret: t_OwnResult_refmut_T_refmut_E = Any.any_l ()
     | & self: MutBorrow.t t_OwnResult_T_E = self
     | & x: MutBorrow.t t_T = Any.any_l ()
     | & _6: MutBorrow.t t_T = Any.any_l ()
     | & x'0: MutBorrow.t t_E = Any.any_l ()
     | & _8: MutBorrow.t t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_ref_T_ref_E) ->
-    {[@expl:as_mut result type invariant] inv_OwnResult_ref_T_ref_E result}
+    [ return (result: t_OwnResult_refmut_T_refmut_E) ->
+    {[@expl:as_mut result type invariant] inv_OwnResult_refmut_T_refmut_E result}
       {[@expl:as_mut ensures] exists t: MutBorrow.t t_T. self.current = Ok (t.current)
           /\ self.final = Ok (t.final) /\ result = Ok'0 t
         \/ (exists e: MutBorrow.t t_E. self.current = Err (e.current)
@@ -1284,7 +1285,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
         end}
       (! return {result}) ]
 end
-module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
+module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -1292,9 +1293,9 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   type t_E
   
-  type t_OwnResult_ref_T_E = Ok (MutBorrow.t t_T) | Err t_E
+  type t_OwnResult_refmut_T_E = Ok (MutBorrow.t t_T) | Err t_E
   
-  let rec elim_Err (_x: t_OwnResult_ref_T_E) (return (f0: t_E)) = any
+  let rec elim_Err (_x: t_OwnResult_refmut_T_E) (return (f0: t_E)) = any
     [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Err _ -> true
@@ -1304,7 +1305,7 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (_x: t_OwnResult_ref_T_E) (return (f0: MutBorrow.t t_T)) = any
+  let rec elim_Ok (_x: t_OwnResult_refmut_T_E) (return (f0: MutBorrow.t t_T)) = any
     [ _k (f0: MutBorrow.t t_T) -> {Ok f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Ok _ -> true
@@ -1314,25 +1315,25 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_E (_1: t_E)
   
-  predicate inv_OwnResult_ref_T_E (_1: t_OwnResult_ref_T_E)
+  predicate inv_OwnResult_refmut_T_E (_1: t_OwnResult_refmut_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_ref_T_E [inv_OwnResult_ref_T_E x]. inv_OwnResult_ref_T_E x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_refmut_T_E [inv_OwnResult_refmut_T_E x]. inv_OwnResult_refmut_T_E x
       = match x with
-        | Ok f0 -> inv_ref_T f0
+        | Ok f0 -> inv_refmut_T f0
         | Err f0 -> inv_E f0
         end
   
@@ -1348,28 +1349,29 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec copied_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
-    {[@expl:copied 'self' type invariant] inv_OwnResult_ref_T_E self}
+  let rec copied_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+    {[@expl:copied 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s2 = -{resolve_ref_T t}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
       | s3 = [ &_ret <- Ok'0 (t.current) ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_OwnResult_T_E = Any.any_l ()
-    | & self: t_OwnResult_ref_T_E = self
+    | & self: t_OwnResult_refmut_T_E = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
     [ return (result: t_OwnResult_T_E) -> {[@expl:copied result type invariant] inv_OwnResult_T_E result}
-      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t -> result = Ok'0 (t.current) /\ resolve_ref_T t}
+      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t
+        -> result = Ok'0 (t.current) /\ resolve_refmut_T t}
       {[@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
       (! return {result}) ]
 end
-module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
+module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -1377,9 +1379,9 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   type t_E
   
-  type t_OwnResult_ref_T_E = Ok (MutBorrow.t t_T) | Err t_E
+  type t_OwnResult_refmut_T_E = Ok (MutBorrow.t t_T) | Err t_E
   
-  let rec elim_Err (_x: t_OwnResult_ref_T_E) (return (f0: t_E)) = any
+  let rec elim_Err (_x: t_OwnResult_refmut_T_E) (return (f0: t_E)) = any
     [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Err _ -> true
@@ -1389,7 +1391,7 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (_x: t_OwnResult_ref_T_E) (return (f0: MutBorrow.t t_T)) = any
+  let rec elim_Ok (_x: t_OwnResult_refmut_T_E) (return (f0: MutBorrow.t t_T)) = any
     [ _k (f0: MutBorrow.t t_T) -> {Ok f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Ok _ -> true
@@ -1399,29 +1401,29 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
   meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_T
-  
-  predicate invariant_ref_T'0 [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T'0
-  
-  predicate inv_ref_T'0 [@inline:trivial] (_1: t_T) = invariant_ref_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_T'0
-  
   predicate precondition_clone (self: ()) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T'0 self_)
+  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
       -> precondition_clone () args
   
   predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
@@ -1435,11 +1437,11 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   predicate inv_E (_1: t_E)
   
-  predicate inv_OwnResult_ref_T_E (_1: t_OwnResult_ref_T_E)
+  predicate inv_OwnResult_refmut_T_E (_1: t_OwnResult_refmut_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_ref_T_E [inv_OwnResult_ref_T_E x]. inv_OwnResult_ref_T_E x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_refmut_T_E [inv_OwnResult_refmut_T_E x]. inv_OwnResult_refmut_T_E x
       = match x with
-        | Ok f0 -> inv_ref_T f0
+        | Ok f0 -> inv_refmut_T f0
         | Err f0 -> inv_E f0
         end
   
@@ -1451,7 +1453,7 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
         | Err'0 f0 -> inv_E f0
         end
   
-  type tup2_OwnResult_ref_T_E_OwnResult_T_E = { f0: t_OwnResult_ref_T_E; f1: t_OwnResult_T_E }
+  type tup2_OwnResult_refmut_T_E_OwnResult_T_E = { f0: t_OwnResult_refmut_T_E; f1: t_OwnResult_T_E }
   
   predicate resolve_clone [@inline:trivial] (_1: ()) = true
   
@@ -1512,21 +1514,21 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec cloned_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
-    {[@expl:cloned 'self' type invariant] inv_OwnResult_ref_T_E self}
+  let rec cloned_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+    {[@expl:cloned 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s2 = -{resolve_ref_T t}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
       | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
       | s4 = [ &_ret <- Ok'0 _6 ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_OwnResult_T_E = Any.any_l ()
-    | & self: t_OwnResult_ref_T_E = self
+    | & self: t_OwnResult_refmut_T_E = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _6: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])

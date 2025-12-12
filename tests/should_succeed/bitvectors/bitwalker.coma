@@ -566,9 +566,9 @@ module M_poke_8bit_array
     {[@expl:poke_8bit requires] UInt64.lt left (8: UInt64.t)}
     any [ return (result: UInt8.t) -> (! return {result}) ]
   
-  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u8
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
   
   meta "compute_max_steps" 1000000
   
@@ -600,7 +600,7 @@ module M_poke_8bit_array
       | s17 = {[@expl:index in bounds] _26} s18
       | s18 = Slice64.set <UInt8.t> {addr.current} {_23} {_15}
           (fun (r: Slice64.slice UInt8.t) -> [ &addr <- { addr with current = r } ] s19)
-      | s19 = -{resolve_ref_slice_u8 addr}- s20
+      | s19 = -{resolve_refmut_slice_u8 addr}- s20
       | s20 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & addr: MutBorrow.t (Slice64.slice UInt8.t) = addr
@@ -637,9 +637,9 @@ module M_poke
   let rec len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
   
-  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u8
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
   
   type t_Ordering = Less | Equal | Greater
   
@@ -712,7 +712,7 @@ module M_poke
       | s3 = UInt64.mul {(8: UInt64.t)} {_24} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s4)
       | s4 = [ &_19 <- UInt64.gt _20 _23 ] s5
       | s5 = any [ br0 -> {_19 = false} (! bb4) | br1 -> {_19} (! bb3) ] ]
-    | bb3 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-1: Int8.t) ] s2 | s2 = return {_ret} ]
+    | bb3 = s0 [ s0 = -{resolve_refmut_slice_u8 addr}- s1 | s1 = [ &_ret <- (-1: Int8.t) ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = [ &_28 <- UInt64.lt length (64: UInt64.t) ] s1
       | s1 = any [ br0 -> {_28 = false} (! bb9) | br1 -> {_28} (! bb5) ] ]
@@ -720,7 +720,7 @@ module M_poke
       [ s0 = UInt64.shl {(1: UInt64.t)} {UInt64.t'int length} (fun (_x: UInt64.t) -> [ &_32 <- _x ] s1)
       | s1 = [ &_30 <- UInt64.ge value _32 ] s2
       | s2 = any [ br0 -> {_30 = false} (! bb9) | br1 -> {_30} (! bb7) ] ]
-    | bb7 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (-2: Int8.t) ] s2 | s2 = return {_ret} ]
+    | bb7 = s0 [ s0 = -{resolve_refmut_slice_u8 addr}- s1 | s1 = [ &_ret <- (-2: Int8.t) ] s2 | s2 = return {_ret} ]
     | bb9 = s0
       [ s0 = UInt64.sub {(64: UInt64.t)} {length} (fun (_x: UInt64.t) -> [ &lstart <- _x ] s1)
       | s1 = [ &i <- (0: UInt64.t) ] s2
@@ -744,7 +744,7 @@ module M_poke
           | s6 = {[@expl:assertion] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len} s7
           | s7 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s8)
           | s8 = bb10 ] ] ]
-    | bb15 = s0 [ s0 = -{resolve_ref_slice_u8 addr}- s1 | s1 = [ &_ret <- (0: Int8.t) ] s2 | s2 = return {_ret} ] ]
+    | bb15 = s0 [ s0 = -{resolve_refmut_slice_u8 addr}- s1 | s1 = [ &_ret <- (0: Int8.t) ] s2 | s2 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l ()
     | & start: UInt64.t = start
     | & length: UInt64.t = length
@@ -840,9 +840,9 @@ module M_peekthenpoke
     [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u8
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
   
   meta "compute_max_steps" 1000000
   
@@ -860,7 +860,7 @@ module M_peekthenpoke
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
             [ &_19 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s2)
       | s2 = poke {start} {length} {_19} {value} (fun (_x: Int8.t) -> [ &res <- _x ] s3)
-      | s3 = -{resolve_ref_slice_u8 addr}- s4
+      | s3 = -{resolve_refmut_slice_u8 addr}- s4
       | s4 = [ &_ret <- res ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l ()
@@ -934,9 +934,9 @@ module M_pokethenpeek
     [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u8
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
     {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
@@ -960,7 +960,7 @@ module M_pokethenpeek
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
             [ &_16 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s1)
       | s1 = poke {start} {length} {_16} {value} (fun (_x: Int8.t) -> [ &_res <- _x ] s2)
-      | s2 = -{resolve_ref_slice_u8 addr}- s3
+      | s2 = -{resolve_refmut_slice_u8 addr}- s3
       | s3 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &peek_result <- _x ] s4)
       | s4 = [ &_ret <- peek_result ] s5
       | s5 = return {_ret} ] ]

@@ -3,13 +3,13 @@ module M_unnest
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_ref_ref_u32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt32.t)) = _1.final = _1.current
+  predicate resolve_refmut_refmut_u32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_refmut_u32
   
   meta "compute_max_steps" 1000000
   
@@ -22,8 +22,8 @@ module M_unnest
             [ &_2 <- _bor ] [ &x <- { x with current = { x.current with current = _bor.final } } ] s1)
       | s1 = MutBorrow.borrow_final <UInt32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_ret <- _bor ] [ &_2 <- { _2 with current = _bor.final } ] s2)
-      | s2 = -{resolve_ref_u32 _2}- s3
-      | s3 = -{resolve_ref_ref_u32 x}- s4
+      | s2 = -{resolve_refmut_u32 _2}- s3
+      | s3 = -{resolve_refmut_refmut_u32 x}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: MutBorrow.t UInt32.t = Any.any_l ()
     | & x: MutBorrow.t (MutBorrow.t UInt32.t) = x

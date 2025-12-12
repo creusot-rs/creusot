@@ -36,13 +36,14 @@ module M_impl_Foo__add (* Foo *)
   
   axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
   
-  predicate invariant_ref_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) = inv_Foo self.current /\ inv_Foo self.final
+  predicate invariant_refmut_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) =
+    inv_Foo self.current /\ inv_Foo self.final
   
-  meta "rewrite_def" predicate invariant_ref_Foo
+  meta "rewrite_def" predicate invariant_refmut_Foo
   
-  predicate inv_ref_Foo [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant_ref_Foo _1
+  predicate inv_refmut_Foo [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant_refmut_Foo _1
   
-  meta "rewrite_def" predicate inv_ref_Foo
+  meta "rewrite_def" predicate inv_refmut_Foo
   
   type t_FMap_Int_u8
   
@@ -65,7 +66,7 @@ module M_impl_Foo__add (* Foo *)
   meta "select_lsinst" "all"
   
   let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv_ref_Foo self}
+    {[@expl:add 'self' type invariant] inv_refmut_Foo self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- bar ] s1

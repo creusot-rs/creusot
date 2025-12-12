@@ -105,18 +105,18 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -148,21 +148,21 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x = inv_I x.iter
   
-  predicate invariant_ref_Take_I [@inline:trivial] (self: MutBorrow.t t_Take_I) =
+  predicate invariant_refmut_Take_I [@inline:trivial] (self: MutBorrow.t t_Take_I) =
     inv_Take_I self.current /\ inv_Take_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Take_I
+  meta "rewrite_def" predicate invariant_refmut_Take_I
   
-  predicate inv_ref_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = invariant_ref_Take_I _1
+  predicate inv_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = invariant_refmut_Take_I _1
   
-  meta "rewrite_def" predicate inv_ref_Take_I
+  meta "rewrite_def" predicate inv_refmut_Take_I
   
-  predicate resolve_ref_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
+  predicate resolve_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Take_I
+  meta "rewrite_def" predicate resolve_refmut_Take_I
   
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
-    UInt64.t'int self.current.n = 0 /\ resolve_ref_Take_I self
+    UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
     \/ UInt64.t'int self.current.n > 0
     /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -175,7 +175,7 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Take_I (self: MutBorrow.t t_Take_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_ref_Take_I self}
+    {[@expl:next 'self' type invariant] inv_refmut_Take_I self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- self.current.n <> (0: UInt64.t) ] s1
@@ -189,12 +189,12 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
         [ _ck -> (! {inv_I self.current.iter} any) ]
       | s2 = next_I {_6} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Take_I self} any) ]
-      | s4 = -{resolve_ref_Take_I self}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Take_I self} any) ]
+      | s4 = -{resolve_refmut_Take_I self}- s5
       | s5 = return {_ret} ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Take_I self} any) ]
-      | s1 = -{resolve_ref_Take_I self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Take_I self} any) ]
+      | s1 = -{resolve_refmut_Take_I self}- s2
       | s2 = [ &_ret <- None ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_Item = Any.any_l ()
@@ -224,14 +224,14 @@ module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator
   
   axiom inv_axiom [@rewrite]: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x = inv_I x.iter
   
-  predicate invariant_ref_Take_I [@inline:trivial] (self: MutBorrow.t t_Take_I) =
+  predicate invariant_refmut_Take_I [@inline:trivial] (self: MutBorrow.t t_Take_I) =
     inv_Take_I self.current /\ inv_Take_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Take_I
+  meta "rewrite_def" predicate invariant_refmut_Take_I
   
-  predicate inv_ref_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = invariant_ref_Take_I _1
+  predicate inv_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = invariant_refmut_Take_I _1
   
-  meta "rewrite_def" predicate inv_ref_Take_I
+  meta "rewrite_def" predicate inv_refmut_Take_I
   
   type t_Item
   
@@ -258,14 +258,14 @@ module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator
         | Some f0 -> inv_Item f0
         end
   
-  predicate resolve_ref_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
+  predicate resolve_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Take_I
+  meta "rewrite_def" predicate resolve_refmut_Take_I
   
   predicate completed_I (self: MutBorrow.t t_I)
   
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
-    UInt64.t'int self.current.n = 0 /\ resolve_ref_Take_I self
+    UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
     \/ UInt64.t'int self.current.n > 0
     /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 1))
@@ -277,8 +277,8 @@ module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Take_I. inv_ref_Take_I self
-      -> inv_ref_Take_I self
+  goal refines: forall self: MutBorrow.t t_Take_I. inv_refmut_Take_I self
+      -> inv_refmut_Take_I self
       /\ (forall result: t_Option_Item. inv_Option_Item result
           /\ match result with
             | None -> completed_Take_I self

@@ -14,9 +14,9 @@ module M_ghost_enter_ghost
   let rec deref_mut_Ghost_NonCopy (self: MutBorrow.t t_NonCopy) (return (x: MutBorrow.t t_NonCopy)) = any
     [ return (result: MutBorrow.t t_NonCopy) -> {result = self} (! return {result}) ]
   
-  predicate resolve_ref_NonCopy [@inline:trivial] (_1: MutBorrow.t t_NonCopy) = _1.final = _1.current
+  predicate resolve_refmut_NonCopy [@inline:trivial] (_1: MutBorrow.t t_NonCopy) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_NonCopy
+  meta "rewrite_def" predicate resolve_refmut_NonCopy
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -40,7 +40,7 @@ module M_ghost_enter_ghost
           (fun (_bor: MutBorrow.t t_NonCopy) -> [ &_13 <- _bor ] [ &g_mut <- _bor.final ] s9)
       | s9 = deref_mut_Ghost_NonCopy {_13} (fun (_x: MutBorrow.t t_NonCopy) -> [ &_12 <- _x ] s10)
       | s10 = [ &_12 <- { _12 with current = _11 } ] s11
-      | s11 = -{resolve_ref_NonCopy _12}- s12
+      | s11 = -{resolve_refmut_NonCopy _12}- s12
       | s12 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s13)
       | s13 = {[@expl:assertion] view_NonCopy g_read = 2} s14
       | s14 = {[@expl:assertion] view_NonCopy g_mut = 4} s15

@@ -63,9 +63,9 @@ module M_ghost_is_copy
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
   meta "compute_max_steps" 1000000
   
@@ -76,7 +76,7 @@ module M_ghost_is_copy
       [ s0 = [ &x <- (0: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &r <- _bor ] [ &x <- _bor.final ] s2)
-      | s2 = -{resolve_ref_i32 r}- s3
+      | s2 = -{resolve_refmut_i32 r}- s3
       | s3 = [ &g <- r ] s4
       | s4 = [ &g1 <- g ] s5
       | s5 = [ &g2 <- g ] s6

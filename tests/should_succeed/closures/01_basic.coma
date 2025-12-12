@@ -63,15 +63,15 @@ module M_move_closure
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_i32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_i32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -83,7 +83,7 @@ module M_move_closure
     [ bb0 = s0
       [ s0 = Int32.add {self.current.c0.current} {(1: Int32.t)}
           (fun (_x: Int32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
-      | s1 = -{resolve_ref_closure0 self}- s2
+      | s1 = -{resolve_refmut_closure0 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
@@ -162,15 +162,15 @@ module M_move_mut
   
   type closure0 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_u32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -184,13 +184,13 @@ module M_move_mut
       | s1 = MutBorrow.borrow_final <UInt32.t> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_2 <- _bor ] [ &_3 <- { _3 with current = _bor.final } ] s2)
       | s2 = -{match self with
-          | {current = {c0 = x}} -> resolve_ref_u32 x
+          | {current = {c0 = x}} -> resolve_refmut_u32 x
           | _ -> true
           end}-
         s3
       | s3 = [ &self <- { self with current = { c0 = _2 } } ] s4
-      | s4 = -{resolve_ref_closure0 self}- s5
-      | s5 = -{resolve_ref_u32 _3}- s6
+      | s4 = -{resolve_refmut_closure0 self}- s5
+      | s5 = -{resolve_refmut_u32 _3}- s6
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0 = self

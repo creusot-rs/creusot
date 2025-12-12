@@ -137,20 +137,20 @@ module M_valid_normal
   
   type closure2 = { c0'0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
+  predicate resolve_refmut_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure2
+  meta "rewrite_def" predicate resolve_refmut_closure2
   
   predicate postcondition_once_closure2 [@inline:trivial] (self: closure2) (args: bool) (result: ()) =
     let b = args in b /\ self.c0'0.final = (2: UInt32.t) \/ not b /\ self.c0'0.final = (1: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_once_closure2
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_ref_u32 _1.c0'0
+  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_refmut_u32 _1.c0'0
   
   meta "rewrite_def" predicate resolve_closure2
   
@@ -192,7 +192,7 @@ module M_valid_normal
     | bb2 = s0 [ s0 = [ &_4 <- (1: UInt32.t) ] s1 | s1 = bb3 ]
     | bb3 = s0
       [ s0 = [ &self <- { self with current = { c0'0 = { self.current.c0'0 with current = _4 } } } ] s1
-      | s1 = -{resolve_ref_closure2 self}- s2
+      | s1 = -{resolve_refmut_closure2 self}- s2
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:closure ensures] b /\ self.final.c0'0.current = (2: UInt32.t)

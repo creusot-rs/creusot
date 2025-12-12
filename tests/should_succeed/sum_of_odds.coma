@@ -81,12 +81,12 @@ module M_compute_sum_of_odd
   axiom produces_refl_Range_u32_spec:
     forall self: t_Range_u32. produces_Range_u32 self (Seq.empty: Seq.seq UInt32.t) self
   
-  predicate resolve_ref_Range_u32 [@inline:trivial] (_1: MutBorrow.t t_Range_u32) = _1.final = _1.current
+  predicate resolve_refmut_Range_u32 [@inline:trivial] (_1: MutBorrow.t t_Range_u32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_u32
+  meta "rewrite_def" predicate resolve_refmut_Range_u32
   
   predicate completed_Range_u32 (self: MutBorrow.t t_Range_u32) =
-    resolve_ref_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
+    resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
   
   let rec next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {match result with
@@ -149,7 +149,7 @@ module M_compute_sum_of_odd
         | s1 = MutBorrow.borrow_final <t_Range_u32> {_32.current} {MutBorrow.get_id _32}
             (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_31 <- _bor ] [ &_32 <- { _32 with current = _bor.final } ] s2)
         | s2 = next_Range_u32 {_31} (fun (_x: t_Option_u32) -> [ &_30 <- _x ] s3)
-        | s3 = -{resolve_ref_Range_u32 _32}- s4
+        | s3 = -{resolve_refmut_Range_u32 _32}- s4
         | s4 = any [ br0 -> {_30 = None} (! bb9) | br1 (x0: UInt32.t) -> {_30 = Some x0} (! bb10) ] ]
         [ bb10 = s0
           [ s0 = elim_Some {_30} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

@@ -3,13 +3,13 @@ module M_borrow_in_box
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_Box_ref_i32_Global [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve_ref_i32 _1
+  predicate resolve_Box_refmut_i32_Global [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve_refmut_i32 _1
   
-  meta "rewrite_def" predicate resolve_Box_ref_i32_Global
+  meta "rewrite_def" predicate resolve_Box_refmut_i32_Global
   
   meta "compute_max_steps" 1000000
   
@@ -21,11 +21,11 @@ module M_borrow_in_box
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &x <- { x with current = _bor.final } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {_5.current} {MutBorrow.get_id _5}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_2 <- _bor ] [ &_5 <- { _5 with current = _bor.final } ] s2)
-      | s2 = -{resolve_ref_i32 _5}- s3
+      | s2 = -{resolve_refmut_i32 _5}- s3
       | s3 = MutBorrow.borrow_final <Int32.t> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_ret <- _bor ] [ &_2 <- { _2 with current = _bor.final } ] s4)
-      | s4 = -{resolve_ref_i32 _2}- s5
-      | s5 = -{resolve_Box_ref_i32_Global x}- s6
+      | s4 = -{resolve_refmut_i32 _2}- s5
+      | s5 = -{resolve_Box_refmut_i32_Global x}- s6
       | s6 = return {_ret} ] ]
     [ & _ret: MutBorrow.t Int32.t = Any.any_l ()
     | & x: MutBorrow.t Int32.t = x

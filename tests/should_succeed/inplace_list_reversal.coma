@@ -27,17 +27,17 @@ module M_rev
         | Cons f0'0 -> inv_Box_tup2_T_List_T_Global f0'0
         end
   
-  predicate invariant_ref_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
+  predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_List_T
+  meta "rewrite_def" predicate invariant_refmut_List_T
   
-  predicate inv_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_ref_List_T _1
+  predicate inv_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_refmut_List_T _1
   
-  meta "rewrite_def" predicate inv_ref_List_T
+  meta "rewrite_def" predicate inv_refmut_List_T
   
   let rec replace_List_T (dest: MutBorrow.t t_List_T) (src: t_List_T) (return (x: t_List_T)) =
-    {[@expl:replace 'dest' type invariant] inv_ref_List_T dest}
+    {[@expl:replace 'dest' type invariant] inv_refmut_List_T dest}
     {[@expl:replace 'src' type invariant] inv_List_T src}
     any
     [ return (result: t_List_T) -> {inv_List_T result} {dest.final = src} {result = dest.current} (! return {result}) ]
@@ -73,15 +73,15 @@ module M_rev
         | Cons x0 -> resolve_Box_tup2_T_List_T_Global x0
         end
   
-  predicate resolve_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_List_T
+  meta "rewrite_def" predicate resolve_refmut_List_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec rev_T (l: MutBorrow.t t_List_T) (return (x: ())) = {[@expl:rev 'l' type invariant] inv_ref_List_T l}
+  let rec rev_T (l: MutBorrow.t t_List_T) (return (x: ())) = {[@expl:rev 'l' type invariant] inv_refmut_List_T l}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_l <- l ] s1
@@ -122,8 +122,8 @@ module M_rev
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_List_T l.current} any) ]
       | s3 = -{resolve_List_T l.current}- s4
       | s4 = [ &l <- { l with current = prev } ] s5
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_List_T l} any) ]
-      | s6 = -{resolve_ref_List_T l}- s7
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T l} any) ]
+      | s6 = -{resolve_refmut_List_T l}- s7
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & l: MutBorrow.t t_List_T = l

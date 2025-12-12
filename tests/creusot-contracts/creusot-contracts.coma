@@ -97,24 +97,25 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   axiom inv_axiom [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
       = invariant_PermCellOwn_T x
   
-  predicate invariant_ref_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
+  predicate invariant_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
     inv_PermCellOwn_T self.current /\ inv_PermCellOwn_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PermCellOwn_T
+  meta "rewrite_def" predicate invariant_refmut_PermCellOwn_T
   
-  predicate inv_ref_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) = invariant_ref_PermCellOwn_T _1
+  predicate inv_refmut_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) =
+    invariant_refmut_PermCellOwn_T _1
   
-  meta "rewrite_def" predicate inv_ref_PermCellOwn_T
+  meta "rewrite_def" predicate inv_refmut_PermCellOwn_T
   
-  predicate invariant_Ghost_ref_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
-    inv_ref_PermCellOwn_T self
+  predicate invariant_Ghost_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
+    inv_refmut_PermCellOwn_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PermCellOwn_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PermCellOwn_T
   
-  predicate inv_Ghost_ref_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) =
-    invariant_Ghost_ref_PermCellOwn_T _1
+  predicate inv_Ghost_refmut_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) =
+    invariant_Ghost_refmut_PermCellOwn_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PermCellOwn_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PermCellOwn_T
   
   type t_Id
   
@@ -126,20 +127,20 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   
   meta "rewrite_def" function view_PermCellOwn_T
   
-  function fin_Ghost_ref_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) : t_PermCellOwn_T =
+  function fin_Ghost_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) : t_PermCellOwn_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PermCellOwn_T
+  meta "rewrite_def" function fin_Ghost_refmut_PermCellOwn_T
   
   let rec replace_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (val': t_T) (return (x: t_T)) =
-    {[@expl:replace 'perm' type invariant] inv_Ghost_ref_PermCellOwn_T perm}
+    {[@expl:replace 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
     {[@expl:replace 'val' type invariant] inv_T val'}
     {[@expl:replace requires] id_T self = id_T'0 perm.current}
     any
     [ return (result: t_T) -> {inv_T result}
-      {val' = view_PermCellOwn_T (fin_Ghost_ref_PermCellOwn_T perm)}
+      {val' = view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       {result = view_PermCellOwn_T perm.current}
-      {id_T self = id_T'0 (fin_Ghost_ref_PermCellOwn_T perm)}
+      {id_T self = id_T'0 (fin_Ghost_refmut_PermCellOwn_T perm)}
       (! return {result}) ]
   
   predicate resolve_default [@inline:trivial] (_1: ()) = true
@@ -202,7 +203,7 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   meta "select_lsinst" "all"
   
   let rec take_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (return (x: t_T)) =
-    {[@expl:take 'perm' type invariant] inv_Ghost_ref_PermCellOwn_T perm}
+    {[@expl:take 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
     {[@expl:take requires] id_T self = id_T'0 perm.current}
     (! bb0
     [ bb0 = s0
@@ -214,9 +215,9 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
     | & perm: MutBorrow.t t_PermCellOwn_T = perm
     | & _15: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:take result type invariant] inv_T result}
-      {[@expl:take ensures #0] id_T self = id_T'0 (fin_Ghost_ref_PermCellOwn_T perm)}
+      {[@expl:take ensures #0] id_T self = id_T'0 (fin_Ghost_refmut_PermCellOwn_T perm)}
       {[@expl:take ensures #1] result = view_PermCellOwn_T perm.current}
-      {[@expl:take ensures #2] postcondition_default () () (view_PermCellOwn_T (fin_Ghost_ref_PermCellOwn_T perm))}
+      {[@expl:take ensures #2] postcondition_default () () (view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm))}
       (! return {result}) ]
 end
 module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone (* <ghost::fn_ghost::FnGhostWrapper<F> as std::clone::Clone> *)
@@ -405,38 +406,38 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate invariant_Ghost_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_ref_T self
+  predicate invariant_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_T
   
-  predicate inv_Ghost_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_Ghost_ref_T _1
+  predicate inv_Ghost_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_Ghost_refmut_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_T
   
   predicate precondition_F (self: t_F) (args: MutBorrow.t t_T)
   
   predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_T) (result: t_A)
   
-  function fin_Ghost_ref_T [@inline:trivial] (self: MutBorrow.t t_T) : t_T = self.final
+  function fin_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) : t_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_T
+  meta "rewrite_def" function fin_Ghost_refmut_T
   
   predicate inv_A (_1: t_A)
   
   let rec open_T (this: t_LocalInvariant_T) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
     {[@expl:open 'f' type invariant] inv_F f}
     {[@expl:open requires #0] contains tokens (namespace_T this)}
-    {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T this) /\ inv_Ghost_ref_T t
+    {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T this) /\ inv_Ghost_refmut_T t
       -> precondition_F f t
-      /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_ref_T t) (public_T this))}
+      /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_refmut_T t) (public_T this))}
     any
     [ return (result: t_A) -> {inv_A result}
       {exists t: MutBorrow.t t_T. protocol_T t.current (public_T this) /\ postcondition_once_F f t result}
@@ -449,9 +450,9 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   let rec open_Ghost_ref_LocalInvariant_T (self: t_LocalInvariant_T) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
     {[@expl:open 'f' type invariant] inv_F f}
     {[@expl:open requires #0] contains tokens (namespace_T self)}
-    {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T self) /\ inv_Ghost_ref_T t
+    {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T self) /\ inv_Ghost_refmut_T t
       -> precondition_F f t
-      /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_ref_T t) (public_T self))}
+      /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_refmut_T t) (public_T self))}
     (! bb0
     [ bb0 = s0 [ s0 = open_T {self} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_A = Any.any_l () | & self: t_LocalInvariant_T = self | & tokens: t_Tokens = tokens | & f: t_F = f ])
@@ -1999,18 +2000,19 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__insert (* ghost::resour
   axiom inv_axiom [@rewrite]: forall x: t_Authority_K_V [inv_Authority_K_V x]. inv_Authority_K_V x
       = invariant_Authority_K_V x
   
-  predicate invariant_ref_Authority_K_V [@inline:trivial] (self: MutBorrow.t t_Authority_K_V) =
+  predicate invariant_refmut_Authority_K_V [@inline:trivial] (self: MutBorrow.t t_Authority_K_V) =
     inv_Authority_K_V self.current /\ inv_Authority_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_Authority_K_V
+  meta "rewrite_def" predicate invariant_refmut_Authority_K_V
   
-  predicate inv_ref_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = invariant_ref_Authority_K_V _1
+  predicate inv_refmut_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) =
+    invariant_refmut_Authority_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_Authority_K_V
+  meta "rewrite_def" predicate inv_refmut_Authority_K_V
   
-  predicate resolve_ref_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = _1.final = _1.current
+  predicate resolve_refmut_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Authority_K_V
+  meta "rewrite_def" predicate resolve_refmut_Authority_K_V
   
   type t_Option_View_AuthViewRel_FMap_K_Ag_V = None'4 | Some'4 t_View_AuthViewRel_FMap_K_Ag_V
   
@@ -2128,7 +2130,7 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__insert (* ghost::resour
   meta "select_lsinst" "all"
   
   let rec insert_K'1 (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
-    {[@expl:insert 'self' type invariant] inv_ref_Authority_K_V self}
+    {[@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self}
     {[@expl:insert requires] not contains_K'0 (view_Authority_K_V self.current) k}
     (! bb0
     [ bb0 = s0
@@ -2141,8 +2143,8 @@ module M_ghost__resource__fmap_view__impl_Authority_K_V__insert (* ghost::resour
             [ &_22 <- _bor ] [ &self <- { self with current = { f0'2 = _bor.final } } ] s4)
       | s4 = update_View_AuthViewRel_FMap_K_Ag_V {_22} {_23} (fun (_x: ()) -> [ &_21 <- _x ] s5)
       | s5 = {[@expl:assertion] ext_eq_K (view_Authority_K_V self.current) (insert_K'0 (view_Authority_K_V s) k v)} s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Authority_K_V self} any) ]
-      | s7 = -{resolve_ref_Authority_K_V self}- s8
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_K_V self} any) ]
+      | s7 = -{resolve_refmut_Authority_K_V self}- s8
       | s8 = core_View_AuthViewRel_FMap_K_Ag_V'0 {self.current.f0'2}
           (fun (_x: t_Resource_View_AuthViewRel_FMap_K_Ag_V) -> [ &_35 <- _x ] s9)
       | s9 = [ &_ret <- { f0'7 = _35; f1'7 = k; f2'7 = v } ] s10
@@ -3121,9 +3123,9 @@ module M_ghost__resource__m__impl_Resource_R__split_off (* ghost::resource::m::R
       {view_Resource_R result.f1 = b}
       (! return {result}) ]
   
-  predicate resolve_ref_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+  predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Resource_R
+  meta "rewrite_def" predicate resolve_refmut_Resource_R
   
   predicate resolve_Resource_R (_1: t_Resource_R)
   
@@ -3145,7 +3147,7 @@ module M_ghost__resource__m__impl_Resource_R__split_off (* ghost::resource::m::R
       | s6 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_25 <- _bor ] [ &self <- { self with current = _bor.final } ] s7)
       | s7 = replace_Resource_R {_25} {this'0} (fun (_x: t_Resource_R) -> [ &_24 <- _x ] s8)
-      | s8 = -{resolve_ref_Resource_R self}- s9
+      | s8 = -{resolve_refmut_Resource_R self}- s9
       | s9 = -{resolve_Resource_R _24}- s10
       | s10 = [ &_ret <- r'0 ] s11
       | s11 = return {_ret} ] ]
@@ -3237,9 +3239,9 @@ module M_ghost__resource__m__impl_Resource_R__join_in (* ghost::resource::m::Res
       {Some (view_Resource_R result) = op_R (view_Resource_R self) (view_Resource_R other)}
       (! return {result}) ]
   
-  predicate resolve_ref_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+  predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Resource_R
+  meta "rewrite_def" predicate resolve_refmut_Resource_R
   
   predicate resolve_Resource_R (_1: t_Resource_R)
   
@@ -3259,7 +3261,7 @@ module M_ghost__resource__m__impl_Resource_R__join_in (* ghost::resource::m::Res
       | s4 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_18 <- _bor ] [ &self <- { self with current = _bor.final } ] s5)
       | s5 = replace_Resource_R {_18} {this'0} (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s6)
-      | s6 = -{resolve_ref_Resource_R self}- s7
+      | s6 = -{resolve_refmut_Resource_R self}- s7
       | s7 = -{resolve_Resource_R _17}- s8
       | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -3366,9 +3368,9 @@ module M_ghost__resource__m__impl_Resource_R__weaken (* ghost::resource::m::Reso
   
   predicate resolve_Resource_R (_1: t_Resource_R)
   
-  predicate resolve_ref_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+  predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Resource_R
+  meta "rewrite_def" predicate resolve_refmut_Resource_R
   
   meta "compute_max_steps" 1000000
   
@@ -3383,7 +3385,7 @@ module M_ghost__resource__m__impl_Resource_R__weaken (* ghost::resource::m::Reso
           (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
       | s2 = split_off_R {_16} {f} {target} (fun (_x: t_Resource_R) -> [ &_15 <- _x ] s3)
       | s3 = -{resolve_Resource_R _15}- s4
-      | s4 = -{resolve_ref_Resource_R self}- s5
+      | s4 = -{resolve_refmut_Resource_R self}- s5
       | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Resource_R = self
@@ -3524,9 +3526,9 @@ module M_ghost__resource__m__impl_Resource_R__update (* ghost::resource::m::Reso
       {view_Resource_R self.final = result}
       (! return {result}) ]
   
-  predicate resolve_ref_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+  predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Resource_R
+  meta "rewrite_def" predicate resolve_refmut_Resource_R
   
   meta "compute_max_steps" 1000000
   
@@ -3550,7 +3552,7 @@ module M_ghost__resource__m__impl_Resource_R__update (* ghost::resource::m::Reso
       | s7 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s8)
       | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
-      | s9 = -{resolve_ref_Resource_R self}- s10
+      | s9 = -{resolve_refmut_Resource_R self}- s10
       | s10 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s11
       | s11 = return {_ret} ] ]
     [ & _ret: t_Choice = Any.any_l ()
@@ -4301,14 +4303,14 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
   
   type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
   
-  predicate invariant_ref_FMap_K_V [@inline:trivial] (self: MutBorrow.t t_FMap_K_V) =
+  predicate invariant_refmut_FMap_K_V [@inline:trivial] (self: MutBorrow.t t_FMap_K_V) =
     inv_FMap_K_V self.current /\ inv_FMap_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMap_K_V
+  meta "rewrite_def" predicate invariant_refmut_FMap_K_V
   
-  predicate inv_ref_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = invariant_ref_FMap_K_V _1
+  predicate inv_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = invariant_refmut_FMap_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_FMap_K_V
+  meta "rewrite_def" predicate inv_refmut_FMap_K_V
   
   predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0 /\ inv_V _1.f1
   
@@ -4347,7 +4349,7 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
       = (if contains_K self k then len_K self else len_K self + 1)
   
   let rec remove_one_ghost_K (self: MutBorrow.t t_FMap_K_V) (return (x: t_Option_tup2_K_V)) =
-    {[@expl:remove_one_ghost 'self' type invariant] inv_ref_FMap_K_V self}
+    {[@expl:remove_one_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
     any
     [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result}
       {match result with
@@ -4360,18 +4362,19 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_FMapIter_K_V [inv_FMapIter_K_V x]. inv_FMapIter_K_V x = inv_FMap_K_V x.inner
   
-  predicate invariant_ref_FMapIter_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIter_K_V) =
+  predicate invariant_refmut_FMapIter_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIter_K_V) =
     inv_FMapIter_K_V self.current /\ inv_FMapIter_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMapIter_K_V
+  meta "rewrite_def" predicate invariant_refmut_FMapIter_K_V
   
-  predicate inv_ref_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = invariant_ref_FMapIter_K_V _1
+  predicate inv_refmut_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) =
+    invariant_refmut_FMapIter_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_FMapIter_K_V
+  meta "rewrite_def" predicate inv_refmut_FMapIter_K_V
   
-  predicate resolve_ref_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = _1.final = _1.current
+  predicate resolve_refmut_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_FMapIter_K_V
+  meta "rewrite_def" predicate resolve_refmut_FMapIter_K_V
   
   function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = if 0 <= ix /\ ix < Seq.length self then
       Some'0 (Seq.get self ix)
@@ -4409,7 +4412,7 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
   meta "select_lsinst" "all"
   
   let rec next_FMapIter_K_V (self: MutBorrow.t t_FMapIter_K_V) (return (x: t_Option_tup2_K_V)) =
-    {[@expl:next 'self' type invariant] inv_ref_FMapIter_K_V self}
+    {[@expl:next 'self' type invariant] inv_refmut_FMapIter_K_V self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_FMap_K_V> {self.current.inner} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -4418,8 +4421,8 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
         [ _ck -> (! {inv_FMap_K_V self.current.inner} any) ]
       | s1 = remove_one_ghost_K {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_FMapIter_K_V self} any) ]
-      | s3 = -{resolve_ref_FMapIter_K_V self}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_K_V self} any) ]
+      | s3 = -{resolve_refmut_FMapIter_K_V self}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_K_V = Any.any_l ()
     | & self: MutBorrow.t t_FMapIter_K_V = self
@@ -23404,31 +23407,31 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
   
   meta "rewrite_def" predicate inv_Seq_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_T self.current /\ inv_Seq_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_T
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
   
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_ref_Seq_T _1
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_T
+  meta "rewrite_def" predicate inv_refmut_Seq_T
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_ref_T f0
+        | Some f0 -> inv_refmut_T f0
         end
   
   type t_Option_T = None'0 | Some'0 t_T
@@ -23439,10 +23442,10 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
       None'0
   
   
-  let rec get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_ref_T)) =
-    {[@expl:get_mut_ghost 'self' type invariant] inv_ref_Seq_T self}
+  let rec get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+    {[@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
     any
-    [ return (result: t_Option_ref_T) -> {inv_Option_ref_T result}
+    [ return (result: t_Option_refmut_T) -> {inv_Option_refmut_T result}
       {match result with
         | None -> get_T self.current index = None'0 /\ self.current = self.final
         | Some r -> get_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
@@ -23451,25 +23454,25 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
       {Seq.length self.current = Seq.length self.final}
       (! return {result}) ]
   
-  let rec unwrap_ref_T (self_: t_Option_ref_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_T self_}
+  let rec unwrap_refmut_T (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_T self_}
     {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: MutBorrow.t t_T) -> {inv_ref_T result} {Some result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_T) -> {inv_refmut_T result} {Some result = self_} (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate resolve_ref_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+  predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Seq_T
+  meta "rewrite_def" predicate resolve_refmut_Seq_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec index_mut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
-    {[@expl:index_mut 'self' type invariant] inv_ref_Seq_T self}
+    {[@expl:index_mut 'self' type invariant] inv_refmut_Seq_T self}
     {[@expl:index_mut requires] 0 <= index /\ index < Seq.length self.current}
     (! bb0
     [ bb0 = s0
@@ -23477,31 +23480,31 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
           (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
             [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Seq_T self.current} any) ]
-      | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_ref_T) -> [ &_16 <- _x ] s2)
-      | s2 = unwrap_ref_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
+      | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
+      | s2 = unwrap_refmut_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <t_T> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
             [ &_15 <- { _15 with current = _bor.final } ] s4) [ _ck -> (! {inv_T _15.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T _15} any) ]
-      | s5 = -{resolve_ref_T _15}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _15} any) ]
+      | s5 = -{resolve_refmut_T _15}- s6
       | s6 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
             [ &_3 <- { _3 with current = _bor.final } ] s7) [ _ck -> (! {inv_T _3.current} any) ]
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_ref_T _3} any) ]
-      | s8 = -{resolve_ref_T _3}- s9
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_ref_Seq_T self} any) ]
-      | s10 = -{resolve_ref_Seq_T self}- s11
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+      | s8 = -{resolve_refmut_T _3}- s9
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s10 = -{resolve_refmut_Seq_T self}- s11
       | s11 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self: MutBorrow.t (Seq.seq t_T) = self
     | & index: int = index
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _15: MutBorrow.t t_T = Any.any_l ()
-    | & _16: t_Option_ref_T = Any.any_l ()
+    | & _16: t_Option_refmut_T = Any.any_l ()
     | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:index_mut result type invariant] inv_ref_T result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:index_mut result type invariant] inv_refmut_T result}
       {[@expl:index_mut ensures #0] Seq.length self.current = Seq.length self.final}
       {[@expl:index_mut ensures #1] result.current = Seq.get self.current index
       /\ result.final = Seq.get self.final index}
@@ -23590,14 +23593,14 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   
   type t_Option_T = None | Some t_T
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_T self.current /\ inv_Seq_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_T
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
   
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_ref_Seq_T _1
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_T
+  meta "rewrite_def" predicate inv_refmut_Seq_T
   
   predicate inv_Option_T (_1: t_Option_T)
   
@@ -23610,7 +23613,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
   let rec pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
-    {[@expl:pop_front_ghost 'self' type invariant] inv_ref_Seq_T self}
+    {[@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
       {match result with
@@ -23623,18 +23626,18 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
   
-  predicate invariant_ref_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
+  predicate invariant_refmut_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
     inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_SeqIter_T
+  meta "rewrite_def" predicate invariant_refmut_SeqIter_T
   
-  predicate inv_ref_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_ref_SeqIter_T _1
+  predicate inv_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_refmut_SeqIter_T _1
   
-  meta "rewrite_def" predicate inv_ref_SeqIter_T
+  meta "rewrite_def" predicate inv_refmut_SeqIter_T
   
-  predicate resolve_ref_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = _1.final = _1.current
+  predicate resolve_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_SeqIter_T
+  meta "rewrite_def" predicate resolve_refmut_SeqIter_T
   
   function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
   
@@ -23659,7 +23662,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   meta "select_lsinst" "all"
   
   let rec next_SeqIter_T (self: MutBorrow.t t_SeqIter_T) (return (x: t_Option_T)) =
-    {[@expl:next 'self' type invariant] inv_ref_SeqIter_T self}
+    {[@expl:next 'self' type invariant] inv_refmut_SeqIter_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current.inner} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -23668,8 +23671,8 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
         [ _ck -> (! {inv_Seq_T self.current.inner} any) ]
       | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_SeqIter_T self} any) ]
-      | s3 = -{resolve_ref_SeqIter_T self}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIter_T self} any) ]
+      | s3 = -{resolve_refmut_SeqIter_T self}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_SeqIter_T = self
@@ -23904,18 +23907,19 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   axiom inv_axiom'0 [@rewrite]: forall x: t_SeqIterRef_T [inv_SeqIterRef_T x]. inv_SeqIterRef_T x
       = (invariant_SeqIterRef_T x /\ inv_ref_Seq_T x.inner)
   
-  predicate invariant_ref_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
+  predicate invariant_refmut_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
     inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_SeqIterRef_T
+  meta "rewrite_def" predicate invariant_refmut_SeqIterRef_T
   
-  predicate inv_ref_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = invariant_ref_SeqIterRef_T _1
+  predicate inv_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) =
+    invariant_refmut_SeqIterRef_T _1
   
-  meta "rewrite_def" predicate inv_ref_SeqIterRef_T
+  meta "rewrite_def" predicate inv_refmut_SeqIterRef_T
   
-  predicate resolve_ref_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = _1.final = _1.current
+  predicate resolve_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_SeqIterRef_T
+  meta "rewrite_def" predicate resolve_refmut_SeqIterRef_T
   
   let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
@@ -23953,15 +23957,15 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   meta "select_lsinst" "all"
   
   let rec next_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) (return (x: t_Option_ref_T)) =
-    {[@expl:next 'self' type invariant] inv_ref_SeqIterRef_T self}
+    {[@expl:next 'self' type invariant] inv_refmut_SeqIterRef_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_before <- view_SeqIterRef_T self.current ] s1
       | s1 = get_ghost_T {self.current.inner} {self.current.index} (fun (_x: t_Option_ref_T) -> [ &_7 <- _x ] s2)
       | s2 = any [ br0 -> {_7 = None} (! bb6) | br1 (x0: t_T) -> {_7 = Some x0} (! bb4) ] ]
     | bb6 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_SeqIterRef_T self} any) ]
-      | s1 = -{resolve_ref_SeqIterRef_T self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIterRef_T self} any) ]
+      | s1 = -{resolve_refmut_SeqIterRef_T self}- s2
       | s2 = {[@expl:assertion] self.current.index = Seq.length self.current.inner} s3
       | s3 = {[@expl:assertion] view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)} s4
       | s4 = [ &_ret <- None ] s5
@@ -23972,8 +23976,8 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
           (fun (_bor: MutBorrow.t int) ->
             [ &_13 <- _bor ] [ &self <- { self with current = { self.current with index = _bor.final } } ] s2)
       | s2 = incr_ghost {_13} (fun (_x: ()) -> [ &_12 <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_SeqIterRef_T self} any) ]
-      | s4 = -{resolve_ref_SeqIterRef_T self}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIterRef_T self} any) ]
+      | s4 = -{resolve_refmut_SeqIterRef_T self}- s5
       | s5 = {[@expl:assertion] view_SeqIterRef_T self.current = tail_T _before} s6
       | s6 = [ &_ret <- Some res ] s7
       | s7 = return {_ret} ] ]
@@ -29476,7 +29480,7 @@ module M_resolve__impl_Resolve_for_ref_T__resolve_coherence (* <&'a T as resolve
   
   goal vc_resolve_coherence_ref_T: [@expl:resolve_coherence ensures] resolve_ref_T self
 end
-module M_resolve__impl_Resolve_for_ref_T_0__resolve_coherence (* <&'a mut T as resolve::Resolve> *)
+module M_resolve__impl_Resolve_for_refmut_T__resolve_coherence (* <&'a mut T as resolve::Resolve> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -29485,7 +29489,7 @@ module M_resolve__impl_Resolve_for_ref_T_0__resolve_coherence (* <&'a mut T as r
   
   type t_T
   
-  predicate resolve_ref_T (self: MutBorrow.t t_T) = true
+  predicate resolve_refmut_T (self: MutBorrow.t t_T) = true
   
   meta "compute_max_steps" 1000000
   
@@ -29493,9 +29497,9 @@ module M_resolve__impl_Resolve_for_ref_T_0__resolve_coherence (* <&'a mut T as r
   
   constant self : MutBorrow.t t_T
   
-  function resolve_coherence_ref_T (self: MutBorrow.t t_T) : ()
+  function resolve_coherence_refmut_T (self: MutBorrow.t t_T) : ()
   
-  goal vc_resolve_coherence_ref_T: [@expl:resolve_coherence ensures] resolve_ref_T self
+  goal vc_resolve_coherence_refmut_T: [@expl:resolve_coherence ensures] resolve_refmut_T self
 end
 module M_snapshot__impl_Clone_for_Snapshot_T__clone (* <snapshot::Snapshot<T> as std::clone::Clone> *)
   type namespace_other
@@ -29997,27 +30001,27 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_V
   
-  type tup2_ref_K_ref_V = { f0: t_K; f1: MutBorrow.t t_V }
+  type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
   
-  type t_FMap_DeepModelTy_ref_V
+  type t_FMap_DeepModelTy_refmut_V
   
-  function len_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : int
   
-  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_ref_V. len_DeepModelTy self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_refmut_V. len_DeepModelTy self >= 0
   
-  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_ref_V
+  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_refmut_V
   
-  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+  predicate contains_tup2_ref_K_refmut_V (self: Seq.seq tup2_ref_K_refmut_V) (x: tup2_ref_K_refmut_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   type t_DeepModelTy
   
-  type t_Option_ref_V = None | Some (MutBorrow.t t_V)
+  type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
+  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
-  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
-    Map.get (view_FMap_DeepModelTy_ref_V self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
+   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -30027,17 +30031,17 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_IterMut_K_V) =
+  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (o: t_IterMut_K_V) =
     len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
-    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_refmut_V visited { f0 = k; f1 = v }
         -> get_DeepModelTy (view_IterMut_K_V self) (deep_model_K k) = Some v
         /\ get_DeepModelTy (view_IterMut_K_V o) (deep_model_K k) = None)
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V o) k = Some v
         -> get_DeepModelTy (view_IterMut_K_V self) k = Some v
         /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
-          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+          /\ contains_tup2_ref_K_refmut_V visited { f0 = k2; f1 = v2 }))
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V self) k = Some v
-        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k1; f1 = v })
+        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V visited { f0 = k1; f1 = v })
         \/ get_DeepModelTy (view_IterMut_K_V o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
@@ -30056,7 +30060,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   function produces_refl_IterMut_K_V (self: t_IterMut_K_V) : ()
   
   goal vc_produces_refl_IterMut_K_V:
-    [@expl:produces_refl ensures] produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
+    [@expl:produces_refl ensures] produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self
 end
 module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces_trans (* <std::collections::hash_map::IterMut<'a, K, V> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -30074,27 +30078,27 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_V
   
-  type tup2_ref_K_ref_V = { f0: t_K; f1: MutBorrow.t t_V }
+  type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
   
-  type t_FMap_DeepModelTy_ref_V
+  type t_FMap_DeepModelTy_refmut_V
   
-  function len_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : int
   
-  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_ref_V. len_DeepModelTy self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_refmut_V. len_DeepModelTy self >= 0
   
-  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_ref_V
+  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_refmut_V
   
-  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+  predicate contains_tup2_ref_K_refmut_V (self: Seq.seq tup2_ref_K_refmut_V) (x: tup2_ref_K_refmut_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   type t_DeepModelTy
   
-  type t_Option_ref_V = None | Some (MutBorrow.t t_V)
+  type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
+  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
-  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
-    Map.get (view_FMap_DeepModelTy_ref_V self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
+   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -30104,17 +30108,17 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_IterMut_K_V) =
+  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (o: t_IterMut_K_V) =
     len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
-    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_refmut_V visited { f0 = k; f1 = v }
         -> get_DeepModelTy (view_IterMut_K_V self) (deep_model_K k) = Some v
         /\ get_DeepModelTy (view_IterMut_K_V o) (deep_model_K k) = None)
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V o) k = Some v
         -> get_DeepModelTy (view_IterMut_K_V self) k = Some v
         /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
-          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+          /\ contains_tup2_ref_K_refmut_V visited { f0 = k2; f1 = v2 }))
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V self) k = Some v
-        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k1; f1 = v })
+        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V visited { f0 = k1; f1 = v })
         \/ get_DeepModelTy (view_IterMut_K_V o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
@@ -30130,15 +30134,15 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   constant a : t_IterMut_K_V
   
-  constant ab : Seq.seq tup2_ref_K_ref_V
+  constant ab : Seq.seq tup2_ref_K_refmut_V
   
   constant b : t_IterMut_K_V
   
-  constant bc : Seq.seq tup2_ref_K_ref_V
+  constant bc : Seq.seq tup2_ref_K_refmut_V
   
   constant c : t_IterMut_K_V
   
-  function produces_trans_IterMut_K_V (a: t_IterMut_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_IterMut_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_IterMut_K_V) : ()
+  function produces_trans_IterMut_K_V (a: t_IterMut_K_V) (ab: Seq.seq tup2_ref_K_refmut_V) (b: t_IterMut_K_V) (bc: Seq.seq tup2_ref_K_refmut_V) (c: t_IterMut_K_V) : ()
   
   goal vc_produces_trans_IterMut_K_V: produces_IterMut_K_V a ab b
     -> produces_IterMut_K_V b bc c
@@ -39516,18 +39520,18 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self_ = args in inv_ref_I self_)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self_ = args in inv_refmut_I self_)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -39583,13 +39587,13 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   
   type t_B
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate inv_tup2_Item_Snapshot_Seq_Item [@inline:trivial] (_1: tup2_Item_Snapshot_Seq_Item) = inv_Item _1.f0
   
@@ -39627,7 +39631,7 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut 'arg' type invariant] inv_tup2_Item_Snapshot_Seq_Item arg}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any
@@ -39728,18 +39732,18 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   axiom inv_axiom'0 [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
       = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
+  predicate invariant_refmut_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
     inv_MapInv_I_F self.current /\ inv_MapInv_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_MapInv_I_F
+  meta "rewrite_def" predicate invariant_refmut_MapInv_I_F
   
-  predicate inv_ref_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = invariant_ref_MapInv_I_F _1
+  predicate inv_refmut_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = invariant_refmut_MapInv_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_MapInv_I_F
+  meta "rewrite_def" predicate inv_refmut_MapInv_I_F
   
-  predicate resolve_ref_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = _1.final = _1.current
+  predicate resolve_refmut_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_MapInv_I_F
+  meta "rewrite_def" predicate resolve_refmut_MapInv_I_F
   
   type t_Option_B = None'0 | Some'0 t_B
   
@@ -39761,7 +39765,7 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   meta "select_lsinst" "all"
   
   let rec next_MapInv_I_F (self: MutBorrow.t t_MapInv_I_F) (return (x: t_Option_B)) =
-    {[@expl:next 'self' type invariant] inv_ref_MapInv_I_F self}
+    {[@expl:next 'self' type invariant] inv_refmut_MapInv_I_F self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self.current ] s1
@@ -39786,14 +39790,14 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
       | s6 = [ &self <- { self with current = { self.current with produced = produced'0 } } ] s7
       | s7 = [ &_26 <- () ] s8
       | s8 = {[@expl:assertion] produces_one_I old_self r self.current} s9
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_ref_MapInv_I_F self} any) ]
-      | s10 = -{resolve_ref_MapInv_I_F self}- s11
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_MapInv_I_F self} any) ]
+      | s10 = -{resolve_refmut_MapInv_I_F self}- s11
       | s11 = [ &_ret <- Some'0 r ] s12
       | s12 = return {_ret} ]
     | bb14 = s0
       [ s0 = [ &self <- { self with current = { self.current with produced = Seq.empty: Seq.seq t_Item } } ] s1
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_MapInv_I_F self} any) ]
-      | s2 = -{resolve_ref_MapInv_I_F self}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_MapInv_I_F self} any) ]
+      | s2 = -{resolve_refmut_MapInv_I_F self}- s3
       | s3 = [ &_ret <- None'0 ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
@@ -41368,7 +41372,7 @@ module M_std__iter__trait_IteratorSpec__map_inv
       {[@expl:map_inv ensures] result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
       (! return {result}) ]
 end
-module M_std__iter__impl_IteratorSpec_for_ref_I__produces_refl (* <&mut I as std::iter::IteratorSpec> *)
+module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_refl (* <&mut I as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -41391,7 +41395,7 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_refl (* <&mut I as std
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces_ref_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
+  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
     produces_I self.current visited o.current /\ self.final = o.final
   
   meta "compute_max_steps" 1000000
@@ -41400,11 +41404,11 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_refl (* <&mut I as std
   
   constant self : MutBorrow.t t_I
   
-  function produces_refl_ref_I (self: MutBorrow.t t_I) : ()
+  function produces_refl_refmut_I (self: MutBorrow.t t_I) : ()
   
-  goal vc_produces_refl_ref_I: [@expl:produces_refl ensures] produces_ref_I self (Seq.empty: Seq.seq t_Item) self
+  goal vc_produces_refl_refmut_I: [@expl:produces_refl ensures] produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
 end
-module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans (* <&mut I as std::iter::IteratorSpec> *)
+module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_trans (* <&mut I as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -41427,7 +41431,7 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans (* <&mut I as st
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces_ref_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
+  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
     produces_I self.current visited o.current /\ self.final = o.final
   
   meta "compute_max_steps" 1000000
@@ -41444,10 +41448,10 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans (* <&mut I as st
   
   constant c : MutBorrow.t t_I
   
-  function produces_trans_ref_I (a: MutBorrow.t t_I) (ab: Seq.seq t_Item) (b: MutBorrow.t t_I) (bc: Seq.seq t_Item) (c: MutBorrow.t t_I) : ()
+  function produces_trans_refmut_I (a: MutBorrow.t t_I) (ab: Seq.seq t_Item) (b: MutBorrow.t t_I) (bc: Seq.seq t_Item) (c: MutBorrow.t t_I) : ()
   
-  goal vc_produces_trans_ref_I: produces_ref_I a ab b
-    -> produces_ref_I b bc c -> ([@expl:produces_trans ensures] produces_ref_I a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_refmut_I: produces_refmut_I a ab b
+    -> produces_refmut_I b bc c -> ([@expl:produces_trans ensures] produces_refmut_I a (Seq.(++) ab bc) c)
 end
 module M_std__mem__extern_spec_std_mem_replace_body
   type namespace_other
@@ -41461,29 +41465,29 @@ module M_std__mem__extern_spec_std_mem_replace_body
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
   let rec swap_T (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_ref_T x}
-    {[@expl:swap 'y' type invariant] inv_ref_T y}
+    {[@expl:swap 'x' type invariant] inv_refmut_T x}
+    {[@expl:swap 'y' type invariant] inv_refmut_T y}
     any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec extern_spec_std_mem_replace_body_T (dest: MutBorrow.t t_T) (src: t_T) (return (x: t_T)) =
-    {[@expl:extern_spec_std_mem_replace_body 'dest' type invariant] inv_ref_T dest}
+    {[@expl:extern_spec_std_mem_replace_body 'dest' type invariant] inv_refmut_T dest}
     {[@expl:extern_spec_std_mem_replace_body 'src' type invariant] inv_T src}
     (! bb0
     [ bb0 = s0
@@ -41500,10 +41504,10 @@ module M_std__mem__extern_spec_std_mem_replace_body
             [ &_11 <- _bor ] -{inv_T _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s4) [ _ck -> (! {inv_T _12.current} any) ]
       | s4 = swap_T {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_T _12} any) ]
-      | s6 = -{resolve_ref_T _12}- s7
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_ref_T dest} any) ]
-      | s8 = -{resolve_ref_T dest}- s9
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _12} any) ]
+      | s6 = -{resolve_refmut_T _12}- s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_T dest} any) ]
+      | s8 = -{resolve_refmut_T dest}- s9
       | s9 = [ &_ret <- src'0 ] s10
       | s10 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
@@ -41545,22 +41549,22 @@ module M_std__mem__extern_spec_std_mem_take_body
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
     any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
   let rec replace_T (dest: MutBorrow.t t_T) (src: t_T) (return (x: t_T)) =
-    {[@expl:replace 'dest' type invariant] inv_ref_T dest}
+    {[@expl:replace 'dest' type invariant] inv_refmut_T dest}
     {[@expl:replace 'src' type invariant] inv_T src}
     any [ return (result: t_T) -> {inv_T result} {dest.final = src} {result = dest.current} (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate resolve_default [@inline:trivial] (_1: ()) = true
   
@@ -41622,7 +41626,7 @@ module M_std__mem__extern_spec_std_mem_take_body
   meta "select_lsinst" "all"
   
   let rec extern_spec_std_mem_take_body_T (dest: MutBorrow.t t_T) (return (x: t_T)) =
-    {[@expl:extern_spec_std_mem_take_body 'dest' type invariant] inv_ref_T dest}
+    {[@expl:extern_spec_std_mem_take_body 'dest' type invariant] inv_refmut_T dest}
     (! bb0
     [ bb0 = s0
       [ s0 = default_T (fun (_x: t_T) -> [ &_7 <- _x ] s1)
@@ -41631,8 +41635,8 @@ module M_std__mem__extern_spec_std_mem_take_body
             [ &_6 <- _bor ] -{inv_T _bor.final}-
             [ &dest <- { dest with current = _bor.final } ] s2) [ _ck -> (! {inv_T dest.current} any) ]
       | s2 = replace_T {_6} {_7} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_T dest} any) ]
-      | s4 = -{resolve_ref_T dest}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T dest} any) ]
+      | s4 = -{resolve_refmut_T dest}- s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & dest: MutBorrow.t t_T = dest
@@ -43097,19 +43101,19 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_body
   
   predicate inv_T (_1: t_T)
   
-  type t_Option_ref_T = None'0 | Some'0 (MutBorrow.t t_T)
+  type t_Option_refmut_T = None'0 | Some'0 (MutBorrow.t t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_Option_T (_1: t_Option_T)
   
@@ -43119,33 +43123,34 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_body
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
       = match x with
         | None'0 -> true
-        | Some'0 f0 -> inv_ref_T f0
+        | Some'0 f0 -> inv_refmut_T f0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec extern_spec_std_option_T_Option_T_as_mut_body_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_ref_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_as_mut_body 'self_' type invariant] inv_ref_Option_T self_}
+  let rec extern_spec_std_option_T_Option_T_as_mut_body_T (self_: MutBorrow.t t_Option_T)
+    (return (x: t_Option_refmut_T)) =
+    {[@expl:extern_spec_std_option_T_Option_T_as_mut_body 'self_' type invariant] inv_refmut_Option_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_.current = None} (! bb3) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb4) ]
     | bb4 = s0
@@ -43160,24 +43165,24 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_body
             [ &_10 <- _bor ] -{inv_T _bor.final}-
             [ &t <- { t with current = _bor.final } ] s2) [ _ck -> (! {inv_T t.current} any) ]
       | s2 = [ &_ret <- Some'0 _10 ] s3
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s4 = -{resolve_ref_T t}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s4 = -{resolve_refmut_T t}- s5
       | s5 = bb5 ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = [ &_ret <- None'0 ] s3
       | s3 = bb5 ]
     | bb5 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = return {_ret} ] ]
-    [ & _ret: t_Option_ref_T = Any.any_l ()
+    [ & _ret: t_Option_refmut_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _10: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: t_Option_ref_T) ->
-    {[@expl:extern_spec_std_option_T_Option_T_as_mut_body result type invariant] inv_Option_ref_T result}
+    [ return (result: t_Option_refmut_T) ->
+    {[@expl:extern_spec_std_option_T_Option_T_as_mut_body result type invariant] inv_Option_refmut_T result}
       {[@expl:extern_spec_std_option_T_Option_T_as_mut_body ensures #0] self_.current = None
       -> result = None'0 /\ self_.final = None}
       {[@expl:extern_spec_std_option_T_Option_T_as_mut_body ensures #1] self_.current = None
@@ -43337,13 +43342,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
   predicate invariant_Box_T_Global (self: t_T) = inv_T self
   
@@ -43366,32 +43371,32 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
   
   meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   let rec from_mut_T (s: MutBorrow.t t_T) (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:from_mut 's' type invariant] inv_ref_T s}
+    {[@expl:from_mut 's' type invariant] inv_refmut_T s}
     any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_ref_slice_T result}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_refmut_slice_T result}
       {Seq.length (Slice64.view result.current) = 1}
       {Seq.get (Slice64.view result.current) 0 = s.current}
       {Seq.length (Slice64.view result.final) = 1}
       {Seq.get (Slice64.view result.final) 0 = s.final}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_T
+  meta "rewrite_def" predicate resolve_refmut_slice_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_Option_T (_1: t_Option_T)
   
@@ -43401,18 +43406,18 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   predicate invariant_array_T_0 (self: Slice64.array t_T) =
     inv_Seq_T (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (0: UInt64.t)
@@ -43421,18 +43426,18 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
   
   meta "rewrite_def" predicate inv_array_T_0
   
-  predicate invariant_ref_array_T_0 [@inline:trivial] (self: MutBorrow.t (Slice64.array t_T)) =
+  predicate invariant_refmut_array_T_0 [@inline:trivial] (self: MutBorrow.t (Slice64.array t_T)) =
     inv_array_T_0 self.current /\ inv_array_T_0 self.final
   
-  meta "rewrite_def" predicate invariant_ref_array_T_0
+  meta "rewrite_def" predicate invariant_refmut_array_T_0
   
-  predicate inv_ref_array_T_0 [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = invariant_ref_array_T_0 _1
+  predicate inv_refmut_array_T_0 [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = invariant_refmut_array_T_0 _1
   
-  meta "rewrite_def" predicate inv_ref_array_T_0
+  meta "rewrite_def" predicate inv_refmut_array_T_0
   
-  predicate resolve_ref_array_T_0 [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = _1.final = _1.current
+  predicate resolve_refmut_array_T_0 [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_array_T_0
+  meta "rewrite_def" predicate resolve_refmut_array_T_0
   
   meta "compute_max_steps" 1000000
   
@@ -43440,7 +43445,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
   
   let rec extern_spec_std_option_T_Option_T_as_mut_slice_body_T (self_: MutBorrow.t t_Option_T)
     (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body 'self_' type invariant] inv_refmut_Option_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_.current = None} (! bb2) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb3) ]
     | bb3 = s0
@@ -43459,14 +43464,14 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_5 <- _bor ] -{inv_slice_T _bor.final}-
             [ &_11 <- { _11 with current = _bor.final } ] s4) [ _ck -> (! {inv_slice_T _11.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T _11} any) ]
-      | s5 = -{resolve_ref_slice_T _11}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s7 = -{resolve_ref_T t}- s8
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _11} any) ]
+      | s5 = -{resolve_refmut_slice_T _11}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s7 = -{resolve_refmut_T t}- s8
       | s8 = bb6 ]
     | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = any
@@ -43488,26 +43493,26 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
             [ &_7 <- _bor ] -{inv_array_T_0 _bor.final}-
             [ &_8 <- { _8 with current = _bor.final } ] s5) [ _ck -> (! {inv_array_T_0 _8.current} any) ]
       | s5 = [ &_5 <- _7 ] s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_array_T_0 _8} any) ]
-      | s7 = -{resolve_ref_array_T_0 _8}- s8
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_ref_array_T_0 _13} any) ]
-      | s9 = -{resolve_ref_array_T_0 _13}- s10
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_array_T_0 _8} any) ]
+      | s7 = -{resolve_refmut_array_T_0 _8}- s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_array_T_0 _13} any) ]
+      | s9 = -{resolve_refmut_array_T_0 _13}- s10
       | s10 = bb6 ]
     | bb6 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {_5.current} {MutBorrow.get_id _5}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_2 <- _bor ] -{inv_slice_T _bor.final}-
             [ &_5 <- { _5 with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T _5.current} any) ]
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T _5} any) ]
-      | s2 = -{resolve_ref_slice_T _5}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _5} any) ]
+      | s2 = -{resolve_refmut_slice_T _5}- s3
       | s3 = MutBorrow.borrow_final <Slice64.slice t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_ret <- _bor ] -{inv_slice_T _bor.final}-
             [ &_2 <- { _2 with current = _bor.final } ] s4) [ _ck -> (! {inv_slice_T _2.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T _2} any) ]
-      | s5 = -{resolve_ref_slice_T _2}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s7 = -{resolve_ref_Option_T self_}- s8
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _2} any) ]
+      | s5 = -{resolve_refmut_slice_T _2}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s7 = -{resolve_refmut_Option_T self_}- s8
       | s8 = return {_ret} ] ]
     [ & _ret: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -43520,7 +43525,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_as_mut_slice_body
     | & _12: MutBorrow.t t_T = Any.any_l ()
     | & _13: MutBorrow.t (Slice64.array t_T) = Any.any_l () ])
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
-    {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body result type invariant] inv_ref_slice_T result}
+    {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body result type invariant] inv_refmut_slice_T result}
       {[@expl:extern_spec_std_option_T_Option_T_as_mut_slice_body ensures] match self_.current with
         | None -> Seq.length (Slice64.view result.current) = 0
         | Some _ -> exists b: MutBorrow.t t_T. self_.current = Some (b.current)
@@ -45049,30 +45054,30 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
         end}
       any) ]
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   meta "compute_max_steps" 1000000
   
@@ -45080,7 +45085,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
   
   let rec extern_spec_std_option_T_Option_T_insert_body_T (self_: MutBorrow.t t_Option_T) (value: t_T)
     (return (x: MutBorrow.t t_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_insert_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_insert_body 'self_' type invariant] inv_refmut_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_insert_body 'value' type invariant] inv_T value}
     (! bb0
     [ bb0 = s0
@@ -45100,26 +45105,26 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_11 <- _bor ] -{inv_T _bor.final}-
             [ &v <- { v with current = _bor.final } ] s2) [ _ck -> (! {inv_T v.current} any) ]
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_T v} any) ]
-      | s3 = -{resolve_ref_T v}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T v} any) ]
+      | s3 = -{resolve_refmut_T v}- s4
       | s4 = MutBorrow.borrow_final <t_T> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
             [ &_11 <- { _11 with current = _bor.final } ] s5) [ _ck -> (! {inv_T _11.current} any) ]
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_T _11} any) ]
-      | s6 = -{resolve_ref_T _11}- s7
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _11} any) ]
+      | s6 = -{resolve_refmut_T _11}- s7
       | s7 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
             [ &_3 <- { _3 with current = _bor.final } ] s8) [ _ck -> (! {inv_T _3.current} any) ]
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_ref_T _3} any) ]
-      | s9 = -{resolve_ref_T _3}- s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s11 = -{resolve_ref_Option_T self_}- s12
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+      | s9 = -{resolve_refmut_T _3}- s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s11 = -{resolve_refmut_Option_T self_}- s12
       | s12 = return {_ret} ]
     | bb6 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = {false} any ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -45129,7 +45134,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_insert_body
     | & _11: MutBorrow.t t_T = Any.any_l ()
     | & v: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: MutBorrow.t t_T) ->
-    {[@expl:extern_spec_std_option_T_Option_T_insert_body result type invariant] inv_ref_T result}
+    {[@expl:extern_spec_std_option_T_Option_T_insert_body result type invariant] inv_refmut_T result}
       {[@expl:extern_spec_std_option_T_Option_T_insert_body ensures #0] match self_.current with
         | Some t -> resolve_T t
         | None -> true
@@ -45178,30 +45183,30 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
         end}
       any) ]
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   meta "compute_max_steps" 1000000
   
@@ -45209,7 +45214,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
   
   let rec extern_spec_std_option_T_Option_T_get_or_insert_body_T (self_: MutBorrow.t t_Option_T) (value: t_T)
     (return (x: MutBorrow.t t_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body 'self_' type invariant] inv_refmut_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body 'value' type invariant] inv_T value}
     (! bb0
     [ bb0 = any [ br0 -> {self_.current = None} (! bb4) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb3) ]
@@ -45233,26 +45238,26 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_11 <- _bor ] -{inv_T _bor.final}-
             [ &v <- { v with current = _bor.final } ] s2) [ _ck -> (! {inv_T v.current} any) ]
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_T v} any) ]
-      | s3 = -{resolve_ref_T v}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T v} any) ]
+      | s3 = -{resolve_refmut_T v}- s4
       | s4 = MutBorrow.borrow_final <t_T> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
             [ &_11 <- { _11 with current = _bor.final } ] s5) [ _ck -> (! {inv_T _11.current} any) ]
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ref_T _11} any) ]
-      | s6 = -{resolve_ref_T _11}- s7
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _11} any) ]
+      | s6 = -{resolve_refmut_T _11}- s7
       | s7 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
             [ &_3 <- { _3 with current = _bor.final } ] s8) [ _ck -> (! {inv_T _3.current} any) ]
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_ref_T _3} any) ]
-      | s9 = -{resolve_ref_T _3}- s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s11 = -{resolve_ref_Option_T self_}- s12
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+      | s9 = -{resolve_refmut_T _3}- s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s11 = -{resolve_refmut_Option_T self_}- s12
       | s12 = return {_ret} ]
     | bb11 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = {false} any ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -45262,7 +45267,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_body
     | & _11: MutBorrow.t t_T = Any.any_l ()
     | & v: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: MutBorrow.t t_T) ->
-    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body result type invariant] inv_ref_T result}
+    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body result type invariant] inv_refmut_T result}
       {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_body ensures] match self_.current with
         | None -> result.current = value /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final) /\ resolve_T value
@@ -45297,17 +45302,17 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate precondition_F (self: t_F) (args: ())
   
@@ -45335,43 +45340,43 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
         | Some x0 -> resolve_T x0
         end
   
-  type t_Option_ref_T = None'0 | Some'0 (MutBorrow.t t_T)
+  type t_Option_refmut_T = None'0 | Some'0 (MutBorrow.t t_T)
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
       = match x with
         | None'0 -> true
-        | Some'0 f0 -> inv_ref_T f0
+        | Some'0 f0 -> inv_refmut_T f0
         end
   
-  let rec as_mut_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_ref_T)) =
-    {[@expl:as_mut 'self_' type invariant] inv_ref_Option_T self_}
+  let rec as_mut_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_refmut_T)) =
+    {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_T self_}
     any
-    [ return (result: t_Option_ref_T) -> {inv_Option_ref_T result}
+    [ return (result: t_Option_refmut_T) -> {inv_Option_refmut_T result}
       {self_.current = None -> result = None'0 /\ self_.final = None}
       {self_.current = None
       \/ (exists r: MutBorrow.t t_T. result = Some'0 r
         /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
       (! return {result}) ]
   
-  let rec unwrap_ref_T (self_: t_Option_ref_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_T self_}
+  let rec unwrap_refmut_T (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_T self_}
     {[@expl:unwrap requires] self_ <> None'0}
-    any [ return (result: MutBorrow.t t_T) -> {inv_ref_T result} {Some'0 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t t_T) -> {inv_refmut_T result} {Some'0 result = self_} (! return {result}) ]
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   meta "compute_max_steps" 1000000
   
@@ -45379,7 +45384,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
   
   let rec extern_spec_std_option_T_Option_T_get_or_insert_with_body_T (self_: MutBorrow.t t_Option_T) (f: t_F)
     (return (x: MutBorrow.t t_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body 'self_' type invariant] inv_refmut_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body 'f' type invariant] inv_F f}
     {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body requires] self_.current = None
     -> precondition_F f ()}
@@ -45398,8 +45403,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_10 <- _bor ] -{inv_T _bor.final}-
             [ &t <- { t with current = _bor.final } ] s4) [ _ck -> (! {inv_T t.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s5 = -{resolve_ref_T t}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s5 = -{resolve_refmut_T t}- s6
       | s6 = bb12 ]
     | bb4 = s0
       [ s0 = call_once_F {f} {_16} (fun (_x: t_T) -> [ &_14 <- _x ] s1)
@@ -45411,36 +45416,36 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
           (fun (_bor: MutBorrow.t t_Option_T) ->
             [ &_19 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s6) [ _ck -> (! {inv_Option_T self_.current} any) ]
-      | s6 = as_mut_T {_19} (fun (_x: t_Option_ref_T) -> [ &_18 <- _x ] s7)
-      | s7 = unwrap_ref_T {_18} (fun (_x: MutBorrow.t t_T) -> [ &_17 <- _x ] s8)
+      | s6 = as_mut_T {_19} (fun (_x: t_Option_refmut_T) -> [ &_18 <- _x ] s7)
+      | s7 = unwrap_refmut_T {_18} (fun (_x: MutBorrow.t t_T) -> [ &_17 <- _x ] s8)
       | s8 = MutBorrow.borrow_final <t_T> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_12 <- _bor ] -{inv_T _bor.final}-
             [ &_17 <- { _17 with current = _bor.final } ] s9) [ _ck -> (! {inv_T _17.current} any) ]
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_ref_T _17} any) ]
-      | s10 = -{resolve_ref_T _17}- s11
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _17} any) ]
+      | s10 = -{resolve_refmut_T _17}- s11
       | s11 = MutBorrow.borrow_final <t_T> {_12.current} {MutBorrow.get_id _12}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_10 <- _bor ] -{inv_T _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s12) [ _ck -> (! {inv_T _12.current} any) ]
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_ref_T _12} any) ]
-      | s13 = -{resolve_ref_T _12}- s14
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _12} any) ]
+      | s13 = -{resolve_refmut_T _12}- s14
       | s14 = bb12 ]
     | bb12 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
             [ &_10 <- { _10 with current = _bor.final } ] s1) [ _ck -> (! {inv_T _10.current} any) ]
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T _10} any) ]
-      | s2 = -{resolve_ref_T _10}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _10} any) ]
+      | s2 = -{resolve_refmut_T _10}- s3
       | s3 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
             [ &_3 <- { _3 with current = _bor.final } ] s4) [ _ck -> (! {inv_T _3.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T _3} any) ]
-      | s5 = -{resolve_ref_T _3}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s7 = -{resolve_ref_Option_T self_}- s8
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+      | s5 = -{resolve_refmut_T _3}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s7 = -{resolve_refmut_Option_T self_}- s8
       | s8 = return {_ret} ] ]
     [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -45452,11 +45457,11 @@ module M_std__option__extern_spec_std_option_T_Option_T_get_or_insert_with_body
     | & _14: t_T = Any.any_l ()
     | & _16: () = Any.any_l ()
     | & _17: MutBorrow.t t_T = Any.any_l ()
-    | & _18: t_Option_ref_T = Any.any_l ()
+    | & _18: t_Option_refmut_T = Any.any_l ()
     | & _19: MutBorrow.t t_Option_T = Any.any_l ()
     | & t: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: MutBorrow.t t_T) ->
-    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body result type invariant] inv_ref_T result}
+    {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body result type invariant] inv_refmut_T result}
       {[@expl:extern_spec_std_option_T_Option_T_get_or_insert_with_body ensures] match self_.current with
         | None -> postcondition_once_F f () result.current /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final)
@@ -45485,17 +45490,17 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_body
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
   let rec replace_Option_T (dest: MutBorrow.t t_Option_T) (src: t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:replace 'dest' type invariant] inv_ref_Option_T dest}
+    {[@expl:replace 'dest' type invariant] inv_refmut_Option_T dest}
     {[@expl:replace 'src' type invariant] inv_Option_T src}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
@@ -45503,16 +45508,16 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_body
       {result = dest.current}
       (! return {result}) ]
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec extern_spec_std_option_T_Option_T_take_body_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_take_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_take_body 'self_' type invariant] inv_refmut_Option_T self_}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- None ] s1
@@ -45521,8 +45526,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_body
             [ &_4 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s2) [ _ck -> (! {inv_Option_T self_.current} any) ]
       | s2 = replace_Option_T {_4} {_5} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s4 = -{resolve_ref_Option_T self_}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s4 = -{resolve_refmut_Option_T self_}- s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -45559,17 +45564,17 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
   
   predicate inv_P (_1: t_P)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate inv_tup1_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = inv_ref_T _1
+  predicate inv_tup1_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = inv_refmut_T _1
   
-  meta "rewrite_def" predicate inv_tup1_ref_T
+  meta "rewrite_def" predicate inv_tup1_refmut_T
   
   predicate precondition_P (self: t_P) (args: MutBorrow.t t_T)
   
@@ -45577,13 +45582,13 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
   
   let rec call_once_P (self_: t_P) (arg: MutBorrow.t t_T) (return (x: bool)) =
     {[@expl:call_once 'self_' type invariant] inv_P self_}
-    {[@expl:call_once 'arg' type invariant] inv_tup1_ref_T arg}
+    {[@expl:call_once 'arg' type invariant] inv_tup1_refmut_T arg}
     {[@expl:call_once requires] precondition_P self_ arg}
     any [ return (result: bool) -> {postcondition_once_P self_ arg result} (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_Option_T (_1: t_Option_T)
   
@@ -45593,25 +45598,25 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
   let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:take 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
       {result = self_.current /\ self_.final = None}
       (! return {result}) ]
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   predicate resolve_P (_1: t_P)
   
@@ -45621,11 +45626,11 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
   
   let rec extern_spec_std_option_T_Option_T_take_if_body_T (self_: MutBorrow.t t_Option_T) (predicate': t_P)
     (return (x: t_Option_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_take_if_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_take_if_body 'self_' type invariant] inv_refmut_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_take_if_body 'predicate' type invariant] inv_P predicate'}
     {[@expl:extern_spec_std_option_T_Option_T_take_if_body requires] match self_.current with
       | None -> true
-      | Some t -> forall b: MutBorrow.t t_T. inv_ref_T b /\ b.current = t -> precondition_P predicate' b
+      | Some t -> forall b: MutBorrow.t t_T. inv_refmut_T b /\ b.current = t -> precondition_P predicate' b
       end}
     (! bb0
     [ bb0 = any [ br0 -> {self_.current = None} (! bb2) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb3) ]
@@ -45642,8 +45647,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
             [ &t <- { t with current = _bor.final } ] s2) [ _ck -> (! {inv_T t.current} any) ]
       | s2 = [ &_13 <- _14 ] s3
       | s3 = call_once_P {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s5 = -{resolve_ref_T t}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s5 = -{resolve_refmut_T t}- s6
       | s6 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
       [ s0 = MutBorrow.borrow_final <t_Option_T> {self_.current} {MutBorrow.get_id self_}
@@ -45651,19 +45656,19 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
             [ &_15 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s1) [ _ck -> (! {inv_Option_T self_.current} any) ]
       | s1 = take_T {_15} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s3 = -{resolve_ref_Option_T self_}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s3 = -{resolve_refmut_Option_T self_}- s4
       | s4 = return {_ret} ]
     | bb8 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s1 = -{resolve_ref_Option_T self_}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
       | s2 = [ &_ret <- None ] s3
       | s3 = return {_ret} ]
     | bb2 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_P predicate'} any) ]
       | s1 = -{resolve_P predicate'}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s3 = -{resolve_ref_Option_T self_}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s3 = -{resolve_refmut_Option_T self_}- s4
       | s4 = [ &_ret <- None ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
@@ -45678,7 +45683,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_take_if_body
     {[@expl:extern_spec_std_option_T_Option_T_take_if_body result type invariant] inv_Option_T result}
       {[@expl:extern_spec_std_option_T_Option_T_take_if_body ensures] match self_.current with
         | None -> result = None /\ self_.final = None
-        | Some cur -> exists b: MutBorrow.t t_T, res: bool. inv_ref_T b
+        | Some cur -> exists b: MutBorrow.t t_T, res: bool. inv_refmut_T b
           /\ cur = b.current
           /\ postcondition_once_P predicate' b res
           /\ (if res then
@@ -45711,17 +45716,17 @@ module M_std__option__extern_spec_std_option_T_Option_T_replace_body
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
     inv_Option_T self.current /\ inv_Option_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_T
+  meta "rewrite_def" predicate invariant_refmut_Option_T
   
-  predicate inv_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_ref_Option_T _1
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
   
-  meta "rewrite_def" predicate inv_ref_Option_T
+  meta "rewrite_def" predicate inv_refmut_Option_T
   
   let rec replace_Option_T (dest: MutBorrow.t t_Option_T) (src: t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:replace 'dest' type invariant] inv_ref_Option_T dest}
+    {[@expl:replace 'dest' type invariant] inv_refmut_Option_T dest}
     {[@expl:replace 'src' type invariant] inv_Option_T src}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
@@ -45729,9 +45734,9 @@ module M_std__option__extern_spec_std_option_T_Option_T_replace_body
       {result = dest.current}
       (! return {result}) ]
   
-  predicate resolve_ref_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_T
+  meta "rewrite_def" predicate resolve_refmut_Option_T
   
   meta "compute_max_steps" 1000000
   
@@ -45739,7 +45744,7 @@ module M_std__option__extern_spec_std_option_T_Option_T_replace_body
   
   let rec extern_spec_std_option_T_Option_T_replace_body_T (self_: MutBorrow.t t_Option_T) (value: t_T)
     (return (x: t_Option_T)) =
-    {[@expl:extern_spec_std_option_T_Option_T_replace_body 'self_' type invariant] inv_ref_Option_T self_}
+    {[@expl:extern_spec_std_option_T_Option_T_replace_body 'self_' type invariant] inv_refmut_Option_T self_}
     {[@expl:extern_spec_std_option_T_Option_T_replace_body 'value' type invariant] inv_T value}
     (! bb0
     [ bb0 = s0
@@ -45749,8 +45754,8 @@ module M_std__option__extern_spec_std_option_T_Option_T_replace_body
             [ &_6 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s2) [ _ck -> (! {inv_Option_T self_.current} any) ]
       | s2 = replace_Option_T {_6} {_7} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_Option_T self_} any) ]
-      | s4 = -{resolve_ref_Option_T self_}- s5
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s4 = -{resolve_refmut_Option_T self_}- s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self_: MutBorrow.t t_Option_T = self_
@@ -46252,9 +46257,9 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_copied_body
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  let rec elim_Some (_x: t_Option_ref_T) (return (f0: MutBorrow.t t_T)) = any
+  let rec elim_Some (_x: t_Option_refmut_T) (return (f0: MutBorrow.t t_T)) = any
     [ _k (f0: MutBorrow.t t_T) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Some _ -> true
@@ -46264,26 +46269,26 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_copied_body
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   type t_Option_T = None'0 | Some'0 t_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_ref_T f0
+        | Some f0 -> inv_refmut_T f0
         end
   
   predicate inv_Option_T (_1: t_Option_T)
@@ -46298,18 +46303,18 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_copied_body
   
   meta "select_lsinst" "all"
   
-  let rec extern_spec_std_option_T_Option__refmut_T_copied_body_T (self_: t_Option_ref_T) (return (x: t_Option_T)) =
-    {[@expl:extern_spec_std_option_T_Option__refmut_T_copied_body 'self_' type invariant] inv_Option_ref_T self_}
+  let rec extern_spec_std_option_T_Option__refmut_T_copied_body_T (self_: t_Option_refmut_T) (return (x: t_Option_T)) =
+    {[@expl:extern_spec_std_option_T_Option__refmut_T_copied_body 'self_' type invariant] inv_Option_refmut_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: MutBorrow.t t_T) -> {self_ = Some x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Some {self_} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s2 = -{resolve_ref_T t}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
       | s3 = [ &_ret <- Some'0 (t.current) ] s4
       | s4 = return {_ret} ]
     | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_ref_T = self_ | & t: MutBorrow.t t_T = Any.any_l () ])
+    [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_refmut_T = self_ | & t: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@expl:extern_spec_std_option_T_Option__refmut_T_copied_body result type invariant] inv_Option_T result}
       {[@expl:extern_spec_std_option_T_Option__refmut_T_copied_body ensures] match self_ with
@@ -46328,9 +46333,9 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  let rec elim_Some (_x: t_Option_ref_T) (return (f0: MutBorrow.t t_T)) = any
+  let rec elim_Some (_x: t_Option_refmut_T) (return (f0: MutBorrow.t t_T)) = any
     [ _k (f0: MutBorrow.t t_T) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
         | Some _ -> true
@@ -46340,29 +46345,29 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
   meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_T
-  
-  predicate invariant_ref_T'0 [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T'0
-  
-  predicate inv_ref_T'0 [@inline:trivial] (_1: t_T) = invariant_ref_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_T'0
-  
   predicate precondition_clone (self: ()) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T'0 self_)
+  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
       -> precondition_clone () args
   
   predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
@@ -46376,12 +46381,12 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
   
   type t_Option_T = None'0 | Some'0 t_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_ref_T f0
+        | Some f0 -> inv_refmut_T f0
         end
   
   predicate inv_Option_T (_1: t_Option_T)
@@ -46392,7 +46397,7 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
         | Some'0 f0 -> inv_T f0
         end
   
-  type tup2_Option_ref_T_Option_T = { f0: t_Option_ref_T; f1: t_Option_T }
+  type tup2_Option_refmut_T_Option_T = { f0: t_Option_refmut_T; f1: t_Option_T }
   
   predicate resolve_clone [@inline:trivial] (_1: ()) = true
   
@@ -46453,20 +46458,20 @@ module M_std__option__extern_spec_std_option_T_Option_refmut_T_cloned_body
   
   meta "select_lsinst" "all"
   
-  let rec extern_spec_std_option_T_Option__refmut_T_cloned_body_T (self_: t_Option_ref_T) (return (x: t_Option_T)) =
-    {[@expl:extern_spec_std_option_T_Option__refmut_T_cloned_body 'self_' type invariant] inv_Option_ref_T self_}
+  let rec extern_spec_std_option_T_Option__refmut_T_cloned_body_T (self_: t_Option_refmut_T) (return (x: t_Option_T)) =
+    {[@expl:extern_spec_std_option_T_Option__refmut_T_cloned_body 'self_' type invariant] inv_Option_refmut_T self_}
     (! bb0
     [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: MutBorrow.t t_T) -> {self_ = Some x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Some {self_} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_ref_T t} any) ]
-      | s2 = -{resolve_ref_T t}- s3
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
       | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
       | s4 = [ &_ret <- Some'0 _6 ] s5
       | s5 = return {_ret} ]
     | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
-    | & self_: t_Option_ref_T = self_
+    | & self_: t_Option_refmut_T = self_
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _6: t_T = Any.any_l () ])
     [ return (result: t_Option_T) ->
@@ -47521,9 +47526,9 @@ module M_std__option__impl_IteratorSpec_for_IterMut_T__produces_refl (* <std::op
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  function view_IterMut_T (self: t_IterMut_T) : t_Option_ref_T
+  function view_IterMut_T (self: t_IterMut_T) : t_Option_refmut_T
   
   predicate produces_IterMut_T (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
     visited = (Seq.empty: Seq.seq (MutBorrow.t t_T)) /\ self = o
@@ -47552,9 +47557,9 @@ module M_std__option__impl_IteratorSpec_for_IterMut_T__produces_trans (* <std::o
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  function view_IterMut_T (self: t_IterMut_T) : t_Option_ref_T
+  function view_IterMut_T (self: t_IterMut_T) : t_Option_refmut_T
   
   predicate produces_IterMut_T (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
     visited = (Seq.empty: Seq.seq (MutBorrow.t t_T)) /\ self = o
@@ -48562,16 +48567,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   type t_PtrOwn_slice_T
   
-  type tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -48603,13 +48608,13 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_slice_T'0
+  meta "rewrite_def" predicate invariant_ref_slice_T
   
-  predicate inv_ref_slice_T'0 [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T'0 _1
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T'0
+  meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
@@ -48618,97 +48623,98 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
     /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T'0 (val_slice_T self)
+    /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
       = invariant_PtrOwn_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+  predicate invariant_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
     inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_ref_PtrOwn_slice_T _1
+  predicate inv_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_ref_PtrOwn_slice_T self
+  predicate invariant_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+    inv_refmut_PtrOwn_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_Ghost_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) =
+    inv_Ghost_refmut_PtrOwn_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T
   
   let rec from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T)) = {[@expl:from_mut 'r' type invariant] inv_ref_slice_T r}
+    (return (x: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T)) =
+    {[@expl:from_mut 'r' type invariant] inv_refmut_slice_T r}
     any
-    [ return (result: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) ->
-    {inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T result}
+    [ return (result: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) ->
+    {inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T result}
       {ptr_slice_T result.f1.current = result.f0}
       {val_slice_T result.f1.current = r.current}
       {val_slice_T result.f1.final = r.final}
       (! return {result}) ]
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_PtrOwn_slice_T }
   
-  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_T
+  meta "rewrite_def" predicate resolve_refmut_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1'0
+  predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) =
+    inv_Ghost_refmut_PtrOwn_slice_T _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T
   
-  function fin_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
+  function fin_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec as_mut_ptr_own_slice_T (self: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T)) =
-    {[@expl:as_mut_ptr_own 'self' type invariant] inv_ref_slice_T self}
+    (return (x: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T)) =
+    {[@expl:as_mut_ptr_own 'self' type invariant] inv_refmut_slice_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_12 <- _bor ] -{inv_slice_T _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T self.current} any) ]
-      | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) -> [ &_11 <- _x ] s2)
+      | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) -> [ &_11 <- _x ] s2)
       | s2 = [ &ptr <- _11.f0 ] s3
       | s3 = [ &own <- _11.f1 ] s4
       | s4 = [ &_13 <- Opaque.thin ptr ] s5
       | s5 = [ &_ret <- { f0'0 = _13; f1'0 = own } ] s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_slice_T self} any) ]
-      | s7 = -{resolve_ref_slice_T self}- s8
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self} any) ]
+      | s7 = -{resolve_refmut_slice_T self}- s8
       | s8 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    [ & _ret: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = Any.any_l ()
     | & self: MutBorrow.t (Slice64.slice t_T) = self
     | & ptr: Opaque.ptr = Any.any_l ()
     | & own: MutBorrow.t t_PtrOwn_slice_T = Any.any_l ()
-    | & _11: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    | & _11: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T = Any.any_l ()
     | & _12: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _13: Opaque.ptr = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
-    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
+    [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) ->
+    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
       {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr_slice_T result.f1'0.current)}
       {[@expl:as_mut_ptr_own ensures #1] self.current = val_slice_T result.f1'0.current}
-      {[@expl:as_mut_ptr_own ensures #2] self.final = val_slice_T (fin_Ghost_ref_PtrOwn_slice_T result.f1'0)}
+      {[@expl:as_mut_ptr_own ensures #2] self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1'0)}
       (! return {result}) ]
 end
 module M_std__slice__impl_IteratorSpec_for_Iter_T__produces_refl (* <std::slice::Iter<'a, T> as std::iter::IteratorSpec> *)
@@ -49389,7 +49395,7 @@ module M_resolve__impl_Resolve_for_ref_T__resolve_coherence__refines (* <&'a T a
   goal refines: forall self: t_T. inv_ref_T self /\ structural_resolve_ref_T self
       -> (forall result: (). resolve_ref_T self -> resolve_ref_T self)
 end
-module M_resolve__impl_Resolve_for_ref_T_0__resolve_coherence__refines (* <&'a mut T as resolve::Resolve> *)
+module M_resolve__impl_Resolve_for_refmut_T__resolve_coherence__refines (* <&'a mut T as resolve::Resolve> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -49400,24 +49406,24 @@ module M_resolve__impl_Resolve_for_ref_T_0__resolve_coherence__refines (* <&'a m
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate structural_resolve_ref_T (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate structural_resolve_refmut_T (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  predicate resolve_ref_T (self: MutBorrow.t t_T) = true
+  predicate resolve_refmut_T (self: MutBorrow.t t_T) = true
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_T. inv_ref_T self /\ structural_resolve_ref_T self
-      -> (forall result: (). resolve_ref_T self -> resolve_ref_T self)
+  goal refines: forall self: MutBorrow.t t_T. inv_refmut_T self /\ structural_resolve_refmut_T self
+      -> (forall result: (). resolve_refmut_T self -> resolve_refmut_T self)
 end
 module M_std__array__impl_Resolve_for_array_T_n__resolve_coherence__refines (* <[T; N] as resolve::Resolve> *)
   type namespace_other
@@ -50596,15 +50602,15 @@ module M_ghost__fn_ghost__impl_FnMut_for_FnGhostWrapper_F__call_mut__refines (* 
   
   axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
   
-  predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: MutBorrow.t t_FnGhostWrapper_F) =
+  predicate invariant_refmut_FnGhostWrapper_F [@inline:trivial] (self: MutBorrow.t t_FnGhostWrapper_F) =
     inv_FnGhostWrapper_F self.current /\ inv_FnGhostWrapper_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
+  meta "rewrite_def" predicate invariant_refmut_FnGhostWrapper_F
   
-  predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: MutBorrow.t t_FnGhostWrapper_F) =
-    invariant_ref_FnGhostWrapper_F _1
+  predicate inv_refmut_FnGhostWrapper_F [@inline:trivial] (_1: MutBorrow.t t_FnGhostWrapper_F) =
+    invariant_refmut_FnGhostWrapper_F _1
   
-  meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
+  meta "rewrite_def" predicate inv_refmut_FnGhostWrapper_F
   
   type t_I
   
@@ -50632,9 +50638,9 @@ module M_ghost__fn_ghost__impl_FnMut_for_FnGhostWrapper_F__call_mut__refines (* 
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_FnGhostWrapper_F. forall arg: t_I. inv_ref_FnGhostWrapper_F self_
+  goal refines: forall self_: MutBorrow.t t_FnGhostWrapper_F. forall arg: t_I. inv_refmut_FnGhostWrapper_F self_
           /\ inv_I arg /\ precondition_FnGhostWrapper_F self_.current arg
-        -> inv_ref_FnGhostWrapper_F self_
+        -> inv_refmut_FnGhostWrapper_F self_
         /\ inv_I arg
         /\ precondition_FnGhostWrapper_F self_.current arg
         /\ (forall result: t_Output. inv_Output result
@@ -50891,14 +50897,15 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next__refines (* <logic::f
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_FMapIter_K_V [inv_FMapIter_K_V x]. inv_FMapIter_K_V x = inv_FMap_K_V x.inner
   
-  predicate invariant_ref_FMapIter_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIter_K_V) =
+  predicate invariant_refmut_FMapIter_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIter_K_V) =
     inv_FMapIter_K_V self.current /\ inv_FMapIter_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMapIter_K_V
+  meta "rewrite_def" predicate invariant_refmut_FMapIter_K_V
   
-  predicate inv_ref_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = invariant_ref_FMapIter_K_V _1
+  predicate inv_refmut_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) =
+    invariant_refmut_FMapIter_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_FMapIter_K_V
+  meta "rewrite_def" predicate inv_refmut_FMapIter_K_V
   
   type tup2_K_V = { f0: t_K; f1: t_V }
   
@@ -50975,8 +50982,8 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next__refines (* <logic::f
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_FMapIter_K_V. inv_ref_FMapIter_K_V self_
-      -> inv_ref_FMapIter_K_V self_
+  goal refines: forall self_: MutBorrow.t t_FMapIter_K_V. inv_refmut_FMapIter_K_V self_
+      -> inv_refmut_FMapIter_K_V self_
       /\ (forall result: t_Option_tup2_K_V. inv_Option_tup2_K_V result
           /\ match result with
             | None'0 -> completed_FMapIter_K_V self_
@@ -51080,15 +51087,15 @@ module M_logic__fmap__impl_Iterator_for_FMapIterRef_K_V__next__refines (* <logic
   axiom inv_axiom'0 [@rewrite]: forall x: t_FMapIterRef_K_V [inv_FMapIterRef_K_V x]. inv_FMapIterRef_K_V x
       = inv_FMap_ref_K_ref_V x.inner
   
-  predicate invariant_ref_FMapIterRef_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIterRef_K_V) =
+  predicate invariant_refmut_FMapIterRef_K_V [@inline:trivial] (self: MutBorrow.t t_FMapIterRef_K_V) =
     inv_FMapIterRef_K_V self.current /\ inv_FMapIterRef_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMapIterRef_K_V
+  meta "rewrite_def" predicate invariant_refmut_FMapIterRef_K_V
   
-  predicate inv_ref_FMapIterRef_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIterRef_K_V) =
-    invariant_ref_FMapIterRef_K_V _1
+  predicate inv_refmut_FMapIterRef_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIterRef_K_V) =
+    invariant_refmut_FMapIterRef_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_FMapIterRef_K_V
+  meta "rewrite_def" predicate inv_refmut_FMapIterRef_K_V
   
   type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
   
@@ -51174,8 +51181,8 @@ module M_logic__fmap__impl_Iterator_for_FMapIterRef_K_V__next__refines (* <logic
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_FMapIterRef_K_V. inv_ref_FMapIterRef_K_V self_
-      -> inv_ref_FMapIterRef_K_V self_
+  goal refines: forall self_: MutBorrow.t t_FMapIterRef_K_V. inv_refmut_FMapIterRef_K_V self_
+      -> inv_refmut_FMapIterRef_K_V self_
       /\ (forall result: t_Option_tup2_ref_K_ref_V. inv_Option_tup2_ref_K_ref_V result
           /\ match result with
             | None'0 -> completed_FMapIterRef_K_V self_
@@ -51221,14 +51228,14 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   
   axiom inv_axiom [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
   
-  predicate invariant_ref_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
+  predicate invariant_refmut_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
     inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_SeqIter_T
+  meta "rewrite_def" predicate invariant_refmut_SeqIter_T
   
-  predicate inv_ref_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_ref_SeqIter_T _1
+  predicate inv_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_refmut_SeqIter_T _1
   
-  meta "rewrite_def" predicate inv_ref_SeqIter_T
+  meta "rewrite_def" predicate inv_refmut_SeqIter_T
   
   type t_Option_T = None | Some t_T
   
@@ -51262,8 +51269,8 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_SeqIter_T. inv_ref_SeqIter_T self_
-      -> inv_ref_SeqIter_T self_
+  goal refines: forall self_: MutBorrow.t t_SeqIter_T. inv_refmut_SeqIter_T self_
+      -> inv_refmut_SeqIter_T self_
       /\ (forall result: t_Option_T. inv_Option_T result
           /\ match result with
             | None -> completed_SeqIter_T self_
@@ -51320,14 +51327,15 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next__refines (* <logic::se
   axiom inv_axiom [@rewrite]: forall x: t_SeqIterRef_T [inv_SeqIterRef_T x]. inv_SeqIterRef_T x
       = (invariant_SeqIterRef_T x /\ inv_ref_Seq_T x.inner)
   
-  predicate invariant_ref_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
+  predicate invariant_refmut_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
     inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_SeqIterRef_T
+  meta "rewrite_def" predicate invariant_refmut_SeqIterRef_T
   
-  predicate inv_ref_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = invariant_ref_SeqIterRef_T _1
+  predicate inv_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) =
+    invariant_refmut_SeqIterRef_T _1
   
-  meta "rewrite_def" predicate inv_ref_SeqIterRef_T
+  meta "rewrite_def" predicate inv_refmut_SeqIterRef_T
   
   type t_Option_ref_T = None | Some t_T
   
@@ -51372,8 +51380,8 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next__refines (* <logic::se
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_SeqIterRef_T. inv_ref_SeqIterRef_T self_
-      -> inv_ref_SeqIterRef_T self_
+  goal refines: forall self_: MutBorrow.t t_SeqIterRef_T. inv_refmut_SeqIterRef_T self_
+      -> inv_refmut_SeqIterRef_T self_
       /\ (forall result: t_Option_ref_T. inv_Option_ref_T result
           /\ match result with
             | None -> completed_SeqIterRef_T self_
@@ -51487,14 +51495,14 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
   axiom inv_axiom [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
       = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
+  predicate invariant_refmut_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
     inv_MapInv_I_F self.current /\ inv_MapInv_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_MapInv_I_F
+  meta "rewrite_def" predicate invariant_refmut_MapInv_I_F
   
-  predicate inv_ref_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = invariant_ref_MapInv_I_F _1
+  predicate inv_refmut_MapInv_I_F [@inline:trivial] (_1: MutBorrow.t t_MapInv_I_F) = invariant_refmut_MapInv_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_MapInv_I_F
+  meta "rewrite_def" predicate inv_refmut_MapInv_I_F
   
   type t_Option_B = None | Some t_B
   
@@ -51560,8 +51568,8 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_MapInv_I_F. inv_ref_MapInv_I_F self_
-      -> inv_ref_MapInv_I_F self_
+  goal refines: forall self_: MutBorrow.t t_MapInv_I_F. inv_refmut_MapInv_I_F self_
+      -> inv_refmut_MapInv_I_F self_
       /\ (forall result: t_Option_B. inv_Option_B result
           /\ match result with
             | None -> completed_MapInv_I_F self_
@@ -52328,27 +52336,27 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_V
   
-  type tup2_ref_K_ref_V = { f0: t_K; f1: MutBorrow.t t_V }
+  type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
   
-  type t_FMap_DeepModelTy_ref_V
+  type t_FMap_DeepModelTy_refmut_V
   
-  function len_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : int
   
-  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_ref_V. len_DeepModelTy self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_refmut_V. len_DeepModelTy self >= 0
   
-  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_ref_V
+  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_refmut_V
   
-  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+  predicate contains_tup2_ref_K_refmut_V (self: Seq.seq tup2_ref_K_refmut_V) (x: tup2_ref_K_refmut_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   type t_DeepModelTy
   
-  type t_Option_ref_V = None | Some (MutBorrow.t t_V)
+  type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
+  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
-  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
-    Map.get (view_FMap_DeepModelTy_ref_V self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
+   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -52358,17 +52366,17 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_IterMut_K_V) =
+  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (o: t_IterMut_K_V) =
     len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
-    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_refmut_V visited { f0 = k; f1 = v }
         -> get_DeepModelTy (view_IterMut_K_V self) (deep_model_K k) = Some v
         /\ get_DeepModelTy (view_IterMut_K_V o) (deep_model_K k) = None)
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V o) k = Some v
         -> get_DeepModelTy (view_IterMut_K_V self) k = Some v
         /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
-          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+          /\ contains_tup2_ref_K_refmut_V visited { f0 = k2; f1 = v2 }))
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V self) k = Some v
-        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k1; f1 = v })
+        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V visited { f0 = k1; f1 = v })
         \/ get_DeepModelTy (view_IterMut_K_V o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
@@ -52383,7 +52391,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_IterMut_K_V. forall ab: Seq.seq tup2_ref_K_ref_V. forall b: t_IterMut_K_V. forall bc: Seq.seq tup2_ref_K_ref_V. forall c: t_IterMut_K_V. produces_IterMut_K_V a ab b
+    forall a: t_IterMut_K_V. forall ab: Seq.seq tup2_ref_K_refmut_V. forall b: t_IterMut_K_V. forall bc: Seq.seq tup2_ref_K_refmut_V. forall c: t_IterMut_K_V. produces_IterMut_K_V a ab b
                 /\ produces_IterMut_K_V b bc c
               -> produces_IterMut_K_V a ab b
               /\ produces_IterMut_K_V b bc c
@@ -52406,27 +52414,27 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_V
   
-  type tup2_ref_K_ref_V = { f0: t_K; f1: MutBorrow.t t_V }
+  type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
   
-  type t_FMap_DeepModelTy_ref_V
+  type t_FMap_DeepModelTy_refmut_V
   
-  function len_DeepModelTy (self: t_FMap_DeepModelTy_ref_V) : int
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : int
   
-  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_ref_V. len_DeepModelTy self >= 0
+  axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_refmut_V. len_DeepModelTy self >= 0
   
-  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_ref_V
+  function view_IterMut_K_V (self: t_IterMut_K_V) : t_FMap_DeepModelTy_refmut_V
   
-  predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+  predicate contains_tup2_ref_K_refmut_V (self: Seq.seq tup2_ref_K_refmut_V) (x: tup2_ref_K_refmut_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
   type t_DeepModelTy
   
-  type t_Option_ref_V = None | Some (MutBorrow.t t_V)
+  type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_ref_V (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
+  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
-  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
-    Map.get (view_FMap_DeepModelTy_ref_V self) k
+  function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
+   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -52436,17 +52444,17 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_IterMut_K_V) =
+  predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (o: t_IterMut_K_V) =
     len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
-    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+    /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_refmut_V visited { f0 = k; f1 = v }
         -> get_DeepModelTy (view_IterMut_K_V self) (deep_model_K k) = Some v
         /\ get_DeepModelTy (view_IterMut_K_V o) (deep_model_K k) = None)
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V o) k = Some v
         -> get_DeepModelTy (view_IterMut_K_V self) k = Some v
         /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
-          /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+          /\ contains_tup2_ref_K_refmut_V visited { f0 = k2; f1 = v2 }))
     /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy (view_IterMut_K_V self) k = Some v
-        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k1; f1 = v })
+        -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V visited { f0 = k1; f1 = v })
         \/ get_DeepModelTy (view_IterMut_K_V o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
@@ -52461,8 +52469,8 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: t_IterMut_K_V. forall result: (). produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
-        -> produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
+    forall self: t_IterMut_K_V. forall result: (). produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self
+        -> produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self
 end
 module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_refl__refines (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -55080,7 +55088,7 @@ module M_std__iter__zip__impl_IteratorSpec_for_Zip_A_B__produces_trans__refines 
               /\ produces_Zip_A_B b bc c
               /\ (forall result: (). produces_Zip_A_B a (Seq.(++) ab bc) c -> produces_Zip_A_B a (Seq.(++) ab bc) c)
 end
-module M_std__iter__impl_IteratorSpec_for_ref_I__produces_refl__refines (* <&mut I as std::iter::IteratorSpec> *)
+module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_refl__refines (* <&mut I as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -55103,17 +55111,17 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_refl__refines (* <&mut
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces_ref_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
+  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
     produces_I self.current visited o.current /\ self.final = o.final
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_I. forall result: (). produces_ref_I self (Seq.empty: Seq.seq t_Item) self
-        -> produces_ref_I self (Seq.empty: Seq.seq t_Item) self
+  goal refines: forall self: MutBorrow.t t_I. forall result: (). produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
+        -> produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
 end
-module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans__refines (* <&mut I as std::iter::IteratorSpec> *)
+module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_trans__refines (* <&mut I as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -55136,7 +55144,7 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans__refines (* <&mu
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate produces_ref_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
+  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
     produces_I self.current visited o.current /\ self.final = o.final
   
   meta "compute_max_steps" 1000000
@@ -55144,11 +55152,11 @@ module M_std__iter__impl_IteratorSpec_for_ref_I__produces_trans__refines (* <&mu
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: MutBorrow.t t_I. forall ab: Seq.seq t_Item. forall b: MutBorrow.t t_I. forall bc: Seq.seq t_Item. forall c: MutBorrow.t t_I. produces_ref_I a ab b
-                /\ produces_ref_I b bc c
-              -> produces_ref_I a ab b
-              /\ produces_ref_I b bc c
-              /\ (forall result: (). produces_ref_I a (Seq.(++) ab bc) c -> produces_ref_I a (Seq.(++) ab bc) c)
+    forall a: MutBorrow.t t_I. forall ab: Seq.seq t_Item. forall b: MutBorrow.t t_I. forall bc: Seq.seq t_Item. forall c: MutBorrow.t t_I. produces_refmut_I a ab b
+                /\ produces_refmut_I b bc c
+              -> produces_refmut_I a ab b
+              /\ produces_refmut_I b bc c
+              /\ (forall result: (). produces_refmut_I a (Seq.(++) ab bc) c -> produces_refmut_I a (Seq.(++) ab bc) c)
 end
 module M_std__option__impl_IteratorSpec_for_IntoIter_T__produces_trans__refines (* <std::option::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -55275,9 +55283,9 @@ module M_std__option__impl_IteratorSpec_for_IterMut_T__produces_trans__refines (
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  function view_IterMut_T (self: t_IterMut_T) : t_Option_ref_T
+  function view_IterMut_T (self: t_IterMut_T) : t_Option_refmut_T
   
   predicate produces_IterMut_T (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
     visited = (Seq.empty: Seq.seq (MutBorrow.t t_T)) /\ self = o
@@ -55306,9 +55314,9 @@ module M_std__option__impl_IteratorSpec_for_IterMut_T__produces_refl__refines (*
   
   type t_T
   
-  type t_Option_ref_T = None | Some (MutBorrow.t t_T)
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  function view_IterMut_T (self: t_IterMut_T) : t_Option_ref_T
+  function view_IterMut_T (self: t_IterMut_T) : t_Option_refmut_T
   
   predicate produces_IterMut_T (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
     visited = (Seq.empty: Seq.seq (MutBorrow.t t_T)) /\ self = o
@@ -73801,18 +73809,18 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   type t_PtrOwn_slice_T
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -73844,13 +73852,13 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_slice_T'0
+  meta "rewrite_def" predicate invariant_ref_slice_T
   
-  predicate inv_ref_slice_T'0 [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T'0 _1
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T'0
+  meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
@@ -73859,54 +73867,54 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
     /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T'0 (val_slice_T self)
+    /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
       = invariant_PtrOwn_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+  predicate invariant_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
     inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_ref_PtrOwn_slice_T _1
+  predicate inv_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_ref_PtrOwn_slice_T self
+  predicate invariant_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+    inv_refmut_PtrOwn_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_Ghost_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) =
+    inv_Ghost_refmut_PtrOwn_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T
   
-  function fin_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
+  function fin_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_ref_slice_T self
-      -> inv_ref_slice_T self
-      /\ (forall result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result
+  goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_refmut_slice_T self
+      -> inv_refmut_slice_T self
+      /\ (forall result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result
           /\ result.f0 = Opaque.thin (ptr_slice_T result.f1.current)
           /\ self.current = val_slice_T result.f1.current
-          /\ self.final = val_slice_T (fin_Ghost_ref_PtrOwn_slice_T result.f1)
-        -> inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result)
+          /\ self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1)
+        -> inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result)
 end
 module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as std::slice::SliceExt<T>> *)
   type namespace_other

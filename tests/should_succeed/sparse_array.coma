@@ -764,18 +764,18 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   axiom inv_axiom [@rewrite]: forall x: t_Sparse_T [inv_Sparse_T x]. inv_Sparse_T x
       = (invariant_Sparse_T x /\ inv_array_T_n x.values /\ inv_array_usize_n x.idx /\ inv_array_usize_n x.back)
   
-  predicate invariant_ref_Sparse_T [@inline:trivial] (self: MutBorrow.t t_Sparse_T) =
+  predicate invariant_refmut_Sparse_T [@inline:trivial] (self: MutBorrow.t t_Sparse_T) =
     inv_Sparse_T self.current /\ inv_Sparse_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Sparse_T
+  meta "rewrite_def" predicate invariant_refmut_Sparse_T
   
-  predicate inv_ref_Sparse_T [@inline:trivial] (_1: MutBorrow.t t_Sparse_T) = invariant_ref_Sparse_T _1
+  predicate inv_refmut_Sparse_T [@inline:trivial] (_1: MutBorrow.t t_Sparse_T) = invariant_refmut_Sparse_T _1
   
-  meta "rewrite_def" predicate inv_ref_Sparse_T
+  meta "rewrite_def" predicate inv_refmut_Sparse_T
   
-  predicate resolve_ref_Sparse_T [@inline:trivial] (_1: MutBorrow.t t_Sparse_T) = _1.final = _1.current
+  predicate resolve_refmut_Sparse_T [@inline:trivial] (_1: MutBorrow.t t_Sparse_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Sparse_T
+  meta "rewrite_def" predicate resolve_refmut_Sparse_T
   
   predicate is_elt_T (self: t_Sparse_T) (i: int) =
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
@@ -872,7 +872,7 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   meta "select_lsinst" "all"
   
   let rec set_T (self: MutBorrow.t t_Sparse_T) (i: UInt64.t) (v: t_T) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_ref_Sparse_T self}
+    {[@expl:set 'self' type invariant] inv_refmut_Sparse_T self}
     {[@expl:set 'v' type invariant] inv_T v}
     {[@expl:set requires] UInt64.t'int i < UInt64.t'int const_SIZE}
     (! bb0
@@ -898,8 +898,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       | s4 = [ &_22 <- _23 = i ] s5
       | s5 = any [ br0 -> {_22 = false} (! bb11) | br1 -> {_22} (! bb8) ] ]
     | bb8 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Sparse_T self} any) ]
-      | s1 = -{resolve_ref_Sparse_T self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Sparse_T self} any) ]
+      | s1 = -{resolve_refmut_Sparse_T self}- s2
       | s2 = return {_ret} ]
     | bb11 = s0
       [ s0 = [ &_27 <- () ] s1
@@ -916,8 +916,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
           (fun (r: Slice64.array UInt64.t) -> [ &self <- { self with current = { self.current with back = r } } ] s10)
       | s10 = UInt64.add {self.current.n} {(1: UInt64.t)}
           (fun (_x: UInt64.t) -> [ &self <- { self with current = { self.current with n = _x } } ] s11)
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_ref_Sparse_T self} any) ]
-      | s12 = -{resolve_ref_Sparse_T self}- s13
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Sparse_T self} any) ]
+      | s12 = -{resolve_refmut_Sparse_T self}- s13
       | s13 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Sparse_T = self
@@ -1243,17 +1243,17 @@ module M_f
         end}
       (! return {result}) ]
   
-  predicate invariant_ref_Sparse_i32'1 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32) =
+  predicate invariant_refmut_Sparse_i32 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32) =
     inv_Sparse_i32 self.current /\ inv_Sparse_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Sparse_i32'1
+  meta "rewrite_def" predicate invariant_refmut_Sparse_i32
   
-  predicate inv_ref_Sparse_i32'1 [@inline:trivial] (_1: MutBorrow.t t_Sparse_i32) = invariant_ref_Sparse_i32'1 _1
+  predicate inv_refmut_Sparse_i32 [@inline:trivial] (_1: MutBorrow.t t_Sparse_i32) = invariant_refmut_Sparse_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Sparse_i32'1
+  meta "rewrite_def" predicate inv_refmut_Sparse_i32
   
   let rec set_i32 (self: MutBorrow.t t_Sparse_i32) (i: UInt64.t) (v: Int32.t) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_ref_Sparse_i32'1 self}
+    {[@expl:set 'self' type invariant] inv_refmut_Sparse_i32 self}
     {[@expl:set requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t)}
     any
     [ return (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (10: UInt64.t) /\ j <> UInt64.t'int i
@@ -1261,17 +1261,18 @@ module M_f
       {Seq.get (view_Sparse_i32 self.final) (UInt64.t'int i) = Some v}
       (! return {result}) ]
   
-  predicate invariant_ref_Sparse_i32'2 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32'0) =
+  predicate invariant_refmut_Sparse_i32'0 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32'0) =
     inv_Sparse_i32'0 self.current /\ inv_Sparse_i32'0 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Sparse_i32'2
+  meta "rewrite_def" predicate invariant_refmut_Sparse_i32'0
   
-  predicate inv_ref_Sparse_i32'2 [@inline:trivial] (_1: MutBorrow.t t_Sparse_i32'0) = invariant_ref_Sparse_i32'2 _1
+  predicate inv_refmut_Sparse_i32'0 [@inline:trivial] (_1: MutBorrow.t t_Sparse_i32'0) =
+    invariant_refmut_Sparse_i32'0 _1
   
-  meta "rewrite_def" predicate inv_ref_Sparse_i32'2
+  meta "rewrite_def" predicate inv_refmut_Sparse_i32'0
   
   let rec set_i32'0 (self: MutBorrow.t t_Sparse_i32'0) (i: UInt64.t) (v: Int32.t) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_ref_Sparse_i32'2 self}
+    {[@expl:set 'self' type invariant] inv_refmut_Sparse_i32'0 self}
     {[@expl:set requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t)}
     any
     [ return (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (20: UInt64.t) /\ j <> UInt64.t'int i

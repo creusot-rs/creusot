@@ -54,12 +54,12 @@ module M_f
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {match result with
@@ -112,9 +112,9 @@ module M_f
       {Seq.length (view_Vec_bool_Global self_.final) = Seq.length (view_Vec_bool_Global self_.current)}
       (! return {result}) ]
   
-  predicate resolve_ref_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
+  predicate resolve_refmut_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_bool
+  meta "rewrite_def" predicate resolve_refmut_bool
   
   meta "compute_max_steps" 1000000
   
@@ -139,7 +139,7 @@ module M_f
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_23.current} {MutBorrow.get_id _23}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s2)
         | s2 = next_Range_usize {_22} (fun (_x: t_Option_usize) -> [ &_21 <- _x ] s3)
-        | s3 = -{resolve_ref_Range_usize _23}- s4
+        | s3 = -{resolve_refmut_Range_usize _23}- s4
         | s4 = any [ br0 -> {_21 = None} (! bb19) | br1 (x0: UInt64.t) -> {_21 = Some x0} (! bb11) ] ]
         [ bb11 = s0
           [ s0 = elim_Some {_21} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -161,7 +161,7 @@ module M_f
               | s3 = UInt64.sub {door} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_47 <- _x ] s4)
               | s4 = index_mut_Vec_bool_Global {_46} {_47} (fun (_x: MutBorrow.t bool) -> [ &_45 <- _x ] s5)
               | s5 = [ &_45 <- { _45 with current = not _41 } ] s6
-              | s6 = -{resolve_ref_bool _45}- s7
+              | s6 = -{resolve_refmut_bool _45}- s7
               | s7 = UInt64.add {door} {pass} (fun (_x: UInt64.t) -> [ &door <- _x ] s8)
               | s8 = bb13 ] ] ] ] ]
     | bb19 = return {_ret} ]

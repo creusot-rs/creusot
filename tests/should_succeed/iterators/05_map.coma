@@ -204,18 +204,18 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   
   type t_Option_Item = None | Some t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -313,13 +313,13 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate inv_tup1_Item [@inline:trivial] (_1: t_Item) = inv_Item _1
   
@@ -328,7 +328,7 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   predicate inv_B (_1: t_B)
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: t_Item) (return (x: t_B)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut 'arg' type invariant] inv_tup1_Item arg}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any
@@ -341,18 +341,18 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   axiom inv_axiom'0 [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x
       = (invariant_Map_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
+  predicate invariant_refmut_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
     inv_Map_I_F self.current /\ inv_Map_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_Map_I_F
+  meta "rewrite_def" predicate invariant_refmut_Map_I_F
   
-  predicate inv_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_ref_Map_I_F _1
+  predicate inv_refmut_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_refmut_Map_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_Map_I_F
+  meta "rewrite_def" predicate inv_refmut_Map_I_F
   
-  predicate resolve_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = _1.final = _1.current
+  predicate resolve_refmut_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Map_I_F
+  meta "rewrite_def" predicate resolve_refmut_Map_I_F
   
   type t_Option_B = None'0 | Some'0 t_B
   
@@ -400,7 +400,7 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Map_I_F (self: MutBorrow.t t_Map_I_F) (return (x: t_Option_B)) =
-    {[@expl:next 'self' type invariant] inv_ref_Map_I_F self}
+    {[@expl:next 'self' type invariant] inv_refmut_Map_I_F self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
@@ -421,13 +421,13 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
         [ _ck -> (! {inv_F self.current.func} any) ]
       | s4 = [ &_16 <- v ] s5
       | s5 = call_mut_F {_15} {_16} (fun (_x: t_B) -> [ &_14 <- _x ] s6)
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_ref_Map_I_F self} any) ]
-      | s7 = -{resolve_ref_Map_I_F self}- s8
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
+      | s7 = -{resolve_refmut_Map_I_F self}- s8
       | s8 = [ &_ret <- Some'0 _14 ] s9
       | s9 = return {_ret} ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ref_Map_I_F self} any) ]
-      | s1 = -{resolve_ref_Map_I_F self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
+      | s1 = -{resolve_refmut_Map_I_F self}- s2
       | s2 = [ &_ret <- None'0 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
@@ -832,14 +832,14 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   axiom inv_axiom [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x
       = (invariant_Map_I_F x /\ inv_I x.iter /\ inv_F x.func)
   
-  predicate invariant_ref_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
+  predicate invariant_refmut_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
     inv_Map_I_F self.current /\ inv_Map_I_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_Map_I_F
+  meta "rewrite_def" predicate invariant_refmut_Map_I_F
   
-  predicate inv_ref_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_ref_Map_I_F _1
+  predicate inv_refmut_Map_I_F [@inline:trivial] (_1: MutBorrow.t t_Map_I_F) = invariant_refmut_Map_I_F _1
   
-  meta "rewrite_def" predicate inv_ref_Map_I_F
+  meta "rewrite_def" predicate inv_refmut_Map_I_F
   
   type t_Option_B = None | Some t_B
   
@@ -888,8 +888,8 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Map_I_F. inv_ref_Map_I_F self
-      -> inv_ref_Map_I_F self
+  goal refines: forall self: MutBorrow.t t_Map_I_F. inv_refmut_Map_I_F self
+      -> inv_refmut_Map_I_F self
       /\ (forall result: t_Option_B. inv_Option_B result
           /\ match result with
             | None -> completed_Map_I_F self

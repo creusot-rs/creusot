@@ -72,9 +72,10 @@ module M_slice_range_inclusive
       {Seq.length (Slice64.view self_.final) = Seq.length (Slice64.view self_.current)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u32
+  meta "rewrite_def" predicate resolve_refmut_slice_u32
   
   meta "compute_max_steps" 1000000
   
@@ -109,9 +110,9 @@ module M_slice_range_inclusive
       | s14 = {[@expl:index in bounds] _17} s15
       | s15 = Slice64.set <UInt32.t> {s.current} {_14} {(1: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &s <- { s with current = r } ] s16)
-      | s16 = -{resolve_ref_slice_u32 s}- s17
-      | s17 = -{resolve_ref_slice_u32 _7}- s18
-      | s18 = -{resolve_ref_slice_u32 a}- s19
+      | s16 = -{resolve_refmut_slice_u32 s}- s17
+      | s17 = -{resolve_refmut_slice_u32 _7}- s18
+      | s18 = -{resolve_refmut_slice_u32 a}- s19
       | s19 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a

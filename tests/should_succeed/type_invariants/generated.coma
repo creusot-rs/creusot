@@ -10,9 +10,9 @@ module M_use_foo
   
   type t_Foo_u32 = A (MutBorrow.t t_Sum10) UInt64.t | B UInt32.t
   
-  type tup2_Foo_u32_ref_Sum10 = { f0'0: t_Foo_u32; f1'0: MutBorrow.t t_Sum10 }
+  type tup2_Foo_u32_refmut_Sum10 = { f0'0: t_Foo_u32; f1'0: MutBorrow.t t_Sum10 }
   
-  type t_Foo_tup2_Foo_u32_ref_Sum10 = A'0 (MutBorrow.t t_Sum10) UInt64.t | B'0 tup2_Foo_u32_ref_Sum10
+  type t_Foo_tup2_Foo_u32_refmut_Sum10 = A'0 (MutBorrow.t t_Sum10) UInt64.t | B'0 tup2_Foo_u32_refmut_Sum10
   
   predicate invariant_Sum10 (self: t_Sum10) = Int32.to_int self.f0 + Int32.to_int self.f1 = 10
   
@@ -20,74 +20,74 @@ module M_use_foo
   
   axiom inv_axiom [@rewrite]: forall x: t_Sum10 [inv_Sum10 x]. inv_Sum10 x = invariant_Sum10 x
   
-  predicate invariant_ref_Sum10 [@inline:trivial] (self: MutBorrow.t t_Sum10) =
+  predicate invariant_refmut_Sum10 [@inline:trivial] (self: MutBorrow.t t_Sum10) =
     inv_Sum10 self.current /\ inv_Sum10 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Sum10
+  meta "rewrite_def" predicate invariant_refmut_Sum10
   
-  predicate inv_ref_Sum10 [@inline:trivial] (_1: MutBorrow.t t_Sum10) = invariant_ref_Sum10 _1
+  predicate inv_refmut_Sum10 [@inline:trivial] (_1: MutBorrow.t t_Sum10) = invariant_refmut_Sum10 _1
   
-  meta "rewrite_def" predicate inv_ref_Sum10
+  meta "rewrite_def" predicate inv_refmut_Sum10
   
   predicate inv_Foo_u32 (_1: t_Foo_u32)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Foo_u32 [inv_Foo_u32 x]. inv_Foo_u32 x
       = match x with
-        | A f1'1 f2 -> inv_ref_Sum10 f1'1
+        | A f1'1 f2 -> inv_refmut_Sum10 f1'1
         | B f0'1 -> true
         end
   
-  predicate inv_tup2_Foo_u32_ref_Sum10 [@inline:trivial] (_1: tup2_Foo_u32_ref_Sum10) =
-    inv_Foo_u32 _1.f0'0 /\ inv_ref_Sum10 _1.f1'0
+  predicate inv_tup2_Foo_u32_refmut_Sum10 [@inline:trivial] (_1: tup2_Foo_u32_refmut_Sum10) =
+    inv_Foo_u32 _1.f0'0 /\ inv_refmut_Sum10 _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_Foo_u32_ref_Sum10
+  meta "rewrite_def" predicate inv_tup2_Foo_u32_refmut_Sum10
   
-  predicate inv_Foo_tup2_Foo_u32_ref_Sum10 (_1: t_Foo_tup2_Foo_u32_ref_Sum10)
+  predicate inv_Foo_tup2_Foo_u32_refmut_Sum10 (_1: t_Foo_tup2_Foo_u32_refmut_Sum10)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall x: t_Foo_tup2_Foo_u32_ref_Sum10 [inv_Foo_tup2_Foo_u32_ref_Sum10 x]. inv_Foo_tup2_Foo_u32_ref_Sum10 x
+    forall x: t_Foo_tup2_Foo_u32_refmut_Sum10 [inv_Foo_tup2_Foo_u32_refmut_Sum10 x]. inv_Foo_tup2_Foo_u32_refmut_Sum10 x
       = match x with
-        | A'0 f1'1 f2 -> inv_ref_Sum10 f1'1
-        | B'0 f0'1 -> inv_tup2_Foo_u32_ref_Sum10 f0'1
+        | A'0 f1'1 f2 -> inv_refmut_Sum10 f1'1
+        | B'0 f0'1 -> inv_tup2_Foo_u32_refmut_Sum10 f0'1
         end
   
-  predicate resolve_ref_Sum10 [@inline:trivial] (_1: MutBorrow.t t_Sum10) = _1.final = _1.current
+  predicate resolve_refmut_Sum10 [@inline:trivial] (_1: MutBorrow.t t_Sum10) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Sum10
+  meta "rewrite_def" predicate resolve_refmut_Sum10
   
   predicate resolve_Foo_u32 (_1: t_Foo_u32)
   
   axiom resolve_axiom [@rewrite]: forall x: t_Foo_u32 [resolve_Foo_u32 x]. resolve_Foo_u32 x
       = match x with
-        | A x0 x1 -> resolve_ref_Sum10 x0
+        | A x0 x1 -> resolve_refmut_Sum10 x0
         | B x0 -> true
         end
   
-  predicate resolve_tup2_Foo_u32_ref_Sum10 [@inline:trivial] (_1: tup2_Foo_u32_ref_Sum10) =
-    resolve_Foo_u32 _1.f0'0 /\ resolve_ref_Sum10 _1.f1'0
+  predicate resolve_tup2_Foo_u32_refmut_Sum10 [@inline:trivial] (_1: tup2_Foo_u32_refmut_Sum10) =
+    resolve_Foo_u32 _1.f0'0 /\ resolve_refmut_Sum10 _1.f1'0
   
-  meta "rewrite_def" predicate resolve_tup2_Foo_u32_ref_Sum10
+  meta "rewrite_def" predicate resolve_tup2_Foo_u32_refmut_Sum10
   
-  predicate resolve_Foo_tup2_Foo_u32_ref_Sum10 (_1: t_Foo_tup2_Foo_u32_ref_Sum10)
+  predicate resolve_Foo_tup2_Foo_u32_refmut_Sum10 (_1: t_Foo_tup2_Foo_u32_refmut_Sum10)
   
   axiom resolve_axiom'0 [@rewrite]:
-    forall x: t_Foo_tup2_Foo_u32_ref_Sum10 [resolve_Foo_tup2_Foo_u32_ref_Sum10 x]. resolve_Foo_tup2_Foo_u32_ref_Sum10 x
+    forall x: t_Foo_tup2_Foo_u32_refmut_Sum10 [resolve_Foo_tup2_Foo_u32_refmut_Sum10 x]. resolve_Foo_tup2_Foo_u32_refmut_Sum10 x
       = match x with
-        | A'0 x0 x1 -> resolve_ref_Sum10 x0
-        | B'0 x0 -> resolve_tup2_Foo_u32_ref_Sum10 x0
+        | A'0 x0 x1 -> resolve_refmut_Sum10 x0
+        | B'0 x0 -> resolve_tup2_Foo_u32_refmut_Sum10 x0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec use_foo (x: t_Foo_tup2_Foo_u32_ref_Sum10) (return (x'0: ())) =
-    {[@expl:use_foo 'x' type invariant] inv_Foo_tup2_Foo_u32_ref_Sum10 x}
+  let rec use_foo (x: t_Foo_tup2_Foo_u32_refmut_Sum10) (return (x'0: ())) =
+    {[@expl:use_foo 'x' type invariant] inv_Foo_tup2_Foo_u32_refmut_Sum10 x}
     (! bb0
     [ bb0 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Foo_tup2_Foo_u32_ref_Sum10 x} any) ]
-      | s1 = -{resolve_Foo_tup2_Foo_u32_ref_Sum10 x}- s2
-      | s2 = {[@expl:assertion] inv_Foo_tup2_Foo_u32_ref_Sum10 x} s3
-      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: t_Foo_tup2_Foo_u32_ref_Sum10 = x ])
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Foo_tup2_Foo_u32_refmut_Sum10 x} any) ]
+      | s1 = -{resolve_Foo_tup2_Foo_u32_refmut_Sum10 x}- s2
+      | s2 = {[@expl:assertion] inv_Foo_tup2_Foo_u32_refmut_Sum10 x} s3
+      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: t_Foo_tup2_Foo_u32_refmut_Sum10 = x ])
     [ return (result: ()) -> (! return {result}) ]
 end

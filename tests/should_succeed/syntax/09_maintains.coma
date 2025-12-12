@@ -18,9 +18,9 @@ module M_test_2
   use creusot.prelude.Any
   use creusot.int.UInt64
   
-  predicate resolve_ref_A [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  predicate resolve_refmut_A [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_A
+  meta "rewrite_def" predicate resolve_refmut_A
   
   predicate invariant' (self: ()) (b: bool) (c: UInt64.t) = true
   
@@ -31,7 +31,7 @@ module M_test_2
   let rec test_2 (a: MutBorrow.t ()) (b: bool) (c: UInt64.t) (return (x: ())) =
     {[@expl:test_2 requires] invariant' a.current b c}
     (! bb0
-    [ bb0 = s0 [ s0 = -{resolve_ref_A a}- s1 | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = -{resolve_refmut_A a}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & a: MutBorrow.t () = a ])
     [ return (result: ()) -> {[@expl:test_2 ensures] invariant' a.final b c} (! return {result}) ]
 end
@@ -40,13 +40,13 @@ module M_test_3
   use creusot.prelude.Any
   use creusot.int.UInt64
   
-  predicate resolve_ref_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
+  predicate resolve_refmut_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_bool
+  meta "rewrite_def" predicate resolve_refmut_bool
   
-  predicate resolve_ref_A [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  predicate resolve_refmut_A [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_A
+  meta "rewrite_def" predicate resolve_refmut_A
   
   predicate invariant' (self: ()) (b: bool) (c: UInt64.t) = true
   
@@ -57,7 +57,7 @@ module M_test_3
   let rec test_3 (a: MutBorrow.t ()) (b: MutBorrow.t bool) (c: UInt64.t) (return (x: ())) =
     {[@expl:test_3 requires] invariant' a.current b.current c}
     (! bb0
-    [ bb0 = s0 [ s0 = -{resolve_ref_bool b}- s1 | s1 = -{resolve_ref_A a}- s2 | s2 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = -{resolve_refmut_bool b}- s1 | s1 = -{resolve_refmut_A a}- s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & a: MutBorrow.t () = a | & b: MutBorrow.t bool = b ])
     [ return (result: ()) -> {[@expl:test_3 ensures] invariant' a.final b.final c} (! return {result}) ]
 end

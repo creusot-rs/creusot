@@ -4,9 +4,9 @@ module M_add_some
   use creusot.prelude.Any
   use mach.int.Int
   
-  predicate resolve_ref_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_refmut_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u64
+  meta "rewrite_def" predicate resolve_refmut_u64
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -64,7 +64,7 @@ module M_add_some
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {a.current} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &a <- { a with current = _x } ] s1)
-      | s1 = -{resolve_ref_u64 a}- s2
+      | s1 = -{resolve_refmut_u64 a}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & a: MutBorrow.t UInt64.t = a ])
     [ return (result: ()) -> {[@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
 end
@@ -125,9 +125,9 @@ module M_foo
     <= Int.div (UInt64.t'int const_MAX) 2}
     any [ return (result: ()) -> {UInt64.gt a.final a.current} (! return {result}) ]
   
-  predicate resolve_ref_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_refmut_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u64
+  meta "rewrite_def" predicate resolve_refmut_u64
   
   meta "compute_max_steps" 1000000
   
@@ -140,7 +140,7 @@ module M_foo
       | s1 = MutBorrow.borrow_final <UInt64.t> {a.current} {MutBorrow.get_id a}
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_10 <- _bor ] [ &a <- { a with current = _bor.final } ] s2)
       | s2 = add_some {_10} (fun (_x: ()) -> [ &_9 <- _x ] s3)
-      | s3 = -{resolve_ref_u64 a}- s4
+      | s3 = -{resolve_refmut_u64 a}- s4
       | s4 = {[@expl:assertion] UInt64.gt a.current a_p} s5
       | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

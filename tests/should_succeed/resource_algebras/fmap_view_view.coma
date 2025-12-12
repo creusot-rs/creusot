@@ -1222,18 +1222,19 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   axiom inv_axiom [@rewrite]: forall x: t_Authority_K_V [inv_Authority_K_V x]. inv_Authority_K_V x
       = invariant_Authority_K_V x
   
-  predicate invariant_ref_Authority_K_V [@inline:trivial] (self: MutBorrow.t t_Authority_K_V) =
+  predicate invariant_refmut_Authority_K_V [@inline:trivial] (self: MutBorrow.t t_Authority_K_V) =
     inv_Authority_K_V self.current /\ inv_Authority_K_V self.final
   
-  meta "rewrite_def" predicate invariant_ref_Authority_K_V
+  meta "rewrite_def" predicate invariant_refmut_Authority_K_V
   
-  predicate inv_ref_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = invariant_ref_Authority_K_V _1
+  predicate inv_refmut_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) =
+    invariant_refmut_Authority_K_V _1
   
-  meta "rewrite_def" predicate inv_ref_Authority_K_V
+  meta "rewrite_def" predicate inv_refmut_Authority_K_V
   
-  predicate resolve_ref_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = _1.final = _1.current
+  predicate resolve_refmut_Authority_K_V [@inline:trivial] (_1: MutBorrow.t t_Authority_K_V) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Authority_K_V
+  meta "rewrite_def" predicate resolve_refmut_Authority_K_V
   
   type t_Fragment_K_V = { f0'5: t_Resource_View_MapRelation_K_V; f1'5: t_K; f2'5: t_V }
   
@@ -1258,7 +1259,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   meta "select_lsinst" "all"
   
   let rec insert_K'1 (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
-    {[@expl:insert 'self' type invariant] inv_ref_Authority_K_V self}
+    {[@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self}
     {[@expl:insert requires] not contains_K (view_Authority_K_V self.current) k}
     (! bb0
     [ bb0 = s0
@@ -1275,8 +1276,8 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
             [ &_33 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s6)
       | s6 = split_off_View_MapRelation_K_V {_33} {new_frag_MapRelation_K_V frag} {new_auth_MapRelation_K_V auth}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_32 <- _x ] s7)
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_ref_Authority_K_V self} any) ]
-      | s8 = -{resolve_ref_Authority_K_V self}- s9
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_K_V self} any) ]
+      | s8 = -{resolve_refmut_Authority_K_V self}- s9
       | s9 = [ &_ret <- { f0'5 = _32; f1'5 = k; f2'5 = v } ] s10
       | s10 = return {_ret} ] ]
     [ & _ret: t_Fragment_K_V = Any.any_l ()

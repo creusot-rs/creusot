@@ -89,12 +89,12 @@ module M_main
   
   type t_Option_i32 = None | Some Int32.t
   
-  predicate resolve_ref_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
+  predicate resolve_refmut_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_i32
+  meta "rewrite_def" predicate resolve_refmut_Range_i32
   
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_ref_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {match result with
@@ -164,7 +164,7 @@ module M_main
       | s9 = MutBorrow.borrow_final <t_Range_i32> {_82.current} {MutBorrow.get_id _82}
           (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s10)
       | s10 = next_Range_i32 {_81} (fun (_x: t_Option_i32) -> [ &_80 <- _x ] s11)
-      | s11 = -{resolve_ref_Range_i32 _82}- s12
+      | s11 = -{resolve_refmut_Range_i32 _82}- s12
       | s12 = any [ br0 -> {_80 = None} (! bb44) | br1 (x0: Int32.t) -> {_80 = Some x0} (! bb42) ] ]
     | bb42 = s0
       [ s0 = elim_Some {_80} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)

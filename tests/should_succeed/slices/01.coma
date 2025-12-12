@@ -35,9 +35,10 @@ module M_index_mut_slice
   use creusot.prelude.Any
   use seq.Seq
   
-  predicate resolve_ref_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_u32
+  meta "rewrite_def" predicate resolve_refmut_slice_u32
   
   function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
@@ -60,7 +61,7 @@ module M_index_mut_slice
       | s4 = {[@expl:index in bounds] _9} s5
       | s5 = Slice64.set <UInt32.t> {a.current} {_6} {(3: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s6)
-      | s6 = -{resolve_ref_slice_u32 a}- s7
+      | s6 = -{resolve_refmut_slice_u32 a}- s7
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t (Slice64.slice UInt32.t) = a

@@ -20,9 +20,9 @@ module M_f
   
   let rec z (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
-  predicate resolve_ref_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
+  predicate resolve_refmut_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_tup2_MyInt_MyInt
+  meta "rewrite_def" predicate resolve_refmut_tup2_MyInt_MyInt
   
   meta "compute_max_steps" 1000000
   
@@ -45,7 +45,7 @@ module M_f
       [ s0 = [ &_8 <- { f0 = (10: UInt64.t) } ] s1
       | s1 = [ &y <- { y with current = { y.current with f0'0 = _8 } } ] s2
       | s2 = bb4 ]
-    | bb4 = s0 [ s0 = -{resolve_ref_tup2_MyInt_MyInt y}- s1 | s1 = return {_ret} ] ]
+    | bb4 = s0 [ s0 = -{resolve_refmut_tup2_MyInt_MyInt y}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: tup2_MyInt_MyInt = Any.any_l ()
     | & _2: t_MyInt = Any.any_l ()
@@ -64,13 +64,13 @@ module M_g
   
   type tup2_MyInt_MyInt = { f0'0: t_MyInt; f1'0: t_MyInt }
   
-  predicate resolve_ref_MyInt [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
+  predicate resolve_refmut_MyInt [@inline:trivial] (_1: MutBorrow.t t_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_MyInt
+  meta "rewrite_def" predicate resolve_refmut_MyInt
   
-  predicate resolve_ref_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
+  predicate resolve_refmut_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_tup2_MyInt_MyInt
+  meta "rewrite_def" predicate resolve_refmut_tup2_MyInt_MyInt
   
   meta "compute_max_steps" 1000000
   
@@ -86,10 +86,10 @@ module M_g
       | s4 = MutBorrow.borrow_final <t_MyInt> {x.current.f1'0} {MutBorrow.inherit_id (MutBorrow.get_id x) 2}
           (fun (_bor: MutBorrow.t t_MyInt) ->
             [ &_z <- _bor ] [ &x <- { x with current = { x.current with f1'0 = _bor.final } } ] s5)
-      | s5 = -{resolve_ref_MyInt _z}- s6
+      | s5 = -{resolve_refmut_MyInt _z}- s6
       | s6 = [ &_6 <- { f0 = (3: UInt64.t) } ] s7
       | s7 = [ &x <- { x with current = { x.current with f0'0 = _6 } } ] s8
-      | s8 = -{resolve_ref_tup2_MyInt_MyInt x}- s9
+      | s8 = -{resolve_refmut_tup2_MyInt_MyInt x}- s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: tup2_MyInt_MyInt = Any.any_l ()

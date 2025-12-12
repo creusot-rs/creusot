@@ -52,15 +52,15 @@ module M_search
   
   type t_Option_usize = None | Some UInt64.t
   
-  predicate invariant_ref_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
+  predicate invariant_refmut_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
     inv_RangeInclusive_usize self.current /\ inv_RangeInclusive_usize self.final
   
-  meta "rewrite_def" predicate invariant_ref_RangeInclusive_usize
+  meta "rewrite_def" predicate invariant_refmut_RangeInclusive_usize
   
-  predicate inv_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
-    invariant_ref_RangeInclusive_usize _1
+  predicate inv_refmut_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
+    invariant_refmut_RangeInclusive_usize _1
   
-  meta "rewrite_def" predicate inv_ref_RangeInclusive_usize
+  meta "rewrite_def" predicate inv_refmut_RangeInclusive_usize
   
   function range_inclusive_len_usize (r: t_RangeInclusive_usize) : int = if is_empty_log_RangeInclusive_usize r then
       0
@@ -94,7 +94,7 @@ module M_search
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
   let rec next_RangeInclusive_usize (self_: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
-    {[@expl:next 'self_' type invariant] inv_ref_RangeInclusive_usize self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_usize self_}
     any
     [ return (result: t_Option_usize) -> {match result with
         | None -> completed_RangeInclusive_usize self_
@@ -102,10 +102,10 @@ module M_search
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
+  predicate resolve_refmut_RangeInclusive_usize [@inline:trivial] (_1: MutBorrow.t t_RangeInclusive_usize) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_RangeInclusive_usize
+  meta "rewrite_def" predicate resolve_refmut_RangeInclusive_usize
   
   function index_Vec_u8_Global [@inline:trivial] (self: t_Vec_u8_Global) (ix: int) : UInt8.t =
     Seq.get (view_Vec_u8_Global self) ix
@@ -153,12 +153,12 @@ module M_search
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {match result with
@@ -221,8 +221,8 @@ module M_search
               [ &_45 <- { _45 with current = _bor.final } ] s2)
           [ _ck -> (! {inv_RangeInclusive_usize _45.current} any) ]
         | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_ref_RangeInclusive_usize _45} any) ]
-        | s4 = -{resolve_ref_RangeInclusive_usize _45}- s5
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_usize _45} any) ]
+        | s4 = -{resolve_refmut_RangeInclusive_usize _45}- s5
         | s5 = any [ br0 -> {_43 = None} (! bb12) | br1 (x0: UInt64.t) -> {_43 = Some x0} (! bb13) ] ]
         [ bb13 = s0
           [ s0 = elim_Some {_43} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
@@ -246,7 +246,7 @@ module M_search
                 (fun (_bor: MutBorrow.t t_Range_usize) ->
                   [ &_79 <- _bor ] [ &_80 <- { _80 with current = _bor.final } ] s2)
             | s2 = next_Range_usize {_79} (fun (_x: t_Option_usize) -> [ &_78 <- _x ] s3)
-            | s3 = -{resolve_ref_Range_usize _80}- s4
+            | s3 = -{resolve_refmut_Range_usize _80}- s4
             | s4 = any [ br0 -> {_78 = None} (! bb24) | br1 (x0: UInt64.t) -> {_78 = Some x0} (! bb25) ] ]
             [ bb25 = s0
               [ s0 = elim_Some {_78} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)

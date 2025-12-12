@@ -18,14 +18,14 @@ module M_test_array
   
   type t_Option_ref_i32 = None | Some Int32.t
   
-  predicate invariant_ref_Iter_i32 [@inline:trivial] (self: MutBorrow.t t_Iter_i32) =
+  predicate invariant_refmut_Iter_i32 [@inline:trivial] (self: MutBorrow.t t_Iter_i32) =
     inv_Iter_i32 self.current /\ inv_Iter_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Iter_i32
+  meta "rewrite_def" predicate invariant_refmut_Iter_i32
   
-  predicate inv_ref_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = invariant_ref_Iter_i32 _1
+  predicate inv_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = invariant_refmut_Iter_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Iter_i32
+  meta "rewrite_def" predicate inv_refmut_Iter_i32
   
   function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
@@ -55,15 +55,15 @@ module M_test_array
   
   axiom produces_refl_Iter_i32_spec: forall self: t_Iter_i32. produces_Iter_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve_ref_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = _1.final = _1.current
+  predicate resolve_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Iter_i32
+  meta "rewrite_def" predicate resolve_refmut_Iter_i32
   
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
-    resolve_ref_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
+    resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
   let rec next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-    {[@expl:next 'self_' type invariant] inv_ref_Iter_i32 self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {match result with
         | None -> completed_Iter_i32 self_
@@ -127,14 +127,15 @@ module M_test_array
   
   type t_Option_i32 = None'1 | Some'1 Int32.t
   
-  predicate invariant_ref_IntoIter_i32 [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32) =
+  predicate invariant_refmut_IntoIter_i32 [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32) =
     inv_IntoIter_i32 self.current /\ inv_IntoIter_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_IntoIter_i32
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_i32
   
-  predicate inv_ref_IntoIter_i32 [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32) = invariant_ref_IntoIter_i32 _1
+  predicate inv_refmut_IntoIter_i32 [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32) =
+    invariant_refmut_IntoIter_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_IntoIter_i32
+  meta "rewrite_def" predicate inv_refmut_IntoIter_i32
   
   predicate produces_IntoIter_i32 (self: t_IntoIter_i32) (visited: Seq.seq Int32.t) (o: t_IntoIter_i32) =
     view_IntoIter_i32 self = Seq.(++) visited (view_IntoIter_i32 o)
@@ -151,15 +152,15 @@ module M_test_array
   axiom produces_refl_IntoIter_i32_spec:
     forall self: t_IntoIter_i32. produces_IntoIter_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve_ref_IntoIter_i32 [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32) = _1.final = _1.current
+  predicate resolve_refmut_IntoIter_i32 [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_i32
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_i32
   
   predicate completed_IntoIter_i32 (self: MutBorrow.t t_IntoIter_i32) =
-    resolve_ref_IntoIter_i32 self /\ view_IntoIter_i32 self.current = (Seq.empty: Seq.seq Int32.t)
+    resolve_refmut_IntoIter_i32 self /\ view_IntoIter_i32 self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec next_IntoIter_i32 (self_: MutBorrow.t t_IntoIter_i32) (return (x: t_Option_i32)) =
-    {[@expl:next 'self_' type invariant] inv_ref_IntoIter_i32 self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_i32 self_}
     any
     [ return (result: t_Option_i32) -> {match result with
         | None'1 -> completed_IntoIter_i32 self_

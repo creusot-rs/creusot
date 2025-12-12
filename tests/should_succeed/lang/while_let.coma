@@ -5,9 +5,9 @@ module M_f
   
   type t_Option_i32 = None | Some Int32.t
   
-  predicate resolve_ref_Option_i32 [@inline:trivial] (_1: MutBorrow.t t_Option_i32) = _1.final = _1.current
+  predicate resolve_refmut_Option_i32 [@inline:trivial] (_1: MutBorrow.t t_Option_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_i32
+  meta "rewrite_def" predicate resolve_refmut_Option_i32
   
   meta "compute_max_steps" 1000000
   
@@ -26,7 +26,7 @@ module M_f
         (! s0)
         [ s0 = any [ br0 -> {b.current = None} (! bb5) | br1 (x0: Int32.t) -> {b.current = Some x0} (! bb4) ] ]
         [ bb4 = s0 [ s0 = [ &_7 <- None ] s1 | s1 = [ &b <- { b with current = _7 } ] s2 | s2 = bb1 ] ] ]
-    | bb5 = s0 [ s0 = -{resolve_ref_Option_i32 b}- s1 | s1 = return {_ret} ] ]
+    | bb5 = s0 [ s0 = -{resolve_refmut_Option_i32 b}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: t_Option_i32 = Any.any_l ()
     | & b: MutBorrow.t t_Option_i32 = Any.any_l ()

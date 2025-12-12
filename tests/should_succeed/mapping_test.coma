@@ -7,9 +7,9 @@ module M_incr
   
   type t_T = { a: Int32.t }
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   function view_T (self: t_T) : Map.map int int
   
@@ -26,7 +26,7 @@ module M_incr
     [ bb0 = s0
       [ s0 = [ &old_t <- t ] s1
       | s1 = Int32.add {t.current.a} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &t <- { t with current = { a = _x } } ] s2)
-      | s2 = -{resolve_ref_T t}- s3
+      | s2 = -{resolve_refmut_T t}- s3
       | s3 = {[@expl:assertion] view_T t.final = Map.set (view_T old_t.current) (Int32.to_int old_t.current.a) 1} s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & t: MutBorrow.t t_T = t | & old_t: MutBorrow.t t_T = Any.any_l () ])
@@ -54,9 +54,9 @@ module M_f
     [ return (result: ()) -> {view_T t.final = Map.set (view_T t.current) (Int32.to_int t.current.a) 1}
       (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   meta "compute_max_steps" 1000000
   
@@ -71,7 +71,7 @@ module M_f
       | s4 = MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_T) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
       | s5 = incr {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
-      | s6 = -{resolve_ref_T _10}- s7
+      | s6 = -{resolve_refmut_T _10}- s7
       | s7 = {[@expl:assertion] Map.get (view_T x) 13 = 1} s8
       | s8 = {[@expl:assertion] Map.get (view_T x) 42 = 1} s9
       | s9 = return {_ret} ] ]
