@@ -1,7 +1,7 @@
 //! Definition for using orderings in pearlite.
 
 use crate::prelude::*;
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 /// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in pearlite.
 ///

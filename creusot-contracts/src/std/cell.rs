@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::cell::*;
+use core::cell::*;
 
 extern_spec! {
     impl<T> UnsafeCell<T> {

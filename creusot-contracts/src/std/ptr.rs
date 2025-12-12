@@ -1,7 +1,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic};
-use std::ptr::*;
+use core::ptr::*;
 
 /// Metadata of a pointer in logic.
 ///
@@ -314,7 +314,7 @@ extern_spec! {
         fn is_aligned(self) -> bool
             where T: Sized,
         {
-            self.is_aligned_to(std::mem::align_of::<T>())
+            self.is_aligned_to(core::mem::align_of::<T>())
         }
 
         #[check(ghost)]
@@ -353,7 +353,7 @@ extern_spec! {
         fn is_aligned(self) -> bool
             where T: Sized,
         {
-            self.is_aligned_to(std::mem::align_of::<T>())
+            self.is_aligned_to(core::mem::align_of::<T>())
         }
 
         #[check(ghost)]
@@ -380,19 +380,19 @@ extern_spec! {
         fn len(self) -> usize;
     }
 
-    mod std {
+    mod core {
         mod ptr {
             #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null<T>() -> *const T
             where
-                T: std::ptr::Thin + ?Sized;
+                T: core::ptr::Thin + ?Sized;
 
             #[check(ghost)]
             #[ensures(result.is_null_logic())]
             fn null_mut<T>() -> *mut T
             where
-                T: std::ptr::Thin + ?Sized;
+                T: core::ptr::Thin + ?Sized;
 
             #[check(ghost)]
             #[ensures(result == (p.addr_logic() == q.addr_logic()))]

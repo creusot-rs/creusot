@@ -1,7 +1,7 @@
 use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use std::iter::Step;
-use std::ops::{Range, RangeInclusive};
+use core::iter::Step;
+use core::ops::{Range, RangeInclusive};
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {

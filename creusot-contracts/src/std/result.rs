@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
     type DeepModelTy = Result<T::DeepModelTy, E::DeepModelTy>;
@@ -14,7 +14,7 @@ impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod result {
             impl<T, E> Result<T, E> {
                 #[check(ghost)]

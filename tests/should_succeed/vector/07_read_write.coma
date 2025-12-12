@@ -11,14 +11,16 @@ module M_read_write
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  meta "rewrite_def" predicate invariant_ref_T
   
-  meta "rewrite_def" predicate inv_Box_T_Global
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_T
   
@@ -52,13 +54,13 @@ module M_read_write
   
   meta "rewrite_def" predicate in_bounds_usize
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_ref_T'0 [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_ref_T'0
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T'0 _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_ref_T'0
   
   predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) (out: t_T) =
     Seq.get seq (UInt64.t'int self) = out
@@ -74,7 +76,7 @@ module M_read_write
     {[@expl:index_mut 'self_' type invariant] inv_ref_Vec_T_Global self_}
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_T_Global self_.current)}
     any
-    [ return (result: MutBorrow.t t_T) -> {inv_ref_T result}
+    [ return (result: MutBorrow.t t_T) -> {inv_ref_T'0 result}
       {has_value_usize ix (view_Vec_T_Global self_.current) result.current}
       {has_value_usize ix (view_Vec_T_Global self_.final) result.final}
       {resolve_elswhere_usize ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final)}
@@ -97,19 +99,11 @@ module M_read_write
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global'0
   
-  predicate invariant_ref_T'0 [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T'0
-  
-  predicate inv_ref_T'0 [@inline:trivial] (_1: t_T) = invariant_ref_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_T'0
-  
   let rec index_Vec_T_Global (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
     {[@expl:index 'self_' type invariant] inv_ref_Vec_T_Global'0 self_}
     {[@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_)}
     any
-    [ return (result: t_T) -> {inv_ref_T'0 result}
+    [ return (result: t_T) -> {inv_ref_T result}
       {has_value_usize ix (view_Vec_T_Global self_) result}
       (! return {result}) ]
   
@@ -118,8 +112,8 @@ module M_read_write
   predicate precondition_eq (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T'0 self_
-        /\ inv_ref_T'0 rhs) -> precondition_eq () args
+    forall args: tup2_ref_T_ref_T [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
+        /\ inv_ref_T rhs) -> precondition_eq () args
   
   type t_DeepModelTy
   
@@ -158,7 +152,7 @@ module M_read_write
       | s2 = bb1 ]
     | bb1 = s0
       [ s0 = [ &_8 <- { _8 with current = x } ] s1
-      | s1 = {[@expl:type invariant] inv_ref_T _8} s2
+      | s1 = {[@expl:type invariant] inv_ref_T'0 _8} s2
       | s2 = -{resolve_ref_T _8}- s3
       | s3 = {[@expl:type invariant] inv_ref_Vec_T_Global a} s4
       | s4 = -{resolve_ref_Vec_T_Global a}- s5

@@ -1,6 +1,6 @@
 //! Raw pointers with ghost code
 
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::prelude::*;
 #[cfg(creusot)]
@@ -78,6 +78,7 @@ impl<T: ?Sized> Invariant for PtrOwn<T> {
 impl<T> PtrOwn<T> {
     /// Creates a new `PtrOwn` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
+    #[cfg(feature = "std")]
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (*mut T, Ghost<PtrOwn<T>>) {
@@ -96,6 +97,7 @@ impl<T> PtrOwn<T> {
 
 impl<T: ?Sized> PtrOwn<T> {
     /// Creates a ghost `PtrOwn` and associated `*const` from an existing [`Box`].
+    #[cfg(feature = "std")]
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(result.1.ptr() == result.0 && *result.1.val() == *val)]
@@ -211,6 +213,7 @@ impl<T: ?Sized> PtrOwn<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
+    #[cfg(feature = "std")]
     #[trusted]
     #[check(terminates)]
     #[requires(ptr as *const T == own.ptr())]
@@ -229,6 +232,7 @@ impl<T: ?Sized> PtrOwn<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PtrOwn).
+    #[cfg(feature = "std")] // TODO: Remove std dependency ?
     #[check(terminates)]
     #[requires(ptr as *const T == own.ptr())]
     pub unsafe fn drop(ptr: *mut T, own: Ghost<PtrOwn<T>>) {
