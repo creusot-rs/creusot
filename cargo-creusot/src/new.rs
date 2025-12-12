@@ -36,12 +36,23 @@ pub struct NewInitArgs {
     /// Path to local creusot-contracts relative to the generated Cargo.toml
     #[clap(long)]
     pub creusot_contracts: Option<String>,
+    /// Disable standard library
+    #[clap(long)]
+    pub no_std: bool,
 }
 
-fn cargo_template(name: &str) -> String {
+fn cargo_template(name: &str, no_std: bool) -> String {
     let version = Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap();
     let patch = if version.pre.is_empty() {
         "".to_string()
+    } else if no_std {
+        format!(
+            r#"
+[patch.crates-io]
+creusot-contracts = {{ path = "{}", default-features = false }}
+"#,
+            creusot_contracts_path().display()
+        )
     } else {
         format!(
             r#"
@@ -51,6 +62,11 @@ creusot-contracts = {{ path = "{}" }}
             creusot_contracts_path().display()
         )
     };
+    let creusot_contracts = if no_std {
+        format!("{{ version = \"{CREUSOT_CONTRACTS_VERSION}\", default-features = false }}")
+    } else {
+        format!("\"{CREUSOT_CONTRACTS_VERSION}\"")
+    };
     format!(
         r#"[package]
 name = "{name}"
@@ -58,7 +74,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-creusot-contracts = "{CREUSOT_CONTRACTS_VERSION}"
+creusot-contracts = {creusot_contracts}
 
 [lints.rust]
 unexpected_cfgs = {{ level = "warn", check-cfg = ['cfg(creusot)'] }}
@@ -99,8 +115,20 @@ pub fn add_one(a: i64) -> i64 {
 }
 "#;
 
+const LIB_TEMPLATE_NOSTD: &str = r#"#![no_std]
+use creusot_contracts::prelude::*;
+
+#[requires(a@ < i64::MAX@)]
+#[ensures(result@ == a@ + 1)]
+pub fn add_one(a: i64) -> i64 {
+    a + 1
+}"#;
+
 pub fn new(args: NewArgs) -> Result<()> {
     validate_name(&args.name)?;
+    if args.args.main && args.args.no_std {
+        return Err(anyhow::anyhow!("Cannot create main file in no-std mode, as 'fn main()' depends on 'std'."))
+    };
     fs::create_dir(&args.name).map_err(|e| {
         if e.kind() == std::io::ErrorKind::AlreadyExists {
             anyhow::anyhow!("Directory '{}' already exists", args.name)
@@ -135,7 +163,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     if cargo_toml.exists() {
         patch_dep(cargo_toml)?;
     } else {
-        write(cargo_toml, &cargo_template(&name));
+        write(cargo_toml, &cargo_template(&name, args.no_std));
         if args.tests {
             fs::create_dir_all("tests")?;
             write("tests/test.rs", TEST_TEMPLATE);
@@ -144,7 +172,11 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
         if args.main {
             write("src/main.rs", &bin_template(&name));
         }
-        write("src/lib.rs", LIB_TEMPLATE);
+        if args.no_std {
+            write("src/lib.rs", LIB_TEMPLATE_NOSTD);
+        } else {
+            write("src/lib.rs", LIB_TEMPLATE);
+        }
     }
     if let Some(parent_cargo_toml) = find_parent_cargo_toml() {
         eprintln!(
