@@ -1,9 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{
-    invariant::{Invariant, inv},
-    logic::Seq,
-    prelude::*,
-};
+use creusot_contracts::{invariant::Invariant, logic::Seq, prelude::*};
 
 mod common;
 use common::Iterator;
@@ -78,7 +74,6 @@ pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v).into_iter();
     let iter_old = snapshot! { it };
     let mut produced = snapshot! { Seq::empty() };
-    #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(forall<i> 0 <= i && i < produced.len() ==> (^produced[i])@ == 0)]
     loop {

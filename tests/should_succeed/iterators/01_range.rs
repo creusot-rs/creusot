@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, logic::Seq, prelude::*};
+use creusot_contracts::{logic::Seq, prelude::*};
 
 mod common;
 use common::Iterator;
@@ -69,7 +69,6 @@ pub fn sum_range(n: isize) -> isize {
     let mut it = Range { start: 0, end: n }.into_iter();
     let iter_old = snapshot! { it };
     let mut produced = snapshot! { Seq::empty() };
-    #[invariant(inv(it))]
     #[invariant(iter_old.produces(produced.inner(), it))]
     #[invariant(i@ == produced.len() && i <= n)]
     loop {

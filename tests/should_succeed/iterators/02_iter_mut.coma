@@ -617,19 +617,19 @@ module M_all_zero
       | s4 = [ &produced <- Seq.empty: Seq.seq (MutBorrow.t UInt64.t) ] s5
       | s5 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:loop invariant #0] inv_IterMut_usize it}
-        {[@expl:loop invariant #1] produces_IterMut_usize iter_old produced it}
-        {[@expl:loop invariant #2] forall i: int. 0 <= i /\ i < Seq.length produced
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_IterMut_usize it}
+        {[@expl:loop invariant #0] produces_IterMut_usize iter_old produced it}
+        {[@expl:loop invariant #1] forall i: int. 0 <= i /\ i < Seq.length produced
           -> UInt64.t'int (Seq.get produced i).final = 0}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_IterMut_usize> {it}
             (fun (_bor: MutBorrow.t t_IterMut_usize) ->
-              [ &_25 <- _bor ] -{inv_IterMut_usize _bor.final}-
+              [ &_23 <- _bor ] -{inv_IterMut_usize _bor.final}-
               [ &it <- _bor.final ] s1) [ _ck -> (! {inv_IterMut_usize it} any) ]
-        | s1 = next_IterMut_usize {_25} (fun (_x: t_Option_refmut_usize) -> [ &_24 <- _x ] s2)
-        | s2 = any [ br0 -> {_24 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_24 = Some x0} (! bb11) ] ]
+        | s1 = next_IterMut_usize {_23} (fun (_x: t_Option_refmut_usize) -> [ &_22 <- _x ] s2)
+        | s2 = any [ br0 -> {_22 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_22 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_24} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
+          [ s0 = elim_Some {_22} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
           | s2 = [ &x <- { x with current = (0: UInt64.t) } ] s3
           | s3 = -{resolve_refmut_usize x}- s4
@@ -646,8 +646,8 @@ module M_all_zero
     | & _8: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
     | & iter_old: t_IterMut_usize = Any.any_l ()
     | & produced: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
-    | & _24: t_Option_refmut_usize = Any.any_l ()
-    | & _25: MutBorrow.t t_IterMut_usize = Any.any_l ()
+    | & _22: t_Option_refmut_usize = Any.any_l ()
+    | & _23: MutBorrow.t t_IterMut_usize = Any.any_l ()
     | & x: MutBorrow.t UInt64.t = Any.any_l () ])
     [ return (result: ()) -> {[@expl:all_zero ensures #0] Seq.length (view_Vec_usize_Global v.final)
       = Seq.length (view_Vec_usize_Global v.current)}

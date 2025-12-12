@@ -286,7 +286,7 @@ fn conj_inv_call<'tcx>(
     }
 }
 
-fn resolve_user_inv<'tcx>(
+pub(crate) fn resolve_user_inv<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     ty: Ty<'tcx>,
     typing_env: TypingEnv<'tcx>,

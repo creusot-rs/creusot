@@ -24,8 +24,6 @@ pub fn rev<T>(l: &mut List<T>) {
     let old_l = snapshot! { l };
     let mut prev = Nil;
     let mut head = replace(l, Nil);
-    #[invariant(inv(prev))]
-    #[invariant(inv(head))]
     #[invariant(rev_append(head, prev) == rev_append(*old_l.inner(), Nil))]
     while let Cons(mut curr) = head {
         let next = curr.1;

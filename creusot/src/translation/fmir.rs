@@ -250,7 +250,7 @@ impl Branches<'_> {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Invariant<'tcx> {
-    pub(crate) body: Term<'tcx>,
+    pub(crate) inv: Term<'tcx>,
     /// Label ("explanation") for the corresponding Why3 subgoal, including the "expl:" prefix
     #[type_visitable(ignore)]
     #[type_foldable(identity)]
@@ -281,7 +281,7 @@ pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LocalKind {
-    Param,
+    Param { open_inv: bool },
     Return,
     Temp,
     User,
@@ -506,7 +506,7 @@ pub(crate) fn super_visit_body<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, body
 
 pub(crate) fn super_visit_block<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, b: &Block<'tcx>) {
     let Block { invariants, variant, stmts, terminator } = b;
-    invariants.iter().for_each(|t| visitor.visit_term(&t.body));
+    invariants.iter().for_each(|t| visitor.visit_term(&t.inv));
     variant.iter().for_each(|v| visitor.visit_term(&v.term));
     stmts.iter().for_each(|s| visitor.visit_stmt(s));
     visitor.visit_terminator(terminator);
@@ -639,7 +639,7 @@ pub(crate) fn super_visit_mut_block<'tcx, V: FmirVisitorMut<'tcx>>(
     b: &mut Block<'tcx>,
 ) {
     let Block { invariants, variant, stmts, terminator } = b;
-    invariants.iter_mut().for_each(|t| visitor.visit_mut_term(&mut t.body));
+    invariants.iter_mut().for_each(|t| visitor.visit_mut_term(&mut t.inv));
     variant.iter_mut().for_each(|v| visitor.visit_mut_term(&mut v.term));
     stmts.iter_mut().for_each(|s| visitor.visit_mut_stmt(s));
     visitor.visit_mut_terminator(terminator);

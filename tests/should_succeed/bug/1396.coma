@@ -145,10 +145,6 @@ module M_foo1
         end}
       (! return {result}) ]
   
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
-  
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_i32
@@ -161,77 +157,75 @@ module M_foo1
         end}
       any) ]
   
-  type closure10 = { c0: MutBorrow.t Int32.t }
+  type closure9 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_refmut_closure10 [@inline:trivial] (_1: MutBorrow.t closure10) = _1.final = _1.current
+  predicate resolve_refmut_closure9 [@inline:trivial] (_1: MutBorrow.t closure9) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_closure10
+  meta "rewrite_def" predicate resolve_refmut_closure9
   
-  predicate postcondition_once_closure10 [@inline:trivial] (self: closure10) (args: ()) (result: ()) =
+  predicate postcondition_once_closure9 [@inline:trivial] (self: closure9) (args: ()) (result: ()) =
     Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final
   
-  meta "rewrite_def" predicate postcondition_once_closure10
+  meta "rewrite_def" predicate postcondition_once_closure9
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure10 [@inline:trivial] (_1: closure10) = resolve_refmut_i32 _1.c0
+  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_i32 _1.c0
   
-  meta "rewrite_def" predicate resolve_closure10
+  meta "rewrite_def" predicate resolve_closure9
   
-  predicate hist_inv_closure10 [@inline:trivial] (self: closure10) (result_state: closure10) =
+  predicate hist_inv_closure9 [@inline:trivial] (self: closure9) (result_state: closure9) =
     result_state.c0.final = self.c0.final
   
-  meta "rewrite_def" predicate hist_inv_closure10
+  meta "rewrite_def" predicate hist_inv_closure9
   
-  predicate postcondition_mut_closure10 [@inline:trivial] (self: closure10) (args: ()) (result_state: closure10) (result: ()) =
-    Int32.to_int self.c0.current + 1 = Int32.to_int result_state.c0.current /\ hist_inv_closure10 self result_state
+  predicate postcondition_mut_closure9 [@inline:trivial] (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
+    Int32.to_int self.c0.current + 1 = Int32.to_int result_state.c0.current /\ hist_inv_closure9 self result_state
   
-  meta "rewrite_def" predicate postcondition_mut_closure10
+  meta "rewrite_def" predicate postcondition_mut_closure9
   
-  function fn_mut_once_closure10 (self: closure10) (args: ()) (res: ()) : ()
+  function fn_mut_once_closure9 (self: closure9) (args: ()) (res: ()) : ()
   
-  axiom fn_mut_once_closure10_spec:
-    forall self: closure10, args: (), res: (). postcondition_once_closure10 self args res
-      = (exists res_state: closure10. postcondition_mut_closure10 self args res_state res
-        /\ resolve_closure10 res_state)
+  axiom fn_mut_once_closure9_spec: forall self: closure9, args: (), res: (). postcondition_once_closure9 self args res
+      = (exists res_state: closure9. postcondition_mut_closure9 self args res_state res /\ resolve_closure9 res_state)
   
-  function hist_inv_trans_closure10 (self: closure10) (b: closure10) (c: closure10) : ()
+  function hist_inv_trans_closure9 (self: closure9) (b: closure9) (c: closure9) : ()
   
-  axiom hist_inv_trans_closure10_spec: forall self: closure10, b: closure10, c: closure10. hist_inv_closure10 self b
-      -> hist_inv_closure10 b c -> hist_inv_closure10 self c
+  axiom hist_inv_trans_closure9_spec: forall self: closure9, b: closure9, c: closure9. hist_inv_closure9 self b
+      -> hist_inv_closure9 b c -> hist_inv_closure9 self c
   
-  function hist_inv_refl_closure10 (self: closure10) : ()
+  function hist_inv_refl_closure9 (self: closure9) : ()
   
-  axiom hist_inv_refl_closure10_spec: forall self: closure10. hist_inv_closure10 self self
+  axiom hist_inv_refl_closure9_spec: forall self: closure9. hist_inv_closure9 self self
   
-  function postcondition_mut_hist_inv_closure10 (self: closure10) (args: ()) (res_state: closure10) (res: ()) : ()
+  function postcondition_mut_hist_inv_closure9 (self: closure9) (args: ()) (res_state: closure9) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_closure10_spec:
-    forall self: closure10, args: (), res_state: closure10, res: (). postcondition_mut_closure10 self args res_state res
-      -> hist_inv_closure10 self res_state
+  axiom postcondition_mut_hist_inv_closure9_spec:
+    forall self: closure9, args: (), res_state: closure9, res: (). postcondition_mut_closure9 self args res_state res
+      -> hist_inv_closure9 self res_state
   
-  let rec closure10 (self: MutBorrow.t closure10) (return (x: ())) =
+  let rec closure9 (self: MutBorrow.t closure9) (return (x: ())) =
     {[@expl:closure requires] Int32.to_int self.current.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.current.c0.current} {(1: Int32.t)}
           (fun (_x: Int32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
-      | s1 = -{resolve_refmut_closure10 self}- s2
-      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure10 = self ])
+      | s1 = -{resolve_refmut_closure9 self}- s2
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure9 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.current.c0.current + 1
       = Int32.to_int self.final.c0.current}
-      {[@expl:closure hist_inv post] hist_inv_closure10 self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv_closure9 self.current self.final}
       (! return {result}) ]
   
-  predicate precondition_closure10 [@inline:trivial] (self: closure10) (args: ()) = Int32.to_int self.c0.current < 42
+  predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
   
-  meta "rewrite_def" predicate precondition_closure10
+  meta "rewrite_def" predicate precondition_closure9
   
-  let rec apply_mut_closure10 (f: closure10) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure10 f ()}
+  let rec apply_mut_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure9 f ()}
     any
-    [ return (result: ()) -> {exists g: closure10. postcondition_mut_closure10 f () g () /\ resolve_closure10 g}
+    [ return (result: ()) -> {exists g: closure9. postcondition_mut_closure9 f () g () /\ resolve_closure9 g}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -252,27 +246,26 @@ module M_foo1
       | s8 = [ &_old <- r.final ] s9
       | s9 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:mut invariant] _old = r.final}
+      [ bb5 = {[@expl:inferred invariant: unchanged value] _old = r.final}
         {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
         {[@expl:loop invariant #1] snap_r.final = r.final}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_33 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_32} (fun (_x: t_Option_i32) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _33}- s4
-        | s4 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_30} (fun (_x: t_Option_i32) -> [ &_29 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _31}- s4
+        | s4 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: Int32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_bor: MutBorrow.t Int32.t) -> [ &_42 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
-          | s3 = [ &_41 <- { c0 = _42 } ] s4
-          | s4 = apply_mut_closure10 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+              (fun (_bor: MutBorrow.t Int32.t) -> [ &_40 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
+          | s3 = [ &_39 <- { c0 = _40 } ] s4
+          | s4 = apply_mut_closure9 {_39} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = -{resolve_refmut_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_ret} ] ]
@@ -285,13 +278,13 @@ module M_foo1
     | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _31: t_Option_i32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _29: t_Option_i32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _40: () = Any.any_l ()
-    | & _41: closure10 = Any.any_l ()
-    | & _42: MutBorrow.t Int32.t = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: closure9 = Any.any_l ()
+    | & _40: MutBorrow.t Int32.t = Any.any_l ()
     | & _old: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo2
@@ -345,10 +338,6 @@ module M_foo2
         end}
       (! return {result}) ]
   
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
-  
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_i32
@@ -361,60 +350,58 @@ module M_foo2
         end}
       any) ]
   
-  type closure10 = { c0: MutBorrow.t (MutBorrow.t Int32.t) }
+  type closure9 = { c0: MutBorrow.t (MutBorrow.t Int32.t) }
   
-  predicate resolve_refmut_closure10 [@inline:trivial] (_1: MutBorrow.t closure10) = _1.final = _1.current
+  predicate resolve_refmut_closure9 [@inline:trivial] (_1: MutBorrow.t closure9) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_closure10
+  meta "rewrite_def" predicate resolve_refmut_closure9
   
-  predicate postcondition_once_closure10 [@inline:trivial] (self: closure10) (args: ()) (result: ()) =
+  predicate postcondition_once_closure9 [@inline:trivial] (self: closure9) (args: ()) (result: ()) =
     Int32.to_int self.c0.current.current + 1 = Int32.to_int self.c0.final.current
     /\ self.c0.current.final = self.c0.final.final
   
-  meta "rewrite_def" predicate postcondition_once_closure10
+  meta "rewrite_def" predicate postcondition_once_closure9
   
   predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_refmut_i32
   
-  predicate resolve_closure10 [@inline:trivial] (_1: closure10) = resolve_refmut_refmut_i32 _1.c0
+  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_refmut_i32 _1.c0
   
-  meta "rewrite_def" predicate resolve_closure10
+  meta "rewrite_def" predicate resolve_closure9
   
-  predicate hist_inv_closure10 [@inline:trivial] (self: closure10) (result_state: closure10) =
+  predicate hist_inv_closure9 [@inline:trivial] (self: closure9) (result_state: closure9) =
     result_state.c0.final = self.c0.final
   
-  meta "rewrite_def" predicate hist_inv_closure10
+  meta "rewrite_def" predicate hist_inv_closure9
   
-  predicate postcondition_mut_closure10 [@inline:trivial] (self: closure10) (args: ()) (result_state: closure10) (result: ()) =
+  predicate postcondition_mut_closure9 [@inline:trivial] (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
     Int32.to_int self.c0.current.current + 1 = Int32.to_int result_state.c0.current.current
-    /\ self.c0.current.final = result_state.c0.current.final /\ hist_inv_closure10 self result_state
+    /\ self.c0.current.final = result_state.c0.current.final /\ hist_inv_closure9 self result_state
   
-  meta "rewrite_def" predicate postcondition_mut_closure10
+  meta "rewrite_def" predicate postcondition_mut_closure9
   
-  function fn_mut_once_closure10 (self: closure10) (args: ()) (res: ()) : ()
+  function fn_mut_once_closure9 (self: closure9) (args: ()) (res: ()) : ()
   
-  axiom fn_mut_once_closure10_spec:
-    forall self: closure10, args: (), res: (). postcondition_once_closure10 self args res
-      = (exists res_state: closure10. postcondition_mut_closure10 self args res_state res
-        /\ resolve_closure10 res_state)
+  axiom fn_mut_once_closure9_spec: forall self: closure9, args: (), res: (). postcondition_once_closure9 self args res
+      = (exists res_state: closure9. postcondition_mut_closure9 self args res_state res /\ resolve_closure9 res_state)
   
-  function hist_inv_trans_closure10 (self: closure10) (b: closure10) (c: closure10) : ()
+  function hist_inv_trans_closure9 (self: closure9) (b: closure9) (c: closure9) : ()
   
-  axiom hist_inv_trans_closure10_spec: forall self: closure10, b: closure10, c: closure10. hist_inv_closure10 self b
-      -> hist_inv_closure10 b c -> hist_inv_closure10 self c
+  axiom hist_inv_trans_closure9_spec: forall self: closure9, b: closure9, c: closure9. hist_inv_closure9 self b
+      -> hist_inv_closure9 b c -> hist_inv_closure9 self c
   
-  function hist_inv_refl_closure10 (self: closure10) : ()
+  function hist_inv_refl_closure9 (self: closure9) : ()
   
-  axiom hist_inv_refl_closure10_spec: forall self: closure10. hist_inv_closure10 self self
+  axiom hist_inv_refl_closure9_spec: forall self: closure9. hist_inv_closure9 self self
   
-  function postcondition_mut_hist_inv_closure10 (self: closure10) (args: ()) (res_state: closure10) (res: ()) : ()
+  function postcondition_mut_hist_inv_closure9 (self: closure9) (args: ()) (res_state: closure9) (res: ()) : ()
   
-  axiom postcondition_mut_hist_inv_closure10_spec:
-    forall self: closure10, args: (), res_state: closure10, res: (). postcondition_mut_closure10 self args res_state res
-      -> hist_inv_closure10 self res_state
+  axiom postcondition_mut_hist_inv_closure9_spec:
+    forall self: closure9, args: (), res_state: closure9, res: (). postcondition_mut_closure9 self args res_state res
+      -> hist_inv_closure9 self res_state
   
-  let rec closure10 (self: MutBorrow.t closure10) (return (x: ())) =
+  let rec closure9 (self: MutBorrow.t closure9) (return (x: ())) =
     {[@expl:closure requires] Int32.to_int self.current.c0.current.current < 42}
     (! bb0
     [ bb0 = s0
@@ -422,22 +409,22 @@ module M_foo2
           (fun (_x: Int32.t) ->
             [ &self <- { self with current = { c0 = { self.current.c0 with current = { self.current.c0.current with current = _x } } } } ]
             s1)
-      | s1 = -{resolve_refmut_closure10 self}- s2
-      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure10 = self ])
+      | s1 = -{resolve_refmut_closure9 self}- s2
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure9 = self ])
     [ return (result: ()) -> {[@expl:closure ensures #0] Int32.to_int self.current.c0.current.current + 1
       = Int32.to_int self.final.c0.current.current}
       {[@expl:closure ensures #1] self.current.c0.current.final = self.final.c0.current.final}
-      {[@expl:closure hist_inv post] hist_inv_closure10 self.current self.final}
+      {[@expl:closure hist_inv post] hist_inv_closure9 self.current self.final}
       (! return {result}) ]
   
-  predicate precondition_closure10 [@inline:trivial] (self: closure10) (args: ()) =
+  predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) =
     Int32.to_int self.c0.current.current < 42
   
-  meta "rewrite_def" predicate precondition_closure10
+  meta "rewrite_def" predicate precondition_closure9
   
-  let rec apply_mut_closure10 (f: closure10) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure10 f ()}
+  let rec apply_mut_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure9 f ()}
     any
-    [ return (result: ()) -> {exists g: closure10. postcondition_mut_closure10 f () g () /\ resolve_closure10 g}
+    [ return (result: ()) -> {exists g: closure9. postcondition_mut_closure9 f () g () /\ resolve_closure9 g}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -462,25 +449,24 @@ module M_foo2
       | s8 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
         {[@expl:loop invariant #1] snap_r.final = r.final}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_33 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_32} (fun (_x: t_Option_i32) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _33}- s4
-        | s4 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_30} (fun (_x: t_Option_i32) -> [ &_29 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _31}- s4
+        | s4 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: Int32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {r}
-              (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_42 <- _bor ] [ &r <- _bor.final ] s3)
-          | s3 = [ &_41 <- { c0 = _42 } ] s4
-          | s4 = apply_mut_closure10 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+              (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_40 <- _bor ] [ &r <- _bor.final ] s3)
+          | s3 = [ &_39 <- { c0 = _40 } ] s4
+          | s4 = apply_mut_closure9 {_39} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = -{resolve_refmut_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_ret} ] ]
@@ -493,13 +479,13 @@ module M_foo2
     | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _31: t_Option_i32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _29: t_Option_i32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _40: () = Any.any_l ()
-    | & _41: closure10 = Any.any_l ()
-    | & _42: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _38: () = Any.any_l ()
+    | & _39: closure9 = Any.any_l ()
+    | & _40: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo3
   use creusot.int.Int32
@@ -551,10 +537,6 @@ module M_foo3
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -659,27 +641,26 @@ module M_foo3
       | s8 = [ &_old <- r.final ] s9
       | s9 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:mut invariant] _old = r.final}
+      [ bb5 = {[@expl:inferred invariant: unchanged value] _old = r.final}
         {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
         {[@expl:loop invariant #1] snap_r.final = r.final}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_33 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_32} (fun (_x: t_Option_i32) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _33}- s4
-        | s4 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_30} (fun (_x: t_Option_i32) -> [ &_29 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _31}- s4
+        | s4 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: Int32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_bor: MutBorrow.t Int32.t) -> [ &_42 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
-          | s3 = [ &_41 <- { c0 = _42 } ] s4
-          | s4 = apply_mut_closure1 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+              (fun (_bor: MutBorrow.t Int32.t) -> [ &_40 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
+          | s3 = [ &_39 <- { c0 = _40 } ] s4
+          | s4 = apply_mut_closure1 {_39} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = -{resolve_refmut_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_ret} ] ]
@@ -692,13 +673,13 @@ module M_foo3
     | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _31: t_Option_i32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _29: t_Option_i32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _40: () = Any.any_l ()
-    | & _41: closure1 = Any.any_l ()
-    | & _42: MutBorrow.t Int32.t = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: closure1 = Any.any_l ()
+    | & _40: MutBorrow.t Int32.t = Any.any_l ()
     | & _old: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo4
@@ -752,10 +733,6 @@ module M_foo4
         end}
       (! return {result}) ]
   
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
-  
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_i32
@@ -768,13 +745,13 @@ module M_foo4
         end}
       any) ]
   
-  type closure10 = { c0: MutBorrow.t Int32.t }
+  type closure9 = { c0: MutBorrow.t Int32.t }
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec closure10 (self: closure10) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
+  let rec closure9 (self: closure9) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.c0.current} {(1: Int32.t)}
@@ -784,22 +761,21 @@ module M_foo4
           | _ -> true
           end}-
         s2
-      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure10 = self ])
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure9 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final}
       (! return {result}) ]
   
-  predicate precondition_closure10 [@inline:trivial] (self: closure10) (args: ()) = Int32.to_int self.c0.current < 42
+  predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
   
-  meta "rewrite_def" predicate precondition_closure10
+  meta "rewrite_def" predicate precondition_closure9
   
-  predicate postcondition_once_closure10 [@inline:trivial] (self: closure10) (args: ()) (result: ()) =
+  predicate postcondition_once_closure9 [@inline:trivial] (self: closure9) (args: ()) (result: ()) =
     Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final
   
-  meta "rewrite_def" predicate postcondition_once_closure10
+  meta "rewrite_def" predicate postcondition_once_closure9
   
-  let rec apply_once_closure10 (f: closure10) (return (x: ())) =
-    {[@expl:apply_once requires] precondition_closure10 f ()}
-    any [ return (result: ()) -> {postcondition_once_closure10 f () ()} (! return {result}) ]
+  let rec apply_once_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_once requires] precondition_closure9 f ()}
+    any [ return (result: ()) -> {postcondition_once_closure9 f () ()} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -819,27 +795,26 @@ module M_foo4
       | s8 = [ &_old <- r.final ] s9
       | s9 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:mut invariant] _old = r.final}
+      [ bb5 = {[@expl:inferred invariant: unchanged value] _old = r.final}
         {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
         {[@expl:loop invariant #1] snap_r.final = r.final}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_33 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_32} (fun (_x: t_Option_i32) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _33}- s4
-        | s4 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_30} (fun (_x: t_Option_i32) -> [ &_29 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _31}- s4
+        | s4 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: Int32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_bor: MutBorrow.t Int32.t) -> [ &_42 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
-          | s3 = [ &_41 <- { c0 = _42 } ] s4
-          | s4 = apply_once_closure10 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+              (fun (_bor: MutBorrow.t Int32.t) -> [ &_40 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
+          | s3 = [ &_39 <- { c0 = _40 } ] s4
+          | s4 = apply_once_closure9 {_39} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = -{resolve_refmut_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_ret} ] ]
@@ -852,13 +827,13 @@ module M_foo4
     | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _31: t_Option_i32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _29: t_Option_i32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _40: () = Any.any_l ()
-    | & _41: closure10 = Any.any_l ()
-    | & _42: MutBorrow.t Int32.t = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: closure9 = Any.any_l ()
+    | & _40: MutBorrow.t Int32.t = Any.any_l ()
     | & _old: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_foo5
@@ -912,10 +887,6 @@ module M_foo5
         end}
       (! return {result}) ]
   
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
-  
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_i32
@@ -928,13 +899,13 @@ module M_foo5
         end}
       any) ]
   
-  type closure10 = { c0: MutBorrow.t Int32.t }
+  type closure9 = { c0: MutBorrow.t Int32.t }
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec closure10 (self: closure10) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
+  let rec closure9 (self: closure9) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.c0.current} {(1: Int32.t)}
@@ -944,22 +915,21 @@ module M_foo5
           | _ -> true
           end}-
         s2
-      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure10 = self ])
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure9 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final}
       (! return {result}) ]
   
-  predicate precondition_closure10 [@inline:trivial] (self: closure10) (args: ()) = Int32.to_int self.c0.current < 42
+  predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
   
-  meta "rewrite_def" predicate precondition_closure10
+  meta "rewrite_def" predicate precondition_closure9
   
-  predicate postcondition_once_closure10 [@inline:trivial] (self: closure10) (args: ()) (result: ()) =
+  predicate postcondition_once_closure9 [@inline:trivial] (self: closure9) (args: ()) (result: ()) =
     Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final
   
-  meta "rewrite_def" predicate postcondition_once_closure10
+  meta "rewrite_def" predicate postcondition_once_closure9
   
-  let rec apply_once_closure10 (f: closure10) (return (x: ())) =
-    {[@expl:apply_once requires] precondition_closure10 f ()}
-    any [ return (result: ()) -> {postcondition_once_closure10 f () ()} (! return {result}) ]
+  let rec apply_once_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_once requires] precondition_closure9 f ()}
+    any [ return (result: ()) -> {postcondition_once_closure9 f () ()} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -979,27 +949,26 @@ module M_foo5
       | s8 = [ &_old <- r.final ] s9
       | s9 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:mut invariant] _old = r.final}
+      [ bb5 = {[@expl:inferred invariant: unchanged value] _old = r.final}
         {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
         {[@expl:loop invariant #0] Int32.to_int r.current = 13 + Seq.length produced}
         {[@expl:loop invariant #1] snap_r.final = r.final}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_33 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_33.current} {MutBorrow.get_id _33}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_32 <- _bor ] [ &_33 <- { _33 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_32} (fun (_x: t_Option_i32) -> [ &_31 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _33}- s4
-        | s4 = any [ br0 -> {_31 = None} (! bb10) | br1 (x0: Int32.t) -> {_31 = Some x0} (! bb11) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_30} (fun (_x: t_Option_i32) -> [ &_29 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _31}- s4
+        | s4 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: Int32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_31} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <Int32.t> {r.current}
-              (fun (_bor: MutBorrow.t Int32.t) -> [ &_42 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
-          | s3 = [ &_41 <- { c0 = _42 } ] s4
-          | s4 = apply_once_closure10 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+              (fun (_bor: MutBorrow.t Int32.t) -> [ &_40 <- _bor ] [ &r <- { r with current = _bor.final } ] s3)
+          | s3 = [ &_39 <- { c0 = _40 } ] s4
+          | s4 = apply_once_closure9 {_39} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = -{resolve_refmut_i32 r}- s1 | s1 = {[@expl:assertion] Int32.to_int x = 42} s2 | s2 = return {_ret} ] ]
@@ -1012,12 +981,12 @@ module M_foo5
     | & _9: Int32.t = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _31: t_Option_i32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _29: t_Option_i32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _40: () = Any.any_l ()
-    | & _41: closure10 = Any.any_l ()
-    | & _42: MutBorrow.t Int32.t = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: closure9 = Any.any_l ()
+    | & _40: MutBorrow.t Int32.t = Any.any_l ()
     | & _old: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

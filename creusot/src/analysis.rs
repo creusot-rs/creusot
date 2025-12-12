@@ -968,10 +968,18 @@ impl<'tcx> BodyLocals<'tcx> {
             .iter_enumerated()
             .filter(|(loc, _)| !erased_locals.contains(*loc))
             .map(|(loc, d)| {
-                let (ident, kind) = if loc.index() == 0 {
+                let idx = loc.index();
+                let (ident, kind) = if idx == 0 {
                     (Ident::fresh(ctx.crate_name(), "_ret"), LocalKind::Return)
-                } else if 0 < loc.index() && loc.index() <= body.arg_count {
-                    (args[loc.index() - 1].0.0, LocalKind::Param)
+                } else if 0 < idx && idx <= body.arg_count {
+                    (
+                        args[idx - 1].0.0,
+                        LocalKind::Param {
+                            open_inv: ctx
+                                .params_open_inv(body.source.def_id())
+                                .is_some_and(|bs| bs.contains(idx - 1)),
+                        },
+                    )
                 } else if let Some(debug_info) =
                     body.var_debug_info.iter().find(|var_info| match var_info.value {
                         mir::VarDebugInfoContents::Place(p) => {
@@ -986,7 +994,7 @@ impl<'tcx> BodyLocals<'tcx> {
                     );
                     (ident, LocalKind::User)
                 } else {
-                    (Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index())), LocalKind::Temp)
+                    (Ident::fresh(ctx.crate_name(), &format!("_{}", idx)), LocalKind::Temp)
                 };
                 (
                     (ident, fmir::LocalDecl { span: d.source_info.span, ty: d.ty, kind }),

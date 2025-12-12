@@ -27,6 +27,20 @@ module M_impl_List_T__index (* List<T> *)
   
   type t_List_T = Cons t_T t_List_T | Nil
   
+  type t_Option_T = None | Some t_T
+  
+  function get_T (self: t_List_T) (ix: int) : t_Option_T = match self with
+      | Cons t ls -> if ix = 0 then Some t else get_T ls (ix - 1)
+      | Nil -> None
+      end
+  
+  function len_T (self: t_List_T) : int = match self with
+      | Cons _ ls -> 1 + len_T ls
+      | Nil -> 0
+      end
+  
+  axiom len_T_spec: forall self: t_List_T. len_T self >= 0
+  
   predicate inv_T (_1: t_T)
   
   predicate inv_List_T (_1: t_List_T)
@@ -50,20 +64,6 @@ module M_impl_List_T__index (* List<T> *)
   predicate inv_ref_List_T [@inline:trivial] (_1: t_List_T) = invariant_ref_List_T _1
   
   meta "rewrite_def" predicate inv_ref_List_T
-  
-  type t_Option_T = None | Some t_T
-  
-  function get_T (self: t_List_T) (ix: int) : t_Option_T = match self with
-      | Cons t ls -> if ix = 0 then Some t else get_T ls (ix - 1)
-      | Nil -> None
-      end
-  
-  function len_T (self: t_List_T) : int = match self with
-      | Cons _ ls -> 1 + len_T ls
-      | Nil -> 0
-      end
-  
-  axiom len_T_spec: forall self: t_List_T. len_T self >= 0
   
   let rec elim_Cons (_x: t_List_T) (return (f0: t_T) (f1: t_List_T)) = any
     [ _k (f0: t_T) (f1: t_List_T) -> {Cons f0 f1 = _x} (! return {f0} {f1})
@@ -91,19 +91,19 @@ module M_impl_List_T__index (* List<T> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &orig_ix <- ix ] s1 | s1 = [ &l <- self ] s2 | s2 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant #0] UInt64.t'int ix < len_T l}
+      [ bb1 = {[@expl:inferred invariant: type invariant] inv_ref_List_T l}
+        {[@expl:loop invariant #0] UInt64.t'int ix < len_T l}
         {[@expl:loop invariant #1] get_T self (UInt64.t'int orig_ix) = get_T l (UInt64.t'int ix)}
-        {[@expl:loop invariant #2] inv_ref_List_T l}
         (! s0)
         [ s0 = any [ br0 (x0: t_T) (x1: t_List_T) -> {l = Cons x0 x1} (! bb4) | br1 -> {l = Nil} (! bb7) ] ]
         [ bb4 = s0
           [ s0 = elim_Cons {l} (fun (r0: t_T) (r1: t_List_T) -> [ &t <- r0 ] s1)
           | s1 = elim_Cons {l} (fun (r0: t_T) (r1: t_List_T) -> [ &ls <- r1 ] s2)
-          | s2 = [ &_27 <- UInt64.gt ix (0: UInt64.t) ] s3
-          | s3 = any [ br0 -> {_27 = false} (! bb6) | br1 -> {_27} (! bb5) ] ]
+          | s2 = [ &_25 <- UInt64.gt ix (0: UInt64.t) ] s3
+          | s3 = any [ br0 -> {_25 = false} (! bb6) | br1 -> {_25} (! bb5) ] ]
         | bb5 = s0
-          [ s0 = [ &_30 <- ls ] s1
-          | s1 = [ &l <- _30 ] s2
+          [ s0 = [ &_28 <- ls ] s1
+          | s1 = [ &l <- _28 ] s2
           | s2 = UInt64.sub {ix} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &ix <- _x ] s3)
           | s3 = bb1 ] ] ]
     | bb7 = {false} any
@@ -115,8 +115,8 @@ module M_impl_List_T__index (* List<T> *)
     | & l: t_List_T = Any.any_l ()
     | & t: t_T = Any.any_l ()
     | & ls: t_List_T = Any.any_l ()
-    | & _27: bool = Any.any_l ()
-    | & _30: t_List_T = Any.any_l () ])
+    | & _25: bool = Any.any_l ()
+    | & _28: t_List_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:index result type invariant] inv_ref_T result}
       {[@expl:index ensures] Some result = get_T self (UInt64.t'int ix)}
       (! return {result}) ]
@@ -129,6 +129,13 @@ module M_impl_List_T__len (* List<T> *)
   type t_T
   
   type t_List_T = Cons t_T t_List_T | Nil
+  
+  function len_T (self: t_List_T) : int = match self with
+      | Cons _ ls -> 1 + len_T ls
+      | Nil -> 0
+      end
+  
+  axiom len_T_spec: forall self: t_List_T. len_T self >= 0
   
   predicate inv_T (_1: t_T)
   
@@ -153,13 +160,6 @@ module M_impl_List_T__len (* List<T> *)
   predicate inv_ref_List_T [@inline:trivial] (_1: t_List_T) = invariant_ref_List_T _1
   
   meta "rewrite_def" predicate inv_ref_List_T
-  
-  function len_T (self: t_List_T) : int = match self with
-      | Cons _ ls -> 1 + len_T ls
-      | Nil -> 0
-      end
-  
-  axiom len_T_spec: forall self: t_List_T. len_T self >= 0
   
   let rec elim_Cons (_x: t_List_T) (return (f0: t_T) (f1: t_List_T)) = any
     [ _k (f0: t_T) (f1: t_List_T) -> {Cons f0 f1 = _x} (! return {f0} {f1})
@@ -223,8 +223,8 @@ module M_impl_List_T__len (* List<T> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &len <- (0: UInt64.t) ] s1 | s1 = [ &l <- self ] s2 | s2 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant #0] UInt64.t'int len + len_T l = len_T self}
-        {[@expl:loop invariant #1] inv_ref_List_T l}
+      [ bb1 = {[@expl:inferred invariant: type invariant] inv_ref_List_T l}
+        {[@expl:loop invariant] UInt64.t'int len + len_T l = len_T self}
         (! s0)
         [ s0 = any [ br0 (x0: t_T) (x1: t_List_T) -> {l = Cons x0 x1} (! bb4) | br1 -> {l = Nil} (! bb5) ] ]
         [ bb4 = s0

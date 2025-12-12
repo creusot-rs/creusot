@@ -303,12 +303,14 @@ pub fn why_body<'tcx>(
     let arg_index = body
         .locals
         .iter()
-        .flat_map(|(id, decl)| if decl.kind == LocalKind::Param { Some(*id) } else { None })
+        .flat_map(
+            |(id, decl)| if let LocalKind::Param { .. } = decl.kind { Some(*id) } else { None },
+        )
         .enumerate()
         .map(|(i, k)| (k, i))
         .collect::<HashMap<_, _>>();
 
-    optimizations(ctx, &mut body, body_id.def_id);
+    optimizations(ctx, &mut body, names.source_id(), names.typing_env());
 
     let wto = weak_topological_order(&node_graph(&body), START_BLOCK);
 
@@ -334,7 +336,7 @@ pub fn why_body<'tcx>(
         .into_iter()
         .map(|(id, decl)| {
             let ty = translate_ty(ctx, names, decl.span, decl.ty);
-            let init = if decl.kind == LocalKind::Param {
+            let init = if let LocalKind::Param { .. } = decl.kind {
                 Exp::var(params[arg_index[&id]])
             } else {
                 Exp::qvar(names.in_pre(PreMod::Any, "any_l")).app([Exp::unit()])
@@ -1108,7 +1110,7 @@ impl<'tcx> Block<'tcx> {
 
         for i in self.invariants.into_iter().rev() {
             body = Expr::assert(
-                lower_pure(lower.ctx, lower.names, &i.body.spanned())
+                lower_pure(lower.ctx, lower.names, &i.inv.spanned())
                     .with_attr(Attribute::Attr(i.expl)),
                 body,
             );

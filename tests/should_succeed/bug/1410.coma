@@ -53,15 +53,11 @@ module M_bar
   
   predicate precondition_F (self: t_F) (args: ())
   
-  predicate inv_F (_1: t_F)
-  
-  predicate inv_Range_i32 [@inline:trivial] (_1: t_Range_i32) = true
-  
-  meta "rewrite_def" predicate inv_Range_i32
-  
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_i32
+  
+  predicate inv_F (_1: t_F)
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
@@ -126,26 +122,25 @@ module M_bar
       | s3 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s4
       | s4 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:for invariant] inv_Seq_i32 produced}
-        {[@expl:for invariant] inv_Range_i32 iter}
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_F f}
+        {[@expl:for invariant] inv_Seq_i32 produced}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
-        {[@expl:loop invariant #0] inv_F f}
-        {[@expl:loop invariant #1] Seq.length produced = 0 -> precondition_F f ()}
+        {[@expl:loop invariant] Seq.length produced = 0 -> precondition_F f ()}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_28 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_i32> {_28.current} {MutBorrow.get_id _28}
-            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_27} (fun (_x: t_Option_i32) -> [ &_26 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_i32 _28}- s4
-        | s4 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int32.t) -> {_26 = Some x0} (! bb10) ] ]
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_24 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_24.current} {MutBorrow.get_id _24}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_23 <- _bor ] [ &_24 <- { _24 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_23} (fun (_x: t_Option_i32) -> [ &_22 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _24}- s4
+        | s4 = any [ br0 -> {_22 = None} (! bb9) | br1 (x0: Int32.t) -> {_22 = Some x0} (! bb10) ] ]
         [ bb10 = s0
-          [ s0 = elim_Some {_26} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_22} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <t_F> {f}
-              (fun (_bor: MutBorrow.t t_F) -> [ &_36 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s3)
+              (fun (_bor: MutBorrow.t t_F) -> [ &_32 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s3)
             [ _ck -> (! {inv_F f} any) ]
-          | s3 = call_mut_F {_36} {_37} (fun (_x: ()) -> [ &_35 <- _x ] s4)
+          | s3 = call_mut_F {_32} {_33} (fun (_x: ()) -> [ &_31 <- _x ] s4)
           | s4 = bb4 ] ] ]
     | bb9 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ] | s1 = -{resolve_F f}- s2 | s2 = return {_ret} ] ]
@@ -155,11 +150,11 @@ module M_bar
     | & _5: t_Range_i32 = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
-    | & _26: t_Option_i32 = Any.any_l ()
-    | & _27: MutBorrow.t t_Range_i32 = Any.any_l ()
-    | & _28: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _22: t_Option_i32 = Any.any_l ()
+    | & _23: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _24: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
-    | & _35: () = Any.any_l ()
-    | & _36: MutBorrow.t t_F = Any.any_l ()
-    | & _37: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _31: () = Any.any_l ()
+    | & _32: MutBorrow.t t_F = Any.any_l ()
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

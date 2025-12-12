@@ -351,10 +351,6 @@ module M_sum_range
         end}
       (! return {result}) ]
   
-  predicate inv_Range [@inline:trivial] (_1: t_Range) = true
-  
-  meta "rewrite_def" predicate inv_Range
-  
   let rec elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
     [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {match _x with
@@ -377,16 +373,15 @@ module M_sum_range
       | s4 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s5
       | s5 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant #0] inv_Range it}
-        {[@expl:loop invariant #1] produces_Range iter_old produced it}
-        {[@expl:loop invariant #2] Int64.to_int i = Seq.length produced /\ Int64.le i n}
+      [ bb4 = {[@expl:loop invariant #0] produces_Range iter_old produced it}
+        {[@expl:loop invariant #1] Int64.to_int i = Seq.length produced /\ Int64.le i n}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range> {it}
-            (fun (_bor: MutBorrow.t t_Range) -> [ &_29 <- _bor ] [ &it <- _bor.final ] s1)
-        | s1 = next_Range {_29} (fun (_x: t_Option_isize) -> [ &_28 <- _x ] s2)
-        | s2 = any [ br0 -> {_28 = None} (! bb9) | br1 (x0: Int64.t) -> {_28 = Some x0} (! bb10) ] ]
+            (fun (_bor: MutBorrow.t t_Range) -> [ &_27 <- _bor ] [ &it <- _bor.final ] s1)
+        | s1 = next_Range {_27} (fun (_x: t_Option_isize) -> [ &_26 <- _x ] s2)
+        | s2 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some x0} (! bb10) ] ]
         [ bb10 = s0
-          [ s0 = elim_Some {_28} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
+          [ s0 = elim_Some {_26} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
           | s2 = Int64.add {i} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &i <- _x ] s3)
           | s3 = bb4 ] ] ]
@@ -398,8 +393,8 @@ module M_sum_range
     | & _8: t_Range = Any.any_l ()
     | & iter_old: t_Range = Any.any_l ()
     | & produced: Seq.seq Int64.t = Any.any_l ()
-    | & _28: t_Option_isize = Any.any_l ()
-    | & _29: MutBorrow.t t_Range = Any.any_l ()
+    | & _26: t_Option_isize = Any.any_l ()
+    | & _27: MutBorrow.t t_Range = Any.any_l ()
     | & x: Int64.t = Any.any_l () ])
     [ return (result: Int64.t) -> {[@expl:sum_range ensures] result = n} (! return {result}) ]
 end

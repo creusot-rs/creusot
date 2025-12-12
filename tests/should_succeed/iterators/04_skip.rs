@@ -1,6 +1,6 @@
 // WHY3PROVE
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, prelude::*};
+use creusot_contracts::prelude::*;
 
 mod common;
 use common::Iterator;
@@ -60,7 +60,6 @@ where
         let mut n = std::mem::take(&mut self.n);
         let mut skipped = snapshot! { Seq::empty() };
 
-        #[invariant(inv(self))]
         #[invariant(skipped.len() + n@ == old_self.n@)]
         #[invariant(old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(forall<i> 0 <= i && i < skipped.len() ==> resolve(skipped[i]))]

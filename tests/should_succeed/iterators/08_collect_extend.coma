@@ -147,33 +147,33 @@ module M_extend
       | s4 = [ &_old <- vec.final ] s5
       | s5 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:mut invariant] _old = vec.final}
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_I iter'0}
+        {[@expl:inferred invariant: type invariant] inv_refmut_Vec_T_Global vec}
+        {[@expl:inferred invariant: unchanged value] _old = vec.final}
         {[@expl:for invariant] inv_Seq_T produced}
-        {[@expl:for invariant] inv_I iter'0}
         {[@expl:for invariant] produces_I iter_old produced iter'0}
-        {[@expl:loop invariant #0] inv_refmut_Vec_T_Global vec}
-        {[@expl:loop invariant #1] Seq.(==) (view_Vec_T_Global vec.current) (Seq.(++) (view_Vec_T_Global old_vec.current) produced)}
+        {[@expl:loop invariant] Seq.(==) (view_Vec_T_Global vec.current) (Seq.(++) (view_Vec_T_Global old_vec.current) produced)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
-            (fun (_bor: MutBorrow.t t_I) -> [ &_34 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
+            (fun (_bor: MutBorrow.t t_I) -> [ &_30 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
           [ _ck -> (! {inv_I iter'0} any) ]
-        | s1 = MutBorrow.borrow_final <t_I> {_34.current} {MutBorrow.get_id _34}
+        | s1 = MutBorrow.borrow_final <t_I> {_30.current} {MutBorrow.get_id _30}
             (fun (_bor: MutBorrow.t t_I) ->
-              [ &_33 <- _bor ] -{inv_I _bor.final}-
-              [ &_34 <- { _34 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _34.current} any) ]
-        | s2 = next_I {_33} (fun (_x: t_Option_T) -> [ &_32 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _34} any) ]
-        | s4 = -{resolve_refmut_I _34}- s5
-        | s5 = any [ br0 -> {_32 = None} (! bb10) | br1 (x0: t_T) -> {_32 = Some x0} (! bb11) ] ]
+              [ &_29 <- _bor ] -{inv_I _bor.final}-
+              [ &_30 <- { _30 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _30.current} any) ]
+        | s2 = next_I {_29} (fun (_x: t_Option_T) -> [ &_28 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _30} any) ]
+        | s4 = -{resolve_refmut_I _30}- s5
+        | s5 = any [ br0 -> {_28 = None} (! bb10) | br1 (x0: t_T) -> {_28 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_32} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_28} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &x <- __creusot_proc_iter_elem ] s3
           | s3 = MutBorrow.borrow_mut <t_Vec_T_Global> {vec.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
-                [ &_43 <- _bor ] -{inv_Vec_T_Global _bor.final}-
+                [ &_39 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &vec <- { vec with current = _bor.final } ] s4) [ _ck -> (! {inv_Vec_T_Global vec.current} any) ]
-          | s4 = push_T {_43} {x} (fun (_x: ()) -> [ &_42 <- _x ] s5)
+          | s4 = push_T {_39} {x} (fun (_x: ()) -> [ &_38 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
@@ -188,13 +188,13 @@ module M_extend
     | & iter'0: t_I = Any.any_l ()
     | & iter_old: t_I = Any.any_l ()
     | & produced: Seq.seq t_T = Any.any_l ()
-    | & _32: t_Option_T = Any.any_l ()
-    | & _33: MutBorrow.t t_I = Any.any_l ()
-    | & _34: MutBorrow.t t_I = Any.any_l ()
+    | & _28: t_Option_T = Any.any_l ()
+    | & _29: MutBorrow.t t_I = Any.any_l ()
+    | & _30: MutBorrow.t t_I = Any.any_l ()
     | & __creusot_proc_iter_elem: t_T = Any.any_l ()
     | & x: t_T = Any.any_l ()
-    | & _42: () = Any.any_l ()
-    | & _43: MutBorrow.t t_Vec_T_Global = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:extend ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_T. completed_I done'
         /\ produces_I iter prod done'.current
@@ -350,32 +350,32 @@ module M_collect
       | s3 = [ &produced <- Seq.empty: Seq.seq t_Item ] s4
       | s4 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:for invariant] inv_Seq_Item produced}
-        {[@expl:for invariant] inv_I iter'0}
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_I iter'0}
+        {[@expl:inferred invariant: type invariant] inv_Vec_Item_Global res}
+        {[@expl:for invariant] inv_Seq_Item produced}
         {[@expl:for invariant] produces_I iter_old produced iter'0}
-        {[@expl:loop invariant #0] inv_Vec_Item_Global res}
-        {[@expl:loop invariant #1] Seq.(==) (view_Vec_Item_Global res) produced}
+        {[@expl:loop invariant] Seq.(==) (view_Vec_Item_Global res) produced}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
-            (fun (_bor: MutBorrow.t t_I) -> [ &_30 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
+            (fun (_bor: MutBorrow.t t_I) -> [ &_26 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
           [ _ck -> (! {inv_I iter'0} any) ]
-        | s1 = MutBorrow.borrow_final <t_I> {_30.current} {MutBorrow.get_id _30}
+        | s1 = MutBorrow.borrow_final <t_I> {_26.current} {MutBorrow.get_id _26}
             (fun (_bor: MutBorrow.t t_I) ->
-              [ &_29 <- _bor ] -{inv_I _bor.final}-
-              [ &_30 <- { _30 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _30.current} any) ]
-        | s2 = next_I {_29} (fun (_x: t_Option_Item) -> [ &_28 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _30} any) ]
-        | s4 = -{resolve_refmut_I _30}- s5
-        | s5 = any [ br0 -> {_28 = None} (! bb10) | br1 (x0: t_Item) -> {_28 = Some x0} (! bb11) ] ]
+              [ &_25 <- _bor ] -{inv_I _bor.final}-
+              [ &_26 <- { _26 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _26.current} any) ]
+        | s2 = next_I {_25} (fun (_x: t_Option_Item) -> [ &_24 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _26} any) ]
+        | s4 = -{resolve_refmut_I _26}- s5
+        | s5 = any [ br0 -> {_24 = None} (! bb10) | br1 (x0: t_Item) -> {_24 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_28} (fun (r0: t_Item) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_24} (fun (r0: t_Item) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &x <- __creusot_proc_iter_elem ] s3
           | s3 = MutBorrow.borrow_mut <t_Vec_Item_Global> {res}
               (fun (_bor: MutBorrow.t t_Vec_Item_Global) ->
-                [ &_39 <- _bor ] -{inv_Vec_Item_Global _bor.final}-
+                [ &_35 <- _bor ] -{inv_Vec_Item_Global _bor.final}-
                 [ &res <- _bor.final ] s4) [ _ck -> (! {inv_Vec_Item_Global res} any) ]
-          | s4 = push_Item {_39} {x} (fun (_x: ()) -> [ &_38 <- _x ] s5)
+          | s4 = push_Item {_35} {x} (fun (_x: ()) -> [ &_34 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
@@ -388,13 +388,13 @@ module M_collect
     | & iter'0: t_I = Any.any_l ()
     | & iter_old: t_I = Any.any_l ()
     | & produced: Seq.seq t_Item = Any.any_l ()
-    | & _28: t_Option_Item = Any.any_l ()
-    | & _29: MutBorrow.t t_I = Any.any_l ()
-    | & _30: MutBorrow.t t_I = Any.any_l ()
+    | & _24: t_Option_Item = Any.any_l ()
+    | & _25: MutBorrow.t t_I = Any.any_l ()
+    | & _26: MutBorrow.t t_I = Any.any_l ()
     | & __creusot_proc_iter_elem: t_Item = Any.any_l ()
     | & x: t_Item = Any.any_l ()
-    | & _38: () = Any.any_l ()
-    | & _39: MutBorrow.t t_Vec_Item_Global = Any.any_l () ])
+    | & _34: () = Any.any_l ()
+    | & _35: MutBorrow.t t_Vec_Item_Global = Any.any_l () ])
     [ return (result: t_Vec_Item_Global) -> {[@expl:collect result type invariant] inv_Vec_Item_Global result}
       {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve_I done'.final
         /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_Item_Global result = prod}

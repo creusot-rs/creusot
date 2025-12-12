@@ -99,10 +99,6 @@ module M_compute_sum_of_odd
   
   axiom sum_of_odd_def: forall x: int. sum_of_odd x = (if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
-  predicate inv_Range_u32 [@inline:trivial] (_1: t_Range_u32) = true
-  
-  meta "rewrite_def" predicate inv_Range_u32
-  
   predicate inv_Seq_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_u32
@@ -140,25 +136,24 @@ module M_compute_sum_of_odd
       | s5 = bb4 ]
     | bb4 = bb4
       [ bb4 = {[@expl:for invariant] inv_Seq_u32 produced}
-        {[@expl:for invariant] inv_Range_u32 iter}
         {[@expl:for invariant] produces_Range_u32 iter_old produced iter}
         {[@expl:loop invariant] UInt32.t'int s = sum_of_odd (Seq.length produced)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_u32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_32 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_u32> {_32.current} {MutBorrow.get_id _32}
-            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_31 <- _bor ] [ &_32 <- { _32 with current = _bor.final } ] s2)
-        | s2 = next_Range_u32 {_31} (fun (_x: t_Option_u32) -> [ &_30 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_u32 _32}- s4
-        | s4 = any [ br0 -> {_30 = None} (! bb9) | br1 (x0: UInt32.t) -> {_30 = Some x0} (! bb10) ] ]
+            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_30 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_u32> {_30.current} {MutBorrow.get_id _30}
+            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_29 <- _bor ] [ &_30 <- { _30 with current = _bor.final } ] s2)
+        | s2 = next_Range_u32 {_29} (fun (_x: t_Option_u32) -> [ &_28 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_u32 _30}- s4
+        | s4 = any [ br0 -> {_28 = None} (! bb9) | br1 (x0: UInt32.t) -> {_28 = Some x0} (! bb10) ] ]
         [ bb10 = s0
-          [ s0 = elim_Some {_30} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_28} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
           | s3 = {[@expl:assertion] let _ = sum_of_odd_is_sqr (UInt32.t'int i) in true} s4
-          | s4 = UInt32.mul {(2: UInt32.t)} {i} (fun (_x: UInt32.t) -> [ &_44 <- _x ] s5)
-          | s5 = UInt32.add {_44} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_43 <- _x ] s6)
-          | s6 = UInt32.add {s} {_43} (fun (_x: UInt32.t) -> [ &s <- _x ] s7)
+          | s4 = UInt32.mul {(2: UInt32.t)} {i} (fun (_x: UInt32.t) -> [ &_42 <- _x ] s5)
+          | s5 = UInt32.add {_42} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_41 <- _x ] s6)
+          | s6 = UInt32.add {s} {_41} (fun (_x: UInt32.t) -> [ &s <- _x ] s7)
           | s7 = bb4 ] ] ]
     | bb9 = s0 [ s0 = [ &_ret <- s ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
@@ -168,13 +163,13 @@ module M_compute_sum_of_odd
     | & _10: t_Range_u32 = Any.any_l ()
     | & iter_old: t_Range_u32 = Any.any_l ()
     | & produced: Seq.seq UInt32.t = Any.any_l ()
-    | & _30: t_Option_u32 = Any.any_l ()
-    | & _31: MutBorrow.t t_Range_u32 = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_u32 = Any.any_l ()
+    | & _28: t_Option_u32 = Any.any_l ()
+    | & _29: MutBorrow.t t_Range_u32 = Any.any_l ()
+    | & _30: MutBorrow.t t_Range_u32 = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt32.t = Any.any_l ()
     | & i: UInt32.t = Any.any_l ()
-    | & _43: UInt32.t = Any.any_l ()
-    | & _44: UInt32.t = Any.any_l () ])
+    | & _41: UInt32.t = Any.any_l ()
+    | & _42: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:compute_sum_of_odd ensures] UInt32.t'int result
       = sum_of_odd (UInt32.t'int x)}
       (! return {result}) ]

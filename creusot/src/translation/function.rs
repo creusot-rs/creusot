@@ -185,8 +185,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
             // compute invariants assertions to insert in this basic block
-            for (expl, body) in self.invariants.remove(&bb).into_iter().flatten() {
-                invariants.push(fmir::Invariant { body, expl });
+            for (expl, inv) in self.invariants.remove(&bb).into_iter().flatten() {
+                invariants.push(fmir::Invariant { inv, expl });
             }
 
             // compute an eventual variant assertion to insert in this basic block

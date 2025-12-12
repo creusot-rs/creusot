@@ -67,10 +67,6 @@ module M_all_zero
   
   meta "rewrite_def" function index_Vec_u32_Global
   
-  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
-  
-  meta "rewrite_def" predicate inv_Range_usize
-  
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
   meta "rewrite_def" predicate inv_Seq_usize
@@ -131,9 +127,8 @@ module M_all_zero
       | s6 = [ &_old <- v.final ] s7
       | s7 = bb6 ]
     | bb6 = bb6
-      [ bb6 = {[@expl:mut invariant] _old = v.final}
+      [ bb6 = {[@expl:inferred invariant: unchanged value] _old = v.final}
         {[@expl:for invariant] inv_Seq_usize produced}
-        {[@expl:for invariant] inv_Range_usize iter}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
         {[@expl:loop invariant #0] Seq.length (view_Vec_u32_Global v.current)
         = Seq.length (view_Vec_u32_Global old_v.current)}
@@ -141,22 +136,22 @@ module M_all_zero
           -> index_Vec_u32_Global v.current j = (0: UInt32.t)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
-            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_36 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_usize> {_36.current} {MutBorrow.get_id _36}
-            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_35 <- _bor ] [ &_36 <- { _36 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_35} (fun (_x: t_Option_usize) -> [ &_34 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_usize _36}- s4
-        | s4 = any [ br0 -> {_34 = None} (! bb11) | br1 (x0: UInt64.t) -> {_34 = Some x0} (! bb12) ] ]
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_34 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_usize> {_34.current} {MutBorrow.get_id _34}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_33 <- _bor ] [ &_34 <- { _34 with current = _bor.final } ] s2)
+        | s2 = next_Range_usize {_33} (fun (_x: t_Option_usize) -> [ &_32 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_usize _34}- s4
+        | s4 = any [ br0 -> {_32 = None} (! bb11) | br1 (x0: UInt64.t) -> {_32 = Some x0} (! bb12) ] ]
         [ bb12 = s0
-          [ s0 = elim_Some {_34} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_32} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
           | s3 = MutBorrow.borrow_mut <t_Vec_u32_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_u32_Global) ->
-                [ &_45 <- _bor ] [ &v <- { v with current = _bor.final } ] s4)
-          | s4 = index_mut_Vec_u32_Global {_45} {i} (fun (_x: MutBorrow.t UInt32.t) -> [ &_44 <- _x ] s5)
-          | s5 = [ &_44 <- { _44 with current = (0: UInt32.t) } ] s6
-          | s6 = -{resolve_refmut_u32 _44}- s7
+                [ &_43 <- _bor ] [ &v <- { v with current = _bor.final } ] s4)
+          | s4 = index_mut_Vec_u32_Global {_43} {i} (fun (_x: MutBorrow.t UInt32.t) -> [ &_42 <- _x ] s5)
+          | s5 = [ &_42 <- { _42 with current = (0: UInt32.t) } ] s6
+          | s6 = -{resolve_refmut_u32 _42}- s7
           | s7 = bb6 ] ] ]
     | bb11 = s0 [ s0 = -{resolve_refmut_Vec_u32_Global v}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -167,13 +162,13 @@ module M_all_zero
     | & _11: UInt64.t = Any.any_l ()
     | & iter_old: t_Range_usize = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _34: t_Option_usize = Any.any_l ()
-    | & _35: MutBorrow.t t_Range_usize = Any.any_l ()
-    | & _36: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _32: t_Option_usize = Any.any_l ()
+    | & _33: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _34: MutBorrow.t t_Range_usize = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
-    | & _44: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _45: MutBorrow.t t_Vec_u32_Global = Any.any_l ()
+    | & _42: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _43: MutBorrow.t t_Vec_u32_Global = Any.any_l ()
     | & _old: t_Vec_u32_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:all_zero ensures #0] forall i: int. 0 <= i
           /\ i < Seq.length (view_Vec_u32_Global v.final) -> index_Vec_u32_Global v.final i = (0: UInt32.t)}
