@@ -1,6 +1,6 @@
-//! Define local invariants.
+//! Define non-atomic invariants.
 //!
-//! [Local invariants](LocalInvariant) are not the same as [type invariants](Invariant): they
+//! [Non-atomic invariants](NonAtomicInvariant) are not the same as [type invariants](Invariant): they
 //! allow the use of a shared piece of data to be used in the invariant (see
 //! [`Protocol`]), but in return they impose a much more restricted access to
 //! the underlying data, as well as the use of [`Tokens`].
@@ -11,7 +11,7 @@
 //! ```
 //! # use creusot_contracts::{
 //! #     cell::{PermCell, PermCellOwn},
-//! #     ghost::local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
+//! #     ghost::invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
 //! #     logic::Id,
 //! #     prelude::*,
 //! # };
@@ -20,7 +20,7 @@
 //! /// A cell that simply asserts its content's type invariant.
 //! pub struct CellInv<T: Invariant> {
 //!     data: PermCell<T>,
-//!     permission: Ghost<LocalInvariant<PermCellLocalInv<T>>>,
+//!     permission: Ghost<NonAtomicInvariant<PermCellNAInv<T>>>,
 //! }
 //! impl<T: Invariant> Invariant for CellInv<T> {
 //!     #[logic]
@@ -29,8 +29,8 @@
 //!     }
 //! }
 //!
-//! struct PermCellLocalInv<T>(PermCellOwn<T>);
-//! impl<T: Invariant> Protocol for PermCellLocalInv<T> {
+//! struct PermCellNAInv<T>(PermCellOwn<T>);
+//! impl<T: Invariant> Protocol for PermCellNAInv<T> {
 //!     type Public = Id;
 //!
 //!     #[logic]
@@ -42,7 +42,7 @@
 //! impl<T: Invariant> CellInv<T> {
 //!     #[requires(tokens.contains(PERMCELL()))]
 //!     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
-//!         LocalInvariant::open(self.permission.borrow(), tokens, move |perm| unsafe {
+//!         NonAtomicInvariant::open(self.permission.borrow(), tokens, move |perm| unsafe {
 //!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
 //!         })
 //!     }
@@ -51,7 +51,7 @@
 //!
 //! # Explicit tokens
 //!
-//! For now, [`Tokens`] must be explicitely passed to [`open`](LocalInvariant::open).
+//! For now, [`Tokens`] must be explicitely passed to [`open`](NonAtomicInvariant::open).
 //! We plan to relax this limitation at some point.
 
 use crate::{logic::Set, prelude::*};
@@ -62,7 +62,7 @@ use std::{cell::UnsafeCell, marker::PhantomData};
 /// # Example
 ///
 /// ```rust
-/// use creusot_contracts::{ghost::local_invariant::{declare_namespace, Namespace}, logic::Set, prelude::*};
+/// use creusot_contracts::{ghost::invariant::{declare_namespace, Namespace}, logic::Set, prelude::*};
 /// declare_namespace! { A }
 ///
 /// #[requires(ns.contains(A()))]
@@ -70,21 +70,21 @@ use std::{cell::UnsafeCell, marker::PhantomData};
 /// ```
 pub use base_macros::declare_namespace;
 
-/// The type of _namespaces_ of associated with local invariants.
+/// The type of _namespaces_ of associated with non-atomic invariants.
 ///
-/// Can be declared with the [`declare_namespace`] macro, and then attached to a local
-/// invariant when creating it with [`LocalInvariant::new`].
+/// Can be declared with the [`declare_namespace`] macro, and then attached to a non-atomic
+/// invariant when creating it with [`NonAtomicInvariant::new`].
 #[intrinsic("namespace")]
 pub struct Namespace(());
 
 /// Invariant tokens.
 ///
 /// This is given at the start of the program, and must be passed along to
-/// [LocalInvariant::open] to prevent opening invariant reentrantly.
+/// [NonAtomicInvariant::open] to prevent opening invariant reentrantly.
 ///
 /// # Tokens and `open`
 ///
-/// Tokens are used to avoid reentrency in [`open`](LocalInvariant::open).
+/// Tokens are used to avoid reentrency in [`open`](NonAtomicInvariant::open).
 /// To ensure this, `Tokens` acts as a special kind of mutable borrow : only
 /// one may exist at a given point in the program, preventing multiple calls to
 /// `open` with the same namespace. This is the reason this type has a lifetime
@@ -125,7 +125,7 @@ impl Tokens<'_> {
     ///
     /// # Example
     /// ```
-    /// # use creusot_contracts::{ghost::local_invariant::Tokens, prelude::*};
+    /// # use creusot_contracts::{ghost::invariant::Tokens, prelude::*};
     /// fn foo(tokens: Ghost<Tokens>) {}
     /// fn bar(tokens: Ghost<Tokens>) {}
     /// fn baz(mut tokens: Ghost<Tokens>) {
@@ -145,7 +145,7 @@ impl Tokens<'_> {
     /// # Example
     ///
     /// ```
-    /// # use creusot_contracts::{ghost::local_invariant::{declare_namespace, Tokens}, prelude::*};
+    /// # use creusot_contracts::{ghost::invariant::{declare_namespace, Tokens}, prelude::*};
     /// declare_namespace! { FOO }
     /// declare_namespace! { BAR }
     ///
@@ -194,13 +194,13 @@ impl View for Tokens<'_> {
 /// A ghost structure, that holds a piece of data (`T`) together with an
 /// [protocol](Protocol).
 #[opaque]
-pub struct LocalInvariant<T: Protocol> {
+pub struct NonAtomicInvariant<T: Protocol> {
     value: UnsafeCell<T>,
 }
 
-/// A variant of [`Invariant`] for use in [`LocalInvariant`]s.
+/// A variant of [`Invariant`] for use in [`NonAtomicInvariant`]s.
 ///
-/// This allows to specify an invariant that depends on some [public data](LocalInvariant::public).
+/// This allows to specify an invariant that depends on some [public data](NonAtomicInvariant::public).
 pub trait Protocol {
     type Public;
 
@@ -208,18 +208,18 @@ pub trait Protocol {
     fn protocol(self, data: Self::Public) -> bool;
 }
 
-/// Define method call syntax for [`LocalInvariant::open`].
-pub trait LocalInvariantExt<'a> {
+/// Define method call syntax for [`NonAtomicInvariant::open`].
+pub trait NonAtomicInvariantExt<'a> {
     type Inner: 'a;
 
-    /// Alias for [`LocalInvariant::open`], to use method call syntax (`inv.open(...)`).
+    /// Alias for [`NonAtomicInvariant::open`], to use method call syntax (`inv.open(...)`).
     #[requires(false)]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
 }
 
-impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
+impl<'a, T: Protocol> NonAtomicInvariantExt<'a> for Ghost<&'a NonAtomicInvariant<T>> {
     type Inner = T;
 
     #[requires(tokens.contains(self.namespace()))]
@@ -232,23 +232,23 @@ impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
     {
-        LocalInvariant::open(self, tokens, f)
+        NonAtomicInvariant::open(self, tokens, f)
     }
 }
 
-impl<'a, T> LocalInvariantExt<'a> for Ghost<&'a T>
+impl<'a, T> NonAtomicInvariantExt<'a> for Ghost<&'a T>
 where
     T: std::ops::Deref,
-    Ghost<&'a T::Target>: LocalInvariantExt<'a>,
+    Ghost<&'a T::Target>: NonAtomicInvariantExt<'a>,
 {
-    type Inner = <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::Inner;
+    type Inner = <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::Inner;
 
     #[requires(T::deref.precondition((*self,)))]
     #[requires(forall<this> T::deref.postcondition((*self,), this) ==>
-        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f))
+        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f))
     )]
     #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
-        <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
+        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
     )]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
@@ -259,14 +259,14 @@ where
     }
 }
 
-impl<'a, L> LocalInvariantExt<'a> for &'a Ghost<L>
+impl<'a, L> NonAtomicInvariantExt<'a> for &'a Ghost<L>
 where
-    Ghost<&'a L>: LocalInvariantExt<'a>,
+    Ghost<&'a L>: NonAtomicInvariantExt<'a>,
 {
-    type Inner = <Ghost<&'a L> as LocalInvariantExt<'a>>::Inner;
+    type Inner = <Ghost<&'a L> as NonAtomicInvariantExt<'a>>::Inner;
 
-    #[requires(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
-    #[ensures(<Ghost<&'a L> as LocalInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
+    #[requires(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
+    #[ensures(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -275,8 +275,8 @@ where
     }
 }
 
-impl<T: Protocol> LocalInvariant<T> {
-    /// Construct a `LocalInvariant`
+impl<T: Protocol> NonAtomicInvariant<T> {
+    /// Construct a `NonAtomicInvariant`
     ///
     /// # Parameters
     /// - `value`: the actual data contained in the invariant. Use [`Self::open`] to
