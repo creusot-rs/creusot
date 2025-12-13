@@ -71,11 +71,13 @@ module M_impl_Clone_for_Point__clone (* <Point as std::clone::Clone> *)
   
   let rec clone_Point (self: t_Point) (return (x'0: t_Point)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_6 <- self.x ] s1 | s1 = clone_isize {_6} (fun (_ret: Int64.t) -> [ &_4 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_9 <- self.y ] s1 | s1 = clone_isize {_9} (fun (_ret: Int64.t) -> [ &_7 <- _ret ] s2) | s2 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_0 <- { x = _4; y = _7 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_Point = Any.any_l ()
+      [ s0 = [ &_6 <- self.x ] s1
+      | s1 = clone_isize {_6} (fun (_x: Int64.t) -> [ &_4 <- _x ] s2)
+      | s2 = [ &_9 <- self.y ] s3
+      | s3 = clone_isize {_9} (fun (_x: Int64.t) -> [ &_7 <- _x ] s4)
+      | s4 = [ &_ret <- { x = _4; y = _7 } ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Point = Any.any_l ()
     | & self: t_Point = self
     | & _4: Int64.t = Any.any_l ()
     | & _6: Int64.t = Any.any_l ()
@@ -106,11 +108,11 @@ module M_impl_Point__mov (* Point *)
     {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000}
     (! bb0
     [ bb0 = s0
-      [ s0 = Int64.add {self.x} {p.f0} (fun (_ret: Int64.t) -> [ &_17 <- _ret ] s1)
-      | s1 = Int64.add {self.y} {p.f1} (fun (_ret: Int64.t) -> [ &_20 <- _ret ] s2)
-      | s2 = [ &_0 <- { x = _17; y = _20 } ] s3
-      | s3 = return {_0} ] ]
-    [ & _0: t_Point = Any.any_l ()
+      [ s0 = Int64.add {self.x} {p.f0} (fun (_x: Int64.t) -> [ &_17 <- _x ] s1)
+      | s1 = Int64.add {self.y} {p.f1} (fun (_x: Int64.t) -> [ &_20 <- _x ] s2)
+      | s2 = [ &_ret <- { x = _17; y = _20 } ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Point = Any.any_l ()
     | & self: t_Point = self
     | & p: tup2_isize_isize = p
     | & _17: Int64.t = Any.any_l ()
@@ -131,9 +133,9 @@ module M_impl_Board__new (* Board *)
   
   type closure3 = { c0: UInt64.t }
   
-  predicate resolve_ref_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = _1.final = _1.current
+  predicate resolve_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure3
+  meta "rewrite_def" predicate resolve_refmut_closure3
   
   type t_Vec_usize_Global
   
@@ -199,12 +201,11 @@ module M_impl_Board__new (* Board *)
   let rec closure3 (self: MutBorrow.t closure3) (_0: UInt64.t) (_1: Seq.seq UInt64.t) (return (x: t_Vec_usize_Global)) =
     (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve_ref_closure3 self}- s1
-      | s1 = from_elem_usize {(0: UInt64.t)} {self.current.c0} (fun (_ret: t_Vec_usize_Global) -> [ &res <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_0'0 <- res ] s1 | s1 = bb3 ]
-    | bb3 = return {_0'0} ]
-    [ & _0'0: t_Vec_usize_Global = Any.any_l ()
+      [ s0 = -{resolve_refmut_closure3 self}- s1
+      | s1 = from_elem_usize {(0: UInt64.t)} {self.current.c0} (fun (_x: t_Vec_usize_Global) -> [ &res <- _x ] s2)
+      | s2 = [ &_ret <- res ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Vec_usize_Global = Any.any_l ()
     | & self: MutBorrow.t closure3 = self
     | & res: t_Vec_usize_Global = Any.any_l () ])
     [ return (result: t_Vec_usize_Global) -> {[@expl:closure ensures] Seq.length (view_Vec_usize_Global result)
@@ -253,12 +254,12 @@ module M_impl_Board__new (* Board *)
   
   meta "rewrite_def" predicate precondition_closure3
   
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   predicate next_precondition_Range_usize (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
     forall e: UInt64.t, i: t_Range_usize. produces_Range_usize iter'0 (Seq.singleton e) i
@@ -389,15 +390,11 @@ module M_impl_Board__new (* Board *)
     [ bb0 = s0
       [ s0 = [ &_9 <- { start = (0: UInt64.t); end' = size'0 } ] s1
       | s1 = [ &_11 <- { c0 = size'0 } ] s2
-      | s2 = map_inv_Range_usize {_9} {_11} (fun (_ret: t_MapInv_Range_usize_closure3) -> [ &_8 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = collect_MapInv_Range_usize_closure3 {_8}
-          (fun (_ret: t_Vec_Vec_usize_Global_Global) -> [ &rows <- _ret ] s1)
-      | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_0 <- { size = size'0; field = rows } ] s1 | s1 = bb4 ]
-    | bb4 = return {_0} ]
-    [ & _0: t_Board = Any.any_l ()
+      | s2 = map_inv_Range_usize {_9} {_11} (fun (_x: t_MapInv_Range_usize_closure3) -> [ &_8 <- _x ] s3)
+      | s3 = collect_MapInv_Range_usize_closure3 {_8} (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &rows <- _x ] s4)
+      | s4 = [ &_ret <- { size = size'0; field = rows } ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Board = Any.any_l ()
     | & size'0: UInt64.t = size'0
     | & rows: t_Vec_Vec_usize_Global_Global = Any.any_l ()
     | & _8: t_MapInv_Range_usize_closure3 = Any.any_l ()
@@ -490,29 +487,25 @@ module M_impl_Board__available (* Board *)
     [ bb0 = s0
       [ s0 = [ &_8 <- Int64.le (0: Int64.t) p.x ] s1 | s1 = any [ br0 -> {_8 = false} (! bb9) | br1 -> {_8} (! bb1) ] ]
     | bb1 = s0
-      [ s0 = UInt64.of_int {Int64.to_int p.x} (fun (_ret_from: UInt64.t) -> [ &_11 <- _ret_from ] s1)
+      [ s0 = UInt64.of_int {Int64.to_int p.x} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s1)
       | s1 = [ &_10 <- UInt64.lt _11 self.size ] s2
       | s2 = any [ br0 -> {_10 = false} (! bb9) | br1 -> {_10} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_14 <- Int64.le (0: Int64.t) p.y ] s1
       | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = UInt64.of_int {Int64.to_int p.y} (fun (_ret_from: UInt64.t) -> [ &_17 <- _ret_from ] s1)
+      [ s0 = UInt64.of_int {Int64.to_int p.y} (fun (_x: UInt64.t) -> [ &_17 <- _x ] s1)
       | s1 = [ &_16 <- UInt64.lt _17 self.size ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = UInt64.of_int {Int64.to_int p.x} (fun (_ret_from: UInt64.t) -> [ &_25 <- _ret_from ] s1)
-      | s1 = index_Vec_Vec_usize_Global_Global {self.field} {_25}
-          (fun (_ret: t_Vec_usize_Global) -> [ &_23 <- _ret ] s2)
-      | s2 = bb10 ]
-    | bb10 = s0
-      [ s0 = UInt64.of_int {Int64.to_int p.y} (fun (_ret_from: UInt64.t) -> [ &_27 <- _ret_from ] s1)
-      | s1 = index_Vec_usize_Global {_23} {_27} (fun (_ret: UInt64.t) -> [ &_21 <- _ret ] s2)
-      | s2 = bb11 ]
-    | bb11 = s0 [ s0 = [ &_0 <- _21 = (0: UInt64.t) ] s1 | s1 = bb12 ]
-    | bb9 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = bb12 ]
-    | bb12 = return {_0} ]
-    [ & _0: bool = Any.any_l ()
+      [ s0 = UInt64.of_int {Int64.to_int p.x} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s1)
+      | s1 = index_Vec_Vec_usize_Global_Global {self.field} {_25} (fun (_x: t_Vec_usize_Global) -> [ &_23 <- _x ] s2)
+      | s2 = UInt64.of_int {Int64.to_int p.y} (fun (_x: UInt64.t) -> [ &_27 <- _x ] s3)
+      | s3 = index_Vec_usize_Global {_23} {_27} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s4)
+      | s4 = [ &_ret <- _21 = (0: UInt64.t) ] s5
+      | s5 = return {_ret} ]
+    | bb9 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
     | & self: t_Board = self
     | & p: t_Point = p
     | & _8: bool = Any.any_l ()
@@ -573,6 +566,18 @@ module M_impl_Board__count_degree (* Board *)
       {view_Vec_tup2_isize_isize_Global self_ = view_IntoIter_tup2_isize_isize_Global result}
       (! return {result}) ]
   
+  type t_Option_tup2_isize_isize = None | Some tup2_isize_isize
+  
+  predicate invariant_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_tup2_isize_isize_Global
+  
+  predicate inv_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    invariant_refmut_IntoIter_tup2_isize_isize_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_IntoIter_tup2_isize_isize_Global
+  
   predicate produces_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) (visited: Seq.seq tup2_isize_isize) (rhs: t_IntoIter_tup2_isize_isize_Global) =
     view_IntoIter_tup2_isize_isize_Global self = Seq.(++) visited (view_IntoIter_tup2_isize_isize_Global rhs)
   
@@ -589,34 +594,18 @@ module M_impl_Board__count_degree (* Board *)
   axiom produces_refl_IntoIter_tup2_isize_isize_Global_spec:
     forall self: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global self (Seq.empty: Seq.seq tup2_isize_isize) self
   
-  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
-  
-  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
-  
-  type t_Option_tup2_isize_isize = None | Some tup2_isize_isize
-  
-  predicate invariant_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
-  
-  meta "rewrite_def" predicate invariant_ref_IntoIter_tup2_isize_isize_Global
-  
-  predicate inv_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    invariant_ref_IntoIter_tup2_isize_isize_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_IntoIter_tup2_isize_isize_Global
-  
-  predicate resolve_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+  predicate resolve_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_tup2_isize_isize_Global
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_tup2_isize_isize_Global
   
   predicate completed_IntoIter_tup2_isize_isize_Global (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    resolve_ref_IntoIter_tup2_isize_isize_Global self
+    resolve_refmut_IntoIter_tup2_isize_isize_Global self
     /\ view_IntoIter_tup2_isize_isize_Global self.current = (Seq.empty: Seq.seq tup2_isize_isize)
   
   let rec next_IntoIter_tup2_isize_isize_Global (self_: MutBorrow.t t_IntoIter_tup2_isize_isize_Global)
     (return (x: t_Option_tup2_isize_isize)) =
-    {[@expl:next 'self_' type invariant] inv_ref_IntoIter_tup2_isize_isize_Global self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
     any
     [ return (result: t_Option_tup2_isize_isize) -> {match result with
         | None -> completed_IntoIter_tup2_isize_isize_Global self_
@@ -624,10 +613,16 @@ module M_impl_Board__count_degree (* Board *)
         end}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_tup2_isize_isize) (ret (f0'0: tup2_isize_isize)) = any
-    [ good (f0'0: tup2_isize_isize) -> {Some f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: tup2_isize_isize [Some f0'0: t_Option_tup2_isize_isize]. Some f0'0 <> input}
-      (! {false}
+  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
+  
+  let rec elim_Some (_x: t_Option_tup2_isize_isize) (return (f0'0: tup2_isize_isize)) = any
+    [ _k (f0'0: tup2_isize_isize) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
       any) ]
   
   type t_Point = { x: Int64.t; y: Int64.t }
@@ -704,59 +699,47 @@ module M_impl_Board__count_degree (* Board *)
     (! bb0
     [ bb0 = s0
       [ s0 = [ &count <- (0: UInt64.t) ] s1
-      | s1 = moves (fun (_ret: t_Vec_tup2_isize_isize_Global) -> [ &_11 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = into_iter_Vec_tup2_isize_isize_Global {_11}
-          (fun (_ret: t_IntoIter_tup2_isize_isize_Global) -> [ &iter <- _ret ] s1)
-      | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq tup2_isize_isize ] s1 | s1 = bb5 ]
+      | s1 = moves (fun (_x: t_Vec_tup2_isize_isize_Global) -> [ &_11 <- _x ] s2)
+      | s2 = into_iter_Vec_tup2_isize_isize_Global {_11}
+          (fun (_x: t_IntoIter_tup2_isize_isize_Global) -> [ &iter <- _x ] s3)
+      | s3 = [ &iter_old <- iter ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq tup2_isize_isize ] s5
+      | s5 = bb5 ]
     | bb5 = bb5
-      [ bb5 = {[@expl:for invariant] inv_Seq_tup2_isize_isize produced}
-        {[@expl:for invariant] inv_IntoIter_tup2_isize_isize_Global iter}
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_IntoIter_tup2_isize_isize_Global iter}
+        {[@expl:for invariant] inv_Seq_tup2_isize_isize produced}
         {[@expl:for invariant] produces_IntoIter_tup2_isize_isize_Global iter_old produced iter}
         {[@expl:loop invariant] UInt64.t'int count <= Seq.length produced}
         (! s0)
-        [ s0 = bb6 ]
-        [ bb6 = s0
-          [ s0 = {inv_IntoIter_tup2_isize_isize_Global iter}
-            MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter}
-              (fun (_ret: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-                [ &_32 <- _ret ] -{inv_IntoIter_tup2_isize_isize_Global _ret.final}-
-                [ &iter <- _ret.final ] s1)
-          | s1 = {inv_IntoIter_tup2_isize_isize_Global _32.current}
-            MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_32.current} {MutBorrow.get_id _32}
-              (fun (_ret: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-                [ &_31 <- _ret ] -{inv_IntoIter_tup2_isize_isize_Global _ret.final}-
-                [ &_32 <- { _32 with current = _ret.final } ] s2)
-          | s2 = next_IntoIter_tup2_isize_isize_Global {_31}
-              (fun (_ret: t_Option_tup2_isize_isize) -> [ &_30 <- _ret ] s3)
-          | s3 = bb7 ]
-        | bb7 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_IntoIter_tup2_isize_isize_Global _32} s1
-          | s1 = -{resolve_ref_IntoIter_tup2_isize_isize_Global _32}- s2
-          | s2 = any [ br0 -> {_30 = None} (! bb10) | br1 (x0: tup2_isize_isize) -> {_30 = Some x0} (! bb11) ] ]
-        | bb11 = s0
-          [ s0 = elim_Some {_30} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_35 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb12 ]
-        | bb12 = s0
-          [ s0 = [ &produced <- _35 ] s1
-          | s1 = [ &m <- __creusot_proc_iter_elem ] s2
-          | s2 = [ &_43 <- m ] s3
-          | s3 = mov {p} {_43} (fun (_ret: t_Point) -> [ &next <- _ret ] s4)
-          | s4 = bb13 ]
-        | bb13 = s0 [ s0 = available {self} {next} (fun (_ret: bool) -> [ &_44 <- _ret ] s1) | s1 = bb14 ]
-        | bb14 = any [ br0 -> {_44 = false} (! bb5) | br1 -> {_44} (! bb15) ]
+        [ s0 = MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter}
+            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+              [ &_30 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_IntoIter_tup2_isize_isize_Global iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_30.current} {MutBorrow.get_id _30}
+            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+              [ &_29 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+              [ &_30 <- { _30 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_IntoIter_tup2_isize_isize_Global _30.current} any) ]
+        | s2 = next_IntoIter_tup2_isize_isize_Global {_29} (fun (_x: t_Option_tup2_isize_isize) -> [ &_28 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global _30} any) ]
+        | s4 = -{resolve_refmut_IntoIter_tup2_isize_isize_Global _30}- s5
+        | s5 = any [ br0 -> {_28 = None} (! bb10) | br1 (x0: tup2_isize_isize) -> {_28 = Some x0} (! bb11) ] ]
+        [ bb11 = s0
+          [ s0 = elim_Some {_28} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &m <- __creusot_proc_iter_elem ] s3
+          | s3 = [ &_41 <- m ] s4
+          | s4 = mov {p} {_41} (fun (_x: t_Point) -> [ &next <- _x ] s5)
+          | s5 = available {self} {next} (fun (_x: bool) -> [ &_42 <- _x ] s6)
+          | s6 = any [ br0 -> {_42 = false} (! bb5) | br1 -> {_42} (! bb15) ] ]
         | bb15 = s0
-          [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &count <- _ret ] s1) | s1 = bb5 ] ] ]
+          [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s1) | s1 = bb5 ] ] ]
     | bb10 = s0
-      [ s0 = {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} any) ]
       | s1 = -{resolve_IntoIter_tup2_isize_isize_Global'0 iter}- s2
-      | s2 = bb18 ]
-    | bb18 = s0 [ s0 = [ &_0 <- count ] s1 | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s2 = [ &_ret <- count ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & self: t_Board = self
     | & p: t_Point = p
     | & count: UInt64.t = Any.any_l ()
@@ -764,15 +747,14 @@ module M_impl_Board__count_degree (* Board *)
     | & _11: t_Vec_tup2_isize_isize_Global = Any.any_l ()
     | & iter_old: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
     | & produced: Seq.seq tup2_isize_isize = Any.any_l ()
-    | & _30: t_Option_tup2_isize_isize = Any.any_l ()
-    | & _31: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & _32: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _28: t_Option_tup2_isize_isize = Any.any_l ()
+    | & _29: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _30: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
     | & __creusot_proc_iter_elem: tup2_isize_isize = Any.any_l ()
-    | & _35: Seq.seq tup2_isize_isize = Any.any_l ()
     | & m: tup2_isize_isize = Any.any_l ()
     | & next: t_Point = Any.any_l ()
-    | & _43: tup2_isize_isize = Any.any_l ()
-    | & _44: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+    | & _41: tup2_isize_isize = Any.any_l ()
+    | & _42: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_impl_Board__set (* Board *)
   use creusot.int.UInt64
@@ -856,17 +838,18 @@ module M_impl_Board__set (* Board *)
       {Seq.length (view_Vec_usize_Global self_.final) = Seq.length (view_Vec_usize_Global self_.current)}
       (! return {result}) ]
   
-  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_usize
+  meta "rewrite_def" predicate resolve_refmut_usize
   
-  predicate resolve_ref_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_usize_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_usize_Global
   
-  predicate resolve_ref_Board [@inline:trivial] (_1: MutBorrow.t t_Board) = _1.final = _1.current
+  predicate resolve_refmut_Board [@inline:trivial] (_1: MutBorrow.t t_Board) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Board
+  meta "rewrite_def" predicate resolve_refmut_Board
   
   function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
    = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
@@ -894,26 +877,22 @@ module M_impl_Board__set (* Board *)
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_Vec_usize_Global_Global> {self.current.field}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
-          (fun (_ret: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
-            [ &_17 <- _ret ] [ &self <- { self with current = { self.current with field = _ret.final } } ] s1)
-      | s1 = UInt64.of_int {Int64.to_int p.x} (fun (_ret_from: UInt64.t) -> [ &_18 <- _ret_from ] s2)
+          (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
+            [ &_17 <- _bor ] [ &self <- { self with current = { self.current with field = _bor.final } } ] s1)
+      | s1 = UInt64.of_int {Int64.to_int p.x} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s2)
       | s2 = index_mut_Vec_Vec_usize_Global_Global {_17} {_18}
-          (fun (_ret: MutBorrow.t t_Vec_usize_Global) -> [ &_16 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {_16.current} {MutBorrow.get_id _16}
-          (fun (_ret: MutBorrow.t t_Vec_usize_Global) ->
-            [ &_15 <- _ret ] [ &_16 <- { _16 with current = _ret.final } ] s1)
-      | s1 = UInt64.of_int {Int64.to_int p.y} (fun (_ret_from: UInt64.t) -> [ &_20 <- _ret_from ] s2)
-      | s2 = index_mut_Vec_usize_Global {_15} {_20} (fun (_ret: MutBorrow.t UInt64.t) -> [ &_14 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_14 <- { _14 with current = v } ] s1
-      | s1 = -{resolve_ref_usize _14}- s2
-      | s2 = -{resolve_ref_Vec_usize_Global _16}- s3
-      | s3 = -{resolve_ref_Board self}- s4
-      | s4 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_16 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_16.current} {MutBorrow.get_id _16}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
+            [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s4)
+      | s4 = UInt64.of_int {Int64.to_int p.y} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s5)
+      | s5 = index_mut_Vec_usize_Global {_15} {_20} (fun (_x: MutBorrow.t UInt64.t) -> [ &_14 <- _x ] s6)
+      | s6 = [ &_14 <- { _14 with current = v } ] s7
+      | s7 = -{resolve_refmut_usize _14}- s8
+      | s8 = -{resolve_refmut_Vec_usize_Global _16}- s9
+      | s9 = -{resolve_refmut_Board self}- s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Board = self
     | & p: t_Point = p
     | & v: UInt64.t = v
@@ -964,10 +943,15 @@ module M_min
       {view_Vec_tup2_usize_Point_Global self_ = Slice64.view (view_Iter_tup2_usize_Point result)}
       (! return {result}) ]
   
-  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
-   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
+  predicate invariant_refmut_Iter_tup2_usize_Point [@inline:trivial] (self: MutBorrow.t t_Iter_tup2_usize_Point) =
+    inv_Iter_tup2_usize_Point self.current /\ inv_Iter_tup2_usize_Point self.final
   
-  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
+  meta "rewrite_def" predicate invariant_refmut_Iter_tup2_usize_Point
+  
+  predicate inv_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
+    invariant_refmut_Iter_tup2_usize_Point _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_tup2_usize_Point
   
   function index_slice_tup2_usize_Point [@inline:trivial] (self: Slice64.slice tup2_usize_Point) (ix: int) : tup2_usize_Point
    = Seq.get (Slice64.view self) ix
@@ -1000,32 +984,18 @@ module M_min
   axiom produces_refl_Iter_tup2_usize_Point_spec:
     forall self: t_Iter_tup2_usize_Point. produces_Iter_tup2_usize_Point self (Seq.empty: Seq.seq tup2_usize_Point) self
   
-  predicate inv_Seq_ref_tup2_usize_Point [@inline:trivial] (_1: Seq.seq tup2_usize_Point) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_tup2_usize_Point
-  
-  predicate invariant_ref_Iter_tup2_usize_Point [@inline:trivial] (self: MutBorrow.t t_Iter_tup2_usize_Point) =
-    inv_Iter_tup2_usize_Point self.current /\ inv_Iter_tup2_usize_Point self.final
-  
-  meta "rewrite_def" predicate invariant_ref_Iter_tup2_usize_Point
-  
-  predicate inv_ref_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
-    invariant_ref_Iter_tup2_usize_Point _1
-  
-  meta "rewrite_def" predicate inv_ref_Iter_tup2_usize_Point
-  
-  predicate resolve_ref_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
+  predicate resolve_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Iter_tup2_usize_Point
+  meta "rewrite_def" predicate resolve_refmut_Iter_tup2_usize_Point
   
   predicate completed_Iter_tup2_usize_Point (self: MutBorrow.t t_Iter_tup2_usize_Point) =
-    resolve_ref_Iter_tup2_usize_Point self
+    resolve_refmut_Iter_tup2_usize_Point self
     /\ Slice64.view (view_Iter_tup2_usize_Point self.current) = (Seq.empty: Seq.seq tup2_usize_Point)
   
   let rec next_Iter_tup2_usize_Point (self_: MutBorrow.t t_Iter_tup2_usize_Point)
     (return (x'0: t_Option_ref_tup2_usize_Point)) =
-    {[@expl:next 'self_' type invariant] inv_ref_Iter_tup2_usize_Point self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_Iter_tup2_usize_Point self_}
     any
     [ return (result: t_Option_ref_tup2_usize_Point) -> {match result with
         | None -> completed_Iter_tup2_usize_Point self_
@@ -1033,10 +1003,21 @@ module M_min
         end}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_ref_tup2_usize_Point) (ret (f0'0: tup2_usize_Point)) = any
-    [ good (f0'0: tup2_usize_Point) -> {Some f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: tup2_usize_Point [Some f0'0: t_Option_ref_tup2_usize_Point]. Some f0'0 <> input}
-      (! {false}
+  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
+   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
+  
+  predicate inv_Seq_ref_tup2_usize_Point [@inline:trivial] (_1: Seq.seq tup2_usize_Point) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_tup2_usize_Point
+  
+  let rec elim_Some (_x: t_Option_ref_tup2_usize_Point) (return (f0'0: tup2_usize_Point)) = any
+    [ _k (f0'0: tup2_usize_Point) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
       any) ]
   
   predicate resolve_Iter_tup2_usize_Point (_1: t_Iter_tup2_usize_Point)
@@ -1048,71 +1029,62 @@ module M_min
   let rec min (v: t_Vec_tup2_usize_Point_Global) (return (x'0: t_Option_ref_tup2_usize_Point)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &min'0 <- None ] s1
-      | s1 = into_iter_ref_Vec_tup2_usize_Point_Global {v} (fun (_ret: t_Iter_tup2_usize_Point) -> [ &iter <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq tup2_usize_Point ] s1 | s1 = bb4 ]
+      | s1 = into_iter_ref_Vec_tup2_usize_Point_Global {v} (fun (_x: t_Iter_tup2_usize_Point) -> [ &iter <- _x ] s2)
+      | s2 = [ &iter_old <- iter ] s3
+      | s3 = [ &produced <- Seq.empty: Seq.seq tup2_usize_Point ] s4
+      | s4 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:for invariant] inv_Seq_ref_tup2_usize_Point produced}
-        {[@expl:for invariant] inv_Iter_tup2_usize_Point iter}
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_tup2_usize_Point iter}
+        {[@expl:for invariant] inv_Seq_ref_tup2_usize_Point produced}
         {[@expl:for invariant] produces_Iter_tup2_usize_Point iter_old produced iter}
         {[@expl:loop invariant] forall r: tup2_usize_Point. min'0 = Some r
           -> (exists i: int. 0 <= i
             /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
         (! s0)
-        [ s0 = bb5 ]
-        [ bb5 = s0
-          [ s0 = {inv_Iter_tup2_usize_Point iter}
-            MutBorrow.borrow_mut <t_Iter_tup2_usize_Point> {iter}
-              (fun (_ret: MutBorrow.t t_Iter_tup2_usize_Point) ->
-                [ &_28 <- _ret ] -{inv_Iter_tup2_usize_Point _ret.final}-
-                [ &iter <- _ret.final ] s1)
-          | s1 = {inv_Iter_tup2_usize_Point _28.current}
-            MutBorrow.borrow_final <t_Iter_tup2_usize_Point> {_28.current} {MutBorrow.get_id _28}
-              (fun (_ret: MutBorrow.t t_Iter_tup2_usize_Point) ->
-                [ &_27 <- _ret ] -{inv_Iter_tup2_usize_Point _ret.final}-
-                [ &_28 <- { _28 with current = _ret.final } ] s2)
-          | s2 = next_Iter_tup2_usize_Point {_27} (fun (_ret: t_Option_ref_tup2_usize_Point) -> [ &_26 <- _ret ] s3)
-          | s3 = bb6 ]
-        | bb6 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_Iter_tup2_usize_Point _28} s1
-          | s1 = -{resolve_ref_Iter_tup2_usize_Point _28}- s2
-          | s2 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: tup2_usize_Point) -> {_26 = Some x0} (! bb10) ] ]
-        | bb10 = s0
-          [ s0 = elim_Some {_26} (fun (r0: tup2_usize_Point) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_31 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb11 ]
-        | bb11 = s0
-          [ s0 = [ &produced <- _31 ] s1
-          | s1 = [ &x'0 <- __creusot_proc_iter_elem ] s2
-          | s2 = any [ br0 -> {min'0 = None} (! bb15) | br1 (x0: tup2_usize_Point) -> {min'0 = Some x0} (! bb14) ] ]
+        [ s0 = MutBorrow.borrow_mut <t_Iter_tup2_usize_Point> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
+              [ &_26 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_Iter_tup2_usize_Point iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_tup2_usize_Point> {_26.current} {MutBorrow.get_id _26}
+            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
+              [ &_25 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
+              [ &_26 <- { _26 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_Iter_tup2_usize_Point _26.current} any) ]
+        | s2 = next_Iter_tup2_usize_Point {_25} (fun (_x: t_Option_ref_tup2_usize_Point) -> [ &_24 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_tup2_usize_Point _26} any) ]
+        | s4 = -{resolve_refmut_Iter_tup2_usize_Point _26}- s5
+        | s5 = any [ br0 -> {_24 = None} (! bb9) | br1 (x0: tup2_usize_Point) -> {_24 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_24} (fun (r0: tup2_usize_Point) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &x'0 <- __creusot_proc_iter_elem ] s3
+          | s3 = any [ br0 -> {min'0 = None} (! bb15) | br1 (x0: tup2_usize_Point) -> {min'0 = Some x0} (! bb14) ] ]
         | bb14 = s0
           [ s0 = elim_Some {min'0} (fun (r0: tup2_usize_Point) -> [ &m <- r0 ] s1)
-          | s1 = [ &_41 <- UInt64.lt x'0.f0 m.f0 ] s2
-          | s2 = any [ br0 -> {_41 = false} (! bb4) | br1 -> {_41} (! bb16) ] ]
-        | bb16 = s0 [ s0 = [ &_44 <- Some x'0 ] s1 | s1 = [ &min'0 <- _44 ] s2 | s2 = bb4 ]
-        | bb15 = s0 [ s0 = [ &_38 <- Some x'0 ] s1 | s1 = [ &min'0 <- _38 ] s2 | s2 = bb4 ] ] ]
+          | s1 = [ &_39 <- UInt64.lt x'0.f0 m.f0 ] s2
+          | s2 = any [ br0 -> {_39 = false} (! bb4) | br1 -> {_39} (! bb16) ] ]
+        | bb16 = s0 [ s0 = [ &_42 <- Some x'0 ] s1 | s1 = [ &min'0 <- _42 ] s2 | s2 = bb4 ]
+        | bb15 = s0 [ s0 = [ &_36 <- Some x'0 ] s1 | s1 = [ &min'0 <- _36 ] s2 | s2 = bb4 ] ] ]
     | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} any) ]
       | s1 = -{resolve_Iter_tup2_usize_Point iter}- s2
-      | s2 = [ &_0 <- min'0 ] s3
-      | s3 = return {_0} ] ]
-    [ & _0: t_Option_ref_tup2_usize_Point = Any.any_l ()
+      | s2 = [ &_ret <- min'0 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Option_ref_tup2_usize_Point = Any.any_l ()
     | & v: t_Vec_tup2_usize_Point_Global = v
     | & min'0: t_Option_ref_tup2_usize_Point = Any.any_l ()
     | & iter: t_Iter_tup2_usize_Point = Any.any_l ()
     | & iter_old: t_Iter_tup2_usize_Point = Any.any_l ()
     | & produced: Seq.seq tup2_usize_Point = Any.any_l ()
-    | & _26: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & _27: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
-    | & _28: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
+    | & _24: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & _25: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
+    | & _26: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
     | & __creusot_proc_iter_elem: tup2_usize_Point = Any.any_l ()
-    | & _31: Seq.seq tup2_usize_Point = Any.any_l ()
     | & x'0: tup2_usize_Point = Any.any_l ()
-    | & _38: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & _36: t_Option_ref_tup2_usize_Point = Any.any_l ()
     | & m: tup2_usize_Point = Any.any_l ()
-    | & _41: bool = Any.any_l ()
-    | & _44: t_Option_ref_tup2_usize_Point = Any.any_l () ])
+    | & _39: bool = Any.any_l ()
+    | & _42: t_Option_ref_tup2_usize_Point = Any.any_l () ])
     [ return (result: t_Option_ref_tup2_usize_Point) -> {[@expl:min ensures] forall r: tup2_usize_Point. result = Some r
         -> (exists i: int. 0 <= i
           /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
@@ -1195,6 +1167,8 @@ module M_knights_tour
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x'0: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
   
+  type t_Option_usize = None | Some UInt64.t
+  
   function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function deep_model_usize
@@ -1218,22 +1192,12 @@ module M_knights_tour
   axiom produces_refl_Range_usize_spec:
     forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
   
-  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
   
-  meta "rewrite_def" predicate inv_Range_usize
-  
-  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
-  
-  meta "rewrite_def" predicate inv_Seq_usize
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_Range_usize
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x'0: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {match result with
@@ -1242,9 +1206,17 @@ module M_knights_tour
         end}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Some f0: t_Option_usize]. Some f0 <> input} (! {false} any) ]
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
+  
+  let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_Vec_tup2_usize_Point_Global
   
@@ -1296,10 +1268,17 @@ module M_knights_tour
       {view_Vec_tup2_isize_isize_Global self_ = view_IntoIter_tup2_isize_isize_Global result}
       (! return {result}) ]
   
-  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
-   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
+  type t_Option_tup2_isize_isize = None'0 | Some'0 tup2_isize_isize
   
-  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
+  predicate invariant_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_tup2_isize_isize_Global
+  
+  predicate inv_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    invariant_refmut_IntoIter_tup2_isize_isize_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_IntoIter_tup2_isize_isize_Global
   
   predicate produces_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) (visited: Seq.seq tup2_isize_isize) (rhs: t_IntoIter_tup2_isize_isize_Global) =
     view_IntoIter_tup2_isize_isize_Global self = Seq.(++) visited (view_IntoIter_tup2_isize_isize_Global rhs)
@@ -1317,34 +1296,18 @@ module M_knights_tour
   axiom produces_refl_IntoIter_tup2_isize_isize_Global_spec:
     forall self: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global self (Seq.empty: Seq.seq tup2_isize_isize) self
   
-  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
-  
-  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
-  
-  type t_Option_tup2_isize_isize = None'0 | Some'0 tup2_isize_isize
-  
-  predicate invariant_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
-  
-  meta "rewrite_def" predicate invariant_ref_IntoIter_tup2_isize_isize_Global
-  
-  predicate inv_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    invariant_ref_IntoIter_tup2_isize_isize_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_IntoIter_tup2_isize_isize_Global
-  
-  predicate resolve_ref_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+  predicate resolve_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_tup2_isize_isize_Global
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_tup2_isize_isize_Global
   
   predicate completed_IntoIter_tup2_isize_isize_Global (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    resolve_ref_IntoIter_tup2_isize_isize_Global self
+    resolve_refmut_IntoIter_tup2_isize_isize_Global self
     /\ view_IntoIter_tup2_isize_isize_Global self.current = (Seq.empty: Seq.seq tup2_isize_isize)
   
   let rec next_IntoIter_tup2_isize_isize_Global (self_: MutBorrow.t t_IntoIter_tup2_isize_isize_Global)
     (return (x'0: t_Option_tup2_isize_isize)) =
-    {[@expl:next 'self_' type invariant] inv_ref_IntoIter_tup2_isize_isize_Global self_}
+    {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
     any
     [ return (result: t_Option_tup2_isize_isize) -> {match result with
         | None'0 -> completed_IntoIter_tup2_isize_isize_Global self_
@@ -1352,10 +1315,21 @@ module M_knights_tour
         end}
       (! return {result}) ]
   
-  let rec elim_Some'0 (input: t_Option_tup2_isize_isize) (ret (f0'1: tup2_isize_isize)) = any
-    [ good (f0'1: tup2_isize_isize) -> {Some'0 f0'1 = input} (! ret {f0'1})
-    | bad -> {forall f0'1: tup2_isize_isize [Some'0 f0'1: t_Option_tup2_isize_isize]. Some'0 f0'1 <> input}
-      (! {false}
+  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
+   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
+  
+  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
+  
+  let rec elim_Some'0 (_x: t_Option_tup2_isize_isize) (return (f0'1: tup2_isize_isize)) = any
+    [ _k (f0'1: tup2_isize_isize) -> {Some'0 f0'1 = _x} (! return {f0'1})
+    | _chk -> (! {match _x with
+        | Some'0 _ -> true
+        | _ -> false
+        end}
       any) ]
   
   let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {[@expl:mov requires #0] - 10000
@@ -1407,10 +1381,12 @@ module M_knights_tour
           /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
       (! return {result}) ]
   
-  let rec elim_Some'1 (input: t_Option_ref_tup2_usize_Point) (ret (f0'1: tup2_usize_Point)) = any
-    [ good (f0'1: tup2_usize_Point) -> {Some'1 f0'1 = input} (! ret {f0'1})
-    | bad -> {forall f0'1: tup2_usize_Point [Some'1 f0'1: t_Option_ref_tup2_usize_Point]. Some'1 f0'1 <> input}
-      (! {false}
+  let rec elim_Some'1 (_x: t_Option_ref_tup2_usize_Point) (return (f0'1: tup2_usize_Point)) = any
+    [ _k (f0'1: tup2_usize_Point) -> {Some'1 f0'1 = _x} (! return {f0'1})
+    | _chk -> (! {match _x with
+        | Some'1 _ -> true
+        | _ -> false
+        end}
       any) ]
   
   type t_Option_Board = None'2 | Some'2 t_Board
@@ -1473,130 +1449,104 @@ module M_knights_tour
     {[@expl:knights_tour requires #1] UInt64.lt x'0 size'0}
     {[@expl:knights_tour requires #2] UInt64.lt y'0 size'0}
     (! bb0
-    [ bb0 = s0 [ s0 = new {size'0} (fun (_ret: t_Board) -> [ &board <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = Int64.of_int {UInt64.t'int x'0} (fun (_ret_from: Int64.t) -> [ &_15 <- _ret_from ] s1)
-      | s1 = Int64.of_int {UInt64.t'int y'0} (fun (_ret_from: Int64.t) -> [ &_17 <- _ret_from ] s2)
-      | s2 = [ &p <- { x = _15; y = _17 } ] s3
-      | s3 = MutBorrow.borrow_mut <t_Board> {board}
-          (fun (_ret: MutBorrow.t t_Board) -> [ &_20 <- _ret ] [ &board <- _ret.final ] s4)
-      | s4 = set {_20} {p} {(1: UInt64.t)} (fun (_ret: ()) -> [ &_19 <- _ret ] s5)
-      | s5 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_22 <- dumb_nonlinear_arith size'0 ] s1 | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = UInt64.mul {size'0} {size'0} (fun (_ret: UInt64.t) -> [ &_28 <- _ret ] s1)
-      | s1 = [ &_27 <- { start = (2: UInt64.t); end' = _28 } ] s2
-      | s2 = into_iter_Range_usize {_27} (fun (_ret: t_Range_usize) -> [ &iter <- _ret ] s3)
-      | s3 = bb4 ]
-    | bb4 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb7 ]
+    [ bb0 = s0
+      [ s0 = new {size'0} (fun (_x: t_Board) -> [ &board <- _x ] s1)
+      | s1 = Int64.of_int {UInt64.t'int x'0} (fun (_x: Int64.t) -> [ &_15 <- _x ] s2)
+      | s2 = Int64.of_int {UInt64.t'int y'0} (fun (_x: Int64.t) -> [ &_17 <- _x ] s3)
+      | s3 = [ &p <- { x = _15; y = _17 } ] s4
+      | s4 = MutBorrow.borrow_mut <t_Board> {board}
+          (fun (_bor: MutBorrow.t t_Board) -> [ &_20 <- _bor ] [ &board <- _bor.final ] s5)
+      | s5 = set {_20} {p} {(1: UInt64.t)} (fun (_x: ()) -> [ &_19 <- _x ] s6)
+      | s6 = [ &_22 <- dumb_nonlinear_arith size'0 ] s7
+      | s7 = UInt64.mul {size'0} {size'0} (fun (_x: UInt64.t) -> [ &_28 <- _x ] s8)
+      | s8 = [ &_27 <- { start = (2: UInt64.t); end' = _28 } ] s9
+      | s9 = into_iter_Range_usize {_27} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s10)
+      | s10 = [ &iter_old <- iter ] s11
+      | s11 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s12
+      | s12 = bb7 ]
     | bb7 = bb7
       [ bb7 = {[@expl:for invariant] inv_Seq_usize produced}
-        {[@expl:for invariant] inv_Range_usize iter}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
         {[@expl:loop invariant #0] board.size = size'0}
         {[@expl:loop invariant #1] wf board}
         {[@expl:loop invariant #2] in_bounds board p}
         (! s0)
-        [ s0 = bb8 ]
-        [ bb8 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
-              (fun (_ret: MutBorrow.t t_Range_usize) -> [ &_56 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_usize> {_56.current} {MutBorrow.get_id _56}
-              (fun (_ret: MutBorrow.t t_Range_usize) ->
-                [ &_55 <- _ret ] [ &_56 <- { _56 with current = _ret.final } ] s2)
-          | s2 = next_Range_usize {_55} (fun (_ret: t_Option_usize) -> [ &_54 <- _ret ] s3)
-          | s3 = bb9 ]
-        | bb9 = s0
-          [ s0 = -{resolve_ref_Range_usize _56}- s1
-          | s1 = any [ br0 -> {_54 = None} (! bb12) | br1 (x0: UInt64.t) -> {_54 = Some x0} (! bb13) ] ]
-        | bb13 = s0
-          [ s0 = elim_Some {_54} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_59 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb14 ]
-        | bb14 = s0
-          [ s0 = [ &produced <- _59 ] s1
-          | s1 = [ &step <- __creusot_proc_iter_elem ] s2
-          | s2 = new_tup2_usize_Point (fun (_ret: t_Vec_tup2_usize_Point_Global) -> [ &candidates <- _ret ] s3)
-          | s3 = bb15 ]
-        | bb15 = s0 [ s0 = moves (fun (_ret: t_Vec_tup2_isize_isize_Global) -> [ &_67 <- _ret ] s1) | s1 = bb16 ]
-        | bb16 = s0
-          [ s0 = into_iter_Vec_tup2_isize_isize_Global {_67}
-              (fun (_ret: t_IntoIter_tup2_isize_isize_Global) -> [ &iter'0 <- _ret ] s1)
-          | s1 = bb17 ]
-        | bb17 = s0 [ s0 = [ &iter_old'0 <- iter'0 ] s1 | s1 = bb18 ]
-        | bb18 = s0 [ s0 = [ &produced'0 <- Seq.empty: Seq.seq tup2_isize_isize ] s1 | s1 = bb20 ]
+        [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_54 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_usize> {_54.current} {MutBorrow.get_id _54}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_53 <- _bor ] [ &_54 <- { _54 with current = _bor.final } ] s2)
+        | s2 = next_Range_usize {_53} (fun (_x: t_Option_usize) -> [ &_52 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_usize _54}- s4
+        | s4 = any [ br0 -> {_52 = None} (! bb12) | br1 (x0: UInt64.t) -> {_52 = Some x0} (! bb13) ] ]
+        [ bb13 = s0
+          [ s0 = elim_Some {_52} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &step <- __creusot_proc_iter_elem ] s3
+          | s3 = new_tup2_usize_Point (fun (_x: t_Vec_tup2_usize_Point_Global) -> [ &candidates <- _x ] s4)
+          | s4 = moves (fun (_x: t_Vec_tup2_isize_isize_Global) -> [ &_65 <- _x ] s5)
+          | s5 = into_iter_Vec_tup2_isize_isize_Global {_65}
+              (fun (_x: t_IntoIter_tup2_isize_isize_Global) -> [ &iter'0 <- _x ] s6)
+          | s6 = [ &iter_old'0 <- iter'0 ] s7
+          | s7 = [ &produced'0 <- Seq.empty: Seq.seq tup2_isize_isize ] s8
+          | s8 = bb20 ]
         | bb20 = bb20
-          [ bb20 = {[@expl:for invariant] inv_Seq_tup2_isize_isize produced'0}
-            {[@expl:for invariant] inv_IntoIter_tup2_isize_isize_Global iter'0}
+          [ bb20 = {[@expl:inferred invariant: type invariant] inv_IntoIter_tup2_isize_isize_Global iter'0}
+            {[@expl:for invariant] inv_Seq_tup2_isize_isize produced'0}
             {[@expl:for invariant] produces_IntoIter_tup2_isize_isize_Global iter_old'0 produced'0 iter'0}
             {[@expl:loop invariant] forall i: int. 0 <= i
                 /\ i < Seq.length (view_Vec_tup2_usize_Point_Global candidates)
               -> in_bounds board (index_Vec_tup2_usize_Point_Global candidates i).f1}
             (! s0)
-            [ s0 = bb21 ]
-            [ bb21 = s0
-              [ s0 = {inv_IntoIter_tup2_isize_isize_Global iter'0}
-                MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter'0}
-                  (fun (_ret: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-                    [ &_87 <- _ret ] -{inv_IntoIter_tup2_isize_isize_Global _ret.final}-
-                    [ &iter'0 <- _ret.final ] s1)
-              | s1 = {inv_IntoIter_tup2_isize_isize_Global _87.current}
-                MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_87.current} {MutBorrow.get_id _87}
-                  (fun (_ret: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-                    [ &_86 <- _ret ] -{inv_IntoIter_tup2_isize_isize_Global _ret.final}-
-                    [ &_87 <- { _87 with current = _ret.final } ] s2)
-              | s2 = next_IntoIter_tup2_isize_isize_Global {_86}
-                  (fun (_ret: t_Option_tup2_isize_isize) -> [ &_85 <- _ret ] s3)
-              | s3 = bb22 ]
-            | bb22 = s0
-              [ s0 = {[@expl:type invariant] inv_ref_IntoIter_tup2_isize_isize_Global _87} s1
-              | s1 = -{resolve_ref_IntoIter_tup2_isize_isize_Global _87}- s2
-              | s2 = any [ br0 -> {_85 = None'0} (! bb25) | br1 (x0: tup2_isize_isize) -> {_85 = Some'0 x0} (! bb26) ] ]
-            | bb26 = s0
-              [ s0 = elim_Some'0 {_85} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
-              | s1 = [ &_90 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
-              | s2 = bb27 ]
-            | bb27 = s0
-              [ s0 = [ &produced'0 <- _90 ] s1
-              | s1 = [ &m <- __creusot_proc_iter_elem'0 ] s2
-              | s2 =
+            [ s0 = MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter'0}
+                (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+                  [ &_83 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+                  [ &iter'0 <- _bor.final ] s1) [ _ck -> (! {inv_IntoIter_tup2_isize_isize_Global iter'0} any) ]
+            | s1 = MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_83.current} {MutBorrow.get_id _83}
+                (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+                  [ &_82 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+                  [ &_83 <- { _83 with current = _bor.final } ] s2)
+              [ _ck -> (! {inv_IntoIter_tup2_isize_isize_Global _83.current} any) ]
+            | s2 = next_IntoIter_tup2_isize_isize_Global {_82}
+                (fun (_x: t_Option_tup2_isize_isize) -> [ &_81 <- _x ] s3)
+            | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global _83} any) ]
+            | s4 = -{resolve_refmut_IntoIter_tup2_isize_isize_Global _83}- s5
+            | s5 = any [ br0 -> {_81 = None'0} (! bb25) | br1 (x0: tup2_isize_isize) -> {_81 = Some'0 x0} (! bb26) ] ]
+            [ bb26 = s0
+              [ s0 = elim_Some'0 {_81} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+              | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+              | s2 = [ &m <- __creusot_proc_iter_elem'0 ] s3
+              | s3 =
                 {[@expl:assertion] forall r: Seq.seq tup2_isize_isize, a: Seq.seq tup2_isize_isize, b: Seq.seq tup2_isize_isize. r
                     = Seq.(++) a (Seq.(++) (Seq.singleton m) b) -> m = Seq.get r (Seq.length a)}
-                s3
-              | s3 = [ &_101 <- m ] s4
-              | s4 = mov {p} {_101} (fun (_ret: t_Point) -> [ &adj <- _ret ] s5)
-              | s5 = bb28 ]
-            | bb28 = s0 [ s0 = available {board} {adj} (fun (_ret: bool) -> [ &_102 <- _ret ] s1) | s1 = bb29 ]
-            | bb29 = any [ br0 -> {_102 = false} (! bb20) | br1 -> {_102} (! bb30) ]
-            | bb30 = s0 [ s0 = count_degree {board} {adj} (fun (_ret: UInt64.t) -> [ &degree <- _ret ] s1) | s1 = bb31 ]
-            | bb31 = s0
-              [ s0 = [ &_110 <- { f0 = degree; f1 = adj } ] s1
-              | s1 = MutBorrow.borrow_mut <t_Vec_tup2_usize_Point_Global> {candidates}
-                  (fun (_ret: MutBorrow.t t_Vec_tup2_usize_Point_Global) ->
-                    [ &_109 <- _ret ] [ &candidates <- _ret.final ] s2)
-              | s2 = push_tup2_usize_Point {_109} {_110} (fun (_ret: ()) -> [ &_108 <- _ret ] s3)
-              | s3 = bb20 ] ] ]
+                s4
+              | s4 = [ &_97 <- m ] s5
+              | s5 = mov {p} {_97} (fun (_x: t_Point) -> [ &adj <- _x ] s6)
+              | s6 = available {board} {adj} (fun (_x: bool) -> [ &_98 <- _x ] s7)
+              | s7 = any [ br0 -> {_98 = false} (! bb20) | br1 -> {_98} (! bb30) ] ]
+            | bb30 = s0
+              [ s0 = count_degree {board} {adj} (fun (_x: UInt64.t) -> [ &degree <- _x ] s1)
+              | s1 = [ &_106 <- { f0 = degree; f1 = adj } ] s2
+              | s2 = MutBorrow.borrow_mut <t_Vec_tup2_usize_Point_Global> {candidates}
+                  (fun (_bor: MutBorrow.t t_Vec_tup2_usize_Point_Global) ->
+                    [ &_105 <- _bor ] [ &candidates <- _bor.final ] s3)
+              | s3 = push_tup2_usize_Point {_105} {_106} (fun (_x: ()) -> [ &_104 <- _x ] s4)
+              | s4 = bb20 ] ] ]
         | bb25 = s0
-          [ s0 = {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter'0} s1
+          [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter'0} any) ]
           | s1 = -{resolve_IntoIter_tup2_isize_isize_Global'0 iter'0}- s2
-          | s2 = bb35 ]
-        | bb35 = s0
-          [ s0 = [ &_117 <- candidates ] s1
-          | s1 = min {_117} (fun (_ret: t_Option_ref_tup2_usize_Point) -> [ &_115 <- _ret ] s2)
-          | s2 = bb36 ]
-        | bb36 = any [ br0 -> {_115 = None'1} (! bb39) | br1 (x0: tup2_usize_Point) -> {_115 = Some'1 x0} (! bb40) ]
+          | s2 = [ &_113 <- candidates ] s3
+          | s3 = min {_113} (fun (_x: t_Option_ref_tup2_usize_Point) -> [ &_111 <- _x ] s4)
+          | s4 = any [ br0 -> {_111 = None'1} (! bb39) | br1 (x0: tup2_usize_Point) -> {_111 = Some'1 x0} (! bb40) ] ]
         | bb40 = s0
-          [ s0 = elim_Some'1 {_115} (fun (r0: tup2_usize_Point) -> [ &adj'0 <- r0.f1 ] s1)
+          [ s0 = elim_Some'1 {_111} (fun (r0: tup2_usize_Point) -> [ &adj'0 <- r0.f1 ] s1)
           | s1 = [ &p <- adj'0 ] s2
           | s2 = MutBorrow.borrow_mut <t_Board> {board}
-              (fun (_ret: MutBorrow.t t_Board) -> [ &_123 <- _ret ] [ &board <- _ret.final ] s3)
-          | s3 = set {_123} {p} {step} (fun (_ret: ()) -> [ &_122 <- _ret ] s4)
+              (fun (_bor: MutBorrow.t t_Board) -> [ &_119 <- _bor ] [ &board <- _bor.final ] s3)
+          | s3 = set {_119} {p} {step} (fun (_x: ()) -> [ &_118 <- _x ] s4)
           | s4 = bb7 ] ] ]
-    | bb39 = s0 [ s0 = [ &_0 <- None'2 ] s1 | s1 = bb47 ]
-    | bb12 = s0 [ s0 = [ &_0 <- Some'2 board ] s1 | s1 = bb47 ]
-    | bb47 = return {_0} ]
-    [ & _0: t_Option_Board = Any.any_l ()
+    | bb39 = s0 [ s0 = [ &_ret <- None'2 ] s1 | s1 = return {_ret} ]
+    | bb12 = s0 [ s0 = [ &_ret <- Some'2 board ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_Board = Any.any_l ()
     | & size'0: UInt64.t = size'0
     | & x'0: UInt64.t = x'0
     | & y'0: UInt64.t = y'0
@@ -1612,33 +1562,31 @@ module M_knights_tour
     | & _28: UInt64.t = Any.any_l ()
     | & iter_old: t_Range_usize = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _54: t_Option_usize = Any.any_l ()
-    | & _55: MutBorrow.t t_Range_usize = Any.any_l ()
-    | & _56: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _52: t_Option_usize = Any.any_l ()
+    | & _53: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _54: MutBorrow.t t_Range_usize = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
-    | & _59: Seq.seq UInt64.t = Any.any_l ()
     | & step: UInt64.t = Any.any_l ()
     | & candidates: t_Vec_tup2_usize_Point_Global = Any.any_l ()
     | & iter'0: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & _67: t_Vec_tup2_isize_isize_Global = Any.any_l ()
+    | & _65: t_Vec_tup2_isize_isize_Global = Any.any_l ()
     | & iter_old'0: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
     | & produced'0: Seq.seq tup2_isize_isize = Any.any_l ()
-    | & _85: t_Option_tup2_isize_isize = Any.any_l ()
-    | & _86: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & _87: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _81: t_Option_tup2_isize_isize = Any.any_l ()
+    | & _82: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _83: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
     | & __creusot_proc_iter_elem'0: tup2_isize_isize = Any.any_l ()
-    | & _90: Seq.seq tup2_isize_isize = Any.any_l ()
     | & m: tup2_isize_isize = Any.any_l ()
     | & adj: t_Point = Any.any_l ()
-    | & _101: tup2_isize_isize = Any.any_l ()
-    | & _102: bool = Any.any_l ()
+    | & _97: tup2_isize_isize = Any.any_l ()
+    | & _98: bool = Any.any_l ()
     | & degree: UInt64.t = Any.any_l ()
-    | & _108: () = Any.any_l ()
-    | & _109: MutBorrow.t t_Vec_tup2_usize_Point_Global = Any.any_l ()
-    | & _110: tup2_usize_Point = Any.any_l ()
-    | & _115: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & _117: t_Vec_tup2_usize_Point_Global = Any.any_l ()
+    | & _104: () = Any.any_l ()
+    | & _105: MutBorrow.t t_Vec_tup2_usize_Point_Global = Any.any_l ()
+    | & _106: tup2_usize_Point = Any.any_l ()
+    | & _111: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & _113: t_Vec_tup2_usize_Point_Global = Any.any_l ()
     | & adj'0: t_Point = Any.any_l ()
-    | & _122: () = Any.any_l ()
-    | & _123: MutBorrow.t t_Board = Any.any_l () ]) [ return (result: t_Option_Board) -> (! return {result}) ]
+    | & _118: () = Any.any_l ()
+    | & _119: MutBorrow.t t_Board = Any.any_l () ]) [ return (result: t_Option_Board) -> (! return {result}) ]
 end

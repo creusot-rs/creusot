@@ -22,8 +22,8 @@ module M_implementation__impl_PartialEq_for_Element__eq (* <implementation::Elem
   meta "select_lsinst" "all"
   
   let rec eq_Element (self: t_Element) (other: t_Element) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = addr_eq_unit {self.f0} {other.f0} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return {_0} ] [ & _0: bool = Any.any_l () | & self: t_Element = self | & other: t_Element = other ])
+    [ bb0 = s0 [ s0 = addr_eq_unit {self.f0} {other.f0} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_Element = self | & other: t_Element = other ])
     [ return (result: bool) -> {[@expl:eq ensures] result
       = (deep_model_ref_Element self = deep_model_ref_Element other)}
       (! return {result}) ]
@@ -39,8 +39,8 @@ module M_implementation__impl_Clone_for_Element__clone (* <implementation::Eleme
   meta "select_lsinst" "all"
   
   let rec clone_Element (self: t_Element) (return (x: t_Element)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = self.f0 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_Element = Any.any_l () | & self: t_Element = self ])
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = self.f0 } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l () | & self: t_Element = self ])
     [ return (result: t_Element) -> {[@expl:clone ensures] self = result} (! return {result}) ]
 end
 module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T> *)
@@ -488,7 +488,6 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
       = index_Mapping_Element_Element result (index_Mapping_Element_Element result e))
 end
 module M_implementation__new
-  use set.Fset
   use creusot.prelude.Opaque
   use map.Map
   use creusot.prelude.Ptr
@@ -496,11 +495,12 @@ module M_implementation__new
   use mach.int.Int
   use creusot.int.Int64
   use map.Const
+  use set.Fset
   use creusot.prelude.Any
   
-  type t_Element = { f0: Opaque.ptr }
-  
   type t_FMap_Element_PtrOwn_Node_T
+  
+  type t_Element = { f0: Opaque.ptr }
   
   type t_PtrOwn_Node_T
   
@@ -681,17 +681,6 @@ module M_implementation__new
     forall p: Map.map (Map.map t_Element t_T) bool. (exists x: Map.map t_Element t_T. index_Mapping_Mapping_Element_T_bool p x)
       -> index_Mapping_Mapping_Element_T_bool p (such_that_Mapping_Element_T p)
   
-  predicate index_Mapping_Mapping_Element_Int_bool [@inline:trivial] (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Mapping_Element_Int_bool
-  
-  function such_that_Mapping_Element_Int (p: Map.map (Map.map t_Element int) bool) : Map.map t_Element int
-  
-  axiom such_that_Mapping_Element_Int_spec:
-    forall p: Map.map (Map.map t_Element int) bool. (exists x: Map.map t_Element int. index_Mapping_Mapping_Element_Int_bool p x)
-      -> index_Mapping_Mapping_Element_Int_bool p (such_that_Mapping_Element_Int p)
-  
   predicate index_Mapping_Mapping_Element_Element_bool [@inline:trivial] (self: Map.map (Map.map t_Element t_Element) bool) (a: Map.map t_Element t_Element) =
     Map.get self a
   
@@ -702,6 +691,17 @@ module M_implementation__new
   axiom such_that_Mapping_Element_Element_spec:
     forall p: Map.map (Map.map t_Element t_Element) bool. (exists x: Map.map t_Element t_Element. index_Mapping_Mapping_Element_Element_bool p x)
       -> index_Mapping_Mapping_Element_Element_bool p (such_that_Mapping_Element_Element p)
+  
+  predicate index_Mapping_Mapping_Element_Int_bool [@inline:trivial] (self: Map.map (Map.map t_Element int) bool) (a: Map.map t_Element int) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Mapping_Element_Int_bool
+  
+  function such_that_Mapping_Element_Int (p: Map.map (Map.map t_Element int) bool) : Map.map t_Element int
+  
+  axiom such_that_Mapping_Element_Int_spec:
+    forall p: Map.map (Map.map t_Element int) bool. (exists x: Map.map t_Element int. index_Mapping_Mapping_Element_Int_bool p x)
+      -> index_Mapping_Mapping_Element_Int_bool p (such_that_Mapping_Element_Int p)
   
   type t_UFInner_T = {
     domain: Fset.fset t_Element;
@@ -792,34 +792,23 @@ module M_implementation__new
   meta "select_lsinst" "all"
   
   let rec new_T (return (x: t_UnionFind_T)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_4 <- Fset.empty: Fset.fset t_Element ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new_Element (fun (_ret: t_FMap_Element_PtrOwn_Node_T) -> [ &_7 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = into_inner_FMap_Element_PtrOwn_Node_T {_7} (fun (_ret: t_FMap_Element_PtrOwn_Node_T) -> [ &_6 <- _ret ] s1)
-      | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_8 <- such_that_Mapping_Element_T (fun (__0: Map.map t_Element t_T) -> true) ] s1 | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_10 <- such_that_Mapping_Element_Int (fun (__0: Map.map t_Element int) -> true) ] s1 | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = [ &_12 <- such_that_Mapping_Element_Element (fun (__0: Map.map t_Element t_Element) -> true) ] s1
-      | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_14 <- 0 ] s1 | s1 = bb7 ]
-    | bb7 = s0
-      [ s0 = [ &_3 <- { domain = _4; perms = _6; payloads = _8; roots = _12; depth = _10; max_depth = _14 } ] s1
-      | s1 = [ &_2 <- { f0'1 = _3 } ] s2
-      | s2 = new_UnionFind_T {_2} (fun (_ret: t_UnionFind_T) -> [ &_0 <- _ret ] s3)
-      | s3 = bb8 ]
-    | bb8 = return {_0} ]
-    [ & _0: t_UnionFind_T = Any.any_l ()
+    [ bb0 = s0
+      [ s0 = new_Element (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_7 <- _x ] s1)
+      | s1 = into_inner_FMap_Element_PtrOwn_Node_T {_7} (fun (_x: t_FMap_Element_PtrOwn_Node_T) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Element;
+                        perms = _6;
+                        payloads = such_that_Mapping_Element_T (fun (__0: Map.map t_Element t_T) -> true);
+                        roots = such_that_Mapping_Element_Element (fun (__0: Map.map t_Element t_Element) -> true);
+                        depth = such_that_Mapping_Element_Int (fun (__0: Map.map t_Element int) -> true);
+                        max_depth = 0 } ] s3
+      | s3 = [ &_2 <- { f0'1 = _3 } ] s4
+      | s4 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_UnionFind_T = Any.any_l ()
     | & _2: t_UnionFind_T = Any.any_l ()
     | & _3: t_UFInner_T = Any.any_l ()
-    | & _4: Fset.fset t_Element = Any.any_l ()
     | & _6: t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _7: t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _8: Map.map t_Element t_T = Any.any_l ()
-    | & _10: Map.map t_Element int = Any.any_l ()
-    | & _12: Map.map t_Element t_Element = Any.any_l ()
-    | & _14: int = Any.any_l () ])
+    | & _7: t_FMap_Element_PtrOwn_Node_T = Any.any_l () ])
     [ return (result: t_UnionFind_T) -> {[@expl:new result type invariant] inv_Ghost_UnionFind_T result}
       {[@expl:new ensures] Fset.is_empty (domain_T result)}
       (! return {result}) ]
@@ -1060,31 +1049,33 @@ module M_implementation__make
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'2)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  let rec into_inner_ref_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
-    {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_UnionFind_T self}
+  let rec into_inner_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
+    {[@expl:into_inner 'self' type invariant] inv_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_ref_UnionFind_T result} {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_refmut_UnionFind_T result}
+      {result = self}
+      (! return {result}) ]
   
-  type tup2_PtrOwn_Node_T_ref_UnionFind_T = { f0'3: t_PtrOwn_Node_T; f1'3: MutBorrow.t t_UnionFind_T }
+  type tup2_PtrOwn_Node_T_refmut_UnionFind_T = { f0'3: t_PtrOwn_Node_T; f1'3: MutBorrow.t t_UnionFind_T }
   
   predicate index_Mapping_Element_bool [@inline:trivial] (self: Map.map t_Element bool) (a: t_Element) = Map.get self a
   
@@ -1152,24 +1143,26 @@ module M_implementation__make
       {result = map_Option_PtrOwn_Node_T (get_Element self key) (fun (v: t_PtrOwn_Node_T) -> v)}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_ref_PtrOwn_Node_T) (ret (f0'4: t_PtrOwn_Node_T)) = any
-    [ good (f0'4: t_PtrOwn_Node_T) -> {Some'0 f0'4 = input} (! ret {f0'4})
-    | bad -> {forall f0'4: t_PtrOwn_Node_T [Some'0 f0'4: t_Option_ref_PtrOwn_Node_T]. Some'0 f0'4 <> input}
-      (! {false}
+  let rec elim_Some (_x: t_Option_ref_PtrOwn_Node_T) (return (f0'4: t_PtrOwn_Node_T)) = any
+    [ _k (f0'4: t_PtrOwn_Node_T) -> {Some'0 f0'4 = _x} (! return {f0'4})
+    | _chk -> (! {match _x with
+        | Some'0 _ -> true
+        | _ -> false
+        end}
       any) ]
   
-  predicate invariant_ref_PtrOwn_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
+  predicate invariant_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
     inv_PtrOwn_Node_T self.current /\ inv_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_Node_T
   
-  predicate inv_ref_PtrOwn_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
-    invariant_ref_PtrOwn_Node_T'0 _1
+  predicate inv_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
+    invariant_refmut_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_Node_T
   
   let rec disjoint_lemma_Node_T (own1: MutBorrow.t t_PtrOwn_Node_T) (own2: t_PtrOwn_Node_T) (return (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrOwn_Node_T'0 own1}
+    {[@expl:disjoint_lemma 'own1' type invariant] inv_refmut_PtrOwn_Node_T own1}
     {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_Node_T own2}
     {[@expl:disjoint_lemma requires] size_of_Node_T <> 0}
     any
@@ -1177,19 +1170,19 @@ module M_implementation__make
       {own1.current = own1.final}
       (! return {result}) ]
   
-  predicate resolve_ref_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
+  predicate resolve_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_refmut_PtrOwn_Node_T
   
-  predicate invariant_ref_FMap_Element_PtrOwn_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+  predicate invariant_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
     inv_FMap_Element_PtrOwn_Node_T self.current /\ inv_FMap_Element_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_ref_FMap_Element_PtrOwn_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    invariant_ref_FMap_Element_PtrOwn_Node_T'0 _1
+  predicate inv_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    invariant_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_FMap_Element_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_FMap_Element_PtrOwn_Node_T
   
   predicate inv_Option_PtrOwn_Node_T (_1: t_Option_PtrOwn_Node_T)
   
@@ -1216,7 +1209,7 @@ module M_implementation__make
   
   let rec insert_ghost_Element (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) (key: t_Element)
     (value: t_PtrOwn_Node_T) (return (x: t_Option_PtrOwn_Node_T)) =
-    {[@expl:insert_ghost 'self' type invariant] inv_ref_FMap_Element_PtrOwn_Node_T'0 self}
+    {[@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_Element_PtrOwn_Node_T self}
     {[@expl:insert_ghost 'value' type invariant] inv_PtrOwn_Node_T value}
     any
     [ return (result: t_Option_PtrOwn_Node_T) -> {inv_Option_PtrOwn_Node_T result}
@@ -1240,15 +1233,15 @@ module M_implementation__make
   
   meta "rewrite_def" function insert_Element'0
   
-  predicate resolve_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
+  predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
-  function fin_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
+  function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_T
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'2.roots
   
@@ -1265,91 +1258,74 @@ module M_implementation__make
   meta "select_lsinst" "all"
   
   let rec make_T (uf: MutBorrow.t t_UnionFind_T) (payload: t_T) (return (x: t_Element)) =
-    {[@expl:make 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:make 'payload' type invariant] inv_T payload}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &payload_snap <- payload ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new (fun (_ret: t_PeanoInt) -> [ &_19 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &_18 <- Root _19 payload ] s1 | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = new_Node_T {_18} (fun (_ret: tup2_ptr_Node_T_Ghost_PtrOwn_Node_T) -> [ &_17 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &ptr <- _17.f0'1 ] s1
-      | s1 = [ &perm <- _17.f1'1 ] s2
-      | s2 = [ &_22 <- ptr ] s3
-      | s3 = [ &elt <- { f0'0 = _22 } ] s4
-      | s4 = into_inner_PtrOwn_Node_T {perm} (fun (_ret: t_PtrOwn_Node_T) -> [ &_29 <- _ret ] s5)
-      | s5 = bb5 ]
-    | bb5 = s0
-      [ s0 = into_inner_ref_UnionFind_T {uf} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = s0
-      [ s0 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s1
-      | s1 = [ &perm'0 <- _28.f0'3 ] s2
-      | s2 = [ &uf'0 <- _28.f1'3 ] s3
-      | s3 = [ &other_elt_ptr_snap <- (such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
-        /\ deep_model_Element e = deep_model_Element elt)).f0'0 ] s4
-      | s4 = bb7 ]
-    | bb7 = s0
-      [ s0 = into_ghost_ptr_unit {other_elt_ptr_snap} (fun (_ret: Opaque.ptr) -> [ &_39 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = into_inner_ptr_unit {_39} (fun (_ret: Opaque.ptr) -> [ &_38 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &other_elt <- { f0'0 = _38 } ] s1
-      | s1 = [ &_45 <- other_elt ] s2
-      | s2 = get_ghost_Element {uf'0.current.f0'2.perms} {_45}
-          (fun (_ret: t_Option_ref_PtrOwn_Node_T) -> [ &_42 <- _ret ] s3)
-      | s3 = bb10 ]
-    | bb10 = any [ br0 -> {_42 = None'0} (! bb16) | br1 (x0: t_PtrOwn_Node_T) -> {_42 = Some'0 x0} (! bb13) ]
+    [ bb0 = s0
+      [ s0 = [ &payload_snap <- payload ] s1
+      | s1 = new (fun (_x: t_PeanoInt) -> [ &_19 <- _x ] s2)
+      | s2 = [ &_18 <- Root _19 payload ] s3
+      | s3 = new_Node_T {_18} (fun (_x: tup2_ptr_Node_T_Ghost_PtrOwn_Node_T) -> [ &_17 <- _x ] s4)
+      | s4 = [ &ptr <- _17.f0'1 ] s5
+      | s5 = [ &perm <- _17.f1'1 ] s6
+      | s6 = [ &_22 <- ptr ] s7
+      | s7 = [ &elt <- { f0'0 = _22 } ] s8
+      | s8 = into_inner_PtrOwn_Node_T {perm} (fun (_x: t_PtrOwn_Node_T) -> [ &_29 <- _x ] s9)
+      | s9 = into_inner_refmut_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _x ] s10)
+      | s10 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s11
+      | s11 = [ &perm'0 <- _28.f0'3 ] s12
+      | s12 = [ &uf'0 <- _28.f1'3 ] s13
+      | s13 = [ &other_elt_ptr_snap <- (such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
+        /\ deep_model_Element e = deep_model_Element elt)).f0'0 ] s14
+      | s14 = into_ghost_ptr_unit {other_elt_ptr_snap} (fun (_x: Opaque.ptr) -> [ &_39 <- _x ] s15)
+      | s15 = into_inner_ptr_unit {_39} (fun (_x: Opaque.ptr) -> [ &_38 <- _x ] s16)
+      | s16 = [ &other_elt <- { f0'0 = _38 } ] s17
+      | s17 = [ &_45 <- other_elt ] s18
+      | s18 = get_ghost_Element {uf'0.current.f0'2.perms} {_45}
+          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_42 <- _x ] s19)
+      | s19 = any [ br0 -> {_42 = None'0} (! bb16) | br1 (x0: t_PtrOwn_Node_T) -> {_42 = Some'0 x0} (! bb13) ] ]
     | bb13 = s0
       [ s0 = elim_Some {_42} (fun (r0: t_PtrOwn_Node_T) -> [ &other_perm <- r0 ] s1)
-      | s1 = {inv_PtrOwn_Node_T perm'0}
-        MutBorrow.borrow_mut <t_PtrOwn_Node_T> {perm'0}
-          (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) ->
-            [ &_49 <- _ret ] -{inv_PtrOwn_Node_T _ret.final}-
-            [ &perm'0 <- _ret.final ] s2)
-      | s2 = {inv_PtrOwn_Node_T _49.current}
-        MutBorrow.borrow_final <t_PtrOwn_Node_T> {_49.current} {MutBorrow.get_id _49}
-          (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) ->
-            [ &_48 <- _ret ] -{inv_PtrOwn_Node_T _ret.final}-
-            [ &_49 <- { _49 with current = _ret.final } ] s3)
-      | s3 = disjoint_lemma_Node_T {_48} {other_perm} (fun (_ret: ()) -> [ &_41 <- _ret ] s4)
-      | s4 = bb15 ]
-    | bb15 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _49} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _49}- s2
-      | s2 = bb16 ]
+      | s1 = MutBorrow.borrow_mut <t_PtrOwn_Node_T> {perm'0}
+          (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
+            [ &_49 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
+            [ &perm'0 <- _bor.final ] s2) [ _ck -> (! {inv_PtrOwn_Node_T perm'0} any) ]
+      | s2 = MutBorrow.borrow_final <t_PtrOwn_Node_T> {_49.current} {MutBorrow.get_id _49}
+          (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
+            [ &_48 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
+            [ &_49 <- { _49 with current = _bor.final } ] s3) [ _ck -> (! {inv_PtrOwn_Node_T _49.current} any) ]
+      | s3 = disjoint_lemma_Node_T {_48} {other_perm} (fun (_x: ()) -> [ &_41 <- _x ] s4)
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_PtrOwn_Node_T _49} any) ]
+      | s5 = -{resolve_refmut_PtrOwn_Node_T _49}- s6
+      | s6 = bb16 ]
     | bb16 = s0
-      [ s0 = {inv_FMap_Element_PtrOwn_Node_T uf'0.current.f0'2.perms}
-        MutBorrow.borrow_final <t_FMap_Element_PtrOwn_Node_T> {uf'0.current.f0'2.perms}
+      [ s0 = MutBorrow.borrow_final <t_FMap_Element_PtrOwn_Node_T> {uf'0.current.f0'2.perms}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id uf'0) 1) 2}
-          (fun (_ret: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
-            [ &_52 <- _ret ] -{inv_FMap_Element_PtrOwn_Node_T _ret.final}-
-            [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with perms = _ret.final } } } ] s1)
-      | s1 = insert_ghost_Element {_52} {elt} {perm'0} (fun (_ret: t_Option_PtrOwn_Node_T) -> [ &_51 <- _ret ] s2)
-      | s2 = {[@expl:type invariant] inv_Option_PtrOwn_Node_T _51} s3
+          (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
+            [ &_52 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
+            [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with perms = _bor.final } } } ] s1)
+        [ _ck -> (! {inv_FMap_Element_PtrOwn_Node_T uf'0.current.f0'2.perms} any) ]
+      | s1 = insert_ghost_Element {_52} {elt} {perm'0} (fun (_x: t_Option_PtrOwn_Node_T) -> [ &_51 <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_PtrOwn_Node_T _51} any) ]
       | s3 = -{resolve_Option_PtrOwn_Node_T _51}- s4
-      | s4 = bb17 ]
-    | bb17 = s0 [ s0 = [ &_55 <- insert_Element'0 uf'0.current.f0'2.domain elt ] s1 | s1 = bb18 ]
-    | bb18 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = _55 } } } ] s1
-      | s1 = [ &_59 <- Map.set uf'0.current.f0'2.payloads elt payload_snap ] s2
-      | s2 = bb19 ]
-    | bb19 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = _59 } } } ] s1
-      | s1 = [ &_64 <- Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth ] s2
-      | s2 = bb20 ]
-    | bb20 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = _64 } } } ] s1
-      | s1 = [ &_69 <- Map.set uf'0.current.f0'2.roots elt elt ] s2
-      | s2 = bb21 ]
-    | bb21 = s0
-      [ s0 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = _69 } } } ] s1
-      | s1 = {[@expl:type invariant] inv_ref_UnionFind_T uf'0} s2
-      | s2 = -{resolve_ref_UnionFind_T uf'0}- s3
-      | s3 = new_unit {_25} (fun (_ret: ()) -> [ &_24 <- _ret ] s4)
-      | s4 = bb22 ]
-    | bb22 = s0 [ s0 = [ &_0 <- elt ] s1 | s1 = bb23 ]
-    | bb23 = return {_0} ]
-    [ & _0: t_Element = Any.any_l ()
+      | s4 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Element'0 uf'0.current.f0'2.domain elt } } } ]
+        s5
+      | s5 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
+        s6
+      | s6 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth } } } ]
+        s7
+      | s7 =
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = Map.set uf'0.current.f0'2.roots elt elt } } } ]
+        s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T uf'0} any) ]
+      | s9 = -{resolve_refmut_UnionFind_T uf'0}- s10
+      | s10 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s11)
+      | s11 = [ &_ret <- elt ] s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & payload: t_T = payload
     | & payload_snap: t_T = Any.any_l ()
@@ -1364,7 +1340,7 @@ module M_implementation__make
     | & _25: () = Any.any_l ()
     | & perm'0: t_PtrOwn_Node_T = Any.any_l ()
     | & uf'0: MutBorrow.t t_UnionFind_T = Any.any_l ()
-    | & _28: tup2_PtrOwn_Node_T_ref_UnionFind_T = Any.any_l ()
+    | & _28: tup2_PtrOwn_Node_T_refmut_UnionFind_T = Any.any_l ()
     | & _29: t_PtrOwn_Node_T = Any.any_l ()
     | & _31: MutBorrow.t t_UnionFind_T = Any.any_l ()
     | & other_elt_ptr_snap: Opaque.ptr = Any.any_l ()
@@ -1378,16 +1354,13 @@ module M_implementation__make
     | & _48: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _49: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _51: t_Option_PtrOwn_Node_T = Any.any_l ()
-    | & _52: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _55: Fset.fset t_Element = Any.any_l ()
-    | & _59: Map.map t_Element t_T = Any.any_l ()
-    | & _64: Map.map t_Element int = Any.any_l ()
-    | & _69: Map.map t_Element t_Element = Any.any_l () ])
+    | & _52: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l () ])
     [ return (result: t_Element) -> {[@expl:make ensures #0] not in_domain_T uf.current result}
-      {[@expl:make ensures #1] domain_T (fin_Ghost_ref_UnionFind_T uf) = insert_Element'0 (domain_T uf.current) result}
-      {[@expl:make ensures #2] roots_map_T (fin_Ghost_ref_UnionFind_T uf)
+      {[@expl:make ensures #1] domain_T (fin_Ghost_refmut_UnionFind_T uf)
+      = insert_Element'0 (domain_T uf.current) result}
+      {[@expl:make ensures #2] roots_map_T (fin_Ghost_refmut_UnionFind_T uf)
       = Map.set (roots_map_T uf.current) result result}
-      {[@expl:make ensures #3] payloads_map_T (fin_Ghost_ref_UnionFind_T uf)
+      {[@expl:make ensures #3] payloads_map_T (fin_Ghost_refmut_UnionFind_T uf)
       = Map.set (payloads_map_T uf.current) result payload}
       (! return {result}) ]
 end
@@ -1598,47 +1571,49 @@ module M_implementation__find_inner
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'0)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_Ghost_ref_UnionFind_T self
+  predicate invariant_ref_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_Ghost_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_ref_Ghost_refmut_UnionFind_T
   
-  predicate inv_ref_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_ref_Ghost_ref_UnionFind_T _1
+  predicate inv_ref_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_ref_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_ref_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) = inv_ref_UnionFind_T self
+  predicate invariant_ref_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_ref_refmut_UnionFind_T
   
-  predicate inv_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_ref_UnionFind_T _1
+  predicate inv_ref_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_ref_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_ref_refmut_UnionFind_T
   
-  let rec deref_Ghost_ref_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
+  let rec deref_Ghost_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_ref_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_ref_refmut_UnionFind_T result}
       {result = self}
       (! return {result}) ]
   
@@ -1708,133 +1683,139 @@ module M_implementation__find_inner
     {[@expl:as_ref requires] ptr = ptr_Node_T own}
     any [ return (result: t_Node_T) -> {inv_ref_Node_T result} {result = val_Node_T own} (! return {result}) ]
   
-  let rec elim_Link (input: t_Node_T) (ret (f0'2: t_Element)) = any
-    [ good (f0'2: t_Element) -> {Link f0'2 = input} (! ret {f0'2})
-    | bad -> {forall f0'2: t_Element [Link f0'2: t_Node_T]. Link f0'2 <> input} (! {false} any) ]
+  let rec elim_Link (_x: t_Node_T) (return (f0'2: t_Element)) = any
+    [ _k (f0'2: t_Element) -> {Link f0'2 = _x} (! return {f0'2})
+    | _chk -> (! {match _x with
+        | Link _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  predicate invariant_ref_Ghost_ref_UnionFind_T'0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_Ghost_ref_UnionFind_T self.current /\ inv_Ghost_ref_UnionFind_T self.final
+  predicate invariant_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_Ghost_refmut_UnionFind_T self.current /\ inv_Ghost_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UnionFind_T'0
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UnionFind_T
   
-  predicate inv_ref_Ghost_ref_UnionFind_T'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_Ghost_ref_UnionFind_T'0 _1
+  predicate inv_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UnionFind_T'0
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_ref_UnionFind_T'0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_ref_UnionFind_T self.current /\ inv_ref_UnionFind_T self.final
+  predicate invariant_refmut_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_refmut_UnionFind_T self.current /\ inv_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UnionFind_T'0
+  meta "rewrite_def" predicate invariant_refmut_refmut_UnionFind_T
   
-  predicate inv_ref_ref_UnionFind_T'0 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_ref_UnionFind_T'0 _1
+  predicate inv_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UnionFind_T'0
+  meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let rec deref_mut_Ghost_ref_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let rec deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T'0 self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_ref_ref_UnionFind_T'0 result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
       {result = self}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+  predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
-  predicate resolve_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
+  predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let rec new_ref_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_UnionFind_T x}
+  let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
       {result = x}
       (! return {result}) ]
   
-  predicate invariant_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
+  predicate invariant_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
     inv_UFInner_T self.current /\ inv_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_UFInner_T
   
-  predicate inv_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_ref_UFInner_T _1
+  predicate inv_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_UFInner_T
   
-  predicate invariant_Ghost_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) = inv_ref_UFInner_T self
+  predicate invariant_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
+    inv_refmut_UFInner_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UFInner_T
   
-  predicate inv_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_Ghost_ref_UFInner_T _1
+  predicate inv_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) =
+    invariant_Ghost_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UFInner_T
   
-  let rec new_ref_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_UFInner_T x}
+  let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_UFInner_T x}
     any
-    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_ref_UFInner_T result} {result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_refmut_UFInner_T result} {result = x} (! return {result}) ]
   
-  predicate invariant_ref_Ghost_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    inv_Ghost_ref_UFInner_T self.current /\ inv_Ghost_ref_UFInner_T self.final
+  predicate invariant_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    inv_Ghost_refmut_UFInner_T self.current /\ inv_Ghost_refmut_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UFInner_T
   
-  predicate inv_ref_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    invariant_ref_Ghost_ref_UFInner_T _1
+  predicate inv_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    invariant_refmut_Ghost_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UFInner_T
   
-  predicate invariant_ref_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    inv_ref_UFInner_T self.current /\ inv_ref_UFInner_T self.final
+  predicate invariant_refmut_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    inv_refmut_UFInner_T self.current /\ inv_refmut_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_UFInner_T
   
-  predicate inv_ref_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    invariant_ref_ref_UFInner_T _1
+  predicate inv_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    invariant_refmut_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_refmut_UFInner_T
   
-  let rec deref_mut_Ghost_ref_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
+  let rec deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UFInner_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UFInner_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_ref_ref_UFInner_T result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_refmut_refmut_UFInner_T result}
       {result = self}
       (! return {result}) ]
   
-  type t_Option_ref_PtrOwn_Node_T'0 = None'1 | Some'1 (MutBorrow.t t_PtrOwn_Node_T)
+  type t_Option_refmut_PtrOwn_Node_T = None'1 | Some'1 (MutBorrow.t t_PtrOwn_Node_T)
   
-  predicate invariant_ref_FMap_Element_PtrOwn_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+  predicate invariant_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
     inv_FMap_Element_PtrOwn_Node_T self.current /\ inv_FMap_Element_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_ref_FMap_Element_PtrOwn_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    invariant_ref_FMap_Element_PtrOwn_Node_T'0 _1
+  predicate inv_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    invariant_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_FMap_Element_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate invariant_ref_PtrOwn_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
+  predicate invariant_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
     inv_PtrOwn_Node_T self.current /\ inv_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_Node_T
   
-  predicate inv_ref_PtrOwn_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
-    invariant_ref_PtrOwn_Node_T'0 _1
+  predicate inv_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
+    invariant_refmut_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_Node_T
   
-  predicate inv_Option_ref_PtrOwn_Node_T'0 (_1: t_Option_ref_PtrOwn_Node_T'0)
+  predicate inv_Option_refmut_PtrOwn_Node_T (_1: t_Option_refmut_PtrOwn_Node_T)
   
   axiom inv_axiom'5 [@rewrite]:
-    forall x: t_Option_ref_PtrOwn_Node_T'0 [inv_Option_ref_PtrOwn_Node_T'0 x]. inv_Option_ref_PtrOwn_Node_T'0 x
+    forall x: t_Option_refmut_PtrOwn_Node_T [inv_Option_refmut_PtrOwn_Node_T x]. inv_Option_refmut_PtrOwn_Node_T x
       = match x with
         | None'1 -> true
-        | Some'1 f0'2 -> inv_ref_PtrOwn_Node_T'0 f0'2
+        | Some'1 f0'2 -> inv_refmut_PtrOwn_Node_T f0'2
         end
   
   function len_Element (self: t_FMap_Element_PtrOwn_Node_T) : int
@@ -1842,10 +1823,10 @@ module M_implementation__find_inner
   axiom len_Element_spec: forall self: t_FMap_Element_PtrOwn_Node_T. len_Element self >= 0
   
   let rec get_mut_ghost_Element (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) (key: t_Element)
-    (return (x: t_Option_ref_PtrOwn_Node_T'0)) =
-    {[@expl:get_mut_ghost 'self' type invariant] inv_ref_FMap_Element_PtrOwn_Node_T'0 self}
+    (return (x: t_Option_refmut_PtrOwn_Node_T)) =
+    {[@expl:get_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_PtrOwn_Node_T self}
     any
-    [ return (result: t_Option_ref_PtrOwn_Node_T'0) -> {inv_Option_ref_PtrOwn_Node_T'0 result}
+    [ return (result: t_Option_refmut_PtrOwn_Node_T) -> {inv_Option_refmut_PtrOwn_Node_T result}
       {if contains_Element'0 self.current key then
         match result with
           | None'1 -> false
@@ -1860,62 +1841,62 @@ module M_implementation__find_inner
       {len_Element self.current = len_Element self.final}
       (! return {result}) ]
   
-  let rec unwrap_ref_PtrOwn_Node_T'0 (self_: t_Option_ref_PtrOwn_Node_T'0) (return (x: MutBorrow.t t_PtrOwn_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_PtrOwn_Node_T'0 self_}
+  let rec unwrap_refmut_PtrOwn_Node_T (self_: t_Option_refmut_PtrOwn_Node_T) (return (x: MutBorrow.t t_PtrOwn_Node_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_PtrOwn_Node_T self_}
     {[@expl:unwrap requires] self_ <> None'1}
     any
-    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_ref_PtrOwn_Node_T'0 result}
+    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_refmut_PtrOwn_Node_T result}
       {Some'1 result = self_}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+  predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UFInner_T
   
-  predicate invariant_Ghost_ref_PtrOwn_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
-    inv_ref_PtrOwn_Node_T'0 self
+  predicate invariant_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
+    inv_refmut_PtrOwn_Node_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_Node_T
   
-  predicate inv_Ghost_ref_PtrOwn_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
-    invariant_Ghost_ref_PtrOwn_Node_T'0 _1
+  predicate inv_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
+    invariant_Ghost_refmut_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_Node_T'0
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_Node_T
   
-  let rec new_ref_PtrOwn_Node_T'0 (x: MutBorrow.t t_PtrOwn_Node_T) (return (x'0: MutBorrow.t t_PtrOwn_Node_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_PtrOwn_Node_T'0 x}
+  let rec new_refmut_PtrOwn_Node_T (x: MutBorrow.t t_PtrOwn_Node_T) (return (x'0: MutBorrow.t t_PtrOwn_Node_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_PtrOwn_Node_T x}
     any
-    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_Ghost_ref_PtrOwn_Node_T'0 result}
+    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_Ghost_refmut_PtrOwn_Node_T result}
       {result = x}
       (! return {result}) ]
   
-  predicate resolve_ref_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
+  predicate resolve_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_refmut_PtrOwn_Node_T
   
-  predicate invariant_ref_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_Node_T) =
+  predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
     inv_Node_T self.current /\ inv_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_Node_T
   
-  predicate inv_ref_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_ref_Node_T'0 _1
+  predicate inv_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_refmut_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_Node_T
   
-  function fin_Ghost_ref_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) : t_PtrOwn_Node_T =
+  function fin_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) : t_PtrOwn_Node_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_Node_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_Node_T
   
   let rec as_mut_Node_T (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_Node_T) (return (x: MutBorrow.t t_Node_T)) =
-    {[@expl:as_mut 'own' type invariant] inv_Ghost_ref_PtrOwn_Node_T'0 own}
+    {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_PtrOwn_Node_T own}
     {[@expl:as_mut requires] ptr = ptr_Node_T own.current}
     any
-    [ return (result: MutBorrow.t t_Node_T) -> {inv_ref_Node_T'0 result}
+    [ return (result: MutBorrow.t t_Node_T) -> {inv_refmut_Node_T result}
       {result.current = val_Node_T own.current}
-      {ptr_Node_T (fin_Ghost_ref_PtrOwn_Node_T own) = ptr_Node_T own.current}
-      {val_Node_T (fin_Ghost_ref_PtrOwn_Node_T own) = result.final}
+      {ptr_Node_T (fin_Ghost_refmut_PtrOwn_Node_T own) = ptr_Node_T own.current}
+      {val_Node_T (fin_Ghost_refmut_PtrOwn_Node_T own) = result.final}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -1928,21 +1909,22 @@ module M_implementation__find_inner
         | Link x0 -> true
         end
   
-  predicate resolve_ref_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
+  predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Node_T
+  meta "rewrite_def" predicate resolve_refmut_Node_T
   
-  predicate resolve_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
+  predicate resolve_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_refmut_UFInner_T
   
-  predicate resolve_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = resolve_ref_UFInner_T _1
+  predicate resolve_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = resolve_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate resolve_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T
   
-  predicate resolve_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = resolve_ref_UnionFind_T _1
+  predicate resolve_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    resolve_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate resolve_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UnionFind_T
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
@@ -1968,9 +1950,9 @@ module M_implementation__find_inner
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
-  function fin_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
+  function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_T
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
@@ -1981,142 +1963,110 @@ module M_implementation__find_inner
   meta "select_lsinst" "all"
   
   let rec find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:find_inner requires] in_domain_T uf.current elem}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _ret ] s1)
-      | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_26 <- elem ] s1
-      | s1 = get_ghost_Element {_23.current.f0'0.perms} {_26}
-          (fun (_ret: t_Option_ref_PtrOwn_Node_T) -> [ &_21 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = unwrap_ref_PtrOwn_Node_T {_21} (fun (_ret: t_PtrOwn_Node_T) -> [ &_20 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_ref_PtrOwn_Node_T {_20} (fun (_ret: t_PtrOwn_Node_T) -> [ &perm <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_29 <- elem.f0 ] s1
-      | s1 = as_ref_Node_T {_29} {perm} (fun (_ret: t_Node_T) -> [ &_27 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = any
-      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_27 = Root x0 x1} (! bb7) | br1 (x0: t_Element) -> {_27 = Link x0} (! bb8) ]
+      [ s0 = deref_Ghost_refmut_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _x ] s1)
+      | s1 = [ &_26 <- elem ] s2
+      | s2 = get_ghost_Element {_23.current.f0'0.perms} {_26}
+          (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_21 <- _x ] s3)
+      | s3 = unwrap_ref_PtrOwn_Node_T {_21} (fun (_x: t_PtrOwn_Node_T) -> [ &_20 <- _x ] s4)
+      | s4 = new_ref_PtrOwn_Node_T {_20} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = [ &_29 <- elem.f0 ] s6
+      | s6 = as_ref_Node_T {_29} {perm} (fun (_x: t_Node_T) -> [ &_27 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_27 = Root x0 x1} (! bb7)
+        | br1 (x0: t_Element) -> {_27 = Link x0} (! bb8) ] ]
     | bb8 = s0
       [ s0 = elim_Link {_27} (fun (r0: t_Element) -> [ &e <- r0 ] s1)
-      | s1 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_40 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s2)
-      | s2 = deref_mut_Ghost_ref_UnionFind_T {_40}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_39 <- _ret ] s3)
-      | s3 = bb10 ]
-    | bb10 = s0
-      [ s0 = {inv_UnionFind_T _39.current.current}
-        MutBorrow.borrow_mut <t_UnionFind_T> {_39.current.current}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_38 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_39 <- { _39 with current = { _39.current with current = _ret.final } } ] s1)
-      | s1 = {inv_UnionFind_T _38.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_38.current} {MutBorrow.get_id _38}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_37 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_38 <- { _38 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _39} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _39}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _38} s5
-      | s5 = -{resolve_ref_UnionFind_T _38}- s6
-      | s6 = {inv_UnionFind_T _37.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_37.current} {MutBorrow.get_id _37}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_36 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_37 <- { _37 with current = _ret.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_36} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_35 <- _ret ] s8)
-      | s8 = bb11 ]
-    | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _37} s1
-      | s1 = -{resolve_ref_UnionFind_T _37}- s2
-      | s2 = find_inner_T {_35} {e} (fun (_ret: t_Element) -> [ &root <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_44 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_44}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_43 <- _ret ] s2)
-      | s2 = bb13 ]
-    | bb13 = s0
-      [ s0 = {inv_UFInner_T _43.current.current.f0'0}
-        MutBorrow.borrow_mut <t_UFInner_T> {_43.current.current.f0'0}
-          (fun (_ret: MutBorrow.t t_UFInner_T) ->
-            [ &__temp <- _ret ] -{inv_UFInner_T _ret.final}-
-            [ &_43 <- { _43 with current = { _43.current with current = { f0'0 = _ret.final } } } ] s1)
-      | s1 = new_ref_UFInner_T {__temp} (fun (_ret: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _ret ] s2)
-      | s2 = bb14 ]
-    | bb14 = s0
-      [ s0 = {[@expl:assertion] index_Mapping_Element_Int uf'0.current.depth elem
+      | s1 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_40 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s2) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s2 = deref_mut_Ghost_refmut_UnionFind_T {_40}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_39 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_UnionFind_T> {_39.current.current}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_38 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_39 <- { _39 with current = { _39.current with current = _bor.final } } ] s4)
+        [ _ck -> (! {inv_UnionFind_T _39.current.current} any) ]
+      | s4 = MutBorrow.borrow_final <t_UnionFind_T> {_38.current} {MutBorrow.get_id _38}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_37 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_38 <- { _38 with current = _bor.final } ] s5) [ _ck -> (! {inv_UnionFind_T _38.current} any) ]
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _39} any) ]
+      | s6 = -{resolve_refmut_refmut_UnionFind_T _39}- s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _38} any) ]
+      | s8 = -{resolve_refmut_UnionFind_T _38}- s9
+      | s9 = MutBorrow.borrow_final <t_UnionFind_T> {_37.current} {MutBorrow.get_id _37}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_36 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_37 <- { _37 with current = _bor.final } ] s10) [ _ck -> (! {inv_UnionFind_T _37.current} any) ]
+      | s10 = new_refmut_UnionFind_T {_36} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_35 <- _x ] s11)
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _37} any) ]
+      | s12 = -{resolve_refmut_UnionFind_T _37}- s13
+      | s13 = find_inner_T {_35} {e} (fun (_x: t_Element) -> [ &root <- _x ] s14)
+      | s14 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_44 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s15) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s15 = deref_mut_Ghost_refmut_UnionFind_T {_44}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_43 <- _x ] s16)
+      | s16 = MutBorrow.borrow_mut <t_UFInner_T> {_43.current.current.f0'0}
+          (fun (_bor: MutBorrow.t t_UFInner_T) ->
+            [ &__temp <- _bor ] -{inv_UFInner_T _bor.final}-
+            [ &_43 <- { _43 with current = { _43.current with current = { f0'0 = _bor.final } } } ] s17)
+        [ _ck -> (! {inv_UFInner_T _43.current.current.f0'0} any) ]
+      | s17 = new_refmut_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s18)
+      | s18 = {[@expl:assertion] index_Mapping_Element_Int uf'0.current.depth elem
         < index_Mapping_Element_Int uf'0.current.depth root}
-        s1
-      | s1 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_58 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s2)
-      | s2 = deref_mut_Ghost_ref_UFInner_T {_58}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_57 <- _ret ] s3)
-      | s3 = bb15 ]
-    | bb15 = s0
-      [ s0 = [ &_60 <- elem ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _57.current.current.perms}
-        MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_57.current.current.perms}
-          (fun (_ret: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
-            [ &_56 <- _ret ] -{inv_FMap_Element_PtrOwn_Node_T _ret.final}-
-            [ &_57 <- { _57 with current = { _57.current with current = { _57.current.current with perms = _ret.final } } } ]
-            s2)
-      | s2 = get_mut_ghost_Element {_56} {_60} (fun (_ret: t_Option_ref_PtrOwn_Node_T'0) -> [ &_55 <- _ret ] s3)
-      | s3 = bb16 ]
-    | bb16 = s0
-      [ s0 = unwrap_ref_PtrOwn_Node_T'0 {_55} (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) -> [ &_54 <- _ret ] s1)
-      | s1 = bb17 ]
-    | bb17 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_ref_UFInner_T _57} s1
-      | s1 = -{resolve_ref_ref_UFInner_T _57}- s2
-      | s2 = {inv_PtrOwn_Node_T _54.current}
-        MutBorrow.borrow_final <t_PtrOwn_Node_T> {_54.current} {MutBorrow.get_id _54}
-          (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) ->
-            [ &_53 <- _ret ] -{inv_PtrOwn_Node_T _ret.final}-
-            [ &_54 <- { _54 with current = _ret.final } ] s3)
-      | s3 = new_ref_PtrOwn_Node_T'0 {_53} (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) -> [ &mut_perm <- _ret ] s4)
-      | s4 = bb18 ]
-    | bb18 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T'0 _54} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _54}- s2
-      | s2 = [ &_62 <- Link root ] s3
-      | s3 = [ &_65 <- elem.f0 ] s4
-      | s4 = as_mut_Node_T {_65} {mut_perm} (fun (_ret: MutBorrow.t t_Node_T) -> [ &_64 <- _ret ] s5)
-      | s5 = bb20 ]
-    | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T _64.current} s1
-      | s1 = -{resolve_Node_T _64.current}- s2
-      | s2 = [ &_64 <- { _64 with current = _62 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 _64} s4
-      | s4 = -{resolve_ref_Node_T _64}- s5
-      | s5 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s6
-      | s6 = -{resolve_Ghost_ref_UFInner_T uf'0}- s7
-      | s7 = {[@expl:type invariant] inv_ref_ref_UnionFind_T'0 _43} s8
-      | s8 = -{resolve_ref_ref_UnionFind_T _43}- s9
-      | s9 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s10
-      | s10 = -{resolve_Ghost_ref_UnionFind_T uf}- s11
-      | s11 = bb22 ]
-    | bb22 = s0 [ s0 = [ &_0 <- root ] s1 | s1 = bb23 ]
+        s19
+      | s19 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_58 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s20) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s20 = deref_mut_Ghost_refmut_UFInner_T {_58}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_57 <- _x ] s21)
+      | s21 = [ &_60 <- elem ] s22
+      | s22 = MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_57.current.current.perms}
+          (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
+            [ &_56 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
+            [ &_57 <- { _57 with current = { _57.current with current = { _57.current.current with perms = _bor.final } } } ]
+            s23) [ _ck -> (! {inv_FMap_Element_PtrOwn_Node_T _57.current.current.perms} any) ]
+      | s23 = get_mut_ghost_Element {_56} {_60} (fun (_x: t_Option_refmut_PtrOwn_Node_T) -> [ &_55 <- _x ] s24)
+      | s24 = unwrap_refmut_PtrOwn_Node_T {_55} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_54 <- _x ] s25)
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _57} any) ]
+      | s26 = -{resolve_refmut_refmut_UFInner_T _57}- s27
+      | s27 = MutBorrow.borrow_final <t_PtrOwn_Node_T> {_54.current} {MutBorrow.get_id _54}
+          (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
+            [ &_53 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
+            [ &_54 <- { _54 with current = _bor.final } ] s28) [ _ck -> (! {inv_PtrOwn_Node_T _54.current} any) ]
+      | s28 = new_refmut_PtrOwn_Node_T {_53} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &mut_perm <- _x ] s29)
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_PtrOwn_Node_T _54} any) ]
+      | s30 = -{resolve_refmut_PtrOwn_Node_T _54}- s31
+      | s31 = [ &_62 <- Link root ] s32
+      | s32 = [ &_65 <- elem.f0 ] s33
+      | s33 = as_mut_Node_T {_65} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_64 <- _x ] s34)
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_Node_T _64.current} any) ]
+      | s35 = -{resolve_Node_T _64.current}- s36
+      | s36 = [ &_64 <- { _64 with current = _62 } ] s37
+      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _64} any) ]
+      | s38 = -{resolve_refmut_Node_T _64}- s39
+      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s40 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s41
+      | s41 = s42 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _43} any) ]
+      | s42 = -{resolve_refmut_refmut_UnionFind_T _43}- s43
+      | s43 = s44 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s44 = -{resolve_Ghost_refmut_UnionFind_T uf}- s45
+      | s45 = [ &_ret <- root ] s46
+      | s46 = return {_ret} ]
     | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s1
-      | s1 = -{resolve_Ghost_ref_UnionFind_T uf}- s2
-      | s2 = bb9 ]
-    | bb9 = s0 [ s0 = [ &_0 <- elem ] s1 | s1 = bb23 ]
-    | bb23 = return {_0} ]
-    [ & _0: t_Element = Any.any_l ()
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s1 = -{resolve_Ghost_refmut_UnionFind_T uf}- s2
+      | s2 = [ &_ret <- elem ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & elem: t_Element = elem
     | & perm: t_PtrOwn_Node_T = Any.any_l ()
@@ -2141,7 +2091,7 @@ module M_implementation__find_inner
     | & mut_perm: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _53: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _54: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
-    | & _55: t_Option_ref_PtrOwn_Node_T'0 = Any.any_l ()
+    | & _55: t_Option_refmut_PtrOwn_Node_T = Any.any_l ()
     | & _56: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
     | & _57: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
     | & _58: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
@@ -2149,14 +2099,14 @@ module M_implementation__find_inner
     | & _62: t_Node_T = Any.any_l ()
     | & _64: MutBorrow.t t_Node_T = Any.any_l ()
     | & _65: Opaque.ptr = Any.any_l () ]
-    [ find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (_ret (_r: t_Element)) ->
+    [ find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (_k (_ret: t_Element)) ->
     {[@expl:function variant] well_founded_relation_Int function_variant (uf.current.f0'0.max_depth
       - index_Mapping_Element_Int uf.current.f0'0.depth elem)}
-      find_inner_T {uf} {elem} (_ret) ]
+      find_inner_T {uf} {elem} (_k) ]
     [ function_variant: int = uf.current.f0'0.max_depth - index_Mapping_Element_Int uf.current.f0'0.depth elem ])
     [ return (result: t_Element) -> {[@expl:find_inner ensures #0] result = root_T uf.current elem}
       {[@expl:find_inner ensures #1] unchanged_T uf}
-      {[@expl:find_inner ensures #2] (fin_Ghost_ref_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
+      {[@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
       {[@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
       >= index_Mapping_Element_Int uf.current.f0'0.depth elem}
       (! return {result}) ]
@@ -2368,24 +2318,24 @@ module M_implementation__find
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'0)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
@@ -2411,17 +2361,17 @@ module M_implementation__find
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
-  function fin_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
+  function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_T
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   let rec find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:find_inner requires] in_domain_T uf.current elem}
     any
     [ return (result: t_Element) -> {result = root_T uf.current elem}
       {unchanged_T uf}
-      {(fin_Ghost_ref_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
+      {(fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
       {index_Mapping_Element_Int uf.current.f0'0.depth result >= index_Mapping_Element_Int uf.current.f0'0.depth elem}
       (! return {result}) ]
   
@@ -2430,12 +2380,11 @@ module M_implementation__find
   meta "select_lsinst" "all"
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:find requires] in_domain_T uf.current elem}
     (! bb0
-    [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_ret: t_Element) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return {_0} ]
-    [ & _0: t_Element = Any.any_l () | & uf: MutBorrow.t t_UnionFind_T = uf | & elem: t_Element = elem ])
+    [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_x: t_Element) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l () | & uf: MutBorrow.t t_UnionFind_T = uf | & elem: t_Element = elem ])
     [ return (result: t_Element) -> {[@expl:find ensures #0] result = root_T uf.current elem}
       {[@expl:find ensures #1] unchanged_T uf}
       (! return {result}) ]
@@ -2748,10 +2697,12 @@ module M_implementation__get
     {[@expl:as_ref requires] ptr = ptr_Node_T own}
     any [ return (result: t_Node_T) -> {inv_ref_Node_T result} {result = val_Node_T own} (! return {result}) ]
   
-  let rec elim_Root (input: t_Node_T) (ret (rank: t_PeanoInt) (payload: t_T)) = any
-    [ good (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = input} (! ret {rank} {payload})
-    | bad -> {forall rank: t_PeanoInt, payload: t_T [Root rank payload: t_Node_T]. Root rank payload <> input}
-      (! {false}
+  let rec elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
+    [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
+    | _chk -> (! {match _x with
+        | Root _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
@@ -2793,25 +2744,23 @@ module M_implementation__get
     {[@expl:get requires #0] in_domain_T uf elem}
     {[@expl:get requires #1] root_T uf elem = elem}
     (! bb0
-    [ bb0 = s0 [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_ret: t_UnionFind_T) -> [ &_16 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_19 <- elem ] s1
-      | s1 = get_ghost_Element {_16.f0'0.perms} {_19} (fun (_ret: t_Option_ref_PtrOwn_Node_T) -> [ &_14 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = unwrap_ref_PtrOwn_Node_T {_14} (fun (_ret: t_PtrOwn_Node_T) -> [ &_13 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = new_ref_PtrOwn_Node_T {_13} (fun (_ret: t_PtrOwn_Node_T) -> [ &perm <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_22 <- elem.f0 ] s1
-      | s1 = as_ref_Node_T {_22} {perm} (fun (_ret: t_Node_T) -> [ &_20 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = any
-      [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_20 = Root x0 x1} (! bb8) | br1 (x0: t_Element) -> {_20 = Link x0} (! bb6) ]
+    [ bb0 = s0
+      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: t_UnionFind_T) -> [ &_16 <- _x ] s1)
+      | s1 = [ &_19 <- elem ] s2
+      | s2 = get_ghost_Element {_16.f0'0.perms} {_19} (fun (_x: t_Option_ref_PtrOwn_Node_T) -> [ &_14 <- _x ] s3)
+      | s3 = unwrap_ref_PtrOwn_Node_T {_14} (fun (_x: t_PtrOwn_Node_T) -> [ &_13 <- _x ] s4)
+      | s4 = new_ref_PtrOwn_Node_T {_13} (fun (_x: t_PtrOwn_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = [ &_22 <- elem.f0 ] s6
+      | s6 = as_ref_Node_T {_22} {perm} (fun (_x: t_Node_T) -> [ &_20 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_20 = Root x0 x1} (! bb8)
+        | br1 (x0: t_Element) -> {_20 = Link x0} (! bb6) ] ]
     | bb6 = {false} any
     | bb8 = s0
       [ s0 = elim_Root {_20} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
-      | s1 = [ &_0 <- payload ] s2
-      | s2 = return {_0} ] ]
-    [ & _0: t_T = Any.any_l ()
+      | s1 = [ &_ret <- payload ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
     | & uf: t_UnionFind_T = uf
     | & elem: t_Element = elem
     | & perm: t_PtrOwn_Node_T = Any.any_l ()
@@ -3033,66 +2982,66 @@ module M_implementation__equiv
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'0)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_Ghost_ref_UnionFind_T self.current /\ inv_Ghost_ref_UnionFind_T self.final
+  predicate invariant_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_Ghost_refmut_UnionFind_T self.current /\ inv_Ghost_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UnionFind_T
   
-  predicate inv_ref_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_Ghost_ref_UnionFind_T _1
+  predicate inv_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_ref_UnionFind_T self.current /\ inv_ref_UnionFind_T self.final
+  predicate invariant_refmut_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_refmut_UnionFind_T self.current /\ inv_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_UnionFind_T
   
-  predicate inv_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_ref_UnionFind_T _1
+  predicate inv_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let rec deref_mut_Ghost_ref_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let rec deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_ref_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
       {result = self}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+  predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
-  predicate resolve_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
+  predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let rec new_ref_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_UnionFind_T x}
+  let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
       {result = x}
       (! return {result}) ]
   
@@ -3121,7 +3070,7 @@ module M_implementation__equiv
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:find requires] in_domain_T uf.current elem}
     any [ return (result: t_Element) -> {result = root_T uf.current elem} {unchanged_T uf} (! return {result}) ]
   
@@ -3138,50 +3087,42 @@ module M_implementation__equiv
   meta "select_lsinst" "all"
   
   let rec equiv_T (uf: MutBorrow.t t_UnionFind_T) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
-    {[@expl:equiv 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:equiv requires #0] in_domain_T uf.current e1}
     {[@expl:equiv requires #1] in_domain_T uf.current e2}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_22 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_22}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_21 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_UnionFind_T _21.current.current}
-        MutBorrow.borrow_mut <t_UnionFind_T> {_21.current.current}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_20 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_21 <- { _21 with current = { _21.current with current = _ret.final } } ] s1)
-      | s1 = {inv_UnionFind_T _20.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_20.current} {MutBorrow.get_id _20}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_19 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_20 <- { _20 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _21} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _21}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _20} s5
-      | s5 = -{resolve_ref_UnionFind_T _20}- s6
-      | s6 = {inv_UnionFind_T _19.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_19.current} {MutBorrow.get_id _19}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_18 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_19 <- { _19 with current = _ret.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_18} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _ret ] s8)
-      | s8 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _19} s1
-      | s1 = -{resolve_ref_UnionFind_T _19}- s2
-      | s2 = find_T {_17} {e1} (fun (_ret: t_Element) -> [ &r1 <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = find_T {uf} {e2} (fun (_ret: t_Element) -> [ &r2 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = eq_Element {r1} {r2} (fun (_ret: bool) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = return {_0} ]
-    [ & _0: bool = Any.any_l ()
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_22 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_22}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_21 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_UnionFind_T> {_21.current.current}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_20 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_21 <- { _21 with current = { _21.current with current = _bor.final } } ] s3)
+        [ _ck -> (! {inv_UnionFind_T _21.current.current} any) ]
+      | s3 = MutBorrow.borrow_final <t_UnionFind_T> {_20.current} {MutBorrow.get_id _20}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_19 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_20 <- { _20 with current = _bor.final } ] s4) [ _ck -> (! {inv_UnionFind_T _20.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _21} any) ]
+      | s5 = -{resolve_refmut_refmut_UnionFind_T _21}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _20} any) ]
+      | s7 = -{resolve_refmut_UnionFind_T _20}- s8
+      | s8 = MutBorrow.borrow_final <t_UnionFind_T> {_19.current} {MutBorrow.get_id _19}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_18 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_19 <- { _19 with current = _bor.final } ] s9) [ _ck -> (! {inv_UnionFind_T _19.current} any) ]
+      | s9 = new_refmut_UnionFind_T {_18} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _x ] s10)
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _19} any) ]
+      | s11 = -{resolve_refmut_UnionFind_T _19}- s12
+      | s12 = find_T {_17} {e1} (fun (_x: t_Element) -> [ &r1 <- _x ] s13)
+      | s13 = find_T {uf} {e2} (fun (_x: t_Element) -> [ &r2 <- _x ] s14)
+      | s14 = eq_Element {r1} {r2} (fun (_x: bool) -> [ &_ret <- _x ] s15)
+      | s15 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & e1: t_Element = e1
     | & e2: t_Element = e2
@@ -3413,138 +3354,142 @@ module M_implementation__link
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'0)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  predicate resolve_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
+  predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  predicate resolve_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = resolve_ref_UnionFind_T _1
+  predicate resolve_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    resolve_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate resolve_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_Ghost_ref_UnionFind_T self.current /\ inv_Ghost_ref_UnionFind_T self.final
+  predicate invariant_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_Ghost_refmut_UnionFind_T self.current /\ inv_Ghost_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UnionFind_T
   
-  predicate inv_ref_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_Ghost_ref_UnionFind_T _1
+  predicate inv_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_ref_UnionFind_T self.current /\ inv_ref_UnionFind_T self.final
+  predicate invariant_refmut_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_refmut_UnionFind_T self.current /\ inv_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_UnionFind_T
   
-  predicate inv_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_ref_UnionFind_T _1
+  predicate inv_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let rec deref_mut_Ghost_ref_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let rec deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_ref_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
       {result = self}
       (! return {result}) ]
   
-  predicate invariant_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
+  predicate invariant_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
     inv_UFInner_T self.current /\ inv_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_UFInner_T
   
-  predicate inv_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_ref_UFInner_T _1
+  predicate inv_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_UFInner_T
   
-  predicate invariant_Ghost_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) = inv_ref_UFInner_T self
+  predicate invariant_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
+    inv_refmut_UFInner_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UFInner_T
   
-  predicate inv_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = invariant_Ghost_ref_UFInner_T _1
+  predicate inv_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) =
+    invariant_Ghost_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UFInner_T
   
-  let rec new_ref_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_UFInner_T x}
+  let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_UFInner_T x}
     any
-    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_ref_UFInner_T result} {result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_refmut_UFInner_T result} {result = x} (! return {result}) ]
   
-  predicate invariant_ref_Ghost_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    inv_Ghost_ref_UFInner_T self.current /\ inv_Ghost_ref_UFInner_T self.final
+  predicate invariant_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    inv_Ghost_refmut_UFInner_T self.current /\ inv_Ghost_refmut_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UFInner_T
   
-  predicate inv_ref_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    invariant_ref_Ghost_ref_UFInner_T _1
+  predicate inv_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    invariant_refmut_Ghost_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UFInner_T
   
-  predicate invariant_ref_ref_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    inv_ref_UFInner_T self.current /\ inv_ref_UFInner_T self.final
+  predicate invariant_refmut_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    inv_refmut_UFInner_T self.current /\ inv_refmut_UFInner_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UFInner_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_UFInner_T
   
-  predicate inv_ref_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    invariant_ref_ref_UFInner_T _1
+  predicate inv_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    invariant_refmut_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UFInner_T
+  meta "rewrite_def" predicate inv_refmut_refmut_UFInner_T
   
-  let rec deref_mut_Ghost_ref_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
+  let rec deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UFInner_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UFInner_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_ref_ref_UFInner_T result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_refmut_refmut_UFInner_T result}
       {result = self}
       (! return {result}) ]
   
-  type tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T = {
+  type tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T = {
     f0'2: MutBorrow.t t_PtrOwn_Node_T;
     f1'2: MutBorrow.t t_FMap_Element_PtrOwn_Node_T }
   
-  predicate invariant_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+  predicate invariant_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
     inv_FMap_Element_PtrOwn_Node_T self.current /\ inv_FMap_Element_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    invariant_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate inv_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    invariant_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate invariant_ref_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
+  predicate invariant_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
     inv_PtrOwn_Node_T self.current /\ inv_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_Node_T
   
-  predicate inv_ref_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = invariant_ref_PtrOwn_Node_T _1
+  predicate inv_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
+    invariant_refmut_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_Node_T
   
-  predicate inv_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) =
-    inv_ref_PtrOwn_Node_T _1.f0'2 /\ inv_ref_FMap_Element_PtrOwn_Node_T _1.f1'2
+  predicate inv_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) =
+    inv_refmut_PtrOwn_Node_T _1.f0'2 /\ inv_refmut_FMap_Element_PtrOwn_Node_T _1.f1'2
   
-  meta "rewrite_def" predicate inv_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T
   
   function len_Element (self: t_FMap_Element_PtrOwn_Node_T) : int
   
@@ -3571,154 +3516,155 @@ module M_implementation__link
       = (if contains_Element'0 self k then len_Element self else len_Element self + 1)
   
   let rec split_mut_ghost_Element (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) (key: t_Element)
-    (return (x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T)) =
-    {[@expl:split_mut_ghost 'self' type invariant] inv_ref_FMap_Element_PtrOwn_Node_T self}
+    (return (x: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T)) =
+    {[@expl:split_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_PtrOwn_Node_T self}
     {[@expl:split_mut_ghost requires] contains_Element'0 self.current key}
     any
-    [ return (result: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) ->
-    {inv_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T result}
+    [ return (result: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) ->
+    {inv_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T result}
       {result.f1'2.current = remove_Element self.current key}
       {index_FMap_Element_PtrOwn_Node_T self.current key = result.f0'2.current
       /\ self.final = insert_Element result.f1'2.final key result.f0'2.final}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+  predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UFInner_T
   
-  predicate invariant_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) =
-    inv_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T self
+  predicate invariant_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) =
+    inv_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) =
-    invariant_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate inv_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) =
+    invariant_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T
   
-  let rec new_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T
-    (x: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T)
-    (return (x'0: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T)) =
-    {[@expl:new 'x' type invariant] inv_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T x}
+  let rec new_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T
+    (x: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T)
+    (return (x'0: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T)) =
+    {[@expl:new 'x' type invariant] inv_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T x}
     any
-    [ return (result: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) ->
-    {inv_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T result}
+    [ return (result: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) ->
+    {inv_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T result}
       {result = x}
       (! return {result}) ]
   
-  type tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T = {
+  type tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T = {
     f0'3: MutBorrow.t t_PtrOwn_Node_T;
     f1'3: MutBorrow.t t_FMap_Element_PtrOwn_Node_T }
   
-  predicate invariant_Ghost_ref_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
-    inv_ref_PtrOwn_Node_T self
+  predicate invariant_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) =
+    inv_refmut_PtrOwn_Node_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_Node_T
   
-  predicate inv_Ghost_ref_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
-    invariant_Ghost_ref_PtrOwn_Node_T _1
+  predicate inv_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) =
+    invariant_Ghost_refmut_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_Node_T
   
-  predicate invariant_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    inv_ref_FMap_Element_PtrOwn_Node_T self
+  predicate invariant_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    inv_refmut_FMap_Element_PtrOwn_Node_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    invariant_Ghost_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    invariant_Ghost_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T) =
-    inv_Ghost_ref_PtrOwn_Node_T _1.f0'3 /\ inv_Ghost_ref_FMap_Element_PtrOwn_Node_T _1.f1'3
+  predicate inv_tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T) =
+    inv_Ghost_refmut_PtrOwn_Node_T _1.f0'3 /\ inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T _1.f1'3
   
-  meta "rewrite_def" predicate inv_tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
-  let rec split_ref_PtrOwn_Node_T (self: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T)
-    (return (x: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T)) =
-    {[@expl:split 'self' type invariant] inv_Ghost_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T self}
+  let rec split_refmut_PtrOwn_Node_T (self: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T)
+    (return (x: tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T)) =
+    {[@expl:split 'self' type invariant] inv_Ghost_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T self}
     any
-    [ return (result: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T) ->
-    {inv_tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T result}
+    [ return (result: tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T) ->
+    {inv_tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T result}
       {self.f0'2 = result.f0'3}
       {self.f1'2 = result.f1'3}
       (! return {result}) ]
   
-  predicate invariant_ref_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_Node_T) =
+  predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
     inv_Node_T self.current /\ inv_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Node_T'0
+  meta "rewrite_def" predicate invariant_refmut_Node_T
   
-  predicate inv_ref_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_ref_Node_T'0 _1
+  predicate inv_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_refmut_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_Node_T'0
+  meta "rewrite_def" predicate inv_refmut_Node_T
   
-  function fin_Ghost_ref_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) : t_PtrOwn_Node_T =
+  function fin_Ghost_refmut_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_Node_T) : t_PtrOwn_Node_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_Node_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_Node_T
   
   let rec as_mut_Node_T (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_Node_T) (return (x: MutBorrow.t t_Node_T)) =
-    {[@expl:as_mut 'own' type invariant] inv_Ghost_ref_PtrOwn_Node_T own}
+    {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_PtrOwn_Node_T own}
     {[@expl:as_mut requires] ptr = ptr_Node_T own.current}
     any
-    [ return (result: MutBorrow.t t_Node_T) -> {inv_ref_Node_T'0 result}
+    [ return (result: MutBorrow.t t_Node_T) -> {inv_refmut_Node_T result}
       {result.current = val_Node_T own.current}
-      {ptr_Node_T (fin_Ghost_ref_PtrOwn_Node_T own) = ptr_Node_T own.current}
-      {val_Node_T (fin_Ghost_ref_PtrOwn_Node_T own) = result.final}
+      {ptr_Node_T (fin_Ghost_refmut_PtrOwn_Node_T own) = ptr_Node_T own.current}
+      {val_Node_T (fin_Ghost_refmut_PtrOwn_Node_T own) = result.final}
       (! return {result}) ]
   
-  predicate resolve_ref_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
+  predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Node_T
+  meta "rewrite_def" predicate resolve_refmut_Node_T
   
-  predicate invariant_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
-    inv_Ghost_ref_FMap_Element_PtrOwn_Node_T self.current /\ inv_Ghost_ref_FMap_Element_PtrOwn_Node_T self.final
+  predicate invariant_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
+    inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T self.current /\ inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
-    invariant_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate inv_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
+    invariant_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate invariant_ref_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
-    inv_ref_FMap_Element_PtrOwn_Node_T self.current /\ inv_ref_FMap_Element_PtrOwn_Node_T self.final
+  predicate invariant_refmut_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
+    inv_refmut_FMap_Element_PtrOwn_Node_T self.current /\ inv_refmut_FMap_Element_PtrOwn_Node_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate inv_ref_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
-    invariant_ref_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate inv_refmut_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
+    invariant_refmut_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate inv_refmut_refmut_FMap_Element_PtrOwn_Node_T
   
-  let rec deref_mut_Ghost_ref_FMap_Element_PtrOwn_Node_T (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T))
+  let rec deref_mut_Ghost_refmut_FMap_Element_PtrOwn_Node_T
+    (self: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T))
     (return (x: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_FMap_Element_PtrOwn_Node_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_FMap_Element_PtrOwn_Node_T self}
     any
     [ return (result: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) ->
-    {inv_ref_ref_FMap_Element_PtrOwn_Node_T result}
+    {inv_refmut_refmut_FMap_Element_PtrOwn_Node_T result}
       {result = self}
       (! return {result}) ]
   
-  type t_Option_ref_PtrOwn_Node_T = None'0 | Some'0 (MutBorrow.t t_PtrOwn_Node_T)
+  type t_Option_refmut_PtrOwn_Node_T = None'0 | Some'0 (MutBorrow.t t_PtrOwn_Node_T)
   
-  predicate inv_Option_ref_PtrOwn_Node_T (_1: t_Option_ref_PtrOwn_Node_T)
+  predicate inv_Option_refmut_PtrOwn_Node_T (_1: t_Option_refmut_PtrOwn_Node_T)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall x: t_Option_ref_PtrOwn_Node_T [inv_Option_ref_PtrOwn_Node_T x]. inv_Option_ref_PtrOwn_Node_T x
+    forall x: t_Option_refmut_PtrOwn_Node_T [inv_Option_refmut_PtrOwn_Node_T x]. inv_Option_refmut_PtrOwn_Node_T x
       = match x with
         | None'0 -> true
-        | Some'0 f0'4 -> inv_ref_PtrOwn_Node_T f0'4
+        | Some'0 f0'4 -> inv_refmut_PtrOwn_Node_T f0'4
         end
   
   let rec get_mut_ghost_Element (self: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) (key: t_Element)
-    (return (x: t_Option_ref_PtrOwn_Node_T)) =
-    {[@expl:get_mut_ghost 'self' type invariant] inv_ref_FMap_Element_PtrOwn_Node_T self}
+    (return (x: t_Option_refmut_PtrOwn_Node_T)) =
+    {[@expl:get_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_PtrOwn_Node_T self}
     any
-    [ return (result: t_Option_ref_PtrOwn_Node_T) -> {inv_Option_ref_PtrOwn_Node_T result}
+    [ return (result: t_Option_refmut_PtrOwn_Node_T) -> {inv_Option_refmut_PtrOwn_Node_T result}
       {if contains_Element'0 self.current key then
         match result with
           | None'0 -> false
@@ -3733,39 +3679,41 @@ module M_implementation__link
       {len_Element self.current = len_Element self.final}
       (! return {result}) ]
   
-  let rec unwrap_ref_PtrOwn_Node_T (self_: t_Option_ref_PtrOwn_Node_T) (return (x: MutBorrow.t t_PtrOwn_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_PtrOwn_Node_T self_}
+  let rec unwrap_refmut_PtrOwn_Node_T (self_: t_Option_refmut_PtrOwn_Node_T) (return (x: MutBorrow.t t_PtrOwn_Node_T)) =
+    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_PtrOwn_Node_T self_}
     {[@expl:unwrap requires] self_ <> None'0}
     any
-    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_ref_PtrOwn_Node_T result}
+    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_refmut_PtrOwn_Node_T result}
       {Some'0 result = self_}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
+  predicate resolve_refmut_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate resolve_ref_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
+  predicate resolve_refmut_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_Node_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_refmut_PtrOwn_Node_T
   
-  let rec new_ref_PtrOwn_Node_T (x: MutBorrow.t t_PtrOwn_Node_T) (return (x'0: MutBorrow.t t_PtrOwn_Node_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_PtrOwn_Node_T x}
+  let rec new_refmut_PtrOwn_Node_T (x: MutBorrow.t t_PtrOwn_Node_T) (return (x'0: MutBorrow.t t_PtrOwn_Node_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_PtrOwn_Node_T x}
     any
-    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_Ghost_ref_PtrOwn_Node_T result}
+    [ return (result: MutBorrow.t t_PtrOwn_Node_T) -> {inv_Ghost_refmut_PtrOwn_Node_T result}
       {result = x}
       (! return {result}) ]
   
-  let rec elim_Root (input: t_Node_T) (ret (rank: t_PeanoInt) (payload: t_T)) = any
-    [ good (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = input} (! ret {rank} {payload})
-    | bad -> {forall rank: t_PeanoInt, payload: t_T [Root rank payload: t_Node_T]. Root rank payload <> input}
-      (! {false}
+  let rec elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
+    [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
+    | _chk -> (! {match _x with
+        | Root _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
-  predicate resolve_ref_PeanoInt [@inline:trivial] (_1: MutBorrow.t t_PeanoInt) = _1.final = _1.current
+  predicate resolve_refmut_PeanoInt [@inline:trivial] (_1: MutBorrow.t t_PeanoInt) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PeanoInt
+  meta "rewrite_def" predicate resolve_refmut_PeanoInt
   
   type t_Ordering = Less | Equal | Greater
   
@@ -3819,15 +3767,15 @@ module M_implementation__link
   let rec lt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = any
     [ return (result: bool) -> {result = UInt64.lt (view_PeanoInt self) (view_PeanoInt other)} (! return {result}) ]
   
-  predicate resolve_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+  predicate resolve_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_refmut_FMap_Element_PtrOwn_Node_T
   
-  predicate resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
-    resolve_ref_FMap_Element_PtrOwn_Node_T _1
+  predicate resolve_Ghost_refmut_FMap_Element_PtrOwn_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) =
+    resolve_refmut_FMap_Element_PtrOwn_Node_T _1
   
-  meta "rewrite_def" predicate resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T
+  meta "rewrite_def" predicate resolve_Ghost_refmut_FMap_Element_PtrOwn_Node_T
   
   predicate resolve_T (_1: t_T)
   
@@ -3839,18 +3787,18 @@ module M_implementation__link
         | Link x0 -> true
         end
   
-  predicate resolve_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
+  predicate resolve_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_refmut_UFInner_T
   
-  predicate resolve_Ghost_ref_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = resolve_ref_UFInner_T _1
+  predicate resolve_Ghost_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = resolve_refmut_UFInner_T _1
   
-  meta "rewrite_def" predicate resolve_Ghost_ref_UFInner_T
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T
   
-  predicate resolve_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+  predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -3885,345 +3833,276 @@ module M_implementation__link
   predicate payloads_unchanged_T (self: MutBorrow.t t_UnionFind_T) =
     payloads_map_T self.current = payloads_map_T self.final
   
-  function fin_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
+  function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_T
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y}
     {[@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_Element {x} {y} (fun (_ret: bool) -> [ &_25 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_25 = false} (! bb3) | br1 -> {_25} (! bb2) ]
+    [ bb0 = s0
+      [ s0 = eq_Element {x} {y} (fun (_x: bool) -> [ &_25 <- _x ] s1)
+      | s1 = any [ br0 -> {_25 = false} (! bb3) | br1 -> {_25} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s1
-      | s1 = -{resolve_Ghost_ref_UnionFind_T uf}- s2
-      | s2 = [ &_0 <- x ] s3
-      | s3 = bb51 ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s1 = -{resolve_Ghost_refmut_UnionFind_T uf}- s2
+      | s2 = [ &_ret <- x ] s3
+      | s3 = return {_ret} ]
     | bb3 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_31 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_31}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_30 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_UFInner_T _30.current.current.f0'0}
-        MutBorrow.borrow_mut <t_UFInner_T> {_30.current.current.f0'0}
-          (fun (_ret: MutBorrow.t t_UFInner_T) ->
-            [ &__temp <- _ret ] -{inv_UFInner_T _ret.final}-
-            [ &_30 <- { _30 with current = { _30.current with current = { f0'0 = _ret.final } } } ] s1)
-      | s1 = new_ref_UFInner_T {__temp} (fun (_ret: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_41 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_41}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_40 <- _ret ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0
-      [ s0 = [ &_43 <- x ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _40.current.current.perms}
-        MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_40.current.current.perms}
-          (fun (_ret: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
-            [ &_39 <- _ret ] -{inv_FMap_Element_PtrOwn_Node_T _ret.final}-
-            [ &_40 <- { _40 with current = { _40.current with current = { _40.current.current with perms = _ret.final } } } ]
-            s2)
-      | s2 = split_mut_ghost_Element {_39} {_43}
-          (fun (_ret: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_38 <- _ret ] s3)
-      | s3 = bb7 ]
-    | bb7 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_ref_UFInner_T _40} s1
-      | s1 = -{resolve_ref_ref_UFInner_T _40}- s2
-      | s2 = new_tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T {_38}
-          (fun (_ret: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T) -> [ &_37 <- _ret ] s3)
-      | s3 = bb8 ]
-    | bb8 = s0
-      [ s0 = split_ref_PtrOwn_Node_T {_37}
-          (fun (_ret: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T) -> [ &_36 <- _ret ] s1)
-      | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &perm_x <- _36.f0'3 ] s1
-      | s1 = [ &m <- _36.f1'3 ] s2
-      | s2 = [ &_46 <- x.f0 ] s3
-      | s3 = as_mut_Node_T {_46} {perm_x} (fun (_ret: MutBorrow.t t_Node_T) -> [ &_45 <- _ret ] s4)
-      | s4 = bb10 ]
-    | bb10 = s0
-      [ s0 = {inv_Node_T _45.current}
-        MutBorrow.borrow_final <t_Node_T> {_45.current} {MutBorrow.get_id _45}
-          (fun (_ret: MutBorrow.t t_Node_T) ->
-            [ &bx <- _ret ] -{inv_Node_T _ret.final}-
-            [ &_45 <- { _45 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 _45} s2
-      | s2 = -{resolve_ref_Node_T _45}- s3
-      | s3 = [ &_51 <- y.f0 ] s4
-      | s4 = {inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m}
-        MutBorrow.borrow_mut <MutBorrow.t t_FMap_Element_PtrOwn_Node_T> {m}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) ->
-            [ &_60 <- _ret ] -{inv_Ghost_ref_FMap_Element_PtrOwn_Node_T _ret.final}-
-            [ &m <- _ret.final ] s5)
-      | s5 = deref_mut_Ghost_ref_FMap_Element_PtrOwn_Node_T {_60}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) -> [ &_59 <- _ret ] s6)
-      | s6 = bb11 ]
-    | bb11 = s0
-      [ s0 = [ &_62 <- y ] s1
-      | s1 = {inv_FMap_Element_PtrOwn_Node_T _59.current.current}
-        MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_59.current.current}
-          (fun (_ret: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
-            [ &_58 <- _ret ] -{inv_FMap_Element_PtrOwn_Node_T _ret.final}-
-            [ &_59 <- { _59 with current = { _59.current with current = _ret.final } } ] s2)
-      | s2 = get_mut_ghost_Element {_58} {_62} (fun (_ret: t_Option_ref_PtrOwn_Node_T) -> [ &_57 <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0
-      [ s0 = unwrap_ref_PtrOwn_Node_T {_57} (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) -> [ &_56 <- _ret ] s1)
-      | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = {inv_PtrOwn_Node_T _56.current}
-        MutBorrow.borrow_final <t_PtrOwn_Node_T> {_56.current} {MutBorrow.get_id _56}
-          (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) ->
-            [ &_55 <- _ret ] -{inv_PtrOwn_Node_T _ret.final}-
-            [ &_56 <- { _56 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_ref_FMap_Element_PtrOwn_Node_T _59} s2
-      | s2 = -{resolve_ref_ref_FMap_Element_PtrOwn_Node_T _59}- s3
-      | s3 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _56} s4
-      | s4 = -{resolve_ref_PtrOwn_Node_T _56}- s5
-      | s5 = {inv_PtrOwn_Node_T _55.current}
-        MutBorrow.borrow_final <t_PtrOwn_Node_T> {_55.current} {MutBorrow.get_id _55}
-          (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) ->
-            [ &_54 <- _ret ] -{inv_PtrOwn_Node_T _ret.final}-
-            [ &_55 <- { _55 with current = _ret.final } ] s6)
-      | s6 = new_ref_PtrOwn_Node_T {_54} (fun (_ret: MutBorrow.t t_PtrOwn_Node_T) -> [ &_53 <- _ret ] s7)
-      | s7 = bb14 ]
-    | bb14 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_PtrOwn_Node_T _55} s1
-      | s1 = -{resolve_ref_PtrOwn_Node_T _55}- s2
-      | s2 = as_mut_Node_T {_51} {_53} (fun (_ret: MutBorrow.t t_Node_T) -> [ &_50 <- _ret ] s3)
-      | s3 = bb15 ]
-    | bb15 = s0
-      [ s0 = {inv_Node_T _50.current}
-        MutBorrow.borrow_final <t_Node_T> {_50.current} {MutBorrow.get_id _50}
-          (fun (_ret: MutBorrow.t t_Node_T) ->
-            [ &by' <- _ret ] -{inv_Node_T _ret.final}-
-            [ &_50 <- { _50 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 _50} s2
-      | s2 = -{resolve_ref_Node_T _50}- s3
-      | s3 = any
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_31 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_31}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_30 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_UFInner_T> {_30.current.current.f0'0}
+          (fun (_bor: MutBorrow.t t_UFInner_T) ->
+            [ &__temp <- _bor ] -{inv_UFInner_T _bor.final}-
+            [ &_30 <- { _30 with current = { _30.current with current = { f0'0 = _bor.final } } } ] s3)
+        [ _ck -> (! {inv_UFInner_T _30.current.current.f0'0} any) ]
+      | s3 = new_refmut_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_41 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s5) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s5 = deref_mut_Ghost_refmut_UFInner_T {_41}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_40 <- _x ] s6)
+      | s6 = [ &_43 <- x ] s7
+      | s7 = MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_40.current.current.perms}
+          (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
+            [ &_39 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
+            [ &_40 <- { _40 with current = { _40.current with current = { _40.current.current with perms = _bor.final } } } ]
+            s8) [ _ck -> (! {inv_FMap_Element_PtrOwn_Node_T _40.current.current.perms} any) ]
+      | s8 = split_mut_ghost_Element {_39} {_43}
+          (fun (_x: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) -> [ &_38 <- _x ] s9)
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _40} any) ]
+      | s10 = -{resolve_refmut_refmut_UFInner_T _40}- s11
+      | s11 = new_tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T {_38}
+          (fun (_x: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T) -> [ &_37 <- _x ] s12)
+      | s12 = split_refmut_PtrOwn_Node_T {_37}
+          (fun (_x: tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T) -> [ &_36 <- _x ] s13)
+      | s13 = [ &perm_x <- _36.f0'3 ] s14
+      | s14 = [ &m <- _36.f1'3 ] s15
+      | s15 = [ &_46 <- x.f0 ] s16
+      | s16 = as_mut_Node_T {_46} {perm_x} (fun (_x: MutBorrow.t t_Node_T) -> [ &_45 <- _x ] s17)
+      | s17 = MutBorrow.borrow_final <t_Node_T> {_45.current} {MutBorrow.get_id _45}
+          (fun (_bor: MutBorrow.t t_Node_T) ->
+            [ &bx <- _bor ] -{inv_Node_T _bor.final}-
+            [ &_45 <- { _45 with current = _bor.final } ] s18) [ _ck -> (! {inv_Node_T _45.current} any) ]
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _45} any) ]
+      | s19 = -{resolve_refmut_Node_T _45}- s20
+      | s20 = [ &_51 <- y.f0 ] s21
+      | s21 = MutBorrow.borrow_mut <MutBorrow.t t_FMap_Element_PtrOwn_Node_T> {m}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) ->
+            [ &_60 <- _bor ] -{inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T _bor.final}-
+            [ &m <- _bor.final ] s22) [ _ck -> (! {inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T m} any) ]
+      | s22 = deref_mut_Ghost_refmut_FMap_Element_PtrOwn_Node_T {_60}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T)) -> [ &_59 <- _x ] s23)
+      | s23 = [ &_62 <- y ] s24
+      | s24 = MutBorrow.borrow_mut <t_FMap_Element_PtrOwn_Node_T> {_59.current.current}
+          (fun (_bor: MutBorrow.t t_FMap_Element_PtrOwn_Node_T) ->
+            [ &_58 <- _bor ] -{inv_FMap_Element_PtrOwn_Node_T _bor.final}-
+            [ &_59 <- { _59 with current = { _59.current with current = _bor.final } } ] s25)
+        [ _ck -> (! {inv_FMap_Element_PtrOwn_Node_T _59.current.current} any) ]
+      | s25 = get_mut_ghost_Element {_58} {_62} (fun (_x: t_Option_refmut_PtrOwn_Node_T) -> [ &_57 <- _x ] s26)
+      | s26 = unwrap_refmut_PtrOwn_Node_T {_57} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_56 <- _x ] s27)
+      | s27 = MutBorrow.borrow_final <t_PtrOwn_Node_T> {_56.current} {MutBorrow.get_id _56}
+          (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
+            [ &_55 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
+            [ &_56 <- { _56 with current = _bor.final } ] s28) [ _ck -> (! {inv_PtrOwn_Node_T _56.current} any) ]
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_FMap_Element_PtrOwn_Node_T _59} any) ]
+      | s29 = -{resolve_refmut_refmut_FMap_Element_PtrOwn_Node_T _59}- s30
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_PtrOwn_Node_T _56} any) ]
+      | s31 = -{resolve_refmut_PtrOwn_Node_T _56}- s32
+      | s32 = MutBorrow.borrow_final <t_PtrOwn_Node_T> {_55.current} {MutBorrow.get_id _55}
+          (fun (_bor: MutBorrow.t t_PtrOwn_Node_T) ->
+            [ &_54 <- _bor ] -{inv_PtrOwn_Node_T _bor.final}-
+            [ &_55 <- { _55 with current = _bor.final } ] s33) [ _ck -> (! {inv_PtrOwn_Node_T _55.current} any) ]
+      | s33 = new_refmut_PtrOwn_Node_T {_54} (fun (_x: MutBorrow.t t_PtrOwn_Node_T) -> [ &_53 <- _x ] s34)
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_refmut_PtrOwn_Node_T _55} any) ]
+      | s35 = -{resolve_refmut_PtrOwn_Node_T _55}- s36
+      | s36 = as_mut_Node_T {_51} {_53} (fun (_x: MutBorrow.t t_Node_T) -> [ &_50 <- _x ] s37)
+      | s37 = MutBorrow.borrow_final <t_Node_T> {_50.current} {MutBorrow.get_id _50}
+          (fun (_bor: MutBorrow.t t_Node_T) ->
+            [ &by' <- _bor ] -{inv_Node_T _bor.final}-
+            [ &_50 <- { _50 with current = _bor.final } ] s38) [ _ck -> (! {inv_Node_T _50.current} any) ]
+      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _50} any) ]
+      | s39 = -{resolve_refmut_Node_T _50}- s40
+      | s40 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {bx.current = Root x0 x1} (! bb18)
         | br1 (x0: t_Element) -> {bx.current = Link x0} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s1
-      | s1 = -{resolve_ref_Node_T by'}- s2
-      | s2 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s3
-      | s3 = -{resolve_ref_Node_T bx}- s4
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
+      | s1 = -{resolve_refmut_Node_T by'}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s3 = -{resolve_refmut_Node_T bx}- s4
       | s4 = {false} any ]
     | bb18 = s0
       [ s0 = elim_Root {bx.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
             MutBorrow.borrow_mut <t_PeanoInt> {rrank}
-              (fun (_ret: MutBorrow.t t_PeanoInt) ->
-                [ &rx <- _ret ] [ &bx <- { bx with current = Root _ret.final rpayload } ] s1))
+              (fun (_bor: MutBorrow.t t_PeanoInt) ->
+                [ &rx <- _bor ] [ &bx <- { bx with current = Root _bor.final rpayload } ] s1))
       | s1 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {by'.current = Root x0 x1} (! bb21)
         | br1 (x0: t_Element) -> {by'.current = Link x0} (! bb19) ] ]
     | bb19 = s0
-      [ s0 = -{resolve_ref_PeanoInt rx}- s1
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s2
-      | s2 = -{resolve_ref_Node_T by'}- s3
+      [ s0 = -{resolve_refmut_PeanoInt rx}- s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
+      | s2 = -{resolve_refmut_Node_T by'}- s3
       | s3 = {false} any ]
     | bb21 = s0
       [ s0 = elim_Root {by'.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
             MutBorrow.borrow_mut <t_PeanoInt> {rrank}
-              (fun (_ret: MutBorrow.t t_PeanoInt) ->
-                [ &ry <- _ret ] [ &by' <- { by' with current = Root _ret.final rpayload } ] s1))
-      | s1 = lt_PeanoInt {rx.current} {ry.current} (fun (_ret: bool) -> [ &_69 <- _ret ] s2)
-      | s2 = bb22 ]
-    | bb22 = any [ br0 -> {_69 = false} (! bb34) | br1 -> {_69} (! bb23) ]
+              (fun (_bor: MutBorrow.t t_PeanoInt) ->
+                [ &ry <- _bor ] [ &by' <- { by' with current = Root _bor.final rpayload } ] s1))
+      | s1 = lt_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_69 <- _x ] s2)
+      | s2 = any [ br0 -> {_69 = false} (! bb34) | br1 -> {_69} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = -{resolve_ref_PeanoInt ry}- s1
-      | s1 = -{resolve_ref_PeanoInt rx}- s2
-      | s2 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s3
-      | s3 = -{resolve_ref_Node_T by'}- s4
-      | s4 = {[@expl:type invariant] inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m} s5
-      | s5 = -{resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T m}- s6
+      [ s0 = -{resolve_refmut_PeanoInt ry}- s1
+      | s1 = -{resolve_refmut_PeanoInt rx}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
+      | s3 = -{resolve_refmut_Node_T by'}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T m} any) ]
+      | s5 = -{resolve_Ghost_refmut_FMap_Element_PtrOwn_Node_T m}- s6
       | s6 = [ &_72 <- Link y ] s7
-      | s7 = bb24 ]
-    | bb24 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T bx.current} s1
-      | s1 = -{resolve_Node_T bx.current}- s2
-      | s2 = [ &bx <- { bx with current = _72 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s4
-      | s4 = -{resolve_ref_Node_T bx}- s5
-      | s5 = bb26 ]
-    | bb26 = s0
-      [ s0 = [ &_76 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = x then
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Node_T bx.current} any) ]
+      | s8 = -{resolve_Node_T bx.current}- s9
+      | s9 = [ &bx <- { bx with current = _72 } ] s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s11 = -{resolve_refmut_Node_T bx}- s12
+      | s12 = [ &_76 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = x then
           y
         else
           index_Mapping_Element_Element uf'0.current.roots z
-         ] s1
-      | s1 = bb27 ]
-    | bb27 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_82 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_82}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_81 <- _ret ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0
-      [ s0 = [ &_81 <- { _81 with current = { _81.current with current = { _81.current.current with roots = _76 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _81} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _81}- s3
-      | s3 = [ &_83 <- uf'0.current.max_depth + 1 ] s4
-      | s4 = bb29 ]
-    | bb29 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_87 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_87}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_86 <- _ret ] s2)
-      | s2 = bb30 ]
-    | bb30 = s0
-      [ s0 =
+         ] s13
+      | s13 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_82 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s14) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s14 = deref_mut_Ghost_refmut_UFInner_T {_82}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_81 <- _x ] s15)
+      | s15 = [ &_81 <- { _81 with current = { _81.current with current = { _81.current.current with roots = _76 } } } ]
+        s16
+      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _81} any) ]
+      | s17 = -{resolve_refmut_refmut_UFInner_T _81}- s18
+      | s18 = [ &_83 <- uf'0.current.max_depth + 1 ] s19
+      | s19 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_87 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s20) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s20 = deref_mut_Ghost_refmut_UFInner_T {_87}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_86 <- _x ] s21)
+      | s21 =
         [ &_86 <- { _86 with current = { _86.current with current = { _86.current.current with max_depth = _83 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _86} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _86}- s3
-      | s3 = [ &_88 <- Map.set uf'0.current.depth y (1
+        s22
+      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _86} any) ]
+      | s23 = -{resolve_refmut_refmut_UFInner_T _86}- s24
+      | s24 = [ &_88 <- Map.set uf'0.current.depth y (1
         + MinMax.max (index_Mapping_Element_Int uf'0.current.depth x) (index_Mapping_Element_Int uf'0.current.depth y)) ]
-        s4
-      | s4 = bb31 ]
-    | bb31 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_94 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_94}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_93 <- _ret ] s2)
-      | s2 = bb32 ]
-    | bb32 = s0
-      [ s0 = [ &_93 <- { _93 with current = { _93.current with current = { _93.current.current with depth = _88 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _93} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _93}- s3
-      | s3 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s4
-      | s4 = -{resolve_Ghost_ref_UFInner_T uf'0}- s5
-      | s5 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s6
-      | s6 = -{resolve_ref_ref_UnionFind_T _30}- s7
-      | s7 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s8
-      | s8 = -{resolve_Ghost_ref_UnionFind_T uf}- s9
-      | s9 = new_unit {_75} (fun (_ret: ()) -> [ &_74 <- _ret ] s10)
-      | s10 = bb33 ]
-    | bb33 = s0 [ s0 = [ &_0 <- y ] s1 | s1 = bb51 ]
+        s25
+      | s25 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_94 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s26) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s26 = deref_mut_Ghost_refmut_UFInner_T {_94}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_93 <- _x ] s27)
+      | s27 = [ &_93 <- { _93 with current = { _93.current with current = { _93.current.current with depth = _88 } } } ]
+        s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _93} any) ]
+      | s29 = -{resolve_refmut_refmut_UFInner_T _93}- s30
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s31 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s32
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _30} any) ]
+      | s33 = -{resolve_refmut_refmut_UnionFind_T _30}- s34
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s35 = -{resolve_Ghost_refmut_UnionFind_T uf}- s36
+      | s36 = new_unit {_75} (fun (_x: ()) -> [ &_74 <- _x ] s37)
+      | s37 = [ &_ret <- y ] s38
+      | s38 = return {_ret} ]
     | bb34 = s0
-      [ s0 = -{resolve_ref_PeanoInt ry}- s1
-      | s1 = eq_PeanoInt {rx.current} {ry.current} (fun (_ret: bool) -> [ &_96 <- _ret ] s2)
-      | s2 = bb35 ]
-    | bb35 = any [ br0 -> {_96 = false} (! bb38) | br1 -> {_96} (! bb36) ]
+      [ s0 = -{resolve_refmut_PeanoInt ry}- s1
+      | s1 = eq_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_96 <- _x ] s2)
+      | s2 = any [ br0 -> {_96 = false} (! bb38) | br1 -> {_96} (! bb36) ] ]
     | bb36 = s0
-      [ s0 = -{resolve_ref_PeanoInt rx}- s1
-      | s1 = incr {rx.current} (fun (_ret: t_PeanoInt) -> [ &_99 <- _ret ] s2)
-      | s2 = bb37 ]
-    | bb37 = s0 [ s0 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s1 | s1 = -{resolve_ref_Node_T bx}- s2 | s2 = bb39 ]
+      [ s0 = -{resolve_refmut_PeanoInt rx}- s1
+      | s1 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_99 <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s3 = -{resolve_refmut_Node_T bx}- s4
+      | s4 = bb39 ]
     | bb38 = s0
-      [ s0 = -{resolve_ref_PeanoInt rx}- s1
-      | s1 = {[@expl:type invariant] inv_ref_Node_T'0 bx} s2
-      | s2 = -{resolve_ref_Node_T bx}- s3
+      [ s0 = -{resolve_refmut_PeanoInt rx}- s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s2 = -{resolve_refmut_Node_T bx}- s3
       | s3 = bb39 ]
-    | bb39 = s0 [ s0 = [ &_101 <- Link x ] s1 | s1 = bb40 ]
-    | bb40 = s0
-      [ s0 = {[@expl:type invariant] inv_Node_T by'.current} s1
-      | s1 = -{resolve_Node_T by'.current}- s2
-      | s2 = [ &by' <- { by' with current = _101 } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Node_T'0 by'} s4
-      | s4 = -{resolve_ref_Node_T by'}- s5
-      | s5 = {[@expl:type invariant] inv_Ghost_ref_FMap_Element_PtrOwn_Node_T m} s6
-      | s6 = -{resolve_Ghost_ref_FMap_Element_PtrOwn_Node_T m}- s7
-      | s7 = bb42 ]
-    | bb42 = s0
-      [ s0 = [ &_105 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = y then
+    | bb39 = s0
+      [ s0 = [ &_101 <- Link x ] s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Node_T by'.current} any) ]
+      | s2 = -{resolve_Node_T by'.current}- s3
+      | s3 = [ &by' <- { by' with current = _101 } ] s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
+      | s5 = -{resolve_refmut_Node_T by'}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_FMap_Element_PtrOwn_Node_T m} any) ]
+      | s7 = -{resolve_Ghost_refmut_FMap_Element_PtrOwn_Node_T m}- s8
+      | s8 = [ &_105 <- fun (z: t_Element) -> if index_Mapping_Element_Element uf'0.current.roots z = y then
           x
         else
           index_Mapping_Element_Element uf'0.current.roots z
-         ] s1
-      | s1 = bb43 ]
-    | bb43 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_111 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_111}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_110 <- _ret ] s2)
-      | s2 = bb44 ]
-    | bb44 = s0
-      [ s0 =
+         ] s9
+      | s9 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_111 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s10) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s10 = deref_mut_Ghost_refmut_UFInner_T {_111}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_110 <- _x ] s11)
+      | s11 =
         [ &_110 <- { _110 with current = { _110.current with current = { _110.current.current with roots = _105 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _110} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _110}- s3
-      | s3 = [ &_112 <- uf'0.current.max_depth + 1 ] s4
-      | s4 = bb45 ]
-    | bb45 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_116 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_116}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_115 <- _ret ] s2)
-      | s2 = bb46 ]
-    | bb46 = s0
-      [ s0 =
+        s12
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _110} any) ]
+      | s13 = -{resolve_refmut_refmut_UFInner_T _110}- s14
+      | s14 = [ &_112 <- uf'0.current.max_depth + 1 ] s15
+      | s15 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_116 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s16) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s16 = deref_mut_Ghost_refmut_UFInner_T {_116}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_115 <- _x ] s17)
+      | s17 =
         [ &_115 <- { _115 with current = { _115.current with current = { _115.current.current with max_depth = _112 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _115} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _115}- s3
-      | s3 = [ &_117 <- Map.set uf'0.current.depth x (1
+        s18
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _115} any) ]
+      | s19 = -{resolve_refmut_refmut_UFInner_T _115}- s20
+      | s20 = [ &_117 <- Map.set uf'0.current.depth x (1
         + MinMax.max (index_Mapping_Element_Int uf'0.current.depth x) (index_Mapping_Element_Int uf'0.current.depth y)) ]
-        s4
-      | s4 = bb47 ]
-    | bb47 = s0
-      [ s0 = {inv_Ghost_ref_UFInner_T uf'0}
-        MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_123 <- _ret ] -{inv_Ghost_ref_UFInner_T _ret.final}-
-            [ &uf'0 <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UFInner_T {_123}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_122 <- _ret ] s2)
-      | s2 = bb48 ]
-    | bb48 = s0
-      [ s0 =
+        s21
+      | s21 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+            [ &_123 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s22) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s22 = deref_mut_Ghost_refmut_UFInner_T {_123}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_122 <- _x ] s23)
+      | s23 =
         [ &_122 <- { _122 with current = { _122.current with current = { _122.current.current with depth = _117 } } } ]
-        s1
-      | s1 = {[@expl:type invariant] inv_ref_ref_UFInner_T _122} s2
-      | s2 = -{resolve_ref_ref_UFInner_T _122}- s3
-      | s3 = {[@expl:type invariant] inv_Ghost_ref_UFInner_T uf'0} s4
-      | s4 = -{resolve_Ghost_ref_UFInner_T uf'0}- s5
-      | s5 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _30} s6
-      | s6 = -{resolve_ref_ref_UnionFind_T _30}- s7
-      | s7 = {[@expl:type invariant] inv_Ghost_ref_UnionFind_T uf} s8
-      | s8 = -{resolve_Ghost_ref_UnionFind_T uf}- s9
-      | s9 = new_unit {_104} (fun (_ret: ()) -> [ &_103 <- _ret ] s10)
-      | s10 = bb49 ]
-    | bb49 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = bb51 ]
-    | bb51 = return {_0} ]
-    [ & _0: t_Element = Any.any_l ()
+        s24
+      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _122} any) ]
+      | s25 = -{resolve_refmut_refmut_UFInner_T _122}- s26
+      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s27 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _30} any) ]
+      | s29 = -{resolve_refmut_refmut_UnionFind_T _30}- s30
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s31 = -{resolve_Ghost_refmut_UnionFind_T uf}- s32
+      | s32 = new_unit {_104} (fun (_x: ()) -> [ &_103 <- _x ] s33)
+      | s33 = [ &_ret <- x ] s34
+      | s34 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & x: t_Element = x
     | & y: t_Element = y
@@ -4234,9 +4113,9 @@ module M_implementation__link
     | & uf'0: MutBorrow.t t_UFInner_T = Any.any_l ()
     | & perm_x: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & m: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _36: tup2_Ghost_ref_PtrOwn_Node_T_Ghost_ref_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _37: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T = Any.any_l ()
-    | & _38: tup2_ref_PtrOwn_Node_T_ref_FMap_Element_PtrOwn_Node_T = Any.any_l ()
+    | & _36: tup2_Ghost_refmut_PtrOwn_Node_T_Ghost_refmut_FMap_Element_PtrOwn_Node_T = Any.any_l ()
+    | & _37: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T = Any.any_l ()
+    | & _38: tup2_refmut_PtrOwn_Node_T_refmut_FMap_Element_PtrOwn_Node_T = Any.any_l ()
     | & _39: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
     | & _40: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
     | & _41: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
@@ -4251,7 +4130,7 @@ module M_implementation__link
     | & _54: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _55: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
     | & _56: MutBorrow.t t_PtrOwn_Node_T = Any.any_l ()
-    | & _57: t_Option_ref_PtrOwn_Node_T = Any.any_l ()
+    | & _57: t_Option_refmut_PtrOwn_Node_T = Any.any_l ()
     | & _58: MutBorrow.t t_FMap_Element_PtrOwn_Node_T = Any.any_l ()
     | & _59: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T) = Any.any_l ()
     | & _60: MutBorrow.t (MutBorrow.t t_FMap_Element_PtrOwn_Node_T) = Any.any_l ()
@@ -4287,9 +4166,9 @@ module M_implementation__link
     | & _123: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l () ])
     [ return (result: t_Element) -> {[@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
       {[@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
-      {[@expl:link ensures #2] result = root_T (fin_Ghost_ref_UnionFind_T uf) result}
+      {[@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UnionFind_T uf) result}
       {[@expl:link ensures #3] forall z: t_Element. in_domain_T uf.current z
-        -> root_T (fin_Ghost_ref_UnionFind_T uf) z
+        -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
@@ -4504,66 +4383,66 @@ module M_implementation__union
   axiom inv_axiom'3 [@rewrite]: forall x: t_UnionFind_T [inv_UnionFind_T x]. inv_UnionFind_T x
       = (invariant_UnionFind_T x /\ inv_UFInner_T x.f0'0)
   
-  predicate invariant_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+  predicate invariant_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
     inv_UnionFind_T self.current /\ inv_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_T
   
-  predicate inv_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_ref_UnionFind_T _1
+  predicate inv_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = invariant_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_UnionFind_T
   
-  predicate invariant_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
-    inv_ref_UnionFind_T self
+  predicate invariant_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) =
+    inv_refmut_UnionFind_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_T
   
-  predicate inv_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
-    invariant_Ghost_ref_UnionFind_T _1
+  predicate inv_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) =
+    invariant_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_Ghost_ref_UnionFind_T self.current /\ inv_Ghost_ref_UnionFind_T self.final
+  predicate invariant_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_Ghost_refmut_UnionFind_T self.current /\ inv_Ghost_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_refmut_UnionFind_T
   
-  predicate inv_ref_Ghost_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_Ghost_ref_UnionFind_T _1
+  predicate inv_refmut_Ghost_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_Ghost_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_refmut_UnionFind_T
   
-  predicate invariant_ref_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    inv_ref_UnionFind_T self.current /\ inv_ref_UnionFind_T self.final
+  predicate invariant_refmut_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    inv_refmut_UnionFind_T self.current /\ inv_refmut_UnionFind_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate invariant_refmut_refmut_UnionFind_T
   
-  predicate inv_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
-    invariant_ref_ref_UnionFind_T _1
+  predicate inv_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+    invariant_refmut_refmut_UnionFind_T _1
   
-  meta "rewrite_def" predicate inv_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let rec deref_mut_Ghost_ref_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let rec deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_ref_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
       {result = self}
       (! return {result}) ]
   
-  predicate resolve_ref_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
+  predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
-  predicate resolve_ref_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
+  predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_UnionFind_T
+  meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let rec new_ref_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
-    {[@expl:new 'x' type invariant] inv_ref_UnionFind_T x}
+  let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+    {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_ref_UnionFind_T result}
+    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
       {result = x}
       (! return {result}) ]
   
@@ -4592,7 +4471,7 @@ module M_implementation__union
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:find requires] in_domain_T uf.current elem}
     any [ return (result: t_Element) -> {result = root_T uf.current elem} {unchanged_T uf} (! return {result}) ]
   
@@ -4601,20 +4480,20 @@ module M_implementation__union
   predicate payloads_unchanged_T (self: MutBorrow.t t_UnionFind_T) =
     payloads_map_T self.current = payloads_map_T self.final
   
-  function fin_Ghost_ref_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
+  function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_T
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   let rec link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y}
     {[@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y}
     any
     [ return (result: t_Element) -> {domain_unchanged_T uf /\ payloads_unchanged_T uf}
       {result = root_T uf.current x \/ result = root_T uf.current y}
-      {result = root_T (fin_Ghost_ref_UnionFind_T uf) result}
+      {result = root_T (fin_Ghost_refmut_UnionFind_T uf) result}
       {forall z: t_Element. in_domain_T uf.current z
-        -> root_T (fin_Ghost_ref_UnionFind_T uf) z
+        -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
@@ -4627,84 +4506,67 @@ module M_implementation__union
   meta "select_lsinst" "all"
   
   let rec union_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:union 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
+    {[@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
     {[@expl:union requires] in_domain_T uf.current x /\ in_domain_T uf.current y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_24 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_24}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_23 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_UnionFind_T _23.current.current}
-        MutBorrow.borrow_mut <t_UnionFind_T> {_23.current.current}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_22 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_23 <- { _23 with current = { _23.current with current = _ret.final } } ] s1)
-      | s1 = {inv_UnionFind_T _22.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_22.current} {MutBorrow.get_id _22}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_21 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_22 <- { _22 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _23} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _23}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _22} s5
-      | s5 = -{resolve_ref_UnionFind_T _22}- s6
-      | s6 = {inv_UnionFind_T _21.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_21.current} {MutBorrow.get_id _21}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_20 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_21 <- { _21 with current = _ret.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_20} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _ret ] s8)
-      | s8 = bb2 ]
-    | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _21} s1
-      | s1 = -{resolve_ref_UnionFind_T _21}- s2
-      | s2 = find_T {_19} {x} (fun (_ret: t_Element) -> [ &rx <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = {inv_Ghost_ref_UnionFind_T uf}
-        MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
-            [ &_32 <- _ret ] -{inv_Ghost_ref_UnionFind_T _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_ref_UnionFind_T {_32}
-          (fun (_ret: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_31 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_UnionFind_T _31.current.current}
-        MutBorrow.borrow_mut <t_UnionFind_T> {_31.current.current}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_30 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_31 <- { _31 with current = { _31.current with current = _ret.final } } ] s1)
-      | s1 = {inv_UnionFind_T _30.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_30.current} {MutBorrow.get_id _30}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_29 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_30 <- { _30 with current = _ret.final } ] s2)
-      | s2 = {[@expl:type invariant] inv_ref_ref_UnionFind_T _31} s3
-      | s3 = -{resolve_ref_ref_UnionFind_T _31}- s4
-      | s4 = {[@expl:type invariant] inv_ref_UnionFind_T _30} s5
-      | s5 = -{resolve_ref_UnionFind_T _30}- s6
-      | s6 = {inv_UnionFind_T _29.current}
-        MutBorrow.borrow_final <t_UnionFind_T> {_29.current} {MutBorrow.get_id _29}
-          (fun (_ret: MutBorrow.t t_UnionFind_T) ->
-            [ &_28 <- _ret ] -{inv_UnionFind_T _ret.final}-
-            [ &_29 <- { _29 with current = _ret.final } ] s7)
-      | s7 = new_ref_UnionFind_T {_28} (fun (_ret: MutBorrow.t t_UnionFind_T) -> [ &_27 <- _ret ] s8)
-      | s8 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_UnionFind_T _29} s1
-      | s1 = -{resolve_ref_UnionFind_T _29}- s2
-      | s2 = find_T {_27} {y} (fun (_ret: t_Element) -> [ &ry <- _ret ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0 [ s0 = link_T {uf} {rx} {ry} (fun (_ret: t_Element) -> [ &_0 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = return {_0} ]
-    [ & _0: t_Element = Any.any_l ()
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_24 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_24}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_23 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_UnionFind_T> {_23.current.current}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_22 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_23 <- { _23 with current = { _23.current with current = _bor.final } } ] s3)
+        [ _ck -> (! {inv_UnionFind_T _23.current.current} any) ]
+      | s3 = MutBorrow.borrow_final <t_UnionFind_T> {_22.current} {MutBorrow.get_id _22}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_21 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_22 <- { _22 with current = _bor.final } ] s4) [ _ck -> (! {inv_UnionFind_T _22.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _23} any) ]
+      | s5 = -{resolve_refmut_refmut_UnionFind_T _23}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _22} any) ]
+      | s7 = -{resolve_refmut_UnionFind_T _22}- s8
+      | s8 = MutBorrow.borrow_final <t_UnionFind_T> {_21.current} {MutBorrow.get_id _21}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_20 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_21 <- { _21 with current = _bor.final } ] s9) [ _ck -> (! {inv_UnionFind_T _21.current} any) ]
+      | s9 = new_refmut_UnionFind_T {_20} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _x ] s10)
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _21} any) ]
+      | s11 = -{resolve_refmut_UnionFind_T _21}- s12
+      | s12 = find_T {_19} {x} (fun (_x: t_Element) -> [ &rx <- _x ] s13)
+      | s13 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+            [ &_32 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
+            [ &uf <- _bor.final ] s14) [ _ck -> (! {inv_Ghost_refmut_UnionFind_T uf} any) ]
+      | s14 = deref_mut_Ghost_refmut_UnionFind_T {_32}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_31 <- _x ] s15)
+      | s15 = MutBorrow.borrow_mut <t_UnionFind_T> {_31.current.current}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_30 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_31 <- { _31 with current = { _31.current with current = _bor.final } } ] s16)
+        [ _ck -> (! {inv_UnionFind_T _31.current.current} any) ]
+      | s16 = MutBorrow.borrow_final <t_UnionFind_T> {_30.current} {MutBorrow.get_id _30}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_29 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_30 <- { _30 with current = _bor.final } ] s17) [ _ck -> (! {inv_UnionFind_T _30.current} any) ]
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UnionFind_T _31} any) ]
+      | s18 = -{resolve_refmut_refmut_UnionFind_T _31}- s19
+      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _30} any) ]
+      | s20 = -{resolve_refmut_UnionFind_T _30}- s21
+      | s21 = MutBorrow.borrow_final <t_UnionFind_T> {_29.current} {MutBorrow.get_id _29}
+          (fun (_bor: MutBorrow.t t_UnionFind_T) ->
+            [ &_28 <- _bor ] -{inv_UnionFind_T _bor.final}-
+            [ &_29 <- { _29 with current = _bor.final } ] s22) [ _ck -> (! {inv_UnionFind_T _29.current} any) ]
+      | s22 = new_refmut_UnionFind_T {_28} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_27 <- _x ] s23)
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _29} any) ]
+      | s24 = -{resolve_refmut_UnionFind_T _29}- s25
+      | s25 = find_T {_27} {y} (fun (_x: t_Element) -> [ &ry <- _x ] s26)
+      | s26 = link_T {uf} {rx} {ry} (fun (_x: t_Element) -> [ &_ret <- _x ] s27)
+      | s27 = return {_ret} ] ]
+    [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & x: t_Element = x
     | & y: t_Element = y
@@ -4725,7 +4587,7 @@ module M_implementation__union
     [ return (result: t_Element) -> {[@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
       {[@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
       {[@expl:union ensures #2] forall z: t_Element. in_domain_T uf.current z
-        -> root_T (fin_Ghost_ref_UnionFind_T uf) z
+        -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
@@ -4776,39 +4638,40 @@ module M_example
       {Fset.is_empty (domain_i32 result)}
       (! return {result}) ]
   
-  predicate invariant_ref_Ghost_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
+  predicate invariant_refmut_Ghost_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
     inv_Ghost_UnionFind_i32 self.current /\ inv_Ghost_UnionFind_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_UnionFind_i32
+  meta "rewrite_def" predicate invariant_refmut_Ghost_UnionFind_i32
   
-  predicate inv_ref_Ghost_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) =
-    invariant_ref_Ghost_UnionFind_i32 _1
+  predicate inv_refmut_Ghost_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) =
+    invariant_refmut_Ghost_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_UnionFind_i32
+  meta "rewrite_def" predicate inv_refmut_Ghost_UnionFind_i32
   
-  predicate invariant_ref_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
+  predicate invariant_refmut_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
     inv_UnionFind_i32 self.current /\ inv_UnionFind_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_i32
+  meta "rewrite_def" predicate invariant_refmut_UnionFind_i32
   
-  predicate inv_ref_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) = invariant_ref_UnionFind_i32 _1
+  predicate inv_refmut_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) =
+    invariant_refmut_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_i32
+  meta "rewrite_def" predicate inv_refmut_UnionFind_i32
   
-  predicate invariant_Ghost_ref_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
-    inv_ref_UnionFind_i32 self
+  predicate invariant_Ghost_refmut_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
+    inv_refmut_UnionFind_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_i32
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UnionFind_i32
   
-  predicate inv_Ghost_ref_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) =
-    invariant_Ghost_ref_UnionFind_i32 _1
+  predicate inv_Ghost_refmut_UnionFind_i32 [@inline:trivial] (_1: MutBorrow.t t_UnionFind_i32) =
+    invariant_Ghost_refmut_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_i32
+  meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_i32
   
   let rec borrow_mut_UnionFind_i32 (self: MutBorrow.t t_UnionFind_i32) (return (x: MutBorrow.t t_UnionFind_i32)) =
-    {[@expl:borrow_mut 'self' type invariant] inv_ref_Ghost_UnionFind_i32 self}
+    {[@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_UnionFind_i32 self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_i32) -> {inv_Ghost_ref_UnionFind_i32 result}
+    [ return (result: MutBorrow.t t_UnionFind_i32) -> {inv_Ghost_refmut_UnionFind_i32 result}
       {result = self}
       (! return {result}) ]
   
@@ -4816,10 +4679,10 @@ module M_example
   
   predicate in_domain_i32 (self: t_UnionFind_i32) (e: t_Element) = contains_Element (domain_i32 self) e
   
-  function fin_Ghost_ref_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) : t_UnionFind_i32 =
+  function fin_Ghost_refmut_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) : t_UnionFind_i32 =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_UnionFind_i32
+  meta "rewrite_def" function fin_Ghost_refmut_UnionFind_i32
   
   function insert_Element [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element =
     Fset.add e self
@@ -4842,45 +4705,42 @@ module M_example
   function payloads_map_i32 (self: t_UnionFind_i32) : Map.map t_Element Int32.t
   
   let rec make_i32 (uf: MutBorrow.t t_UnionFind_i32) (payload: Int32.t) (return (x: t_Element)) =
-    {[@expl:make 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
+    {[@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     any
     [ return (result: t_Element) -> {inv_Element result}
       {not in_domain_i32 uf.current result}
-      {domain_i32 (fin_Ghost_ref_UnionFind_i32 uf) = insert_Element (domain_i32 uf.current) result}
-      {roots_map_i32 (fin_Ghost_ref_UnionFind_i32 uf) = Map.set (roots_map_i32 uf.current) result result}
-      {payloads_map_i32 (fin_Ghost_ref_UnionFind_i32 uf) = Map.set (payloads_map_i32 uf.current) result payload}
+      {domain_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = insert_Element (domain_i32 uf.current) result}
+      {roots_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = Map.set (roots_map_i32 uf.current) result result}
+      {payloads_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = Map.set (payloads_map_i32 uf.current) result payload}
       (! return {result}) ]
   
-  predicate invariant_ref_Ghost_UnionFind_i32'0 [@inline:trivial] (self: t_UnionFind_i32) = inv_Ghost_UnionFind_i32 self
+  predicate invariant_ref_Ghost_UnionFind_i32 [@inline:trivial] (self: t_UnionFind_i32) = inv_Ghost_UnionFind_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_UnionFind_i32'0
+  meta "rewrite_def" predicate invariant_ref_Ghost_UnionFind_i32
   
-  predicate inv_ref_Ghost_UnionFind_i32'0 [@inline:trivial] (_1: t_UnionFind_i32) =
-    invariant_ref_Ghost_UnionFind_i32'0 _1
+  predicate inv_ref_Ghost_UnionFind_i32 [@inline:trivial] (_1: t_UnionFind_i32) = invariant_ref_Ghost_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_UnionFind_i32'0
+  meta "rewrite_def" predicate inv_ref_Ghost_UnionFind_i32
   
-  predicate invariant_ref_UnionFind_i32'0 [@inline:trivial] (self: t_UnionFind_i32) = inv_UnionFind_i32 self
+  predicate invariant_ref_UnionFind_i32 [@inline:trivial] (self: t_UnionFind_i32) = inv_UnionFind_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_UnionFind_i32'0
+  meta "rewrite_def" predicate invariant_ref_UnionFind_i32
   
-  predicate inv_ref_UnionFind_i32'0 [@inline:trivial] (_1: t_UnionFind_i32) = invariant_ref_UnionFind_i32'0 _1
+  predicate inv_ref_UnionFind_i32 [@inline:trivial] (_1: t_UnionFind_i32) = invariant_ref_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_UnionFind_i32'0
+  meta "rewrite_def" predicate inv_ref_UnionFind_i32
   
-  predicate invariant_Ghost_ref_UnionFind_i32'0 [@inline:trivial] (self: t_UnionFind_i32) = inv_ref_UnionFind_i32'0 self
+  predicate invariant_Ghost_ref_UnionFind_i32 [@inline:trivial] (self: t_UnionFind_i32) = inv_ref_UnionFind_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_i32'0
+  meta "rewrite_def" predicate invariant_Ghost_ref_UnionFind_i32
   
-  predicate inv_Ghost_ref_UnionFind_i32'0 [@inline:trivial] (_1: t_UnionFind_i32) =
-    invariant_Ghost_ref_UnionFind_i32'0 _1
+  predicate inv_Ghost_ref_UnionFind_i32 [@inline:trivial] (_1: t_UnionFind_i32) = invariant_Ghost_ref_UnionFind_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_i32'0
+  meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_i32
   
   let rec borrow_UnionFind_i32 (self: t_UnionFind_i32) (return (x: t_UnionFind_i32)) =
-    {[@expl:borrow 'self' type invariant] inv_ref_Ghost_UnionFind_i32'0 self}
-    any
-    [ return (result: t_UnionFind_i32) -> {inv_Ghost_ref_UnionFind_i32'0 result} {result = self} (! return {result}) ]
+    {[@expl:borrow 'self' type invariant] inv_ref_Ghost_UnionFind_i32 self}
+    any [ return (result: t_UnionFind_i32) -> {inv_Ghost_ref_UnionFind_i32 result} {result = self} (! return {result}) ]
   
   function root_i32 (self: t_UnionFind_i32) (e: t_Element) : t_Element =
     index_Mapping_Element_Element (roots_map_i32 self) e
@@ -4894,7 +4754,7 @@ module M_example
     index_Mapping_Element_i32 (payloads_map_i32 self) e
   
   let rec get_i32 (uf: t_UnionFind_i32) (elem: t_Element) (return (x: Int32.t)) =
-    {[@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_i32'0 uf}
+    {[@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
     {[@expl:get 'elem' type invariant] inv_Element elem}
     {[@expl:get requires #0] in_domain_i32 uf elem}
     {[@expl:get requires #1] root_i32 uf elem = elem}
@@ -4906,7 +4766,7 @@ module M_example
     payloads_map_i32 self.current = payloads_map_i32 self.final
   
   let rec union_i32 (uf: MutBorrow.t t_UnionFind_i32) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:union 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
+    {[@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     {[@expl:union 'x' type invariant] inv_Element x}
     {[@expl:union 'y' type invariant] inv_Element y}
     {[@expl:union requires] in_domain_i32 uf.current x /\ in_domain_i32 uf.current y}
@@ -4915,7 +4775,7 @@ module M_example
       {domain_unchanged_i32 uf /\ payloads_unchanged_i32 uf}
       {result = root_i32 uf.current x \/ result = root_i32 uf.current y}
       {forall z: t_Element. in_domain_i32 uf.current z
-        -> root_i32 (fin_Ghost_ref_UnionFind_i32 uf) z
+        -> root_i32 (fin_Ghost_refmut_UnionFind_i32 uf) z
         = (if root_i32 uf.current z = root_i32 uf.current x \/ root_i32 uf.current z = root_i32 uf.current y then
           result
         else
@@ -4929,7 +4789,7 @@ module M_example
     /\ payloads_map_i32 self.current = payloads_map_i32 self.final
   
   let rec equiv_i32 (uf: MutBorrow.t t_UnionFind_i32) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
-    {[@expl:equiv 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
+    {[@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     {[@expl:equiv 'e1' type invariant] inv_Element e1}
     {[@expl:equiv 'e2' type invariant] inv_Element e2}
     {[@expl:equiv requires #0] in_domain_i32 uf.current e1}
@@ -4940,7 +4800,7 @@ module M_example
       (! return {result}) ]
   
   let rec find_i32 (uf: MutBorrow.t t_UnionFind_i32) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
+    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     {[@expl:find 'elem' type invariant] inv_Element elem}
     {[@expl:find requires] in_domain_i32 uf.current elem}
     any
@@ -4960,119 +4820,103 @@ module M_example
   meta "select_lsinst" "all"
   
   let rec example (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = new_i32 (fun (_ret: t_UnionFind_i32) -> [ &uf <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_4 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_4} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = make_i32 {_3} {(1: Int32.t)} (fun (_ret: t_Element) -> [ &x <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_7 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_7} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _ret ] s2)
-      | s2 = bb4 ]
-    | bb4 = s0 [ s0 = make_i32 {_6} {(2: Int32.t)} (fun (_ret: t_Element) -> [ &y <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_10 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_10} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _ret ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0 [ s0 = make_i32 {_9} {(3: Int32.t)} (fun (_ret: t_Element) -> [ &z <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_15 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = get_i32 {_15} {x} (fun (_ret: Int32.t) -> [ &_14 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = [ &_12 <- _14 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
-    | bb10 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_23 <- _ret ] s1) | s1 = bb12 ]
-    | bb12 = s0 [ s0 = get_i32 {_23} {y} (fun (_ret: Int32.t) -> [ &_22 <- _ret ] s1) | s1 = bb13 ]
-    | bb13 = s0
-      [ s0 = [ &_20 <- _22 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
-    | bb14 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_31 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = s0 [ s0 = get_i32 {_31} {z} (fun (_ret: Int32.t) -> [ &_30 <- _ret ] s1) | s1 = bb17 ]
-    | bb17 = s0
-      [ s0 = [ &_28 <- _30 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_28 = false} (! bb19) | br1 -> {_28} (! bb18) ] ]
+    [ bb0 = s0
+      [ s0 = new_i32 (fun (_x: t_UnionFind_i32) -> [ &uf <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_4 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s2) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s2 = borrow_mut_UnionFind_i32 {_4} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _x ] s3)
+      | s3 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Element) -> [ &x <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_7 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s5) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s5 = borrow_mut_UnionFind_i32 {_7} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _x ] s6)
+      | s6 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Element) -> [ &y <- _x ] s7)
+      | s7 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_10 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s8) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s8 = borrow_mut_UnionFind_i32 {_10} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _x ] s9)
+      | s9 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Element) -> [ &z <- _x ] s10)
+      | s10 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_15 <- _x ] s11)
+      | s11 = get_i32 {_15} {x} (fun (_x: Int32.t) -> [ &_14 <- _x ] s12)
+      | s12 = [ &_12 <- _14 = (1: Int32.t) ] s13
+      | s13 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
+    | bb10 = s0
+      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_23 <- _x ] s1)
+      | s1 = get_i32 {_23} {y} (fun (_x: Int32.t) -> [ &_22 <- _x ] s2)
+      | s2 = [ &_20 <- _22 = (2: Int32.t) ] s3
+      | s3 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
+    | bb14 = s0
+      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_31 <- _x ] s1)
+      | s1 = get_i32 {_31} {z} (fun (_x: Int32.t) -> [ &_30 <- _x ] s2)
+      | s2 = [ &_28 <- _30 = (3: Int32.t) ] s3
+      | s3 = any [ br0 -> {_28 = false} (! bb19) | br1 -> {_28} (! bb18) ] ]
     | bb18 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_37 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_37} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_36 <- _ret ] s2)
-      | s2 = bb20 ]
-    | bb20 = s0 [ s0 = union_i32 {_36} {x} {y} (fun (_ret: t_Element) -> [ &_35 <- _ret ] s1) | s1 = bb21 ]
-    | bb21 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_43 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_43} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_42 <- _ret ] s2)
-      | s2 = bb22 ]
-    | bb22 = s0 [ s0 = equiv_i32 {_42} {x} {y} (fun (_ret: bool) -> [ &_41 <- _ret ] s1) | s1 = bb23 ]
-    | bb23 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ]
+      [ s0 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_37 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s1 = borrow_mut_UnionFind_i32 {_37} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_36 <- _x ] s2)
+      | s2 = union_i32 {_36} {x} {y} (fun (_x: t_Element) -> [ &_35 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_43 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s4) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s4 = borrow_mut_UnionFind_i32 {_43} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_42 <- _x ] s5)
+      | s5 = equiv_i32 {_42} {x} {y} (fun (_x: bool) -> [ &_41 <- _x ] s6)
+      | s6 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ] ]
     | bb24 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_49 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_49} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_48 <- _ret ] s2)
-      | s2 = bb26 ]
-    | bb26 = s0 [ s0 = find_i32 {_48} {x} (fun (_ret: t_Element) -> [ &xr <- _ret ] s1) | s1 = bb27 ]
-    | bb27 = s0
-      [ s0 = {inv_Ghost_UnionFind_i32 uf}
-        MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
-          (fun (_ret: MutBorrow.t t_UnionFind_i32) ->
-            [ &_53 <- _ret ] -{inv_Ghost_UnionFind_i32 _ret.final}-
-            [ &uf <- _ret.final ] s1)
-      | s1 = borrow_mut_UnionFind_i32 {_53} (fun (_ret: MutBorrow.t t_UnionFind_i32) -> [ &_52 <- _ret ] s2)
-      | s2 = bb28 ]
-    | bb28 = s0 [ s0 = find_i32 {_52} {y} (fun (_ret: t_Element) -> [ &yr <- _ret ] s1) | s1 = bb29 ]
-    | bb29 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_59 <- _ret ] s1) | s1 = bb30 ]
-    | bb30 = s0 [ s0 = get_i32 {_59} {xr} (fun (_ret: Int32.t) -> [ &_58 <- _ret ] s1) | s1 = bb31 ]
-    | bb31 = s0 [ s0 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_64 <- _ret ] s1) | s1 = bb32 ]
-    | bb32 = s0 [ s0 = get_i32 {_64} {yr} (fun (_ret: Int32.t) -> [ &_63 <- _ret ] s1) | s1 = bb33 ]
-    | bb33 = s0 [ s0 = [ &_56 <- _58 = _63 ] s1 | s1 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
+      [ s0 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_49 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s1 = borrow_mut_UnionFind_i32 {_49} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_48 <- _x ] s2)
+      | s2 = find_i32 {_48} {x} (fun (_x: t_Element) -> [ &xr <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
+            [ &_53 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
+            [ &uf <- _bor.final ] s4) [ _ck -> (! {inv_Ghost_UnionFind_i32 uf} any) ]
+      | s4 = borrow_mut_UnionFind_i32 {_53} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_52 <- _x ] s5)
+      | s5 = find_i32 {_52} {y} (fun (_x: t_Element) -> [ &yr <- _x ] s6)
+      | s6 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_59 <- _x ] s7)
+      | s7 = get_i32 {_59} {xr} (fun (_x: Int32.t) -> [ &_58 <- _x ] s8)
+      | s8 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_64 <- _x ] s9)
+      | s9 = get_i32 {_64} {yr} (fun (_x: Int32.t) -> [ &_63 <- _x ] s10)
+      | s10 = [ &_56 <- _58 = _63 ] s11
+      | s11 = any [ br0 -> {_56 = false} (! bb35) | br1 -> {_56} (! bb34) ] ]
     | bb34 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
-      | s2 = borrow_UnionFind_i32 {uf} (fun (_ret: t_UnionFind_i32) -> [ &_72 <- _ret ] s3)
-      | s3 = bb36 ]
-    | bb36 = s0 [ s0 = get_i32 {_72} {z} (fun (_ret: Int32.t) -> [ &_71 <- _ret ] s1) | s1 = bb37 ]
-    | bb37 = s0
-      [ s0 = [ &_69 <- _71 = (3: Int32.t) ] s1 | s1 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
-    | bb38 = return {_0}
+      | s2 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_72 <- _x ] s3)
+      | s3 = get_i32 {_72} {z} (fun (_x: Int32.t) -> [ &_71 <- _x ] s4)
+      | s4 = [ &_69 <- _71 = (3: Int32.t) ] s5
+      | s5 = any [ br0 -> {_69 = false} (! bb39) | br1 -> {_69} (! bb38) ] ]
+    | bb38 = return {_ret}
     | bb39 = {false} any
     | bb35 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = {false} any ]
     | bb25 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = {false} any ]
     | bb19 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = {false} any ]
     | bb15 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = {false} any ]
     | bb11 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32 uf}- s2
       | s2 = {false} any ] ]
-    [ & _0: () = Any.any_l ()
+    [ & _ret: () = Any.any_l ()
     | & uf: t_UnionFind_i32 = Any.any_l ()
     | & x: t_Element = Any.any_l ()
     | & _3: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
@@ -5181,11 +5025,12 @@ module M_example_addrs_eq
     {[@expl:example_addrs_eq 'e2' type invariant] inv_Element e2}
     {[@expl:example_addrs_eq requires] in_domain_T uf e1 /\ in_domain_T uf e2}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_Element {e1} {e2} (fun (_ret: bool) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb2) ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] e1 = e2} s1 | s1 = bb4 ]
-    | bb4 = return {_0} ]
-    [ & _0: () = Any.any_l () | & e1: t_Element = e1 | & e2: t_Element = e2 | & _8: bool = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = eq_Element {e1} {e2} (fun (_x: bool) -> [ &_8 <- _x ] s1)
+      | s1 = any [ br0 -> {_8 = false} (! bb4) | br1 -> {_8} (! bb2) ] ]
+    | bb2 = s0 [ s0 = {[@expl:assertion] e1 = e2} s1 | s1 = return {_ret} ]
+    | bb4 = return {_ret} ]
+    [ & _ret: () = Any.any_l () | & e1: t_Element = e1 | & e2: t_Element = e2 | & _8: bool = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_implementation__impl_PartialEq_for_Element__eq__refines (* <implementation::Element as std::cmp::PartialEq> *)

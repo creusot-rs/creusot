@@ -16,12 +16,12 @@ module M_impl_Foo__new (* Foo *)
   meta "select_lsinst" "all"
   
   let rec new (return (x: t_Foo)) = (! bb0
-    [ bb0 = {false} any ] [ & _0: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState = Any.any_l () ])
+    [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState = Any.any_l () ])
     [ return (result: t_Foo) -> {[@expl:new result type invariant] inv_Foo result} (! return {result}) ]
 end
 module M_impl_Foo__add (* Foo *)
-  use creusot.prelude.Any
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   use creusot.int.UInt64
   use creusot.int.UInt8
   use map.Map
@@ -36,13 +36,14 @@ module M_impl_Foo__add (* Foo *)
   
   axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
   
-  predicate invariant_ref_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) = inv_Foo self.current /\ inv_Foo self.final
+  predicate invariant_refmut_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) =
+    inv_Foo self.current /\ inv_Foo self.final
   
-  meta "rewrite_def" predicate invariant_ref_Foo
+  meta "rewrite_def" predicate invariant_refmut_Foo
   
-  predicate inv_ref_Foo [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant_ref_Foo _1
+  predicate inv_refmut_Foo [@inline:trivial] (_1: MutBorrow.t t_Foo) = invariant_refmut_Foo _1
   
-  meta "rewrite_def" predicate inv_ref_Foo
+  meta "rewrite_def" predicate inv_refmut_Foo
   
   type t_FMap_Int_u8
   
@@ -65,14 +66,24 @@ module M_impl_Foo__add (* Foo *)
   meta "select_lsinst" "all"
   
   let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv_ref_Foo self}
+    {[@expl:add 'self' type invariant] inv_refmut_Foo self}
     (! bb0
-    [ bb0 = {false} any ]
-    [ & _0: () = Any.any_l ()
+    [ bb0 = s0
+      [ s0 = [ &_8 <- bar ] s1
+      | s1 = MutBorrow.borrow_final <t_HashMap_u64_u8_RandomState> {self.current.f0}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_HashMap_u64_u8_RandomState) ->
+            [ &_11 <- _bor ] -{inv_HashMap_u64_u8_RandomState _bor.final}-
+            [ &self <- { self with current = { f0 = _bor.final } } ] s2)
+        [ _ck -> (! {inv_HashMap_u64_u8_RandomState self.current.f0} any) ]
+      | s2 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Foo = self
     | & num: UInt64.t = num
     | & bar: UInt8.t = bar
-    | & _9: MutBorrow.t UInt8.t = Any.any_l () ])
+    | & _8: UInt8.t = Any.any_l ()
+    | & _9: MutBorrow.t UInt8.t = Any.any_l ()
+    | & _11: MutBorrow.t t_HashMap_u64_u8_RandomState = Any.any_l () ])
     [ return (result: ()) -> {[@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num) = Some bar}
       (! return {result}) ]
 end

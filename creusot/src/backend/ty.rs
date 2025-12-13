@@ -14,7 +14,7 @@ use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, Param, Prototype},
     declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl, Use},
-    exp::{Exp, Trigger},
+    exp::{Exp, Pattern},
     ty::Type as MlT,
 };
 
@@ -321,39 +321,41 @@ pub(crate) fn eliminator<'tcx>(
         fields.iter().cloned().map(|(nm, ty)| Param::Term(nm, ty)).collect();
 
     let constr = names.item_ident(variant_id, subst);
+
+    let input_ident = Ident::fresh_local("_x");
+
     let cons_test = Exp::var(constr).app(fields.iter().map(|(nm, _)| Exp::var(*nm)));
-
-    let ret_ident = Ident::fresh_local("ret");
-    let good_ident = Ident::fresh_local("good");
-    let bad_ident = Ident::fresh_local("bad");
-    let input_ident = Ident::fresh_local("input");
-    let ret = Expr::var(ret_ident).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
-
-    let good_branch: Defn = Defn {
-        prototype: Prototype { name: good_ident, attrs: vec![], params: field_args.clone() },
-        body: Expr::assert(cons_test.clone().eq(Exp::var(input_ident)), ret.black_box()),
+    let ret = Expr::var(name::return_()).app(fields.iter().map(|(nm, _)| Arg::Term(Exp::var(*nm))));
+    let k_branch = Defn {
+        prototype: Prototype {
+            name: Ident::fresh_local("_k"),
+            attrs: vec![],
+            params: field_args.clone(),
+        },
+        body: Expr::assert(cons_test.eq(Exp::var(input_ident)), ret.black_box()),
     };
 
     let ty = translate_ty(ctx, names, DUMMY_SP, Ty::new_adt(ctx.tcx, adt, subst));
-    let bad_branch = if adt.variants().len() > 1 {
-        let fail = Expr::assert(Exp::mk_false(), Expr::Any).black_box();
-
-        // TODO: Replace this with a pattern match to generat more readable goals
-        let negative_assertion = Exp::forall_trig(
-            fields.clone(),
-            [Trigger::single(cons_test.clone().ascribe(ty.clone()))],
-            cons_test.neq(Exp::var(input_ident)),
+    let check_branch = if adt.variants().len() > 1 {
+        let pat =
+            Pattern::ConsP(Name::local(constr), fields.iter().map(|_| Pattern::Wildcard).collect());
+        let assertion = Exp::match_(
+            Exp::var(input_ident),
+            [(pat, Exp::mk_true()), (Pattern::Wildcard, Exp::mk_false())],
         );
-        Some(Defn::simple(bad_ident, Expr::assert(negative_assertion, fail)))
+        Some(Defn::simple(
+            Ident::fresh_local("_chk"),
+            Expr::assert(assertion, Expr::Any).black_box(),
+        ))
     } else {
         None
     };
 
-    let ret_cont = Param::Cont(ret_ident, Box::new([]), field_args);
+    let ret_cont = Param::Cont(name::return_(), Box::new([]), field_args);
 
     let input = Param::Term(input_ident, ty);
 
-    let branches = once(good_branch).chain(bad_branch).collect();
+    let branches = once(k_branch).chain(check_branch).collect();
     Decl::Coma(Defn {
         prototype: Prototype {
             name: names.eliminator(variant_id, subst),

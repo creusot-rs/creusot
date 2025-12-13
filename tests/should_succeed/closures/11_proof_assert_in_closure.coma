@@ -6,8 +6,8 @@ module M_immutable_capture
   
   let rec closure0 (self: closure0) (return (x: ())) = {[@expl:closure requires] self.c0 = (1: Int32.t)}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:assertion] self.c0 = (1: Int32.t)} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & self: closure0 = self ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:assertion] self.c0 = (1: Int32.t)} s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & self: closure0 = self ]) [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -17,10 +17,9 @@ module M_immutable_capture
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &_4 <- { c0 = x } ] s2
-      | s2 = closure0 {_4} (fun (_ret: ()) -> [ &_2 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s2 = closure0 {_4} (fun (_x: ()) -> [ &_2 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _4: closure0 = Any.any_l ()
@@ -33,19 +32,19 @@ module M_mutable_capture
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
   predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: ()) (result: ()) = true
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_i32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_i32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -85,9 +84,9 @@ module M_mutable_capture
     [ bb0 = s0
       [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
       | s1 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (2: Int32.t) } } } ] s2
-      | s2 = -{resolve_ref_closure0 self}- s3
+      | s2 = -{resolve_refmut_closure0 self}- s3
       | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
-      | s4 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
+      | s4 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
     [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       (! return {result}) ]
   
@@ -99,14 +98,14 @@ module M_mutable_capture
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s2)
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = [ &_4 <- { c0 = _5 } ] s3
       | s3 = MutBorrow.borrow_mut <closure0> {_4}
-          (fun (_ret: MutBorrow.t closure0) -> [ &_3 <- _ret ] [ &_4 <- _ret.final ] s4)
-      | s4 = closure0 {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s5)
-      | s5 = bb1 ]
-    | bb1 = s0 [ s0 = -{resolve_closure0 _4}- s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure0) -> [ &_3 <- _bor ] [ &_4 <- _bor.final ] s4)
+      | s4 = closure0 {_3} (fun (_x: ()) -> [ &_2 <- _x ] s5)
+      | s5 = -{resolve_closure0 _4}- s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _3: MutBorrow.t closure0 = Any.any_l ()
@@ -121,20 +120,20 @@ module M_captures_and_call
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
   predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: ()) (result: ()) =
     self.c0.final = (2: Int32.t)
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_i32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_i32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -174,9 +173,9 @@ module M_captures_and_call
     [ bb0 = s0
       [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
       | s1 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (2: Int32.t) } } } ] s2
-      | s2 = -{resolve_ref_closure0 self}- s3
+      | s2 = -{resolve_refmut_closure0 self}- s3
       | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
-      | s4 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
+      | s4 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] self.final.c0.current = (2: Int32.t)}
       {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       (! return {result}) ]
@@ -197,12 +196,12 @@ module M_captures_and_call
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_3 <- _ret ] [ &x <- _ret.final ] s2)
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_3 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = [ &clos <- { c0 = _3 } ] s3
-      | s3 = calls_closure_closure0 {clos} (fun (_ret: ()) -> [ &_4 <- _ret ] s4)
-      | s4 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] x = (2: Int32.t)} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s3 = calls_closure_closure0 {clos} (fun (_x: ()) -> [ &_4 <- _x ] s4)
+      | s4 = {[@expl:assertion] x = (2: Int32.t)} s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & clos: closure0 = Any.any_l ()
     | & _3: MutBorrow.t Int32.t = Any.any_l ()

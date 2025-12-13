@@ -4,6 +4,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use rustc_abi::VariantIdx;
+use rustc_ast::Mutability;
 use rustc_ast_ir::{try_visit, visit::VisitorResult};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -26,7 +27,7 @@ pub struct Place<'tcx> {
     #[type_visitable(ignore)]
     #[type_foldable(identity)]
     pub(crate) local: Ident,
-    pub(crate) projections: Box<[ProjectionElem<'tcx>]>,
+    pub(crate) projection: Box<[ProjectionElem<'tcx>]>,
 }
 
 /// The equivalent of [`mir::PlaceRef`], but for fMIR
@@ -40,7 +41,7 @@ impl<'tcx> Place<'tcx> {
     pub(crate) fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         let mut ty = PlaceTy::from_ty(locals[&self.local].ty);
 
-        for p in self.projections.iter() {
+        for p in self.projection.iter() {
             ty = projection_ty(ty, tcx, p);
         }
 
@@ -48,24 +49,16 @@ impl<'tcx> Place<'tcx> {
     }
 
     pub(crate) fn as_symbol(&self) -> Option<Ident> {
-        if self.projections.is_empty() { Some(self.local) } else { None }
+        if self.projection.is_empty() { Some(self.local) } else { None }
     }
 
     pub(crate) fn iter_projections(
         &self,
     ) -> impl DoubleEndedIterator<Item = (PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> + '_ {
-        self.projections.iter().enumerate().map(move |(i, proj)| {
-            let base = PlaceRef { local: self.local, projection: &self.projections[..i] };
+        self.projection.iter().enumerate().map(move |(i, proj)| {
+            let base = PlaceRef { local: self.local, projection: &self.projection[..i] };
             (base, *proj)
         })
-    }
-
-    pub fn last_projection(&self) -> Option<(PlaceRef<'_, 'tcx>, ProjectionElem<'tcx>)> {
-        if let &[ref proj_base @ .., elem] = &self.projections[..] {
-            Some((PlaceRef { local: self.local, projection: proj_base }, elem))
-        } else {
-            None
-        }
     }
 }
 
@@ -81,26 +74,6 @@ impl<'tcx> PlaceRef<'_, 'tcx> {
     }
 }
 
-#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
-pub enum StatementKind<'tcx> {
-    Assignment(Place<'tcx>, RValue<'tcx>),
-    Assertion {
-        cond: Term<'tcx>,
-        #[type_visitable(ignore)]
-        #[type_foldable(identity)]
-        msg: Option<String>,
-        trusted: bool,
-    },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
-}
-
-#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
-pub(crate) struct Statement<'tcx> {
-    pub(crate) kind: StatementKind<'tcx>,
-    pub(crate) span: Span,
-}
-
-// TODO: Add shared borrows?
 #[derive(Clone, Copy, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BorrowKind {
     /// Ordinary mutable borrows
@@ -114,9 +87,28 @@ pub enum BorrowKind {
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+pub enum StatementKind<'tcx> {
+    Assignment(Place<'tcx>, RValue<'tcx>),
+    MutBorrow(BorrowKind, Place<'tcx>, Place<'tcx>),
+    Assertion {
+        cond: Term<'tcx>,
+        #[type_visitable(ignore)]
+        #[type_foldable(identity)]
+        msg: Option<String>,
+        check: bool,  // Whether we generate a VC for this assertion
+        assume: bool, // Whether this assertion stays in context
+    },
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
+}
+
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+pub(crate) struct Statement<'tcx> {
+    pub(crate) kind: StatementKind<'tcx>,
+    pub(crate) span: Span,
+}
+
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum RValue<'tcx> {
-    Snapshot(Term<'tcx>),
-    Borrow(BorrowKind, Place<'tcx>),
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
@@ -128,64 +120,14 @@ pub enum RValue<'tcx> {
     Ptr(Place<'tcx>),
 }
 
-impl RValue<'_> {
-    /// Returns false if the expression generates verification conditions
-    pub fn is_pure(&self) -> bool {
-        match self {
-            RValue::Operand(_) => true,
-            RValue::BinOp(
-                BinOp::Add
-                | BinOp::AddUnchecked
-                | BinOp::Mul
-                | BinOp::MulUnchecked
-                | BinOp::Rem
-                | BinOp::Div
-                | BinOp::Sub
-                | BinOp::SubUnchecked
-                | BinOp::Shl
-                | BinOp::ShlUnchecked
-                | BinOp::Shr
-                | BinOp::ShrUnchecked
-                | BinOp::Offset,
-                _,
-                _,
-            ) => false,
-            RValue::BinOp(
-                BinOp::AddWithOverflow
-                | BinOp::SubWithOverflow
-                | BinOp::MulWithOverflow
-                | BinOp::BitAnd
-                | BinOp::BitOr
-                | BinOp::BitXor
-                | BinOp::Cmp
-                | BinOp::Eq
-                | BinOp::Ne
-                | BinOp::Lt
-                | BinOp::Le
-                | BinOp::Gt
-                | BinOp::Ge,
-                _,
-                _,
-            ) => true,
-            RValue::UnaryOp(UnOp::Neg, _) => false,
-            RValue::UnaryOp(UnOp::Not | UnOp::PtrMetadata, _) => true,
-            RValue::Constructor(_, _, _) => true,
-            RValue::Cast(_, _, _) => false,
-            RValue::Tuple(_) => true,
-            RValue::Array(_) => true,
-            RValue::Repeat(_, _) => true,
-            RValue::Snapshot(_) => true,
-            RValue::Borrow(_, _) => true,
-            RValue::Ptr(_) => true,
-        }
-    }
-}
-
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Operand<'tcx> {
-    Move(Place<'tcx>),
-    Copy(Place<'tcx>),
-    Term(Term<'tcx>),
+    Place(Place<'tcx>),
+    /// Only for typing: translated into identity.
+    ShrBorrow(Box<Operand<'tcx>>),
+    /// The Boolean is true if optimization::simplify_temps has detected that this is never read.
+    /// In this case, we want to keep this term, because it may put in the context interesting facts.
+    Term(Term<'tcx>, bool),
     /// Either:
     /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)
     /// - Promoted constants (`Option<Promoted>` is `Some` and `Option<GenericArgsRef>` is `None`)
@@ -193,6 +135,10 @@ pub enum Operand<'tcx> {
 }
 
 impl<'tcx> Operand<'tcx> {
+    pub fn term(t: Term<'tcx>) -> Self {
+        Operand::Term(t, false)
+    }
+
     pub fn inline_const(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
         Operand::InlineConst(def_id, None, Some(subst), ty)
     }
@@ -203,9 +149,11 @@ impl<'tcx> Operand<'tcx> {
 
     pub fn ty(&self, tcx: TyCtxt<'tcx>, locals: &LocalDecls<'tcx>) -> Ty<'tcx> {
         match self {
-            Operand::Move(pl) => pl.ty(tcx, locals),
-            Operand::Copy(pl) => pl.ty(tcx, locals),
-            Operand::Term(t) => t.ty,
+            Operand::Place(pl) => pl.ty(tcx, locals),
+            Operand::ShrBorrow(op) => {
+                Ty::new_ref(tcx, tcx.lifetimes.re_erased, op.ty(tcx, locals), Mutability::Not)
+            }
+            Operand::Term(t, _) => t.ty,
             Operand::InlineConst(_, _, _, ty) => *ty,
         }
     }
@@ -302,7 +250,7 @@ impl Branches<'_> {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Invariant<'tcx> {
-    pub(crate) body: Term<'tcx>,
+    pub(crate) inv: Term<'tcx>,
     /// Label ("explanation") for the corresponding Why3 subgoal, including the "expl:" prefix
     #[type_visitable(ignore)]
     #[type_foldable(identity)]
@@ -331,15 +279,22 @@ pub struct Block<'tcx> {
 
 pub type LocalDecls<'tcx> = IndexMap<Ident, LocalDecl<'tcx>>;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LocalKind {
+    Param { open_inv: bool },
+    Return,
+    Temp,
+    User,
+}
+
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct LocalDecl<'tcx> {
     // Original MIR local
     pub(crate) span: Span,
     pub(crate) ty: Ty<'tcx>,
-    // Is this a MIR temporary?
-    pub(crate) temp: bool,
-    // Is this declaration a function argument or return place?
-    pub(crate) arg: bool,
+    #[type_visitable(ignore)]
+    #[type_foldable(identity)]
+    pub(crate) kind: LocalKind,
 }
 
 #[derive(Clone, Debug)]
@@ -549,12 +504,12 @@ pub(crate) fn super_visit_body<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, body
     }
 }
 
-pub(crate) fn super_visit_block<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, block: &Block<'tcx>) {
-    for stmt in &block.stmts {
-        visitor.visit_stmt(stmt);
-    }
-
-    visitor.visit_terminator(&block.terminator);
+pub(crate) fn super_visit_block<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, b: &Block<'tcx>) {
+    let Block { invariants, variant, stmts, terminator } = b;
+    invariants.iter().for_each(|t| visitor.visit_term(&t.inv));
+    variant.iter().for_each(|v| visitor.visit_term(&v.term));
+    stmts.iter().for_each(|s| visitor.visit_stmt(s));
+    visitor.visit_terminator(terminator);
 }
 
 pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
@@ -566,9 +521,11 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(place);
             visitor.visit_rvalue(rval);
         }
-        StatementKind::Assertion { cond, .. } => {
-            visitor.visit_term(cond);
+        StatementKind::MutBorrow(_, lhs, rhs) => {
+            visitor.visit_place(lhs);
+            visitor.visit_place(rhs);
         }
+        StatementKind::Assertion { cond, .. } => visitor.visit_term(cond),
         StatementKind::Call(place, _, _, operands, _) => {
             visitor.visit_place(place);
             for operand in operands {
@@ -583,10 +540,10 @@ pub(crate) fn super_visit_operand<'tcx, V: FmirVisitor<'tcx>>(
     operand: &Operand<'tcx>,
 ) {
     match operand {
-        Operand::Copy(place) | Operand::Move(place) => {
-            visitor.visit_place(place);
-        }
-        Operand::Term(_) | Operand::InlineConst(_, _, _, _) => (),
+        Operand::Place(place) => visitor.visit_place(place),
+        Operand::ShrBorrow(op) => visitor.visit_operand(op),
+        Operand::Term(t, _) => visitor.visit_term(t),
+        Operand::InlineConst(..) => (),
     }
 }
 
@@ -598,9 +555,7 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 ) {
     match terminator {
         Terminator::Goto(_) => (),
-        Terminator::Switch(op, _) => {
-            visitor.visit_operand(op);
-        }
+        Terminator::Switch(op, _) => visitor.visit_operand(op),
         Terminator::Return => (),
         Terminator::Abort(_) => (),
     }
@@ -608,30 +563,18 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 
 pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rval: &RValue<'tcx>) {
     match rval {
-        RValue::Snapshot(term) => {
-            visitor.visit_term(term);
-        }
-        RValue::Borrow(_, place) => {
-            visitor.visit_place(place);
-        }
-        RValue::Operand(op) => {
-            visitor.visit_operand(op);
-        }
+        RValue::Operand(op) => visitor.visit_operand(op),
         RValue::BinOp(_, op1, op2) => {
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
         }
-        RValue::UnaryOp(_, op) => {
-            visitor.visit_operand(op);
-        }
+        RValue::UnaryOp(_, op) => visitor.visit_operand(op),
         RValue::Constructor(_, _, ops) => {
             for op in ops {
                 visitor.visit_operand(op);
             }
         }
-        RValue::Cast(op, _, _) => {
-            visitor.visit_operand(op);
-        }
+        RValue::Cast(op, _, _) => visitor.visit_operand(op),
         RValue::Tuple(ops) => {
             for op in ops {
                 visitor.visit_operand(op);
@@ -646,8 +589,143 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
             visitor.visit_operand(op1);
             visitor.visit_operand(op2);
         }
-        RValue::Ptr(pl) => {
-            visitor.visit_place(pl);
+        RValue::Ptr(pl) => visitor.visit_place(pl),
+    }
+}
+
+pub(crate) trait FmirVisitorMut<'tcx>: Sized {
+    fn visit_mut_body(&mut self, body: &mut Body<'tcx>) {
+        super_visit_mut_body(self, body);
+    }
+
+    fn visit_mut_block(&mut self, block: &mut Block<'tcx>) {
+        super_visit_mut_block(self, block);
+    }
+
+    fn visit_mut_stmt(&mut self, stmt: &mut Statement<'tcx>) {
+        super_visit_mut_stmt(self, stmt);
+    }
+
+    fn visit_mut_operand(&mut self, operand: &mut Operand<'tcx>) {
+        super_visit_mut_operand(self, operand);
+    }
+
+    fn visit_mut_place(&mut self, place: &mut Place<'tcx>) {
+        super_visit_mut_place(self, place);
+    }
+
+    fn visit_mut_terminator(&mut self, terminator: &mut Terminator<'tcx>) {
+        super_visit_mut_terminator(self, terminator);
+    }
+
+    fn visit_mut_term(&mut self, _: &mut Term<'tcx>) {}
+
+    fn visit_mut_rvalue(&mut self, rval: &mut RValue<'tcx>) {
+        super_visit_mut_rvalue(self, rval);
+    }
+}
+
+pub(crate) fn super_visit_mut_body<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    body: &mut Body<'tcx>,
+) {
+    for block in &mut body.blocks {
+        visitor.visit_mut_block(block.1);
+    }
+}
+
+pub(crate) fn super_visit_mut_block<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    b: &mut Block<'tcx>,
+) {
+    let Block { invariants, variant, stmts, terminator } = b;
+    invariants.iter_mut().for_each(|t| visitor.visit_mut_term(&mut t.inv));
+    variant.iter_mut().for_each(|v| visitor.visit_mut_term(&mut v.term));
+    stmts.iter_mut().for_each(|s| visitor.visit_mut_stmt(s));
+    visitor.visit_mut_terminator(terminator);
+}
+
+pub(crate) fn super_visit_mut_stmt<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    stmt: &mut Statement<'tcx>,
+) {
+    match &mut stmt.kind {
+        StatementKind::Assignment(place, rval) => {
+            visitor.visit_mut_place(place);
+            visitor.visit_mut_rvalue(rval);
         }
+        StatementKind::MutBorrow(_, lhs, rhs) => {
+            visitor.visit_mut_place(lhs);
+            visitor.visit_mut_place(rhs);
+        }
+        StatementKind::Assertion { cond, .. } => visitor.visit_mut_term(cond),
+        StatementKind::Call(place, _, _, operands, _) => {
+            visitor.visit_mut_place(place);
+            for operand in operands {
+                visitor.visit_mut_operand(operand);
+            }
+        }
+    }
+}
+
+pub(crate) fn super_visit_mut_operand<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    operand: &mut Operand<'tcx>,
+) {
+    match operand {
+        Operand::Place(place) => visitor.visit_mut_place(place),
+        Operand::ShrBorrow(op) => visitor.visit_mut_operand(op),
+        Operand::Term(t, _) => visitor.visit_mut_term(t),
+        Operand::InlineConst(_, _, _, _) => (),
+    }
+}
+
+pub(crate) fn super_visit_mut_place<'tcx, V: FmirVisitorMut<'tcx>>(_: &mut V, _: &mut Place<'tcx>) {
+}
+
+pub(crate) fn super_visit_mut_terminator<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    terminator: &mut Terminator<'tcx>,
+) {
+    match terminator {
+        Terminator::Goto(_) => (),
+        Terminator::Switch(op, _) => visitor.visit_mut_operand(op),
+        Terminator::Return => (),
+        Terminator::Abort(_) => (),
+    }
+}
+
+pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
+    visitor: &mut V,
+    rval: &mut RValue<'tcx>,
+) {
+    match rval {
+        RValue::Operand(op) => visitor.visit_mut_operand(op),
+        RValue::BinOp(_, op1, op2) => {
+            visitor.visit_mut_operand(op1);
+            visitor.visit_mut_operand(op2);
+        }
+        RValue::UnaryOp(_, op) => visitor.visit_mut_operand(op),
+        RValue::Constructor(_, _, ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Cast(op, _, _) => visitor.visit_mut_operand(op),
+        RValue::Tuple(ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Array(ops) => {
+            for op in ops {
+                visitor.visit_mut_operand(op);
+            }
+        }
+        RValue::Repeat(op1, op2) => {
+            visitor.visit_mut_operand(op1);
+            visitor.visit_mut_operand(op2);
+        }
+        RValue::Ptr(pl) => visitor.visit_mut_place(pl),
     }
 }

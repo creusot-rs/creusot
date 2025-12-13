@@ -286,7 +286,7 @@ fn conj_inv_call<'tcx>(
     }
 }
 
-fn resolve_user_inv<'tcx>(
+pub(crate) fn resolve_user_inv<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     ty: Ty<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -312,16 +312,8 @@ pub(crate) fn sig_add_type_invariant_spec<'tcx>(
         None => "closure",
     };
 
-    let params_open_inv: HashSet<usize> = ctx
-        .params_open_inv(def_id)
-        .iter()
-        .copied()
-        .flatten()
-        .map(|&i| if ctx.is_closure_like(def_id) { i + 1 } else { i })
-        .collect();
-
     let new_requires = pre_sig.inputs.iter().enumerate().filter_map(|(i, (ident, span, ty))| {
-        if !params_open_inv.contains(&i)
+        if !ctx.params_open_inv(def_id).is_some_and(|bs| bs.contains(i))
             && let Some(term) = inv_call(ctx, typing_env, scope_id, Term::var(ident.0, *ty))
         {
             let expl = format!("expl:{} '{}' type invariant", fn_name, ident.0.name().to_string());

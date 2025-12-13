@@ -76,8 +76,8 @@ module M_weaken_std
     {[@expl:weaken_std 'a' type invariant] inv_A a}
     {[@expl:weaken_std requires] precondition_F f a}
     (! bb0
-    [ bb0 = s0 [ s0 = weaken_2_std_A {f} {a} (fun (_ret: t_Output) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
+    [ bb0 = s0 [ s0 = weaken_2_std_A {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
     [ return (result: t_Output) -> {[@expl:weaken_std result type invariant] inv_Output result}
       {[@expl:weaken_std ensures] postcondition_F f a result}
       (! return {result}) ]
@@ -140,8 +140,8 @@ module M_weaken_2_std
     {[@expl:weaken_2_std 'a' type invariant] inv_A a}
     {[@expl:weaken_2_std requires] precondition_F f a}
     (! bb0
-    [ bb0 = s0 [ s0 = weaken_3_std_A {f} {a} (fun (_ret: t_Output) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
+    [ bb0 = s0 [ s0 = weaken_3_std_A {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
     [ return (result: t_Output) -> {[@expl:weaken_2_std result type invariant] inv_Output result}
       {[@expl:weaken_2_std ensures] exists f2: t_F. postcondition_mut_F f a f2 result /\ resolve_F f2}
       (! return {result}) ]
@@ -179,8 +179,8 @@ module M_weaken_3_std
     {[@expl:weaken_3_std 'a' type invariant] inv_A a}
     {[@expl:weaken_3_std requires] precondition_F f a}
     (! bb0
-    [ bb0 = s0 [ s0 = call_once_F {f} {a} (fun (_ret: t_Output) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
+    [ bb0 = s0 [ s0 = call_once_F {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
     [ return (result: t_Output) -> {[@expl:weaken_3_std result type invariant] inv_Output result}
       {[@expl:weaken_3_std ensures] postcondition_once_F f a result}
       (! return {result}) ]
@@ -210,8 +210,9 @@ module M_fn_once_user
     {[@expl:fn_once_user requires] precondition_F f (0: UInt64.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- (0: UInt64.t) ] s1 | s1 = call_once_F {f} {_5} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: () = Any.any_l () | & f: t_F = f | & _5: UInt64.t = Any.any_l () ])
+      [ s0 = [ &_5 <- (0: UInt64.t) ] s1
+      | s1 = call_once_F {f} {_5} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & f: t_F = f | & _5: UInt64.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_caller
@@ -219,7 +220,7 @@ module M_caller
   use creusot.int.UInt64
   
   let rec closure0 [@coma:extspec] (self: ()) (_0: UInt64.t) (return (x: ())) = bb0
-    [ bb0 = return {_0'0} ] [ & _0'0: () = Any.any_l () ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -239,7 +240,8 @@ module M_caller
   
   let rec caller (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_1 <- () ] s1 | s1 = fn_once_user_closure0 {_1} (fun (_ret: ()) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & _1: () = Any.any_l () ])
+      [ s0 = [ &_1 <- () ] s1
+      | s1 = fn_once_user_closure0 {_1} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

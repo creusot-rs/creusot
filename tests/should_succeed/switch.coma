@@ -4,9 +4,13 @@ module M_test
   
   type t_Option_u32 = Some UInt32.t | None
   
-  let rec elim_Some (input: t_Option_u32) (ret (f0: UInt32.t)) = any
-    [ good (f0: UInt32.t) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt32.t [Some f0: t_Option_u32]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_u32) (return (f0: UInt32.t)) = any
+    [ _k (f0: UInt32.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -14,12 +18,11 @@ module M_test
   
   let rec test (o: t_Option_u32) (return (x: bool)) = (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o = Some x0} (! bb4) | br1 -> {o = None} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = bb5 ]
+    | bb3 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Some {o} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1)
-      | s1 = [ &_0 <- UInt32.gt x (0: UInt32.t) ] s2
-      | s2 = bb5 ]
-    | bb5 = return {_0} ] [ & _0: bool = Any.any_l () | & o: t_Option_u32 = o | & x: UInt32.t = Any.any_l () ])
+      | s1 = [ &_ret <- UInt32.gt x (0: UInt32.t) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & o: t_Option_u32 = o | & x: UInt32.t = Any.any_l () ])
     [ return (result: bool) -> (! return {result}) ]
 end
 module M_test2
@@ -30,9 +33,13 @@ module M_test2
   
   type tup2_Option_u32_u32 = { f0: t_Option_u32; f1: UInt32.t }
   
-  let rec elim_Some (input: t_Option_u32) (ret (f0'0: UInt32.t)) = any
-    [ good (f0'0: UInt32.t) -> {Some f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: UInt32.t [Some f0'0: t_Option_u32]. Some f0'0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_u32) (return (f0'0: UInt32.t)) = any
+    [ _k (f0'0: UInt32.t) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -40,9 +47,9 @@ module M_test2
   
   let rec test2 (o: tup2_Option_u32_u32) (return (x: UInt32.t)) = (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o.f0 = Some x0} (! bb4) | br1 -> {o.f0 = None} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_0 <- o.f1 ] s1 | s1 = bb5 ]
-    | bb4 = s0 [ s0 = elim_Some {o.f0} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- x ] s2 | s2 = bb5 ]
-    | bb5 = return {_0} ]
-    [ & _0: UInt32.t = Any.any_l () | & o: tup2_Option_u32_u32 = o | & x: UInt32.t = Any.any_l () ])
+    | bb3 = s0 [ s0 = [ &_ret <- o.f1 ] s1 | s1 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Some {o.f0} (fun (r0: UInt32.t) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l () | & o: tup2_Option_u32_u32 = o | & x: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
 end

@@ -139,12 +139,13 @@ module M_binary_search
     {[@expl:binary_search requires #0] Seq.length (view_Vec_u32_Global arr) <= UInt64.t'int const_MAX}
     {[@expl:binary_search requires #1] sorted (view_Vec_u32_Global arr)}
     (! bb0
-    [ bb0 = s0 [ s0 = len_u32 {arr} (fun (_ret: UInt64.t) -> [ &_18 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_17 <- _18 = (0: UInt64.t) ] s1 | s1 = any [ br0 -> {_17 = false} (! bb3) | br1 -> {_17} (! bb2) ] ]
-    | bb2 = s0 [ s0 = [ &_0 <- Err (0: UInt64.t) ] s1 | s1 = bb21 ]
-    | bb3 = s0 [ s0 = len_u32 {arr} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = [ &base <- (0: UInt64.t) ] s1 | s1 = bb5 ]
+    [ bb0 = s0
+      [ s0 = len_u32 {arr} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
+      | s1 = [ &_17 <- _18 = (0: UInt64.t) ] s2
+      | s2 = any [ br0 -> {_17 = false} (! bb3) | br1 -> {_17} (! bb2) ] ]
+    | bb2 = s0 [ s0 = [ &_ret <- Err (0: UInt64.t) ] s1 | s1 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = len_u32 {arr} (fun (_x: UInt64.t) -> [ &size <- _x ] s1) | s1 = [ &base <- (0: UInt64.t) ] s2 | s2 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
         /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view_Vec_u32_Global arr)}
@@ -154,41 +155,36 @@ module M_binary_search
             /\ UInt64.t'int i < Seq.length (view_Vec_u32_Global arr)
           -> UInt32.lt elem (index_Vec_u32_Global arr (UInt64.t'int i))}
         (! s0)
-        [ s0 = bb6 ]
-        [ bb6 = s0
-          [ s0 = [ &_40 <- UInt64.gt size (1: UInt64.t) ] s1
-          | s1 = any [ br0 -> {_40 = false} (! bb13) | br1 -> {_40} (! bb7) ] ]
-        | bb7 = s0
-          [ s0 = [ &_44 <- (2: UInt64.t) = (0: UInt64.t) ] s1 | s1 = {[@expl:division by zero] not _44} s2 | s2 = bb8 ]
-        | bb8 = s0
-          [ s0 = UInt64.div {size} {(2: UInt64.t)} (fun (_ret: UInt64.t) -> [ &half <- _ret ] s1)
-          | s1 = UInt64.add {base} {half} (fun (_ret: UInt64.t) -> [ &mid <- _ret ] s2)
-          | s2 = index_Vec_u32_Global'0 {arr} {mid} (fun (_ret: UInt32.t) -> [ &_51 <- _ret ] s3)
-          | s3 = bb9 ]
-        | bb9 = s0
-          [ s0 = [ &_49 <- UInt32.gt _51 elem ] s1
-          | s1 = any [ br0 -> {_49 = false} (! bb11) | br1 -> {_49} (! bb10) ] ]
+        [ s0 = [ &_40 <- UInt64.gt size (1: UInt64.t) ] s1
+        | s1 = any [ br0 -> {_40 = false} (! bb13) | br1 -> {_40} (! bb7) ] ]
+        [ bb7 = s0
+          [ s0 = [ &_44 <- (2: UInt64.t) = (0: UInt64.t) ] s1
+          | s1 = {[@expl:division by zero] not _44} s2
+          | s2 = UInt64.div {size} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &half <- _x ] s3)
+          | s3 = UInt64.add {base} {half} (fun (_x: UInt64.t) -> [ &mid <- _x ] s4)
+          | s4 = index_Vec_u32_Global'0 {arr} {mid} (fun (_x: UInt32.t) -> [ &_51 <- _x ] s5)
+          | s5 = [ &_49 <- UInt32.gt _51 elem ] s6
+          | s6 = any [ br0 -> {_49 = false} (! bb11) | br1 -> {_49} (! bb10) ] ]
         | bb10 = s0 [ s0 = [ &_48 <- base ] s1 | s1 = bb12 ]
         | bb11 = s0 [ s0 = [ &_48 <- mid ] s1 | s1 = bb12 ]
         | bb12 = s0
           [ s0 = [ &base <- _48 ] s1
-          | s1 = UInt64.sub {size} {half} (fun (_ret: UInt64.t) -> [ &size <- _ret ] s2)
+          | s1 = UInt64.sub {size} {half} (fun (_x: UInt64.t) -> [ &size <- _x ] s2)
           | s2 = bb5 ] ] ]
-    | bb13 = s0 [ s0 = index_Vec_u32_Global'0 {arr} {base} (fun (_ret: UInt32.t) -> [ &_58 <- _ret ] s1) | s1 = bb14 ]
-    | bb14 = s0
-      [ s0 = [ &cmp <- _58 ] s1
-      | s1 = [ &_61 <- cmp = elem ] s2
-      | s2 = any [ br0 -> {_61 = false} (! bb16) | br1 -> {_61} (! bb15) ] ]
-    | bb15 = s0 [ s0 = [ &_0 <- Ok base ] s1 | s1 = bb21 ]
+    | bb13 = s0
+      [ s0 = index_Vec_u32_Global'0 {arr} {base} (fun (_x: UInt32.t) -> [ &_58 <- _x ] s1)
+      | s1 = [ &cmp <- _58 ] s2
+      | s2 = [ &_61 <- cmp = elem ] s3
+      | s3 = any [ br0 -> {_61 = false} (! bb16) | br1 -> {_61} (! bb15) ] ]
+    | bb15 = s0 [ s0 = [ &_ret <- Ok base ] s1 | s1 = return {_ret} ]
     | bb16 = s0
       [ s0 = [ &_65 <- UInt32.lt cmp elem ] s1 | s1 = any [ br0 -> {_65 = false} (! bb18) | br1 -> {_65} (! bb17) ] ]
     | bb17 = s0
-      [ s0 = UInt64.add {base} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_68 <- _ret ] s1)
-      | s1 = [ &_0 <- Err _68 ] s2
-      | s2 = bb21 ]
-    | bb18 = s0 [ s0 = [ &_0 <- Err base ] s1 | s1 = bb21 ]
-    | bb21 = return {_0} ]
-    [ & _0: t_Result_usize_usize = Any.any_l ()
+      [ s0 = UInt64.add {base} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_68 <- _x ] s1)
+      | s1 = [ &_ret <- Err _68 ] s2
+      | s2 = return {_ret} ]
+    | bb18 = s0 [ s0 = [ &_ret <- Err base ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Result_usize_usize = Any.any_l ()
     | & arr: t_Vec_u32_Global = arr
     | & elem: UInt32.t = elem
     | & _17: bool = Any.any_l ()

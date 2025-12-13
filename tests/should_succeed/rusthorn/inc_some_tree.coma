@@ -31,10 +31,12 @@ module M_impl_Tree__sum_x (* Tree *)
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
-  let rec elim_Node (input: t_Tree) (ret (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
-    [ good (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = input} (! ret {f0} {f1} {f2})
-    | bad -> {forall f0: t_Tree, f1: UInt32.t, f2: t_Tree [Node f0 f1 f2: t_Tree]. Node f0 f1 f2 <> input}
-      (! {false}
+  let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+    [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
+    | _chk -> (! {match _x with
+        | Node _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   function sum (self: t_Tree) : int = match self with
@@ -57,21 +59,18 @@ module M_impl_Tree__sum_x (* Tree *)
     (! bb0
     [ bb0 = any
       [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self = Node x0 x1 x2} (! bb4) | br1 -> {self = Leaf} (! bb3) ]
-    | bb3 = s0 [ s0 = [ &_0 <- (0: UInt32.t) ] s1 | s1 = bb7 ]
+    | bb3 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tl <- r0 ] s1)
       | s1 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &a <- r1 ] s2)
       | s2 = elim_Node {self} (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) -> [ &tr <- r2 ] s3)
       | s3 = {[@expl:assertion] let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in true} s4
-      | s4 = sum_x {tl} (fun (_ret: UInt32.t) -> [ &_15 <- _ret ] s5)
-      | s5 = bb5 ]
-    | bb5 = s0
-      [ s0 = UInt32.add {_15} {a} (fun (_ret: UInt32.t) -> [ &_14 <- _ret ] s1)
-      | s1 = sum_x {tr} (fun (_ret: UInt32.t) -> [ &_18 <- _ret ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0 [ s0 = UInt32.add {_14} {_18} (fun (_ret: UInt32.t) -> [ &_0 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = return {_0} ]
-    [ & _0: UInt32.t = Any.any_l ()
+      | s4 = sum_x {tl} (fun (_x: UInt32.t) -> [ &_15 <- _x ] s5)
+      | s5 = UInt32.add {_15} {a} (fun (_x: UInt32.t) -> [ &_14 <- _x ] s6)
+      | s6 = sum_x {tr} (fun (_x: UInt32.t) -> [ &_18 <- _x ] s7)
+      | s7 = UInt32.add {_14} {_18} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s8)
+      | s8 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l ()
     | & self: t_Tree = self
     | & tl: t_Tree = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()
@@ -89,14 +88,16 @@ module M_impl_Tree__take_some (* Tree *)
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
-  predicate resolve_ref_Tree [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve_refmut_Tree [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Tree
+  meta "rewrite_def" predicate resolve_refmut_Tree
   
-  let rec elim_Node (input: t_Tree) (ret (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
-    [ good (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = input} (! ret {f0} {f1} {f2})
-    | bad -> {forall f0: t_Tree, f1: UInt32.t, f2: t_Tree [Node f0 f1 f2: t_Tree]. Node f0 f1 f2 <> input}
-      (! {false}
+  let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+    [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
+    | _chk -> (! {match _x with
+        | Node _ _ _ -> true
+        | _ -> false
+        end}
       any) ]
   
   function sum (self: t_Tree) : int = match self with
@@ -113,13 +114,13 @@ module M_impl_Tree__take_some (* Tree *)
   
   let rec random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
-  predicate resolve_ref_Box_Tree_Global [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
+  predicate resolve_refmut_Box_Tree_Global [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Box_Tree_Global
+  meta "rewrite_def" predicate resolve_refmut_Box_Tree_Global
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
   meta "compute_max_steps" 1000000
   
@@ -129,83 +130,80 @@ module M_impl_Tree__take_some (* Tree *)
     [ bb0 = any
       [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self.current = Node x0 x1 x2} (! bb4)
       | br1 -> {self.current = Leaf} (! bb3) ]
-    | bb3 = s0 [ s0 = -{resolve_ref_Tree self}- s1 | s1 = bb15 ]
+    | bb3 = s0 [ s0 = -{resolve_refmut_Tree self}- s1 | s1 = bb15 ]
     | bb15 = bb15 [ bb15 = (! bb15) ]
     | bb4 = s0
       [ s0 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <t_Tree> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-              (fun (_ret: MutBorrow.t t_Tree) ->
-                [ &mtl <- _ret ] [ &self <- { self with current = Node _ret.final r1 r2 } ] s1))
+              (fun (_bor: MutBorrow.t t_Tree) ->
+                [ &mtl <- _bor ] [ &self <- { self with current = Node _bor.final r1 r2 } ] s1))
       | s1 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <UInt32.t> {r1} {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
-              (fun (_ret: MutBorrow.t UInt32.t) ->
-                [ &ma <- _ret ] [ &self <- { self with current = Node r0 _ret.final r2 } ] s2))
+              (fun (_bor: MutBorrow.t UInt32.t) ->
+                [ &ma <- _bor ] [ &self <- { self with current = Node r0 _bor.final r2 } ] s2))
       | s2 = elim_Node {self.current}
           (fun (r0: t_Tree) (r1: UInt32.t) (r2: t_Tree) ->
             MutBorrow.borrow_final <t_Tree> {r2} {MutBorrow.inherit_id (MutBorrow.get_id self) 3}
-              (fun (_ret: MutBorrow.t t_Tree) ->
-                [ &mtr <- _ret ] [ &self <- { self with current = Node r0 r1 _ret.final } ] s3))
+              (fun (_bor: MutBorrow.t t_Tree) ->
+                [ &mtr <- _bor ] [ &self <- { self with current = Node r0 r1 _bor.final } ] s3))
       | s3 = {[@expl:assertion] let _ = lemma_sum_nonneg mtl.current in let _ = lemma_sum_nonneg mtr.current in true} s4
-      | s4 = random (fun (_ret: bool) -> [ &_18 <- _ret ] s5)
-      | s5 = bb5 ]
-    | bb5 = any [ br0 -> {_18 = false} (! bb7) | br1 -> {_18} (! bb6) ]
+      | s4 = random (fun (_x: bool) -> [ &_18 <- _x ] s5)
+      | s5 = any [ br0 -> {_18 = false} (! bb7) | br1 -> {_18} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = -{resolve_ref_Box_Tree_Global mtr}- s1
-      | s1 = -{resolve_ref_Box_Tree_Global mtl}- s2
+      [ s0 = -{resolve_refmut_Box_Tree_Global mtr}- s1
+      | s1 = -{resolve_refmut_Box_Tree_Global mtl}- s2
       | s2 = MutBorrow.borrow_final <UInt32.t> {ma.current} {MutBorrow.get_id ma}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_19 <- _ret ] [ &ma <- { ma with current = _ret.final } ] s3)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_19 <- _bor ] [ &ma <- { ma with current = _bor.final } ] s3)
       | s3 = MutBorrow.borrow_final <UInt32.t> {_19.current} {MutBorrow.get_id _19}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_17 <- _ret ] [ &_19 <- { _19 with current = _ret.final } ] s4)
-      | s4 = -{resolve_ref_u32 _19}- s5
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_17 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s4)
+      | s4 = -{resolve_refmut_u32 _19}- s5
       | s5 = bb14 ]
-    | bb7 = s0 [ s0 = -{resolve_ref_u32 ma}- s1 | s1 = random (fun (_ret: bool) -> [ &_20 <- _ret ] s2) | s2 = bb8 ]
-    | bb8 = any [ br0 -> {_20 = false} (! bb11) | br1 -> {_20} (! bb9) ]
+    | bb7 = s0
+      [ s0 = -{resolve_refmut_u32 ma}- s1
+      | s1 = random (fun (_x: bool) -> [ &_20 <- _x ] s2)
+      | s2 = any [ br0 -> {_20 = false} (! bb11) | br1 -> {_20} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = -{resolve_ref_Box_Tree_Global mtr}- s1
+      [ s0 = -{resolve_refmut_Box_Tree_Global mtr}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtl.current} {MutBorrow.get_id mtl}
-          (fun (_ret: MutBorrow.t t_Tree) -> [ &_23 <- _ret ] [ &mtl <- { mtl with current = _ret.final } ] s2)
-      | s2 = take_some {_23} (fun (_ret: MutBorrow.t UInt32.t) -> [ &_22 <- _ret ] s3)
-      | s3 = bb10 ]
-    | bb10 = s0
-      [ s0 = MutBorrow.borrow_final <UInt32.t> {_22.current} {MutBorrow.get_id _22}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_21 <- _ret ] [ &_22 <- { _22 with current = _ret.final } ] s1)
-      | s1 = -{resolve_ref_u32 _22}- s2
-      | s2 = MutBorrow.borrow_final <UInt32.t> {_21.current} {MutBorrow.get_id _21}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_17 <- _ret ] [ &_21 <- { _21 with current = _ret.final } ] s3)
-      | s3 = -{resolve_ref_u32 _21}- s4
-      | s4 = bb14 ]
+          (fun (_bor: MutBorrow.t t_Tree) -> [ &_23 <- _bor ] [ &mtl <- { mtl with current = _bor.final } ] s2)
+      | s2 = take_some {_23} (fun (_x: MutBorrow.t UInt32.t) -> [ &_22 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <UInt32.t> {_22.current} {MutBorrow.get_id _22}
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_21 <- _bor ] [ &_22 <- { _22 with current = _bor.final } ] s4)
+      | s4 = -{resolve_refmut_u32 _22}- s5
+      | s5 = MutBorrow.borrow_final <UInt32.t> {_21.current} {MutBorrow.get_id _21}
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_17 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s6)
+      | s6 = -{resolve_refmut_u32 _21}- s7
+      | s7 = bb14 ]
     | bb11 = s0
-      [ s0 = -{resolve_ref_Box_Tree_Global mtl}- s1
+      [ s0 = -{resolve_refmut_Box_Tree_Global mtl}- s1
       | s1 = MutBorrow.borrow_final <t_Tree> {mtr.current} {MutBorrow.get_id mtr}
-          (fun (_ret: MutBorrow.t t_Tree) -> [ &_25 <- _ret ] [ &mtr <- { mtr with current = _ret.final } ] s2)
-      | s2 = take_some {_25} (fun (_ret: MutBorrow.t UInt32.t) -> [ &_24 <- _ret ] s3)
-      | s3 = bb12 ]
-    | bb12 = s0
-      [ s0 = MutBorrow.borrow_final <UInt32.t> {_24.current} {MutBorrow.get_id _24}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_17 <- _ret ] [ &_24 <- { _24 with current = _ret.final } ] s1)
-      | s1 = -{resolve_ref_u32 _24}- s2
-      | s2 = bb14 ]
+          (fun (_bor: MutBorrow.t t_Tree) -> [ &_25 <- _bor ] [ &mtr <- { mtr with current = _bor.final } ] s2)
+      | s2 = take_some {_25} (fun (_x: MutBorrow.t UInt32.t) -> [ &_24 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <UInt32.t> {_24.current} {MutBorrow.get_id _24}
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_17 <- _bor ] [ &_24 <- { _24 with current = _bor.final } ] s4)
+      | s4 = -{resolve_refmut_u32 _24}- s5
+      | s5 = bb14 ]
     | bb14 = s0
       [ s0 = MutBorrow.borrow_final <UInt32.t> {_17.current} {MutBorrow.get_id _17}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_12 <- _ret ] [ &_17 <- { _17 with current = _ret.final } ] s1)
-      | s1 = -{resolve_ref_u32 _17}- s2
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_12 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s1)
+      | s1 = -{resolve_refmut_u32 _17}- s2
       | s2 = MutBorrow.borrow_final <UInt32.t> {_12.current} {MutBorrow.get_id _12}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &_12 <- { _12 with current = _ret.final } ] s3)
-      | s3 = -{resolve_ref_u32 _12}- s4
-      | s4 = -{resolve_ref_Box_Tree_Global mtr}- s5
-      | s5 = -{resolve_ref_u32 ma}- s6
-      | s6 = -{resolve_ref_Box_Tree_Global mtl}- s7
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_7 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s3)
+      | s3 = -{resolve_refmut_u32 _12}- s4
+      | s4 = -{resolve_refmut_Box_Tree_Global mtr}- s5
+      | s5 = -{resolve_refmut_u32 ma}- s6
+      | s6 = -{resolve_refmut_Box_Tree_Global mtl}- s7
       | s7 = MutBorrow.borrow_final <UInt32.t> {_7.current} {MutBorrow.get_id _7}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_2 <- _ret ] [ &_7 <- { _7 with current = _ret.final } ] s8)
-      | s8 = -{resolve_ref_u32 _7}- s9
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_2 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s8)
+      | s8 = -{resolve_refmut_u32 _7}- s9
       | s9 = MutBorrow.borrow_final <UInt32.t> {_2.current} {MutBorrow.get_id _2}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_0 <- _ret ] [ &_2 <- { _2 with current = _ret.final } ] s10)
-      | s10 = -{resolve_ref_u32 _2}- s11
-      | s11 = -{resolve_ref_Tree self}- s12
-      | s12 = return {_0} ] ]
-    [ & _0: MutBorrow.t UInt32.t = Any.any_l ()
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_ret <- _bor ] [ &_2 <- { _2 with current = _bor.final } ] s10)
+      | s10 = -{resolve_refmut_u32 _2}- s11
+      | s11 = -{resolve_refmut_Tree self}- s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: MutBorrow.t UInt32.t = Any.any_l ()
     | & self: MutBorrow.t t_Tree = self
     | & _2: MutBorrow.t UInt32.t = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
@@ -249,9 +247,9 @@ module M_inc_some_tree
       {UInt32.t'int result.current <= sum self.current}
       (! return {result}) ]
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
   meta "compute_max_steps" 1000000
   
@@ -261,24 +259,20 @@ module M_inc_some_tree
       + UInt32.t'int k
     <= 1000000}
     (! bb0
-    [ bb0 = s0 [ s0 = sum_x {t} (fun (_ret: UInt32.t) -> [ &sum0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Tree> {t}
-          (fun (_ret: MutBorrow.t t_Tree) -> [ &_9 <- _ret ] [ &t <- _ret.final ] s1)
-      | s1 = take_some {_9} (fun (_ret: MutBorrow.t UInt32.t) -> [ &ma <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt32.add {ma.current} {k} (fun (_ret: UInt32.t) -> [ &ma <- { ma with current = _ret } ] s1)
-      | s1 = -{resolve_ref_u32 ma}- s2
-      | s2 = sum_x {t} (fun (_ret: UInt32.t) -> [ &_13 <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = UInt32.add {sum0} {k} (fun (_ret: UInt32.t) -> [ &_15 <- _ret ] s1)
-      | s1 = [ &_12 <- _13 = _15 ] s2
-      | s2 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb6) ] ]
-    | bb6 = return {_0}
+    [ bb0 = s0
+      [ s0 = sum_x {t} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Tree> {t}
+          (fun (_bor: MutBorrow.t t_Tree) -> [ &_9 <- _bor ] [ &t <- _bor.final ] s2)
+      | s2 = take_some {_9} (fun (_x: MutBorrow.t UInt32.t) -> [ &ma <- _x ] s3)
+      | s3 = UInt32.add {ma.current} {k} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s4)
+      | s4 = -{resolve_refmut_u32 ma}- s5
+      | s5 = sum_x {t} (fun (_x: UInt32.t) -> [ &_13 <- _x ] s6)
+      | s6 = UInt32.add {sum0} {k} (fun (_x: UInt32.t) -> [ &_15 <- _x ] s7)
+      | s7 = [ &_12 <- _13 = _15 ] s8
+      | s8 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb6) ] ]
+    | bb6 = return {_ret}
     | bb5 = {false} any ]
-    [ & _0: () = Any.any_l ()
+    [ & _ret: () = Any.any_l ()
     | & t: t_Tree = t
     | & k: UInt32.t = k
     | & sum0: UInt32.t = Any.any_l ()

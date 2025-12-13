@@ -193,18 +193,18 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   
   axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
   
-  predicate invariant_ref_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
+  predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
     inv_Repeat_A self.current /\ inv_Repeat_A self.final
   
-  meta "rewrite_def" predicate invariant_ref_Repeat_A
+  meta "rewrite_def" predicate invariant_refmut_Repeat_A
   
-  predicate inv_ref_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_ref_Repeat_A _1
+  predicate inv_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_refmut_Repeat_A _1
   
-  meta "rewrite_def" predicate inv_ref_Repeat_A
+  meta "rewrite_def" predicate inv_refmut_Repeat_A
   
-  predicate resolve_ref_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = _1.final = _1.current
+  predicate resolve_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Repeat_A
+  meta "rewrite_def" predicate resolve_refmut_Repeat_A
   
   predicate invariant_ref_A [@inline:trivial] (self: t_A) = inv_A self
   
@@ -304,16 +304,15 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Repeat_A (self: MutBorrow.t t_Repeat_A) (return (x: t_Option_A)) =
-    {[@expl:next 'self' type invariant] inv_ref_Repeat_A self}
+    {[@expl:next 'self' type invariant] inv_refmut_Repeat_A self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Repeat_A self} s1
-      | s1 = -{resolve_ref_Repeat_A self}- s2
-      | s2 = clone_A {self.current.element} (fun (_ret: t_A) -> [ &_4 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- Some _4 ] s1 | s1 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Repeat_A self} any) ]
+      | s1 = -{resolve_refmut_Repeat_A self}- s2
+      | s2 = clone_A {self.current.element} (fun (_x: t_A) -> [ &_4 <- _x ] s3)
+      | s3 = [ &_ret <- Some _4 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
     [ return (result: t_Option_A) -> {[@expl:next result type invariant] inv_Option_A result}
       {[@expl:next ensures] match result with
         | None -> completed_Repeat_A self
@@ -418,14 +417,14 @@ module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iter
   
   axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
   
-  predicate invariant_ref_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
+  predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
     inv_Repeat_A self.current /\ inv_Repeat_A self.final
   
-  meta "rewrite_def" predicate invariant_ref_Repeat_A
+  meta "rewrite_def" predicate invariant_refmut_Repeat_A
   
-  predicate inv_ref_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_ref_Repeat_A _1
+  predicate inv_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_refmut_Repeat_A _1
   
-  meta "rewrite_def" predicate inv_ref_Repeat_A
+  meta "rewrite_def" predicate inv_refmut_Repeat_A
   
   type t_Option_A = None | Some t_A
   
@@ -508,8 +507,8 @@ module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iter
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Repeat_A. inv_ref_Repeat_A self
-      -> inv_ref_Repeat_A self
+  goal refines: forall self: MutBorrow.t t_Repeat_A. inv_refmut_Repeat_A self
+      -> inv_refmut_Repeat_A self
       /\ (forall result: t_Option_A. inv_Option_A result
           /\ match result with
             | None -> completed_Repeat_A self

@@ -19,9 +19,10 @@ module M_mk_s
   meta "select_lsinst" "all"
   
   let rec mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
-    [ bb0 = s0 [ s0 = null_T (fun (_ret: Opaque.ptr) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- { f0 = t; f1 = _6 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2
+      | s2 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
     [ return (result: t_S_T) -> {[@expl:mk_s result type invariant] inv_S_T result}
       {[@expl:mk_s ensures] result.f0 = t}
       (! return {result}) ]
@@ -47,8 +48,10 @@ module M_evil
   meta "select_lsinst" "all"
   
   let rec evil (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = mk_s_i32 {(1: Int32.t)} (fun (_ret: t_S_i32) -> [ &_s <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_S_i32 _s} s1 | s1 = {[@expl:assertion] false} s2 | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & _s: t_S_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0
+      [ s0 = mk_s_i32 {(1: Int32.t)} (fun (_x: t_S_i32) -> [ &_s <- _x ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_S_i32 _s} any) ]
+      | s2 = {[@expl:assertion] false} s3
+      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _s: t_S_i32 = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

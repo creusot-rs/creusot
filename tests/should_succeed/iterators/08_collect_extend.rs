@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{invariant::inv, logic::Seq, prelude::*};
+use creusot_contracts::{logic::Seq, prelude::*};
 
 // Modeling `extend`.
 //
@@ -20,7 +20,6 @@ use creusot_contracts::{invariant::inv, logic::Seq, prelude::*};
 pub fn extend<T, I: IteratorSpec<Item = T>>(vec: &mut Vec<T>, iter: I) {
     let old_vec = snapshot! { vec };
 
-    #[invariant(inv(vec))]
     #[invariant(vec@.ext_eq(old_vec@.concat(*produced)))]
     for x in iter {
         vec.push(x);
@@ -38,7 +37,6 @@ pub fn extend<T, I: IteratorSpec<Item = T>>(vec: &mut Vec<T>, iter: I) {
 pub fn collect<I: IteratorSpec>(iter: I) -> Vec<I::Item> {
     let mut res = Vec::new();
 
-    #[invariant(inv(res))]
     #[invariant(res@.ext_eq(*produced))]
     for x in iter {
         res.push(x);

@@ -2,9 +2,9 @@ module M_impl_MachineTrait_for_Machine__step (* <Machine as MachineTrait> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  predicate resolve_ref_Machine [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  predicate resolve_refmut_Machine [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Machine
+  meta "rewrite_def" predicate resolve_refmut_Machine
   
   predicate invariants_Machine (self: ()) = true
   
@@ -19,11 +19,11 @@ module M_impl_MachineTrait_for_Machine__step (* <Machine as MachineTrait> *)
     {[@expl:step requires] invariants_Machine self.current}
     (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve_ref_Machine self}- s1
-      | s1 = transition {self.current} (fun (_ret: ()) -> [ &_6 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = return {_0} ] ]
-    [ & _0: bool = Any.any_l () | & self: MutBorrow.t () = self | & _6: () = Any.any_l () ])
+      [ s0 = -{resolve_refmut_Machine self}- s1
+      | s1 = transition {self.current} (fun (_x: ()) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- false ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: MutBorrow.t () = self | & _6: () = Any.any_l () ])
     [ return (result: bool) -> {[@expl:step ensures] invariants_Machine self.final} (! return {result}) ]
 end
 module M_impl_Machine__transition (* Machine *)
@@ -37,7 +37,7 @@ module M_impl_Machine__transition (* Machine *)
   
   let rec transition (self: ()) (return (x: ())) = {[@expl:transition requires] invariants_Machine self}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- () ] s1 | s1 = return {_0} ] ] [ & _0: () = Any.any_l () ])
+    [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_MachineTrait_for_Machine__step__refines (* <Machine as MachineTrait> *)

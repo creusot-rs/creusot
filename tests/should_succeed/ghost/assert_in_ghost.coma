@@ -12,10 +12,9 @@ module M_ghost_only
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = {[@expl:assertion] x = (1: Int32.t)} s2
-      | s2 = new_unit {_2} (fun (_ret: ()) -> [ &_1 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () | & x: Int32.t = Any.any_l () ])
+      | s2 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () | & x: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_capture
@@ -33,10 +32,9 @@ module M_ghost_capture
       [ s0 = [ &x <- (42: Int32.t) ] s1
       | s1 = [ &y <- x ] s2
       | s2 = {[@expl:assertion] y = (42: Int32.t)} s3
-      | s3 = new_unit {_3} (fun (_ret: ()) -> [ &_2 <- _ret ] s4)
-      | s4 = bb1 ]
-    | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s3 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _3: () = Any.any_l ()
@@ -55,9 +53,9 @@ module M_ghost_mutate
   let rec deref_mut_Ghost_tup2_i32_i32 (self: MutBorrow.t tup2_i32_i32) (return (x: MutBorrow.t tup2_i32_i32)) = any
     [ return (result: MutBorrow.t tup2_i32_i32) -> {result = self} (! return {result}) ]
   
-  predicate resolve_ref_tup2_i32_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_i32) = _1.final = _1.current
+  predicate resolve_refmut_tup2_i32_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_tup2_i32_i32
+  meta "rewrite_def" predicate resolve_refmut_tup2_i32_i32
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -68,25 +66,18 @@ module M_ghost_mutate
   let rec ghost_mutate (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (2: Int32.t); f1 = (3: Int32.t) } ] s1
-      | s1 = new_tup2_i32_i32 {_2} (fun (_ret: tup2_i32_i32) -> [ &p <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <tup2_i32_i32> {p}
-          (fun (_ret: MutBorrow.t tup2_i32_i32) -> [ &_6 <- _ret ] [ &p <- _ret.final ] s1)
-      | s1 = deref_mut_Ghost_tup2_i32_i32 {_6} (fun (_ret: MutBorrow.t tup2_i32_i32) -> [ &_5 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_5 <- { _5 with current = { _5.current with f0 = (4: Int32.t) } } ] s1
-      | s1 = -{resolve_ref_tup2_i32_i32 _5}- s2
-      | s2 = new_unit {_4} (fun (_ret: ()) -> [ &_3 <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0
-      [ s0 = {[@expl:assertion] p.f0 = (4: Int32.t)} s1
-      | s1 = {[@expl:assertion] p.f1 = (3: Int32.t)} s2
-      | s2 = new_unit {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s3)
-      | s3 = bb4 ]
-    | bb4 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s1 = new_tup2_i32_i32 {_2} (fun (_x: tup2_i32_i32) -> [ &p <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <tup2_i32_i32> {p}
+          (fun (_bor: MutBorrow.t tup2_i32_i32) -> [ &_6 <- _bor ] [ &p <- _bor.final ] s3)
+      | s3 = deref_mut_Ghost_tup2_i32_i32 {_6} (fun (_x: MutBorrow.t tup2_i32_i32) -> [ &_5 <- _x ] s4)
+      | s4 = [ &_5 <- { _5 with current = { _5.current with f0 = (4: Int32.t) } } ] s5
+      | s5 = -{resolve_refmut_tup2_i32_i32 _5}- s6
+      | s6 = new_unit {_4} (fun (_x: ()) -> [ &_3 <- _x ] s7)
+      | s7 = {[@expl:assertion] p.f0 = (4: Int32.t)} s8
+      | s8 = {[@expl:assertion] p.f1 = (3: Int32.t)} s9
+      | s9 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s10)
+      | s10 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & p: tup2_i32_i32 = Any.any_l ()
     | & _2: tup2_i32_i32 = Any.any_l ()
     | & _3: () = Any.any_l ()

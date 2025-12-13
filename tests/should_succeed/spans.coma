@@ -10,13 +10,13 @@ module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   
   let rec foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) = {[@expl:foo requires] [%#sspans] x /\ x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () | & x: bool = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: bool = x ])
     [ return (result: bool) -> {[@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
 end
 module M_bar [#"spans.rs" 24 0 24 33]
   let%span sspans = "spans.rs" 25 14 25 16
-  let%span sspans'0 = "spans.rs" 26 16 26 23
-  let%span sspans'1 = "spans.rs" 27 10 27 11
+  let%span sspans'0 = "spans.rs" 27 10 27 11
+  let%span sspans'1 = "spans.rs" 26 16 26 23
   let%span sspans'2 = "spans.rs" 28 13 28 14
   let%span sspans'3 = "spans.rs" 28 8 28 14
   let%span sspans'4 = "spans.rs" 23 11 23 18
@@ -38,20 +38,17 @@ module M_bar [#"spans.rs" 24 0 24 33]
   let rec bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:bar requires] [%#sspans'4] UInt64.t'int i <= 0}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = bb1invariant
-      [ bb1 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i)} bb1invariant
-      | bb1invariant = {[@expl:loop invariant] [%#sspans'0] UInt64.t'int i <= 0}
+    [ bb0 = bb0invariant
+      [ bb0 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i)} bb0invariant
+      | bb0invariant = {[@expl:loop invariant] [%#sspans'1] UInt64.t'int i <= 0}
         (! [ &variant_old_bb1 <- [%#sspans] UInt64.t'int i ] s0)
-        [ s0 = bb2 ]
-        [ bb2 = s0
-          [ s0 = [ &_11 <- UInt64.lt ([%#sspans'1] (0: UInt64.t)) i ] s1
-          | s1 = any [ br0 -> {_11 = false} (! bb4) | br1 -> {_11} (! bb3) ] ]
-        | bb3 = s0
-          [ s0 = UInt64.sub [%#sspans'3] {i} {[%#sspans'2] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &i <- _ret ] s1)
-          | s1 = bb1 ] ] ]
-    | bb4 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l ()
+        [ s0 = [ &_11 <- UInt64.lt ([%#sspans'0] (0: UInt64.t)) i ] s1
+        | s1 = any [ br0 -> {_11 = false} (! bb4) | br1 -> {_11} (! bb3) ] ]
+        [ bb3 = s0
+          [ s0 = UInt64.sub [%#sspans'3] {i} {[%#sspans'2] (1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s1)
+          | s1 = bb0 ] ] ]
+    | bb4 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & i: UInt64.t = i
     | & _11: bool = Any.any_l ()
     | & variant_old_bb1: int = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
@@ -116,11 +113,11 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
     {[@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_NonNeg self} s1
-      | s1 = UInt64.sub [%#sspans'0] {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_6 <- _ret ] s2)
-      | s2 = [ &_0 <- { f0 = _6 } ] s3
-      | s3 = return {_0} ] ]
-    [ & _0: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _6: UInt64.t = Any.any_l () ])
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_NonNeg self} any) ]
+      | s1 = UInt64.sub [%#sspans'0] {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _6 } ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _6: UInt64.t = Any.any_l () ])
     [ return (result: t_NonNeg) -> {[@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result}
       {[@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
       (! return {result}) ]
@@ -176,14 +173,15 @@ module M_quux [#"spans.rs" 68 0 68 32]
     [ bb0 = s0
       [ s0 = [ &_6 <- i.f0 = ([%#sspans] (0: UInt64.t)) ] s1
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = bb5 ]
-    | bb2 = s0 [ s0 = decr [%#sspans'0] {i} (fun (_ret: t_NonNeg) -> [ &_8 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = quux [%#sspans'1] {_8} (fun (_ret: t_NonNeg) -> [ &_0 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = return {_0} ]
-    [ & _0: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _6: bool = Any.any_l () | & _8: t_NonNeg = Any.any_l () ]
-    [ quux (i: t_NonNeg) (_ret (_r: t_NonNeg)) ->
+    | bb1 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = decr [%#sspans'0] {i} (fun (_x: t_NonNeg) -> [ &_8 <- _x ] s1)
+      | s1 = quux [%#sspans'1] {_8} (fun (_x: t_NonNeg) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _6: bool = Any.any_l () | & _8: t_NonNeg = Any.any_l () ]
+    [ quux (i: t_NonNeg) (_k (_ret: t_NonNeg)) ->
     {[@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'2] UInt64.t'int i.f0)}
-      quux {i} (_ret) ] [ function_variant: int = [%#sspans'2] UInt64.t'int i.f0 ])
+      quux {i} (_k) ] [ function_variant: int = [%#sspans'2] UInt64.t'int i.f0 ])
     [ return (result: t_NonNeg) -> {[@expl:quux result type invariant] [%#sspans'5] inv_NonNeg result}
       (! return {result}) ]
 end

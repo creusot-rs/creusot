@@ -1,8 +1,8 @@
 module M_reverse_ghost
   use seq.Seq
   use mach.int.Int
-  use seq.Reverse
   use creusot.prelude.MutBorrow
+  use seq.Reverse
   use creusot.prelude.Any
   
   type t_T
@@ -53,6 +53,25 @@ module M_reverse_ghost
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
+  type t_Option_T = None | Some t_T
+  
+  predicate invariant_refmut_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
+    inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_SeqIter_T
+  
+  predicate inv_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_refmut_SeqIter_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_SeqIter_T
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
   predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
     view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
   
@@ -66,29 +85,10 @@ module M_reverse_ghost
   
   axiom produces_refl_SeqIter_T_spec: forall self: t_SeqIter_T. produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
   
-  type t_Option_T = None | Some t_T
-  
-  predicate invariant_ref_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
-    inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
-  
-  meta "rewrite_def" predicate invariant_ref_SeqIter_T
-  
-  predicate inv_ref_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_ref_SeqIter_T _1
-  
-  meta "rewrite_def" predicate inv_ref_SeqIter_T
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
   predicate completed_SeqIter_T (self: MutBorrow.t t_SeqIter_T) = view_SeqIter_T self.current = (Seq.empty: Seq.seq t_T)
   
   let rec next_SeqIter_T (self: MutBorrow.t t_SeqIter_T) (return (x: t_Option_T)) =
-    {[@expl:next 'self' type invariant] inv_ref_SeqIter_T self}
+    {[@expl:next 'self' type invariant] inv_refmut_SeqIter_T self}
     any
     [ return (result: t_Option_T) -> {inv_Option_T result}
       {match result with
@@ -97,29 +97,33 @@ module M_reverse_ghost
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = _1.final = _1.current
+  predicate resolve_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_SeqIter_T
+  meta "rewrite_def" predicate resolve_refmut_SeqIter_T
   
-  let rec elim_Some (input: t_Option_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_T self.current /\ inv_Seq_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_T
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
   
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_ref_Seq_T _1
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_T
+  meta "rewrite_def" predicate inv_refmut_Seq_T
   
   function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
   meta "rewrite_def" function push_front_T
   
   let rec push_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-    {[@expl:push_front_ghost 'self' type invariant] inv_ref_Seq_T self}
+    {[@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
     {[@expl:push_front_ghost 'x' type invariant] inv_T x}
     any [ return (result: ()) -> {self.final = push_front_T self.current x} (! return {result}) ]
   
@@ -163,57 +167,51 @@ module M_reverse_ghost
   let rec reverse_ghost_T (s: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:reverse_ghost 's' type invariant] inv_Ghost_Seq_T s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &len <- Seq.length s ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new_T (fun (_ret: Seq.seq t_T) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = into_inner_Seq_T {_9} (fun (_ret: Seq.seq t_T) -> [ &result <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = into_inner_Seq_T {s} (fun (_ret: Seq.seq t_T) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = into_iter_Seq_T {_12} (fun (_ret: t_SeqIter_T) -> [ &iter <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ]
+    [ bb0 = s0
+      [ s0 = [ &len <- Seq.length s ] s1
+      | s1 = new_T (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
+      | s2 = into_inner_Seq_T {_9} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
+      | s3 = into_inner_Seq_T {s} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
+      | s4 = into_iter_Seq_T {_12} (fun (_x: t_SeqIter_T) -> [ &iter <- _x ] s5)
+      | s5 = [ &iter_old <- iter ] s6
+      | s6 = [ &produced <- Seq.empty: Seq.seq t_T ] s7
+      | s7 = bb8 ]
     | bb8 = bb8invariant
       [ bb8 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb8 (len - Seq.length produced)} bb8invariant
-      | bb8invariant = {[@expl:for invariant] inv_Seq_T produced}
-        {[@expl:for invariant] inv_SeqIter_T iter}
+      | bb8invariant = {[@expl:inferred invariant: type invariant] inv_Seq_T result}
+        {[@expl:inferred invariant: type invariant] inv_SeqIter_T iter}
+        {[@expl:for invariant] inv_Seq_T produced}
         {[@expl:for invariant] produces_SeqIter_T iter_old produced iter}
         {[@expl:loop invariant] result = Reverse.reverse produced}
         (! [ &variant_old_bb8 <- len - Seq.length produced ] s0)
-        [ s0 = bb9 ]
-        [ bb9 = s0
-          [ s0 = {inv_SeqIter_T iter}
-            MutBorrow.borrow_mut <t_SeqIter_T> {iter}
-              (fun (_ret: MutBorrow.t t_SeqIter_T) ->
-                [ &_37 <- _ret ] -{inv_SeqIter_T _ret.final}-
-                [ &iter <- _ret.final ] s1)
-          | s1 = {inv_SeqIter_T _37.current}
-            MutBorrow.borrow_final <t_SeqIter_T> {_37.current} {MutBorrow.get_id _37}
-              (fun (_ret: MutBorrow.t t_SeqIter_T) ->
-                [ &_36 <- _ret ] -{inv_SeqIter_T _ret.final}-
-                [ &_37 <- { _37 with current = _ret.final } ] s2)
-          | s2 = next_SeqIter_T {_36} (fun (_ret: t_Option_T) -> [ &_35 <- _ret ] s3)
-          | s3 = bb10 ]
-        | bb10 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_SeqIter_T _37} s1
-          | s1 = -{resolve_ref_SeqIter_T _37}- s2
-          | s2 = any [ br0 -> {_35 = None} (! bb13) | br1 (x0: t_T) -> {_35 = Some x0} (! bb14) ] ]
-        | bb14 = s0
-          [ s0 = elim_Some {_35} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_40 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb15 ]
-        | bb15 = s0
-          [ s0 = [ &produced <- _40 ] s1
-          | s1 = [ &x <- __creusot_proc_iter_elem ] s2
-          | s2 = {inv_Seq_T result}
-            MutBorrow.borrow_mut <Seq.seq t_T> {result}
-              (fun (_ret: MutBorrow.t (Seq.seq t_T)) ->
-                [ &_46 <- _ret ] -{inv_Seq_T _ret.final}-
-                [ &result <- _ret.final ] s3)
-          | s3 = push_front_ghost_T {_46} {x} (fun (_ret: ()) -> [ &_45 <- _ret ] s4)
-          | s4 = bb8 ] ] ]
+        [ s0 = MutBorrow.borrow_mut <t_SeqIter_T> {iter}
+            (fun (_bor: MutBorrow.t t_SeqIter_T) ->
+              [ &_35 <- _bor ] -{inv_SeqIter_T _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_SeqIter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_SeqIter_T> {_35.current} {MutBorrow.get_id _35}
+            (fun (_bor: MutBorrow.t t_SeqIter_T) ->
+              [ &_34 <- _bor ] -{inv_SeqIter_T _bor.final}-
+              [ &_35 <- { _35 with current = _bor.final } ] s2) [ _ck -> (! {inv_SeqIter_T _35.current} any) ]
+        | s2 = next_SeqIter_T {_34} (fun (_x: t_Option_T) -> [ &_33 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIter_T _35} any) ]
+        | s4 = -{resolve_refmut_SeqIter_T _35}- s5
+        | s5 = any [ br0 -> {_33 = None} (! bb13) | br1 (x0: t_T) -> {_33 = Some x0} (! bb14) ] ]
+        [ bb14 = s0
+          [ s0 = elim_Some {_33} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &x <- __creusot_proc_iter_elem ] s3
+          | s3 = MutBorrow.borrow_mut <Seq.seq t_T> {result}
+              (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+                [ &_44 <- _bor ] -{inv_Seq_T _bor.final}-
+                [ &result <- _bor.final ] s4) [ _ck -> (! {inv_Seq_T result} any) ]
+          | s4 = push_front_ghost_T {_44} {x} (fun (_x: ()) -> [ &_43 <- _x ] s5)
+          | s5 = bb8 ] ] ]
     | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv_SeqIter_T iter} s1 | s1 = -{resolve_SeqIter_T'0 iter}- s2 | s2 = bb20 ]
-    | bb20 = s0 [ s0 = new_Seq_T {result} (fun (_ret: Seq.seq t_T) -> [ &_0 <- _ret ] s1) | s1 = bb21 ]
-    | bb21 = return {_0} ]
-    [ & _0: Seq.seq t_T = Any.any_l ()
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_SeqIter_T iter} any) ]
+      | s1 = -{resolve_SeqIter_T'0 iter}- s2
+      | s2 = new_Seq_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s
     | & len: int = Any.any_l ()
     | & result: Seq.seq t_T = Any.any_l ()
@@ -222,14 +220,13 @@ module M_reverse_ghost
     | & _12: Seq.seq t_T = Any.any_l ()
     | & iter_old: t_SeqIter_T = Any.any_l ()
     | & produced: Seq.seq t_T = Any.any_l ()
-    | & _35: t_Option_T = Any.any_l ()
-    | & _36: MutBorrow.t t_SeqIter_T = Any.any_l ()
-    | & _37: MutBorrow.t t_SeqIter_T = Any.any_l ()
+    | & _33: t_Option_T = Any.any_l ()
+    | & _34: MutBorrow.t t_SeqIter_T = Any.any_l ()
+    | & _35: MutBorrow.t t_SeqIter_T = Any.any_l ()
     | & __creusot_proc_iter_elem: t_T = Any.any_l ()
-    | & _40: Seq.seq t_T = Any.any_l ()
     | & x: t_T = Any.any_l ()
-    | & _45: () = Any.any_l ()
-    | & _46: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _43: () = Any.any_l ()
+    | & _44: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
     | & variant_old_bb8: int = Any.any_l () ])
     [ return (result: Seq.seq t_T) -> {[@expl:reverse_ghost result type invariant] inv_Ghost_Seq_T result}
       {[@expl:reverse_ghost ensures] result = Reverse.reverse s}
@@ -238,8 +235,8 @@ end
 module M_reverse_ghost_ref
   use seq.Seq
   use mach.int.Int
-  use seq.Reverse
   use creusot.prelude.MutBorrow
+  use seq.Reverse
   use creusot.prelude.Any
   
   type t_T
@@ -342,6 +339,26 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate invariant_refmut_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
+    inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_SeqIterRef_T
+  
+  predicate inv_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) =
+    invariant_refmut_SeqIterRef_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_SeqIterRef_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
   predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
     let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
   
@@ -356,30 +373,11 @@ module M_reverse_ghost_ref
   axiom produces_refl_SeqIterRef_T_spec:
     forall self: t_SeqIterRef_T. produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
   
-  type t_Option_ref_T = None | Some t_T
-  
-  predicate invariant_ref_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
-    inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
-  
-  meta "rewrite_def" predicate invariant_ref_SeqIterRef_T
-  
-  predicate inv_ref_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = invariant_ref_SeqIterRef_T _1
-  
-  meta "rewrite_def" predicate inv_ref_SeqIterRef_T
-  
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_ref_T f0
-        end
-  
   predicate completed_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) =
     view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)
   
   let rec next_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) (return (x: t_Option_ref_T)) =
-    {[@expl:next 'self' type invariant] inv_ref_SeqIterRef_T self}
+    {[@expl:next 'self' type invariant] inv_refmut_SeqIterRef_T self}
     any
     [ return (result: t_Option_ref_T) -> {inv_Option_ref_T result}
       {match result with
@@ -388,29 +386,33 @@ module M_reverse_ghost_ref
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = _1.final = _1.current
+  predicate resolve_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_SeqIterRef_T
+  meta "rewrite_def" predicate resolve_refmut_SeqIterRef_T
   
-  let rec elim_Some (input: t_Option_ref_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_ref_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  predicate invariant_refmut_Seq_ref_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
     inv_Seq_ref_T self.current /\ inv_Seq_ref_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
+  meta "rewrite_def" predicate invariant_refmut_Seq_ref_T
   
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_ref_Seq_ref_T _1
+  predicate inv_refmut_Seq_ref_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_ref_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
+  meta "rewrite_def" predicate inv_refmut_Seq_ref_T
   
   function push_front_ref_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
   meta "rewrite_def" function push_front_ref_T
   
   let rec push_front_ghost_ref_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-    {[@expl:push_front_ghost 'self' type invariant] inv_ref_Seq_ref_T self}
+    {[@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_ref_T self}
     {[@expl:push_front_ghost 'x' type invariant] inv_ref_T x}
     any [ return (result: ()) -> {self.final = push_front_ref_T self.current x} (! return {result}) ]
   
@@ -426,59 +428,51 @@ module M_reverse_ghost_ref
   let rec reverse_ghost_ref_T (s: Seq.seq t_T) (return (x: Seq.seq t_T)) =
     {[@expl:reverse_ghost_ref 's' type invariant] inv_Ghost_ref_Seq_T s}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &len <- Seq.length s ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = new_ref_T (fun (_ret: Seq.seq t_T) -> [ &_9 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = into_inner_Seq_ref_T {_9} (fun (_ret: Seq.seq t_T) -> [ &result <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = into_inner_ref_Seq_T {s} (fun (_ret: Seq.seq t_T) -> [ &_12 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = into_iter_ref_Seq_T {_12} (fun (_ret: t_SeqIterRef_T) -> [ &iter <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb6 ]
-    | bb6 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq t_T ] s1 | s1 = bb8 ]
+    [ bb0 = s0
+      [ s0 = [ &len <- Seq.length s ] s1
+      | s1 = new_ref_T (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
+      | s2 = into_inner_Seq_ref_T {_9} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
+      | s3 = into_inner_ref_Seq_T {s} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
+      | s4 = into_iter_ref_Seq_T {_12} (fun (_x: t_SeqIterRef_T) -> [ &iter <- _x ] s5)
+      | s5 = [ &iter_old <- iter ] s6
+      | s6 = [ &produced <- Seq.empty: Seq.seq t_T ] s7
+      | s7 = bb8 ]
     | bb8 = bb8invariant
       [ bb8 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb8 (len - Seq.length produced)} bb8invariant
-      | bb8invariant = {[@expl:for invariant] inv_Seq_ref_T produced}
-        {[@expl:for invariant] inv_SeqIterRef_T iter}
+      | bb8invariant = {[@expl:inferred invariant: type invariant] inv_Seq_ref_T result}
+        {[@expl:inferred invariant: type invariant] inv_SeqIterRef_T iter}
+        {[@expl:for invariant] inv_Seq_ref_T produced}
         {[@expl:for invariant] produces_SeqIterRef_T iter_old produced iter}
         {[@expl:loop invariant] result = Reverse.reverse produced}
         (! [ &variant_old_bb8 <- len - Seq.length produced ] s0)
-        [ s0 = bb9 ]
-        [ bb9 = s0
-          [ s0 = {inv_SeqIterRef_T iter}
-            MutBorrow.borrow_mut <t_SeqIterRef_T> {iter}
-              (fun (_ret: MutBorrow.t t_SeqIterRef_T) ->
-                [ &_37 <- _ret ] -{inv_SeqIterRef_T _ret.final}-
-                [ &iter <- _ret.final ] s1)
-          | s1 = {inv_SeqIterRef_T _37.current}
-            MutBorrow.borrow_final <t_SeqIterRef_T> {_37.current} {MutBorrow.get_id _37}
-              (fun (_ret: MutBorrow.t t_SeqIterRef_T) ->
-                [ &_36 <- _ret ] -{inv_SeqIterRef_T _ret.final}-
-                [ &_37 <- { _37 with current = _ret.final } ] s2)
-          | s2 = next_SeqIterRef_T {_36} (fun (_ret: t_Option_ref_T) -> [ &_35 <- _ret ] s3)
-          | s3 = bb10 ]
-        | bb10 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_SeqIterRef_T _37} s1
-          | s1 = -{resolve_ref_SeqIterRef_T _37}- s2
-          | s2 = any [ br0 -> {_35 = None} (! bb13) | br1 (x0: t_T) -> {_35 = Some x0} (! bb14) ] ]
-        | bb14 = s0
-          [ s0 = elim_Some {_35} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_40 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb15 ]
-        | bb15 = s0
-          [ s0 = [ &produced <- _40 ] s1
-          | s1 = [ &x <- __creusot_proc_iter_elem ] s2
-          | s2 = {inv_Seq_ref_T result}
-            MutBorrow.borrow_mut <Seq.seq t_T> {result}
-              (fun (_ret: MutBorrow.t (Seq.seq t_T)) ->
-                [ &_46 <- _ret ] -{inv_Seq_ref_T _ret.final}-
-                [ &result <- _ret.final ] s3)
-          | s3 = push_front_ghost_ref_T {_46} {x} (fun (_ret: ()) -> [ &_45 <- _ret ] s4)
-          | s4 = bb8 ] ] ]
+        [ s0 = MutBorrow.borrow_mut <t_SeqIterRef_T> {iter}
+            (fun (_bor: MutBorrow.t t_SeqIterRef_T) ->
+              [ &_35 <- _bor ] -{inv_SeqIterRef_T _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_SeqIterRef_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_SeqIterRef_T> {_35.current} {MutBorrow.get_id _35}
+            (fun (_bor: MutBorrow.t t_SeqIterRef_T) ->
+              [ &_34 <- _bor ] -{inv_SeqIterRef_T _bor.final}-
+              [ &_35 <- { _35 with current = _bor.final } ] s2) [ _ck -> (! {inv_SeqIterRef_T _35.current} any) ]
+        | s2 = next_SeqIterRef_T {_34} (fun (_x: t_Option_ref_T) -> [ &_33 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIterRef_T _35} any) ]
+        | s4 = -{resolve_refmut_SeqIterRef_T _35}- s5
+        | s5 = any [ br0 -> {_33 = None} (! bb13) | br1 (x0: t_T) -> {_33 = Some x0} (! bb14) ] ]
+        [ bb14 = s0
+          [ s0 = elim_Some {_33} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &x <- __creusot_proc_iter_elem ] s3
+          | s3 = MutBorrow.borrow_mut <Seq.seq t_T> {result}
+              (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+                [ &_44 <- _bor ] -{inv_Seq_ref_T _bor.final}-
+                [ &result <- _bor.final ] s4) [ _ck -> (! {inv_Seq_ref_T result} any) ]
+          | s4 = push_front_ghost_ref_T {_44} {x} (fun (_x: ()) -> [ &_43 <- _x ] s5)
+          | s5 = bb8 ] ] ]
     | bb13 = s0
-      [ s0 = {[@expl:type invariant] inv_SeqIterRef_T iter} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_SeqIterRef_T iter} any) ]
       | s1 = -{resolve_SeqIterRef_T iter}- s2
-      | s2 = new_Seq_ref_T {result} (fun (_ret: Seq.seq t_T) -> [ &_0 <- _ret ] s3)
-      | s3 = bb17 ]
-    | bb17 = return {_0} ]
-    [ & _0: Seq.seq t_T = Any.any_l ()
+      | s2 = new_Seq_ref_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s
     | & len: int = Any.any_l ()
     | & result: Seq.seq t_T = Any.any_l ()
@@ -487,14 +481,13 @@ module M_reverse_ghost_ref
     | & _12: Seq.seq t_T = Any.any_l ()
     | & iter_old: t_SeqIterRef_T = Any.any_l ()
     | & produced: Seq.seq t_T = Any.any_l ()
-    | & _35: t_Option_ref_T = Any.any_l ()
-    | & _36: MutBorrow.t t_SeqIterRef_T = Any.any_l ()
-    | & _37: MutBorrow.t t_SeqIterRef_T = Any.any_l ()
+    | & _33: t_Option_ref_T = Any.any_l ()
+    | & _34: MutBorrow.t t_SeqIterRef_T = Any.any_l ()
+    | & _35: MutBorrow.t t_SeqIterRef_T = Any.any_l ()
     | & __creusot_proc_iter_elem: t_T = Any.any_l ()
-    | & _40: Seq.seq t_T = Any.any_l ()
     | & x: t_T = Any.any_l ()
-    | & _45: () = Any.any_l ()
-    | & _46: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _43: () = Any.any_l ()
+    | & _44: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
     | & variant_old_bb8: int = Any.any_l () ])
     [ return (result: Seq.seq t_T) -> {[@expl:reverse_ghost_ref result type invariant] inv_Ghost_Seq_ref_T result}
       {[@expl:reverse_ghost_ref ensures] result = Reverse.reverse s}

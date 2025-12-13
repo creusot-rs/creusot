@@ -2,11 +2,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    invariant::{Invariant, inv},
-    logic::Mapping,
-    prelude::*,
-};
+use creusot_contracts::{invariant::Invariant, logic::Mapping, prelude::*};
 
 mod common;
 use common::Iterator;
@@ -90,14 +86,12 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<I::Item> {
-        let old_self = snapshot! { self};
+        let old_self = snapshot! { self };
         let mut produced = snapshot! { Seq::empty() };
 
-        #[invariant(inv(self))]
         #[invariant(self.func == old_self.func)]
         #[invariant(forall<i> 0 <= i && i < produced.len() ==> self.func.postcondition_mut((&produced[i],), self.func, false))]
         #[invariant(old_self.iter.produces(*produced, self.iter))]
-        #[invariant(old_self.func.hist_inv(self.func))]
         while let Some(n) = self.iter.next() {
             produced = snapshot! { produced.push_back(n) };
             proof_assert!(old_self.iter.produces(*produced, self.iter));

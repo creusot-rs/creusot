@@ -3,9 +3,9 @@ module M_insertion_sort
   use creusot.int.Int32
   use creusot.int.UInt64
   use seq.Seq
-  use seq.Permut
   use creusot.prelude.MutBorrow
   use mach.int.Int
+  use seq.Permut
   use creusot.prelude.Opaque
   use creusot.prelude.Any
   
@@ -16,6 +16,45 @@ module M_insertion_sort
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+  
+  type t_Option_usize = None | Some UInt64.t
+  
+  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_usize
+  
+  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
+    self.end' = o.end'
+    /\ deep_model_usize self.start <= deep_model_usize o.start
+    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
+  
+  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
+  
+  axiom produces_trans_Range_usize_spec:
+    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
+      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_usize (self: t_Range_usize) : ()
+  
+  axiom produces_refl_Range_usize_spec:
+    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
+  
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
+  
+  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+  
+  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+    [ return (result: t_Option_usize) -> {match result with
+        | None -> completed_Range_usize self_
+        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
   
   predicate permutation_of_i32 (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
     Permut.permut self other 0 (Seq.length self)
@@ -68,56 +107,17 @@ module M_insertion_sort
   predicate sorted_range_i32 (s: Seq.seq Int32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
   
-  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
-  
-  meta "rewrite_def" function deep_model_usize
-  
-  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
-    self.end' = o.end'
-    /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
-    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
-  
-  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
-  
-  axiom produces_trans_Range_usize_spec:
-    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
-      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range_usize (self: t_Range_usize) : ()
-  
-  axiom produces_refl_Range_usize_spec:
-    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
-  
-  predicate inv_Range_usize [@inline:trivial] (_1: t_Range_usize) = true
-  
-  meta "rewrite_def" predicate inv_Range_usize
-  
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
   meta "rewrite_def" predicate inv_Seq_usize
   
-  type t_Option_usize = None | Some UInt64.t
-  
-  predicate resolve_ref_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_Range_usize
-  
-  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_ref_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
-  
-  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
-        | None -> completed_Range_usize self_
-        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+  let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
         end}
-      (! return {result}) ]
-  
-  let rec elim_Some (input: t_Option_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Some f0: t_Option_usize]. Some f0 <> input} (! {false} any) ]
+      any) ]
   
   function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: UInt64.t) : Int32.t =
     Seq.get (Slice64.view self) (UInt64.t'int ix)
@@ -180,9 +180,9 @@ module M_insertion_sort
     {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
+  predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_i32
+  meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   predicate sorted_i32 (s: Seq.seq Int32.t) = sorted_range_i32 s 0 (Seq.length s)
   
@@ -191,48 +191,39 @@ module M_insertion_sort
   meta "select_lsinst" "all"
   
   let rec insertion_sort (array: MutBorrow.t (Slice64.slice Int32.t)) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &original <- array ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = len_i32 {array.current} (fun (_ret: UInt64.t) -> [ &n <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_13 <- { start = (1: UInt64.t); end' = n } ] s1
-      | s1 = into_iter_Range_usize {_13} (fun (_ret: t_Range_usize) -> [ &iter <- _ret ] s2)
-      | s2 = bb3 ]
-    | bb3 = s0 [ s0 = [ &iter_old <- iter ] s1 | s1 = bb4 ]
-    | bb4 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s1 | s1 = bb5 ]
-    | bb5 = s0 [ s0 = [ &old_6_0 <- array ] s1 | s1 = bb6 ]
+    [ bb0 = s0
+      [ s0 = [ &original <- array ] s1
+      | s1 = len_i32 {array.current} (fun (_x: UInt64.t) -> [ &n <- _x ] s2)
+      | s2 = [ &_13 <- { start = (1: UInt64.t); end' = n } ] s3
+      | s3 = into_iter_Range_usize {_13} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s4)
+      | s4 = [ &iter_old <- iter ] s5
+      | s5 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s6
+      | s6 = [ &_old'0 <- array.final ] s7
+      | s7 = bb6 ]
     | bb6 = bb6
-      [ bb6 = {[@expl:mut invariant] old_6_0.final = array.final}
+      [ bb6 = {[@expl:inferred invariant: unchanged value] _old'0 = array.final}
         {[@expl:for invariant] inv_Seq_usize produced}
-        {[@expl:for invariant] inv_Range_usize iter}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
         {[@expl:loop invariant #0] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length produced + 1)}
         {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
         {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
         (! s0)
-        [ s0 = bb7 ]
-        [ bb7 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
-              (fun (_ret: MutBorrow.t t_Range_usize) -> [ &_41 <- _ret ] [ &iter <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Range_usize> {_41.current} {MutBorrow.get_id _41}
-              (fun (_ret: MutBorrow.t t_Range_usize) ->
-                [ &_40 <- _ret ] [ &_41 <- { _41 with current = _ret.final } ] s2)
-          | s2 = next_Range_usize {_40} (fun (_ret: t_Option_usize) -> [ &_39 <- _ret ] s3)
-          | s3 = bb8 ]
-        | bb8 = s0
-          [ s0 = -{resolve_ref_Range_usize _41}- s1
-          | s1 = any [ br0 -> {_39 = None} (! bb11) | br1 (x0: UInt64.t) -> {_39 = Some x0} (! bb12) ] ]
-        | bb12 = s0
-          [ s0 = elim_Some {_39} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_44 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = bb13 ]
-        | bb13 = s0
-          [ s0 = [ &produced <- _44 ] s1
-          | s1 = [ &i <- __creusot_proc_iter_elem ] s2
-          | s2 = [ &j <- i ] s3
-          | s3 = [ &old_14_0 <- array ] s4
-          | s4 = bb14 ]
+        [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_39 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_usize> {_39.current} {MutBorrow.get_id _39}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_38 <- _bor ] [ &_39 <- { _39 with current = _bor.final } ] s2)
+        | s2 = next_Range_usize {_38} (fun (_x: t_Option_usize) -> [ &_37 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_usize _39}- s4
+        | s4 = any [ br0 -> {_37 = None} (! bb11) | br1 (x0: UInt64.t) -> {_37 = Some x0} (! bb12) ] ]
+        [ bb12 = s0
+          [ s0 = elim_Some {_37} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &i <- __creusot_proc_iter_elem ] s3
+          | s3 = [ &j <- i ] s4
+          | s4 = [ &_old <- array.final ] s5
+          | s5 = bb14 ]
         | bb14 = bb14
-          [ bb14 = {[@expl:mut invariant] old_14_0.final = array.final}
+          [ bb14 = {[@expl:inferred invariant: unchanged value] _old = array.final}
             {[@expl:loop invariant #0] UInt64.le j i}
             {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
             {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
@@ -243,51 +234,44 @@ module M_insertion_sort
             {[@expl:loop invariant #4] forall a: int. UInt64.t'int j + 1 <= a /\ a <= UInt64.t'int i
               -> Int32.lt (index_slice_i32 array.current j) (index_slice_i32'0 array.current a)}
             (! s0)
-            [ s0 = bb15 ]
-            [ bb15 = s0
-              [ s0 = [ &_68 <- UInt64.gt j (0: UInt64.t) ] s1
-              | s1 = any [ br0 -> {_68 = false} (! bb6) | br1 -> {_68} (! bb16) ] ]
-            | bb16 = s0
-              [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_73 <- _ret ] s1)
+            [ s0 = [ &_66 <- UInt64.gt j (0: UInt64.t) ] s1
+            | s1 = any [ br0 -> {_66 = false} (! bb6) | br1 -> {_66} (! bb16) ] ]
+            [ bb16 = s0
+              [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_71 <- _x ] s1)
               | s1 = Opaque.fresh_ptr
                   (fun (_ptr: Opaque.ptr) ->
                     -{Slice64.slice_ptr_len _ptr = Slice64.length array.current}-
-                    [ &_75 <- _ptr ] s2)
-              | s2 = [ &_76 <- Slice64.slice_ptr_len _75 ] s3
-              | s3 = [ &_77 <- UInt64.lt _73 _76 ] s4
-              | s4 = {[@expl:index in bounds] _77} s5
-              | s5 = bb17 ]
-            | bb17 = s0
-              [ s0 = [ &_79 <- j ] s1
-              | s1 = Opaque.fresh_ptr
+                    [ &_73 <- _ptr ] s2)
+              | s2 = [ &_74 <- Slice64.slice_ptr_len _73 ] s3
+              | s3 = [ &_75 <- UInt64.lt _71 _74 ] s4
+              | s4 = {[@expl:index in bounds] _75} s5
+              | s5 = Slice64.get <Int32.t> {array.current} {_71} (fun (r: Int32.t) -> [ &_70 <- r ] s6)
+              | s6 = [ &_77 <- j ] s7
+              | s7 = Opaque.fresh_ptr
                   (fun (_ptr: Opaque.ptr) ->
                     -{Slice64.slice_ptr_len _ptr = Slice64.length array.current}-
-                    [ &_80 <- _ptr ] s2)
-              | s2 = [ &_81 <- Slice64.slice_ptr_len _80 ] s3
-              | s3 = [ &_82 <- UInt64.lt _79 _81 ] s4
-              | s4 = {[@expl:index in bounds] _82} s5
-              | s5 = bb18 ]
-            | bb18 = s0
-              [ s0 = Slice64.get <Int32.t> {array.current} {_79}
-                  (fun (r: Int32.t) ->
-                    Slice64.get <Int32.t> {array.current} {_73} (fun (r'0: Int32.t) -> [ &_71 <- Int32.gt r'0 r ] s1))
-              | s1 = any [ br0 -> {_71 = false} (! bb6) | br1 -> {_71} (! bb19) ] ]
+                    [ &_78 <- _ptr ] s8)
+              | s8 = [ &_79 <- Slice64.slice_ptr_len _78 ] s9
+              | s9 = [ &_80 <- UInt64.lt _77 _79 ] s10
+              | s10 = {[@expl:index in bounds] _80} s11
+              | s11 = Slice64.get <Int32.t> {array.current} {_77} (fun (r: Int32.t) -> [ &_76 <- r ] s12)
+              | s12 = [ &_69 <- Int32.gt _70 _76 ] s13
+              | s13 = any [ br0 -> {_69 = false} (! bb6) | br1 -> {_69} (! bb19) ] ]
             | bb19 = s0
-              [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &_85 <- _ret ] s1)
+              [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_83 <- _x ] s1)
               | s1 = MutBorrow.borrow_mut <Slice64.slice Int32.t> {array.current}
-                  (fun (_ret: MutBorrow.t (Slice64.slice Int32.t)) ->
-                    [ &_84 <- _ret ] [ &array <- { array with current = _ret.final } ] s2)
-              | s2 = swap_i32 {_84} {_85} {j} (fun (_ret: ()) -> [ &_83 <- _ret ] s3)
-              | s3 = bb20 ]
-            | bb20 = s0
-              [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &j <- _ret ] s1) | s1 = bb14 ] ] ] ] ]
+                  (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
+                    [ &_82 <- _bor ] [ &array <- { array with current = _bor.final } ] s2)
+              | s2 = swap_i32 {_82} {_83} {j} (fun (_x: ()) -> [ &_81 <- _x ] s3)
+              | s3 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
+              | s4 = bb14 ] ] ] ] ]
     | bb11 = s0
-      [ s0 = -{resolve_ref_slice_i32 array}- s1
+      [ s0 = -{resolve_refmut_slice_i32 array}- s1
       | s1 =
         {[@expl:assertion] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length (Slice64.view array.current))}
         s2
-      | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & array: MutBorrow.t (Slice64.slice Int32.t) = array
     | & original: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & n: UInt64.t = Any.any_l ()
@@ -295,28 +279,29 @@ module M_insertion_sort
     | & _13: t_Range_usize = Any.any_l ()
     | & iter_old: t_Range_usize = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _39: t_Option_usize = Any.any_l ()
-    | & _40: MutBorrow.t t_Range_usize = Any.any_l ()
-    | & _41: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _37: t_Option_usize = Any.any_l ()
+    | & _38: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _39: MutBorrow.t t_Range_usize = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
-    | & _44: Seq.seq UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & j: UInt64.t = Any.any_l ()
-    | & _68: bool = Any.any_l ()
-    | & _71: bool = Any.any_l ()
-    | & _73: UInt64.t = Any.any_l ()
-    | & _75: Opaque.ptr = Any.any_l ()
-    | & _76: UInt64.t = Any.any_l ()
-    | & _77: bool = Any.any_l ()
+    | & _66: bool = Any.any_l ()
+    | & _69: bool = Any.any_l ()
+    | & _70: Int32.t = Any.any_l ()
+    | & _71: UInt64.t = Any.any_l ()
+    | & _73: Opaque.ptr = Any.any_l ()
+    | & _74: UInt64.t = Any.any_l ()
+    | & _75: bool = Any.any_l ()
+    | & _76: Int32.t = Any.any_l ()
+    | & _77: UInt64.t = Any.any_l ()
+    | & _78: Opaque.ptr = Any.any_l ()
     | & _79: UInt64.t = Any.any_l ()
-    | & _80: Opaque.ptr = Any.any_l ()
-    | & _81: UInt64.t = Any.any_l ()
-    | & _82: bool = Any.any_l ()
-    | & _83: () = Any.any_l ()
-    | & _84: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
-    | & _85: UInt64.t = Any.any_l ()
-    | & old_14_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
-    | & old_6_0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l () ])
+    | & _80: bool = Any.any_l ()
+    | & _81: () = Any.any_l ()
+    | & _82: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
+    | & _83: UInt64.t = Any.any_l ()
+    | & _old: Slice64.slice Int32.t = Any.any_l ()
+    | & _old'0: Slice64.slice Int32.t = Any.any_l () ])
     [ return (result: ()) ->
     {[@expl:insertion_sort ensures #0] permutation_of_i32 (Slice64.view array.current) (Slice64.view array.final)}
       {[@expl:insertion_sort ensures #1] sorted_i32 (Slice64.view array.final)}

@@ -6,11 +6,11 @@ module M_test
   let rec closure0 (self: ()) (x: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:closure requires] UInt64.t'int x < 1000}
     (! bb0
     [ bb0 = s0
-      [ s0 = UInt64.add {x} {(1: UInt64.t)} (fun (_ret: UInt64.t) -> [ &res'0 <- _ret ] s1)
+      [ s0 = UInt64.add {x} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &res'0 <- _x ] s1)
       | s1 = [ &res <- res'0 ] s2
-      | s2 = [ &_0 <- res ] s3
-      | s3 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s2 = [ &_ret <- res ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = x
     | & res: UInt64.t = Any.any_l ()
     | & res'0: UInt64.t = Any.any_l () ])
@@ -25,9 +25,11 @@ module M_test
     [ bb0 = s0
       [ s0 = [ &c <- () ] s1
       | s1 = [ &_4 <- (2: UInt64.t) ] s2
-      | s2 = closure0 {c} {_4} (fun (_ret: UInt64.t) -> [ &y <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:assertion] UInt64.t'int y = 3} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & c: () = Any.any_l () | & y: UInt64.t = Any.any_l () | & _4: UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+      | s2 = closure0 {c} {_4} (fun (_x: UInt64.t) -> [ &y <- _x ] s3)
+      | s3 = {[@expl:assertion] UInt64.t'int y = 3} s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & c: () = Any.any_l ()
+    | & y: UInt64.t = Any.any_l ()
+    | & _4: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

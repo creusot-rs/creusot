@@ -112,7 +112,6 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
     let mut left_weight = max_weight;
 
     let mut j = items.len();
-    #[invariant(inv(result))]
     #[invariant(j@ <= items@.len())]
     #[invariant(left_weight@ <= max_weight@)]
     #[invariant(forall<r: Seq<&Item<Name>>>

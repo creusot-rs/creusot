@@ -4,13 +4,21 @@ module M_range
   
   type t_Bound_ref_usize = Included UInt64.t | Excluded UInt64.t | Unbounded
   
-  let rec elim_Excluded (input: t_Bound_ref_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Excluded f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Excluded f0: t_Bound_ref_usize]. Excluded f0 <> input} (! {false} any) ]
+  let rec elim_Excluded (_x: t_Bound_ref_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Excluded f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Excluded _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_Included (input: t_Bound_ref_usize) (ret (f0: UInt64.t)) = any
-    [ good (f0: UInt64.t) -> {Included f0 = input} (! ret {f0})
-    | bad -> {forall f0: UInt64.t [Included f0: t_Bound_ref_usize]. Included f0 <> input} (! {false} any) ]
+  let rec elim_Included (_x: t_Bound_ref_usize) (return (f0: UInt64.t)) = any
+    [ _k (f0: UInt64.t) -> {Included f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Included _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -27,19 +35,18 @@ module M_range
       | s2 = any [ br0 -> {_12 = false} (! bb1) | br1 -> {_12} (! bb8) ] ]
     | bb8 = s0
       [ s0 = elim_Excluded {range'0} (fun (r0: UInt64.t) -> [ &end''1 <- r0 ] s1)
-      | s1 = [ &_0 <- (0: UInt64.t) ] s2
-      | s2 = bb10 ]
+      | s1 = [ &_ret <- (0: UInt64.t) ] s2
+      | s2 = return {_ret} ]
     | bb5 = s0
       [ s0 = elim_Included {range'0} (fun (r0: UInt64.t) -> [ &end''0 <- r0 ] s1)
       | s1 = [ &_8 <- end''0 = (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_8 = false} (! bb1) | br1 -> {_8} (! bb6) ] ]
     | bb6 = s0
       [ s0 = elim_Included {range'0} (fun (r0: UInt64.t) -> [ &end' <- r0 ] s1)
-      | s1 = [ &_0 <- (0: UInt64.t) ] s2
-      | s2 = bb10 ]
-    | bb1 = s0 [ s0 = [ &_0 <- (1: UInt64.t) ] s1 | s1 = bb10 ]
-    | bb10 = return {_0} ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s1 = [ &_ret <- (0: UInt64.t) ] s2
+      | s2 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &_ret <- (1: UInt64.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & range'0: t_Bound_ref_usize = range'0
     | & end': UInt64.t = Any.any_l ()
     | & end''0: UInt64.t = Any.any_l ()

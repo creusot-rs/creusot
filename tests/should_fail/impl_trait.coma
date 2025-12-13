@@ -6,7 +6,7 @@ module M_impl_MyTrait_for_unit__a (* <() as MyTrait> *)
   meta "select_lsinst" "all"
   
   let rec a_unit (self: ()) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = return {_0} ] ] [ & _0: bool = Any.any_l () ])
+    [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:a ensures] result} (! return {result}) ]
 end
 module M_returns_iterator
@@ -17,7 +17,7 @@ module M_returns_iterator
   meta "select_lsinst" "all"
   
   let rec returns_iterator (return (x: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_main
   use creusot.prelude.Any
@@ -58,13 +58,12 @@ module M_main
   meta "select_lsinst" "all"
   
   let rec main (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = returns_iterator (fun (_ret: opaque) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_opaque _4} s1
-      | s1 = -{resolve_opaque _4}- s2
-      | s2 = a_opaque {_4} (fun (_ret: bool) -> [ &x <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = {[@expl:assertion] x} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = returns_iterator (fun (_x: opaque) -> [ &_4 <- _x ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_opaque _4} any) ]
+      | s2 = -{resolve_opaque _4}- s3
+      | s3 = a_opaque {_4} (fun (_x: bool) -> [ &x <- _x ] s4)
+      | s4 = {[@expl:assertion] x} s5
+      | s5 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
     [ return (result: ()) -> {[@expl:main ensures] true} (! return {result}) ]
 end

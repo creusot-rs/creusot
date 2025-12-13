@@ -76,28 +76,29 @@ module M_foo
       {ptr_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
       (! return {result}) ]
   
-  predicate invariant_ref_Ghost_PtrOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_i32) =
+  predicate invariant_refmut_Ghost_PtrOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_i32) =
     inv_Ghost_PtrOwn_i32 self.current /\ inv_Ghost_PtrOwn_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_refmut_Ghost_PtrOwn_i32
   
-  predicate inv_ref_Ghost_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) =
-    invariant_ref_Ghost_PtrOwn_i32 _1
+  predicate inv_refmut_Ghost_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) =
+    invariant_refmut_Ghost_PtrOwn_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate inv_refmut_Ghost_PtrOwn_i32
   
-  predicate invariant_ref_PtrOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_i32) =
+  predicate invariant_refmut_PtrOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_i32) =
     inv_PtrOwn_i32 self.current /\ inv_PtrOwn_i32 self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_i32
   
-  predicate inv_ref_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = invariant_ref_PtrOwn_i32 _1
+  predicate inv_refmut_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = invariant_refmut_PtrOwn_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_i32
   
   let rec deref_mut_Ghost_PtrOwn_i32 (self: MutBorrow.t t_PtrOwn_i32) (return (x: MutBorrow.t t_PtrOwn_i32)) =
-    {[@expl:deref_mut 'self' type invariant] inv_ref_Ghost_PtrOwn_i32 self}
-    any [ return (result: MutBorrow.t t_PtrOwn_i32) -> {inv_ref_PtrOwn_i32 result} {result = self} (! return {result}) ]
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_PtrOwn_i32 self}
+    any
+    [ return (result: MutBorrow.t t_PtrOwn_i32) -> {inv_refmut_PtrOwn_i32 result} {result = self} (! return {result}) ]
   
   predicate resolve_PtrOwn_i32 (_1: t_PtrOwn_i32)
   
@@ -105,42 +106,42 @@ module M_foo
   
   meta "rewrite_def" predicate resolve_Ghost_PtrOwn_i32
   
-  predicate invariant_ref_Ghost_PtrOwn_i32'0 [@inline:trivial] (self: t_PtrOwn_i32) = inv_Ghost_PtrOwn_i32 self
+  predicate invariant_ref_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_Ghost_PtrOwn_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_PtrOwn_i32'0
+  meta "rewrite_def" predicate invariant_ref_Ghost_PtrOwn_i32
   
-  predicate inv_ref_Ghost_PtrOwn_i32'0 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_Ghost_PtrOwn_i32'0 _1
+  predicate inv_ref_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_Ghost_PtrOwn_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_PtrOwn_i32'0
+  meta "rewrite_def" predicate inv_ref_Ghost_PtrOwn_i32
   
-  predicate invariant_ref_PtrOwn_i32'0 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32'0
+  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32
   
-  predicate inv_ref_PtrOwn_i32'0 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_PtrOwn_i32'0 _1
+  predicate inv_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_PtrOwn_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_i32'0
+  meta "rewrite_def" predicate inv_ref_PtrOwn_i32
   
   let rec deref_Ghost_PtrOwn_i32 (self: t_PtrOwn_i32) (return (x: t_PtrOwn_i32)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_PtrOwn_i32'0 self}
-    any [ return (result: t_PtrOwn_i32) -> {inv_ref_PtrOwn_i32'0 result} {result = self} (! return {result}) ]
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_PtrOwn_i32 self}
+    any [ return (result: t_PtrOwn_i32) -> {inv_ref_PtrOwn_i32 result} {result = self} (! return {result}) ]
   
   let rec disjoint_lemma_i32 (own1: MutBorrow.t t_PtrOwn_i32) (own2: t_PtrOwn_i32) (return (x: ())) =
-    {[@expl:disjoint_lemma 'own1' type invariant] inv_ref_PtrOwn_i32 own1}
-    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_i32'0 own2}
+    {[@expl:disjoint_lemma 'own1' type invariant] inv_refmut_PtrOwn_i32 own1}
+    {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_i32 own2}
     {[@expl:disjoint_lemma requires] size_of_i32 <> 0}
     any
     [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_i32 own1.current) <> Ptr.addr_logic_u64 (ptr_i32 own2)}
       {own1.current = own1.final}
       (! return {result}) ]
   
-  predicate resolve_ref_Ghost_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = _1.final = _1.current
+  predicate resolve_refmut_Ghost_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate resolve_refmut_Ghost_PtrOwn_i32
   
-  predicate resolve_ref_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = _1.final = _1.current
+  predicate resolve_refmut_PtrOwn_i32 [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_i32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_PtrOwn_i32
+  meta "rewrite_def" predicate resolve_refmut_PtrOwn_i32
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -150,52 +151,41 @@ module M_foo
   
   let rec foo (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(1: Int32.t)} (fun (_ret: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_3 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &p1 <- _3.f0 ] s1
-      | s1 = [ &own1 <- _3.f1 ] s2
-      | s2 = new_i32 {(1: Int32.t)} (fun (_ret: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_6 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &p2 <- _6.f0 ] s1
-      | s1 = [ &own2 <- _6.f1 ] s2
-      | s2 = {inv_Ghost_PtrOwn_i32 own1}
-        MutBorrow.borrow_mut <t_PtrOwn_i32> {own1}
-          (fun (_ret: MutBorrow.t t_PtrOwn_i32) ->
-            [ &_13 <- _ret ] -{inv_Ghost_PtrOwn_i32 _ret.final}-
-            [ &own1 <- _ret.final ] s3)
-      | s3 = {inv_Ghost_PtrOwn_i32 _13.current}
-        MutBorrow.borrow_final <t_PtrOwn_i32> {_13.current} {MutBorrow.get_id _13}
-          (fun (_ret: MutBorrow.t t_PtrOwn_i32) ->
-            [ &_12 <- _ret ] -{inv_Ghost_PtrOwn_i32 _ret.final}-
-            [ &_13 <- { _13 with current = _ret.final } ] s4)
-      | s4 = deref_mut_Ghost_PtrOwn_i32 {_12} (fun (_ret: MutBorrow.t t_PtrOwn_i32) -> [ &_11 <- _ret ] s5)
-      | s5 = bb3 ]
-    | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv_Ghost_PtrOwn_i32 own2} s1
-      | s1 = -{resolve_Ghost_PtrOwn_i32 own2}- s2
-      | s2 = [ &_17 <- own2 ] s3
-      | s3 = deref_Ghost_PtrOwn_i32 {_17} (fun (_ret: t_PtrOwn_i32) -> [ &_15 <- _ret ] s4)
-      | s4 = bb4 ]
-    | bb4 = s0
-      [ s0 = {inv_PtrOwn_i32 _11.current}
-        MutBorrow.borrow_final <t_PtrOwn_i32> {_11.current} {MutBorrow.get_id _11}
-          (fun (_ret: MutBorrow.t t_PtrOwn_i32) ->
-            [ &_10 <- _ret ] -{inv_PtrOwn_i32 _ret.final}-
-            [ &_11 <- { _11 with current = _ret.final } ] s1)
-      | s1 = disjoint_lemma_i32 {_10} {_15} (fun (_ret: ()) -> [ &_9 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Ghost_PtrOwn_i32 _13} s1
-      | s1 = -{resolve_ref_Ghost_PtrOwn_i32 _13}- s2
-      | s2 = {[@expl:type invariant] inv_ref_PtrOwn_i32 _11} s3
-      | s3 = -{resolve_ref_PtrOwn_i32 _11}- s4
-      | s4 = {[@expl:type invariant] inv_Ghost_PtrOwn_i32 own1} s5
-      | s5 = -{resolve_Ghost_PtrOwn_i32 own1}- s6
-      | s6 = new_unit {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s7)
-      | s7 = bb6 ]
-    | bb6 = s0 [ s0 = {[@expl:assertion] own1 <> own2} s1 | s1 = {[@expl:assertion] p1 <> p2} s2 | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_3 <- _x ] s1)
+      | s1 = [ &p1 <- _3.f0 ] s2
+      | s2 = [ &own1 <- _3.f1 ] s3
+      | s3 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_6 <- _x ] s4)
+      | s4 = [ &p2 <- _6.f0 ] s5
+      | s5 = [ &own2 <- _6.f1 ] s6
+      | s6 = MutBorrow.borrow_mut <t_PtrOwn_i32> {own1}
+          (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
+            [ &_13 <- _bor ] -{inv_Ghost_PtrOwn_i32 _bor.final}-
+            [ &own1 <- _bor.final ] s7) [ _ck -> (! {inv_Ghost_PtrOwn_i32 own1} any) ]
+      | s7 = MutBorrow.borrow_final <t_PtrOwn_i32> {_13.current} {MutBorrow.get_id _13}
+          (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
+            [ &_12 <- _bor ] -{inv_Ghost_PtrOwn_i32 _bor.final}-
+            [ &_13 <- { _13 with current = _bor.final } ] s8) [ _ck -> (! {inv_Ghost_PtrOwn_i32 _13.current} any) ]
+      | s8 = deref_mut_Ghost_PtrOwn_i32 {_12} (fun (_x: MutBorrow.t t_PtrOwn_i32) -> [ &_11 <- _x ] s9)
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Ghost_PtrOwn_i32 own2} any) ]
+      | s10 = -{resolve_Ghost_PtrOwn_i32 own2}- s11
+      | s11 = [ &_17 <- own2 ] s12
+      | s12 = deref_Ghost_PtrOwn_i32 {_17} (fun (_x: t_PtrOwn_i32) -> [ &_15 <- _x ] s13)
+      | s13 = MutBorrow.borrow_final <t_PtrOwn_i32> {_11.current} {MutBorrow.get_id _11}
+          (fun (_bor: MutBorrow.t t_PtrOwn_i32) ->
+            [ &_10 <- _bor ] -{inv_PtrOwn_i32 _bor.final}-
+            [ &_11 <- { _11 with current = _bor.final } ] s14) [ _ck -> (! {inv_PtrOwn_i32 _11.current} any) ]
+      | s14 = disjoint_lemma_i32 {_10} {_15} (fun (_x: ()) -> [ &_9 <- _x ] s15)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_Ghost_PtrOwn_i32 _13} any) ]
+      | s16 = -{resolve_refmut_Ghost_PtrOwn_i32 _13}- s17
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_PtrOwn_i32 _11} any) ]
+      | s18 = -{resolve_refmut_PtrOwn_i32 _11}- s19
+      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_Ghost_PtrOwn_i32 own1} any) ]
+      | s20 = -{resolve_Ghost_PtrOwn_i32 own1}- s21
+      | s21 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s22)
+      | s22 = {[@expl:assertion] own1 <> own2} s23
+      | s23 = {[@expl:assertion] p1 <> p2} s24
+      | s24 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()
     | & own1: t_PtrOwn_i32 = Any.any_l ()
     | & _3: tup2_ptr_i32_Ghost_PtrOwn_i32 = Any.any_l ()

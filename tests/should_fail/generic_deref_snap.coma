@@ -101,9 +101,12 @@ module M_deref_wrap
   let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv_ref_T x}
     {[@expl:deref_wrap requires] precondition_deref () x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_8 <- x ] s1 | s1 = deref_T {_8} (fun (_ret: t_Target) -> [ &_6 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _6 ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = [ &_8 <- x ] s1
+      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- _6 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
     [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv_ref_Target result}
       {[@expl:deref_wrap ensures] postcondition_deref () x result}
       (! return {result}) ]
@@ -189,9 +192,9 @@ module M_bad
   let rec bad (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- x ] s1
-      | s1 = deref_wrap_Snapshot_i32 {_4} (fun (_ret: Int32.t) -> [ &_2 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _2 ] s1 | s1 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])
+      | s1 = deref_wrap_Snapshot_i32 {_4} (fun (_x: Int32.t) -> [ &_2 <- _x ] s2)
+      | s2 = [ &_ret <- _2 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end

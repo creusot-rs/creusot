@@ -40,15 +40,15 @@ module M_can_extend
       {view_Vec_i32_Global self_ = view_IntoIter_i32_Global result}
       (! return {result}) ]
   
-  predicate invariant_ref_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
+  predicate invariant_refmut_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
     inv_IntoIter_i32_Global self.current /\ inv_IntoIter_i32_Global self.final
   
-  meta "rewrite_def" predicate invariant_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_i32_Global
   
-  predicate inv_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
-    invariant_ref_IntoIter_i32_Global _1
+  predicate inv_refmut_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+    invariant_refmut_IntoIter_i32_Global _1
   
-  meta "rewrite_def" predicate inv_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate inv_refmut_IntoIter_i32_Global
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -130,20 +130,20 @@ module M_can_extend
   axiom produces_refl_IntoIter_i32_Global_spec:
     forall self: t_IntoIter_i32_Global. produces_IntoIter_i32_Global self (Seq.empty: Seq.seq Int32.t) self
   
-  predicate resolve_ref_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
+  predicate resolve_refmut_IntoIter_i32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_i32_Global) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_IntoIter_i32_Global
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_i32_Global
   
   predicate completed_IntoIter_i32_Global (self: MutBorrow.t t_IntoIter_i32_Global) =
-    resolve_ref_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
+    resolve_refmut_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
     {[@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
     {exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
-        /\ inv_ref_IntoIter_i32_Global done'
+        /\ inv_refmut_IntoIter_i32_Global done'
         /\ inv_Seq_i32 prod
         /\ postcondition_into_iter () iter start_
         /\ completed_IntoIter_i32_Global done'
@@ -162,35 +162,28 @@ module M_can_extend
           /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
           [ &_4 <- __arr_temp ] s1) ]
-      | s1 = bb2 ]
-    | bb2 = s0 [ s0 = into_vec_i32 {_4} (fun (_ret: t_Vec_i32_Global) -> [ &v <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = any
+      | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &v <- _x ] s2)
+      | s2 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (4: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 1 = (5: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 2 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
-          [ &_8 <- __arr_temp ] s1) ]
-      | s1 = bb5 ]
-    | bb5 = s0 [ s0 = into_vec_i32 {_8} (fun (_ret: t_Vec_i32_Global) -> [ &w <- _ret ] s1) | s1 = bb6 ]
-    | bb6 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v}
-          (fun (_ret: MutBorrow.t t_Vec_i32_Global) -> [ &_10 <- _ret ] [ &v <- _ret.final ] s1)
-      | s1 = extend_Vec_i32_Global {_10} {w} (fun (_ret: ()) -> [ &_9 <- _ret ] s2)
-      | s2 = bb7 ]
-    | bb7 = s0
-      [ s0 = any
+          [ &_8 <- __arr_temp ] s3) ]
+      | s3 = into_vec_i32 {_8} (fun (_x: t_Vec_i32_Global) -> [ &w <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v}
+          (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_10 <- _bor ] [ &v <- _bor.final ] s5)
+      | s5 = extend_Vec_i32_Global {_10} {w} (fun (_x: ()) -> [ &_9 <- _x ] s6)
+      | s6 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 4 = (5: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 5 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
-          [ &_15 <- __arr_temp ] s1) ]
-      | s1 = bb9 ]
-    | bb9 = s0 [ s0 = into_vec_i32 {_15} (fun (_ret: t_Vec_i32_Global) -> [ &z <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = s0 [ s0 = {[@expl:assertion] Seq.(==) (view_Vec_i32_Global z) (view_Vec_i32_Global v)} s1 | s1 = bb13 ]
-    | bb13 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+          [ &_15 <- __arr_temp ] s7) ]
+      | s7 = into_vec_i32 {_15} (fun (_x: t_Vec_i32_Global) -> [ &z <- _x ] s8)
+      | s8 = {[@expl:assertion] Seq.(==) (view_Vec_i32_Global z) (view_Vec_i32_Global v)} s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & v: t_Vec_i32_Global = Any.any_l ()
     | & _4: Slice64.array Int32.t = Any.any_l ()
     | & w: t_Vec_i32_Global = Any.any_l ()

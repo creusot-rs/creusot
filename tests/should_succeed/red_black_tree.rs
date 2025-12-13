@@ -776,7 +776,6 @@ impl<K: DeepModel<DeepModelTy: OrdLogic> + Ord, V> Map<K, V> {
         snapshot! { Tree::<K, V>::has_mapping_model };
 
         let mut tree = &self.0;
-        #[invariant(inv(tree))]
         #[invariant(tree.bst_invariant())]
         #[invariant(forall<v: V> self.0.has_mapping(key.deep_model(), v) == (*tree).has_mapping(key.deep_model(), v))]
         while let Some(node) = &tree.node {
@@ -799,7 +798,6 @@ impl<K: DeepModel<DeepModelTy: OrdLogic> + Ord, V> Map<K, V> {
         let mut tree = &mut self.0;
         let old_tree = snapshot! { tree };
 
-        #[invariant(inv(tree))]
         #[invariant(tree.bst_invariant())]
         #[invariant(tree.height_invariant())]
         #[invariant(tree.color_invariant())]

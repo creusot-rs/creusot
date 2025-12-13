@@ -154,7 +154,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         let mut l: &mut List<_> = &mut self.buckets[index];
         let old_l = snapshot! { l };
 
-        #[invariant(inv(l))]
         #[invariant(old_self.good_bucket(*l, index@))]
         #[invariant(old_self.good_bucket(^l, index@) ==> old_self.good_bucket(^old_l.inner(), index@))]
         #[invariant((^l).get(key.deep_model()) == Some(val) ==> (^old_l).get(key.deep_model()) == Some(val))]
@@ -182,7 +181,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         let index: usize = key.hash() as usize % self.buckets.len();
         let mut l = &self.buckets[index];
 
-        #[invariant(inv(l))]
         #[invariant(self.bucket(key.deep_model()).get(key.deep_model()) == (*l).get(key.deep_model()))]
         while let List::Cons((k, v), tl) = l {
             if *k == key {
@@ -203,7 +201,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
 
         let mut i: usize = 0;
         #[invariant(inv(self))]
-        #[invariant(inv(new))]
         #[invariant(forall<k: K::DeepModelTy> old_self.bucket_ix(k) < i@ ==> old_self@.get(k) == new@.get(k))]
         #[invariant(forall<k: K::DeepModelTy>
             i@ <=   old_self.bucket_ix(k) &&
@@ -215,8 +212,6 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
         while i < self.buckets.len() {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
-            #[invariant(inv(new))]
-            #[invariant(inv(l))]
             #[invariant(forall<k: K::DeepModelTy> old_self.bucket_ix(k) < i@ ==> old_self@.get(k) == new@.get(k))]
             #[invariant(forall<k: K::DeepModelTy>
                 i@ < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= old_self.buckets@.len()  ==> new@.get(k) == None

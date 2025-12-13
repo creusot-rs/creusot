@@ -17,8 +17,8 @@ module M_swap
   
   let rec swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@expl:swap 'x' type invariant] inv_tup2_T_T x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = bb3 ] | bb3 = return {_0} ]
-    [ & _0: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
     [ return (result: tup2_T_T) -> {[@expl:swap result type invariant] inv_tup2_T_T result}
       {[@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 }}
       (! return {result}) ]
@@ -30,14 +30,14 @@ module M_f
   
   type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
   
-  type tup2_ref_u32_ref_u32 = { f0'0: MutBorrow.t UInt32.t; f1'0: MutBorrow.t UInt32.t }
+  type tup2_refmut_u32_refmut_u32 = { f0'0: MutBorrow.t UInt32.t; f1'0: MutBorrow.t UInt32.t }
   
-  let rec swap_ref_u32 (x: tup2_ref_u32_ref_u32) (return (x'0: tup2_ref_u32_ref_u32)) = any
-    [ return (result: tup2_ref_u32_ref_u32) -> {result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }} (! return {result}) ]
+  let rec swap_refmut_u32 (x: tup2_refmut_u32_refmut_u32) (return (x'0: tup2_refmut_u32_refmut_u32)) = any
+    [ return (result: tup2_refmut_u32_refmut_u32) -> {result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }} (! return {result}) ]
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
   meta "compute_max_steps" 1000000
   
@@ -49,28 +49,26 @@ module M_f
       | s1 = [ &a <- _3.f0 ] s2
       | s2 = [ &b <- _3.f1 ] s3
       | s3 = MutBorrow.borrow_mut <UInt32.t> {a}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_6 <- _ret ] [ &a <- _ret.final ] s4)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_6 <- _bor ] [ &a <- _bor.final ] s4)
       | s4 = MutBorrow.borrow_mut <UInt32.t> {b}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_8 <- _ret ] [ &b <- _ret.final ] s5)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_8 <- _bor ] [ &b <- _bor.final ] s5)
       | s5 = MutBorrow.borrow_final <UInt32.t> {_8.current} {MutBorrow.get_id _8}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s6)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s6)
       | s6 = [ &_5 <- { f0'0 = _6; f1'0 = _7 } ] s7
-      | s7 = swap_ref_u32 {_5} (fun (_ret: tup2_ref_u32_ref_u32) -> [ &p <- _ret ] s8)
-      | s8 = bb1 ]
-    | bb1 = s0
-      [ s0 = -{resolve_ref_u32 p.f1'0}- s1
-      | s1 = -{resolve_ref_u32 _8}- s2
-      | s2 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s3
-      | s3 = -{resolve_ref_u32 p.f0'0}- s4
-      | s4 = {[@expl:assertion] b = (10: UInt32.t)} s5
-      | s5 = {[@expl:assertion] a = (0: UInt32.t)} s6
-      | s6 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s7 = swap_refmut_u32 {_5} (fun (_x: tup2_refmut_u32_refmut_u32) -> [ &p <- _x ] s8)
+      | s8 = -{resolve_refmut_u32 p.f1'0}- s9
+      | s9 = -{resolve_refmut_u32 _8}- s10
+      | s10 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s11
+      | s11 = -{resolve_refmut_u32 p.f0'0}- s12
+      | s12 = {[@expl:assertion] b = (10: UInt32.t)} s13
+      | s13 = {[@expl:assertion] a = (0: UInt32.t)} s14
+      | s14 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & a: UInt32.t = Any.any_l ()
     | & b: UInt32.t = Any.any_l ()
     | & _3: tup2_u32_u32 = Any.any_l ()
-    | & p: tup2_ref_u32_ref_u32 = Any.any_l ()
-    | & _5: tup2_ref_u32_ref_u32 = Any.any_l ()
+    | & p: tup2_refmut_u32_refmut_u32 = Any.any_l ()
+    | & _5: tup2_refmut_u32_refmut_u32 = Any.any_l ()
     | & _6: MutBorrow.t UInt32.t = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
     | & _8: MutBorrow.t UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]

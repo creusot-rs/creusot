@@ -6,21 +6,22 @@ module M_f
   use mach.int.Int
   use creusot.prelude.Any
   
-  let rec new_ref_usize (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
+  let rec new_refmut_usize (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
     [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
       (! return {result}) ]
   
-  let rec into_inner_Seq_ref_usize (self: Seq.seq (MutBorrow.t UInt64.t)) (return (x: Seq.seq (MutBorrow.t UInt64.t))) =
-    any [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return {result}) ]
+  let rec into_inner_Seq_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t))
+    (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
+    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return {result}) ]
   
-  function push_front_ref_usize [@inline:trivial] (self: Seq.seq (MutBorrow.t UInt64.t)) (x: MutBorrow.t UInt64.t) : Seq.seq (MutBorrow.t UInt64.t)
+  function push_front_refmut_usize [@inline:trivial] (self: Seq.seq (MutBorrow.t UInt64.t)) (x: MutBorrow.t UInt64.t) : Seq.seq (MutBorrow.t UInt64.t)
    = Seq.cons x self
   
-  meta "rewrite_def" function push_front_ref_usize
+  meta "rewrite_def" function push_front_refmut_usize
   
-  let rec push_front_ghost_ref_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
+  let rec push_front_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
     (return (x'0: ())) = any
-    [ return (result: ()) -> {self.final = push_front_ref_usize self.current x} (! return {result}) ]
+    [ return (result: ()) -> {self.final = push_front_refmut_usize self.current x} (! return {result}) ]
   
   let rec new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
@@ -28,54 +29,57 @@ module M_f
   let rec deref_Ghost_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {result = self} (! return {result}) ]
   
-  type t_Option_ref_ref_usize = None | Some (MutBorrow.t (MutBorrow.t UInt64.t))
+  type t_Option_refmut_refmut_usize = None | Some (MutBorrow.t (MutBorrow.t UInt64.t))
   
-  type t_Option_ref_usize = None'0 | Some'0 (MutBorrow.t UInt64.t)
+  type t_Option_refmut_usize = None'0 | Some'0 (MutBorrow.t UInt64.t)
   
-  function get_ref_usize (self: Seq.seq (MutBorrow.t UInt64.t)) (ix: int) : t_Option_ref_usize = if 0 <= ix
+  function get_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t)) (ix: int) : t_Option_refmut_usize = if 0 <= ix
     /\ ix < Seq.length self then
       Some'0 (Seq.get self ix)
     else
       None'0
   
   
-  let rec get_mut_ghost_ref_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
-    (return (x: t_Option_ref_ref_usize)) = any
-    [ return (result: t_Option_ref_ref_usize) -> {match result with
-        | None -> get_ref_usize self.current index = None'0 /\ self.current = self.final
-        | Some r -> get_ref_usize self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+  let rec get_mut_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
+    (return (x: t_Option_refmut_refmut_usize)) = any
+    [ return (result: t_Option_refmut_refmut_usize) -> {match result with
+        | None -> get_refmut_usize self.current index = None'0 /\ self.current = self.final
+        | Some r -> get_refmut_usize self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
         end}
-      {forall i: int. i <> index -> get_ref_usize self.current i = get_ref_usize self.final i}
+      {forall i: int. i <> index -> get_refmut_usize self.current i = get_refmut_usize self.final i}
       {Seq.length self.current = Seq.length self.final}
       (! return {result}) ]
   
-  let rec unwrap_ref_ref_usize (self_: t_Option_ref_ref_usize) (return (x: MutBorrow.t (MutBorrow.t UInt64.t))) =
-    {[@expl:unwrap requires] self_ <> None}
+  let rec unwrap_refmut_refmut_usize (self_: t_Option_refmut_refmut_usize)
+    (return (x: MutBorrow.t (MutBorrow.t UInt64.t))) = {[@expl:unwrap requires] self_ <> None}
     any [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {Some result = self_} (! return {result}) ]
   
-  predicate resolve_ref_ref_usize [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt64.t)) = _1.final = _1.current
+  predicate resolve_refmut_refmut_usize [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt64.t)) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_ref_usize
+  meta "rewrite_def" predicate resolve_refmut_refmut_usize
   
-  predicate resolve_ref_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_usize
+  meta "rewrite_def" predicate resolve_refmut_usize
   
-  predicate resolve_Option_ref_usize (_1: t_Option_ref_usize)
+  predicate resolve_Option_refmut_usize (_1: t_Option_refmut_usize)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_ref_usize [resolve_Option_ref_usize x]. resolve_Option_ref_usize x
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Option_refmut_usize [resolve_Option_refmut_usize x]. resolve_Option_refmut_usize x
       = match x with
         | None'0 -> true
-        | Some'0 x0 -> resolve_ref_usize x0
+        | Some'0 x0 -> resolve_refmut_usize x0
         end
   
-  predicate resolve_Seq_ref_usize (self: Seq.seq (MutBorrow.t UInt64.t)) =
-    forall i: int. resolve_Option_ref_usize (get_ref_usize self i)
+  predicate resolve_Seq_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t)) =
+    forall i: int. resolve_Option_refmut_usize (get_refmut_usize self i)
   
-  predicate resolve_Seq_ref_usize'0 (_1: Seq.seq (MutBorrow.t UInt64.t))
+  predicate resolve_Seq_refmut_usize'0 (_1: Seq.seq (MutBorrow.t UInt64.t))
   
-  axiom resolve_axiom'0: forall x: Seq.seq (MutBorrow.t UInt64.t) [resolve_Seq_ref_usize'0 x]. resolve_Seq_ref_usize'0 x
-      -> resolve_Seq_ref_usize x
+  axiom resolve_axiom'0:
+    forall x: Seq.seq (MutBorrow.t UInt64.t) [resolve_Seq_refmut_usize'0 x]. resolve_Seq_refmut_usize'0 x
+      -> resolve_Seq_refmut_usize x
   
   let rec new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
     [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
@@ -87,36 +91,25 @@ module M_f
   let rec f (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: UInt64.t) ] s1
-      | s1 = new_ref_usize (fun (_ret: Seq.seq (MutBorrow.t UInt64.t)) -> [ &_5 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = into_inner_Seq_ref_usize {_5} (fun (_ret: Seq.seq (MutBorrow.t UInt64.t)) -> [ &s <- _ret ] s1)
-      | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = MutBorrow.borrow_mut <UInt64.t> {x}
-          (fun (_ret: MutBorrow.t UInt64.t) -> [ &_8 <- _ret ] [ &x <- _ret.final ] s1)
-      | s1 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
-          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_7 <- _ret ] [ &s <- _ret.final ] s2)
-      | s2 = push_front_ghost_ref_usize {_7} {_8} (fun (_ret: ()) -> [ &_6 <- _ret ] s3)
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = new {(0: Int128.t)} (fun (_ret: int) -> [ &_15 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = deref_Ghost_Int {_15} (fun (_ret: int) -> [ &_13 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
-          (fun (_ret: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_11 <- _ret ] [ &s <- _ret.final ] s1)
-      | s1 = get_mut_ghost_ref_usize {_11} {_13} (fun (_ret: t_Option_ref_ref_usize) -> [ &_10 <- _ret ] s2)
-      | s2 = bb6 ]
-    | bb6 = s0
-      [ s0 = unwrap_ref_ref_usize {_10} (fun (_ret: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _ret ] s1)
-      | s1 = bb7 ]
-    | bb7 = s0
-      [ s0 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s1
-      | s1 = -{resolve_ref_ref_usize _9}- s2
-      | s2 = -{resolve_Seq_ref_usize'0 s}- s3
-      | s3 = new_usize {x} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s4)
-      | s4 = bb8 ]
-    | bb8 = return {_0} ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s1 = new_refmut_usize (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &_5 <- _x ] s2)
+      | s2 = into_inner_Seq_refmut_usize {_5} (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &s <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <UInt64.t> {x}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &x <- _bor.final ] s4)
+      | s4 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
+          (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_7 <- _bor ] [ &s <- _bor.final ] s5)
+      | s5 = push_front_ghost_refmut_usize {_7} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s6)
+      | s6 = new {(0: Int128.t)} (fun (_x: int) -> [ &_15 <- _x ] s7)
+      | s7 = deref_Ghost_Int {_15} (fun (_x: int) -> [ &_13 <- _x ] s8)
+      | s8 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
+          (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_11 <- _bor ] [ &s <- _bor.final ] s9)
+      | s9 = get_mut_ghost_refmut_usize {_11} {_13} (fun (_x: t_Option_refmut_refmut_usize) -> [ &_10 <- _x ] s10)
+      | s10 = unwrap_refmut_refmut_usize {_10} (fun (_x: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _x ] s11)
+      | s11 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s12
+      | s12 = -{resolve_refmut_refmut_usize _9}- s13
+      | s13 = -{resolve_Seq_refmut_usize'0 s}- s14
+      | s14 = new_usize {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s15)
+      | s15 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = Any.any_l ()
     | & s: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
     | & _5: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
@@ -124,7 +117,7 @@ module M_f
     | & _7: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t)) = Any.any_l ()
     | & _8: MutBorrow.t UInt64.t = Any.any_l ()
     | & _9: MutBorrow.t (MutBorrow.t UInt64.t) = Any.any_l ()
-    | & _10: t_Option_ref_ref_usize = Any.any_l ()
+    | & _10: t_Option_refmut_refmut_usize = Any.any_l ()
     | & _11: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t)) = Any.any_l ()
     | & _13: int = Any.any_l ()
     | & _15: int = Any.any_l () ])

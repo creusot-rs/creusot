@@ -1,3 +1,4 @@
+use rustc_ast::Mutability;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
@@ -233,8 +234,12 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
             push_(prefix, "ptr");
             type_string_walk(tcx, prefix, *ty)
         }
-        Ref(_, ty, _) => {
+        Ref(_, ty, Mutability::Not) => {
             push_(prefix, "ref");
+            type_string_walk(tcx, prefix, *ty)
+        }
+        Ref(_, ty, Mutability::Mut) => {
+            push_(prefix, "refmut");
             type_string_walk(tcx, prefix, *ty)
         }
         Tuple(args) if args.is_empty() => {

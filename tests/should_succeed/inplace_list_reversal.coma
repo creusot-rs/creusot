@@ -27,17 +27,17 @@ module M_rev
         | Cons f0'0 -> inv_Box_tup2_T_List_T_Global f0'0
         end
   
-  predicate invariant_ref_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
+  predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_List_T
+  meta "rewrite_def" predicate invariant_refmut_List_T
   
-  predicate inv_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_ref_List_T _1
+  predicate inv_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_refmut_List_T _1
   
-  meta "rewrite_def" predicate inv_ref_List_T
+  meta "rewrite_def" predicate inv_refmut_List_T
   
   let rec replace_List_T (dest: MutBorrow.t t_List_T) (src: t_List_T) (return (x: t_List_T)) =
-    {[@expl:replace 'dest' type invariant] inv_ref_List_T dest}
+    {[@expl:replace 'dest' type invariant] inv_refmut_List_T dest}
     {[@expl:replace 'src' type invariant] inv_List_T src}
     any
     [ return (result: t_List_T) -> {inv_List_T result} {dest.final = src} {result = dest.current} (! return {result}) ]
@@ -47,9 +47,13 @@ module M_rev
       | Cons {f0 = hd; f1 = tl} -> rev_append_T tl (Cons { f0 = hd; f1 = o })
       end
   
-  let rec elim_Cons (input: t_List_T) (ret (f0'0: tup2_T_List_T)) = any
-    [ good (f0'0: tup2_T_List_T) -> {Cons f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: tup2_T_List_T [Cons f0'0: t_List_T]. Cons f0'0 <> input} (! {false} any) ]
+  let rec elim_Cons (_x: t_List_T) (return (f0'0: tup2_T_List_T)) = any
+    [ _k (f0'0: tup2_T_List_T) -> {Cons f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Cons _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate resolve_T (_1: t_T)
   
@@ -69,63 +73,59 @@ module M_rev
         | Cons x0 -> resolve_Box_tup2_T_List_T_Global x0
         end
   
-  predicate resolve_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_List_T
+  meta "rewrite_def" predicate resolve_refmut_List_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec rev_T (l: MutBorrow.t t_List_T) (return (x: ())) = {[@expl:rev 'l' type invariant] inv_ref_List_T l}
+  let rec rev_T (l: MutBorrow.t t_List_T) (return (x: ())) = {[@expl:rev 'l' type invariant] inv_refmut_List_T l}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_l <- l ] s1 | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &prev <- Nil ] s1
-      | s1 = [ &_10 <- Nil ] s2
-      | s2 = {inv_List_T l.current}
-        MutBorrow.borrow_mut <t_List_T> {l.current}
-          (fun (_ret: MutBorrow.t t_List_T) ->
-            [ &_9 <- _ret ] -{inv_List_T _ret.final}-
-            [ &l <- { l with current = _ret.final } ] s3)
-      | s3 = replace_List_T {_9} {_10} (fun (_ret: t_List_T) -> [ &head <- _ret ] s4)
-      | s4 = bb3 ]
+    [ bb0 = s0
+      [ s0 = [ &old_l <- l ] s1
+      | s1 = [ &prev <- Nil ] s2
+      | s2 = [ &_10 <- Nil ] s3
+      | s3 = MutBorrow.borrow_mut <t_List_T> {l.current}
+          (fun (_bor: MutBorrow.t t_List_T) ->
+            [ &_9 <- _bor ] -{inv_List_T _bor.final}-
+            [ &l <- { l with current = _bor.final } ] s4) [ _ck -> (! {inv_List_T l.current} any) ]
+      | s4 = replace_List_T {_9} {_10} (fun (_x: t_List_T) -> [ &head <- _x ] s5)
+      | s5 = bb3 ]
     | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant #0] inv_List_T prev}
-        {[@expl:loop invariant #1] inv_List_T head}
-        {[@expl:loop invariant #2] rev_append_T head prev = rev_append_T old_l.current (Nil)}
+      [ bb3 = {[@expl:inferred invariant: type invariant] inv_List_T prev}
+        {[@expl:inferred invariant: type invariant] inv_List_T head}
+        {[@expl:loop invariant] rev_append_T head prev = rev_append_T old_l.current (Nil)}
         (! s0)
-        [ s0 = bb4 ]
-        [ bb4 = any [ br0 -> {head = Nil} (! bb18) | br1 (x0: tup2_T_List_T) -> {head = Cons x0} (! bb6) ]
-        | bb6 = s0
+        [ s0 = any [ br0 -> {head = Nil} (! bb18) | br1 (x0: tup2_T_List_T) -> {head = Cons x0} (! bb6) ] ]
+        [ bb6 = s0
           [ s0 = elim_Cons {head} (fun (r0: tup2_T_List_T) -> [ &curr <- r0 ] s1)
           | s1 = [ &next <- curr.f1 ] s2
-          | s2 = bb7 ]
-        | bb7 = s0 [ s0 = [ &curr <- { curr with f1 = prev } ] s1 | s1 = bb9 ]
-        | bb9 = s0 [ s0 = [ &_26 <- Cons curr ] s1 | s1 = bb11 ]
-        | bb11 = s0 [ s0 = [ &prev <- _26 ] s1 | s1 = bb14 ]
-        | bb14 = s0 [ s0 = [ &head <- next ] s1 | s1 = bb3 ] ] ]
+          | s2 = [ &curr <- { curr with f1 = prev } ] s3
+          | s3 = [ &_22 <- Cons curr ] s4
+          | s4 = [ &prev <- _22 ] s5
+          | s5 = [ &head <- next ] s6
+          | s6 = bb3 ] ] ]
     | bb18 = s0
-      [ s0 = {[@expl:type invariant] match head with
-          | Cons x -> inv_Box_tup2_T_List_T_Global x
-          | _ -> true
-          end}
-        s1
+      [ s0 = s1
+        [ _ck -> (! {[@expl:type invariant] match head with
+            | Cons x -> inv_Box_tup2_T_List_T_Global x
+            | _ -> true
+            end}
+          any) ]
       | s1 = -{match head with
           | Cons x -> resolve_Box_tup2_T_List_T_Global x
           | _ -> true
           end}-
         s2
-      | s2 = bb20 ]
-    | bb20 = s0
-      [ s0 = {[@expl:type invariant] inv_List_T l.current} s1
-      | s1 = -{resolve_List_T l.current}- s2
-      | s2 = [ &l <- { l with current = prev } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_List_T l} s4
-      | s4 = -{resolve_ref_List_T l}- s5
-      | s5 = bb24 ]
-    | bb24 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_List_T l.current} any) ]
+      | s3 = -{resolve_List_T l.current}- s4
+      | s4 = [ &l <- { l with current = prev } ] s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T l} any) ]
+      | s6 = -{resolve_refmut_List_T l}- s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & l: MutBorrow.t t_List_T = l
     | & old_l: MutBorrow.t t_List_T = Any.any_l ()
     | & prev: t_List_T = Any.any_l ()
@@ -134,6 +134,6 @@ module M_rev
     | & _10: t_List_T = Any.any_l ()
     | & curr: tup2_T_List_T = Any.any_l ()
     | & next: t_List_T = Any.any_l ()
-    | & _26: t_List_T = Any.any_l () ])
+    | & _22: t_List_T = Any.any_l () ])
     [ return (result: ()) -> {[@expl:rev ensures] l.final = rev_append_T l.current (Nil)} (! return {result}) ]
 end

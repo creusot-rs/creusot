@@ -35,9 +35,9 @@ module M_impl_OwnResult_T_E__is_ok (* OwnResult<T, E> *)
     {[@expl:is_ok 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb3) | br1 (x0: t_E) -> {self = Err x0} (! bb1) ]
-    | bb1 = s0 [ s0 = [ &_0 <- false ] s1 | s1 = bb4 ]
-    | bb3 = s0 [ s0 = [ &_0 <- true ] s1 | s1 = bb4 ]
-    | bb4 = return {_0} ] [ & _0: bool = Any.any_l () | & self: t_OwnResult_T_E = self ])
+    | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_OwnResult_T_E = self ])
     [ return (result: bool) -> {[@expl:is_ok ensures] result = (exists t: t_T. self = Ok t)} (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
@@ -80,9 +80,9 @@ module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
   let rec is_err_T (self: t_OwnResult_T_E) (return (x: bool)) =
     {[@expl:is_err 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
-    [ bb0 = s0 [ s0 = is_ok_T {self} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- not _4 ] s1 | s1 = return {_0} ] ]
-    [ & _0: bool = Any.any_l () | & self: t_OwnResult_T_E = self | & _4: bool = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = is_ok_T {self} (fun (_x: bool) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- not _4 ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_OwnResult_T_E = self | & _4: bool = Any.any_l () ])
     [ return (result: bool) -> {[@expl:is_err ensures] result = (exists e: t_E. self = Err e)} (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
@@ -94,9 +94,13 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
@@ -104,9 +108,13 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
   
   type t_Option_T = None | Some t_T
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -136,13 +144,13 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_E x'0} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E x'0} any) ]
       | s2 = -{resolve_E x'0}- s3
-      | s3 = [ &_0 <- None ] s4
-      | s4 = bb9 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- Some x ] s2 | s2 = bb9 ]
-    | bb9 = return {_0} ]
-    [ & _0: t_Option_T = Any.any_l ()
+      | s3 = [ &_ret <- None ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- Some x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
@@ -160,15 +168,23 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_Option_E = None | Some t_E
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -200,15 +216,15 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
     {[@expl:err 'self' type invariant] inv_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- Some x'0 ] s2 | s2 = bb9 ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_ret <- Some x'0 ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_T x} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T x} any) ]
       | s2 = -{resolve_T x}- s3
-      | s3 = [ &_0 <- None ] s4
-      | s4 = bb9 ]
-    | bb9 = return {_0} ]
-    [ & _0: t_Option_E = Any.any_l ()
+      | s3 = [ &_ret <- None ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_E = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
@@ -226,15 +242,23 @@ module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_ref_T_ref_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -289,10 +313,13 @@ module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
     {[@expl:as_ref 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1) | s1 = [ &_0 <- Err'0 x'0 ] s2 | s2 = bb5 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- Ok'0 x ] s2 | s2 = bb5 ]
-    | bb5 = return {_0} ]
-    [ & _0: t_OwnResult_ref_T_ref_E = Any.any_l ()
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
+      | s1 = [ &_ret <- Err'0 x'0 ] s2
+      | s2 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- Ok'0 x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_ref_T_ref_E = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
@@ -312,43 +339,51 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
-  type t_OwnResult_ref_T_ref_E = Ok'0 (MutBorrow.t t_T) | Err'0 (MutBorrow.t t_E)
+  type t_OwnResult_refmut_T_refmut_E = Ok'0 (MutBorrow.t t_T) | Err'0 (MutBorrow.t t_E)
   
-  predicate invariant_ref_E [@inline:trivial] (self: MutBorrow.t t_E) = inv_E self.current /\ inv_E self.final
+  predicate invariant_refmut_E [@inline:trivial] (self: MutBorrow.t t_E) = inv_E self.current /\ inv_E self.final
   
-  meta "rewrite_def" predicate invariant_ref_E
+  meta "rewrite_def" predicate invariant_refmut_E
   
-  predicate inv_ref_E [@inline:trivial] (_1: MutBorrow.t t_E) = invariant_ref_E _1
+  predicate inv_refmut_E [@inline:trivial] (_1: MutBorrow.t t_E) = invariant_refmut_E _1
   
-  meta "rewrite_def" predicate inv_ref_E
+  meta "rewrite_def" predicate inv_refmut_E
   
-  predicate resolve_ref_E [@inline:trivial] (_1: MutBorrow.t t_E) = _1.final = _1.current
+  predicate resolve_refmut_E [@inline:trivial] (_1: MutBorrow.t t_E) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_E
+  meta "rewrite_def" predicate resolve_refmut_E
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
   
@@ -358,82 +393,79 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
         | Err f0 -> inv_E f0
         end
   
-  predicate invariant_ref_OwnResult_T_E [@inline:trivial] (self: MutBorrow.t t_OwnResult_T_E) =
+  predicate invariant_refmut_OwnResult_T_E [@inline:trivial] (self: MutBorrow.t t_OwnResult_T_E) =
     inv_OwnResult_T_E self.current /\ inv_OwnResult_T_E self.final
   
-  meta "rewrite_def" predicate invariant_ref_OwnResult_T_E
+  meta "rewrite_def" predicate invariant_refmut_OwnResult_T_E
   
-  predicate inv_ref_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = invariant_ref_OwnResult_T_E _1
+  predicate inv_refmut_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) =
+    invariant_refmut_OwnResult_T_E _1
   
-  meta "rewrite_def" predicate inv_ref_OwnResult_T_E
+  meta "rewrite_def" predicate inv_refmut_OwnResult_T_E
   
-  predicate resolve_ref_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = _1.final = _1.current
+  predicate resolve_refmut_OwnResult_T_E [@inline:trivial] (_1: MutBorrow.t t_OwnResult_T_E) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_OwnResult_T_E
+  meta "rewrite_def" predicate resolve_refmut_OwnResult_T_E
   
-  predicate inv_OwnResult_ref_T_ref_E (_1: t_OwnResult_ref_T_ref_E)
+  predicate inv_OwnResult_refmut_T_refmut_E (_1: t_OwnResult_refmut_T_refmut_E)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall x: t_OwnResult_ref_T_ref_E [inv_OwnResult_ref_T_ref_E x]. inv_OwnResult_ref_T_ref_E x
+    forall x: t_OwnResult_refmut_T_refmut_E [inv_OwnResult_refmut_T_refmut_E x]. inv_OwnResult_refmut_T_refmut_E x
       = match x with
-        | Ok'0 f0 -> inv_ref_T f0
-        | Err'0 f0 -> inv_ref_E f0
+        | Ok'0 f0 -> inv_refmut_T f0
+        | Err'0 f0 -> inv_refmut_E f0
         end
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_mut_T (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
-    {[@expl:as_mut 'self' type invariant] inv_ref_OwnResult_T_E self}
+  let rec as_mut_T (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_refmut_T_refmut_E)) =
+    {[@expl:as_mut 'self' type invariant] inv_refmut_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self.current = Ok x0} (! bb4) | br1 (x0: t_E) -> {self.current = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self.current}
           (fun (r0: t_E) ->
-            {inv_E r0}
             MutBorrow.borrow_final <t_E> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-              (fun (_ret: MutBorrow.t t_E) ->
-                [ &x'0 <- _ret ] -{inv_E _ret.final}-
-                [ &self <- { self with current = Err _ret.final } ] s1))
-      | s1 = {inv_E x'0.current}
-        MutBorrow.borrow_final <t_E> {x'0.current} {MutBorrow.get_id x'0}
-          (fun (_ret: MutBorrow.t t_E) ->
-            [ &_8 <- _ret ] -{inv_E _ret.final}-
-            [ &x'0 <- { x'0 with current = _ret.final } ] s2)
-      | s2 = [ &_0 <- Err'0 _8 ] s3
-      | s3 = {[@expl:type invariant] inv_ref_E x'0} s4
-      | s4 = -{resolve_ref_E x'0}- s5
+              (fun (_bor: MutBorrow.t t_E) ->
+                [ &x'0 <- _bor ] -{inv_E _bor.final}-
+                [ &self <- { self with current = Err _bor.final } ] s1) [ _ck -> (! {inv_E r0} any) ])
+      | s1 = MutBorrow.borrow_final <t_E> {x'0.current} {MutBorrow.get_id x'0}
+          (fun (_bor: MutBorrow.t t_E) ->
+            [ &_8 <- _bor ] -{inv_E _bor.final}-
+            [ &x'0 <- { x'0 with current = _bor.final } ] s2) [ _ck -> (! {inv_E x'0.current} any) ]
+      | s2 = [ &_ret <- Err'0 _8 ] s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_E x'0} any) ]
+      | s4 = -{resolve_refmut_E x'0}- s5
       | s5 = bb5 ]
     | bb4 = s0
       [ s0 = elim_Ok {self.current}
           (fun (r0: t_T) ->
-            {inv_T r0}
             MutBorrow.borrow_final <t_T> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-              (fun (_ret: MutBorrow.t t_T) ->
-                [ &x <- _ret ] -{inv_T _ret.final}-
-                [ &self <- { self with current = Ok _ret.final } ] s1))
-      | s1 = {inv_T x.current}
-        MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_6 <- _ret ] -{inv_T _ret.final}-
-            [ &x <- { x with current = _ret.final } ] s2)
-      | s2 = [ &_0 <- Ok'0 _6 ] s3
-      | s3 = {[@expl:type invariant] inv_ref_T x} s4
-      | s4 = -{resolve_ref_T x}- s5
+              (fun (_bor: MutBorrow.t t_T) ->
+                [ &x <- _bor ] -{inv_T _bor.final}-
+                [ &self <- { self with current = Ok _bor.final } ] s1) [ _ck -> (! {inv_T r0} any) ])
+      | s1 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_6 <- _bor ] -{inv_T _bor.final}-
+            [ &x <- { x with current = _bor.final } ] s2) [ _ck -> (! {inv_T x.current} any) ]
+      | s2 = [ &_ret <- Ok'0 _6 ] s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T x} any) ]
+      | s4 = -{resolve_refmut_T x}- s5
       | s5 = bb5 ]
     | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_OwnResult_T_E self} s1
-      | s1 = -{resolve_ref_OwnResult_T_E self}- s2
-      | s2 = return {_0} ] ]
-    [ & _0: t_OwnResult_ref_T_ref_E = Any.any_l ()
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_OwnResult_T_E self} any) ]
+      | s1 = -{resolve_refmut_OwnResult_T_E self}- s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_refmut_T_refmut_E = Any.any_l ()
     | & self: MutBorrow.t t_OwnResult_T_E = self
     | & x: MutBorrow.t t_T = Any.any_l ()
     | & _6: MutBorrow.t t_T = Any.any_l ()
     | & x'0: MutBorrow.t t_E = Any.any_l ()
     | & _8: MutBorrow.t t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_ref_T_ref_E) ->
-    {[@expl:as_mut result type invariant] inv_OwnResult_ref_T_ref_E result}
+    [ return (result: t_OwnResult_refmut_T_refmut_E) ->
+    {[@expl:as_mut result type invariant] inv_OwnResult_refmut_T_refmut_E result}
       {[@expl:as_mut ensures] exists t: MutBorrow.t t_T. self.current = Ok (t.current)
           /\ self.final = Ok (t.final) /\ result = Ok'0 t
         \/ (exists e: MutBorrow.t t_E. self.current = Err (e.current)
@@ -449,17 +481,25 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
   predicate resolve_E (_1: t_E)
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -482,12 +522,15 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_E _e} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
       | s2 = -{resolve_E _e}- s3
       | s3 = {false} any ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
-    | bb6 = return {_0} ]
-    [ & _0: t_T = Any.any_l () | & self: t_OwnResult_T_E = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & t: t_T = Any.any_l ()
+    | & _e: t_E = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:unwrap result type invariant] inv_T result}
       {[@expl:unwrap ensures] Ok result = self}
       (! return {result}) ]
@@ -501,17 +544,25 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
   predicate resolve_E (_1: t_E)
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -534,12 +585,15 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_E _e} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
       | s2 = -{resolve_E _e}- s3
       | s3 = {false} any ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb6 ]
-    | bb6 = return {_0} ]
-    [ & _0: t_T = Any.any_l () | & self: t_OwnResult_T_E = self | & t: t_T = Any.any_l () | & _e: t_E = Any.any_l () ])
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & t: t_T = Any.any_l ()
+    | & _e: t_E = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:expect result type invariant] inv_T result}
       {[@expl:expect ensures] Ok result = self}
       (! return {result}) ]
@@ -553,13 +607,21 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -584,14 +646,16 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
     {[@expl:unwrap_err requires] exists e: t_E. self = Err e}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- e ] s2 | s2 = bb6 ]
-    | bb6 = return {_0}
+    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &_t <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_T _t} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T _t} any) ]
       | s2 = -{resolve_T _t}- s3
       | s3 = {false} any ] ]
-    [ & _0: t_E = Any.any_l () | & self: t_OwnResult_T_E = self | & _t: t_T = Any.any_l () | & e: t_E = Any.any_l () ])
+    [ & _ret: t_E = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & _t: t_T = Any.any_l ()
+    | & e: t_E = Any.any_l () ])
     [ return (result: t_E) -> {[@expl:unwrap_err result type invariant] inv_E result}
       {[@expl:unwrap_err ensures] Err result = self}
       (! return {result}) ]
@@ -605,9 +669,13 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
@@ -617,9 +685,13 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
   
   predicate resolve_T (_1: t_T)
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
   
@@ -640,14 +712,17 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_E e} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
       | s2 = -{resolve_E e}- s3
-      | s3 = [ &_0 <- default ] s4
-      | s4 = bb9 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_T default} s1 | s1 = -{resolve_T default}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- t ] s2 | s2 = bb9 ]
-    | bb9 = return {_0} ]
-    [ & _0: t_T = Any.any_l ()
+      | s3 = [ &_ret <- default ] s4
+      | s4 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T default} any) ]
+      | s1 = -{resolve_T default}- s2
+      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s3)
+      | s3 = [ &_ret <- t ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & default: t_T = default
     | & t: t_T = Any.any_l ()
@@ -704,9 +779,13 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
     any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate resolve_default [@inline:trivial] (_1: ()) = true
   
@@ -772,12 +851,13 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv_OwnResult_T_E self} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_T_E self} any) ]
       | s1 = -{resolve_OwnResult_T_E self}- s2
-      | s2 = default_T (fun (_ret: t_T) -> [ &_0 <- _ret ] s3)
-      | s3 = bb7 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_0 <- x ] s2 | s2 = bb7 ]
-    | bb7 = return {_0} ] [ & _0: t_T = Any.any_l () | & self: t_OwnResult_T_E = self | & x: t_T = Any.any_l () ])
+      | s2 = default_T (fun (_x: t_T) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & self: t_OwnResult_T_E = self | & x: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:unwrap_or_default result type invariant] inv_T result}
       {[@expl:unwrap_or_default ensures #0] forall t: t_T. self = Ok t -> result = t}
       {[@expl:unwrap_or_default ensures #1] (exists e: t_E. self = Err e) -> postcondition_default () () result}
@@ -820,13 +900,21 @@ module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
         | Err'0 x0 -> resolve_E x0
         end
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -850,19 +938,18 @@ module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = {[@expl:type invariant] inv_OwnResult_U_E res} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_U_E res} any) ]
       | s1 = -{resolve_OwnResult_U_E res}- s2
       | s2 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s3)
-      | s3 = [ &_0 <- Err'0 e ] s4
-      | s4 = bb10 ]
+      | s3 = [ &_ret <- Err'0 e ] s4
+      | s4 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_T x} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T x} any) ]
       | s2 = -{resolve_T x}- s3
-      | s3 = [ &_0 <- res ] s4
-      | s4 = bb10 ]
-    | bb10 = return {_0} ]
-    [ & _0: t_OwnResult_U_E = Any.any_l ()
+      | s3 = [ &_ret <- res ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_U_E = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & res: t_OwnResult_U_E = res
     | & x: t_T = Any.any_l ()
@@ -881,9 +968,13 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
   
   type t_OwnResult_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_E (_1: t_E)
   
@@ -917,9 +1008,13 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
         | Err'0 x0 -> resolve_F x0
         end
   
-  let rec elim_Ok (input: t_OwnResult_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
   
@@ -940,15 +1035,17 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_E e} s2
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
       | s2 = -{resolve_E e}- s3
-      | s3 = [ &_0 <- res ] s4
-      | s4 = bb10 ]
+      | s3 = [ &_ret <- res ] s4
+      | s4 = return {_ret} ]
     | bb2 = s0
-      [ s0 = {[@expl:type invariant] inv_OwnResult_T_F res} s1 | s1 = -{resolve_OwnResult_T_F res}- s2 | s2 = bb4 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_0 <- Ok'0 v ] s2 | s2 = bb10 ]
-    | bb10 = return {_0} ]
-    [ & _0: t_OwnResult_T_F = Any.any_l ()
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_T_F res} any) ]
+      | s1 = -{resolve_OwnResult_T_F res}- s2
+      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s3)
+      | s3 = [ &_ret <- Ok'0 v ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_F = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & res: t_OwnResult_T_F = res
     | & v: t_T = Any.any_l ()
@@ -967,15 +1064,23 @@ module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
   
   type t_OwnResult_ref_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_ref_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_ref_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_ref_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (input: t_OwnResult_ref_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_ref_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_ref_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -1013,10 +1118,11 @@ module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
     {[@expl:copied 'self' type invariant] inv_OwnResult_ref_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- Err'0 e ] s2 | s2 = bb8 ]
-    | bb4 = s0 [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_0 <- Ok'0 t ] s2 | s2 = bb8 ]
-    | bb8 = return {_0} ]
-    [ & _0: t_OwnResult_T_E = Any.any_l ()
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Ok'0 t ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_E = Any.any_l ()
     | & self: t_OwnResult_ref_T_E = self
     | & t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
@@ -1034,15 +1140,23 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
   
   type t_OwnResult_ref_T_E = Ok t_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_ref_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_ref_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_ref_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (input: t_OwnResult_ref_T_E) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Ok f0: t_OwnResult_ref_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_ref_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -1151,14 +1265,14 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
     {[@expl:cloned 'self' type invariant] inv_OwnResult_ref_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- Err'0 e ] s2 | s2 = bb10 ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1)
-      | s1 = clone_T {t} (fun (_ret: t_T) -> [ &_6 <- _ret ] s2)
-      | s2 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_0 <- Ok'0 _6 ] s1 | s1 = bb10 ]
-    | bb10 = return {_0} ]
-    [ & _0: t_OwnResult_T_E = Any.any_l ()
+      | s1 = clone_T {t} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- Ok'0 _6 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_E = Any.any_l ()
     | & self: t_OwnResult_ref_T_E = self
     | & t: t_T = Any.any_l ()
     | & _6: t_T = Any.any_l ()
@@ -1171,7 +1285,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
         end}
       (! return {result}) ]
 end
-module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
+module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -1179,39 +1293,47 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   type t_E
   
-  type t_OwnResult_ref_T_E = Ok (MutBorrow.t t_T) | Err t_E
+  type t_OwnResult_refmut_T_E = Ok (MutBorrow.t t_T) | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_ref_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_ref_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_refmut_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (input: t_OwnResult_ref_T_E) (ret (f0: MutBorrow.t t_T)) = any
-    [ good (f0: MutBorrow.t t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: MutBorrow.t t_T [Ok f0: t_OwnResult_ref_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_refmut_T_E) (return (f0: MutBorrow.t t_T)) = any
+    [ _k (f0: MutBorrow.t t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   predicate inv_E (_1: t_E)
   
-  predicate inv_OwnResult_ref_T_E (_1: t_OwnResult_ref_T_E)
+  predicate inv_OwnResult_refmut_T_E (_1: t_OwnResult_refmut_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_ref_T_E [inv_OwnResult_ref_T_E x]. inv_OwnResult_ref_T_E x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_refmut_T_E [inv_OwnResult_refmut_T_E x]. inv_OwnResult_refmut_T_E x
       = match x with
-        | Ok f0 -> inv_ref_T f0
+        | Ok f0 -> inv_refmut_T f0
         | Err f0 -> inv_E f0
         end
   
@@ -1227,28 +1349,29 @@ module M_impl_OwnResult_ref_T_E_0__copied (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec copied_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
-    {[@expl:copied 'self' type invariant] inv_OwnResult_ref_T_E self}
+  let rec copied_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+    {[@expl:copied 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- Err'0 e ] s2 | s2 = bb8 ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T t} s2
-      | s2 = -{resolve_ref_T t}- s3
-      | s3 = [ &_0 <- Ok'0 (t.current) ] s4
-      | s4 = bb8 ]
-    | bb8 = return {_0} ]
-    [ & _0: t_OwnResult_T_E = Any.any_l ()
-    | & self: t_OwnResult_ref_T_E = self
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
+      | s3 = [ &_ret <- Ok'0 (t.current) ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_E = Any.any_l ()
+    | & self: t_OwnResult_refmut_T_E = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
     [ return (result: t_OwnResult_T_E) -> {[@expl:copied result type invariant] inv_OwnResult_T_E result}
-      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t -> result = Ok'0 (t.current) /\ resolve_ref_T t}
+      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t
+        -> result = Ok'0 (t.current) /\ resolve_refmut_T t}
       {[@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
       (! return {result}) ]
 end
-module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
+module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
@@ -1256,43 +1379,51 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   type t_E
   
-  type t_OwnResult_ref_T_E = Ok (MutBorrow.t t_T) | Err t_E
+  type t_OwnResult_refmut_T_E = Ok (MutBorrow.t t_T) | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_ref_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_ref_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_refmut_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
-  let rec elim_Ok (input: t_OwnResult_ref_T_E) (ret (f0: MutBorrow.t t_T)) = any
-    [ good (f0: MutBorrow.t t_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: MutBorrow.t t_T [Ok f0: t_OwnResult_ref_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_refmut_T_E) (return (f0: MutBorrow.t t_T)) = any
+    [ _k (f0: MutBorrow.t t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
   meta "rewrite_def" predicate invariant_ref_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_ref_T
-  
-  predicate invariant_ref_T'0 [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T'0
-  
-  predicate inv_ref_T'0 [@inline:trivial] (_1: t_T) = invariant_ref_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_T'0
-  
   predicate precondition_clone (self: ()) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T'0 self_)
+  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
       -> precondition_clone () args
   
   predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
@@ -1306,11 +1437,11 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   predicate inv_E (_1: t_E)
   
-  predicate inv_OwnResult_ref_T_E (_1: t_OwnResult_ref_T_E)
+  predicate inv_OwnResult_refmut_T_E (_1: t_OwnResult_refmut_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_ref_T_E [inv_OwnResult_ref_T_E x]. inv_OwnResult_ref_T_E x
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_refmut_T_E [inv_OwnResult_refmut_T_E x]. inv_OwnResult_refmut_T_E x
       = match x with
-        | Ok f0 -> inv_ref_T f0
+        | Ok f0 -> inv_refmut_T f0
         | Err f0 -> inv_E f0
         end
   
@@ -1322,7 +1453,7 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
         | Err'0 f0 -> inv_E f0
         end
   
-  type tup2_OwnResult_ref_T_E_OwnResult_T_E = { f0: t_OwnResult_ref_T_E; f1: t_OwnResult_T_E }
+  type tup2_OwnResult_refmut_T_E_OwnResult_T_E = { f0: t_OwnResult_refmut_T_E; f1: t_OwnResult_T_E }
   
   predicate resolve_clone [@inline:trivial] (_1: ()) = true
   
@@ -1383,21 +1514,21 @@ module M_impl_OwnResult_ref_T_E_0__cloned (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let rec cloned_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
-    {[@expl:cloned 'self' type invariant] inv_OwnResult_ref_T_E self}
+  let rec cloned_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+    {[@expl:cloned 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_0 <- Err'0 e ] s2 | s2 = bb10 ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T t} s2
-      | s2 = -{resolve_ref_T t}- s3
-      | s3 = clone_T {t.current} (fun (_ret: t_T) -> [ &_6 <- _ret ] s4)
-      | s4 = bb5 ]
-    | bb5 = s0 [ s0 = [ &_0 <- Ok'0 _6 ] s1 | s1 = bb10 ]
-    | bb10 = return {_0} ]
-    [ & _0: t_OwnResult_T_E = Any.any_l ()
-    | & self: t_OwnResult_ref_T_E = self
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
+      | s2 = -{resolve_refmut_T t}- s3
+      | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
+      | s4 = [ &_ret <- Ok'0 _6 ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_E = Any.any_l ()
+    | & self: t_OwnResult_refmut_T_E = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _6: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
@@ -1420,21 +1551,33 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
   
   type t_OwnResult_Option_T_E = Ok t_Option_T | Err t_E
   
-  let rec elim_Err (input: t_OwnResult_Option_T_E) (ret (f0: t_E)) = any
-    [ good (f0: t_E) -> {Err f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_E [Err f0: t_OwnResult_Option_T_E]. Err f0 <> input} (! {false} any) ]
+  let rec elim_Err (_x: t_OwnResult_Option_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
   type t_Option_OwnResult_T_E = None'0 | Some'0 t_OwnResult_T_E
   
-  let rec elim_Ok (input: t_OwnResult_Option_T_E) (ret (f0: t_Option_T)) = any
-    [ good (f0: t_Option_T) -> {Ok f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Option_T [Ok f0: t_OwnResult_Option_T_E]. Ok f0 <> input} (! {false} any) ]
+  let rec elim_Ok (_x: t_OwnResult_Option_T_E) (return (f0: t_Option_T)) = any
+    [ _k (f0: t_Option_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_Some (input: t_Option_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Some f0: t_Option_T]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   predicate inv_T (_1: t_T)
   
@@ -1482,18 +1625,20 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
     {[@expl:transpose 'self' type invariant] inv_OwnResult_Option_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_Option_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb5) ]
-    | bb5 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_14 <- Err'0 e ] s2 | s2 = bb11 ]
-    | bb11 = s0 [ s0 = [ &_0 <- Some'0 _14 ] s1 | s1 = bb15 ]
+    | bb5 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      | s1 = [ &_14 <- Err'0 e ] s2
+      | s2 = [ &_ret <- Some'0 _14 ] s3
+      | s3 = return {_ret} ]
     | bb2 = elim_Ok {self}
         (fun (r0: t_Option_T) -> any [ br0 -> {r0 = None} (! bb6) | br1 (x0: t_T) -> {r0 = Some x0} (! bb7) ])
     | bb7 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_Option_T) -> elim_Some {r0} (fun (r0'0: t_T) -> [ &x <- r0'0 ] s1))
       | s1 = [ &_11 <- Ok'0 x ] s2
-      | s2 = bb8 ]
-    | bb8 = s0 [ s0 = [ &_0 <- Some'0 _11 ] s1 | s1 = bb15 ]
-    | bb6 = s0 [ s0 = [ &_0 <- None'0 ] s1 | s1 = bb15 ]
-    | bb15 = return {_0} ]
-    [ & _0: t_Option_OwnResult_T_E = Any.any_l ()
+      | s2 = [ &_ret <- Some'0 _11 ] s3
+      | s3 = return {_ret} ]
+    | bb6 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_OwnResult_T_E = Any.any_l ()
     | & self: t_OwnResult_Option_T_E = self
     | & x: t_T = Any.any_l ()
     | & _11: t_OwnResult_T_E = Any.any_l ()

@@ -4,13 +4,21 @@ module M_test
   
   type t_M_u32 = F UInt32.t | G UInt32.t
   
-  let rec elim_G (input: t_M_u32) (ret (field2: UInt32.t)) = any
-    [ good (field2: UInt32.t) -> {G field2 = input} (! ret {field2})
-    | bad -> {forall field2: UInt32.t [G field2: t_M_u32]. G field2 <> input} (! {false} any) ]
+  let rec elim_G (_x: t_M_u32) (return (field2: UInt32.t)) = any
+    [ _k (field2: UInt32.t) -> {G field2 = _x} (! return {field2})
+    | _chk -> (! {match _x with
+        | G _ -> true
+        | _ -> false
+        end}
+      any) ]
   
-  let rec elim_F (input: t_M_u32) (ret (field1: UInt32.t)) = any
-    [ good (field1: UInt32.t) -> {F field1 = input} (! ret {field1})
-    | bad -> {forall field1: UInt32.t [F field1: t_M_u32]. F field1 <> input} (! {false} any) ]
+  let rec elim_F (_x: t_M_u32) (return (field1: UInt32.t)) = any
+    [ _k (field1: UInt32.t) -> {F field1 = _x} (! return {field1})
+    | _chk -> (! {match _x with
+        | F _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -20,14 +28,13 @@ module M_test
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o = F x0} (! bb4) | br1 (x0: UInt32.t) -> {o = G x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_G {o} (fun (rfield2: UInt32.t) -> [ &field2 <- rfield2 ] s1)
-      | s1 = [ &_0 <- field2 = (0: UInt32.t) ] s2
-      | s2 = bb5 ]
+      | s1 = [ &_ret <- field2 = (0: UInt32.t) ] s2
+      | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_F {o} (fun (rfield1: UInt32.t) -> [ &field1 <- rfield1 ] s1)
-      | s1 = [ &_0 <- UInt32.gt field1 (0: UInt32.t) ] s2
-      | s2 = bb5 ]
-    | bb5 = return {_0} ]
-    [ & _0: bool = Any.any_l ()
+      | s1 = [ &_ret <- UInt32.gt field1 (0: UInt32.t) ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
     | & o: t_M_u32 = o
     | & field1: UInt32.t = Any.any_l ()
     | & field2: UInt32.t = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]

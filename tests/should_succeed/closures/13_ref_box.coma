@@ -74,13 +74,12 @@ module M_call_fn
     {[@expl:call_fn requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_10 <- x ] s3
-      | s3 = call_F {f} {_10} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
-      | s4 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
+      | s3 = call_F {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:call_fn ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_call_fnmut
@@ -92,13 +91,13 @@ module M_call_fnmut
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
@@ -131,7 +130,7 @@ module M_call_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
@@ -143,15 +142,15 @@ module M_call_fnmut
     {[@expl:call_fnmut requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
       | s1 = [ &_10 <- x ] s2
-      | s2 = call_mut_F {_9} {_10} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l ()
+      | s2 = call_mut_F {_9} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s4 = -{resolve_F f}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & f: t_F = f
     | & x: Int32.t = x
     | & _9: MutBorrow.t t_F = Any.any_l ()
@@ -185,9 +184,10 @@ module M_call_fnonce
     {[@expl:call_fnonce requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_10 <- x ] s1 | s1 = call_once_F {f} {_10} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2) | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
+      [ s0 = [ &_10 <- x ] s1
+      | s1 = call_once_F {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_F f x result} (! return {result}) ]
 end
 module M_test1
@@ -327,11 +327,10 @@ module M_test1
     {[@expl:test1 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fn_ref_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+      | s2 = call_fn_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test1 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test2
@@ -473,9 +472,8 @@ module M_test2
   let rec test2_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test2 'f' type invariant] inv_F f}
     {[@expl:test2 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fn_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fn_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test2 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test3
@@ -598,11 +596,10 @@ module M_test3
     {[@expl:test3 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fnmut_ref_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+      | s2 = call_fnmut_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test3 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test4
@@ -725,9 +722,8 @@ module M_test4
   let rec test4_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test4 'f' type invariant] inv_F f}
     {[@expl:test4 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test4 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test5
@@ -739,20 +735,20 @@ module M_test5
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
-  predicate precondition_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
     precondition_F self.current args
   
-  meta "rewrite_def" predicate precondition_ref_F
+  meta "rewrite_def" predicate precondition_refmut_F
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -782,53 +778,54 @@ module M_test5
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut_F self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_F
+  meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  predicate resolve_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
+  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_F
+  meta "rewrite_def" predicate resolve_refmut_F
   
-  predicate postcondition_mut_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
+  predicate postcondition_mut_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
     postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate postcondition_mut_ref_F
+  meta "rewrite_def" predicate postcondition_mut_refmut_F
   
-  function fn_mut_once_ref_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_ref_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_ref_F self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut_ref_F self args res_state res /\ resolve_ref_F res_state)
+  axiom fn_mut_once_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_refmut_F self args res
+      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
+        /\ resolve_refmut_F res_state)
   
-  predicate hist_inv_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
+  predicate hist_inv_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
     hist_inv_F self.current result_state.current /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate hist_inv_ref_F
+  meta "rewrite_def" predicate hist_inv_refmut_F
   
-  function hist_inv_trans_ref_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
+  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
   
-  axiom hist_inv_trans_ref_F_spec:
-    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_ref_F self b
-      -> hist_inv_ref_F b c -> hist_inv_ref_F self c
+  axiom hist_inv_trans_refmut_F_spec:
+    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_refmut_F self b
+      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
   
-  function hist_inv_refl_ref_F (self: MutBorrow.t t_F) : ()
+  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
   
-  axiom hist_inv_refl_ref_F_spec: forall self: MutBorrow.t t_F. hist_inv_ref_F self self
+  axiom hist_inv_refl_refmut_F_spec: forall self: MutBorrow.t t_F. hist_inv_refmut_F self self
   
-  function postcondition_mut_hist_inv_ref_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_ref_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_ref_F self args res_state res
-      -> hist_inv_ref_F self res_state
+  axiom postcondition_mut_hist_inv_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_refmut_F self args res_state res
+      -> hist_inv_refmut_F self res_state
   
-  let rec call_fnmut_ref_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnmut requires] precondition_ref_F f x}
+  let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@expl:call_fnmut 'f' type invariant] inv_refmut_F f}
+    {[@expl:call_fnmut requires] precondition_refmut_F f x}
     any
-    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_ref_F f x f2 result
-        /\ resolve_ref_F f2}
+    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+        /\ resolve_refmut_F f2}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -856,14 +853,14 @@ module M_test5
     {[@expl:test5 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_fnmut_ref_F {_9} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
+      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:test5 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test6
@@ -951,11 +948,10 @@ module M_test6
     {[@expl:test6 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fnonce_ref_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+      | s2 = call_fnonce_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test6 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test7
@@ -1040,9 +1036,9 @@ module M_test7
   let rec test7_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test7 'f' type invariant] inv_F f}
     {[@expl:test7 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0
+      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test7 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test8
@@ -1054,20 +1050,20 @@ module M_test8
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
-  predicate precondition_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
     precondition_F self.current args
   
-  meta "rewrite_def" predicate precondition_ref_F
+  meta "rewrite_def" predicate precondition_refmut_F
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1097,15 +1093,15 @@ module M_test8
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut_F self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_F
+  meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  let rec call_fnonce_ref_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnonce requires] precondition_ref_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_ref_F f x result} (! return {result}) ]
+  let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@expl:call_fnonce 'f' type invariant] inv_refmut_F f}
+    {[@expl:call_fnonce requires] precondition_refmut_F f x}
+    any [ return (result: Int32.t) -> {postcondition_once_refmut_F f x result} (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
   
@@ -1132,14 +1128,14 @@ module M_test8
     {[@expl:test8 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_fnonce_ref_F {_9} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
+      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:test8 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test9
@@ -1245,9 +1241,8 @@ module M_test9
   let rec test9_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test9 'f' type invariant] inv_F f}
     {[@expl:test9 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test9 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
       (! return {result}) ]
@@ -1261,20 +1256,20 @@ module M_test10
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
-  predicate precondition_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
     precondition_F self.current args
   
-  meta "rewrite_def" predicate precondition_ref_F
+  meta "rewrite_def" predicate precondition_refmut_F
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1304,53 +1299,54 @@ module M_test10
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut_F self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_F
+  meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  predicate resolve_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
+  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_F
+  meta "rewrite_def" predicate resolve_refmut_F
   
-  predicate postcondition_mut_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
+  predicate postcondition_mut_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
     postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate postcondition_mut_ref_F
+  meta "rewrite_def" predicate postcondition_mut_refmut_F
   
-  function fn_mut_once_ref_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
   
-  axiom fn_mut_once_ref_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_ref_F self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut_ref_F self args res_state res /\ resolve_ref_F res_state)
+  axiom fn_mut_once_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_refmut_F self args res
+      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
+        /\ resolve_refmut_F res_state)
   
-  predicate hist_inv_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
+  predicate hist_inv_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
     hist_inv_F self.current result_state.current /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate hist_inv_ref_F
+  meta "rewrite_def" predicate hist_inv_refmut_F
   
-  function hist_inv_trans_ref_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
+  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
   
-  axiom hist_inv_trans_ref_F_spec:
-    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_ref_F self b
-      -> hist_inv_ref_F b c -> hist_inv_ref_F self c
+  axiom hist_inv_trans_refmut_F_spec:
+    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_refmut_F self b
+      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
   
-  function hist_inv_refl_ref_F (self: MutBorrow.t t_F) : ()
+  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
   
-  axiom hist_inv_refl_ref_F_spec: forall self: MutBorrow.t t_F. hist_inv_ref_F self self
+  axiom hist_inv_refl_refmut_F_spec: forall self: MutBorrow.t t_F. hist_inv_refmut_F self self
   
-  function postcondition_mut_hist_inv_ref_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_ref_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_ref_F self args res_state res
-      -> hist_inv_ref_F self res_state
+  axiom postcondition_mut_hist_inv_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_refmut_F self args res_state res
+      -> hist_inv_refmut_F self res_state
   
-  let rec call_fnmut_ref_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnmut requires] precondition_ref_F f x}
+  let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@expl:call_fnmut 'f' type invariant] inv_refmut_F f}
+    {[@expl:call_fnmut requires] precondition_refmut_F f x}
     any
-    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_ref_F f x f2 result
-        /\ resolve_ref_F f2}
+    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+        /\ resolve_refmut_F f2}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1361,14 +1357,14 @@ module M_test10
     {[@expl:test10 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_fnmut_ref_F {_9} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
+      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:test10 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
       (! return {result}) ]
@@ -1438,9 +1434,9 @@ module M_test11
   let rec test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test11 'f' type invariant] inv_F f}
     {[@expl:test11 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0
+      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test11 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
       (! return {result}) ]
@@ -1454,20 +1450,20 @@ module M_test12
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
-  predicate precondition_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
     precondition_F self.current args
   
-  meta "rewrite_def" predicate precondition_ref_F
+  meta "rewrite_def" predicate precondition_refmut_F
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
@@ -1497,15 +1493,15 @@ module M_test12
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_ref_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
     postcondition_mut_F self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_F
+  meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  let rec call_fnonce_ref_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnonce requires] precondition_ref_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_ref_F f x result} (! return {result}) ]
+  let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@expl:call_fnonce 'f' type invariant] inv_refmut_F f}
+    {[@expl:call_fnonce requires] precondition_refmut_F f x}
+    any [ return (result: Int32.t) -> {postcondition_once_refmut_F f x result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1515,14 +1511,14 @@ module M_test12
     {[@expl:test12 requires] precondition_F f x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_fnonce_ref_F {_9} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
+      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:test12 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
       (! return {result}) ]
@@ -1566,9 +1562,9 @@ module M_test13
   let rec test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test13 'f' type invariant] inv_F f}
     {[@expl:test13 requires] precondition_F f x}
     (! bb0
-    [ bb0 = bb1
-    | bb1 = s0 [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0
+      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test13 ensures] postcondition_once_F f x result} (! return {result}) ]
 end
 module M_test14
@@ -1639,8 +1635,8 @@ module M_test14
   let rec test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test14 'f' type invariant] inv_F f}
     {[@expl:test14 requires] precondition_F f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test14 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test15
@@ -1709,8 +1705,8 @@ module M_test15
   let rec test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test15 'f' type invariant] inv_F f}
     {[@expl:test15 requires] precondition_F f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test15 ensures] postcondition_F f x result} (! return {result}) ]
 end
 module M_test16
@@ -1762,8 +1758,8 @@ module M_test16
   let rec test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test16 'f' type invariant] inv_F f}
     {[@expl:test16 requires] precondition_F f x}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@expl:test16 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
       (! return {result}) ]

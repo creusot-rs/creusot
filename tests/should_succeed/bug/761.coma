@@ -50,19 +50,25 @@ module M_try_option
         end}
       (! return {result}) ]
   
-  let rec elim_Break (input: t_ControlFlow_Option_Infallible_T) (ret (f0: t_Option_Infallible)) = any
-    [ good (f0: t_Option_Infallible) -> {Break f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Option_Infallible [Break f0: t_ControlFlow_Option_Infallible_T]. Break f0 <> input}
-      (! {false}
+  let rec elim_Break (_x: t_ControlFlow_Option_Infallible_T) (return (f0: t_Option_Infallible)) = any
+    [ _k (f0: t_Option_Infallible) -> {Break f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Break _ -> true
+        | _ -> false
+        end}
       any) ]
   
   let rec from_residual_Option_T (residual: t_Option_Infallible) (return (x: t_Option_T)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
     any [ return (result: t_Option_T) -> {inv_Option_T result} {result = None} (! return {result}) ]
   
-  let rec elim_Continue (input: t_ControlFlow_Option_Infallible_T) (ret (f0: t_T)) = any
-    [ good (f0: t_T) -> {Continue f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_T [Continue f0: t_ControlFlow_Option_Infallible_T]. Continue f0 <> input} (! {false} any) ]
+  let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Continue f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Continue _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -72,17 +78,18 @@ module M_try_option
     {[@expl:try_option 'x' type invariant] inv_Option_T x}
     (! bb0
     [ bb0 = s0
-      [ s0 = branch_Option_T {x} (fun (_ret: t_ControlFlow_Option_Infallible_T) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any
-      [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Option_Infallible) -> {_5 = Break x0} (! bb5) ]
+      [ s0 = branch_Option_T {x} (fun (_x: t_ControlFlow_Option_Infallible_T) -> [ &_5 <- _x ] s1)
+      | s1 = any
+        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Option_Infallible) -> {_5 = Break x0} (! bb5) ] ]
     | bb5 = s0
       [ s0 = elim_Break {_5} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual_Option_T {residual} (fun (_ret: t_Option_T) -> [ &_0 <- _ret ] s2)
-      | s2 = bb11 ]
-    | bb4 = s0 [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_0 <- Some val' ] s1 | s1 = bb11 ]
-    | bb11 = return {_0} ]
-    [ & _0: t_Option_T = Any.any_l ()
+      | s1 = from_residual_Option_T {residual} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1)
+      | s1 = [ &_ret <- Some val' ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l ()
     | & x: t_Option_T = x
     | & _5: t_ControlFlow_Option_Infallible_T = Any.any_l ()
     | & residual: t_Option_Infallible = Any.any_l ()
@@ -147,10 +154,12 @@ module M_try_result
         end}
       (! return {result}) ]
   
-  let rec elim_Break (input: t_ControlFlow_Result_Infallible_E_T) (ret (f0: t_Result_Infallible_E)) = any
-    [ good (f0: t_Result_Infallible_E) -> {Break f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_Result_Infallible_E [Break f0: t_ControlFlow_Result_Infallible_E_T]. Break f0 <> input}
-      (! {false}
+  let rec elim_Break (_x: t_ControlFlow_Result_Infallible_E_T) (return (f0: t_Result_Infallible_E)) = any
+    [ _k (f0: t_Result_Infallible_E) -> {Break f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Break _ -> true
+        | _ -> false
+        end}
       any) ]
   
   type tup2_Result_T_E_Result_Infallible_E = { f0: t_Result_T_E; f1: t_Result_Infallible_E }
@@ -226,10 +235,12 @@ module M_try_result
         end}
       (! return {result}) ]
   
-  let rec elim_Continue (input: t_ControlFlow_Result_Infallible_E_T) (ret (f0'0: t_T)) = any
-    [ good (f0'0: t_T) -> {Continue f0'0 = input} (! ret {f0'0})
-    | bad -> {forall f0'0: t_T [Continue f0'0: t_ControlFlow_Result_Infallible_E_T]. Continue f0'0 <> input}
-      (! {false}
+  let rec elim_Continue (_x: t_ControlFlow_Result_Infallible_E_T) (return (f0'0: t_T)) = any
+    [ _k (f0'0: t_T) -> {Continue f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {match _x with
+        | Continue _ -> true
+        | _ -> false
+        end}
       any) ]
   
   meta "compute_max_steps" 1000000
@@ -240,17 +251,18 @@ module M_try_result
     {[@expl:try_result 'x' type invariant] inv_Result_T_E x}
     (! bb0
     [ bb0 = s0
-      [ s0 = branch_Result_T_E {x} (fun (_ret: t_ControlFlow_Result_Infallible_E_T) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = any
-      [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Result_Infallible_E) -> {_5 = Break x0} (! bb5) ]
+      [ s0 = branch_Result_T_E {x} (fun (_x: t_ControlFlow_Result_Infallible_E_T) -> [ &_5 <- _x ] s1)
+      | s1 = any
+        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Result_Infallible_E) -> {_5 = Break x0} (! bb5) ] ]
     | bb5 = s0
       [ s0 = elim_Break {_5} (fun (r0: t_Result_Infallible_E) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual_Result_T_E {residual} (fun (_ret: t_Result_T_E) -> [ &_0 <- _ret ] s2)
-      | s2 = bb12 ]
-    | bb4 = s0 [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = [ &_0 <- Ok val' ] s1 | s1 = bb12 ]
-    | bb12 = return {_0} ]
-    [ & _0: t_Result_T_E = Any.any_l ()
+      | s1 = from_residual_Result_T_E {residual} (fun (_x: t_Result_T_E) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1)
+      | s1 = [ &_ret <- Ok val' ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Result_T_E = Any.any_l ()
     | & x: t_Result_T_E = x
     | & _5: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()
     | & residual: t_Result_Infallible_E = Any.any_l ()
@@ -270,6 +282,6 @@ module M_elim_empty
   
   let rec elim_empty (x: ()) (return (x'0: ())) = {[@expl:elim_empty 'x' type invariant] inv_Empty x}
     (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:type invariant] inv_Empty x} s1 | s1 = {false} any ] ] [ & x: () = x ])
+    [ bb0 = s0 [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Empty x} any) ] | s1 = {false} any ] ] [ & x: () = x ])
     [ return (result: ()) -> (! return {result}) ]
 end

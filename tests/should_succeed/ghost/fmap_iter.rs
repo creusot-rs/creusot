@@ -30,7 +30,6 @@ pub fn merge_fmaps<K, V>(m1: Ghost<FMap<K, V>>, m2: Ghost<FMap<K, V>>) -> Ghost<
 
         #[variant(*len - produced.len())]
         #[invariant(merge.ext_eq(iter@.merge(result, |(v1, _)| v1)))]
-        #[invariant(inv(result))]
         for (k, v) in m1.into_inner() {
             result.insert_ghost(k, v);
         }

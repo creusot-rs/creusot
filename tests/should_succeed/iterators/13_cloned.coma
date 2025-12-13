@@ -232,18 +232,18 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   
   type t_Option_ref_T = None | Some t_T
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_T (_1: t_T)
@@ -284,18 +284,18 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Cloned_I [inv_Cloned_I x]. inv_Cloned_I x = inv_I x.iter
   
-  predicate invariant_ref_Cloned_I [@inline:trivial] (self: MutBorrow.t t_Cloned_I) =
+  predicate invariant_refmut_Cloned_I [@inline:trivial] (self: MutBorrow.t t_Cloned_I) =
     inv_Cloned_I self.current /\ inv_Cloned_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Cloned_I
+  meta "rewrite_def" predicate invariant_refmut_Cloned_I
   
-  predicate inv_ref_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = invariant_ref_Cloned_I _1
+  predicate inv_refmut_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = invariant_refmut_Cloned_I _1
   
-  meta "rewrite_def" predicate inv_ref_Cloned_I
+  meta "rewrite_def" predicate inv_refmut_Cloned_I
   
-  predicate resolve_ref_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = _1.final = _1.current
+  predicate resolve_refmut_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Cloned_I
+  meta "rewrite_def" predicate resolve_refmut_Cloned_I
   
   type t_Option_T = None'0 | Some'0 t_T
   
@@ -402,23 +402,19 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Cloned_I (self: MutBorrow.t t_Cloned_I) (return (x: t_Option_T)) =
-    {[@expl:next 'self' type invariant] inv_ref_Cloned_I self}
+    {[@expl:next 'self' type invariant] inv_refmut_Cloned_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_I self.current.iter}
-        MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_ret: MutBorrow.t t_I) ->
-            [ &_5 <- _ret ] -{inv_I _ret.final}-
-            [ &self <- { self with current = { iter = _ret.final } } ] s1)
-      | s1 = next_I {_5} (fun (_ret: t_Option_ref_T) -> [ &_4 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Cloned_I self} s1
-      | s1 = -{resolve_ref_Cloned_I self}- s2
-      | s2 = cloned_T {_4} (fun (_ret: t_Option_T) -> [ &_0 <- _ret ] s3)
-      | s3 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: t_Option_T = Any.any_l ()
+      [ s0 = MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_I) ->
+            [ &_5 <- _bor ] -{inv_I _bor.final}-
+            [ &self <- { self with current = { iter = _bor.final } } ] s1) [ _ck -> (! {inv_I self.current.iter} any) ]
+      | s1 = next_I {_5} (fun (_x: t_Option_ref_T) -> [ &_4 <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Cloned_I self} any) ]
+      | s3 = -{resolve_refmut_Cloned_I self}- s4
+      | s4 = cloned_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_Cloned_I = self
     | & _4: t_Option_ref_T = Any.any_l ()
     | & _5: MutBorrow.t t_I = Any.any_l () ])
@@ -640,14 +636,14 @@ module M_impl_Iterator_for_Cloned_I__next__refines (* <Cloned<I> as common::Iter
   
   axiom inv_axiom [@rewrite]: forall x: t_Cloned_I [inv_Cloned_I x]. inv_Cloned_I x = inv_I x.iter
   
-  predicate invariant_ref_Cloned_I [@inline:trivial] (self: MutBorrow.t t_Cloned_I) =
+  predicate invariant_refmut_Cloned_I [@inline:trivial] (self: MutBorrow.t t_Cloned_I) =
     inv_Cloned_I self.current /\ inv_Cloned_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Cloned_I
+  meta "rewrite_def" predicate invariant_refmut_Cloned_I
   
-  predicate inv_ref_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = invariant_ref_Cloned_I _1
+  predicate inv_refmut_Cloned_I [@inline:trivial] (_1: MutBorrow.t t_Cloned_I) = invariant_refmut_Cloned_I _1
   
-  meta "rewrite_def" predicate inv_ref_Cloned_I
+  meta "rewrite_def" predicate inv_refmut_Cloned_I
   
   type t_T
   
@@ -749,8 +745,8 @@ module M_impl_Iterator_for_Cloned_I__next__refines (* <Cloned<I> as common::Iter
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Cloned_I. inv_ref_Cloned_I self
-      -> inv_ref_Cloned_I self
+  goal refines: forall self: MutBorrow.t t_Cloned_I. inv_refmut_Cloned_I self
+      -> inv_refmut_Cloned_I self
       /\ (forall result: t_Option_T. inv_Option_T result
           /\ match result with
             | None -> completed_Cloned_I self

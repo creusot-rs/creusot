@@ -70,17 +70,17 @@ module M_impl_S__minimize (* S *)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv_S x]. inv_S x = inv_Ghost_PtrOwn_i32 x.perm
   
-  predicate invariant_ref_S [@inline:trivial] (self: MutBorrow.t t_S) = inv_S self.current /\ inv_S self.final
+  predicate invariant_refmut_S [@inline:trivial] (self: MutBorrow.t t_S) = inv_S self.current /\ inv_S self.final
   
-  meta "rewrite_def" predicate invariant_ref_S
+  meta "rewrite_def" predicate invariant_refmut_S
   
-  predicate inv_ref_S [@inline:trivial] (_1: MutBorrow.t t_S) = invariant_ref_S _1
+  predicate inv_refmut_S [@inline:trivial] (_1: MutBorrow.t t_S) = invariant_refmut_S _1
   
-  meta "rewrite_def" predicate inv_ref_S
+  meta "rewrite_def" predicate inv_refmut_S
   
-  predicate resolve_ref_S [@inline:trivial] (_1: MutBorrow.t t_S) = _1.final = _1.current
+  predicate resolve_refmut_S [@inline:trivial] (_1: MutBorrow.t t_S) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_S
+  meta "rewrite_def" predicate resolve_refmut_S
   
   predicate invariant_ref_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_Ghost_PtrOwn_i32 self
   
@@ -123,20 +123,18 @@ module M_impl_S__minimize (* S *)
   
   meta "select_lsinst" "all"
   
-  let rec minimize (self: MutBorrow.t t_S) (return (x: ())) = {[@expl:minimize 'self' type invariant] inv_ref_S self}
+  let rec minimize (self: MutBorrow.t t_S) (return (x: ())) = {[@expl:minimize 'self' type invariant] inv_refmut_S self}
     {[@expl:minimize requires #0] Int32.to_int (val_i32 self.current.perm) = 1}
     {[@expl:minimize requires #1] ptr_i32 self.current.perm = self.current.ptr}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_S self} s1
-      | s1 = -{resolve_ref_S self}- s2
-      | s2 = deref_Ghost_PtrOwn_i32 {self.current.perm} (fun (_ret: t_PtrOwn_i32) -> [ &_12 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_11 <- _12 ] s1
-      | s1 = new_ref_PtrOwn_i32 {_11} (fun (_ret: t_PtrOwn_i32) -> [ &_9 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = as_ref_i32 {self.current.ptr} {_9} (fun (_ret: Int32.t) -> [ &r <- _ret ] s1) | s1 = bb4 ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_S self} any) ]
+      | s1 = -{resolve_refmut_S self}- s2
+      | s2 = deref_Ghost_PtrOwn_i32 {self.current.perm} (fun (_x: t_PtrOwn_i32) -> [ &_12 <- _x ] s3)
+      | s3 = [ &_11 <- _12 ] s4
+      | s4 = new_ref_PtrOwn_i32 {_11} (fun (_x: t_PtrOwn_i32) -> [ &_9 <- _x ] s5)
+      | s5 = as_ref_i32 {self.current.ptr} {_9} (fun (_x: Int32.t) -> [ &r <- _x ] s6)
+      | s6 = bb4 ]
     | bb4 = bb4 [ bb4 = {[@expl:loop invariant] 0 <= Int32.to_int (val_i32 self.current.perm)} (! s0) [ s0 = bb4 ] ] ]
     [ & self: MutBorrow.t t_S = self
     | & r: Int32.t = Any.any_l ()

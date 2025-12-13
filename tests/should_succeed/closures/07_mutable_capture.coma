@@ -7,20 +7,20 @@ module M_test_fnmut
   
   type closure1 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
+  predicate resolve_refmut_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure1
+  meta "rewrite_def" predicate resolve_refmut_closure1
   
   predicate postcondition_once_closure1 [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
     UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once_closure1
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_ref_u32 _1.c0
+  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure1
   
@@ -60,14 +60,13 @@ module M_test_fnmut
     (! bb0
     [ bb0 = s0
       [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve_ref_closure1 self}- s2
+          (fun (_x: UInt32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
+      | s1 = -{resolve_refmut_closure1 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0 <- res ] s5
-      | s5 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l ()
+      | s4 = [ &_ret <- res ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
@@ -84,20 +83,18 @@ module M_test_fnmut
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s1)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
-          (fun (_ret: MutBorrow.t closure1) -> [ &_7 <- _ret ] [ &c <- _ret.final ] s3)
-      | s3 = closure1 {_7} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s4)
-      | s4 = bb1 ]
-    | bb1 = s0
-      [ s0 = MutBorrow.borrow_mut <closure1> {c}
-          (fun (_ret: MutBorrow.t closure1) -> [ &_10 <- _ret ] [ &c <- _ret.final ] s1)
-      | s1 = closure1 {_10} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = -{resolve_closure1 c}- s1 | s1 = {[@expl:assertion] UInt32.t'int x = 100002} s2 | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure1) -> [ &_7 <- _bor ] [ &c <- _bor.final ] s3)
+      | s3 = closure1 {_7} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <closure1> {c}
+          (fun (_bor: MutBorrow.t closure1) -> [ &_10 <- _bor ] [ &c <- _bor.final ] s5)
+      | s5 = closure1 {_10} (fun (_x: Int32.t) -> [ &_9 <- _x ] s6)
+      | s6 = -{resolve_closure1 c}- s7
+      | s7 = {[@expl:assertion] UInt32.t'int x = 100002} s8
+      | s8 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
@@ -117,13 +114,13 @@ module M_call_fnmut
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: ())
   
@@ -156,7 +153,7 @@ module M_call_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
@@ -170,20 +167,18 @@ module M_call_fnmut
       -> precondition_F st1 ()}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_9 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_mut_F {_9} {_10} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_11 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
-      | s1 = call_mut_F {_11} {_12} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb3 ]
-    | bb3 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l ()
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
+      | s1 = call_mut_F {_9} {_10} (fun (_x: Int32.t) -> [ &_8 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_11 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s3)
+        [ _ck -> (! {inv_F f} any) ]
+      | s3 = call_mut_F {_11} {_12} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s5 = -{resolve_F f}- s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & f: t_F = f
     | & _8: Int32.t = Any.any_l ()
     | & _9: MutBorrow.t t_F = Any.any_l ()
@@ -219,8 +214,8 @@ module M_call_fnonce
   let rec call_fnonce_F (f: t_F) (return (x: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv_F f}
     {[@expl:call_fnonce requires] precondition_F f ()}
     (! bb0
-    [ bb0 = s0 [ s0 = call_once_F {f} {_7} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & _7: () = Any.any_l () ])
+    [ bb0 = s0 [ s0 = call_once_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: () = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_F f () result} (! return {result}) ]
 end
 module M_test_fnmut2
@@ -232,20 +227,20 @@ module M_test_fnmut2
   
   type closure1 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
+  predicate resolve_refmut_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure1
+  meta "rewrite_def" predicate resolve_refmut_closure1
   
   predicate postcondition_once_closure1 [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
     UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once_closure1
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_ref_u32 _1.c0
+  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure1
   
@@ -285,14 +280,13 @@ module M_test_fnmut2
     (! bb0
     [ bb0 = s0
       [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve_ref_closure1 self}- s2
+          (fun (_x: UInt32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
+      | s1 = -{resolve_refmut_closure1 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0 <- res ] s5
-      | s5 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l ()
+      | s4 = [ &_ret <- res ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
@@ -305,57 +299,57 @@ module M_test_fnmut2
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate precondition_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
+  predicate precondition_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
     precondition_closure1 self.current args
   
-  meta "rewrite_def" predicate precondition_ref_closure1
+  meta "rewrite_def" predicate precondition_refmut_closure1
   
-  predicate postcondition_once_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
+  predicate postcondition_once_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
     postcondition_mut_closure1 self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_closure1
+  meta "rewrite_def" predicate postcondition_once_refmut_closure1
   
-  predicate postcondition_mut_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
+  predicate postcondition_mut_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
     postcondition_mut_closure1 self.current args result_state.current result /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate postcondition_mut_ref_closure1
+  meta "rewrite_def" predicate postcondition_mut_refmut_closure1
   
-  function fn_mut_once_ref_closure1 (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
+  function fn_mut_once_refmut_closure1 (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
   
-  axiom fn_mut_once_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_ref_closure1 self args res
-      = (exists res_state: MutBorrow.t closure1. postcondition_mut_ref_closure1 self args res_state res
-        /\ resolve_ref_closure1 res_state)
+  axiom fn_mut_once_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_refmut_closure1 self args res
+      = (exists res_state: MutBorrow.t closure1. postcondition_mut_refmut_closure1 self args res_state res
+        /\ resolve_refmut_closure1 res_state)
   
-  predicate hist_inv_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
+  predicate hist_inv_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
     hist_inv_closure1 self.current result_state.current /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate hist_inv_ref_closure1
+  meta "rewrite_def" predicate hist_inv_refmut_closure1
   
-  function hist_inv_trans_ref_closure1 (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
+  function hist_inv_trans_refmut_closure1 (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_trans_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_ref_closure1 self b
-      -> hist_inv_ref_closure1 b c -> hist_inv_ref_closure1 self c
+  axiom hist_inv_trans_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_refmut_closure1 self b
+      -> hist_inv_refmut_closure1 b c -> hist_inv_refmut_closure1 self c
   
-  function hist_inv_refl_ref_closure1 (self: MutBorrow.t closure1) : ()
+  function hist_inv_refl_refmut_closure1 (self: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_refl_ref_closure1_spec: forall self: MutBorrow.t closure1. hist_inv_ref_closure1 self self
+  axiom hist_inv_refl_refmut_closure1_spec: forall self: MutBorrow.t closure1. hist_inv_refmut_closure1 self self
   
-  function postcondition_mut_hist_inv_ref_closure1 (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_refmut_closure1 (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_ref_closure1 self args res_state res
-      -> hist_inv_ref_closure1 self res_state
+  axiom postcondition_mut_hist_inv_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_refmut_closure1 self args res_state res
+      -> hist_inv_refmut_closure1 self res_state
   
-  let rec call_fnmut_ref_closure1 (f: MutBorrow.t closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_ref_closure1 f ()}
-    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_ref_closure1 f () st1 r
-      -> precondition_ref_closure1 st1 ()}
+  let rec call_fnmut_refmut_closure1 (f: MutBorrow.t closure1) (return (x: Int32.t)) =
+    {[@expl:call_fnmut requires #0] precondition_refmut_closure1 f ()}
+    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
+      -> precondition_refmut_closure1 st1 ()}
     any
     [ return (result: Int32.t) ->
-    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_ref_closure1 f () st1 r
-        /\ postcondition_mut_ref_closure1 st1 () st2 result /\ resolve_ref_closure1 st2}
+    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
+        /\ postcondition_mut_refmut_closure1 st1 () st2 result /\ resolve_refmut_closure1 st2}
       (! return {result}) ]
   
   let rec call_fnmut_closure1 (f: closure1) (return (x: Int32.t)) =
@@ -376,15 +370,15 @@ module M_test_fnmut2
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s1)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
-          (fun (_ret: MutBorrow.t closure1) -> [ &_7 <- _ret ] [ &c <- _ret.final ] s3)
-      | s3 = call_fnmut_ref_closure1 {_7} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s4)
-      | s4 = bb1 ]
-    | bb1 = s0 [ s0 = call_fnmut_closure1 {c} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100004} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure1) -> [ &_7 <- _bor ] [ &c <- _bor.final ] s3)
+      | s3 = call_fnmut_refmut_closure1 {_7} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
+      | s4 = call_fnmut_closure1 {c} (fun (_x: Int32.t) -> [ &_8 <- _x ] s5)
+      | s5 = {[@expl:assertion] UInt32.t'int x = 100004} s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
@@ -400,15 +394,15 @@ module M_test_fnmut3
   
   type closure0 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_u32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -420,11 +414,10 @@ module M_test_fnmut3
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return (x: Int32.t)) = bb0
     [ bb0 = s0
       [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve_ref_closure0 self}- s2
-      | s2 = [ &_0 <- (5: Int32.t) ] s3
-      | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
+          (fun (_x: UInt32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
+      | s1 = -{resolve_refmut_closure0 self}- s2
+      | s2 = [ &_ret <- (5: Int32.t) ] s3
+      | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -469,19 +462,19 @@ module M_test_fnmut3
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) =
+  predicate precondition_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) =
     precondition_closure0 self.current args
   
-  meta "rewrite_def" predicate precondition_ref_closure0
+  meta "rewrite_def" predicate precondition_refmut_closure0
   
-  predicate postcondition_once_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result: Int32.t) =
+  predicate postcondition_once_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result: Int32.t) =
     postcondition_mut_closure0 self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_closure0
+  meta "rewrite_def" predicate postcondition_once_refmut_closure0
   
-  let rec call_fnonce_ref_closure0 (f: MutBorrow.t closure0) (return (x: Int32.t)) =
-    {[@expl:call_fnonce requires] precondition_ref_closure0 f ()}
-    any [ return (result: Int32.t) -> {postcondition_once_ref_closure0 f () result} (! return {result}) ]
+  let rec call_fnonce_refmut_closure0 (f: MutBorrow.t closure0) (return (x: Int32.t)) =
+    {[@expl:call_fnonce requires] precondition_refmut_closure0 f ()}
+    any [ return (result: Int32.t) -> {postcondition_once_refmut_closure0 f () result} (! return {result}) ]
   
   let rec call_fnonce_closure0 (f: closure0) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition_closure0 f ()}
@@ -495,15 +488,15 @@ module M_test_fnmut3
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s1)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure0> {c}
-          (fun (_ret: MutBorrow.t closure0) -> [ &_7 <- _ret ] [ &c <- _ret.final ] s3)
-      | s3 = call_fnonce_ref_closure0 {_7} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s4)
-      | s4 = bb1 ]
-    | bb1 = s0 [ s0 = call_fnonce_closure0 {c} (fun (_ret: Int32.t) -> [ &_8 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100002} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure0) -> [ &_7 <- _bor ] [ &c <- _bor.final ] s3)
+      | s3 = call_fnonce_refmut_closure0 {_7} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
+      | s4 = call_fnonce_closure0 {c} (fun (_x: Int32.t) -> [ &_8 <- _x ] s5)
+      | s5 = {[@expl:assertion] UInt32.t'int x = 100002} s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: UInt32.t = x
     | & c: closure0 = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
@@ -520,20 +513,20 @@ module M_test_fnmut2box
   
   type closure1 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
+  predicate resolve_refmut_closure1 [@inline:trivial] (_1: MutBorrow.t closure1) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure1
+  meta "rewrite_def" predicate resolve_refmut_closure1
   
   predicate postcondition_once_closure1 [@inline:trivial] (self: closure1) (args: ()) (result: Int32.t) =
     UInt32.t'int self.c0.final = UInt32.t'int self.c0.current + 1
   
   meta "rewrite_def" predicate postcondition_once_closure1
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_ref_u32 _1.c0
+  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure1
   
@@ -573,14 +566,13 @@ module M_test_fnmut2box
     (! bb0
     [ bb0 = s0
       [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve_ref_closure1 self}- s2
+          (fun (_x: UInt32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
+      | s1 = -{resolve_refmut_closure1 self}- s2
       | s2 = [ &res'0 <- (5: Int32.t) ] s3
       | s3 = [ &res <- res'0 ] s4
-      | s4 = [ &_0 <- res ] s5
-      | s5 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l ()
+      | s4 = [ &_ret <- res ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
@@ -593,105 +585,105 @@ module M_test_fnmut2box
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate precondition_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
+  predicate precondition_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
     precondition_closure1 self.current args
   
-  meta "rewrite_def" predicate precondition_ref_closure1
+  meta "rewrite_def" predicate precondition_refmut_closure1
   
-  predicate precondition_Box_ref_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
-    precondition_ref_closure1 self args
+  predicate precondition_Box_refmut_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) =
+    precondition_refmut_closure1 self args
   
-  meta "rewrite_def" predicate precondition_Box_ref_closure1_Global
+  meta "rewrite_def" predicate precondition_Box_refmut_closure1_Global
   
-  predicate postcondition_once_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
+  predicate postcondition_once_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
     postcondition_mut_closure1 self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_closure1
+  meta "rewrite_def" predicate postcondition_once_refmut_closure1
   
-  predicate postcondition_once_Box_ref_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
-    postcondition_once_ref_closure1 self args result
+  predicate postcondition_once_Box_refmut_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result: Int32.t) =
+    postcondition_once_refmut_closure1 self args result
   
-  meta "rewrite_def" predicate postcondition_once_Box_ref_closure1_Global
+  meta "rewrite_def" predicate postcondition_once_Box_refmut_closure1_Global
   
-  predicate resolve_Box_ref_closure1_Global [@inline:trivial] (_1: MutBorrow.t closure1) = resolve_ref_closure1 _1
+  predicate resolve_Box_refmut_closure1_Global [@inline:trivial] (_1: MutBorrow.t closure1) = resolve_refmut_closure1 _1
   
-  meta "rewrite_def" predicate resolve_Box_ref_closure1_Global
+  meta "rewrite_def" predicate resolve_Box_refmut_closure1_Global
   
-  predicate postcondition_mut_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
+  predicate postcondition_mut_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
     postcondition_mut_closure1 self.current args result_state.current result /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate postcondition_mut_ref_closure1
+  meta "rewrite_def" predicate postcondition_mut_refmut_closure1
   
-  function fn_mut_once_ref_closure1 (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
+  function fn_mut_once_refmut_closure1 (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
   
-  axiom fn_mut_once_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_ref_closure1 self args res
-      = (exists res_state: MutBorrow.t closure1. postcondition_mut_ref_closure1 self args res_state res
-        /\ resolve_ref_closure1 res_state)
+  axiom fn_mut_once_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_refmut_closure1 self args res
+      = (exists res_state: MutBorrow.t closure1. postcondition_mut_refmut_closure1 self args res_state res
+        /\ resolve_refmut_closure1 res_state)
   
-  predicate hist_inv_ref_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
+  predicate hist_inv_refmut_closure1 [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
     hist_inv_closure1 self.current result_state.current /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate hist_inv_ref_closure1
+  meta "rewrite_def" predicate hist_inv_refmut_closure1
   
-  function hist_inv_trans_ref_closure1 (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
+  function hist_inv_trans_refmut_closure1 (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_trans_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_ref_closure1 self b
-      -> hist_inv_ref_closure1 b c -> hist_inv_ref_closure1 self c
+  axiom hist_inv_trans_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_refmut_closure1 self b
+      -> hist_inv_refmut_closure1 b c -> hist_inv_refmut_closure1 self c
   
-  function hist_inv_refl_ref_closure1 (self: MutBorrow.t closure1) : ()
+  function hist_inv_refl_refmut_closure1 (self: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_refl_ref_closure1_spec: forall self: MutBorrow.t closure1. hist_inv_ref_closure1 self self
+  axiom hist_inv_refl_refmut_closure1_spec: forall self: MutBorrow.t closure1. hist_inv_refmut_closure1 self self
   
-  function postcondition_mut_hist_inv_ref_closure1 (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_refmut_closure1 (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_ref_closure1_spec:
-    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_ref_closure1 self args res_state res
-      -> hist_inv_ref_closure1 self res_state
+  axiom postcondition_mut_hist_inv_refmut_closure1_spec:
+    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_refmut_closure1 self args res_state res
+      -> hist_inv_refmut_closure1 self res_state
   
-  predicate postcondition_mut_Box_ref_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
-    postcondition_mut_ref_closure1 self args result_state result
+  predicate postcondition_mut_Box_refmut_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (args: ()) (result_state: MutBorrow.t closure1) (result: Int32.t) =
+    postcondition_mut_refmut_closure1 self args result_state result
   
-  meta "rewrite_def" predicate postcondition_mut_Box_ref_closure1_Global
+  meta "rewrite_def" predicate postcondition_mut_Box_refmut_closure1_Global
   
-  function fn_mut_once_Box_ref_closure1_Global (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
+  function fn_mut_once_Box_refmut_closure1_Global (self: MutBorrow.t closure1) (args: ()) (res: Int32.t) : ()
   
-  axiom fn_mut_once_Box_ref_closure1_Global_spec:
-    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_Box_ref_closure1_Global self args res
-      = (exists res_state: MutBorrow.t closure1. postcondition_mut_Box_ref_closure1_Global self args res_state res
-        /\ resolve_Box_ref_closure1_Global res_state)
+  axiom fn_mut_once_Box_refmut_closure1_Global_spec:
+    forall self: MutBorrow.t closure1, args: (), res: Int32.t. postcondition_once_Box_refmut_closure1_Global self args res
+      = (exists res_state: MutBorrow.t closure1. postcondition_mut_Box_refmut_closure1_Global self args res_state res
+        /\ resolve_Box_refmut_closure1_Global res_state)
   
-  predicate hist_inv_Box_ref_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
-    hist_inv_ref_closure1 self result_state
+  predicate hist_inv_Box_refmut_closure1_Global [@inline:trivial] (self: MutBorrow.t closure1) (result_state: MutBorrow.t closure1) =
+    hist_inv_refmut_closure1 self result_state
   
-  meta "rewrite_def" predicate hist_inv_Box_ref_closure1_Global
+  meta "rewrite_def" predicate hist_inv_Box_refmut_closure1_Global
   
-  function hist_inv_trans_Box_ref_closure1_Global (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
+  function hist_inv_trans_Box_refmut_closure1_Global (self: MutBorrow.t closure1) (b: MutBorrow.t closure1) (c: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_trans_Box_ref_closure1_Global_spec:
-    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_Box_ref_closure1_Global self b
-      -> hist_inv_Box_ref_closure1_Global b c -> hist_inv_Box_ref_closure1_Global self c
+  axiom hist_inv_trans_Box_refmut_closure1_Global_spec:
+    forall self: MutBorrow.t closure1, b: MutBorrow.t closure1, c: MutBorrow.t closure1. hist_inv_Box_refmut_closure1_Global self b
+      -> hist_inv_Box_refmut_closure1_Global b c -> hist_inv_Box_refmut_closure1_Global self c
   
-  function hist_inv_refl_Box_ref_closure1_Global (self: MutBorrow.t closure1) : ()
+  function hist_inv_refl_Box_refmut_closure1_Global (self: MutBorrow.t closure1) : ()
   
-  axiom hist_inv_refl_Box_ref_closure1_Global_spec:
-    forall self: MutBorrow.t closure1. hist_inv_Box_ref_closure1_Global self self
+  axiom hist_inv_refl_Box_refmut_closure1_Global_spec:
+    forall self: MutBorrow.t closure1. hist_inv_Box_refmut_closure1_Global self self
   
-  function postcondition_mut_hist_inv_Box_ref_closure1_Global (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_Box_refmut_closure1_Global (self: MutBorrow.t closure1) (args: ()) (res_state: MutBorrow.t closure1) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_Box_ref_closure1_Global_spec:
-    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_Box_ref_closure1_Global self args res_state res
-      -> hist_inv_Box_ref_closure1_Global self res_state
+  axiom postcondition_mut_hist_inv_Box_refmut_closure1_Global_spec:
+    forall self: MutBorrow.t closure1, args: (), res_state: MutBorrow.t closure1, res: Int32.t. postcondition_mut_Box_refmut_closure1_Global self args res_state res
+      -> hist_inv_Box_refmut_closure1_Global self res_state
   
-  let rec call_fnmut_Box_ref_closure1_Global (f: MutBorrow.t closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_Box_ref_closure1_Global f ()}
-    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_ref_closure1_Global f () st1 r
-      -> precondition_Box_ref_closure1_Global st1 ()}
+  let rec call_fnmut_Box_refmut_closure1_Global (f: MutBorrow.t closure1) (return (x: Int32.t)) =
+    {[@expl:call_fnmut requires #0] precondition_Box_refmut_closure1_Global f ()}
+    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
+      -> precondition_Box_refmut_closure1_Global st1 ()}
     any
     [ return (result: Int32.t) ->
-    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_ref_closure1_Global f () st1 r
-        /\ postcondition_mut_Box_ref_closure1_Global st1 () st2 result /\ resolve_Box_ref_closure1_Global st2}
+    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
+        /\ postcondition_mut_Box_refmut_closure1_Global st1 () st2 result /\ resolve_Box_refmut_closure1_Global st2}
       (! return {result}) ]
   
   predicate precondition_Box_closure1_Global [@inline:trivial] (self: closure1) (args: ()) =
@@ -808,16 +800,15 @@ module M_test_fnmut2box
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s1)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
-          (fun (_ret: MutBorrow.t closure1) -> [ &_8 <- _ret ] [ &c <- _ret.final ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = call_fnmut_Box_ref_closure1_Global {_8} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = call_fnmut_Box_Box_closure1_Global_Global {c} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1) | s1 = bb5 ]
-    | bb5 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100004} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure1) -> [ &_8 <- _bor ] [ &c <- _bor.final ] s3)
+      | s3 = call_fnmut_Box_refmut_closure1_Global {_8} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
+      | s4 = call_fnmut_Box_Box_closure1_Global_Global {c} (fun (_x: Int32.t) -> [ &_9 <- _x ] s5)
+      | s5 = {[@expl:assertion] UInt32.t'int x = 100004} s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: UInt32.t = x
     | & c: closure1 = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()
@@ -833,15 +824,15 @@ module M_test_fnmut3box
   
   type closure0 = { c0: MutBorrow.t UInt32.t }
   
-  predicate resolve_ref_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure0
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
-  predicate resolve_ref_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_u32
+  meta "rewrite_def" predicate resolve_refmut_u32
   
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_ref_u32 _1.c0
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_u32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -853,11 +844,10 @@ module M_test_fnmut3box
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return (x: Int32.t)) = bb0
     [ bb0 = s0
       [ s0 = UInt32.add {self.current.c0.current} {(1: UInt32.t)}
-          (fun (_ret: UInt32.t) ->
-            [ &self <- { self with current = { c0 = { self.current.c0 with current = _ret } } } ] s1)
-      | s1 = -{resolve_ref_closure0 self}- s2
-      | s2 = [ &_0 <- (5: Int32.t) ] s3
-      | s3 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
+          (fun (_x: UInt32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
+      | s1 = -{resolve_refmut_closure0 self}- s2
+      | s2 = [ &_ret <- (5: Int32.t) ] s3
+      | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -902,62 +892,62 @@ module M_test_fnmut3box
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) =
+  predicate precondition_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) =
     precondition_closure0 self.current args
   
-  meta "rewrite_def" predicate precondition_ref_closure0
+  meta "rewrite_def" predicate precondition_refmut_closure0
   
-  predicate precondition_ref_ref_closure0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t closure0)) (args: ()) =
-    precondition_ref_closure0 self.current args
+  predicate precondition_refmut_refmut_closure0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t closure0)) (args: ()) =
+    precondition_refmut_closure0 self.current args
   
-  meta "rewrite_def" predicate precondition_ref_ref_closure0
+  meta "rewrite_def" predicate precondition_refmut_refmut_closure0
   
-  predicate postcondition_once_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result: Int32.t) =
+  predicate postcondition_once_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result: Int32.t) =
     postcondition_mut_closure0 self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_closure0
+  meta "rewrite_def" predicate postcondition_once_refmut_closure0
   
-  predicate postcondition_mut_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result_state: MutBorrow.t closure0) (result: Int32.t) =
+  predicate postcondition_mut_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (args: ()) (result_state: MutBorrow.t closure0) (result: Int32.t) =
     postcondition_mut_closure0 self.current args result_state.current result /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate postcondition_mut_ref_closure0
+  meta "rewrite_def" predicate postcondition_mut_refmut_closure0
   
-  function fn_mut_once_ref_closure0 (self: MutBorrow.t closure0) (args: ()) (res: Int32.t) : ()
+  function fn_mut_once_refmut_closure0 (self: MutBorrow.t closure0) (args: ()) (res: Int32.t) : ()
   
-  axiom fn_mut_once_ref_closure0_spec:
-    forall self: MutBorrow.t closure0, args: (), res: Int32.t. postcondition_once_ref_closure0 self args res
-      = (exists res_state: MutBorrow.t closure0. postcondition_mut_ref_closure0 self args res_state res
-        /\ resolve_ref_closure0 res_state)
+  axiom fn_mut_once_refmut_closure0_spec:
+    forall self: MutBorrow.t closure0, args: (), res: Int32.t. postcondition_once_refmut_closure0 self args res
+      = (exists res_state: MutBorrow.t closure0. postcondition_mut_refmut_closure0 self args res_state res
+        /\ resolve_refmut_closure0 res_state)
   
-  predicate hist_inv_ref_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (result_state: MutBorrow.t closure0) =
+  predicate hist_inv_refmut_closure0 [@inline:trivial] (self: MutBorrow.t closure0) (result_state: MutBorrow.t closure0) =
     hist_inv_closure0 self.current result_state.current /\ self.final = result_state.final
   
-  meta "rewrite_def" predicate hist_inv_ref_closure0
+  meta "rewrite_def" predicate hist_inv_refmut_closure0
   
-  function hist_inv_trans_ref_closure0 (self: MutBorrow.t closure0) (b: MutBorrow.t closure0) (c: MutBorrow.t closure0) : ()
+  function hist_inv_trans_refmut_closure0 (self: MutBorrow.t closure0) (b: MutBorrow.t closure0) (c: MutBorrow.t closure0) : ()
   
-  axiom hist_inv_trans_ref_closure0_spec:
-    forall self: MutBorrow.t closure0, b: MutBorrow.t closure0, c: MutBorrow.t closure0. hist_inv_ref_closure0 self b
-      -> hist_inv_ref_closure0 b c -> hist_inv_ref_closure0 self c
+  axiom hist_inv_trans_refmut_closure0_spec:
+    forall self: MutBorrow.t closure0, b: MutBorrow.t closure0, c: MutBorrow.t closure0. hist_inv_refmut_closure0 self b
+      -> hist_inv_refmut_closure0 b c -> hist_inv_refmut_closure0 self c
   
-  function hist_inv_refl_ref_closure0 (self: MutBorrow.t closure0) : ()
+  function hist_inv_refl_refmut_closure0 (self: MutBorrow.t closure0) : ()
   
-  axiom hist_inv_refl_ref_closure0_spec: forall self: MutBorrow.t closure0. hist_inv_ref_closure0 self self
+  axiom hist_inv_refl_refmut_closure0_spec: forall self: MutBorrow.t closure0. hist_inv_refmut_closure0 self self
   
-  function postcondition_mut_hist_inv_ref_closure0 (self: MutBorrow.t closure0) (args: ()) (res_state: MutBorrow.t closure0) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_refmut_closure0 (self: MutBorrow.t closure0) (args: ()) (res_state: MutBorrow.t closure0) (res: Int32.t) : ()
   
-  axiom postcondition_mut_hist_inv_ref_closure0_spec:
-    forall self: MutBorrow.t closure0, args: (), res_state: MutBorrow.t closure0, res: Int32.t. postcondition_mut_ref_closure0 self args res_state res
-      -> hist_inv_ref_closure0 self res_state
+  axiom postcondition_mut_hist_inv_refmut_closure0_spec:
+    forall self: MutBorrow.t closure0, args: (), res_state: MutBorrow.t closure0, res: Int32.t. postcondition_mut_refmut_closure0 self args res_state res
+      -> hist_inv_refmut_closure0 self res_state
   
-  predicate postcondition_once_ref_ref_closure0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t closure0)) (args: ()) (result: Int32.t) =
-    postcondition_mut_ref_closure0 self.current args self.final result
+  predicate postcondition_once_refmut_refmut_closure0 [@inline:trivial] (self: MutBorrow.t (MutBorrow.t closure0)) (args: ()) (result: Int32.t) =
+    postcondition_mut_refmut_closure0 self.current args self.final result
   
-  meta "rewrite_def" predicate postcondition_once_ref_ref_closure0
+  meta "rewrite_def" predicate postcondition_once_refmut_refmut_closure0
   
-  let rec call_fnonce_ref_ref_closure0 (f: MutBorrow.t (MutBorrow.t closure0)) (return (x: Int32.t)) =
-    {[@expl:call_fnonce requires] precondition_ref_ref_closure0 f ()}
-    any [ return (result: Int32.t) -> {postcondition_once_ref_ref_closure0 f () result} (! return {result}) ]
+  let rec call_fnonce_refmut_refmut_closure0 (f: MutBorrow.t (MutBorrow.t closure0)) (return (x: Int32.t)) =
+    {[@expl:call_fnonce requires] precondition_refmut_refmut_closure0 f ()}
+    any [ return (result: Int32.t) -> {postcondition_once_refmut_refmut_closure0 f () result} (! return {result}) ]
   
   predicate precondition_Box_closure0_Global [@inline:trivial] (self: closure0) (args: ()) =
     precondition_closure0 self args
@@ -992,19 +982,18 @@ module M_test_fnmut3box
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <UInt32.t> {x}
-          (fun (_ret: MutBorrow.t UInt32.t) -> [ &_5 <- _ret ] [ &x <- _ret.final ] s1)
+          (fun (_bor: MutBorrow.t UInt32.t) -> [ &_5 <- _bor ] [ &x <- _bor.final ] s1)
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure0> {c}
-          (fun (_ret: MutBorrow.t closure0) -> [ &_8 <- _ret ] [ &c <- _ret.final ] s3)
+          (fun (_bor: MutBorrow.t closure0) -> [ &_8 <- _bor ] [ &c <- _bor.final ] s3)
       | s3 = MutBorrow.borrow_mut <MutBorrow.t closure0> {_8}
-          (fun (_ret: MutBorrow.t (MutBorrow.t closure0)) -> [ &_7 <- _ret ] [ &_8 <- _ret.final ] s4)
-      | s4 = call_fnonce_ref_ref_closure0 {_7} (fun (_ret: Int32.t) -> [ &_6 <- _ret ] s5)
-      | s5 = bb1 ]
-    | bb1 = s0 [ s0 = -{resolve_ref_closure0 _8}- s1 | s1 = bb3 ]
-    | bb3 = s0
-      [ s0 = call_fnonce_Box_Box_closure0_Global_Global {c} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0 [ s0 = {[@expl:assertion] UInt32.t'int x = 100002} s1 | s1 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+          (fun (_bor: MutBorrow.t (MutBorrow.t closure0)) -> [ &_7 <- _bor ] [ &_8 <- _bor.final ] s4)
+      | s4 = call_fnonce_refmut_refmut_closure0 {_7} (fun (_x: Int32.t) -> [ &_6 <- _x ] s5)
+      | s5 = -{resolve_refmut_closure0 _8}- s6
+      | s6 = call_fnonce_Box_Box_closure0_Global_Global {c} (fun (_x: Int32.t) -> [ &_9 <- _x ] s7)
+      | s7 = {[@expl:assertion] UInt32.t'int x = 100002} s8
+      | s8 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: UInt32.t = x
     | & c: closure0 = Any.any_l ()
     | & _5: MutBorrow.t UInt32.t = Any.any_l ()

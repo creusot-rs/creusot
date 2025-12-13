@@ -44,7 +44,7 @@ use crate::{
     },
     naming::lowercase_prefix,
     translation::{
-        fmir::{self, BorrowKind},
+        fmir::{self, BorrowKind, LocalKind},
         function::discriminator_for_switch,
         pearlite::{Term, TermKind},
     },
@@ -254,7 +254,7 @@ pub struct Analysis<'a, 'tcx> {
     typing_env: TypingEnv<'tcx>,
     /// Places to resolve before and after the current statement
     current_resolved: Resolves<'tcx>,
-    not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'tcx>>,
+    not_final_places: ResultsCursor<'a, 'tcx, NotFinalPlaces<'a, 'tcx>>,
     /// `&mut` because we also rename assertions here
     body_specs: &'a mut BodySpecs<'tcx>,
     data: BorrowData<'tcx>,
@@ -968,11 +968,18 @@ impl<'tcx> BodyLocals<'tcx> {
             .iter_enumerated()
             .filter(|(loc, _)| !erased_locals.contains(*loc))
             .map(|(loc, d)| {
-                let (mut temp, mut arg) = (false, false);
-                let ident;
-                if 0 < loc.index() && loc.index() <= body.arg_count {
-                    arg = true;
-                    ident = args[loc.index() - 1].0.0
+                let idx = loc.index();
+                let (ident, kind) = if idx == 0 {
+                    (Ident::fresh(ctx.crate_name(), "_ret"), LocalKind::Return)
+                } else if 0 < idx && idx <= body.arg_count {
+                    (
+                        args[idx - 1].0.0,
+                        LocalKind::Param {
+                            open_inv: ctx
+                                .params_open_inv(body.source.def_id())
+                                .is_some_and(|bs| bs.contains(idx - 1)),
+                        },
+                    )
                 } else if let Some(debug_info) =
                     body.var_debug_info.iter().find(|var_info| match var_info.value {
                         mir::VarDebugInfoContents::Place(p) => {
@@ -981,16 +988,18 @@ impl<'tcx> BodyLocals<'tcx> {
                         _ => false,
                     })
                 {
-                    ident = Ident::fresh(
+                    let ident = Ident::fresh(
                         ctx.crate_name(),
                         lowercase_prefix("v_", debug_info.name.as_str()),
-                    )
+                    );
+                    (ident, LocalKind::User)
                 } else {
-                    temp = true;
-                    ident = Ident::fresh(ctx.crate_name(), &format!("_{}", loc.index()))
+                    (Ident::fresh(ctx.crate_name(), &format!("_{}", idx)), LocalKind::Temp)
                 };
-                let span = d.source_info.span;
-                ((ident, fmir::LocalDecl { span, ty: d.ty, temp, arg }), (loc, ident))
+                (
+                    (ident, fmir::LocalDecl { span: d.source_info.span, ty: d.ty, kind }),
+                    (loc, ident),
+                )
             })
             .unzip();
         BodyLocals { vars, locals }

@@ -61,31 +61,27 @@ module M_incorrect_recursion
       [ s0 = [ &_4 <- Int32.lt x (-10: Int32.t) ] s1 | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb13) ] ]
     | bb2 = s0
       [ s0 = [ &_6 <- Int32.gt x (10: Int32.t) ] s1 | s1 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb13) ] ]
+    | bb13 = return {_ret}
     | bb5 = s0
       [ s0 = [ &_10 <- x ] s1
       | s1 = [ &_11 <- (2: Int32.t) = (0: Int32.t) ] s2
       | s2 = {[@expl:remainder by zero] not _11} s3
-      | s3 = bb6 ]
-    | bb6 = s0
-      [ s0 = [ &_12 <- (2: Int32.t) = (-1: Int32.t) ] s1
-      | s1 = [ &_13 <- _10 = (-2147483648: Int32.t) ] s2
-      | s2 = [ &_14 <- Bool.bw_and _12 _13 ] s3
-      | s3 = {[@expl:Rem overflow] not _14} s4
-      | s4 = bb7 ]
-    | bb7 = s0
-      [ s0 = Int32.rem {_10} {(2: Int32.t)} (fun (_ret: Int32.t) -> [ &_9 <- _ret ] s1)
-      | s1 = [ &_8 <- _9 = (0: Int32.t) ] s2
-      | s2 = any [ br0 -> {_8 = false} (! bb10) | br1 -> {_8} (! bb8) ] ]
+      | s3 = [ &_12 <- (2: Int32.t) = (-1: Int32.t) ] s4
+      | s4 = [ &_13 <- _10 = (-2147483648: Int32.t) ] s5
+      | s5 = [ &_14 <- Bool.bw_and _12 _13 ] s6
+      | s6 = {[@expl:Rem overflow] not _14} s7
+      | s7 = Int32.rem {_10} {(2: Int32.t)} (fun (_x: Int32.t) -> [ &_9 <- _x ] s8)
+      | s8 = [ &_8 <- _9 = (0: Int32.t) ] s9
+      | s9 = any [ br0 -> {_8 = false} (! bb10) | br1 -> {_8} (! bb8) ] ]
     | bb8 = s0
-      [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_15 <- _ret ] s1)
-      | s1 = incorrect_recursion {_15} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
-      | s2 = bb13 ]
+      [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_15 <- _x ] s1)
+      | s1 = incorrect_recursion {_15} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ]
     | bb10 = s0
-      [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_17 <- _ret ] s1)
-      | s1 = incorrect_recursion {_17} (fun (_ret: ()) -> [ &_0 <- _ret ] s2)
-      | s2 = bb13 ]
-    | bb13 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_17 <- _x ] s1)
+      | s1 = incorrect_recursion {_17} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = x
     | & _4: bool = Any.any_l ()
     | & _6: bool = Any.any_l ()
@@ -98,9 +94,9 @@ module M_incorrect_recursion
     | & _14: bool = Any.any_l ()
     | & _15: Int32.t = Any.any_l ()
     | & _17: Int32.t = Any.any_l () ]
-    [ incorrect_recursion (x: Int32.t) (_ret (_r: ())) ->
+    [ incorrect_recursion (x: Int32.t) (_k (_ret: ())) ->
     {[@expl:function variant] well_founded_relation_i32 function_variant x}
-      incorrect_recursion {x} (_ret) ] [ function_variant: Int32.t = x ]) [ return (result: ()) -> (! return {result}) ]
+      incorrect_recursion {x} (_k) ] [ function_variant: Int32.t = x ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_incorrect_recursion_logic
   use mach.int.Int
@@ -190,36 +186,29 @@ module M_incorrect_loop_variant
   meta "select_lsinst" "all"
   
   let rec incorrect_loop_variant (x: Int32.t) (return (x'0: ())) = (! bb0
-    [ bb0 = bb1
-    | bb1 = bb1invariant
-      [ bb1 = {[@expl:loop variant] well_founded_relation_i32 variant_old_bb1 x} bb1invariant
-      | bb1invariant = (! [ &variant_old_bb1 <- x ] s0
-        [ s0 = bb2 ])
-        [ bb2 = s0
-          [ s0 = [ &_6 <- Int32.ge x (-10: Int32.t) ] s1
-          | s1 = any [ br0 -> {_6 = false} (! bb12) | br1 -> {_6} (! bb3) ] ]
-        | bb3 = s0
+    [ bb0 = bb0invariant
+      [ bb0 = {[@expl:loop variant] well_founded_relation_i32 variant_old_bb1 x} bb0invariant
+      | bb0invariant = (! [ &variant_old_bb1 <- x ] s0
+        [ s0 = [ &_6 <- Int32.ge x (-10: Int32.t) ] s1
+        | s1 = any [ br0 -> {_6 = false} (! bb12) | br1 -> {_6} (! bb3) ] ])
+        [ bb3 = s0
           [ s0 = [ &_8 <- Int32.le x (10: Int32.t) ] s1
           | s1 = any [ br0 -> {_8 = false} (! bb12) | br1 -> {_8} (! bb4) ] ]
         | bb4 = s0
           [ s0 = [ &_12 <- x ] s1
           | s1 = [ &_13 <- (2: Int32.t) = (0: Int32.t) ] s2
           | s2 = {[@expl:remainder by zero] not _13} s3
-          | s3 = bb5 ]
-        | bb5 = s0
-          [ s0 = [ &_14 <- (2: Int32.t) = (-1: Int32.t) ] s1
-          | s1 = [ &_15 <- _12 = (-2147483648: Int32.t) ] s2
-          | s2 = [ &_16 <- Bool.bw_and _14 _15 ] s3
-          | s3 = {[@expl:Rem overflow] not _16} s4
-          | s4 = bb6 ]
-        | bb6 = s0
-          [ s0 = Int32.rem {_12} {(2: Int32.t)} (fun (_ret: Int32.t) -> [ &_11 <- _ret ] s1)
-          | s1 = [ &_10 <- _11 = (0: Int32.t) ] s2
-          | s2 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb7) ] ]
-        | bb7 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- _ret ] s1) | s1 = bb1 ]
-        | bb8 = s0 [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &x <- _ret ] s1) | s1 = bb1 ] ] ]
-    | bb12 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+          | s3 = [ &_14 <- (2: Int32.t) = (-1: Int32.t) ] s4
+          | s4 = [ &_15 <- _12 = (-2147483648: Int32.t) ] s5
+          | s5 = [ &_16 <- Bool.bw_and _14 _15 ] s6
+          | s6 = {[@expl:Rem overflow] not _16} s7
+          | s7 = Int32.rem {_12} {(2: Int32.t)} (fun (_x: Int32.t) -> [ &_11 <- _x ] s8)
+          | s8 = [ &_10 <- _11 = (0: Int32.t) ] s9
+          | s9 = any [ br0 -> {_10 = false} (! bb8) | br1 -> {_10} (! bb7) ] ]
+        | bb7 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &x <- _x ] s1) | s1 = bb0 ]
+        | bb8 = s0 [ s0 = Int32.sub {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &x <- _x ] s1) | s1 = bb0 ] ] ]
+    | bb12 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = x
     | & _6: bool = Any.any_l ()
     | & _8: bool = Any.any_l ()

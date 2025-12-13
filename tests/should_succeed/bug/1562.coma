@@ -36,39 +36,71 @@ module M_impl_List_T__foo (* List<T> *)
     {[@expl:is_none 'self_' type invariant] inv_ref_Option_Node_T self_}
     any [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
   
-  predicate invariant_ref_Option_Node_T'0 [@inline:trivial] (self: MutBorrow.t t_Option_Node_T) =
-    inv_Option_Node_T self.current /\ inv_Option_Node_T self.final
-  
-  meta "rewrite_def" predicate invariant_ref_Option_Node_T'0
-  
-  predicate inv_ref_Option_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_Option_Node_T) =
-    invariant_ref_Option_Node_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_Node_T'0
-  
-  let rec take_Node_T (self_: MutBorrow.t t_Option_Node_T) (return (x: t_Option_Node_T)) =
-    {[@expl:take 'self_' type invariant] inv_ref_Option_Node_T'0 self_}
-    any
-    [ return (result: t_Option_Node_T) -> {inv_Option_Node_T result}
-      {result = self_.current /\ self_.final = None}
-      (! return {result}) ]
+  type t_PermCellOwn_List_T
   
   predicate inv_List_T (_1: t_List_T)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x = inv_Option_Node_T x.head
   
-  predicate invariant_ref_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
-    inv_List_T self.current /\ inv_List_T self.final
+  predicate invariant_ref_List_T [@inline:trivial] (self: t_List_T) = inv_List_T self
   
   meta "rewrite_def" predicate invariant_ref_List_T
   
-  predicate inv_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_ref_List_T _1
+  predicate inv_ref_List_T [@inline:trivial] (_1: t_List_T) = invariant_ref_List_T _1
   
   meta "rewrite_def" predicate inv_ref_List_T
   
-  predicate resolve_ref_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  function val_List_T (self: t_PermCellOwn_List_T) : t_List_T
   
-  meta "rewrite_def" predicate resolve_ref_List_T
+  predicate invariant_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) =
+    inv_ref_List_T (val_List_T self)
+  
+  meta "rewrite_def" predicate invariant_PermCellOwn_List_T
+  
+  predicate inv_PermCellOwn_List_T (_1: t_PermCellOwn_List_T)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_PermCellOwn_List_T [inv_PermCellOwn_List_T x]. inv_PermCellOwn_List_T x
+      = invariant_PermCellOwn_List_T x
+  
+  predicate invariant_Ghost_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) =
+    inv_PermCellOwn_List_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_PermCellOwn_List_T
+  
+  predicate inv_Ghost_PermCellOwn_List_T [@inline:trivial] (_1: t_PermCellOwn_List_T) =
+    invariant_Ghost_PermCellOwn_List_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_PermCellOwn_List_T
+  
+  predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
+    inv_List_T self.current /\ inv_List_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_List_T
+  
+  predicate inv_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_refmut_List_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_List_T
+  
+  predicate invariant_refmut_Option_Node_T [@inline:trivial] (self: MutBorrow.t t_Option_Node_T) =
+    inv_Option_Node_T self.current /\ inv_Option_Node_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Option_Node_T
+  
+  predicate inv_refmut_Option_Node_T [@inline:trivial] (_1: MutBorrow.t t_Option_Node_T) =
+    invariant_refmut_Option_Node_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Option_Node_T
+  
+  let rec take_Node_T (self_: MutBorrow.t t_Option_Node_T) (return (x: t_Option_Node_T)) =
+    {[@expl:take 'self_' type invariant] inv_refmut_Option_Node_T self_}
+    any
+    [ return (result: t_Option_Node_T) -> {inv_Option_Node_T result}
+      {result = self_.current /\ self_.final = None}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_List_T
   
   let rec unwrap_Node_T (self_: t_Option_Node_T) (return (x: t_Node_T)) =
     {[@expl:unwrap 'self_' type invariant] inv_Option_Node_T self_}
@@ -108,73 +140,41 @@ module M_impl_List_T__foo (* List<T> *)
     {[@expl:as_ref 'self_' type invariant] inv_ref_Rc_PermCell_List_T_Global self_}
     any [ return (result: t_PermCell_List_T) -> {result = view_Rc_PermCell_List_T_Global self_} (! return {result}) ]
   
-  type t_PermCellOwn_List_T
-  
-  predicate invariant_ref_List_T'0 [@inline:trivial] (self: t_List_T) = inv_List_T self
-  
-  meta "rewrite_def" predicate invariant_ref_List_T'0
-  
-  predicate inv_ref_List_T'0 [@inline:trivial] (_1: t_List_T) = invariant_ref_List_T'0 _1
-  
-  meta "rewrite_def" predicate inv_ref_List_T'0
-  
-  function val_List_T (self: t_PermCellOwn_List_T) : t_List_T
-  
-  predicate invariant_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) =
-    inv_ref_List_T'0 (val_List_T self)
-  
-  meta "rewrite_def" predicate invariant_PermCellOwn_List_T
-  
-  predicate inv_PermCellOwn_List_T (_1: t_PermCellOwn_List_T)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_PermCellOwn_List_T [inv_PermCellOwn_List_T x]. inv_PermCellOwn_List_T x
-      = invariant_PermCellOwn_List_T x
-  
-  predicate invariant_Ghost_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) =
-    inv_PermCellOwn_List_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_PermCellOwn_List_T
-  
-  predicate inv_Ghost_PermCellOwn_List_T [@inline:trivial] (_1: t_PermCellOwn_List_T) =
-    invariant_Ghost_PermCellOwn_List_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_PermCellOwn_List_T
-  
-  predicate invariant_ref_Ghost_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
+  predicate invariant_refmut_Ghost_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
     inv_Ghost_PermCellOwn_List_T self.current /\ inv_Ghost_PermCellOwn_List_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_PermCellOwn_List_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_PermCellOwn_List_T
   
-  predicate inv_ref_Ghost_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
-    invariant_ref_Ghost_PermCellOwn_List_T _1
+  predicate inv_refmut_Ghost_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
+    invariant_refmut_Ghost_PermCellOwn_List_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_PermCellOwn_List_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_PermCellOwn_List_T
   
-  predicate invariant_ref_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
+  predicate invariant_refmut_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
     inv_PermCellOwn_List_T self.current /\ inv_PermCellOwn_List_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PermCellOwn_List_T
+  meta "rewrite_def" predicate invariant_refmut_PermCellOwn_List_T
   
-  predicate inv_ref_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
-    invariant_ref_PermCellOwn_List_T _1
+  predicate inv_refmut_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
+    invariant_refmut_PermCellOwn_List_T _1
   
-  meta "rewrite_def" predicate inv_ref_PermCellOwn_List_T
+  meta "rewrite_def" predicate inv_refmut_PermCellOwn_List_T
   
-  predicate invariant_Ghost_ref_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
-    inv_ref_PermCellOwn_List_T self
+  predicate invariant_Ghost_refmut_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) =
+    inv_refmut_PermCellOwn_List_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PermCellOwn_List_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PermCellOwn_List_T
   
-  predicate inv_Ghost_ref_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
-    invariant_Ghost_ref_PermCellOwn_List_T _1
+  predicate inv_Ghost_refmut_PermCellOwn_List_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_List_T) =
+    invariant_Ghost_refmut_PermCellOwn_List_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PermCellOwn_List_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PermCellOwn_List_T
   
   let rec borrow_mut_PermCellOwn_List_T (self: MutBorrow.t t_PermCellOwn_List_T)
     (return (x: MutBorrow.t t_PermCellOwn_List_T)) =
-    {[@expl:borrow_mut 'self' type invariant] inv_ref_Ghost_PermCellOwn_List_T self}
+    {[@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_PermCellOwn_List_T self}
     any
-    [ return (result: MutBorrow.t t_PermCellOwn_List_T) -> {inv_Ghost_ref_PermCellOwn_List_T result}
+    [ return (result: MutBorrow.t t_PermCellOwn_List_T) -> {inv_Ghost_refmut_PermCellOwn_List_T result}
       {result = self}
       (! return {result}) ]
   
@@ -184,10 +184,10 @@ module M_impl_List_T__foo (* List<T> *)
   
   function id_List_T'0 (self: t_PermCellOwn_List_T) : t_Id
   
-  function fin_Ghost_ref_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) : t_PermCellOwn_List_T
+  function fin_Ghost_refmut_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) : t_PermCellOwn_List_T
    = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PermCellOwn_List_T
+  meta "rewrite_def" function fin_Ghost_refmut_PermCellOwn_List_T
   
   function view_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) : t_List_T = val_List_T self
   
@@ -195,21 +195,21 @@ module M_impl_List_T__foo (* List<T> *)
   
   let rec borrow_mut_List_T (self: t_PermCell_List_T) (perm: MutBorrow.t t_PermCellOwn_List_T)
     (return (x: MutBorrow.t t_List_T)) =
-    {[@expl:borrow_mut 'perm' type invariant] inv_Ghost_ref_PermCellOwn_List_T perm}
+    {[@expl:borrow_mut 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_List_T perm}
     {[@expl:borrow_mut requires] id_List_T self = id_List_T'0 perm.current}
     any
-    [ return (result: MutBorrow.t t_List_T) -> {inv_ref_List_T result}
-      {id_List_T self = id_List_T'0 (fin_Ghost_ref_PermCellOwn_List_T perm)}
+    [ return (result: MutBorrow.t t_List_T) -> {inv_refmut_List_T result}
+      {id_List_T self = id_List_T'0 (fin_Ghost_refmut_PermCellOwn_List_T perm)}
       {result.current = view_PermCellOwn_List_T perm.current}
-      {result.final = view_PermCellOwn_List_T (fin_Ghost_ref_PermCellOwn_List_T perm)}
+      {result.final = view_PermCellOwn_List_T (fin_Ghost_refmut_PermCellOwn_List_T perm)}
       (! return {result}) ]
   
-  predicate resolve_ref_List_T'0 [@inline:trivial] (_1: t_List_T) = true
+  predicate resolve_ref_List_T [@inline:trivial] (_1: t_List_T) = true
   
-  meta "rewrite_def" predicate resolve_ref_List_T'0
+  meta "rewrite_def" predicate resolve_ref_List_T
   
   predicate resolve_PermCellOwn_List_T [@inline:trivial] (self: t_PermCellOwn_List_T) =
-    resolve_ref_List_T'0 (val_List_T self)
+    resolve_ref_List_T (val_List_T self)
   
   meta "rewrite_def" predicate resolve_PermCellOwn_List_T
   
@@ -228,69 +228,56 @@ module M_impl_List_T__foo (* List<T> *)
   meta "select_lsinst" "all"
   
   let rec foo_T (self: MutBorrow.t t_List_T) (perm: t_PermCellOwn_List_T) (return (x: ())) =
-    {[@expl:foo 'self' type invariant] inv_ref_List_T self}
+    {[@expl:foo 'self' type invariant] inv_refmut_List_T self}
     {[@expl:foo 'perm' type invariant] inv_Ghost_PermCellOwn_List_T perm}
     {[@expl:foo requires] false}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &p <- self ] s1 | s1 = bb2 ]
-    | bb2 = bb2
-      [ bb2 = (! s0
-        [ s0 = is_none_Node_T {p.current.head} (fun (_ret: bool) -> [ &_7 <- _ret ] s1) | s1 = bb3 ])
-        [ bb3 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ]
-        | bb5 = s0
-          [ s0 = {inv_Option_Node_T p.current.head}
-            MutBorrow.borrow_final <t_Option_Node_T> {p.current.head} {MutBorrow.inherit_id (MutBorrow.get_id p) 1}
-              (fun (_ret: MutBorrow.t t_Option_Node_T) ->
-                [ &_11 <- _ret ] -{inv_Option_Node_T _ret.final}-
-                [ &p <- { p with current = { head = _ret.final } } ] s1)
-          | s1 = take_Node_T {_11} (fun (_ret: t_Option_Node_T) -> [ &_10 <- _ret ] s2)
-          | s2 = bb6 ]
-        | bb6 = s0
-          [ s0 = {[@expl:type invariant] inv_ref_List_T p} s1
-          | s1 = -{resolve_ref_List_T p}- s2
-          | s2 = unwrap_Node_T {_10} (fun (_ret: t_Node_T) -> [ &curr <- _ret ] s3)
-          | s3 = bb7 ]
-        | bb7 = s0
-          [ s0 = {[@expl:type invariant] inv_Node_T curr} s1
-          | s1 = -{resolve_Node_T curr}- s2
-          | s2 = clone_Rc_PermCell_List_T_Global {curr.next}
-              (fun (_ret: t_Rc_PermCell_List_T_Global) -> [ &_12 <- _ret ] s3)
-          | s3 = bb9 ]
-        | bb9 = s0 [ s0 = [ &next'0 <- _12 ] s1 | s1 = bb11 ]
-        | bb11 = s0
-          [ s0 = {[@expl:type invariant] inv_Rc_PermCell_List_T_Global next'0} s1
-          | s1 = -{resolve_Rc_PermCell_List_T_Global next'0}- s2
-          | s2 = as_ref_Rc_PermCell_List_T_Global {next'0} (fun (_ret: t_PermCell_List_T) -> [ &_17 <- _ret ] s3)
-          | s3 = bb12 ]
-        | bb12 = s0
-          [ s0 = {inv_Ghost_PermCellOwn_List_T perm}
-            MutBorrow.borrow_mut <t_PermCellOwn_List_T> {perm}
-              (fun (_ret: MutBorrow.t t_PermCellOwn_List_T) ->
-                [ &_20 <- _ret ] -{inv_Ghost_PermCellOwn_List_T _ret.final}-
-                [ &perm <- _ret.final ] s1)
-          | s1 = borrow_mut_PermCellOwn_List_T {_20}
-              (fun (_ret: MutBorrow.t t_PermCellOwn_List_T) -> [ &_19 <- _ret ] s2)
-          | s2 = bb13 ]
-        | bb13 = s0
-          [ s0 = borrow_mut_List_T {_17} {_19} (fun (_ret: MutBorrow.t t_List_T) -> [ &_15 <- _ret ] s1) | s1 = bb14 ]
-        | bb14 = s0
-          [ s0 = {inv_List_T _15.current}
-            MutBorrow.borrow_final <t_List_T> {_15.current} {MutBorrow.get_id _15}
-              (fun (_ret: MutBorrow.t t_List_T) ->
-                [ &_14 <- _ret ] -{inv_List_T _ret.final}-
-                [ &_15 <- { _15 with current = _ret.final } ] s1)
-          | s1 = [ &p <- _14 ] s2
-          | s2 = {[@expl:type invariant] inv_ref_List_T _15} s3
-          | s3 = -{resolve_ref_List_T _15}- s4
-          | s4 = bb2 ] ] ]
+    [ bb0 = s0 [ s0 = [ &p <- self ] s1 | s1 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:inferred invariant: type invariant] inv_refmut_List_T p}
+        {[@expl:inferred invariant: type invariant] inv_Ghost_PermCellOwn_List_T perm}
+        (! s0)
+        [ s0 = is_none_Node_T {p.current.head} (fun (_x: bool) -> [ &_7 <- _x ] s1)
+        | s1 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb4) ] ]
+        [ bb5 = s0
+          [ s0 = MutBorrow.borrow_final <t_Option_Node_T> {p.current.head} {MutBorrow.inherit_id (MutBorrow.get_id p) 1}
+              (fun (_bor: MutBorrow.t t_Option_Node_T) ->
+                [ &_11 <- _bor ] -{inv_Option_Node_T _bor.final}-
+                [ &p <- { p with current = { head = _bor.final } } ] s1)
+            [ _ck -> (! {inv_Option_Node_T p.current.head} any) ]
+          | s1 = take_Node_T {_11} (fun (_x: t_Option_Node_T) -> [ &_10 <- _x ] s2)
+          | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T p} any) ]
+          | s3 = -{resolve_refmut_List_T p}- s4
+          | s4 = unwrap_Node_T {_10} (fun (_x: t_Node_T) -> [ &curr <- _x ] s5)
+          | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Node_T curr} any) ]
+          | s6 = -{resolve_Node_T curr}- s7
+          | s7 = clone_Rc_PermCell_List_T_Global {curr.next}
+              (fun (_x: t_Rc_PermCell_List_T_Global) -> [ &_12 <- _x ] s8)
+          | s8 = [ &next'0 <- _12 ] s9
+          | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Rc_PermCell_List_T_Global next'0} any) ]
+          | s10 = -{resolve_Rc_PermCell_List_T_Global next'0}- s11
+          | s11 = as_ref_Rc_PermCell_List_T_Global {next'0} (fun (_x: t_PermCell_List_T) -> [ &_17 <- _x ] s12)
+          | s12 = MutBorrow.borrow_mut <t_PermCellOwn_List_T> {perm}
+              (fun (_bor: MutBorrow.t t_PermCellOwn_List_T) ->
+                [ &_20 <- _bor ] -{inv_Ghost_PermCellOwn_List_T _bor.final}-
+                [ &perm <- _bor.final ] s13) [ _ck -> (! {inv_Ghost_PermCellOwn_List_T perm} any) ]
+          | s13 = borrow_mut_PermCellOwn_List_T {_20} (fun (_x: MutBorrow.t t_PermCellOwn_List_T) -> [ &_19 <- _x ] s14)
+          | s14 = borrow_mut_List_T {_17} {_19} (fun (_x: MutBorrow.t t_List_T) -> [ &_15 <- _x ] s15)
+          | s15 = MutBorrow.borrow_final <t_List_T> {_15.current} {MutBorrow.get_id _15}
+              (fun (_bor: MutBorrow.t t_List_T) ->
+                [ &_14 <- _bor ] -{inv_List_T _bor.final}-
+                [ &_15 <- { _15 with current = _bor.final } ] s16) [ _ck -> (! {inv_List_T _15.current} any) ]
+          | s16 = [ &p <- _14 ] s17
+          | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T _15} any) ]
+          | s18 = -{resolve_refmut_List_T _15}- s19
+          | s19 = bb1 ] ] ]
     | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_List_T p} s1
-      | s1 = -{resolve_ref_List_T p}- s2
-      | s2 = {[@expl:type invariant] inv_Ghost_PermCellOwn_List_T perm} s3
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T p} any) ]
+      | s1 = -{resolve_refmut_List_T p}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_PermCellOwn_List_T perm} any) ]
       | s3 = -{resolve_Ghost_PermCellOwn_List_T perm}- s4
-      | s4 = bb16 ]
-    | bb16 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
     | & perm: t_PermCellOwn_List_T = perm
     | & p: MutBorrow.t t_List_T = Any.any_l ()

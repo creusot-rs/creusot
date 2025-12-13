@@ -27,7 +27,6 @@ where
     let mut i = 0;
     #[invariant(sorted_range(v.deep_model(), 0, i@))]
     #[invariant(v@.permutation_of(old_v@))]
-    #[invariant(inv(v))]
     while i < v.len() {
         if i == 0 || v[i - 1] <= v[i] {
             i += 1;

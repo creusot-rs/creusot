@@ -101,9 +101,12 @@ module M_deref_wrap
   let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv_ref_T x}
     {[@expl:deref_wrap requires] precondition_deref () x}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_8 <- x ] s1 | s1 = deref_T {_8} (fun (_ret: t_Target) -> [ &_6 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _6 ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = [ &_8 <- x ] s1
+      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- _6 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
     [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv_ref_Target result}
       {[@expl:deref_wrap ensures] postcondition_deref () x result}
       (! return {result}) ]
@@ -125,40 +128,40 @@ module M_deref_mut_wrap
   
   predicate inv_Target (_1: t_Target)
   
-  predicate invariant_ref_Target [@inline:trivial] (self: MutBorrow.t t_Target) =
+  predicate invariant_refmut_Target [@inline:trivial] (self: MutBorrow.t t_Target) =
     inv_Target self.current /\ inv_Target self.final
   
-  meta "rewrite_def" predicate invariant_ref_Target
+  meta "rewrite_def" predicate invariant_refmut_Target
   
-  predicate inv_ref_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invariant_ref_Target _1
+  predicate inv_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invariant_refmut_Target _1
   
-  meta "rewrite_def" predicate inv_ref_Target
+  meta "rewrite_def" predicate inv_refmut_Target
   
   predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
   
   axiom postcondition_fndef:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_once_deref_mut () args res]. postcondition_once_deref_mut () args res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   let rec deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
     {[@expl:deref_mut requires] precondition_deref_mut () self_}
     any [ return (result: MutBorrow.t t_Target) -> {postcondition_once_deref_mut () self_ result} (! return {result}) ]
   
-  predicate invariant_ref_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" predicate inv_refmut_T
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate resolve_ref_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = _1.final = _1.current
+  predicate resolve_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Target
+  meta "rewrite_def" predicate resolve_refmut_Target
   
   predicate resolve_deref_mut [@inline:trivial] (_1: ()) = true
   
@@ -168,7 +171,7 @@ module M_deref_mut_wrap
   
   axiom postcondition_fndef'0:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_mut_deref_mut () args () res]. postcondition_mut_deref_mut () args () res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   function fn_mut_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
   
@@ -204,7 +207,7 @@ module M_deref_mut_wrap
   
   axiom postcondition_fndef'1:
     forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
-      -> (let self_ = args in inv_ref_Target res)
+      -> (let self_ = args in inv_refmut_Target res)
   
   function fn_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
   
@@ -223,49 +226,43 @@ module M_deref_mut_wrap
   meta "select_lsinst" "all"
   
   let rec deref_mut_wrap_T (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_Target)) =
-    {[@expl:deref_mut_wrap 'x' type invariant] inv_ref_T x}
+    {[@expl:deref_mut_wrap 'x' type invariant] inv_refmut_T x}
     {[@expl:deref_mut_wrap requires] forall y: MutBorrow.t t_T. y.current = x.current -> precondition_deref_mut () y}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_T x.current}
-        MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_9 <- _ret ] -{inv_T _ret.final}-
-            [ &x <- { x with current = _ret.final } ] s1)
-      | s1 = {inv_T _9.current}
-        MutBorrow.borrow_final <t_T> {_9.current} {MutBorrow.get_id _9}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_8 <- _ret ] -{inv_T _ret.final}-
-            [ &_9 <- { _9 with current = _ret.final } ] s2)
-      | s2 = deref_mut_T {_8} (fun (_ret: MutBorrow.t t_Target) -> [ &_7 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_Target _7.current}
-        MutBorrow.borrow_final <t_Target> {_7.current} {MutBorrow.get_id _7}
-          (fun (_ret: MutBorrow.t t_Target) ->
-            [ &_2 <- _ret ] -{inv_Target _ret.final}-
-            [ &_7 <- { _7 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T _9} s2
-      | s2 = -{resolve_ref_T _9}- s3
-      | s3 = {[@expl:type invariant] inv_ref_Target _7} s4
-      | s4 = -{resolve_ref_Target _7}- s5
-      | s5 = {inv_Target _2.current}
-        MutBorrow.borrow_final <t_Target> {_2.current} {MutBorrow.get_id _2}
-          (fun (_ret: MutBorrow.t t_Target) ->
-            [ &_0 <- _ret ] -{inv_Target _ret.final}-
-            [ &_2 <- { _2 with current = _ret.final } ] s6)
-      | s6 = {[@expl:type invariant] inv_ref_Target _2} s7
-      | s7 = -{resolve_ref_Target _2}- s8
-      | s8 = {[@expl:type invariant] inv_ref_T x} s9
-      | s9 = -{resolve_ref_T x}- s10
-      | s10 = return {_0} ] ]
-    [ & _0: MutBorrow.t t_Target = Any.any_l ()
+      [ s0 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_9 <- _bor ] -{inv_T _bor.final}-
+            [ &x <- { x with current = _bor.final } ] s1) [ _ck -> (! {inv_T x.current} any) ]
+      | s1 = MutBorrow.borrow_final <t_T> {_9.current} {MutBorrow.get_id _9}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_8 <- _bor ] -{inv_T _bor.final}-
+            [ &_9 <- { _9 with current = _bor.final } ] s2) [ _ck -> (! {inv_T _9.current} any) ]
+      | s2 = deref_mut_T {_8} (fun (_x: MutBorrow.t t_Target) -> [ &_7 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_Target> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_Target) ->
+            [ &_2 <- _bor ] -{inv_Target _bor.final}-
+            [ &_7 <- { _7 with current = _bor.final } ] s4) [ _ck -> (! {inv_Target _7.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _9} any) ]
+      | s5 = -{resolve_refmut_T _9}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Target _7} any) ]
+      | s7 = -{resolve_refmut_Target _7}- s8
+      | s8 = MutBorrow.borrow_final <t_Target> {_2.current} {MutBorrow.get_id _2}
+          (fun (_bor: MutBorrow.t t_Target) ->
+            [ &_ret <- _bor ] -{inv_Target _bor.final}-
+            [ &_2 <- { _2 with current = _bor.final } ] s9) [ _ck -> (! {inv_Target _2.current} any) ]
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Target _2} any) ]
+      | s10 = -{resolve_refmut_Target _2}- s11
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_T x} any) ]
+      | s12 = -{resolve_refmut_T x}- s13
+      | s13 = return {_ret} ] ]
+    [ & _ret: MutBorrow.t t_Target = Any.any_l ()
     | & x: MutBorrow.t t_T = x
     | & _2: MutBorrow.t t_Target = Any.any_l ()
     | & _7: MutBorrow.t t_Target = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut_wrap result type invariant] inv_ref_Target result}
+    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut_wrap result type invariant] inv_refmut_Target result}
       {[@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result}
       (! return {result}) ]
 end

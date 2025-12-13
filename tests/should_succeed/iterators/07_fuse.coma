@@ -19,9 +19,13 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
         | Some f0 -> inv_I f0
         end
   
-  let rec elim_Some (input: t_Option_I) (ret (f0: t_I)) = any
-    [ good (f0: t_I) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: t_I [Some f0: t_Option_I]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_I) (return (f0: t_I)) = any
+    [ _k (f0: t_I) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   type t_Item
   
@@ -38,18 +42,18 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   
   type t_Option_Item = None'0 | Some'0 t_Item
   
-  predicate invariant_ref_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
+  predicate invariant_refmut_I [@inline:trivial] (self: MutBorrow.t t_I) = inv_I self.current /\ inv_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_I
+  meta "rewrite_def" predicate invariant_refmut_I
   
-  predicate inv_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_ref_I _1
+  predicate inv_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = invariant_refmut_I _1
   
-  meta "rewrite_def" predicate inv_ref_I
+  meta "rewrite_def" predicate inv_refmut_I
   
   predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_ref_I self)
+    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
       -> precondition_next () args
   
   predicate inv_Item (_1: t_Item)
@@ -77,39 +81,39 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
     any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
   
-  predicate resolve_ref_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
+  predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_I
+  meta "rewrite_def" predicate resolve_refmut_I
   
-  predicate invariant_ref_Option_I [@inline:trivial] (self: MutBorrow.t t_Option_I) =
+  predicate invariant_refmut_Option_I [@inline:trivial] (self: MutBorrow.t t_Option_I) =
     inv_Option_I self.current /\ inv_Option_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Option_I
+  meta "rewrite_def" predicate invariant_refmut_Option_I
   
-  predicate inv_ref_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = invariant_ref_Option_I _1
+  predicate inv_refmut_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = invariant_refmut_Option_I _1
   
-  meta "rewrite_def" predicate inv_ref_Option_I
+  meta "rewrite_def" predicate inv_refmut_Option_I
   
-  predicate resolve_ref_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = _1.final = _1.current
+  predicate resolve_refmut_Option_I [@inline:trivial] (_1: MutBorrow.t t_Option_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Option_I
+  meta "rewrite_def" predicate resolve_refmut_Option_I
   
   predicate inv_Fuse_I (_1: t_Fuse_I)
   
   axiom inv_axiom'1 [@rewrite]: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x = inv_Option_I x.iter
   
-  predicate invariant_ref_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
+  predicate invariant_refmut_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
     inv_Fuse_I self.current /\ inv_Fuse_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Fuse_I
+  meta "rewrite_def" predicate invariant_refmut_Fuse_I
   
-  predicate inv_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_ref_Fuse_I _1
+  predicate inv_refmut_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_refmut_Fuse_I _1
   
-  meta "rewrite_def" predicate inv_ref_Fuse_I
+  meta "rewrite_def" predicate inv_refmut_Fuse_I
   
-  predicate resolve_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = _1.final = _1.current
+  predicate resolve_refmut_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Fuse_I
+  meta "rewrite_def" predicate resolve_refmut_Fuse_I
   
   predicate resolve_Item (_1: t_Item)
   
@@ -149,60 +153,57 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Fuse_I (self: MutBorrow.t t_Fuse_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_ref_Fuse_I self}
+    {[@expl:next 'self' type invariant] inv_refmut_Fuse_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_Option_I self.current.iter}
-        MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
-          (fun (_ret: MutBorrow.t t_Option_I) ->
-            [ &_4 <- _ret ] -{inv_Option_I _ret.final}-
-            [ &self <- { self with current = { iter = _ret.final } } ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
+          (fun (_bor: MutBorrow.t t_Option_I) ->
+            [ &_4 <- _bor ] -{inv_Option_I _bor.final}-
+            [ &self <- { self with current = { iter = _bor.final } } ] s1)
+        [ _ck -> (! {inv_Option_I self.current.iter} any) ]
       | s1 = any [ br0 -> {_4.current = None} (! bb2) | br1 (x0: t_I) -> {_4.current = Some x0} (! bb3) ] ]
     | bb3 = s0
       [ s0 = elim_Some {_4.current}
           (fun (r0: t_I) ->
-            {inv_I r0}
             MutBorrow.borrow_final <t_I> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
-              (fun (_ret: MutBorrow.t t_I) ->
-                [ &iter'0 <- _ret ] -{inv_I _ret.final}-
-                [ &_4 <- { _4 with current = Some _ret.final } ] s1))
-      | s1 = {inv_I iter'0.current}
-        MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
-          (fun (_ret: MutBorrow.t t_I) ->
-            [ &_8 <- _ret ] -{inv_I _ret.final}-
-            [ &iter'0 <- { iter'0 with current = _ret.final } ] s2)
-      | s2 = next_I {_8} (fun (_ret: t_Option_Item) -> [ &_7 <- _ret ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_I iter'0} s1
-      | s1 = -{resolve_ref_I iter'0}- s2
-      | s2 = {[@expl:type invariant] inv_ref_Option_I _4} s3
-      | s3 = -{resolve_ref_Option_I _4}- s4
-      | s4 = any [ br0 -> {_7 = None'0} (! bb7) | br1 (x0: t_Item) -> {_7 = Some'0 x0} (! bb6) ] ]
+              (fun (_bor: MutBorrow.t t_I) ->
+                [ &iter'0 <- _bor ] -{inv_I _bor.final}-
+                [ &_4 <- { _4 with current = Some _bor.final } ] s1) [ _ck -> (! {inv_I r0} any) ])
+      | s1 = MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
+          (fun (_bor: MutBorrow.t t_I) ->
+            [ &_8 <- _bor ] -{inv_I _bor.final}-
+            [ &iter'0 <- { iter'0 with current = _bor.final } ] s2) [ _ck -> (! {inv_I iter'0.current} any) ]
+      | s2 = next_I {_8} (fun (_x: t_Option_Item) -> [ &_7 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I iter'0} any) ]
+      | s4 = -{resolve_refmut_I iter'0}- s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_I _4} any) ]
+      | s6 = -{resolve_refmut_Option_I _4}- s7
+      | s7 = any [ br0 -> {_7 = None'0} (! bb7) | br1 (x0: t_Item) -> {_7 = Some'0 x0} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Fuse_I self} s1
-      | s1 = -{resolve_ref_Fuse_I self}- s2
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fuse_I self} any) ]
+      | s1 = -{resolve_refmut_Fuse_I self}- s2
       | s2 = [ &x <- _7 ] s3
-      | s3 = [ &_0 <- x ] s4
-      | s4 = bb15 ]
-    | bb7 = s0 [ s0 = {[@expl:type invariant] inv_Option_Item _7} s1 | s1 = -{resolve_Option_Item _7}- s2 | s2 = bb8 ]
-    | bb8 = s0 [ s0 = [ &_10 <- None ] s1 | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = {[@expl:type invariant] inv_Option_I self.current.iter} s1
-      | s1 = -{resolve_Option_I self.current.iter}- s2
-      | s2 = [ &self <- { self with current = { iter = _10 } } ] s3
-      | s3 = {[@expl:type invariant] inv_ref_Fuse_I self} s4
-      | s4 = -{resolve_ref_Fuse_I self}- s5
-      | s5 = bb11 ]
-    | bb11 = s0 [ s0 = [ &_0 <- None'0 ] s1 | s1 = bb15 ]
-    | bb2 = s0 [ s0 = {[@expl:type invariant] inv_ref_Option_I _4} s1 | s1 = -{resolve_ref_Option_I _4}- s2 | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Fuse_I self} s1
-      | s1 = -{resolve_ref_Fuse_I self}- s2
-      | s2 = [ &_0 <- None'0 ] s3
-      | s3 = bb15 ]
-    | bb15 = return {_0} ]
-    [ & _0: t_Option_Item = Any.any_l ()
+      | s3 = [ &_ret <- x ] s4
+      | s4 = return {_ret} ]
+    | bb7 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _7} any) ]
+      | s1 = -{resolve_Option_Item _7}- s2
+      | s2 = [ &_10 <- None ] s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Option_I self.current.iter} any) ]
+      | s4 = -{resolve_Option_I self.current.iter}- s5
+      | s5 = [ &self <- { self with current = { iter = _10 } } ] s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fuse_I self} any) ]
+      | s7 = -{resolve_refmut_Fuse_I self}- s8
+      | s8 = [ &_ret <- None'0 ] s9
+      | s9 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_I _4} any) ]
+      | s1 = -{resolve_refmut_Option_I _4}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fuse_I self} any) ]
+      | s3 = -{resolve_refmut_Fuse_I self}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Option_Item = Any.any_l ()
     | & self: MutBorrow.t t_Fuse_I = self
     | & _4: MutBorrow.t t_Option_I = Any.any_l ()
     | & iter'0: MutBorrow.t t_I = Any.any_l ()
@@ -476,14 +477,14 @@ module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x = inv_Option_I x.iter
   
-  predicate invariant_ref_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
+  predicate invariant_refmut_Fuse_I [@inline:trivial] (self: MutBorrow.t t_Fuse_I) =
     inv_Fuse_I self.current /\ inv_Fuse_I self.final
   
-  meta "rewrite_def" predicate invariant_ref_Fuse_I
+  meta "rewrite_def" predicate invariant_refmut_Fuse_I
   
-  predicate inv_ref_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_ref_Fuse_I _1
+  predicate inv_refmut_Fuse_I [@inline:trivial] (_1: MutBorrow.t t_Fuse_I) = invariant_refmut_Fuse_I _1
   
-  meta "rewrite_def" predicate inv_ref_Fuse_I
+  meta "rewrite_def" predicate inv_refmut_Fuse_I
   
   type t_Item
   
@@ -529,8 +530,8 @@ module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Fuse_I. inv_ref_Fuse_I self
-      -> inv_ref_Fuse_I self
+  goal refines: forall self: MutBorrow.t t_Fuse_I. inv_refmut_Fuse_I self
+      -> inv_refmut_Fuse_I self
       /\ (forall result: t_Option_Item. inv_Option_Item result
           /\ match result with
             | None'0 -> completed_Fuse_I self

@@ -9,11 +9,8 @@ module M_unused_in_loop
   let rec unused_in_loop (b: bool) (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &x <- (10: UInt32.t) ] s1 | s1 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant] true}
-        (! s0)
-        [ s0 = bb2 ]
-        [ bb2 = any [ br0 -> {b = false} (! bb1) | br1 -> {b} (! bb3) ] ] ]
-    | bb3 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ]
-    [ & _0: UInt32.t = Any.any_l () | & b: bool = b | & x: UInt32.t = Any.any_l () ])
+      [ bb1 = {[@expl:loop invariant] true} (! s0) [ s0 = any [ br0 -> {b = false} (! bb1) | br1 -> {b} (! bb3) ] ] ]
+    | bb3 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l () | & b: bool = b | & x: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:unused_in_loop ensures] result = (10: UInt32.t)} (! return {result}) ]
 end

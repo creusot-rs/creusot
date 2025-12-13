@@ -7,6 +7,7 @@ use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
+use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
@@ -39,7 +40,7 @@ impl<'tcx> Metadata<'tcx> {
         self.get(def_id.krate)?.term(def_id)
     }
 
-    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
         assert!(!def_id.is_local());
         self.get(def_id.krate)?.params_open_inv(def_id)
     }
@@ -105,7 +106,7 @@ pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, ScopedTerm<'tcx>>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
-    params_open_inv: HashMap<DefId, Vec<usize>>,
+    params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     is_external_crate: bool,
 }
 
@@ -115,7 +116,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         self.terms.get(&def_id)
     }
 
-    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
         assert!(!def_id.is_local());
         self.params_open_inv.get(&def_id)
     }
@@ -163,7 +164,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
-    params_open_inv: HashMap<DefId, Vec<usize>>,
+    params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     erased_defid: Vec<(DefId, Option<Erasure<'tcx>>)>,
     is_external_crate: bool,
@@ -175,7 +176,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         creusot_items: HashMap<Symbol, DefId>,
         intrinsics: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
-        params_open_inv: HashMap<DefId, Vec<usize>>,
+        params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
         erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
         erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     ) -> Self {

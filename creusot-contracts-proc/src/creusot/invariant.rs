@@ -233,15 +233,6 @@ fn desugar_for(
         },
     );
 
-    invariants.insert(
-        0,
-        Invariant {
-            kind: ForInvariant,
-            span: for_span,
-            term: parse_quote_spanned! {for_span=> ::creusot_contracts::invariant::inv(#it) },
-        },
-    );
-
     invariants.insert(0, Invariant {
         kind: ForInvariant,
         span: for_span,

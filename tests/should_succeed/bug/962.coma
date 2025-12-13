@@ -7,20 +7,20 @@ module M_disjoint_captures
   
   type closure2 = { c0: MutBorrow.t Int32.t }
   
-  predicate resolve_ref_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
+  predicate resolve_refmut_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_closure2
+  meta "rewrite_def" predicate resolve_refmut_closure2
   
   predicate postcondition_once_closure2 [@inline:trivial] (self: closure2) (args: ()) (result: ()) =
     Int32.to_int self.c0.final = 1
   
   meta "rewrite_def" predicate postcondition_once_closure2
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_ref_i32 _1.c0
+  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_refmut_i32 _1.c0
   
   meta "rewrite_def" predicate resolve_closure2
   
@@ -57,8 +57,8 @@ module M_disjoint_captures
   let rec closure2 (self: MutBorrow.t closure2) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (1: Int32.t) } } } ] s1
-      | s1 = -{resolve_ref_closure2 self}- s2
-      | s2 = return {_0} ] ] [ & _0: () = Any.any_l () | & self: MutBorrow.t closure2 = self ])
+      | s1 = -{resolve_refmut_closure2 self}- s2
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self ])
     [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.final.c0.current = 1}
       {[@expl:closure hist_inv post] hist_inv_closure2 self.current self.final}
       (! return {result}) ]
@@ -73,17 +73,15 @@ module M_disjoint_captures
     [ bb0 = s0
       [ s0 = [ &p0 <- p.f0 ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {p.f1}
-          (fun (_ret: MutBorrow.t Int32.t) -> [ &_7 <- _ret ] [ &p <- { p with f1 = _ret.final } ] s2)
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_7 <- _bor ] [ &p <- { p with f1 = _bor.final } ] s2)
       | s2 = [ &clos <- { c0 = _7 } ] s3
       | s3 = MutBorrow.borrow_mut <closure2> {clos}
-          (fun (_ret: MutBorrow.t closure2) -> [ &_9 <- _ret ] [ &clos <- _ret.final ] s4)
-      | s4 = closure2 {_9} (fun (_ret: ()) -> [ &_8 <- _ret ] s5)
-      | s5 = bb1 ]
-    | bb1 = s0
-      [ s0 = -{resolve_closure2 clos}- s1
-      | s1 = Int32.add {p0} {p.f1} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l ()
+          (fun (_bor: MutBorrow.t closure2) -> [ &_9 <- _bor ] [ &clos <- _bor.final ] s4)
+      | s4 = closure2 {_9} (fun (_x: ()) -> [ &_8 <- _x ] s5)
+      | s5 = -{resolve_closure2 clos}- s6
+      | s6 = Int32.add {p0} {p.f1} (fun (_x: Int32.t) -> [ &_ret <- _x ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & p: tup2_i32_i32 = p
     | & p0: Int32.t = Any.any_l ()
     | & clos: closure2 = Any.any_l ()

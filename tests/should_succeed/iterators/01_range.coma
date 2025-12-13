@@ -156,9 +156,9 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range
+  meta "rewrite_def" predicate resolve_refmut_Range
   
   type t_Option_isize = None | Some Int64.t
   
@@ -208,7 +208,7 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -226,16 +226,15 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
     [ bb0 = s0
       [ s0 = [ &_4 <- Int64.ge self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
-    | bb1 = s0 [ s0 = -{resolve_ref_Range self}- s1 | s1 = [ &_0 <- None ] s2 | s2 = bb3 ]
+    | bb1 = s0 [ s0 = -{resolve_refmut_Range self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb2 = s0
       [ s0 = [ &r <- self.current.start ] s1
       | s1 = Int64.add {self.current.start} {(1: Int64.t)}
-          (fun (_ret: Int64.t) -> [ &self <- { self with current = { self.current with start = _ret } } ] s2)
-      | s2 = -{resolve_ref_Range self}- s3
-      | s3 = [ &_0 <- Some r ] s4
-      | s4 = bb3 ]
-    | bb3 = return {_0} ]
-    [ & _0: t_Option_isize = Any.any_l ()
+          (fun (_x: Int64.t) -> [ &self <- { self with current = { self.current with start = _x } } ] s2)
+      | s2 = -{resolve_refmut_Range self}- s3
+      | s3 = [ &_ret <- Some r ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_isize = Any.any_l ()
     | & self: MutBorrow.t t_Range = self
     | & _4: bool = Any.any_l ()
     | & r: Int64.t = Any.any_l () ])
@@ -256,15 +255,15 @@ module M_impl_Range__into_iter (* Range *)
   meta "select_lsinst" "all"
   
   let rec into_iter (self: t_Range) (return (x: t_Range)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- self ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_Range = Any.any_l () | & self: t_Range = self ])
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Range = Any.any_l () | & self: t_Range = self ])
     [ return (result: t_Range) -> {[@expl:into_iter ensures] result = self} (! return {result}) ]
 end
 module M_sum_range
   use creusot.int.Int64
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.MutBorrow
+  use mach.int.Int
   use creusot.prelude.Any
   
   type t_Range = { start: Int64.t; end': Int64.t }
@@ -336,18 +335,14 @@ module M_sum_range
   
   axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
   
-  predicate inv_Range [@inline:trivial] (_1: t_Range) = true
-  
-  meta "rewrite_def" predicate inv_Range
-  
   type t_Option_isize = None | Some Int64.t
   
-  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range
+  meta "rewrite_def" predicate resolve_refmut_Range
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
   
   let rec next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = any
     [ return (result: t_Option_isize) -> {match result with
@@ -356,9 +351,13 @@ module M_sum_range
         end}
       (! return {result}) ]
   
-  let rec elim_Some (input: t_Option_isize) (ret (f0: Int64.t)) = any
-    [ good (f0: Int64.t) -> {Some f0 = input} (! ret {f0})
-    | bad -> {forall f0: Int64.t [Some f0: t_Option_isize]. Some f0 <> input} (! {false} any) ]
+  let rec elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
+    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   meta "compute_max_steps" 1000000
   
@@ -369,42 +368,34 @@ module M_sum_range
     [ bb0 = s0
       [ s0 = [ &i <- (0: Int64.t) ] s1
       | s1 = [ &_8 <- { start = (0: Int64.t); end' = n } ] s2
-      | s2 = into_iter {_8} (fun (_ret: t_Range) -> [ &it <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = [ &iter_old <- it ] s1 | s1 = bb2 ]
-    | bb2 = s0 [ s0 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s1 | s1 = bb4 ]
+      | s2 = into_iter {_8} (fun (_x: t_Range) -> [ &it <- _x ] s3)
+      | s3 = [ &iter_old <- it ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s5
+      | s5 = bb4 ]
     | bb4 = bb4
-      [ bb4 = {[@expl:loop invariant #0] inv_Range it}
-        {[@expl:loop invariant #1] produces_Range iter_old produced it}
-        {[@expl:loop invariant #2] Int64.to_int i = Seq.length produced /\ Int64.le i n}
+      [ bb4 = {[@expl:loop invariant #0] produces_Range iter_old produced it}
+        {[@expl:loop invariant #1] Int64.to_int i = Seq.length produced /\ Int64.le i n}
         (! s0)
-        [ s0 = bb5 ]
-        [ bb5 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Range> {it}
-              (fun (_ret: MutBorrow.t t_Range) -> [ &_29 <- _ret ] [ &it <- _ret.final ] s1)
-          | s1 = next_Range {_29} (fun (_ret: t_Option_isize) -> [ &_28 <- _ret ] s2)
-          | s2 = bb6 ]
-        | bb6 = any [ br0 -> {_28 = None} (! bb9) | br1 (x0: Int64.t) -> {_28 = Some x0} (! bb10) ]
-        | bb10 = s0
-          [ s0 = elim_Some {_28} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
-          | s1 = [ &_32 <- Seq.(++) produced (Seq.singleton x) ] s2
-          | s2 = bb11 ]
-        | bb11 = s0
-          [ s0 = [ &produced <- _32 ] s1
-          | s1 = Int64.add {i} {(1: Int64.t)} (fun (_ret: Int64.t) -> [ &i <- _ret ] s2)
-          | s2 = bb4 ] ] ]
-    | bb9 = s0 [ s0 = [ &_0 <- i ] s1 | s1 = return {_0} ] ]
-    [ & _0: Int64.t = Any.any_l ()
+        [ s0 = MutBorrow.borrow_mut <t_Range> {it}
+            (fun (_bor: MutBorrow.t t_Range) -> [ &_27 <- _bor ] [ &it <- _bor.final ] s1)
+        | s1 = next_Range {_27} (fun (_x: t_Option_isize) -> [ &_26 <- _x ] s2)
+        | s2 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_26} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
+          | s2 = Int64.add {i} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &i <- _x ] s3)
+          | s3 = bb4 ] ] ]
+    | bb9 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int64.t = Any.any_l ()
     | & n: Int64.t = n
     | & i: Int64.t = Any.any_l ()
     | & it: t_Range = Any.any_l ()
     | & _8: t_Range = Any.any_l ()
     | & iter_old: t_Range = Any.any_l ()
     | & produced: Seq.seq Int64.t = Any.any_l ()
-    | & _28: t_Option_isize = Any.any_l ()
-    | & _29: MutBorrow.t t_Range = Any.any_l ()
-    | & x: Int64.t = Any.any_l ()
-    | & _32: Seq.seq Int64.t = Any.any_l () ])
+    | & _26: t_Option_isize = Any.any_l ()
+    | & _27: MutBorrow.t t_Range = Any.any_l ()
+    | & x: Int64.t = Any.any_l () ])
     [ return (result: Int64.t) -> {[@expl:sum_range ensures] result = n} (! return {result}) ]
 end
 module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::Iterator> *)
@@ -488,9 +479,9 @@ module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  predicate resolve_ref_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Range
+  meta "rewrite_def" predicate resolve_refmut_Range
   
   type t_Ordering = Less | Equal | Greater
   
@@ -538,7 +529,7 @@ module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *
   axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_ref_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'

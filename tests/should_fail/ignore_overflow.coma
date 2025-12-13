@@ -1,0 +1,25 @@
+module M_f
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  constant const_N : UInt32.t
+  
+  type tup2_u32_bool = { f0: UInt32.t; f1: bool }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec f (x: UInt32.t) (y: UInt32.t) (return (x'0: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = [ &_1 <- let (_fst, _snd) = UInt32.add_with_overflow const_N (1: UInt32.t) in { f0 = _fst;
+                                                                                                   f1 = _snd } ] s1'0
+          | s1'0 = {[@expl:Add overflow] not _1.f1} s2
+          | s2 = [ &_ret'0 <- _1.f0 ] s3
+          | s3 = _const_ret {_ret'0} ] ] [ & _ret'0: UInt32.t = Any.any_l () | & _1: tup2_u32_bool = Any.any_l () ]
+        [ _const_ret (_const: UInt32.t) -> [ &_3 <- _const ] s1 ]
+      | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _3: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end

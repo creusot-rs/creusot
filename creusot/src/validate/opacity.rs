@@ -1,4 +1,3 @@
-use rustc_abi::VariantIdx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
@@ -91,10 +90,10 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                     match elem {
                         ProjectionElem::Field(field_idx, _) => {
                             let Some(adt) = place_ty.ty.ty_adt_def() else { return };
-                            let fdid = adt
-                                .variant(place_ty.variant_index.unwrap_or(VariantIdx::ZERO))
-                                .fields[*field_idx]
-                                .did;
+                            if !adt.is_struct() {
+                                return;
+                            }
+                            let fdid = adt.non_enum_variant().fields[*field_idx].did;
                             if !self.is_visible_enough(fdid) {
                                 self.error(fdid, term.span);
                                 return;

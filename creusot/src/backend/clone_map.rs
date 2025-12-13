@@ -7,6 +7,7 @@ use crate::{
     },
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
+    naming::name,
     translation::traits::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
@@ -644,13 +645,13 @@ impl Setters {
         if self.is_empty() {
             Decl::Goal(Goal { name, goal })
         } else {
-            let return_ = Ident::fresh_local("ret");
             let prototype = Prototype {
                 name,
                 attrs: vec![],
-                params: [Param::Cont(return_, [].into(), [].into())].into(),
+                params: [Param::Cont(name::return_(), [].into(), [].into())].into(),
             };
-            let body = self.call_setters(Expr::Assert(goal.boxed(), Expr::var(return_).boxed()));
+            let body =
+                self.call_setters(Expr::Assert(goal.boxed(), Expr::var(name::return_()).boxed()));
             Decl::Coma(Defn { prototype, body })
         }
     }

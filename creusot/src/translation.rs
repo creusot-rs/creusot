@@ -17,6 +17,7 @@ use crate::{
 };
 use creusot_args::options::{Options, Output};
 use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_index::bit_set::DenseBitSet;
 use rustc_middle::ty::TyCtxt;
 use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, time::Instant};
 use why3::{
@@ -25,7 +26,7 @@ use why3::{
     printer::{render_decls, render_module},
 };
 
-pub(crate) fn before_analysis<'tcx>(tcx: TyCtxt<'tcx>) -> HashMap<DefId, Vec<usize>> {
+pub(crate) fn before_analysis<'tcx>(tcx: TyCtxt<'tcx>) -> HashMap<DefId, DenseBitSet<usize>> {
     let start = Instant::now();
     let params_open_inv = gather_params_open_inv(tcx);
     debug!("before_analysis: {:?}", start.elapsed());
@@ -50,7 +51,7 @@ fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 pub(crate) fn after_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
     opts: Options,
-    params_open_inv: HashMap<DefId, Vec<usize>>,
+    params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);

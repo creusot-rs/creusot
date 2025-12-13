@@ -44,28 +44,28 @@ module M_test_result
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'0 e}
     any [ return (result: Int32.t) -> {Err'0 result = self_} (! return {result}) ]
   
-  type t_Result_ref_i32_ref_i32'0 = Ok'1 (MutBorrow.t Int32.t) | Err'1 (MutBorrow.t Int32.t)
+  type t_Result_refmut_i32_refmut_i32 = Ok'1 (MutBorrow.t Int32.t) | Err'1 (MutBorrow.t Int32.t)
   
-  let rec as_mut_i32 (self_: MutBorrow.t t_Result_i32_i32) (return (x: t_Result_ref_i32_ref_i32'0)) = any
-    [ return (result: t_Result_ref_i32_ref_i32'0) -> {exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
+  let rec as_mut_i32 (self_: MutBorrow.t t_Result_i32_i32) (return (x: t_Result_refmut_i32_refmut_i32)) = any
+    [ return (result: t_Result_refmut_i32_refmut_i32) -> {exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
           /\ self_.final = Ok (t.final) /\ result = Ok'1 t
         \/ (exists e: MutBorrow.t Int32.t. self_.current = Err (e.current)
           /\ self_.final = Err (e.final) /\ result = Err'1 e)}
       (! return {result}) ]
   
-  let rec unwrap_ref_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap requires] exists t: MutBorrow.t Int32.t. self_ = Ok'1 t}
     any [ return (result: MutBorrow.t Int32.t) -> {Ok'1 result = self_} (! return {result}) ]
   
-  predicate resolve_ref_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_i32
+  meta "rewrite_def" predicate resolve_refmut_i32
   
   let rec unwrap_i32'0 (self_: t_Result_i32_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok t}
     any [ return (result: Int32.t) -> {Ok result = self_} (! return {result}) ]
   
-  let rec unwrap_err_ref_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_err_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'1 e}
     any [ return (result: MutBorrow.t Int32.t) -> {Err'1 result = self_} (! return {result}) ]
   
@@ -169,19 +169,19 @@ module M_test_result
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'2 e}
     any [ return (result: Int32.t) -> {Err'2 result = self_} (! return {result}) ]
   
-  type t_Result_i32_ref_i32'0 = Ok'3 Int32.t | Err'3 (MutBorrow.t Int32.t)
+  type t_Result_i32_refmut_i32 = Ok'3 Int32.t | Err'3 (MutBorrow.t Int32.t)
   
-  let rec copied_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: t_Result_i32_ref_i32'0)) = any
-    [ return (result: t_Result_i32_ref_i32'0) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_ref_i32 t}
+  let rec copied_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
+    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
+        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
       {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
       (! return {result}) ]
   
-  let rec unwrap_i32'2 (self_: t_Result_i32_ref_i32'0) (return (x: Int32.t)) =
+  let rec unwrap_i32'2 (self_: t_Result_i32_refmut_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok'3 t}
     any [ return (result: Int32.t) -> {Ok'3 result = self_} (! return {result}) ]
   
-  let rec unwrap_err_i32'1 (self_: t_Result_i32_ref_i32'0) (return (x: MutBorrow.t Int32.t)) =
+  let rec unwrap_err_i32'1 (self_: t_Result_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'3 e}
     any [ return (result: MutBorrow.t Int32.t) -> {Err'3 result = self_} (! return {result}) ]
   
@@ -190,9 +190,9 @@ module M_test_result
       {forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e}
       (! return {result}) ]
   
-  let rec cloned_i32'0 (self_: t_Result_ref_i32_ref_i32'0) (return (x: t_Result_i32_ref_i32'0)) = any
-    [ return (result: t_Result_i32_ref_i32'0) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_ref_i32 t}
+  let rec cloned_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
+    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
+        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
       {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
       (! return {result}) ]
   
@@ -221,269 +221,237 @@ module M_test_result
     [ bb0 = s0
       [ s0 = [ &ok <- Ok (1: Int32.t) ] s1
       | s1 = [ &err <- Err (-1: Int32.t) ] s2
-      | s2 = is_ok_i32 {ok} (fun (_ret: bool) -> [ &_4 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = any [ br0 -> {_4 = false} (! bb7) | br1 -> {_4} (! bb2) ]
-    | bb2 = s0 [ s0 = is_ok_i32 {err} (fun (_ret: bool) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb7) ]
-    | bb5 = s0 [ s0 = is_err_i32 {err} (fun (_ret: bool) -> [ &_10 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = any [ br0 -> {_10 = false} (! bb14) | br1 -> {_10} (! bb9) ]
-    | bb9 = s0 [ s0 = is_err_i32 {ok} (fun (_ret: bool) -> [ &_12 <- _ret ] s1) | s1 = bb10 ]
-    | bb10 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb14) ]
-    | bb12 = s0 [ s0 = ok_i32 {ok} (fun (_ret: t_Option_i32) -> [ &_18 <- _ret ] s1) | s1 = bb15 ]
-    | bb15 = s0 [ s0 = unwrap_i32 {_18} (fun (_ret: Int32.t) -> [ &_17 <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = s0
-      [ s0 = [ &_16 <- _17 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb18) | br1 -> {_16} (! bb17) ] ]
-    | bb17 = s0 [ s0 = ok_i32 {err} (fun (_ret: t_Option_i32) -> [ &_24 <- _ret ] s1) | s1 = bb19 ]
-    | bb19 = s0 [ s0 = is_none_i32 {_24} (fun (_ret: bool) -> [ &_22 <- _ret ] s1) | s1 = bb20 ]
-    | bb20 = any [ br0 -> {_22 = false} (! bb22) | br1 -> {_22} (! bb21) ]
-    | bb21 = s0 [ s0 = err_i32 {ok} (fun (_ret: t_Option_i32) -> [ &_30 <- _ret ] s1) | s1 = bb23 ]
-    | bb23 = s0 [ s0 = is_none_i32 {_30} (fun (_ret: bool) -> [ &_28 <- _ret ] s1) | s1 = bb24 ]
-    | bb24 = any [ br0 -> {_28 = false} (! bb26) | br1 -> {_28} (! bb25) ]
-    | bb25 = s0 [ s0 = err_i32 {err} (fun (_ret: t_Option_i32) -> [ &_36 <- _ret ] s1) | s1 = bb27 ]
-    | bb27 = s0 [ s0 = unwrap_i32 {_36} (fun (_ret: Int32.t) -> [ &_35 <- _ret ] s1) | s1 = bb28 ]
-    | bb28 = s0
-      [ s0 = [ &_34 <- _35 = (-1: Int32.t) ] s1 | s1 = any [ br0 -> {_34 = false} (! bb30) | br1 -> {_34} (! bb29) ] ]
-    | bb29 = s0 [ s0 = as_ref_i32 {ok} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_43 <- _ret ] s1) | s1 = bb31 ]
-    | bb31 = s0 [ s0 = unwrap_ref_i32 {_43} (fun (_ret: Int32.t) -> [ &_42 <- _ret ] s1) | s1 = bb32 ]
-    | bb32 = s0
-      [ s0 = [ &_40 <- _42 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_40 = false} (! bb34) | br1 -> {_40} (! bb33) ] ]
-    | bb33 = s0 [ s0 = as_ref_i32 {err} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_50 <- _ret ] s1) | s1 = bb35 ]
-    | bb35 = s0 [ s0 = unwrap_err_ref_i32 {_50} (fun (_ret: Int32.t) -> [ &_49 <- _ret ] s1) | s1 = bb36 ]
-    | bb36 = s0
-      [ s0 = [ &_47 <- _49 = (-1: Int32.t) ] s1 | s1 = any [ br0 -> {_47 = false} (! bb38) | br1 -> {_47} (! bb37) ] ]
+      | s2 = is_ok_i32 {ok} (fun (_x: bool) -> [ &_4 <- _x ] s3)
+      | s3 = any [ br0 -> {_4 = false} (! bb7) | br1 -> {_4} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = is_ok_i32 {err} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb7) ] ]
+    | bb5 = s0
+      [ s0 = is_err_i32 {err} (fun (_x: bool) -> [ &_10 <- _x ] s1)
+      | s1 = any [ br0 -> {_10 = false} (! bb14) | br1 -> {_10} (! bb9) ] ]
+    | bb9 = s0
+      [ s0 = is_err_i32 {ok} (fun (_x: bool) -> [ &_12 <- _x ] s1)
+      | s1 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb14) ] ]
+    | bb12 = s0
+      [ s0 = ok_i32 {ok} (fun (_x: t_Option_i32) -> [ &_18 <- _x ] s1)
+      | s1 = unwrap_i32 {_18} (fun (_x: Int32.t) -> [ &_17 <- _x ] s2)
+      | s2 = [ &_16 <- _17 = (1: Int32.t) ] s3
+      | s3 = any [ br0 -> {_16 = false} (! bb18) | br1 -> {_16} (! bb17) ] ]
+    | bb17 = s0
+      [ s0 = ok_i32 {err} (fun (_x: t_Option_i32) -> [ &_24 <- _x ] s1)
+      | s1 = is_none_i32 {_24} (fun (_x: bool) -> [ &_22 <- _x ] s2)
+      | s2 = any [ br0 -> {_22 = false} (! bb22) | br1 -> {_22} (! bb21) ] ]
+    | bb21 = s0
+      [ s0 = err_i32 {ok} (fun (_x: t_Option_i32) -> [ &_30 <- _x ] s1)
+      | s1 = is_none_i32 {_30} (fun (_x: bool) -> [ &_28 <- _x ] s2)
+      | s2 = any [ br0 -> {_28 = false} (! bb26) | br1 -> {_28} (! bb25) ] ]
+    | bb25 = s0
+      [ s0 = err_i32 {err} (fun (_x: t_Option_i32) -> [ &_36 <- _x ] s1)
+      | s1 = unwrap_i32 {_36} (fun (_x: Int32.t) -> [ &_35 <- _x ] s2)
+      | s2 = [ &_34 <- _35 = (-1: Int32.t) ] s3
+      | s3 = any [ br0 -> {_34 = false} (! bb30) | br1 -> {_34} (! bb29) ] ]
+    | bb29 = s0
+      [ s0 = as_ref_i32 {ok} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_43 <- _x ] s1)
+      | s1 = unwrap_ref_i32 {_43} (fun (_x: Int32.t) -> [ &_42 <- _x ] s2)
+      | s2 = [ &_40 <- _42 = (1: Int32.t) ] s3
+      | s3 = any [ br0 -> {_40 = false} (! bb34) | br1 -> {_40} (! bb33) ] ]
+    | bb33 = s0
+      [ s0 = as_ref_i32 {err} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_50 <- _x ] s1)
+      | s1 = unwrap_err_ref_i32 {_50} (fun (_x: Int32.t) -> [ &_49 <- _x ] s2)
+      | s2 = [ &_47 <- _49 = (-1: Int32.t) ] s3
+      | s3 = any [ br0 -> {_47 = false} (! bb38) | br1 -> {_47} (! bb37) ] ]
     | bb37 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_55 <- _ret ] [ &ok <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_55} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_54 <- _ret ] s2)
-      | s2 = bb39 ]
-    | bb39 = s0 [ s0 = unwrap_ref_i32'0 {_54} (fun (_ret: MutBorrow.t Int32.t) -> [ &_53 <- _ret ] s1) | s1 = bb40 ]
-    | bb40 = s0
-      [ s0 = [ &_53 <- { _53 with current = (0: Int32.t) } ] s1
-      | s1 = -{resolve_ref_i32 _53}- s2
-      | s2 = unwrap_i32'0 {ok} (fun (_ret: Int32.t) -> [ &_58 <- _ret ] s3)
-      | s3 = bb41 ]
-    | bb41 = s0
-      [ s0 = [ &_57 <- _58 = (0: Int32.t) ] s1 | s1 = any [ br0 -> {_57 = false} (! bb43) | br1 -> {_57} (! bb42) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_55 <- _bor ] [ &ok <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_55} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_54 <- _x ] s2)
+      | s2 = unwrap_refmut_i32 {_54} (fun (_x: MutBorrow.t Int32.t) -> [ &_53 <- _x ] s3)
+      | s3 = [ &_53 <- { _53 with current = (0: Int32.t) } ] s4
+      | s4 = -{resolve_refmut_i32 _53}- s5
+      | s5 = unwrap_i32'0 {ok} (fun (_x: Int32.t) -> [ &_58 <- _x ] s6)
+      | s6 = [ &_57 <- _58 = (0: Int32.t) ] s7
+      | s7 = any [ br0 -> {_57 = false} (! bb43) | br1 -> {_57} (! bb42) ] ]
     | bb42 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_63 <- _ret ] [ &ok <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_63} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_62 <- _ret ] s2)
-      | s2 = bb44 ]
-    | bb44 = s0 [ s0 = unwrap_ref_i32'0 {_62} (fun (_ret: MutBorrow.t Int32.t) -> [ &_61 <- _ret ] s1) | s1 = bb45 ]
-    | bb45 = s0
-      [ s0 = [ &_61 <- { _61 with current = (1: Int32.t) } ] s1
-      | s1 = -{resolve_ref_i32 _61}- s2
-      | s2 = unwrap_i32'0 {ok} (fun (_ret: Int32.t) -> [ &_66 <- _ret ] s3)
-      | s3 = bb46 ]
-    | bb46 = s0
-      [ s0 = [ &_65 <- _66 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_65 = false} (! bb48) | br1 -> {_65} (! bb47) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_63 <- _bor ] [ &ok <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_63} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_62 <- _x ] s2)
+      | s2 = unwrap_refmut_i32 {_62} (fun (_x: MutBorrow.t Int32.t) -> [ &_61 <- _x ] s3)
+      | s3 = [ &_61 <- { _61 with current = (1: Int32.t) } ] s4
+      | s4 = -{resolve_refmut_i32 _61}- s5
+      | s5 = unwrap_i32'0 {ok} (fun (_x: Int32.t) -> [ &_66 <- _x ] s6)
+      | s6 = [ &_65 <- _66 = (1: Int32.t) ] s7
+      | s7 = any [ br0 -> {_65 = false} (! bb48) | br1 -> {_65} (! bb47) ] ]
     | bb47 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_71 <- _ret ] [ &err <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_71} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_70 <- _ret ] s2)
-      | s2 = bb49 ]
-    | bb49 = s0 [ s0 = unwrap_err_ref_i32'0 {_70} (fun (_ret: MutBorrow.t Int32.t) -> [ &_69 <- _ret ] s1) | s1 = bb50 ]
-    | bb50 = s0
-      [ s0 = [ &_69 <- { _69 with current = (0: Int32.t) } ] s1
-      | s1 = -{resolve_ref_i32 _69}- s2
-      | s2 = unwrap_err_i32 {err} (fun (_ret: Int32.t) -> [ &_74 <- _ret ] s3)
-      | s3 = bb51 ]
-    | bb51 = s0
-      [ s0 = [ &_73 <- _74 = (0: Int32.t) ] s1 | s1 = any [ br0 -> {_73 = false} (! bb53) | br1 -> {_73} (! bb52) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_71 <- _bor ] [ &err <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_71} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_70 <- _x ] s2)
+      | s2 = unwrap_err_refmut_i32 {_70} (fun (_x: MutBorrow.t Int32.t) -> [ &_69 <- _x ] s3)
+      | s3 = [ &_69 <- { _69 with current = (0: Int32.t) } ] s4
+      | s4 = -{resolve_refmut_i32 _69}- s5
+      | s5 = unwrap_err_i32 {err} (fun (_x: Int32.t) -> [ &_74 <- _x ] s6)
+      | s6 = [ &_73 <- _74 = (0: Int32.t) ] s7
+      | s7 = any [ br0 -> {_73 = false} (! bb53) | br1 -> {_73} (! bb52) ] ]
     | bb52 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_79 <- _ret ] [ &err <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_79} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_78 <- _ret ] s2)
-      | s2 = bb54 ]
-    | bb54 = s0 [ s0 = unwrap_err_ref_i32'0 {_78} (fun (_ret: MutBorrow.t Int32.t) -> [ &_77 <- _ret ] s1) | s1 = bb55 ]
-    | bb55 = s0
-      [ s0 = [ &_77 <- { _77 with current = (-1: Int32.t) } ] s1
-      | s1 = -{resolve_ref_i32 _77}- s2
-      | s2 = unwrap_err_i32 {err} (fun (_ret: Int32.t) -> [ &_82 <- _ret ] s3)
-      | s3 = bb56 ]
-    | bb56 = s0
-      [ s0 = [ &_81 <- _82 = (-1: Int32.t) ] s1 | s1 = any [ br0 -> {_81 = false} (! bb58) | br1 -> {_81} (! bb57) ] ]
-    | bb57 = s0 [ s0 = unwrap_i32'0 {ok} (fun (_ret: Int32.t) -> [ &_87 <- _ret ] s1) | s1 = bb59 ]
-    | bb59 = s0
-      [ s0 = [ &_86 <- _87 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_86 = false} (! bb61) | br1 -> {_86} (! bb60) ] ]
-    | bb60 = s0 [ s0 = unwrap_err_i32 {err} (fun (_ret: Int32.t) -> [ &_92 <- _ret ] s1) | s1 = bb62 ]
-    | bb62 = s0
-      [ s0 = [ &_91 <- _92 = (-1: Int32.t) ] s1 | s1 = any [ br0 -> {_91 = false} (! bb64) | br1 -> {_91} (! bb63) ] ]
-    | bb63 = s0 [ s0 = unwrap_or_i32 {ok} {(0: Int32.t)} (fun (_ret: Int32.t) -> [ &_97 <- _ret ] s1) | s1 = bb65 ]
-    | bb65 = s0
-      [ s0 = [ &_96 <- _97 = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_96 = false} (! bb67) | br1 -> {_96} (! bb66) ] ]
-    | bb66 = s0 [ s0 = unwrap_or_i32 {err} {(0: Int32.t)} (fun (_ret: Int32.t) -> [ &_102 <- _ret ] s1) | s1 = bb68 ]
-    | bb68 = s0
-      [ s0 = [ &_101 <- _102 = (0: Int32.t) ] s1
-      | s1 = any [ br0 -> {_101 = false} (! bb70) | br1 -> {_101} (! bb69) ] ]
-    | bb69 = s0 [ s0 = unwrap_or_default_i32 {ok} (fun (_ret: Int32.t) -> [ &_107 <- _ret ] s1) | s1 = bb71 ]
-    | bb71 = s0
-      [ s0 = [ &_106 <- _107 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_106 = false} (! bb73) | br1 -> {_106} (! bb72) ] ]
-    | bb72 = s0 [ s0 = unwrap_or_default_i32 {err} (fun (_ret: Int32.t) -> [ &_112 <- _ret ] s1) | s1 = bb74 ]
-    | bb74 = s0
-      [ s0 = [ &_111 <- _112 = (0: Int32.t) ] s1
-      | s1 = any [ br0 -> {_111 = false} (! bb76) | br1 -> {_111} (! bb75) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_79 <- _bor ] [ &err <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_79} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_78 <- _x ] s2)
+      | s2 = unwrap_err_refmut_i32 {_78} (fun (_x: MutBorrow.t Int32.t) -> [ &_77 <- _x ] s3)
+      | s3 = [ &_77 <- { _77 with current = (-1: Int32.t) } ] s4
+      | s4 = -{resolve_refmut_i32 _77}- s5
+      | s5 = unwrap_err_i32 {err} (fun (_x: Int32.t) -> [ &_82 <- _x ] s6)
+      | s6 = [ &_81 <- _82 = (-1: Int32.t) ] s7
+      | s7 = any [ br0 -> {_81 = false} (! bb58) | br1 -> {_81} (! bb57) ] ]
+    | bb57 = s0
+      [ s0 = unwrap_i32'0 {ok} (fun (_x: Int32.t) -> [ &_87 <- _x ] s1)
+      | s1 = [ &_86 <- _87 = (1: Int32.t) ] s2
+      | s2 = any [ br0 -> {_86 = false} (! bb61) | br1 -> {_86} (! bb60) ] ]
+    | bb60 = s0
+      [ s0 = unwrap_err_i32 {err} (fun (_x: Int32.t) -> [ &_92 <- _x ] s1)
+      | s1 = [ &_91 <- _92 = (-1: Int32.t) ] s2
+      | s2 = any [ br0 -> {_91 = false} (! bb64) | br1 -> {_91} (! bb63) ] ]
+    | bb63 = s0
+      [ s0 = unwrap_or_i32 {ok} {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_97 <- _x ] s1)
+      | s1 = [ &_96 <- _97 = (1: Int32.t) ] s2
+      | s2 = any [ br0 -> {_96 = false} (! bb67) | br1 -> {_96} (! bb66) ] ]
+    | bb66 = s0
+      [ s0 = unwrap_or_i32 {err} {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_102 <- _x ] s1)
+      | s1 = [ &_101 <- _102 = (0: Int32.t) ] s2
+      | s2 = any [ br0 -> {_101 = false} (! bb70) | br1 -> {_101} (! bb69) ] ]
+    | bb69 = s0
+      [ s0 = unwrap_or_default_i32 {ok} (fun (_x: Int32.t) -> [ &_107 <- _x ] s1)
+      | s1 = [ &_106 <- _107 = (1: Int32.t) ] s2
+      | s2 = any [ br0 -> {_106 = false} (! bb73) | br1 -> {_106} (! bb72) ] ]
+    | bb72 = s0
+      [ s0 = unwrap_or_default_i32 {err} (fun (_x: Int32.t) -> [ &_112 <- _x ] s1)
+      | s1 = [ &_111 <- _112 = (0: Int32.t) ] s2
+      | s2 = any [ br0 -> {_111 = false} (! bb76) | br1 -> {_111} (! bb75) ] ]
     | bb75 = s0
       [ s0 = [ &_120 <- Err (-2: Int32.t) ] s1
-      | s1 = and_i32 {ok} {_120} (fun (_ret: t_Result_i32_i32) -> [ &_118 <- _ret ] s2)
-      | s2 = bb77 ]
-    | bb77 = s0 [ s0 = unwrap_err_i32 {_118} (fun (_ret: Int32.t) -> [ &_117 <- _ret ] s1) | s1 = bb78 ]
-    | bb78 = s0
-      [ s0 = [ &_116 <- _117 = (-2: Int32.t) ] s1
-      | s1 = any [ br0 -> {_116 = false} (! bb80) | br1 -> {_116} (! bb79) ] ]
+      | s1 = and_i32 {ok} {_120} (fun (_x: t_Result_i32_i32) -> [ &_118 <- _x ] s2)
+      | s2 = unwrap_err_i32 {_118} (fun (_x: Int32.t) -> [ &_117 <- _x ] s3)
+      | s3 = [ &_116 <- _117 = (-2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_116 = false} (! bb80) | br1 -> {_116} (! bb79) ] ]
     | bb79 = s0
       [ s0 = [ &_127 <- Ok (2: Int32.t) ] s1
-      | s1 = and_i32 {ok} {_127} (fun (_ret: t_Result_i32_i32) -> [ &_125 <- _ret ] s2)
-      | s2 = bb81 ]
-    | bb81 = s0 [ s0 = unwrap_i32'0 {_125} (fun (_ret: Int32.t) -> [ &_124 <- _ret ] s1) | s1 = bb82 ]
-    | bb82 = s0
-      [ s0 = [ &_123 <- _124 = (2: Int32.t) ] s1
-      | s1 = any [ br0 -> {_123 = false} (! bb84) | br1 -> {_123} (! bb83) ] ]
+      | s1 = and_i32 {ok} {_127} (fun (_x: t_Result_i32_i32) -> [ &_125 <- _x ] s2)
+      | s2 = unwrap_i32'0 {_125} (fun (_x: Int32.t) -> [ &_124 <- _x ] s3)
+      | s3 = [ &_123 <- _124 = (2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_123 = false} (! bb84) | br1 -> {_123} (! bb83) ] ]
     | bb83 = s0
       [ s0 = [ &_134 <- Err (-2: Int32.t) ] s1
-      | s1 = and_i32 {err} {_134} (fun (_ret: t_Result_i32_i32) -> [ &_132 <- _ret ] s2)
-      | s2 = bb85 ]
-    | bb85 = s0 [ s0 = unwrap_err_i32 {_132} (fun (_ret: Int32.t) -> [ &_131 <- _ret ] s1) | s1 = bb86 ]
-    | bb86 = s0
-      [ s0 = [ &_130 <- _131 = (-1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_130 = false} (! bb88) | br1 -> {_130} (! bb87) ] ]
+      | s1 = and_i32 {err} {_134} (fun (_x: t_Result_i32_i32) -> [ &_132 <- _x ] s2)
+      | s2 = unwrap_err_i32 {_132} (fun (_x: Int32.t) -> [ &_131 <- _x ] s3)
+      | s3 = [ &_130 <- _131 = (-1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_130 = false} (! bb88) | br1 -> {_130} (! bb87) ] ]
     | bb87 = s0
       [ s0 = [ &_141 <- Ok (2: Int32.t) ] s1
-      | s1 = and_i32 {err} {_141} (fun (_ret: t_Result_i32_i32) -> [ &_139 <- _ret ] s2)
-      | s2 = bb89 ]
-    | bb89 = s0 [ s0 = unwrap_err_i32 {_139} (fun (_ret: Int32.t) -> [ &_138 <- _ret ] s1) | s1 = bb90 ]
-    | bb90 = s0
-      [ s0 = [ &_137 <- _138 = (-1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_137 = false} (! bb92) | br1 -> {_137} (! bb91) ] ]
+      | s1 = and_i32 {err} {_141} (fun (_x: t_Result_i32_i32) -> [ &_139 <- _x ] s2)
+      | s2 = unwrap_err_i32 {_139} (fun (_x: Int32.t) -> [ &_138 <- _x ] s3)
+      | s3 = [ &_137 <- _138 = (-1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_137 = false} (! bb92) | br1 -> {_137} (! bb91) ] ]
     | bb91 = s0
       [ s0 = [ &_148 <- Err (-2: Int32.t) ] s1
-      | s1 = or_i32 {ok} {_148} (fun (_ret: t_Result_i32_i32) -> [ &_146 <- _ret ] s2)
-      | s2 = bb93 ]
-    | bb93 = s0 [ s0 = unwrap_i32'0 {_146} (fun (_ret: Int32.t) -> [ &_145 <- _ret ] s1) | s1 = bb94 ]
-    | bb94 = s0
-      [ s0 = [ &_144 <- _145 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_144 = false} (! bb96) | br1 -> {_144} (! bb95) ] ]
+      | s1 = or_i32 {ok} {_148} (fun (_x: t_Result_i32_i32) -> [ &_146 <- _x ] s2)
+      | s2 = unwrap_i32'0 {_146} (fun (_x: Int32.t) -> [ &_145 <- _x ] s3)
+      | s3 = [ &_144 <- _145 = (1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_144 = false} (! bb96) | br1 -> {_144} (! bb95) ] ]
     | bb95 = s0
       [ s0 = [ &_155 <- Ok (2: Int32.t) ] s1
-      | s1 = or_i32 {ok} {_155} (fun (_ret: t_Result_i32_i32) -> [ &_153 <- _ret ] s2)
-      | s2 = bb97 ]
-    | bb97 = s0 [ s0 = unwrap_i32'0 {_153} (fun (_ret: Int32.t) -> [ &_152 <- _ret ] s1) | s1 = bb98 ]
-    | bb98 = s0
-      [ s0 = [ &_151 <- _152 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_151 = false} (! bb100) | br1 -> {_151} (! bb99) ] ]
+      | s1 = or_i32 {ok} {_155} (fun (_x: t_Result_i32_i32) -> [ &_153 <- _x ] s2)
+      | s2 = unwrap_i32'0 {_153} (fun (_x: Int32.t) -> [ &_152 <- _x ] s3)
+      | s3 = [ &_151 <- _152 = (1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_151 = false} (! bb100) | br1 -> {_151} (! bb99) ] ]
     | bb99 = s0
       [ s0 = [ &_162 <- Err (-2: Int32.t) ] s1
-      | s1 = or_i32 {err} {_162} (fun (_ret: t_Result_i32_i32) -> [ &_160 <- _ret ] s2)
-      | s2 = bb101 ]
-    | bb101 = s0 [ s0 = unwrap_err_i32 {_160} (fun (_ret: Int32.t) -> [ &_159 <- _ret ] s1) | s1 = bb102 ]
-    | bb102 = s0
-      [ s0 = [ &_158 <- _159 = (-2: Int32.t) ] s1
-      | s1 = any [ br0 -> {_158 = false} (! bb104) | br1 -> {_158} (! bb103) ] ]
+      | s1 = or_i32 {err} {_162} (fun (_x: t_Result_i32_i32) -> [ &_160 <- _x ] s2)
+      | s2 = unwrap_err_i32 {_160} (fun (_x: Int32.t) -> [ &_159 <- _x ] s3)
+      | s3 = [ &_158 <- _159 = (-2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_158 = false} (! bb104) | br1 -> {_158} (! bb103) ] ]
     | bb103 = s0
       [ s0 = [ &_169 <- Ok (2: Int32.t) ] s1
-      | s1 = or_i32 {err} {_169} (fun (_ret: t_Result_i32_i32) -> [ &_167 <- _ret ] s2)
-      | s2 = bb105 ]
-    | bb105 = s0 [ s0 = unwrap_i32'0 {_167} (fun (_ret: Int32.t) -> [ &_166 <- _ret ] s1) | s1 = bb106 ]
-    | bb106 = s0
-      [ s0 = [ &_165 <- _166 = (2: Int32.t) ] s1
-      | s1 = any [ br0 -> {_165 = false} (! bb108) | br1 -> {_165} (! bb107) ] ]
-    | bb107 = s0 [ s0 = as_ref_i32 {ok} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_175 <- _ret ] s1) | s1 = bb109 ]
-    | bb109 = s0 [ s0 = copied_i32 {_175} (fun (_ret: t_Result_i32_ref_i32) -> [ &_174 <- _ret ] s1) | s1 = bb110 ]
-    | bb110 = s0 [ s0 = unwrap_i32'1 {_174} (fun (_ret: Int32.t) -> [ &_173 <- _ret ] s1) | s1 = bb111 ]
-    | bb111 = s0
-      [ s0 = [ &_172 <- _173 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_172 = false} (! bb113) | br1 -> {_172} (! bb112) ] ]
-    | bb112 = s0 [ s0 = as_ref_i32 {err} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_183 <- _ret ] s1) | s1 = bb114 ]
-    | bb114 = s0 [ s0 = copied_i32 {_183} (fun (_ret: t_Result_i32_ref_i32) -> [ &_182 <- _ret ] s1) | s1 = bb115 ]
-    | bb115 = s0 [ s0 = unwrap_err_i32'0 {_182} (fun (_ret: Int32.t) -> [ &_181 <- _ret ] s1) | s1 = bb116 ]
-    | bb116 = s0
-      [ s0 = [ &_179 <- _181 = (-1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_179 = false} (! bb118) | br1 -> {_179} (! bb117) ] ]
+      | s1 = or_i32 {err} {_169} (fun (_x: t_Result_i32_i32) -> [ &_167 <- _x ] s2)
+      | s2 = unwrap_i32'0 {_167} (fun (_x: Int32.t) -> [ &_166 <- _x ] s3)
+      | s3 = [ &_165 <- _166 = (2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_165 = false} (! bb108) | br1 -> {_165} (! bb107) ] ]
+    | bb107 = s0
+      [ s0 = as_ref_i32 {ok} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_175 <- _x ] s1)
+      | s1 = copied_i32 {_175} (fun (_x: t_Result_i32_ref_i32) -> [ &_174 <- _x ] s2)
+      | s2 = unwrap_i32'1 {_174} (fun (_x: Int32.t) -> [ &_173 <- _x ] s3)
+      | s3 = [ &_172 <- _173 = (1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_172 = false} (! bb113) | br1 -> {_172} (! bb112) ] ]
+    | bb112 = s0
+      [ s0 = as_ref_i32 {err} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_183 <- _x ] s1)
+      | s1 = copied_i32 {_183} (fun (_x: t_Result_i32_ref_i32) -> [ &_182 <- _x ] s2)
+      | s2 = unwrap_err_i32'0 {_182} (fun (_x: Int32.t) -> [ &_181 <- _x ] s3)
+      | s3 = [ &_179 <- _181 = (-1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_179 = false} (! bb118) | br1 -> {_179} (! bb117) ] ]
     | bb117 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_191 <- _ret ] [ &ok <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_191} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_190 <- _ret ] s2)
-      | s2 = bb119 ]
-    | bb119 = s0 [ s0 = copied_i32'0 {_190} (fun (_ret: t_Result_i32_ref_i32'0) -> [ &_189 <- _ret ] s1) | s1 = bb120 ]
-    | bb120 = s0 [ s0 = unwrap_i32'2 {_189} (fun (_ret: Int32.t) -> [ &_188 <- _ret ] s1) | s1 = bb121 ]
-    | bb121 = s0
-      [ s0 = [ &_187 <- _188 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_187 = false} (! bb123) | br1 -> {_187} (! bb122) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_191 <- _bor ] [ &ok <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_191} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_190 <- _x ] s2)
+      | s2 = copied_i32'0 {_190} (fun (_x: t_Result_i32_refmut_i32) -> [ &_189 <- _x ] s3)
+      | s3 = unwrap_i32'2 {_189} (fun (_x: Int32.t) -> [ &_188 <- _x ] s4)
+      | s4 = [ &_187 <- _188 = (1: Int32.t) ] s5
+      | s5 = any [ br0 -> {_187 = false} (! bb123) | br1 -> {_187} (! bb122) ] ]
     | bb122 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_199 <- _ret ] [ &err <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_199} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_198 <- _ret ] s2)
-      | s2 = bb124 ]
-    | bb124 = s0 [ s0 = copied_i32'0 {_198} (fun (_ret: t_Result_i32_ref_i32'0) -> [ &_197 <- _ret ] s1) | s1 = bb125 ]
-    | bb125 = s0 [ s0 = unwrap_err_i32'1 {_197} (fun (_ret: MutBorrow.t Int32.t) -> [ &_196 <- _ret ] s1) | s1 = bb126 ]
-    | bb126 = s0
-      [ s0 = -{resolve_ref_i32 _196}- s1
-      | s1 = [ &_194 <- _196.current = (-1: Int32.t) ] s2
-      | s2 = any [ br0 -> {_194 = false} (! bb128) | br1 -> {_194} (! bb127) ] ]
-    | bb127 = s0 [ s0 = as_ref_i32 {ok} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_205 <- _ret ] s1) | s1 = bb129 ]
-    | bb129 = s0 [ s0 = cloned_i32 {_205} (fun (_ret: t_Result_i32_ref_i32) -> [ &_204 <- _ret ] s1) | s1 = bb130 ]
-    | bb130 = s0 [ s0 = unwrap_i32'1 {_204} (fun (_ret: Int32.t) -> [ &_203 <- _ret ] s1) | s1 = bb131 ]
-    | bb131 = s0
-      [ s0 = [ &_202 <- _203 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_202 = false} (! bb133) | br1 -> {_202} (! bb132) ] ]
-    | bb132 = s0 [ s0 = as_ref_i32 {err} (fun (_ret: t_Result_ref_i32_ref_i32) -> [ &_213 <- _ret ] s1) | s1 = bb134 ]
-    | bb134 = s0 [ s0 = cloned_i32 {_213} (fun (_ret: t_Result_i32_ref_i32) -> [ &_212 <- _ret ] s1) | s1 = bb135 ]
-    | bb135 = s0 [ s0 = unwrap_err_i32'0 {_212} (fun (_ret: Int32.t) -> [ &_211 <- _ret ] s1) | s1 = bb136 ]
-    | bb136 = s0
-      [ s0 = [ &_209 <- _211 = (-1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_209 = false} (! bb138) | br1 -> {_209} (! bb137) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_199 <- _bor ] [ &err <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_199} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_198 <- _x ] s2)
+      | s2 = copied_i32'0 {_198} (fun (_x: t_Result_i32_refmut_i32) -> [ &_197 <- _x ] s3)
+      | s3 = unwrap_err_i32'1 {_197} (fun (_x: MutBorrow.t Int32.t) -> [ &_196 <- _x ] s4)
+      | s4 = -{resolve_refmut_i32 _196}- s5
+      | s5 = [ &_194 <- _196.current = (-1: Int32.t) ] s6
+      | s6 = any [ br0 -> {_194 = false} (! bb128) | br1 -> {_194} (! bb127) ] ]
+    | bb127 = s0
+      [ s0 = as_ref_i32 {ok} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_205 <- _x ] s1)
+      | s1 = cloned_i32 {_205} (fun (_x: t_Result_i32_ref_i32) -> [ &_204 <- _x ] s2)
+      | s2 = unwrap_i32'1 {_204} (fun (_x: Int32.t) -> [ &_203 <- _x ] s3)
+      | s3 = [ &_202 <- _203 = (1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_202 = false} (! bb133) | br1 -> {_202} (! bb132) ] ]
+    | bb132 = s0
+      [ s0 = as_ref_i32 {err} (fun (_x: t_Result_ref_i32_ref_i32) -> [ &_213 <- _x ] s1)
+      | s1 = cloned_i32 {_213} (fun (_x: t_Result_i32_ref_i32) -> [ &_212 <- _x ] s2)
+      | s2 = unwrap_err_i32'0 {_212} (fun (_x: Int32.t) -> [ &_211 <- _x ] s3)
+      | s3 = [ &_209 <- _211 = (-1: Int32.t) ] s4
+      | s4 = any [ br0 -> {_209 = false} (! bb138) | br1 -> {_209} (! bb137) ] ]
     | bb137 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {ok}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_221 <- _ret ] [ &ok <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_221} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_220 <- _ret ] s2)
-      | s2 = bb139 ]
-    | bb139 = s0 [ s0 = cloned_i32'0 {_220} (fun (_ret: t_Result_i32_ref_i32'0) -> [ &_219 <- _ret ] s1) | s1 = bb140 ]
-    | bb140 = s0 [ s0 = unwrap_i32'2 {_219} (fun (_ret: Int32.t) -> [ &_218 <- _ret ] s1) | s1 = bb141 ]
-    | bb141 = s0
-      [ s0 = [ &_217 <- _218 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_217 = false} (! bb143) | br1 -> {_217} (! bb142) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_221 <- _bor ] [ &ok <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_221} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_220 <- _x ] s2)
+      | s2 = cloned_i32'0 {_220} (fun (_x: t_Result_i32_refmut_i32) -> [ &_219 <- _x ] s3)
+      | s3 = unwrap_i32'2 {_219} (fun (_x: Int32.t) -> [ &_218 <- _x ] s4)
+      | s4 = [ &_217 <- _218 = (1: Int32.t) ] s5
+      | s5 = any [ br0 -> {_217 = false} (! bb143) | br1 -> {_217} (! bb142) ] ]
     | bb142 = s0
       [ s0 = MutBorrow.borrow_mut <t_Result_i32_i32> {err}
-          (fun (_ret: MutBorrow.t t_Result_i32_i32) -> [ &_229 <- _ret ] [ &err <- _ret.final ] s1)
-      | s1 = as_mut_i32 {_229} (fun (_ret: t_Result_ref_i32_ref_i32'0) -> [ &_228 <- _ret ] s2)
-      | s2 = bb144 ]
-    | bb144 = s0 [ s0 = cloned_i32'0 {_228} (fun (_ret: t_Result_i32_ref_i32'0) -> [ &_227 <- _ret ] s1) | s1 = bb145 ]
-    | bb145 = s0 [ s0 = unwrap_err_i32'1 {_227} (fun (_ret: MutBorrow.t Int32.t) -> [ &_226 <- _ret ] s1) | s1 = bb146 ]
-    | bb146 = s0
-      [ s0 = -{resolve_ref_i32 _226}- s1
-      | s1 = [ &_224 <- _226.current = (-1: Int32.t) ] s2
-      | s2 = any [ br0 -> {_224 = false} (! bb148) | br1 -> {_224} (! bb147) ] ]
+          (fun (_bor: MutBorrow.t t_Result_i32_i32) -> [ &_229 <- _bor ] [ &err <- _bor.final ] s1)
+      | s1 = as_mut_i32 {_229} (fun (_x: t_Result_refmut_i32_refmut_i32) -> [ &_228 <- _x ] s2)
+      | s2 = cloned_i32'0 {_228} (fun (_x: t_Result_i32_refmut_i32) -> [ &_227 <- _x ] s3)
+      | s3 = unwrap_err_i32'1 {_227} (fun (_x: MutBorrow.t Int32.t) -> [ &_226 <- _x ] s4)
+      | s4 = -{resolve_refmut_i32 _226}- s5
+      | s5 = [ &_224 <- _226.current = (-1: Int32.t) ] s6
+      | s6 = any [ br0 -> {_224 = false} (! bb148) | br1 -> {_224} (! bb147) ] ]
     | bb147 = s0
       [ s0 = [ &_232 <- None ] s1
       | s1 = [ &res <- Ok'4 _232 ] s2
-      | s2 = transpose_i32 {res} (fun (_ret: t_Option_Result_i32_i32) -> [ &_236 <- _ret ] s3)
-      | s3 = bb149 ]
-    | bb149 = s0 [ s0 = is_none_Result_i32_i32 {_236} (fun (_ret: bool) -> [ &_234 <- _ret ] s1) | s1 = bb150 ]
-    | bb150 = any [ br0 -> {_234 = false} (! bb152) | br1 -> {_234} (! bb151) ]
+      | s2 = transpose_i32 {res} (fun (_x: t_Option_Result_i32_i32) -> [ &_236 <- _x ] s3)
+      | s3 = is_none_Result_i32_i32 {_236} (fun (_x: bool) -> [ &_234 <- _x ] s4)
+      | s4 = any [ br0 -> {_234 = false} (! bb152) | br1 -> {_234} (! bb151) ] ]
     | bb151 = s0
       [ s0 = [ &_240 <- Some (1: Int32.t) ] s1
       | s1 = [ &res'0 <- Ok'4 _240 ] s2
-      | s2 = transpose_i32 {res'0} (fun (_ret: t_Option_Result_i32_i32) -> [ &_245 <- _ret ] s3)
-      | s3 = bb153 ]
-    | bb153 = s0
-      [ s0 = unwrap_Result_i32_i32 {_245} (fun (_ret: t_Result_i32_i32) -> [ &_244 <- _ret ] s1) | s1 = bb154 ]
-    | bb154 = s0 [ s0 = unwrap_i32'0 {_244} (fun (_ret: Int32.t) -> [ &_243 <- _ret ] s1) | s1 = bb155 ]
-    | bb155 = s0
-      [ s0 = [ &_242 <- _243 = (1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_242 = false} (! bb157) | br1 -> {_242} (! bb156) ] ]
+      | s2 = transpose_i32 {res'0} (fun (_x: t_Option_Result_i32_i32) -> [ &_245 <- _x ] s3)
+      | s3 = unwrap_Result_i32_i32 {_245} (fun (_x: t_Result_i32_i32) -> [ &_244 <- _x ] s4)
+      | s4 = unwrap_i32'0 {_244} (fun (_x: Int32.t) -> [ &_243 <- _x ] s5)
+      | s5 = [ &_242 <- _243 = (1: Int32.t) ] s6
+      | s6 = any [ br0 -> {_242 = false} (! bb157) | br1 -> {_242} (! bb156) ] ]
     | bb156 = s0
       [ s0 = [ &res'1 <- Err'4 (-1: Int32.t) ] s1
-      | s1 = transpose_i32 {res'1} (fun (_ret: t_Option_Result_i32_i32) -> [ &_253 <- _ret ] s2)
-      | s2 = bb158 ]
-    | bb158 = s0
-      [ s0 = unwrap_Result_i32_i32 {_253} (fun (_ret: t_Result_i32_i32) -> [ &_252 <- _ret ] s1) | s1 = bb159 ]
-    | bb159 = s0 [ s0 = unwrap_err_i32 {_252} (fun (_ret: Int32.t) -> [ &_251 <- _ret ] s1) | s1 = bb160 ]
-    | bb160 = s0
-      [ s0 = [ &_250 <- _251 = (-1: Int32.t) ] s1
-      | s1 = any [ br0 -> {_250 = false} (! bb162) | br1 -> {_250} (! bb161) ] ]
-    | bb161 = return {_0}
+      | s1 = transpose_i32 {res'1} (fun (_x: t_Option_Result_i32_i32) -> [ &_253 <- _x ] s2)
+      | s2 = unwrap_Result_i32_i32 {_253} (fun (_x: t_Result_i32_i32) -> [ &_252 <- _x ] s3)
+      | s3 = unwrap_err_i32 {_252} (fun (_x: Int32.t) -> [ &_251 <- _x ] s4)
+      | s4 = [ &_250 <- _251 = (-1: Int32.t) ] s5
+      | s5 = any [ br0 -> {_250 = false} (! bb162) | br1 -> {_250} (! bb161) ] ]
+    | bb161 = return {_ret}
     | bb162 = {false} any
     | bb157 = {false} any
     | bb152 = {false} any
@@ -521,7 +489,7 @@ module M_test_result
     | bb18 = {false} any
     | bb14 = {false} any
     | bb7 = {false} any ]
-    [ & _0: () = Any.any_l ()
+    [ & _ret: () = Any.any_l ()
     | & ok: t_Result_i32_i32 = Any.any_l ()
     | & err: t_Result_i32_i32 = Any.any_l ()
     | & _4: bool = Any.any_l ()
@@ -545,22 +513,22 @@ module M_test_result
     | & _49: Int32.t = Any.any_l ()
     | & _50: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _53: MutBorrow.t Int32.t = Any.any_l ()
-    | & _54: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _54: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _55: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _57: bool = Any.any_l ()
     | & _58: Int32.t = Any.any_l ()
     | & _61: MutBorrow.t Int32.t = Any.any_l ()
-    | & _62: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _62: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _63: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _65: bool = Any.any_l ()
     | & _66: Int32.t = Any.any_l ()
     | & _69: MutBorrow.t Int32.t = Any.any_l ()
-    | & _70: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _70: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _71: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _73: bool = Any.any_l ()
     | & _74: Int32.t = Any.any_l ()
     | & _77: MutBorrow.t Int32.t = Any.any_l ()
-    | & _78: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _78: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _79: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _81: bool = Any.any_l ()
     | & _82: Int32.t = Any.any_l ()
@@ -618,13 +586,13 @@ module M_test_result
     | & _183: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _187: bool = Any.any_l ()
     | & _188: Int32.t = Any.any_l ()
-    | & _189: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _190: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _189: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _190: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _191: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _194: bool = Any.any_l ()
     | & _196: MutBorrow.t Int32.t = Any.any_l ()
-    | & _197: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _198: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _197: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _198: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _199: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _202: bool = Any.any_l ()
     | & _203: Int32.t = Any.any_l ()
@@ -636,13 +604,13 @@ module M_test_result
     | & _213: t_Result_ref_i32_ref_i32 = Any.any_l ()
     | & _217: bool = Any.any_l ()
     | & _218: Int32.t = Any.any_l ()
-    | & _219: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _220: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _219: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _220: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _221: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & _224: bool = Any.any_l ()
     | & _226: MutBorrow.t Int32.t = Any.any_l ()
-    | & _227: t_Result_i32_ref_i32'0 = Any.any_l ()
-    | & _228: t_Result_ref_i32_ref_i32'0 = Any.any_l ()
+    | & _227: t_Result_i32_refmut_i32 = Any.any_l ()
+    | & _228: t_Result_refmut_i32_refmut_i32 = Any.any_l ()
     | & _229: MutBorrow.t t_Result_i32_i32 = Any.any_l ()
     | & res: t_Result_Option_i32_i32 = Any.any_l ()
     | & _232: t_Option_i32 = Any.any_l ()

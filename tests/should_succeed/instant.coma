@@ -331,84 +331,74 @@ module M_test_instant
   meta "select_lsinst" "all"
   
   let rec test_instant (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = now (fun (_ret: t_Instant) -> [ &instant <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = from_secs {(0: UInt64.t)} (fun (_ret: t_Duration) -> [ &zero_dur <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = elapsed {instant} (fun (_ret: t_Duration) -> [ &_6 <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = ge_Duration {_6} {zero_dur} (fun (_ret: bool) -> [ &_4 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ]
+    [ bb0 = s0
+      [ s0 = now (fun (_x: t_Instant) -> [ &instant <- _x ] s1)
+      | s1 = from_secs {(0: UInt64.t)} (fun (_x: t_Duration) -> [ &zero_dur <- _x ] s2)
+      | s2 = elapsed {instant} (fun (_x: t_Duration) -> [ &_6 <- _x ] s3)
+      | s3 = ge_Duration {_6} {zero_dur} (fun (_x: bool) -> [ &_4 <- _x ] s4)
+      | s4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = checked_add {instant} {zero_dur} (fun (_ret: t_Option_Instant) -> [ &_14 <- _ret ] s1) | s1 = bb7 ]
-    | bb7 = s0 [ s0 = unwrap_Instant {_14} (fun (_ret: t_Instant) -> [ &_13 <- _ret ] s1) | s1 = bb8 ]
-    | bb8 = s0 [ s0 = eq_Instant {_13} {instant} (fun (_ret: bool) -> [ &_11 <- _ret ] s1) | s1 = bb9 ]
-    | bb9 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb10) ]
-    | bb10 = s0 [ s0 = add_Instant {instant} {zero_dur} (fun (_ret: t_Instant) -> [ &_22 <- _ret ] s1) | s1 = bb12 ]
-    | bb12 = s0 [ s0 = eq_Instant {_22} {instant} (fun (_ret: bool) -> [ &_20 <- _ret ] s1) | s1 = bb13 ]
-    | bb13 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ]
-    | bb14 = s0 [ s0 = from_secs {(3: UInt64.t)} (fun (_ret: t_Duration) -> [ &three_seconds <- _ret ] s1) | s1 = bb16 ]
-    | bb16 = s0
-      [ s0 = add_Instant {instant} {three_seconds} (fun (_ret: t_Instant) -> [ &greater_instant <- _ret ] s1)
-      | s1 = bb17 ]
-    | bb17 = s0
-      [ s0 = {[@expl:assertion] view_Instant instant < view_Instant greater_instant} s1
-      | s1 = add_Instant {greater_instant} {three_seconds}
-          (fun (_ret: t_Instant) -> [ &even_greater_instant <- _ret ] s2)
-      | s2 = bb18 ]
-    | bb18 = s0
-      [ s0 = {[@expl:assertion] view_Instant instant < view_Instant even_greater_instant} s1
-      | s1 = checked_sub {instant} {zero_dur} (fun (_ret: t_Option_Instant) -> [ &_46 <- _ret ] s2)
-      | s2 = bb19 ]
-    | bb19 = s0 [ s0 = unwrap_Instant {_46} (fun (_ret: t_Instant) -> [ &_45 <- _ret ] s1) | s1 = bb20 ]
-    | bb20 = s0 [ s0 = eq_Instant {_45} {instant} (fun (_ret: bool) -> [ &_43 <- _ret ] s1) | s1 = bb21 ]
-    | bb21 = any [ br0 -> {_43 = false} (! bb23) | br1 -> {_43} (! bb22) ]
-    | bb22 = s0 [ s0 = sub_Instant {instant} {zero_dur} (fun (_ret: t_Instant) -> [ &_54 <- _ret ] s1) | s1 = bb24 ]
-    | bb24 = s0 [ s0 = eq_Instant {_54} {instant} (fun (_ret: bool) -> [ &_52 <- _ret ] s1) | s1 = bb25 ]
-    | bb25 = any [ br0 -> {_52 = false} (! bb27) | br1 -> {_52} (! bb26) ]
+      [ s0 = checked_add {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_14 <- _x ] s1)
+      | s1 = unwrap_Instant {_14} (fun (_x: t_Instant) -> [ &_13 <- _x ] s2)
+      | s2 = eq_Instant {_13} {instant} (fun (_x: bool) -> [ &_11 <- _x ] s3)
+      | s3 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb10) ] ]
+    | bb10 = s0
+      [ s0 = add_Instant {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_22 <- _x ] s1)
+      | s1 = eq_Instant {_22} {instant} (fun (_x: bool) -> [ &_20 <- _x ] s2)
+      | s2 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
+    | bb14 = s0
+      [ s0 = from_secs {(3: UInt64.t)} (fun (_x: t_Duration) -> [ &three_seconds <- _x ] s1)
+      | s1 = add_Instant {instant} {three_seconds} (fun (_x: t_Instant) -> [ &greater_instant <- _x ] s2)
+      | s2 = {[@expl:assertion] view_Instant instant < view_Instant greater_instant} s3
+      | s3 = add_Instant {greater_instant} {three_seconds} (fun (_x: t_Instant) -> [ &even_greater_instant <- _x ] s4)
+      | s4 = {[@expl:assertion] view_Instant instant < view_Instant even_greater_instant} s5
+      | s5 = checked_sub {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_46 <- _x ] s6)
+      | s6 = unwrap_Instant {_46} (fun (_x: t_Instant) -> [ &_45 <- _x ] s7)
+      | s7 = eq_Instant {_45} {instant} (fun (_x: bool) -> [ &_43 <- _x ] s8)
+      | s8 = any [ br0 -> {_43 = false} (! bb23) | br1 -> {_43} (! bb22) ] ]
+    | bb22 = s0
+      [ s0 = sub_Instant {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_54 <- _x ] s1)
+      | s1 = eq_Instant {_54} {instant} (fun (_x: bool) -> [ &_52 <- _x ] s2)
+      | s2 = any [ br0 -> {_52 = false} (! bb27) | br1 -> {_52} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = sub_Instant {instant} {three_seconds} (fun (_ret: t_Instant) -> [ &lesser_instant <- _ret ] s1)
-      | s1 = bb28 ]
-    | bb28 = s0
-      [ s0 = {[@expl:assertion] view_Instant instant > view_Instant lesser_instant} s1
-      | s1 = sub_Instant'0 {instant} {instant} (fun (_ret: t_Duration) -> [ &_69 <- _ret ] s2)
-      | s2 = bb29 ]
-    | bb29 = s0 [ s0 = eq_Duration {_69} {zero_dur} (fun (_ret: bool) -> [ &_67 <- _ret ] s1) | s1 = bb30 ]
-    | bb30 = any [ br0 -> {_67 = false} (! bb32) | br1 -> {_67} (! bb31) ]
+      [ s0 = sub_Instant {instant} {three_seconds} (fun (_x: t_Instant) -> [ &lesser_instant <- _x ] s1)
+      | s1 = {[@expl:assertion] view_Instant instant > view_Instant lesser_instant} s2
+      | s2 = sub_Instant'0 {instant} {instant} (fun (_x: t_Duration) -> [ &_69 <- _x ] s3)
+      | s3 = eq_Duration {_69} {zero_dur} (fun (_x: bool) -> [ &_67 <- _x ] s4)
+      | s4 = any [ br0 -> {_67 = false} (! bb32) | br1 -> {_67} (! bb31) ] ]
     | bb31 = s0
-      [ s0 = sub_Instant'0 {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_77 <- _ret ] s1) | s1 = bb33 ]
-    | bb33 = s0 [ s0 = eq_Duration {_77} {zero_dur} (fun (_ret: bool) -> [ &_75 <- _ret ] s1) | s1 = bb34 ]
-    | bb34 = any [ br0 -> {_75 = false} (! bb36) | br1 -> {_75} (! bb35) ]
+      [ s0 = sub_Instant'0 {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_77 <- _x ] s1)
+      | s1 = eq_Duration {_77} {zero_dur} (fun (_x: bool) -> [ &_75 <- _x ] s2)
+      | s2 = any [ br0 -> {_75 = false} (! bb36) | br1 -> {_75} (! bb35) ] ]
     | bb35 = s0
-      [ s0 = sub_Instant'0 {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_85 <- _ret ] s1) | s1 = bb37 ]
-    | bb37 = s0 [ s0 = gt_Duration {_85} {zero_dur} (fun (_ret: bool) -> [ &_83 <- _ret ] s1) | s1 = bb38 ]
-    | bb38 = any [ br0 -> {_83 = false} (! bb40) | br1 -> {_83} (! bb39) ]
+      [ s0 = sub_Instant'0 {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_85 <- _x ] s1)
+      | s1 = gt_Duration {_85} {zero_dur} (fun (_x: bool) -> [ &_83 <- _x ] s2)
+      | s2 = any [ br0 -> {_83 = false} (! bb40) | br1 -> {_83} (! bb39) ] ]
     | bb39 = s0
-      [ s0 = duration_since {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_93 <- _ret ] s1) | s1 = bb41 ]
-    | bb41 = s0 [ s0 = gt_Duration {_93} {zero_dur} (fun (_ret: bool) -> [ &_91 <- _ret ] s1) | s1 = bb42 ]
-    | bb42 = any [ br0 -> {_91 = false} (! bb44) | br1 -> {_91} (! bb43) ]
+      [ s0 = duration_since {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_93 <- _x ] s1)
+      | s1 = gt_Duration {_93} {zero_dur} (fun (_x: bool) -> [ &_91 <- _x ] s2)
+      | s2 = any [ br0 -> {_91 = false} (! bb44) | br1 -> {_91} (! bb43) ] ]
     | bb43 = s0
-      [ s0 = duration_since {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_101 <- _ret ] s1) | s1 = bb45 ]
-    | bb45 = s0 [ s0 = eq_Duration {_101} {zero_dur} (fun (_ret: bool) -> [ &_99 <- _ret ] s1) | s1 = bb46 ]
-    | bb46 = any [ br0 -> {_99 = false} (! bb48) | br1 -> {_99} (! bb47) ]
+      [ s0 = duration_since {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_101 <- _x ] s1)
+      | s1 = eq_Duration {_101} {zero_dur} (fun (_x: bool) -> [ &_99 <- _x ] s2)
+      | s2 = any [ br0 -> {_99 = false} (! bb48) | br1 -> {_99} (! bb47) ] ]
     | bb47 = s0
-      [ s0 = checked_duration_since {greater_instant} {instant} (fun (_ret: t_Option_Duration) -> [ &_109 <- _ret ] s1)
-      | s1 = bb49 ]
-    | bb49 = s0 [ s0 = is_some_Duration {_109} (fun (_ret: bool) -> [ &_107 <- _ret ] s1) | s1 = bb50 ]
-    | bb50 = any [ br0 -> {_107 = false} (! bb52) | br1 -> {_107} (! bb51) ]
+      [ s0 = checked_duration_since {greater_instant} {instant} (fun (_x: t_Option_Duration) -> [ &_109 <- _x ] s1)
+      | s1 = is_some_Duration {_109} (fun (_x: bool) -> [ &_107 <- _x ] s2)
+      | s2 = any [ br0 -> {_107 = false} (! bb52) | br1 -> {_107} (! bb51) ] ]
     | bb51 = s0
-      [ s0 = checked_duration_since {instant} {greater_instant} (fun (_ret: t_Option_Duration) -> [ &_116 <- _ret ] s1)
-      | s1 = bb53 ]
-    | bb53 = s0 [ s0 = is_none_Duration {_116} (fun (_ret: bool) -> [ &_114 <- _ret ] s1) | s1 = bb54 ]
-    | bb54 = any [ br0 -> {_114 = false} (! bb56) | br1 -> {_114} (! bb55) ]
+      [ s0 = checked_duration_since {instant} {greater_instant} (fun (_x: t_Option_Duration) -> [ &_116 <- _x ] s1)
+      | s1 = is_none_Duration {_116} (fun (_x: bool) -> [ &_114 <- _x ] s2)
+      | s2 = any [ br0 -> {_114 = false} (! bb56) | br1 -> {_114} (! bb55) ] ]
     | bb55 = s0
-      [ s0 = saturating_duration_since {greater_instant} {instant} (fun (_ret: t_Duration) -> [ &_123 <- _ret ] s1)
-      | s1 = bb57 ]
-    | bb57 = s0 [ s0 = gt_Duration {_123} {zero_dur} (fun (_ret: bool) -> [ &_121 <- _ret ] s1) | s1 = bb58 ]
-    | bb58 = any [ br0 -> {_121 = false} (! bb60) | br1 -> {_121} (! bb59) ]
+      [ s0 = saturating_duration_since {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_123 <- _x ] s1)
+      | s1 = gt_Duration {_123} {zero_dur} (fun (_x: bool) -> [ &_121 <- _x ] s2)
+      | s2 = any [ br0 -> {_121 = false} (! bb60) | br1 -> {_121} (! bb59) ] ]
     | bb59 = s0
-      [ s0 = saturating_duration_since {instant} {greater_instant} (fun (_ret: t_Duration) -> [ &_131 <- _ret ] s1)
-      | s1 = bb61 ]
-    | bb61 = s0 [ s0 = eq_Duration {_131} {zero_dur} (fun (_ret: bool) -> [ &_129 <- _ret ] s1) | s1 = bb62 ]
-    | bb62 = any [ br0 -> {_129 = false} (! bb64) | br1 -> {_129} (! bb63) ]
-    | bb63 = return {_0}
+      [ s0 = saturating_duration_since {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_131 <- _x ] s1)
+      | s1 = eq_Duration {_131} {zero_dur} (fun (_x: bool) -> [ &_129 <- _x ] s2)
+      | s2 = any [ br0 -> {_129 = false} (! bb64) | br1 -> {_129} (! bb63) ] ]
+    | bb63 = return {_ret}
     | bb64 = {false} any
     | bb60 = {false} any
     | bb56 = {false} any
@@ -423,7 +413,7 @@ module M_test_instant
     | bb15 = {false} any
     | bb11 = {false} any
     | bb6 = {false} any ]
-    [ & _0: () = Any.any_l ()
+    [ & _ret: () = Any.any_l ()
     | & instant: t_Instant = Any.any_l ()
     | & zero_dur: t_Duration = Any.any_l ()
     | & _4: bool = Any.any_l ()

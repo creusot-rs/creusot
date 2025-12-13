@@ -14,8 +14,9 @@ pub fn test_program(s: S2) {
 }
 
 #[allow(unused)]
-pub fn test_assign(mut s: S2) {
+pub fn test_assign(mut s: S2) -> S2 {
     s.s1.f = 2;
+    s
 }
 
 #[allow(unused_must_use)]

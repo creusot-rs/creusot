@@ -3,8 +3,8 @@ module M_foo
   use creusot.prelude.Any
   
   let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
-    [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ]
+    [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -175,28 +175,23 @@ module M_foo
   let rec foo (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- () ] s1
-      | s1 = __new_closure0 {_2} (fun (_ret: t_FnGhostWrapper_closure0) -> [ &f <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = takes_ghost_fn_FnGhostWrapper_closure0 {f} (fun (_ret: Int32.t) -> [ &result <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_6 <- result = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb3) ] ]
+      | s1 = __new_closure0 {_2} (fun (_x: t_FnGhostWrapper_closure0) -> [ &f <- _x ] s2)
+      | s2 = takes_ghost_fn_FnGhostWrapper_closure0 {f} (fun (_x: Int32.t) -> [ &result <- _x ] s3)
+      | s3 = [ &_6 <- result = (2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = takes_ghost_fnmut_FnGhostWrapper_closure0 {f} (fun (_ret: Int32.t) -> [ &result'0 <- _ret ] s1)
-      | s1 = bb5 ]
-    | bb5 = s0
-      [ s0 = [ &_12 <- result'0 = (2: Int32.t) ] s1 | s1 = any [ br0 -> {_12 = false} (! bb7) | br1 -> {_12} (! bb6) ] ]
+      [ s0 = takes_ghost_fnmut_FnGhostWrapper_closure0 {f} (fun (_x: Int32.t) -> [ &result'0 <- _x ] s1)
+      | s1 = [ &_12 <- result'0 = (2: Int32.t) ] s2
+      | s2 = any [ br0 -> {_12 = false} (! bb7) | br1 -> {_12} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = takes_ghost_fnonce_FnGhostWrapper_closure0 {f} (fun (_ret: Int32.t) -> [ &result'1 <- _ret ] s1)
-      | s1 = bb8 ]
-    | bb8 = s0
-      [ s0 = [ &_18 <- result'1 = (2: Int32.t) ] s1
-      | s1 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
-    | bb9 = return {_0}
+      [ s0 = takes_ghost_fnonce_FnGhostWrapper_closure0 {f} (fun (_x: Int32.t) -> [ &result'1 <- _x ] s1)
+      | s1 = [ &_18 <- result'1 = (2: Int32.t) ] s2
+      | s2 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
+    | bb9 = return {_ret}
     | bb10 = {false} any
     | bb7 = {false} any
     | bb4 = {false} any ]
-    [ & _0: () = Any.any_l ()
+    [ & _ret: () = Any.any_l ()
     | & f: t_FnGhostWrapper_closure0 = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & result: Int32.t = Any.any_l ()
@@ -282,12 +277,11 @@ module M_takes_ghost_fn
     {[@expl:takes_ghost_fn requires] precondition_F f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_F f} s1
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_7 <- (1: Int32.t) ] s3
-      | s3 = call_F {f} {_7} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s4)
-      | s4 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
+      | s3 = call_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:takes_ghost_fn ensures] postcondition_F f (1: Int32.t) result}
       (! return {result}) ]
 end
@@ -300,13 +294,13 @@ module M_takes_ghost_fnmut
   
   predicate inv_F (_1: t_F)
   
-  predicate invariant_ref_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
   
-  meta "rewrite_def" predicate invariant_ref_F
+  meta "rewrite_def" predicate invariant_refmut_F
   
-  predicate inv_ref_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_ref_F _1
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
-  meta "rewrite_def" predicate inv_ref_F
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate precondition_F (self: t_F) (args: Int32.t)
   
@@ -339,7 +333,7 @@ module M_takes_ghost_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_ref_F self_}
+    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
     {[@expl:call_mut requires] precondition_F self_.current arg}
     any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
   
@@ -351,15 +345,15 @@ module M_takes_ghost_fnmut
     {[@expl:takes_ghost_fnmut requires] precondition_F f (1: Int32.t)}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_F f}
-        MutBorrow.borrow_mut <t_F> {f}
-          (fun (_ret: MutBorrow.t t_F) -> [ &_6 <- _ret ] -{inv_F _ret.final}- [ &f <- _ret.final ] s1)
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_6 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {inv_F f} any) ]
       | s1 = [ &_7 <- (1: Int32.t) ] s2
-      | s2 = call_mut_F {_6} {_7} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s3)
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = {[@expl:type invariant] inv_F f} s1 | s1 = -{resolve_F f}- s2 | s2 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l ()
+      | s2 = call_mut_F {_6} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s4 = -{resolve_F f}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & f: t_F = f
     | & _6: MutBorrow.t t_F = Any.any_l ()
     | & _7: Int32.t = Any.any_l () ])
@@ -393,9 +387,8 @@ module M_takes_ghost_fnonce
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- (1: Int32.t) ] s1
-      | s1 = call_once_F {f} {_7} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
+      | s1 = call_once_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:takes_ghost_fnonce ensures] postcondition_once_F f (1: Int32.t) result}
       (! return {result}) ]
 end

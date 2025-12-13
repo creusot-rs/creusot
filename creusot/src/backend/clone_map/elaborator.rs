@@ -393,8 +393,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             )
         } else {
             // Generate a constant setter. The constant `(def_id, subst)` is expected to have a body.
-            let outer_return = Ident::fresh_local("ret");
-            let inner_return = Ident::fresh_local("const_ret");
             let value_name = Ident::fresh_local("_const");
             let setter =
                 Ident::fresh_local(crate::naming::ascii_item_name("set_", ctx.tcx, def_id));
@@ -408,22 +406,22 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 BodyId::from_def_id(def_id),
                 Some(subst),
                 &[],
-                inner_return,
+                name::return_(),
                 &mut Default::default(),
             );
 
             let ty = translate_ty(ctx, &mut names, ctx.def_span(def_id), ctx.sig(def_id).output);
             let inner_def = Defn {
-                prototype: Prototype::new(inner_return, [Param::Term(value_name, ty)]),
+                prototype: Prototype::new(name::return_(), [Param::Term(value_name, ty)]),
                 body: Expr::Assume(
                     Exp::var(name).eq(Exp::var(value_name)).boxed(),
-                    Expr::var(outer_return).app([]).boxed(),
+                    Expr::var(name::return_()).app([]).boxed(),
                 ),
             };
             let body = Expr::Defn(body.boxed(), false, [inner_def].into());
 
             let prototype =
-                Prototype::new(setter, [Param::Cont(outer_return, [].into(), [].into())]);
+                Prototype::new(setter, [Param::Cont(name::return_(), [].into(), [].into())]);
             decls.push(Decl::Coma(Defn { prototype, body }));
             decls
         }

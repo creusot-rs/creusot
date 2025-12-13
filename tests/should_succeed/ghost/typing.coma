@@ -14,9 +14,9 @@ module M_ghost_enter_ghost
   let rec deref_mut_Ghost_NonCopy (self: MutBorrow.t t_NonCopy) (return (x: MutBorrow.t t_NonCopy)) = any
     [ return (result: MutBorrow.t t_NonCopy) -> {result = self} (! return {result}) ]
   
-  predicate resolve_ref_NonCopy [@inline:trivial] (_1: MutBorrow.t t_NonCopy) = _1.final = _1.current
+  predicate resolve_refmut_NonCopy [@inline:trivial] (_1: MutBorrow.t t_NonCopy) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_NonCopy
+  meta "rewrite_def" predicate resolve_refmut_NonCopy
   
   let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
   
@@ -29,33 +29,23 @@ module M_ghost_enter_ghost
   let rec ghost_enter_ghost (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (1: Int32.t) } ] s1
-      | s1 = new_NonCopy {_2} (fun (_ret: t_NonCopy) -> [ &g_move <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = [ &_4 <- { f0 = (2: Int32.t) } ] s1
-      | s1 = new_NonCopy {_4} (fun (_ret: t_NonCopy) -> [ &g_read <- _ret ] s2)
-      | s2 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &_6 <- { f0 = (3: Int32.t) } ] s1
-      | s1 = new_NonCopy {_6} (fun (_ret: t_NonCopy) -> [ &g_mut <- _ret ] s2)
-      | s2 = bb3 ]
-    | bb3 = s0 [ s0 = deref_Ghost_NonCopy {g_read} (fun (_ret: t_NonCopy) -> [ &_9 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_11 <- { f0 = (4: Int32.t) } ] s1
-      | s1 = MutBorrow.borrow_mut <t_NonCopy> {g_mut}
-          (fun (_ret: MutBorrow.t t_NonCopy) -> [ &_13 <- _ret ] [ &g_mut <- _ret.final ] s2)
-      | s2 = deref_mut_Ghost_NonCopy {_13} (fun (_ret: MutBorrow.t t_NonCopy) -> [ &_12 <- _ret ] s3)
-      | s3 = bb5 ]
-    | bb5 = s0
-      [ s0 = [ &_12 <- { _12 with current = _11 } ] s1
-      | s1 = -{resolve_ref_NonCopy _12}- s2
-      | s2 = new_unit {_8} (fun (_ret: ()) -> [ &_7 <- _ret ] s3)
-      | s3 = bb6 ]
-    | bb6 = s0
-      [ s0 = {[@expl:assertion] view_NonCopy g_read = 2} s1
-      | s1 = {[@expl:assertion] view_NonCopy g_mut = 4} s2
-      | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s1 = new_NonCopy {_2} (fun (_x: t_NonCopy) -> [ &g_move <- _x ] s2)
+      | s2 = [ &_4 <- { f0 = (2: Int32.t) } ] s3
+      | s3 = new_NonCopy {_4} (fun (_x: t_NonCopy) -> [ &g_read <- _x ] s4)
+      | s4 = [ &_6 <- { f0 = (3: Int32.t) } ] s5
+      | s5 = new_NonCopy {_6} (fun (_x: t_NonCopy) -> [ &g_mut <- _x ] s6)
+      | s6 = deref_Ghost_NonCopy {g_read} (fun (_x: t_NonCopy) -> [ &_9 <- _x ] s7)
+      | s7 = [ &_11 <- { f0 = (4: Int32.t) } ] s8
+      | s8 = MutBorrow.borrow_mut <t_NonCopy> {g_mut}
+          (fun (_bor: MutBorrow.t t_NonCopy) -> [ &_13 <- _bor ] [ &g_mut <- _bor.final ] s9)
+      | s9 = deref_mut_Ghost_NonCopy {_13} (fun (_x: MutBorrow.t t_NonCopy) -> [ &_12 <- _x ] s10)
+      | s10 = [ &_12 <- { _12 with current = _11 } ] s11
+      | s11 = -{resolve_refmut_NonCopy _12}- s12
+      | s12 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s13)
+      | s13 = {[@expl:assertion] view_NonCopy g_read = 2} s14
+      | s14 = {[@expl:assertion] view_NonCopy g_mut = 4} s15
+      | s15 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & g_move: t_NonCopy = Any.any_l ()
     | & _2: t_NonCopy = Any.any_l ()
     | & g_read: t_NonCopy = Any.any_l ()
@@ -84,25 +74,20 @@ module M_snapshot_enter_ghost
   meta "select_lsinst" "all"
   
   let rec snapshot_enter_ghost (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &g_read <- { f0 = (1: Int32.t) } ] s1 | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_6 <- { f0 = (3: Int32.t) } ] s1 | s1 = bb2 ]
-    | bb2 = s0
-      [ s0 = [ &g_mut <- _6 ] s1
-      | s1 = {[@expl:assertion] view_NonCopy g_mut = 3} s2
-      | s2 = [ &_11 <- { f0 = (4: Int32.t) } ] s3
-      | s3 = bb3 ]
-    | bb3 = s0 [ s0 = [ &g_mut <- _11 ] s1 | s1 = new_unit {_5} (fun (_ret: ()) -> [ &_4 <- _ret ] s2) | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = {[@expl:assertion] view_NonCopy g_read = 1} s1
-      | s1 = {[@expl:assertion] view_NonCopy g_mut = 4} s2
-      | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+    [ bb0 = s0
+      [ s0 = [ &g_read <- { f0 = (1: Int32.t) } ] s1
+      | s1 = [ &g_mut <- { f0 = (3: Int32.t) } ] s2
+      | s2 = {[@expl:assertion] view_NonCopy g_mut = 3} s3
+      | s3 = [ &g_mut <- { f0 = (4: Int32.t) } ] s4
+      | s4 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s5)
+      | s5 = {[@expl:assertion] view_NonCopy g_read = 1} s6
+      | s6 = {[@expl:assertion] view_NonCopy g_mut = 4} s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & g_read: t_NonCopy = Any.any_l ()
     | & g_mut: t_NonCopy = Any.any_l ()
     | & _4: () = Any.any_l ()
-    | & _5: () = Any.any_l ()
-    | & _6: t_NonCopy = Any.any_l ()
-    | & _11: t_NonCopy = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_copy_enter_ghost
   use creusot.int.Int32
@@ -120,19 +105,13 @@ module M_copy_enter_ghost
     [ bb0 = s0
       [ s0 = [ &x <- (2: Int32.t) ] s1
       | s1 = [ &pair <- { f0 = (6: Int32.t); f1 = (42: Int32.t) } ] s2
-      | s2 = [ &_x <- x ] s3
-      | s3 = [ &_pair <- pair ] s4
-      | s4 = new_unit {_5} (fun (_ret: ()) -> [ &_4 <- _ret ] s5)
-      | s5 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:assertion] Int32.to_int x = 2} s1
-      | s1 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s2
-      | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l ()
+      | s2 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s3 = {[@expl:assertion] Int32.to_int x = 2} s4
+      | s4 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & pair: tup2_i32_i32 = Any.any_l ()
     | & _4: () = Any.any_l ()
-    | & _5: () = Any.any_l ()
-    | & _x: Int32.t = Any.any_l ()
-    | & _pair: tup2_i32_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

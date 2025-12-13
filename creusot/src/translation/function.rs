@@ -7,6 +7,7 @@ use crate::{
         projections::projections_term,
         ty_inv::{inv_call, is_tyinv_trivial},
     },
+    contracts_items::Intrinsic,
     ctx::*,
     translation::{
         constant::mirconst_to_operand,
@@ -184,8 +185,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let mut invariants = Vec::new();
             let mut variant = None;
             // compute invariants assertions to insert in this basic block
-            for (expl, body) in self.invariants.remove(&bb).into_iter().flatten() {
-                invariants.push(fmir::Invariant { body, expl });
+            for (expl, inv) in self.invariants.remove(&bb).into_iter().flatten() {
+                invariants.push(fmir::Invariant { inv, expl });
             }
 
             // compute an eventual variant assertion to insert in this basic block
@@ -301,7 +302,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 self.ctx,
                 self.typing_env(),
                 Term::var(pl.local, self.vars[&pl.local].ty),
-                &pl.projections,
+                &pl.projection,
                 |e| match rpl {
                     ResolvedPlace::All(_) => {
                         inv_call(self.ctx, self.typing_env(), self.body_id.def_id, e).unwrap()
@@ -320,7 +321,8 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 kind: fmir::StatementKind::Assertion {
                     cond,
                     msg: Some("expl:type invariant".to_string()),
-                    trusted: false,
+                    check: true,
+                    assume: false,
                 },
                 span,
             })
@@ -332,7 +334,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             self.ctx,
             self.typing_env(),
             Term::var(pl.local, self.vars[&pl.local].ty),
-            &pl.projections,
+            &pl.projection,
             |e| {
                 let r = match rpl {
                     ResolvedPlace::All(_) => {
@@ -353,7 +355,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         );
         if !res_triv {
             dest.push(fmir::Statement {
-                kind: fmir::StatementKind::Assertion { cond, msg: None, trusted: true },
+                kind: fmir::StatementKind::Assertion {
+                    cond,
+                    msg: None,
+                    check: false,
+                    assume: true,
+                },
                 span,
             })
         }
@@ -374,22 +381,28 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// # Parameters
     ///
     /// `is_final` signals that the emitted borrow should be final: see [`NotFinalPlaces`].
-    fn emit_borrow(
+    fn emit_mut_borrow(
         &mut self,
         lhs: Place<'tcx>,
         rhs: Place<'tcx>,
         is_final: fmir::BorrowKind,
         span: Span,
     ) {
-        let p = self.translate_place(rhs, span);
-
-        let span = self.tcx().def_span(self.body_id.def_id);
-
-        self.emit_assignment(lhs, fmir::RValue::Borrow(is_final, p), span);
+        let rhs = self.translate_place(rhs, span);
+        let lhs = self.translate_place(lhs, span);
+        self.emit_statement(fmir::Statement {
+            kind: fmir::StatementKind::MutBorrow(is_final, lhs, rhs),
+            span,
+        })
     }
 
     fn emit_snapshot_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>, span: Span) {
-        self.emit_assignment(lhs, fmir::RValue::Snapshot(rhs), span)
+        let subst = self.ctx.mk_args(&[rhs.ty.into()]);
+        let ty =
+            Ty::new_adt(self.tcx(), self.ctx.adt_def(Intrinsic::Snapshot.get(self.ctx)), subst);
+
+        let rvalue = fmir::RValue::Operand(fmir::Operand::term(rhs.coerce(ty)));
+        self.emit_assignment(lhs, rvalue, span)
     }
 
     fn emit_assignment(&mut self, lhs: Place<'tcx>, rhs: RValue<'tcx>, span: Span) {
@@ -410,8 +423,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     /// Will error when trying to dereference a raw pointer.
     fn translate_operand(&self, operand: &Operand<'tcx>, span: Span) -> fmir::Operand<'tcx> {
         match operand {
-            &Operand::Copy(pl) => fmir::Operand::Copy(self.translate_place(pl, span)),
-            &Operand::Move(pl) => fmir::Operand::Move(self.translate_place(pl, span)),
+            &Operand::Copy(pl) | &Operand::Move(pl) => {
+                fmir::Operand::Place(self.translate_place(pl, span))
+            }
             Operand::Constant(c) => {
                 mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
             }
@@ -450,7 +464,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 }
             })
             .collect::<Box<[_]>>();
-        fmir::Place { local: self.locals[&pl.local], projections }
+        fmir::Place { local: self.locals[&pl.local], projection: projections }
     }
 }
 

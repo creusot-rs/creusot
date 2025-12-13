@@ -54,9 +54,9 @@ module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
   
   type t_Empty_T = { f0: () }
   
-  predicate resolve_ref_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
+  predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Empty_T
+  meta "rewrite_def" predicate resolve_refmut_Empty_T
   
   type t_T
   
@@ -72,7 +72,7 @@ module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
         | Some f0'0 -> inv_T f0'0
         end
   
-  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_ref_Empty_T self
+  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_refmut_Empty_T self
   
   predicate produces_Empty_T (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o
@@ -82,8 +82,8 @@ module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Empty_T (self: MutBorrow.t t_Empty_T) (return (x: t_Option_T)) = (! bb0
-    [ bb0 = s0 [ s0 = -{resolve_ref_Empty_T self}- s1 | s1 = [ &_0 <- None ] s2 | s2 = return {_0} ] ]
-    [ & _0: t_Option_T = Any.any_l () | & self: MutBorrow.t t_Empty_T = self ])
+    [ bb0 = s0 [ s0 = -{resolve_refmut_Empty_T self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l () | & self: MutBorrow.t t_Empty_T = self ])
     [ return (result: t_Option_T) -> {[@expl:next result type invariant] inv_Option_T result}
       {[@expl:next ensures] match result with
         | None -> completed_Empty_T self
@@ -149,11 +149,11 @@ module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterat
   
   type t_Empty_T = { f0: () }
   
-  predicate resolve_ref_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
+  predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Empty_T
+  meta "rewrite_def" predicate resolve_refmut_Empty_T
   
-  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_ref_Empty_T self
+  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_refmut_Empty_T self
   
   predicate produces_Empty_T (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
     visited = (Seq.empty: Seq.seq t_T) /\ self = o

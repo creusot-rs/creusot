@@ -13,9 +13,9 @@ module M_division
       [ s0 = [ &_6 <- y ] s1
       | s1 = [ &_7 <- _6 = (0: UInt64.t) ] s2
       | s2 = {[@expl:division by zero] not _7} s3
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = UInt64.div {x} {_6} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s3 = UInt64.div {x} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = x
     | & y: UInt64.t = y
     | & _6: UInt64.t = Any.any_l ()
@@ -36,9 +36,9 @@ module M_modulus
       [ s0 = [ &_6 <- y ] s1
       | s1 = [ &_7 <- _6 = (0: UInt64.t) ] s2
       | s2 = {[@expl:remainder by zero] not _7} s3
-      | s3 = bb1 ]
-    | bb1 = s0 [ s0 = UInt64.rem {x} {_6} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l ()
+      | s3 = UInt64.rem {x} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = x
     | & y: UInt64.t = y
     | & _6: UInt64.t = Any.any_l ()
@@ -59,8 +59,8 @@ module M_multiply
       * UInt64.t'int y
     <= UInt64.t'int const_MAX}
     (! bb0
-    [ bb0 = s0 [ s0 = UInt64.mul {x} {y} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
+    [ bb0 = s0 [ s0 = UInt64.mul {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_add
@@ -78,8 +78,8 @@ module M_add
       + UInt64.t'int y
     <= UInt64.t'int const_MAX}
     (! bb0
-    [ bb0 = s0 [ s0 = UInt64.add {x} {y} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
+    [ bb0 = s0 [ s0 = UInt64.add {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_sub
@@ -95,8 +95,8 @@ module M_sub
       - UInt64.t'int y
     >= 0}
     (! bb0
-    [ bb0 = s0 [ s0 = UInt64.sub {x} {y} (fun (_ret: UInt64.t) -> [ &_0 <- _ret ] s1) | s1 = return {_0} ] ]
-    [ & _0: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
+    [ bb0 = s0 [ s0 = UInt64.sub {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_expression
@@ -119,20 +119,16 @@ module M_expression
       [ s0 = [ &_14 <- y ] s1
       | s1 = [ &_15 <- _14 = (0: UInt64.t) ] s2
       | s2 = {[@expl:division by zero] not _15} s3
-      | s3 = bb1 ]
-    | bb1 = s0
-      [ s0 = UInt64.div {x} {_14} (fun (_ret: UInt64.t) -> [ &_12 <- _ret ] s1)
-      | s1 = UInt64.mul {_12} {z} (fun (_ret: UInt64.t) -> [ &_11 <- _ret ] s2)
-      | s2 = [ &_20 <- y ] s3
-      | s3 = [ &_21 <- _20 = (0: UInt64.t) ] s4
-      | s4 = {[@expl:division by zero] not _21} s5
-      | s5 = bb2 ]
-    | bb2 = s0
-      [ s0 = UInt64.div {x} {_20} (fun (_ret: UInt64.t) -> [ &_18 <- _ret ] s1)
-      | s1 = UInt64.mul {_18} {z} (fun (_ret: UInt64.t) -> [ &_17 <- _ret ] s2)
-      | s2 = [ &_0 <- _11 = _17 ] s3
-      | s3 = return {_0} ] ]
-    [ & _0: bool = Any.any_l ()
+      | s3 = UInt64.div {x} {_14} (fun (_x: UInt64.t) -> [ &_12 <- _x ] s4)
+      | s4 = UInt64.mul {_12} {z} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s5)
+      | s5 = [ &_20 <- y ] s6
+      | s6 = [ &_21 <- _20 = (0: UInt64.t) ] s7
+      | s7 = {[@expl:division by zero] not _21} s8
+      | s8 = UInt64.div {x} {_20} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s9)
+      | s9 = UInt64.mul {_18} {z} (fun (_x: UInt64.t) -> [ &_17 <- _x ] s10)
+      | s10 = [ &_ret <- _11 = _17 ] s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
     | & x: UInt64.t = x
     | & y: UInt64.t = y
     | & z: UInt64.t = z
@@ -201,7 +197,7 @@ module M_primitive_comparison
   meta "select_lsinst" "all"
   
   let rec primitive_comparison (x: t_X) (return (x'0: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ])
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@expl:primitive_comparison ensures] UInt64.le x.a x.a} (! return {result}) ]
 end
 module M_bool_eq
@@ -212,7 +208,7 @@ module M_bool_eq
   meta "select_lsinst" "all"
   
   let rec bool_eq (a: bool) (b: bool) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- a = b ] s1 | s1 = return {_0} ] ]
-    [ & _0: bool = Any.any_l () | & a: bool = a | & b: bool = b ])
+    [ bb0 = s0 [ s0 = [ &_ret <- a = b ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & a: bool = a | & b: bool = b ])
     [ return (result: bool) -> {[@expl:bool_eq ensures] result = (a = b)} (! return {result}) ]
 end

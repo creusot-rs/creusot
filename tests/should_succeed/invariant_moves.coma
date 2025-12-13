@@ -26,33 +26,27 @@ module M_test_invariant_move
         end}
       (! return {result}) ]
   
-  predicate resolve_ref_Vec_u32_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_u32_Global) = _1.final = _1.current
+  predicate resolve_refmut_Vec_u32_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_u32_Global) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_u32_Global
+  meta "rewrite_def" predicate resolve_refmut_Vec_u32_Global
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec test_invariant_move (x: t_Vec_u32_Global) (return (x'0: ())) = (! bb0
-    [ bb0 = bb1
-    | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant] x = x}
+    [ bb0 = bb0
+      [ bb0 = {[@expl:loop invariant] x = x}
         (! s0)
-        [ s0 = bb2 ]
-        [ bb2 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Vec_u32_Global> {x}
-              (fun (_ret: MutBorrow.t t_Vec_u32_Global) -> [ &_8 <- _ret ] [ &x <- _ret.final ] s1)
-          | s1 = MutBorrow.borrow_final <t_Vec_u32_Global> {_8.current} {MutBorrow.get_id _8}
-              (fun (_ret: MutBorrow.t t_Vec_u32_Global) ->
-                [ &_7 <- _ret ] [ &_8 <- { _8 with current = _ret.final } ] s2)
-          | s2 = pop_u32 {_7} (fun (_ret: t_Option_u32) -> [ &_6 <- _ret ] s3)
-          | s3 = bb3 ]
-        | bb3 = s0
-          [ s0 = -{resolve_ref_Vec_u32_Global _8}- s1
-          | s1 = any [ br0 -> {_6 = None} (! bb7) | br1 (x0: UInt32.t) -> {_6 = Some x0} (! bb1) ] ] ] ]
-    | bb7 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+        [ s0 = MutBorrow.borrow_mut <t_Vec_u32_Global> {x}
+            (fun (_bor: MutBorrow.t t_Vec_u32_Global) -> [ &_8 <- _bor ] [ &x <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Vec_u32_Global> {_8.current} {MutBorrow.get_id _8}
+            (fun (_bor: MutBorrow.t t_Vec_u32_Global) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s2)
+        | s2 = pop_u32 {_7} (fun (_x: t_Option_u32) -> [ &_6 <- _x ] s3)
+        | s3 = -{resolve_refmut_Vec_u32_Global _8}- s4
+        | s4 = any [ br0 -> {_6 = None} (! bb7) | br1 (x0: UInt32.t) -> {_6 = Some x0} (! bb0) ] ] ]
+    | bb7 = return {_ret} ]
+    [ & _ret: () = Any.any_l ()
     | & x: t_Vec_u32_Global = x
     | & _6: t_Option_u32 = Any.any_l ()
     | & _7: MutBorrow.t t_Vec_u32_Global = Any.any_l ()

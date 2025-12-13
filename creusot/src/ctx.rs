@@ -36,6 +36,7 @@ use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LOCAL_CRATE, LocalDefId},
 };
+use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
@@ -177,7 +178,7 @@ pub struct TranslationCtx<'tcx> {
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexMap<LocalDefId, Erasure<'tcx>>,
     coma_names: ComaNames,
-    params_open_inv: HashMap<DefId, Vec<usize>>,
+    params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
     terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
@@ -199,18 +200,22 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
     }
 }
 
-pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, Vec<usize>> {
-    struct VisitFns<'tcx, 'a>(TyCtxt<'tcx>, HashMap<DefId, Vec<usize>>, &'a ResolverAstLowering);
+pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, DenseBitSet<usize>> {
+    struct VisitFns<'tcx, 'a>(
+        TyCtxt<'tcx>,
+        HashMap<DefId, DenseBitSet<usize>>,
+        &'a ResolverAstLowering,
+    );
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: &AttrVec, _: Span, node: NodeId) {
-            let decl = match fk {
-                FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => decl,
-                FnKind::Closure(_, _, decl, _) => decl,
+            let (shift, decl) = match fk {
+                FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => (0, decl),
+                FnKind::Closure(_, _, decl, _) => (1, decl),
             };
-            let mut open_inv_params = vec![];
-            for (i, p) in decl.inputs.iter().enumerate() {
+            let mut open_inv_params = DenseBitSet::new_empty(shift + decl.inputs.len());
+            for (i, p) in (shift..).zip(decl.inputs.iter()) {
                 if is_open_inv_param(self.0, p) {
-                    open_inv_params.push(i);
+                    open_inv_params.insert(i);
                 }
             }
             let defid = self.2.node_id_to_def_id[&node].to_def_id();
@@ -230,7 +235,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn new(
         tcx: TyCtxt<'tcx>,
         opts: Options,
-        params_open_inv: HashMap<DefId, Vec<usize>>,
+        params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     ) -> Self {
         let creusot_items = tcx
             .hir_body_owners()
@@ -335,7 +340,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .as_ref()
     }
 
-    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&Vec<usize>> {
+    pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
         if !def_id.is_local() {
             return self.externs.params_open_inv(def_id);
         }

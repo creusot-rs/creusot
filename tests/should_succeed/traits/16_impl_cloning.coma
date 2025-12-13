@@ -45,18 +45,18 @@ module M_test
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Vec_T [inv_Vec_T x]. inv_Vec_T x = inv_Vec_T_Global x.f0
   
-  predicate invariant_ref_Vec_T [@inline:trivial] (self: MutBorrow.t t_Vec_T) =
+  predicate invariant_refmut_Vec_T [@inline:trivial] (self: MutBorrow.t t_Vec_T) =
     inv_Vec_T self.current /\ inv_Vec_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Vec_T
+  meta "rewrite_def" predicate invariant_refmut_Vec_T
   
-  predicate inv_ref_Vec_T [@inline:trivial] (_1: MutBorrow.t t_Vec_T) = invariant_ref_Vec_T _1
+  predicate inv_refmut_Vec_T [@inline:trivial] (_1: MutBorrow.t t_Vec_T) = invariant_refmut_Vec_T _1
   
-  meta "rewrite_def" predicate inv_ref_Vec_T
+  meta "rewrite_def" predicate inv_refmut_Vec_T
   
-  predicate resolve_ref_Vec_T [@inline:trivial] (_1: MutBorrow.t t_Vec_T) = _1.final = _1.current
+  predicate resolve_refmut_Vec_T [@inline:trivial] (_1: MutBorrow.t t_Vec_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_Vec_T
+  meta "rewrite_def" predicate resolve_refmut_Vec_T
   
   function view_Vec_T (self: t_Vec_T) : Seq.seq t_T
   
@@ -64,10 +64,11 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let rec test_T (x: MutBorrow.t t_Vec_T) (return (x'0: ())) = {[@expl:test 'x' type invariant] inv_ref_Vec_T x}
+  let rec test_T (x: MutBorrow.t t_Vec_T) (return (x'0: ())) = {[@expl:test 'x' type invariant] inv_refmut_Vec_T x}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_Vec_T x} s1 | s1 = -{resolve_ref_Vec_T x}- s2 | s2 = return {_0} ] ]
-    [ & _0: () = Any.any_l () | & x: MutBorrow.t t_Vec_T = x ])
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T x} any) ]
+      | s1 = -{resolve_refmut_Vec_T x}- s2
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Vec_T = x ])
     [ return (result: ()) -> {[@expl:test ensures] view_Vec_T x.current = view_Vec_T x.current} (! return {result}) ]
 end

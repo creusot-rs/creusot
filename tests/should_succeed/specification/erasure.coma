@@ -7,7 +7,7 @@ module M_foo
   meta "select_lsinst" "all"
   
   let rec foo (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_foo2
@@ -19,7 +19,7 @@ module M_foo2
   meta "select_lsinst" "all"
   
   let rec foo2 (x: Int32.t) (_2: int) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_baz
@@ -33,7 +33,7 @@ module M_baz
   meta "select_lsinst" "all"
   
   let rec baz (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- const_N ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () ])
+    [ bb0 = s0 [ s0 = [ &_ret <- const_N ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
@@ -47,8 +47,8 @@ module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
   meta "select_lsinst" "all"
   
   let rec quux_i32 (self: Int32.t) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo {self} (fun (_ret: Int32.t) -> [ &_2 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
+    [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_quux2
@@ -62,8 +62,8 @@ module M_quux2
   meta "select_lsinst" "all"
   
   let rec quux2 (x: Int32.t) (y: int) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo2 {x} {y} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () | & x: Int32.t = x | & y: int = y | & _5: Int32.t = Any.any_l () ])
+    [ bb0 = s0 [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & x: Int32.t = x | & y: int = y | & _5: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_foo
@@ -81,12 +81,13 @@ module M_test_foo
   meta "select_lsinst" "all"
   
   let rec test_foo (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = foo {x} (fun (_ret: Int32.t) -> [ &a <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = foo {a} (fun (_ret: Int32.t) -> [ &b <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = baz (fun (_ret: Int32.t) -> [ &c <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = quux_i32 {c} (fun (_ret: ()) -> [ &_7 <- _ret ] s1) | s1 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_9 <- Int32.lt (-10: Int32.t) a ] s1 | s1 = any [ br0 -> {_9 = false} (! bb13) | br1 -> {_9} (! bb5) ] ]
+    [ bb0 = s0
+      [ s0 = foo {x} (fun (_x: Int32.t) -> [ &a <- _x ] s1)
+      | s1 = foo {a} (fun (_x: Int32.t) -> [ &b <- _x ] s2)
+      | s2 = baz (fun (_x: Int32.t) -> [ &c <- _x ] s3)
+      | s3 = quux_i32 {c} (fun (_x: ()) -> [ &_7 <- _x ] s4)
+      | s4 = [ &_9 <- Int32.lt (-10: Int32.t) a ] s5
+      | s5 = any [ br0 -> {_9 = false} (! bb13) | br1 -> {_9} (! bb5) ] ]
     | bb5 = s0
       [ s0 = [ &_11 <- Int32.lt a (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_11 = false} (! bb13) | br1 -> {_11} (! bb6) ] ]
@@ -96,10 +97,9 @@ module M_test_foo
     | bb7 = s0
       [ s0 = [ &_15 <- Int32.lt b (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_15 = false} (! bb13) | br1 -> {_15} (! bb8) ] ]
-    | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb14 ]
-    | bb13 = s0 [ s0 = [ &_0 <- c ] s1 | s1 = bb14 ]
-    | bb14 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l ()
+    | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
+    | bb13 = s0 [ s0 = [ &_ret <- c ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & x: Int32.t = x
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()
@@ -127,13 +127,14 @@ module M_test_foo2
   meta "select_lsinst" "all"
   
   let rec test_foo2 (x: Int32.t) (y: int) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = foo {x} (fun (_ret: Int32.t) -> [ &a <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = foo2 {a} {y} (fun (_ret: Int32.t) -> [ &b <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = s0 [ s0 = baz (fun (_ret: Int32.t) -> [ &c <- _ret ] s1) | s1 = bb3 ]
-    | bb3 = s0 [ s0 = [ &_13 <- c ] s1 | s1 = quux2 {_13} {y} (fun (_ret: ()) -> [ &_11 <- _ret ] s2) | s2 = bb4 ]
-    | bb4 = s0
-      [ s0 = [ &_15 <- Int32.lt (-10: Int32.t) a ] s1
-      | s1 = any [ br0 -> {_15 = false} (! bb13) | br1 -> {_15} (! bb5) ] ]
+    [ bb0 = s0
+      [ s0 = foo {x} (fun (_x: Int32.t) -> [ &a <- _x ] s1)
+      | s1 = foo2 {a} {y} (fun (_x: Int32.t) -> [ &b <- _x ] s2)
+      | s2 = baz (fun (_x: Int32.t) -> [ &c <- _x ] s3)
+      | s3 = [ &_13 <- c ] s4
+      | s4 = quux2 {_13} {y} (fun (_x: ()) -> [ &_11 <- _x ] s5)
+      | s5 = [ &_15 <- Int32.lt (-10: Int32.t) a ] s6
+      | s6 = any [ br0 -> {_15 = false} (! bb13) | br1 -> {_15} (! bb5) ] ]
     | bb5 = s0
       [ s0 = [ &_17 <- Int32.lt a (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_17 = false} (! bb13) | br1 -> {_17} (! bb6) ] ]
@@ -143,10 +144,9 @@ module M_test_foo2
     | bb7 = s0
       [ s0 = [ &_21 <- Int32.lt b (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb8) ] ]
-    | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb14 ]
-    | bb13 = s0 [ s0 = [ &_0 <- c ] s1 | s1 = bb14 ]
-    | bb14 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l ()
+    | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
+    | bb13 = s0 [ s0 = [ &_ret <- c ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & x: Int32.t = x
     | & y: int = y
     | & a: Int32.t = Any.any_l ()
@@ -168,8 +168,8 @@ module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
   meta "select_lsinst" "all"
   
   let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- self ] s1 | s1 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_takes_ref
   use creusot.int.Int32
@@ -180,7 +180,7 @@ module M_takes_ref
   meta "select_lsinst" "all"
   
   let rec takes_ref (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_0 <- x ] s1 | s1 = return {_0} ] ] [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ])
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_takes_ref_test
@@ -194,8 +194,8 @@ module M_takes_ref_test
   meta "select_lsinst" "all"
   
   let rec takes_ref_test (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = takes_ref_i32 {x} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x ]) [ return (result: Int32.t) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = takes_ref_i32 {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_takes_ref_test2
   use creusot.int.Int32
@@ -208,8 +208,9 @@ module M_takes_ref_test2
   meta "select_lsinst" "all"
   
   let rec takes_ref_test2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_5 <- x ] s1 | s1 = takes_ref {_5} (fun (_ret: Int32.t) -> [ &_0 <- _ret ] s2) | s2 = bb1 ]
-    | bb1 = return {_0} ] [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = [ &_5 <- x ] s1 | s1 = takes_ref {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_foog
@@ -226,9 +227,11 @@ module M_foog
   meta "select_lsinst" "all"
   
   let rec foog (x: Int32.t) (return (x'0: tup2_i32_Ghost_i32)) = (! bb0
-    [ bb0 = s0 [ s0 = new_i32 {x} (fun (_ret: Int32.t) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- { f0 = x; f1 = _5 } ] s1 | s1 = return {_0} ] ]
-    [ & _0: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = x; f1 = _5 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
     [ return (result: tup2_i32_Ghost_i32) -> (! return {result}) ]
 end
 module M_test_ghost_fields
@@ -242,9 +245,8 @@ module M_test_ghost_fields
   meta "select_lsinst" "all"
   
   let rec test_ghost_fields (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = foo {x} (fun (_ret: Int32.t) -> [ &a <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- a ] s1 | s1 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l () | & x: Int32.t = x | & a: Int32.t = Any.any_l () ])
+    [ bb0 = s0 [ s0 = foo {x} (fun (_x: Int32.t) -> [ &a <- _x ] s1) | s1 = [ &_ret <- a ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & a: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_ghost_fields2
@@ -261,9 +263,12 @@ module M_test_ghost_fields2
   meta "select_lsinst" "all"
   
   let rec test_ghost_fields2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = foog {x} (fun (_ret: tup2_i32_Ghost_i32) -> [ &_5 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &a <- _5.f0 ] s1 | s1 = [ &_0 <- a ] s2 | s2 = return {_0} ] ]
-    [ & _0: Int32.t = Any.any_l ()
+    [ bb0 = s0
+      [ s0 = foog {x} (fun (_x: tup2_i32_Ghost_i32) -> [ &_5 <- _x ] s1)
+      | s1 = [ &a <- _5.f0 ] s2
+      | s2 = [ &_ret <- a ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
     | & x: Int32.t = x
     | & a: Int32.t = Any.any_l ()
     | & _5: tup2_i32_Ghost_i32 = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
@@ -359,9 +364,9 @@ module M_test_ptr2
     {[@expl:test_ptr2 'own' type invariant] inv_Ghost_ref_PtrOwn_T own}
     {[@expl:test_ptr2 requires] false}
     (! bb0
-    [ bb0 = s0 [ s0 = as_ref_T {x} {own} (fun (_ret: t_T) -> [ &_6 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_0 <- _6 ] s1 | s1 = return {_0} ] ]
-    [ & _0: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_PtrOwn_T = own | & _6: t_T = Any.any_l () ])
+    [ bb0 = s0
+      [ s0 = as_ref_T {x} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1) | s1 = [ &_ret <- _6 ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_PtrOwn_T = own | & _6: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:test_ptr2 result type invariant] inv_ref_T result} (! return {result}) ]
 end
 module M_test_ptr_mut2
@@ -427,88 +432,86 @@ module M_test_ptr_mut2
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
   
-  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
+  predicate invariant_refmut_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) =
     inv_PtrOwn_T self.current /\ inv_PtrOwn_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_T
   
-  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
+  predicate inv_refmut_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_refmut_PtrOwn_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_T
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_T
   
-  predicate invariant_Ghost_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) = inv_ref_PtrOwn_T self
+  predicate invariant_Ghost_refmut_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) = inv_refmut_PtrOwn_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_T
   
-  predicate inv_Ghost_ref_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) = invariant_Ghost_ref_PtrOwn_T _1
+  predicate inv_Ghost_refmut_PtrOwn_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_T) =
+    invariant_Ghost_refmut_PtrOwn_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_T
   
-  predicate invariant_ref_T'0 [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_T'0
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  predicate inv_ref_T'0 [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_T'0 _1
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  meta "rewrite_def" predicate inv_ref_T'0
+  meta "rewrite_def" predicate inv_refmut_T
   
-  function fin_Ghost_ref_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) : t_PtrOwn_T = self.final
+  function fin_Ghost_refmut_PtrOwn_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_T) : t_PtrOwn_T = self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_T
   
   let rec as_mut_T (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:as_mut 'own' type invariant] inv_Ghost_ref_PtrOwn_T own}
+    {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_PtrOwn_T own}
     {[@expl:as_mut requires] ptr = ptr_T own.current}
     any
-    [ return (result: MutBorrow.t t_T) -> {inv_ref_T'0 result}
+    [ return (result: MutBorrow.t t_T) -> {inv_refmut_T result}
       {result.current = val_T own.current}
-      {ptr_T (fin_Ghost_ref_PtrOwn_T own) = ptr_T own.current}
-      {val_T (fin_Ghost_ref_PtrOwn_T own) = result.final}
+      {ptr_T (fin_Ghost_refmut_PtrOwn_T own) = ptr_T own.current}
+      {val_T (fin_Ghost_refmut_PtrOwn_T own) = result.final}
       (! return {result}) ]
   
-  predicate resolve_ref_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_T
+  meta "rewrite_def" predicate resolve_refmut_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec test_ptr_mut2_T (x: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_T) (return (x'0: MutBorrow.t t_T)) =
-    {[@expl:test_ptr_mut2 'own' type invariant] inv_Ghost_ref_PtrOwn_T own}
+    {[@expl:test_ptr_mut2 'own' type invariant] inv_Ghost_refmut_PtrOwn_T own}
     {[@expl:test_ptr_mut2 requires] false}
     (! bb0
-    [ bb0 = s0 [ s0 = as_mut_T {x} {own} (fun (_ret: MutBorrow.t t_T) -> [ &_8 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = s0
-      [ s0 = {inv_T _8.current}
-        MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_7 <- _ret ] -{inv_T _ret.final}-
-            [ &_8 <- { _8 with current = _ret.final } ] s1)
-      | s1 = {[@expl:type invariant] inv_ref_T'0 _8} s2
-      | s2 = -{resolve_ref_T _8}- s3
-      | s3 = {inv_T _7.current}
-        MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_3 <- _ret ] -{inv_T _ret.final}-
-            [ &_7 <- { _7 with current = _ret.final } ] s4)
-      | s4 = {[@expl:type invariant] inv_ref_T'0 _7} s5
-      | s5 = -{resolve_ref_T _7}- s6
-      | s6 = {inv_T _3.current}
-        MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
-          (fun (_ret: MutBorrow.t t_T) ->
-            [ &_0 <- _ret ] -{inv_T _ret.final}-
-            [ &_3 <- { _3 with current = _ret.final } ] s7)
-      | s7 = {[@expl:type invariant] inv_ref_T'0 _3} s8
-      | s8 = -{resolve_ref_T _3}- s9
-      | s9 = return {_0} ] ]
-    [ & _0: MutBorrow.t t_T = Any.any_l ()
+    [ bb0 = s0
+      [ s0 = as_mut_T {x} {own} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_7 <- _bor ] -{inv_T _bor.final}-
+            [ &_8 <- { _8 with current = _bor.final } ] s2) [ _ck -> (! {inv_T _8.current} any) ]
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
+      | s3 = -{resolve_refmut_T _8}- s4
+      | s4 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_3 <- _bor ] -{inv_T _bor.final}-
+            [ &_7 <- { _7 with current = _bor.final } ] s5) [ _ck -> (! {inv_T _7.current} any) ]
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
+      | s6 = -{resolve_refmut_T _7}- s7
+      | s7 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_ret <- _bor ] -{inv_T _bor.final}-
+            [ &_3 <- { _3 with current = _bor.final } ] s8) [ _ck -> (! {inv_T _3.current} any) ]
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+      | s9 = -{resolve_refmut_T _3}- s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: MutBorrow.t t_T = Any.any_l ()
     | & x: Opaque.ptr = x
     | & own: MutBorrow.t t_PtrOwn_T = own
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:test_ptr_mut2 result type invariant] inv_ref_T'0 result}
+    [ return (result: MutBorrow.t t_T) -> {[@expl:test_ptr_mut2 result type invariant] inv_refmut_T result}
       (! return {result}) ]
 end
 module M_no_specs
@@ -522,9 +525,9 @@ module M_no_specs
   meta "select_lsinst" "all"
   
   let rec no_specs (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo {(0: Int32.t)} (fun (_ret: Int32.t) -> [ &_1 <- _ret ] s1) | s1 = bb3 ]
+    [ bb0 = s0 [ s0 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_1 <- _x ] s1) | s1 = bb3 ]
     | bb3 = bb3 [ bb3 = (! any [ br0 -> {false = false} (! bb5) | br1 -> {false} (! bb3) ]) ]
-    | bb5 = return {_0} ] [ & _0: () = Any.any_l () | & _1: Int32.t = Any.any_l () ])
+    | bb5 = return {_ret} ] [ & _ret: () = Any.any_l () | & _1: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_specs
@@ -541,16 +544,15 @@ module M_specs
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] false} s1
-      | s1 = foo {(0: Int32.t)} (fun (_ret: Int32.t) -> [ &_7 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = [ &_8 <- x ] s1 | s1 = bb3 ]
+      | s1 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_7 <- _x ] s2)
+      | s2 = [ &_8 <- x ] s3
+      | s3 = bb3 ]
     | bb3 = bb3
       [ bb3 = {[@expl:loop invariant] false}
         (! s0)
-        [ s0 = bb4 ]
-        [ bb4 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb3) ] ] ]
-    | bb6 = return {_0} ]
-    [ & _0: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
+        [ s0 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb3) ] ] ]
+    | bb6 = return {_ret} ]
+    [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
     [ return (result: ()) -> {[@expl:specs ensures] false} (! return {result}) ]
 end
 module M_nested
@@ -563,8 +565,8 @@ module M_nested
   meta "select_lsinst" "all"
   
   let rec nested (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_ret: ()) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested__hidden
   use creusot.prelude.Any
@@ -574,7 +576,7 @@ module M_nested__hidden
   meta "select_lsinst" "all"
   
   let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested2
   use creusot.prelude.Any
@@ -586,8 +588,8 @@ module M_nested2
   meta "select_lsinst" "all"
   
   let rec nested2 (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_ret: ()) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested2__hidden
   use creusot.prelude.Any
@@ -597,7 +599,7 @@ module M_nested2__hidden
   meta "select_lsinst" "all"
   
   let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested3
   use creusot.prelude.Any
@@ -609,8 +611,8 @@ module M_nested3
   meta "select_lsinst" "all"
   
   let rec nested3 (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_ret: ()) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested3__hidden
   use creusot.prelude.Any
@@ -620,7 +622,7 @@ module M_nested3__hidden
   meta "select_lsinst" "all"
   
   let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_split
   use creusot.prelude.Any
@@ -630,7 +632,7 @@ module M_ghost_split
   meta "select_lsinst" "all"
   
   let rec ghost_split (return (x: ())) = (! bb0
-    [ bb0 = return {_0} ] [ & _0: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_split2
   use creusot.prelude.Any
@@ -654,11 +656,10 @@ module M_ghost_split2
   let rec ghost_split2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- { f0 = _5; f1 = _6 } ] s1
-      | s1 = new_tup2_unit_unit {_4} (fun (_ret: tup2_unit_unit) -> [ &_3 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0 [ s0 = split_unit {_3} (fun (_ret: tup2_Ghost_unit_Ghost_unit) -> [ &_2 <- _ret ] s1) | s1 = bb2 ]
-    | bb2 = return {_0} ]
-    [ & _0: () = Any.any_l ()
+      | s1 = new_tup2_unit_unit {_4} (fun (_x: tup2_unit_unit) -> [ &_3 <- _x ] s2)
+      | s2 = split_unit {_3} (fun (_x: tup2_Ghost_unit_Ghost_unit) -> [ &_2 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
     | & _2: tup2_Ghost_unit_Ghost_unit = Any.any_l ()
     | & _3: tup2_unit_unit = Any.any_l ()
     | & _4: tup2_unit_unit = Any.any_l ()
@@ -716,8 +717,8 @@ module M_slice_as_ptr
   let rec slice_as_ptr_T (s: Slice64.slice t_T) (return (x: Opaque.ptr)) =
     {[@expl:slice_as_ptr 's' type invariant] inv_ref_slice_T s}
     (! bb0
-    [ bb0 = s0 [ s0 = as_ptr_T {s} (fun (_ret: Opaque.ptr) -> [ &_0 <- _ret ] s1) | s1 = bb1 ] | bb1 = return {_0} ]
-    [ & _0: Opaque.ptr = Any.any_l () | & s: Slice64.slice t_T = s ])
+    [ bb0 = s0 [ s0 = as_ptr_T {s} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Opaque.ptr = Any.any_l () | & s: Slice64.slice t_T = s ])
     [ return (result: Opaque.ptr) -> (! return {result}) ]
 end
 module M_slice_as_ptr_own
@@ -849,8 +850,9 @@ module M_slice_as_ptr_own
     {[@expl:slice_as_ptr_own 's' type invariant] inv_ref_slice_T s}
     (! bb0
     [ bb0 = s0
-      [ s0 = as_ptr_own_slice_T {s} (fun (_ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) -> [ &_0 <- _ret ] s1) | s1 = bb1 ]
-    | bb1 = return {_0} ] [ & _0: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l () | & s: Slice64.slice t_T = s ])
+      [ s0 = as_ptr_own_slice_T {s} (fun (_x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) -> [ &_ret <- _x ] s1)
+      | s1 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l () | & s: Slice64.slice t_T = s ])
     [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
     {[@expl:slice_as_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
       (! return {result}) ]
@@ -888,41 +890,40 @@ module M_slice_as_mut_ptr
   
   meta "rewrite_def" predicate inv_slice_T
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   let rec as_mut_ptr_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@expl:as_mut_ptr 'self_' type invariant] inv_ref_slice_T self_}
+    {[@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
     any [ return (result: Opaque.ptr) -> (! return {result}) ]
   
-  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_T
+  meta "rewrite_def" predicate resolve_refmut_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec slice_as_mut_ptr_T (s: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@expl:slice_as_mut_ptr 's' type invariant] inv_ref_slice_T s}
+    {[@expl:slice_as_mut_ptr 's' type invariant] inv_refmut_slice_T s}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_slice_T s.current}
-        MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
-          (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_2 <- _ret ] -{inv_slice_T _ret.final}-
-            [ &s <- { s with current = _ret.final } ] s1)
-      | s1 = as_mut_ptr_T {_2} (fun (_ret: Opaque.ptr) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_slice_T s} s1 | s1 = -{resolve_ref_slice_T s}- s2 | s2 = return {_0} ] ]
-    [ & _0: Opaque.ptr = Any.any_l ()
+      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
+          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_2 <- _bor ] -{inv_slice_T _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T s.current} any) ]
+      | s1 = as_mut_ptr_T {_2} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
+      | s3 = -{resolve_refmut_slice_T s}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Opaque.ptr = Any.any_l ()
     | & s: MutBorrow.t (Slice64.slice t_T) = s
     | & _2: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ]) [ return (result: Opaque.ptr) -> (! return {result}) ]
 end
@@ -964,16 +965,16 @@ module M_slice_as_mut_ptr_own
   
   type t_PtrOwn_slice_T
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
   
-  predicate invariant_ref_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_slice_T
+  meta "rewrite_def" predicate invariant_refmut_slice_T
   
-  predicate inv_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_ref_slice_T _1
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T
+  meta "rewrite_def" predicate inv_refmut_slice_T
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -1005,13 +1006,13 @@ module M_slice_as_mut_ptr_own
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate invariant_ref_slice_T'0 [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_slice_T'0
+  meta "rewrite_def" predicate invariant_ref_slice_T
   
-  predicate inv_ref_slice_T'0 [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T'0 _1
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_slice_T'0
+  meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
     not is_null_ptr_slice_T (ptr_slice_T self)
@@ -1020,79 +1021,78 @@ module M_slice_as_mut_ptr_own
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
     /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T'0 (val_slice_T self)
+    /\ inv_ref_slice_T (val_slice_T self)
   
   predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
   
   axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
       = invariant_PtrOwn_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+  predicate invariant_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
     inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_refmut_PtrOwn_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_ref_PtrOwn_slice_T _1
+  predicate inv_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_refmut_PtrOwn_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_ref_PtrOwn_slice_T self
+  predicate invariant_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
+    inv_refmut_PtrOwn_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
+    invariant_Ghost_refmut_PtrOwn_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) =
+    inv_Ghost_refmut_PtrOwn_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T
   
-  function fin_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
+  function fin_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
     self.final
   
-  meta "rewrite_def" function fin_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_slice_T
   
   let rec as_mut_ptr_own_slice_T (self: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T)) =
-    {[@expl:as_mut_ptr_own 'self' type invariant] inv_ref_slice_T self}
+    (return (x: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T)) =
+    {[@expl:as_mut_ptr_own 'self' type invariant] inv_refmut_slice_T self}
     any
-    [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) -> {inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
+    [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) -> {inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
       {result.f0 = Opaque.thin (ptr_slice_T result.f1.current)}
       {self.current = val_slice_T result.f1.current}
-      {self.final = val_slice_T (fin_Ghost_ref_PtrOwn_slice_T result.f1)}
+      {self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1)}
       (! return {result}) ]
   
-  predicate resolve_ref_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_slice_T
+  meta "rewrite_def" predicate resolve_refmut_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec slice_as_mut_ptr_own_T (s: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T)) =
-    {[@expl:slice_as_mut_ptr_own 's' type invariant] inv_ref_slice_T s}
+    (return (x: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T)) =
+    {[@expl:slice_as_mut_ptr_own 's' type invariant] inv_refmut_slice_T s}
     (! bb0
     [ bb0 = s0
-      [ s0 = {inv_slice_T s.current}
-        MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
-          (fun (_ret: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_4 <- _ret ] -{inv_slice_T _ret.final}-
-            [ &s <- { s with current = _ret.final } ] s1)
-      | s1 = as_mut_ptr_own_slice_T {_4} (fun (_ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) -> [ &_0 <- _ret ] s2)
-      | s2 = bb1 ]
-    | bb1 = s0
-      [ s0 = {[@expl:type invariant] inv_ref_slice_T s} s1 | s1 = -{resolve_ref_slice_T s}- s2 | s2 = return {_0} ] ]
-    [ & _0: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
+          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_4 <- _bor ] -{inv_slice_T _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T s.current} any) ]
+      | s1 = as_mut_ptr_own_slice_T {_4} (fun (_x: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
+      | s3 = -{resolve_refmut_slice_T s}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = Any.any_l ()
     | & s: MutBorrow.t (Slice64.slice t_T) = s
     | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
-    {[@expl:slice_as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
+    [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) ->
+    {[@expl:slice_as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
       (! return {result}) ]
 end
