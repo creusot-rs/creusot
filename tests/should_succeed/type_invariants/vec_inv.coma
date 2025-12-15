@@ -6,7 +6,7 @@ module M_vec
   use creusot.int.UInt64
   use creusot.prelude.Any
   
-  type t_Vec_ref_SumTo10_Global
+  type t_Vec_refmut_SumTo10_Global
   
   type t_SumTo10 = { a: Int32.t; b: Int32.t }
   
@@ -16,84 +16,85 @@ module M_vec
   
   axiom inv_axiom [@rewrite]: forall x: t_SumTo10 [inv_SumTo10 x]. inv_SumTo10 x = invariant_SumTo10 x
   
-  predicate invariant_ref_SumTo10 [@inline:trivial] (self: MutBorrow.t t_SumTo10) =
+  predicate invariant_refmut_SumTo10 [@inline:trivial] (self: MutBorrow.t t_SumTo10) =
     inv_SumTo10 self.current /\ inv_SumTo10 self.final
   
-  meta "rewrite_def" predicate invariant_ref_SumTo10
+  meta "rewrite_def" predicate invariant_refmut_SumTo10
   
-  predicate inv_ref_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant_ref_SumTo10 _1
+  predicate inv_refmut_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant_refmut_SumTo10 _1
   
-  meta "rewrite_def" predicate inv_ref_SumTo10
+  meta "rewrite_def" predicate inv_refmut_SumTo10
   
-  predicate invariant_ref_ref_SumTo10 [@inline:trivial] (self: MutBorrow.t t_SumTo10) = inv_ref_SumTo10 self
+  predicate invariant_ref_refmut_SumTo10 [@inline:trivial] (self: MutBorrow.t t_SumTo10) = inv_refmut_SumTo10 self
   
-  meta "rewrite_def" predicate invariant_ref_ref_SumTo10
+  meta "rewrite_def" predicate invariant_ref_refmut_SumTo10
   
-  predicate inv_ref_ref_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant_ref_ref_SumTo10 _1
+  predicate inv_ref_refmut_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = invariant_ref_refmut_SumTo10 _1
   
-  meta "rewrite_def" predicate inv_ref_ref_SumTo10
+  meta "rewrite_def" predicate inv_ref_refmut_SumTo10
   
-  predicate invariant_Seq_ref_SumTo10 [@inline:trivial] (self: Seq.seq (MutBorrow.t t_SumTo10)) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_SumTo10 (Seq.get self i)
+  predicate invariant_Seq_refmut_SumTo10 [@inline:trivial] (self: Seq.seq (MutBorrow.t t_SumTo10)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_SumTo10 (Seq.get self i)
   
-  meta "rewrite_def" predicate invariant_Seq_ref_SumTo10
+  meta "rewrite_def" predicate invariant_Seq_refmut_SumTo10
   
-  predicate inv_Seq_ref_SumTo10 [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_SumTo10)) = invariant_Seq_ref_SumTo10 _1
+  predicate inv_Seq_refmut_SumTo10 [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_SumTo10)) =
+    invariant_Seq_refmut_SumTo10 _1
   
-  meta "rewrite_def" predicate inv_Seq_ref_SumTo10
+  meta "rewrite_def" predicate inv_Seq_refmut_SumTo10
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view_Vec_ref_SumTo10_Global (self: t_Vec_ref_SumTo10_Global) : Seq.seq (MutBorrow.t t_SumTo10)
+  function view_Vec_refmut_SumTo10_Global (self: t_Vec_refmut_SumTo10_Global) : Seq.seq (MutBorrow.t t_SumTo10)
   
-  axiom view_Vec_ref_SumTo10_Global_spec:
-    forall self: t_Vec_ref_SumTo10_Global. Seq.length (view_Vec_ref_SumTo10_Global self) <= UInt64.t'int const_MAX
+  axiom view_Vec_refmut_SumTo10_Global_spec:
+    forall self: t_Vec_refmut_SumTo10_Global. Seq.length (view_Vec_refmut_SumTo10_Global self) <= UInt64.t'int const_MAX
   
-  predicate invariant_Vec_ref_SumTo10_Global (self: t_Vec_ref_SumTo10_Global) =
-    inv_Seq_ref_SumTo10 (view_Vec_ref_SumTo10_Global self)
+  predicate invariant_Vec_refmut_SumTo10_Global (self: t_Vec_refmut_SumTo10_Global) =
+    inv_Seq_refmut_SumTo10 (view_Vec_refmut_SumTo10_Global self)
   
-  predicate inv_Vec_ref_SumTo10_Global (_1: t_Vec_ref_SumTo10_Global)
+  predicate inv_Vec_refmut_SumTo10_Global (_1: t_Vec_refmut_SumTo10_Global)
   
-  axiom inv_axiom'0: forall x: t_Vec_ref_SumTo10_Global [inv_Vec_ref_SumTo10_Global x]. inv_Vec_ref_SumTo10_Global x
-      -> invariant_Vec_ref_SumTo10_Global x
+  axiom inv_axiom'0:
+    forall x: t_Vec_refmut_SumTo10_Global [inv_Vec_refmut_SumTo10_Global x]. inv_Vec_refmut_SumTo10_Global x
+      -> invariant_Vec_refmut_SumTo10_Global x
   
-  predicate resolve_ref_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = _1.final = _1.current
+  predicate resolve_refmut_SumTo10 [@inline:trivial] (_1: MutBorrow.t t_SumTo10) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_ref_SumTo10
+  meta "rewrite_def" predicate resolve_refmut_SumTo10
   
-  function index_Vec_ref_SumTo10_Global [@inline:trivial] (self: t_Vec_ref_SumTo10_Global) (ix: int) : MutBorrow.t t_SumTo10
-   = Seq.get (view_Vec_ref_SumTo10_Global self) ix
+  function index_Vec_refmut_SumTo10_Global [@inline:trivial] (self: t_Vec_refmut_SumTo10_Global) (ix: int) : MutBorrow.t t_SumTo10
+   = Seq.get (view_Vec_refmut_SumTo10_Global self) ix
   
-  meta "rewrite_def" function index_Vec_ref_SumTo10_Global
+  meta "rewrite_def" function index_Vec_refmut_SumTo10_Global
   
-  predicate resolve_Vec_ref_SumTo10_Global [@inline:trivial] (self: t_Vec_ref_SumTo10_Global) =
-    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_ref_SumTo10_Global self)
-      -> resolve_ref_SumTo10 (index_Vec_ref_SumTo10_Global self i)
+  predicate resolve_Vec_refmut_SumTo10_Global [@inline:trivial] (self: t_Vec_refmut_SumTo10_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_refmut_SumTo10_Global self)
+      -> resolve_refmut_SumTo10 (index_Vec_refmut_SumTo10_Global self i)
   
-  meta "rewrite_def" predicate resolve_Vec_ref_SumTo10_Global
+  meta "rewrite_def" predicate resolve_Vec_refmut_SumTo10_Global
   
-  predicate resolve_Vec_ref_SumTo10_Global'0 (_1: t_Vec_ref_SumTo10_Global)
+  predicate resolve_Vec_refmut_SumTo10_Global'0 (_1: t_Vec_refmut_SumTo10_Global)
   
   axiom resolve_axiom:
-    forall x: t_Vec_ref_SumTo10_Global [resolve_Vec_ref_SumTo10_Global'0 x]. resolve_Vec_ref_SumTo10_Global'0 x
-      -> resolve_Vec_ref_SumTo10_Global x
+    forall x: t_Vec_refmut_SumTo10_Global [resolve_Vec_refmut_SumTo10_Global'0 x]. resolve_Vec_refmut_SumTo10_Global'0 x
+      -> resolve_Vec_refmut_SumTo10_Global x
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec vec (x: t_Vec_ref_SumTo10_Global) (return (x'0: ())) =
-    {[@expl:vec 'x' type invariant] inv_Vec_ref_SumTo10_Global x}
-    {[@expl:vec requires] Seq.length (view_Vec_ref_SumTo10_Global x) > 0}
+  let rec vec (x: t_Vec_refmut_SumTo10_Global) (return (x'0: ())) =
+    {[@expl:vec 'x' type invariant] inv_Vec_refmut_SumTo10_Global x}
+    {[@expl:vec requires] Seq.length (view_Vec_refmut_SumTo10_Global x) > 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:type invariant] inv_Vec_ref_SumTo10_Global x} s1
-      | s1 = -{resolve_Vec_ref_SumTo10_Global'0 x}- s2
-      | s2 = {[@expl:assertion] Int32.to_int (index_Vec_ref_SumTo10_Global x 0).current.a
-          + Int32.to_int (index_Vec_ref_SumTo10_Global x 0).current.b
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Vec_refmut_SumTo10_Global x} any) ]
+      | s1 = -{resolve_Vec_refmut_SumTo10_Global'0 x}- s2
+      | s2 = {[@expl:assertion] Int32.to_int (index_Vec_refmut_SumTo10_Global x 0).current.a
+          + Int32.to_int (index_Vec_refmut_SumTo10_Global x 0).current.b
         = 10}
         s3
-      | s3 = bb1 ]
-    | bb1 = return {_0} ] [ & _0: () = Any.any_l () | & x: t_Vec_ref_SumTo10_Global = x ])
+      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: t_Vec_refmut_SumTo10_Global = x ])
     [ return (result: ()) -> (! return {result}) ]
 end
