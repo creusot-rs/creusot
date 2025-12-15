@@ -128,7 +128,8 @@ use creusot_contracts::prelude::*;
 #[ensures(result@ == a@ + 1)]
 pub fn add_one(a: i64) -> i64 {
     a + 1
-}"#;
+}
+"#;
 
 pub fn new(args: NewArgs) -> Result<()> {
     validate_name(&args.name)?;
