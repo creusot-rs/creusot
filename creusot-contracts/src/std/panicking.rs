@@ -1,6 +1,7 @@
 use crate::prelude::*;
 #[cfg(feature = "nightly")]
 use core::panicking::*;
+#[allow(unused_imports)]
 use core::{any::Any, fmt};
 
 extern_spec! {
