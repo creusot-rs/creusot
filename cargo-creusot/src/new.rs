@@ -73,11 +73,6 @@ creusot-contracts = {{ path = "{}" }}
     } else {
         format!("\"{CREUSOT_CONTRACTS_VERSION}\"")
     };
-    let creusot_contracts = if no_std {
-        format!("{{ version = \"{CREUSOT_CONTRACTS_VERSION}\", default-features = false }}")
-    } else {
-        format!("\"{CREUSOT_CONTRACTS_VERSION}\"")
-    };
     format!(
         r#"[package]
 name = "{name}"
