@@ -11,3 +11,12 @@ pub fn f() -> Ghost<usize> {
         x
     }
 }
+
+#[requires(s.len() >= 1)]
+#[ensures(s[0..1].len() == 1)]
+#[ensures(s[0..=0].len() == 1)]
+#[ensures(s[0..] == s)]
+#[ensures(s[..0].len() == 0)]
+#[ensures(s[..=0].len() == 1)]
+#[ensures(s[..] == s)]
+pub fn g(s: Seq<Int>) {}

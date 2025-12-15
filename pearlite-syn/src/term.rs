@@ -962,6 +962,27 @@ pub(crate) mod parsing {
                     gt_token,
                     cons: Box::new(rhs),
                 });
+            } else if Precedence::Range >= base && input.peek(Token![..]) || input.peek(Token![..=])
+            {
+                let limits: RangeLimits = input.parse()?;
+                let precedence = Precedence::Range;
+                if input.is_empty() {
+                    if matches!(limits, RangeLimits::Closed(_)) {
+                        return Err(input.error("expected expression after ..="));
+                    }
+                    return Ok(Term::Range(TermRange { from: Some(lhs.into()), limits, to: None }));
+                }
+                let mut rhs = unary_term(input, allow_struct)?;
+                loop {
+                    let next = peek_precedence(input);
+                    if next >= precedence {
+                        rhs = parse_term(input, rhs, allow_struct, next)?;
+                    } else {
+                        break;
+                    }
+                }
+                lhs =
+                    Term::Range(TermRange { from: Some(lhs.into()), limits, to: Some(rhs.into()) })
             } else if input
                 .fork()
                 .parse::<BinOp>()

@@ -10,7 +10,7 @@ use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    Ident, Lit, Pat, PatIdent, PatType, UnOp,
+    Ident, Lit, Pat, PatIdent, PatType, RangeLimits, UnOp,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
@@ -319,7 +319,27 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             })
         }
         Term::Path(path) => Ok(quote_spanned! { sp=> #path }.into()),
-        Term::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
+        // Special case to desugar x..=y to RangeInclusive::new_log (instead of new, which is a program function)
+        Term::Range(TermRange {
+            from: Some(from),
+            limits: RangeLimits::Closed(_),
+            to: Some(to),
+        }) => {
+            let from = encode_term_(from, locals)?.toks();
+            let to = encode_term_(to, locals)?.toks();
+            Ok(quote_spanned! {sp=> ::std::ops::RangeInclusive::new_log(#from, #to) }.into())
+        }
+        Term::Range(TermRange { from, limits, to }) => {
+            let from = match from {
+                None => TokenStream::new(),
+                Some(t) => encode_term_(t, locals)?.toks(),
+            };
+            let to = match to {
+                None => TokenStream::new(),
+                Some(t) => encode_term_(t, locals)?.toks(),
+            };
+            Ok(quote! { (#from #limits #to) }.into())
+        }
         Term::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term_(expr, locals)?.toks();
             Ok(quote_spanned! {sp=>
