@@ -55088,39 +55088,6 @@ module M_std__iter__zip__impl_IteratorSpec_for_Zip_A_B__produces_trans__refines 
               /\ produces_Zip_A_B b bc c
               /\ (forall result: (). produces_Zip_A_B a (Seq.(++) ab bc) c -> produces_Zip_A_B a (Seq.(++) ab bc) c)
 end
-module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_refl__refines (* <&mut I as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  
-  type t_I
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
-    produces_I self.current visited o.current /\ self.final = o.final
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_I. forall result: (). produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
-        -> produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
-end
 module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_trans__refines (* <&mut I as std::iter::IteratorSpec> *)
   type namespace_other
   
@@ -55157,6 +55124,39 @@ module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_trans__refines (* <
               -> produces_refmut_I a ab b
               /\ produces_refmut_I b bc c
               /\ (forall result: (). produces_refmut_I a (Seq.(++) ab bc) c -> produces_refmut_I a (Seq.(++) ab bc) c)
+end
+module M_std__iter__impl_IteratorSpec_for_refmut_I__produces_refl__refines (* <&mut I as std::iter::IteratorSpec> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  
+  type t_I
+  
+  type t_Item
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces_refmut_I (self: MutBorrow.t t_I) (visited: Seq.seq t_Item) (o: MutBorrow.t t_I) =
+    produces_I self.current visited o.current /\ self.final = o.final
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: MutBorrow.t t_I. forall result: (). produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
+        -> produces_refmut_I self (Seq.empty: Seq.seq t_Item) self
 end
 module M_std__option__impl_IteratorSpec_for_IntoIter_T__produces_trans__refines (* <std::option::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
