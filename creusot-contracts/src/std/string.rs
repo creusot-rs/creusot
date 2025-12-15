@@ -1,4 +1,5 @@
 use crate::prelude::*;
+#[allow(unused_imports)]
 use core::ops::Deref;
 
 impl View for str {
