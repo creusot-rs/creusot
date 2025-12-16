@@ -82,10 +82,10 @@ pub trait SliceExt<T> {
     fn to_ref_seq(&self) -> Seq<&T>;
 
     #[check(terminates)]
-    fn as_ptr_own(&self) -> (*const T, Ghost<&Perm<*const [T]>>);
+    fn as_ptr_perm(&self) -> (*const T, Ghost<&Perm<*const [T]>>);
 
     #[check(terminates)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>);
+    fn as_mut_ptr_perm(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -111,7 +111,7 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(result.0 == *result.1.ward() as *const T)]
     #[ensures(self == result.1.val())]
     #[erasure(Self::as_ptr)]
-    fn as_ptr_own(&self) -> (*const T, Ghost<&Perm<*const [T]>>) {
+    fn as_ptr_perm(&self) -> (*const T, Ghost<&Perm<*const [T]>>) {
         let (ptr, own) = Perm::from_ref(self);
         (ptr as *const T, own)
     }
@@ -122,7 +122,7 @@ impl<T> SliceExt<T> for [T] {
     #[ensures(&*self == result.1.val())]
     #[ensures(&^self == (^result.1).val())]
     #[erasure(Self::as_mut_ptr)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
+    fn as_mut_ptr_perm(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
         let (ptr, own) = Perm::from_mut(self);
         (ptr as *mut T, own)
     }
@@ -392,11 +392,11 @@ extern_spec! {
         unsafe fn get_unchecked_mut<I: SliceIndexSpec<[T]>>(&mut self, ix: I)
             -> &mut <I as SliceIndex<[T]>>::Output;
 
-        // Calling this is safe but you should use `as_ptr_own` instead to prove things.
+        // Calling this is safe but you should use `as_ptr_perm` instead to prove things.
         #[check(ghost)]
         fn as_ptr(&self) -> *const T;
 
-        // Calling this is safe but you should use `as_mut_ptr_own` instead to prove things.
+        // Calling this is safe but you should use `as_mut_ptr_perm` instead to prove things.
         #[check(ghost)]
         fn as_mut_ptr(&mut self) -> *mut T;
     }

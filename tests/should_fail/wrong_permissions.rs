@@ -14,11 +14,11 @@ pub fn wrong_permcell_permission() {
     let _ = unsafe { cell.borrow(perm.borrow()) };
 }
 
-pub fn unknown_ptr_own_permission(ptr: *const i32, perm: Ghost<&Perm<*const i32>>) {
+pub fn unknown_ptr_perm_permission(ptr: *const i32, perm: Ghost<&Perm<*const i32>>) {
     // does not work: we don't know if ptr and perm have the same id
     let _ = unsafe { Perm::as_ref(ptr, perm) };
 }
-pub fn wrong_ptr_own_permission() {
+pub fn wrong_ptr_perm_permission() {
     let (ptr, _) = Perm::new(1i32);
     let (_, perm) = Perm::new(1i32);
 

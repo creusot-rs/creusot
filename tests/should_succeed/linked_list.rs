@@ -39,7 +39,7 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            seq_map(*self.seq, |ptr_own: Perm<*const Cell<T>>| ptr_own.val().v)
+            seq_map(*self.seq, |ptr_perm: Perm<*const Cell<T>>| ptr_perm.val().v)
         }
     }
 }

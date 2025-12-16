@@ -57,7 +57,7 @@ extern_spec! {
 
             impl<T: ?Sized> Box<T> {
                 // Postulate `check(ghost)`.
-                // It is used in a `#[trusted]` primitive in `ptr_own`.
+                // It is used in a `#[trusted]` primitive in `ptr`.
                 #[check(ghost)]
                 #[requires(false)]
                 unsafe fn from_raw(raw: *mut T) -> Box<T>;

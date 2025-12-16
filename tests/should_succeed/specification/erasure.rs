@@ -162,8 +162,8 @@ pub fn slice_as_ptr<T>(s: &[T]) -> *const T {
 }
 
 #[erasure(slice_as_ptr)]
-pub fn slice_as_ptr_own<T>(s: &[T]) -> (*const T, Ghost<&Perm<*const [T]>>) {
-    s.as_ptr_own()
+pub fn slice_as_ptr_perm<T>(s: &[T]) -> (*const T, Ghost<&Perm<*const [T]>>) {
+    s.as_ptr_perm()
 }
 
 pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
@@ -171,6 +171,6 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 }
 
 #[erasure(slice_as_mut_ptr)]
-pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
-    s.as_mut_ptr_own()
+pub fn slice_as_mut_ptr_perm<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
+    s.as_mut_ptr_perm()
 }
