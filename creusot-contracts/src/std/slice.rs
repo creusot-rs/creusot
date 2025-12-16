@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{ghost::PtrOwn, invariant::*, logic::ops::IndexLogic, prelude::*};
+use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 use std::{
@@ -82,10 +82,10 @@ pub trait SliceExt<T> {
     fn to_ref_seq(&self) -> Seq<&T>;
 
     #[check(terminates)]
-    fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>);
+    fn as_ptr_own(&self) -> (*const T, Ghost<&Perm<*const [T]>>);
 
     #[check(terminates)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>);
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -108,22 +108,22 @@ impl<T> SliceExt<T> for [T] {
 
     /// Convert `&[T]` to `*const T` and a shared ownership token.
     #[check(terminates)]
-    #[ensures(result.0 == result.1.tied() as *const T)]
+    #[ensures(result.0 == *result.1.tied() as *const T)]
     #[ensures(self == result.1.val())]
     #[erasure(Self::as_ptr)]
-    fn as_ptr_own(&self) -> (*const T, Ghost<&PtrOwn<[T]>>) {
-        let (ptr, own) = PtrOwn::from_ref(self);
+    fn as_ptr_own(&self) -> (*const T, Ghost<&Perm<*const [T]>>) {
+        let (ptr, own) = Perm::from_ref(self);
         (ptr as *const T, own)
     }
 
     /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
     #[check(terminates)]
-    #[ensures(result.0 as *const T == result.1.tied() as *const T)]
+    #[ensures(result.0 as *const T == *result.1.tied() as *const T)]
     #[ensures(&*self == result.1.val())]
     #[ensures(&^self == (^result.1).val())]
     #[erasure(Self::as_mut_ptr)]
-    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
-        let (ptr, own) = PtrOwn::from_mut(self);
+    fn as_mut_ptr_own(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
+        let (ptr, own) = Perm::from_mut(self);
         (ptr as *mut T, own)
     }
 }

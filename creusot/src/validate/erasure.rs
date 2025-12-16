@@ -797,7 +797,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 .instantiate(self.tcx, subst_resolved);
                             (erased.def.0, (*subst).into(), args)
                         } else if let Some(ctx) = self.ctx
-                            && let Intrinsic::PtrOwnAsRef | Intrinsic::PtrOwnAsMut =
+                            && let Intrinsic::PermAsRef | Intrinsic::PermAsMut =
                                 ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();
@@ -808,7 +808,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)),
                             );
                         } else if let Some(ctx) = self.ctx
-                            && let Intrinsic::PtrOwnFromRef | Intrinsic::PtrOwnFromMut =
+                            && let Intrinsic::PermFromRef | Intrinsic::PermFromMut =
                                 ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();

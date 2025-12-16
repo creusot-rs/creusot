@@ -22,67 +22,29 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   
   type t_PermCell_T
   
-  type t_PermCellOwn_T
+  type t_Perm_PermCell_T
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  function tied_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
   
-  meta "rewrite_def" predicate invariant_ref_T
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
   
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  function view_Perm_PermCell_T [@inline:trivial] (self: t_Perm_PermCell_T) : t_T = val_PermCell_T self
   
-  meta "rewrite_def" predicate inv_ref_T
+  meta "rewrite_def" function view_Perm_PermCell_T
   
-  function val_T (self: t_PermCellOwn_T) : t_T
+  function fin_Ghost_refmut_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_T) : t_Perm_PermCell_T
+   = self.final
   
-  predicate invariant_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) = inv_ref_T (val_T self)
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_T
   
-  meta "rewrite_def" predicate invariant_PermCellOwn_T
-  
-  predicate inv_PermCellOwn_T (_1: t_PermCellOwn_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
-      = invariant_PermCellOwn_T x
-  
-  predicate invariant_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
-    inv_PermCellOwn_T self.current /\ inv_PermCellOwn_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_PermCellOwn_T
-  
-  predicate inv_refmut_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) =
-    invariant_refmut_PermCellOwn_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_PermCellOwn_T
-  
-  predicate invariant_Ghost_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) =
-    inv_refmut_PermCellOwn_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_refmut_PermCellOwn_T
-  
-  predicate inv_Ghost_refmut_PermCellOwn_T [@inline:trivial] (_1: MutBorrow.t t_PermCellOwn_T) =
-    invariant_Ghost_refmut_PermCellOwn_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_refmut_PermCellOwn_T
-  
-  function tied_T (self: t_PermCellOwn_T) : t_PermCell_T
-  
-  function view_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) : t_T = val_T self
-  
-  meta "rewrite_def" function view_PermCellOwn_T
-  
-  function fin_Ghost_refmut_PermCellOwn_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_T) : t_PermCellOwn_T =
-    self.final
-  
-  meta "rewrite_def" function fin_Ghost_refmut_PermCellOwn_T
-  
-  let rec replace_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (val': t_T) (return (x: t_T)) =
-    {[@expl:replace 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
+  let rec replace_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (val': t_T) (return (x: t_T)) =
     {[@expl:replace 'val' type invariant] inv_T val'}
-    {[@expl:replace requires] self = tied_T perm.current}
+    {[@expl:replace requires] self = tied_PermCell_T perm.current}
     any
     [ return (result: t_T) -> {inv_T result}
-      {val' = view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm)}
-      {result = view_PermCellOwn_T perm.current}
-      {self = tied_T (fin_Ghost_refmut_PermCellOwn_T perm)}
+      {val' = view_Perm_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm)}
+      {result = view_Perm_PermCell_T perm.current}
+      {self = tied_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm)}
       (! return {result}) ]
   
   predicate resolve_default [@inline:trivial] (_1: ()) = true
@@ -144,9 +106,8 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   
   meta "select_lsinst" "all"
   
-  let rec take_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (return (x: t_T)) =
-    {[@expl:take 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
-    {[@expl:take requires] self = tied_T perm.current}
+  let rec take_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (return (x: t_T)) =
+    {[@expl:take requires] self = tied_PermCell_T perm.current}
     (! bb0
     [ bb0 = s0
       [ s0 = default_T (fun (_x: t_T) -> [ &_15 <- _x ] s1)
@@ -154,12 +115,12 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
       | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_PermCell_T = self
-    | & perm: MutBorrow.t t_PermCellOwn_T = perm
+    | & perm: MutBorrow.t t_Perm_PermCell_T = perm
     | & _15: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:take result type invariant] inv_T result}
-      {[@expl:take ensures #0] self = tied_T (fin_Ghost_refmut_PermCellOwn_T perm)}
-      {[@expl:take ensures #1] result = view_PermCellOwn_T perm.current}
-      {[@expl:take ensures #2] postcondition_default () () (view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm))}
+      {[@expl:take ensures #0] self = tied_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm)}
+      {[@expl:take ensures #1] result = view_Perm_PermCell_T perm.current}
+      {[@expl:take ensures #2] postcondition_default () () (view_Perm_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))}
       (! return {result}) ]
 end
 module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone (* <ghost::fn_ghost::FnGhostWrapper<F> as std::clone::Clone> *)
@@ -822,322 +783,6 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_ref_Ghost_L__open (*
     [ return (result: t_A) -> {[@expl:open result type invariant] inv_A result}
       {[@expl:open ensures] postcondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f } result}
       (! return {result}) ]
-end
-module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.Opaque
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_PtrOwn_T
-  
-  type tup2_ptr_T_Ghost_PtrOwn_T = { f0: Opaque.ptr; f1: t_PtrOwn_T }
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
-  
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_T_Global
-  
-  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
-  
-  predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
-    UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
-  
-  constant size_of_T : int
-  
-  axiom size_of_T_spec: 0 <= size_of_T
-  
-  constant align_of_T : UInt64.t
-  
-  axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
-    /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
-  
-  axiom align_of_T_spec'0: Int.mod size_of_T (UInt64.t'int align_of_T) = 0
-  
-  predicate is_aligned_T [@inline:trivial] (ptr: Opaque.ptr) = is_aligned_to_ptr_T ptr align_of_T
-  
-  meta "rewrite_def" predicate is_aligned_T
-  
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
-  
-  predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
-  
-  meta "rewrite_def" predicate metadata_matches_T
-  
-  function val_T (self: t_PtrOwn_T) : t_T
-  
-  function metadata_T (_1: Opaque.ptr) : ()
-  
-  function size_of_val_T [@inline:trivial] (val': t_T) : int = size_of_T
-  
-  meta "rewrite_def" function size_of_val_T
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (tied_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
-  
-  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
-  
-  predicate invariant_Ghost_PtrOwn_T [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_PtrOwn_T
-  
-  predicate inv_Ghost_PtrOwn_T [@inline:trivial] (_1: t_PtrOwn_T) = invariant_Ghost_PtrOwn_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_PtrOwn_T
-  
-  predicate inv_tup2_ptr_T_Ghost_PtrOwn_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_PtrOwn_T) = inv_Ghost_PtrOwn_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_PtrOwn_T
-  
-  let rec from_box_T (val': t_T) (return (x: tup2_ptr_T_Ghost_PtrOwn_T)) =
-    {[@expl:from_box 'val' type invariant] inv_Box_T_Global val'}
-    any
-    [ return (result: tup2_ptr_T_Ghost_PtrOwn_T) -> {inv_tup2_ptr_T_Ghost_PtrOwn_T result}
-      {tied_T result.f1 = result.f0 /\ val_T result.f1 = val'}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec new_T (v: t_T) (return (x: tup2_ptr_T_Ghost_PtrOwn_T)) = {[@expl:new 'v' type invariant] inv_T v}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = from_box_T {v} (fun (_x: tup2_ptr_T_Ghost_PtrOwn_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_PtrOwn_T = Any.any_l () | & v: t_T = v ])
-    [ return (result: tup2_ptr_T_Ghost_PtrOwn_T) ->
-    {[@expl:new result type invariant] inv_tup2_ptr_T_Ghost_PtrOwn_T result}
-      {[@expl:new ensures] tied_T result.f1 = result.f0 /\ val_T result.f1 = v}
-      (! return {result}) ]
-end
-module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.Opaque
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
-  use creusot.prelude.Any
-  
-  type t_PtrOwn_T
-  
-  type t_T
-  
-  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
-  
-  predicate is_aligned_T (ptr: Opaque.ptr)
-  
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
-  
-  type t_Metadata
-  
-  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
-  
-  function val_T (self: t_PtrOwn_T) : t_T
-  
-  function metadata_T (_1: Opaque.ptr) : t_Metadata
-  
-  function size_of_val_T (val': t_T) : int
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (tied_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
-  
-  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
-  
-  predicate invariant_Ghost_PtrOwn_T [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_PtrOwn_T
-  
-  predicate inv_Ghost_PtrOwn_T [@inline:trivial] (_1: t_PtrOwn_T) = invariant_Ghost_PtrOwn_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_PtrOwn_T
-  
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
-  
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_T_Global
-  
-  let rec to_box_T (ptr: Opaque.ptr) (own: t_PtrOwn_T) (return (x: t_T)) =
-    {[@expl:to_box 'own' type invariant] inv_Ghost_PtrOwn_T own}
-    {[@expl:to_box requires] ptr = tied_T own}
-    any [ return (result: t_T) -> {inv_Box_T_Global result} {result = val_T own} (! return {result}) ]
-  
-  predicate resolve_T (_1: t_T)
-  
-  predicate resolve_Box_T_Global [@inline:trivial] (_1: t_T) = resolve_T _1
-  
-  meta "rewrite_def" predicate resolve_Box_T_Global
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec drop_T (ptr: Opaque.ptr) (own: t_PtrOwn_T) (return (x: ())) =
-    {[@expl:drop 'own' type invariant] inv_Ghost_PtrOwn_T own}
-    {[@expl:drop requires] ptr = tied_T own}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Box_T_Global _6} any) ]
-      | s2 = -{resolve_Box_T_Global _6}- s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & ptr: Opaque.ptr = ptr | & own: t_PtrOwn_T = own | & _6: t_T = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own::PtrOwn<T> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.Any
-  use creusot.prelude.Opaque
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use mach.int.Int
-  use creusot.int.Int64
-  
-  type t_PtrOwn_T
-  
-  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
-  
-  predicate is_aligned_T (ptr: Opaque.ptr)
-  
-  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
-  
-  meta "rewrite_def" predicate is_aligned_ptr_T
-  
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
-  
-  type t_T
-  
-  type t_Metadata
-  
-  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
-  
-  function val_T (self: t_PtrOwn_T) : t_T
-  
-  function metadata_T (_1: Opaque.ptr) : t_Metadata
-  
-  function size_of_val_T (val': t_T) : int
-  
-  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (tied_T self)
-    /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
-    /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_T (val_T self)
-  
-  predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_T [inv_PtrOwn_T x]. inv_PtrOwn_T x = invariant_PtrOwn_T x
-  
-  predicate invariant_ref_PtrOwn_T [@inline:trivial] (self: t_PtrOwn_T) = inv_PtrOwn_T self
-  
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_T
-  
-  predicate inv_ref_PtrOwn_T [@inline:trivial] (_1: t_PtrOwn_T) = invariant_ref_PtrOwn_T _1
-  
-  meta "rewrite_def" predicate inv_ref_PtrOwn_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ptr_is_aligned_lemma_T (self: t_PtrOwn_T) (return (x: ())) =
-    {[@expl:ptr_is_aligned_lemma 'self' type invariant] inv_ref_PtrOwn_T self}
-    (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:ptr_is_aligned_lemma ensures] is_aligned_ptr_T (tied_T self)} (! return {result}) ]
 end
 module M_ghost__resource__fmap_view__impl_Authority_K_V__new (* ghost::resource::fmap_view::Authority<K, V> *)
   type namespace_other
@@ -48032,6 +47677,324 @@ module M_std__ptr__extern_spec_T_Clone_ptrconst_T_clone_body
     [ return (result: Opaque.ptr) -> {[@expl:extern_spec_T_Clone__ptrconst_T_clone_body ensures] result = self_}
       (! return {result}) ]
 end
+module M_std__ptr__impl_Perm_ptr_T__new (* ghost::perm::Perm<*const T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Perm_ptr_T
+  
+  type tup2_ptr_T_Ghost_Perm_ptr_T = { f0: Opaque.ptr; f1: t_Perm_ptr_T }
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function tied_ptr_T (self: t_Perm_ptr_T) : Opaque.ptr
+  
+  predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
+    UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  constant align_of_T : UInt64.t
+  
+  axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
+    /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
+  
+  axiom align_of_T_spec'0: Int.mod size_of_T (UInt64.t'int align_of_T) = 0
+  
+  predicate is_aligned_T [@inline:trivial] (ptr: Opaque.ptr) = is_aligned_to_ptr_T ptr align_of_T
+  
+  meta "rewrite_def" predicate is_aligned_T
+  
+  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
+  
+  meta "rewrite_def" predicate is_aligned_ptr_T
+  
+  predicate ptr_is_aligned_opaque_T (self: t_Perm_ptr_T) = is_aligned_ptr_T (tied_ptr_T self)
+  
+  predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches_T
+  
+  function val_ptr_T (self: t_Perm_ptr_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : ()
+  
+  function size_of_val_T [@inline:trivial] (val': t_T) : int = size_of_T
+  
+  meta "rewrite_def" function size_of_val_T
+  
+  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
+    not is_null_ptr_T (tied_ptr_T self)
+    /\ ptr_is_aligned_opaque_T self
+    /\ metadata_matches_T (val_ptr_T self) (metadata_T (tied_ptr_T self))
+    /\ size_of_val_T (val_ptr_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_T self)) + size_of_val_T (val_ptr_T self) <= UInt64.t'int const_MAX'0
+    /\ inv_ref_T (val_ptr_T self)
+  
+  predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+  
+  predicate invariant_Ghost_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Perm_ptr_T
+  
+  predicate inv_Ghost_Perm_ptr_T [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_Ghost_Perm_ptr_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Perm_ptr_T
+  
+  predicate inv_tup2_ptr_T_Ghost_Perm_ptr_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_Perm_ptr_T) =
+    inv_Ghost_Perm_ptr_T _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_Perm_ptr_T
+  
+  let rec from_box_T (val': t_T) (return (x: tup2_ptr_T_Ghost_Perm_ptr_T)) =
+    {[@expl:from_box 'val' type invariant] inv_Box_T_Global val'}
+    any
+    [ return (result: tup2_ptr_T_Ghost_Perm_ptr_T) -> {inv_tup2_ptr_T_Ghost_Perm_ptr_T result}
+      {tied_ptr_T result.f1 = result.f0 /\ val_ptr_T result.f1 = val'}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec new_T (v: t_T) (return (x: tup2_ptr_T_Ghost_Perm_ptr_T)) = {[@expl:new 'v' type invariant] inv_T v}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = from_box_T {v} (fun (_x: tup2_ptr_T_Ghost_Perm_ptr_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_Perm_ptr_T = Any.any_l () | & v: t_T = v ])
+    [ return (result: tup2_ptr_T_Ghost_Perm_ptr_T) ->
+    {[@expl:new result type invariant] inv_tup2_ptr_T_Ghost_Perm_ptr_T result}
+      {[@expl:new ensures] tied_ptr_T result.f1 = result.f0 /\ val_ptr_T result.f1 = v}
+      (! return {result}) ]
+end
+module M_std__ptr__impl_Perm_ptr_T__drop (* ghost::perm::Perm<*const T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_Perm_ptr_T
+  
+  type t_T
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function tied_ptr_T (self: t_Perm_ptr_T) : Opaque.ptr
+  
+  predicate is_aligned_T (ptr: Opaque.ptr)
+  
+  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
+  
+  meta "rewrite_def" predicate is_aligned_ptr_T
+  
+  predicate ptr_is_aligned_opaque_T (self: t_Perm_ptr_T) = is_aligned_ptr_T (tied_ptr_T self)
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_ptr_T (self: t_Perm_ptr_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  function size_of_val_T (val': t_T) : int
+  
+  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
+    not is_null_ptr_T (tied_ptr_T self)
+    /\ ptr_is_aligned_opaque_T self
+    /\ metadata_matches_T (val_ptr_T self) (metadata_T (tied_ptr_T self))
+    /\ size_of_val_T (val_ptr_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_T self)) + size_of_val_T (val_ptr_T self) <= UInt64.t'int const_MAX'0
+    /\ inv_ref_T (val_ptr_T self)
+  
+  predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+  
+  predicate invariant_Ghost_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Perm_ptr_T
+  
+  predicate inv_Ghost_Perm_ptr_T [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_Ghost_Perm_ptr_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Perm_ptr_T
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  let rec to_box_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
+    {[@expl:to_box 'own' type invariant] inv_Ghost_Perm_ptr_T own}
+    {[@expl:to_box requires] ptr = tied_ptr_T own}
+    any [ return (result: t_T) -> {inv_Box_T_Global result} {result = val_ptr_T own} (! return {result}) ]
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_Box_T_Global [@inline:trivial] (_1: t_T) = resolve_T _1
+  
+  meta "rewrite_def" predicate resolve_Box_T_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec drop_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: ())) =
+    {[@expl:drop 'own' type invariant] inv_Ghost_Perm_ptr_T own}
+    {[@expl:drop requires] ptr = tied_ptr_T own}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Box_T_Global _6} any) ]
+      | s2 = -{resolve_Box_T_Global _6}- s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & ptr: Opaque.ptr = ptr | & own: t_Perm_ptr_T = own | & _6: t_T = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_std__ptr__impl_Perm_ptr_T__ptr_is_aligned_lemma (* ghost::perm::Perm<*const T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use mach.int.Int
+  use creusot.int.Int64
+  
+  type t_Perm_ptr_T
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function tied_ptr_T (self: t_Perm_ptr_T) : Opaque.ptr
+  
+  predicate is_aligned_T (ptr: Opaque.ptr)
+  
+  predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
+  
+  meta "rewrite_def" predicate is_aligned_ptr_T
+  
+  predicate ptr_is_aligned_opaque_T (self: t_Perm_ptr_T) = is_aligned_ptr_T (tied_ptr_T self)
+  
+  type t_T
+  
+  type t_Metadata
+  
+  predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+  
+  function val_ptr_T (self: t_Perm_ptr_T) : t_T
+  
+  function metadata_T (_1: Opaque.ptr) : t_Metadata
+  
+  function size_of_val_T (val': t_T) : int
+  
+  axiom size_of_val_T_spec: forall val': t_T. 0 <= size_of_val_T val'
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
+    not is_null_ptr_T (tied_ptr_T self)
+    /\ ptr_is_aligned_opaque_T self
+    /\ metadata_matches_T (val_ptr_T self) (metadata_T (tied_ptr_T self))
+    /\ size_of_val_T (val_ptr_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_T self)) + size_of_val_T (val_ptr_T self) <= UInt64.t'int const_MAX'0
+    /\ inv_ref_T (val_ptr_T self)
+  
+  predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+  
+  predicate invariant_ref_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_T
+  
+  predicate inv_ref_Perm_ptr_T [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_ref_Perm_ptr_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ptr_is_aligned_lemma_T (self: t_Perm_ptr_T) (return (x: ())) =
+    {[@expl:ptr_is_aligned_lemma 'self' type invariant] inv_ref_Perm_ptr_T self}
+    (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:ptr_is_aligned_lemma ensures] is_aligned_ptr_T (tied_ptr_T self)}
+      (! return {result}) ]
+end
 module M_std__range__extern_spec_T_From_Range_T_legacy_Range_T_from_body
   type namespace_other
   
@@ -48324,9 +48287,9 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   type t_T
   
-  type t_PtrOwn_slice_T
+  type t_Perm_ptr_slice_T
   
-  type tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: t_PtrOwn_slice_T }
+  type tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: t_Perm_ptr_slice_T }
   
   predicate inv_T (_1: t_T)
   
@@ -48361,16 +48324,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
+  predicate ptr_is_aligned_opaque_slice_T (self: t_Perm_ptr_slice_T)
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
   meta "rewrite_def" predicate metadata_matches_slice_T
   
-  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -48389,82 +48352,83 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (tied_slice_T self)
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (tied_ptr_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (tied_ptr_slice_T self))
+    /\ size_of_val_slice_T (val_ptr_slice_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_slice_T self)) + size_of_val_slice_T (val_ptr_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T (val_slice_T self)
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: t_PtrOwn_slice_T) = inv_PtrOwn_slice_T self
+  predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: t_PtrOwn_slice_T) = invariant_ref_PtrOwn_slice_T _1
+  predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: t_PtrOwn_slice_T) = inv_ref_PtrOwn_slice_T self
+  predicate invariant_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) =
+    inv_ref_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) =
+    invariant_Ghost_ref_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_slice_T
   
-  predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) =
+    inv_Ghost_ref_Perm_ptr_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T
   
-  let rec from_ref_slice_T (r: Slice64.slice t_T) (return (x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T)) =
+  let rec from_ref_slice_T (r: Slice64.slice t_T) (return (x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T)) =
     {[@expl:from_ref 'r' type invariant] inv_ref_slice_T r}
     any
-    [ return (result: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) ->
-    {inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T result}
-      {tied_slice_T result.f1 = result.f0}
-      {val_slice_T result.f1 = r}
+    [ return (result: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) ->
+    {inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T result}
+      {tied_ptr_slice_T result.f1 = result.f0}
+      {val_ptr_slice_T result.f1 = r}
       (! return {result}) ]
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0'0: Opaque.ptr; f1'0: t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = { f0'0: Opaque.ptr; f1'0: t_Perm_ptr_slice_T }
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1'0
+  predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) =
+    inv_Ghost_ref_Perm_ptr_slice_T _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec as_ptr_own_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T)) =
+  let rec as_ptr_own_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
     {[@expl:as_ptr_own 'self' type invariant] inv_ref_slice_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) -> [ &_9 <- _x ] s1)
+      [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_9 <- _x ] s1)
       | s1 = [ &ptr <- _9.f0 ] s2
       | s2 = [ &own <- _9.f1 ] s3
       | s3 = [ &_11 <- Opaque.thin ptr ] s4
       | s4 = [ &_ret <- { f0'0 = _11; f1'0 = own } ] s5
       | s5 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
     | & self: Slice64.slice t_T = self
     | & ptr: Opaque.ptr = Any.any_l ()
-    | & own: t_PtrOwn_slice_T = Any.any_l ()
-    | & _9: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T = Any.any_l ()
+    | & own: t_Perm_ptr_slice_T = Any.any_l ()
+    | & _9: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
     | & _11: Opaque.ptr = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
-    {[@expl:as_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
-      {[@expl:as_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_slice_T result.f1'0)}
-      {[@expl:as_ptr_own ensures #1] self = val_slice_T result.f1'0}
+    [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
+    {[@expl:as_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result}
+      {[@expl:as_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_ptr_slice_T result.f1'0)}
+      {[@expl:as_ptr_own ensures #1] self = val_ptr_slice_T result.f1'0}
       (! return {result}) ]
 end
 module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::slice::SliceExt<T>> *)
@@ -48507,9 +48471,9 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   meta "rewrite_def" predicate inv_slice_T
   
-  type t_PtrOwn_slice_T
+  type t_Perm_ptr_slice_T
   
-  type tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_slice_T }
   
   predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
     inv_slice_T self.current /\ inv_slice_T self.final
@@ -48522,16 +48486,16 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
+  predicate ptr_is_aligned_opaque_slice_T (self: t_Perm_ptr_slice_T)
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
   meta "rewrite_def" predicate metadata_matches_slice_T
   
-  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -48558,78 +48522,78 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (tied_slice_T self)
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (tied_ptr_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (tied_ptr_slice_T self))
+    /\ size_of_val_slice_T (val_ptr_slice_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_slice_T self)) + size_of_val_slice_T (val_ptr_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T (val_slice_T self)
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
   
-  predicate invariant_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
+  predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_refmut_Perm_ptr_slice_T
   
-  predicate inv_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_refmut_PtrOwn_slice_T _1
+  predicate inv_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_refmut_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_refmut_Perm_ptr_slice_T
   
-  predicate invariant_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_refmut_PtrOwn_slice_T self
+  predicate invariant_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_refmut_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_slice_T
   
-  predicate inv_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_refmut_PtrOwn_slice_T _1
+  predicate inv_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_Ghost_refmut_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_slice_T
   
-  predicate inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) =
-    inv_Ghost_refmut_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T) =
+    inv_Ghost_refmut_Perm_ptr_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T
   
   let rec from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T)) =
+    (return (x: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T)) =
     {[@expl:from_mut 'r' type invariant] inv_refmut_slice_T r}
     any
-    [ return (result: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) ->
-    {inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T result}
-      {tied_slice_T result.f1.current = result.f0}
-      {val_slice_T result.f1.current = r.current}
-      {val_slice_T result.f1.final = r.final}
+    [ return (result: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T) ->
+    {inv_tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T result}
+      {tied_ptr_slice_T result.f1.current = result.f0}
+      {val_ptr_slice_T result.f1.current = r.current}
+      {val_ptr_slice_T result.f1.final = r.final}
       (! return {result}) ]
   
-  type tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = { f0'0: Opaque.ptr; f1'0: MutBorrow.t t_Perm_ptr_slice_T }
   
   predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) =
-    inv_Ghost_refmut_PtrOwn_slice_T _1.f1'0
+  predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) =
+    inv_Ghost_refmut_Perm_ptr_slice_T _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T
   
-  function fin_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
-    self.final
+  function fin_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) : t_Perm_ptr_slice_T
+   = self.final
   
-  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_slice_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec as_mut_ptr_own_slice_T (self: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T)) =
+    (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
     {[@expl:as_mut_ptr_own 'self' type invariant] inv_refmut_slice_T self}
     (! bb0
     [ bb0 = s0
@@ -48637,7 +48601,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_12 <- _bor ] -{inv_slice_T _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T self.current} any) ]
-      | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) -> [ &_11 <- _x ] s2)
+      | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T) -> [ &_11 <- _x ] s2)
       | s2 = [ &ptr <- _11.f0 ] s3
       | s3 = [ &own <- _11.f1 ] s4
       | s4 = [ &_13 <- Opaque.thin ptr ] s5
@@ -48645,18 +48609,18 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self} any) ]
       | s7 = -{resolve_refmut_slice_T self}- s8
       | s8 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = Any.any_l ()
+    [ & _ret: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = Any.any_l ()
     | & self: MutBorrow.t (Slice64.slice t_T) = self
     | & ptr: Opaque.ptr = Any.any_l ()
-    | & own: MutBorrow.t t_PtrOwn_slice_T = Any.any_l ()
-    | & _11: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T = Any.any_l ()
+    | & own: MutBorrow.t t_Perm_ptr_slice_T = Any.any_l ()
+    | & _11: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T = Any.any_l ()
     | & _12: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _13: Opaque.ptr = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) ->
-    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
-      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_slice_T result.f1'0.current)}
-      {[@expl:as_mut_ptr_own ensures #1] self.current = val_slice_T result.f1'0.current}
-      {[@expl:as_mut_ptr_own ensures #2] self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1'0)}
+    [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
+    {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
+      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_ptr_slice_T result.f1'0.current)}
+      {[@expl:as_mut_ptr_own ensures #1] self.current = val_ptr_slice_T result.f1'0.current}
+      {[@expl:as_mut_ptr_own ensures #2] self.final = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1'0)}
       (! return {result}) ]
 end
 module M_std__slice__impl_IteratorSpec_for_Iter_T__produces_refl (* <std::slice::Iter<'a, T> as std::iter::IteratorSpec> *)
@@ -48912,37 +48876,791 @@ module M_std__vec__impl_IteratorSpec_for_IntoIter_T_A__produces_trans (* <std::v
   goal vc_produces_trans_IntoIter_T_A: produces_IntoIter_T_A a ab b
     -> produces_IntoIter_T_A b bc c -> ([@expl:produces_trans ensures] produces_IntoIter_T_A a (Seq.(++) ab bc) c)
 end
-module M_cell__permcell__impl_Resolve_for_PermCellOwn_T__resolve_coherence__refines (* <cell::permcell::PermCellOwn<T> as resolve::Resolve> *)
+module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::clone::Clone> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  type t_PermCellOwn_T
+  type t_F
   
-  predicate inv_PermCellOwn_T (_1: t_PermCellOwn_T)
+  type t_FnGhostWrapper_F = { f0: t_F }
   
-  predicate structural_resolve_PermCellOwn_T (_1: t_PermCellOwn_T)
+  predicate inv_F (_1: t_F)
   
-  type t_T
+  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
   
-  predicate resolve_ref_T [@inline:trivial] (_1: t_T) = true
+  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
   
-  meta "rewrite_def" predicate resolve_ref_T
+  predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
   
-  function val_T (self: t_PermCellOwn_T) : t_T
+  meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
   
-  predicate resolve_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) = resolve_ref_T (val_T self)
+  predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = invariant_ref_FnGhostWrapper_F _1
   
-  meta "rewrite_def" predicate resolve_PermCellOwn_T
+  meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
+  
+  predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F)
+  
+  axiom postcondition_fndef:
+    forall args: t_F, res: t_F [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_F res)
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone (self: ()) (args: t_F) (result_state: ()) (result: t_F)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_F, res: t_F [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
+      -> (let self_ = args in inv_F res)
+  
+  function fn_mut_once_clone (self: ()) (args: t_F) (res: t_F) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: t_F, res: t_F. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: t_F) (res_state: ()) (res: t_F) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: t_F, res_state: (), res: t_F. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone (self: ()) (args: t_F) (result: t_F)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_F, res: t_F [postcondition_clone () args res]. postcondition_clone () args res
+      -> (let self_ = args in inv_F res)
+  
+  function fn_once_clone (self: ()) (args: t_F) (res: t_F) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: t_F, res: t_F. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: t_F) (res_state: ()) (res: t_F) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: t_F, res_state: (), res: t_F. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
+  
+  meta "rewrite_def" predicate invariant_ref_F
+  
+  predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
+  
+  meta "rewrite_def" predicate inv_ref_F
+  
+  predicate precondition_clone (self: ()) (args: t_F)
+  
+  axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self_ = args in inv_ref_F self_)
+      -> precondition_clone () args
+  
+  let rec clone_F (self_: t_F) (return (x: t_F)) = {[@expl:clone requires] precondition_clone () self_}
+    any [ return (result: t_F) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+  
+  function view_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) : t_F = self.f0
+  
+  meta "rewrite_def" function view_FnGhostWrapper_F
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_PermCellOwn_T. inv_PermCellOwn_T self /\ structural_resolve_PermCellOwn_T self
-      -> inv_PermCellOwn_T self
-      /\ structural_resolve_PermCellOwn_T self
-      /\ (forall result: (). resolve_PermCellOwn_T self -> resolve_PermCellOwn_T self)
+  goal refines: forall self_: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self_
+      -> inv_ref_FnGhostWrapper_F self_
+      /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result
+          /\ postcondition_clone () (view_FnGhostWrapper_F self_) (view_FnGhostWrapper_F result)
+        -> inv_FnGhostWrapper_F result)
+end
+module M_ghost__resource__fmap_view__impl_Clone_for_Fragment_K_V__clone__refines (* <ghost::resource::fmap_view::Fragment<K, V> as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  use map.Const
+  
+  type t_Resource_View_AuthViewRel_FMap_K_Ag_V
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Fragment_K_V = { f0: t_Resource_View_AuthViewRel_FMap_K_Ag_V; f1: t_K; f2: t_V }
+  
+  type t_FMap_K_Ag_V
+  
+  type t_Ag_V = { f0'0: t_V }
+  
+  type t_Option_Ag_V = None | Some t_Ag_V
+  
+  function view_FMap_K_Ag_V (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (view_FMap_K_Ag_V self) k
+  
+  meta "rewrite_def" function get_K
+  
+  type t_View_AuthViewRel_FMap_K_Ag_V
+  
+  type t_Option_FMap_K_Ag_V = None'0 | Some'0 t_FMap_K_Ag_V
+  
+  function and_then_Option_FMap_K_Ag_V (self: t_Option_FMap_K_Ag_V) (f: Map.map t_FMap_K_Ag_V t_Option_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
+   = match self with
+      | None'0 -> None'0
+      | Some'0 x -> Map.get f x
+      end
+  
+  type t_Option_Option_Ag_V = None'1 | Some'1 t_Option_Ag_V
+  
+  function and_then_Option_Option_Ag_V (self: t_Option_Option_Ag_V) (f: Map.map t_Option_Ag_V t_Option_Option_Ag_V) : t_Option_Option_Ag_V
+   = match self with
+      | None'1 -> None'1
+      | Some'1 x -> Map.get f x
+      end
+  
+  type tup2_Option_Ag_V_Option_Ag_V = { f0'1: t_Option_Ag_V; f1'1: t_Option_Ag_V }
+  
+  function map_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Option_Ag_V =
+    match self with
+      | None -> None'1
+      | Some x -> Some'1 (Map.get f x)
+      end
+  
+  function and_then_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Ag_V =
+    match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0'0 = other.f0'0 then Some self else None
+  
+  function associative_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) : ()
+  
+  axiom associative_Ag_V_spec:
+    forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V. and_then_Option_Ag_V (op_Ag_V a b) (fun (ab: t_Ag_V) -> op_Ag_V ab c)
+      = and_then_Option_Ag_V (op_Ag_V b c) (fun (bc: t_Ag_V) -> op_Ag_V a bc)
+  
+  function commutative_Ag_V (a: t_Ag_V) (b: t_Ag_V) : ()
+  
+  axiom commutative_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V. op_Ag_V a b = op_Ag_V b a
+  
+  function op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) : t_Option_Option_Ag_V = match { f0'1 = self;
+                                                                                                        f1'1 = other } with
+      | {f0'1 = None} -> Some'1 other
+      | {f1'1 = None} -> Some'1 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some z)
+      end
+  
+  function associative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
+  
+  axiom associative_Option_Ag_V_spec:
+    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. and_then_Option_Option_Ag_V (op_Option_Ag_V a b) (fun (ab: t_Option_Ag_V) -> op_Option_Ag_V ab c)
+      = and_then_Option_Option_Ag_V (op_Option_Ag_V b c) (fun (bc: t_Option_Ag_V) -> op_Option_Ag_V a bc)
+  
+  function commutative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) : ()
+  
+  axiom commutative_Option_Ag_V_spec: forall a: t_Option_Ag_V, b: t_Option_Ag_V. op_Option_Ag_V a b = op_Option_Ag_V b a
+  
+  function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
+  
+  axiom total_op_K_spec:
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+          <> None'1)
+      -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+  
+  function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
+    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'1 then
+      Some'0 (total_op_K self other)
+    else
+      None'0
+  
+  
+  function associative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
+  
+  axiom associative_FMap_K_Ag_V_spec:
+    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V a b) (fun (ab: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V ab c)
+      = and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V b c) (fun (bc: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V a bc)
+  
+  function commutative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) : ()
+  
+  axiom commutative_FMap_K_Ag_V_spec: forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V. op_FMap_K_Ag_V a b = op_FMap_K_Ag_V b a
+  
+  function len_K (self: t_FMap_K_Ag_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_Ag_V. len_K self >= 0
+  
+  constant empty_K : t_FMap_K_Ag_V
+  
+  axiom empty_K_spec: len_K empty_K = 0
+  
+  axiom empty_K_spec'0: view_FMap_K_Ag_V empty_K = Const.const (None)
+  
+  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K
+  
+  axiom unit_FMap_K_Ag_V_spec:
+    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'0 x
+  
+  function factor_Ag_V (self: t_Ag_V) (factor: t_Ag_V) : t_Option_Ag_V = op_Ag_V self factor
+  
+  axiom factor_Ag_V_spec: forall self: t_Ag_V, factor: t_Ag_V. match factor_Ag_V self factor with
+        | Some c -> op_Ag_V factor c = Some self
+        | None -> forall c: t_Ag_V. op_Ag_V factor c <> Some self
+        end
+  
+  function factor_Option_Ag_V (self: t_Option_Ag_V) (factor: t_Option_Ag_V) : t_Option_Option_Ag_V =
+    match { f0'1 = self; f1'1 = factor } with
+      | {f0'1 = x; f1'1 = None} -> Some'1 x
+      | {f0'1 = None} -> None'1
+      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Ag_V x y with
+        | Some z -> Some'1 (Some z)
+        | None -> if x = y then Some'1 (None) else None'1
+        end
+      end
+  
+  axiom factor_Option_Ag_V_spec:
+    forall self: t_Option_Ag_V, factor: t_Option_Ag_V. match factor_Option_Ag_V self factor with
+        | Some'1 c -> op_Option_Ag_V factor c = Some'1 self
+        | None'1 -> forall c: t_Option_Ag_V. op_Option_Ag_V factor c <> Some'1 self
+        end
+  
+  predicate incl_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) = factor_Option_Ag_V other self <> None'1
+  
+  function incl_transitive_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
+  
+  axiom incl_transitive_Option_Ag_V_spec:
+    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. incl_Option_Ag_V a b
+      -> incl_Option_Ag_V b c -> incl_Option_Ag_V a c
+  
+  function incl_op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) (comb: t_Option_Ag_V) : ()
+  
+  axiom incl_op_Option_Ag_V_spec:
+    forall self: t_Option_Ag_V, other: t_Option_Ag_V, comb: t_Option_Ag_V. op_Option_Ag_V self other = Some'1 comb
+      -> incl_Option_Ag_V self comb
+  
+  type tup2_K_Ag_V = { f0'2: t_K; f1'2: t_Ag_V }
+  
+  function index_Mapping_tup2_K_Ag_V_Option_Ag_V [@inline:trivial] (self: Map.map tup2_K_Ag_V t_Option_Ag_V) (a: tup2_K_Ag_V) : t_Option_Ag_V
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_tup2_K_Ag_V_Option_Ag_V
+  
+  function filter_map_K (self: t_FMap_K_Ag_V) (f: Map.map tup2_K_Ag_V t_Option_Ag_V) : t_FMap_K_Ag_V
+  
+  axiom filter_map_K_spec:
+    forall self: t_FMap_K_Ag_V, f: Map.map tup2_K_Ag_V t_Option_Ag_V. forall k: t_K [get_K (filter_map_K self f) k]. get_K (filter_map_K self f) k
+        = match get_K self k with
+          | None -> None
+          | Some v -> index_Mapping_tup2_K_Ag_V_Option_Ag_V f { f0'2 = k; f1'2 = v }
+          end
+  
+  function factor_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (factor: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
+    if forall k: t_K. incl_Option_Ag_V (get_K factor k) (get_K self k) then
+      let res = filter_map_K self (fun (__0: tup2_K_Ag_V) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_V (Some vo) (get_K factor k) with
+        | Some'1 r -> r
+        | None'1 -> None
+        end) in Some'0 res
+    else
+      None'0
+  
+  
+  axiom factor_FMap_K_Ag_V_spec:
+    forall self: t_FMap_K_Ag_V, factor: t_FMap_K_Ag_V. match factor_FMap_K_Ag_V self factor with
+        | Some'0 c -> op_FMap_K_Ag_V factor c = Some'0 self
+        | None'0 -> forall c: t_FMap_K_Ag_V. op_FMap_K_Ag_V factor c <> Some'0 self
+        end
+  
+  predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) = factor_FMap_K_Ag_V other self <> None'0
+  
+  function incl_transitive_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
+  
+  axiom incl_transitive_FMap_K_Ag_V_spec:
+    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. incl_FMap_K_Ag_V a b
+      -> incl_FMap_K_Ag_V b c -> incl_FMap_K_Ag_V a c
+  
+  function incl_op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) (comb: t_FMap_K_Ag_V) : ()
+  
+  axiom incl_op_FMap_K_Ag_V_spec:
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V, comb: t_FMap_K_Ag_V. op_FMap_K_Ag_V self other = Some'0 comb
+      -> incl_FMap_K_Ag_V self comb
+  
+  predicate rel_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f: t_FMap_K_Ag_V) =
+    match a with
+      | Some'0 a'0 -> incl_FMap_K_Ag_V f a'0
+      | None'0 -> true
+      end
+  
+  function rel_unit_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) : ()
+  
+  axiom rel_unit_AuthViewRel_FMap_K_Ag_V_spec:
+    forall a: t_Option_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V a unit_FMap_K_Ag_V
+  
+  function rel_none_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f: t_FMap_K_Ag_V) : ()
+  
+  axiom rel_none_AuthViewRel_FMap_K_Ag_V_spec:
+    forall a: t_Option_FMap_K_Ag_V, f: t_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V (None'0) f
+  
+  function rel_mono_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f1'0: t_FMap_K_Ag_V) (f2'0: t_FMap_K_Ag_V) : ()
+  
+  axiom rel_mono_AuthViewRel_FMap_K_Ag_V_spec:
+    forall a: t_Option_FMap_K_Ag_V, f1'0: t_FMap_K_Ag_V, f2'0: t_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V a f1'0
+      -> incl_FMap_K_Ag_V f2'0 f1'0 -> rel_AuthViewRel_FMap_K_Ag_V a f2'0
+  
+  function auth_AuthViewRel_FMap_K_Ag_V (self: t_View_AuthViewRel_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
+  
+  function frag_AuthViewRel_FMap_K_Ag_V (self: t_View_AuthViewRel_FMap_K_Ag_V) : t_FMap_K_Ag_V
+  
+  axiom frag_AuthViewRel_FMap_K_Ag_V_spec:
+    forall self: t_View_AuthViewRel_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V (auth_AuthViewRel_FMap_K_Ag_V self) (frag_AuthViewRel_FMap_K_Ag_V self)
+  
+  function val_View_AuthViewRel_FMap_K_Ag_V (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_View_AuthViewRel_FMap_K_Ag_V
+  
+  function view_Resource_View_AuthViewRel_FMap_K_Ag_V [@inline:trivial] (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_View_AuthViewRel_FMap_K_Ag_V
+   = val_View_AuthViewRel_FMap_K_Ag_V self
+  
+  meta "rewrite_def" function view_Resource_View_AuthViewRel_FMap_K_Ag_V
+  
+  predicate invariant_Fragment_K_V (self: t_Fragment_K_V) =
+    get_K (frag_AuthViewRel_FMap_K_Ag_V (view_Resource_View_AuthViewRel_FMap_K_Ag_V self.f0)) self.f1
+    = Some { f0'0 = self.f2 }
+  
+  predicate inv_Fragment_K_V (_1: t_Fragment_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Fragment_K_V [inv_Fragment_K_V x]. inv_Fragment_K_V x
+      = invariant_Fragment_K_V x
+  
+  predicate invariant_ref_Fragment_K_V [@inline:trivial] (self: t_Fragment_K_V) = inv_Fragment_K_V self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_K_V
+  
+  predicate inv_ref_Fragment_K_V [@inline:trivial] (_1: t_Fragment_K_V) = invariant_ref_Fragment_K_V _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_K_V
+  
+  type tup2_K_V = { f0'3: t_K; f1'3: t_V }
+  
+  function view_Fragment_K_V (self: t_Fragment_K_V) : tup2_K_V = { f0'3 = self.f1; f1'3 = self.f2 }
+  
+  type t_Id
+  
+  function id_View_AuthViewRel_FMap_K_Ag_V (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_Id
+  
+  function id_K (self: t_Fragment_K_V) : t_Id = id_View_AuthViewRel_FMap_K_Ag_V self.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Fragment_K_V. inv_ref_Fragment_K_V self_
+      -> inv_ref_Fragment_K_V self_
+      /\ (forall result: t_Fragment_K_V. inv_Fragment_K_V result
+          /\ view_Fragment_K_V result = view_Fragment_K_V self_ /\ id_K result = id_K self_ -> inv_Fragment_K_V result)
+end
+module M_ghost__impl_Clone_for_Ghost_T__clone__refines (* <ghost::Ghost<T> as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_T
+  
+  predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_T
+  
+  predicate invariant_ref_Ghost_T [@inline:trivial] (self: t_T) = inv_Ghost_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_T
+  
+  predicate inv_ref_Ghost_T [@inline:trivial] (_1: t_T) = invariant_ref_Ghost_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_T. inv_ref_Ghost_T self_
+      -> inv_ref_Ghost_T self_ /\ (forall result: t_T. inv_Ghost_T result /\ result = self_ -> inv_Ghost_T result)
+end
+module M_logic__fmap__impl_Clone_for_FMap_K_V__clone__refines (* <logic::fmap::FMap<K, V> as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_FMap_K_V
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  
+  meta "rewrite_def" predicate contains_K
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
+      end
+  
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+  
+  meta "rewrite_def" function lookup_K
+  
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  
+  meta "rewrite_def" function index_FMap_K_V
+  
+  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_K_V
+  
+  predicate inv_FMap_K_V (_1: t_FMap_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+  
+  predicate invariant_ref_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) = inv_FMap_K_V self
+  
+  meta "rewrite_def" predicate invariant_ref_FMap_K_V
+  
+  predicate inv_ref_FMap_K_V [@inline:trivial] (_1: t_FMap_K_V) = invariant_ref_FMap_K_V _1
+  
+  meta "rewrite_def" predicate inv_ref_FMap_K_V
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_FMap_K_V. inv_ref_FMap_K_V self_
+      -> inv_ref_FMap_K_V self_
+      /\ (forall result: t_FMap_K_V. inv_FMap_K_V result /\ result = self_ -> inv_FMap_K_V result)
+end
+module M_logic__fset__impl_Clone_for_FSet_T__clone__refines (* <logic::fset::FSet<T> as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use set.Fset
+  
+  type t_T
+  
+  predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
+  
+  meta "rewrite_def" predicate invariant_FSet_T
+  
+  predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_FSet_T
+  
+  predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FSet_T
+  
+  predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FSet_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: Fset.fset t_T. inv_ref_FSet_T self_
+      -> inv_ref_FSet_T self_
+      /\ (forall result: Fset.fset t_T. inv_FSet_T result /\ result = self_ -> inv_FSet_T result)
+end
+module M_logic__seq__impl_Clone_for_Seq_T__clone__refines (* <logic::seq::Seq<T> as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use mach.int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: Seq.seq t_T. inv_ref_Seq_T self_
+      -> inv_ref_Seq_T self_ /\ (forall result: Seq.seq t_T. inv_Seq_T result /\ result = self_ -> inv_Seq_T result)
+end
+module M_ghost__fn_ghost__impl_FnOnce_for_FnGhostWrapper_F__call_once__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::FnOnce<I>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  type t_FnGhostWrapper_F = { f0: t_F }
+  
+  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+  
+  type t_I
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate precondition_F (self: t_F) (args: t_I)
+  
+  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
+    precondition_F self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
+  
+  type t_Output
+  
+  predicate inv_Output (_1: t_Output)
+  
+  predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output)
+  
+  predicate postcondition_once_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
+    postcondition_once_F self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_F
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_FnGhostWrapper_F. forall arg: t_I. inv_FnGhostWrapper_F self_
+          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_ arg
+        -> inv_FnGhostWrapper_F self_
+        /\ inv_I arg
+        /\ precondition_FnGhostWrapper_F self_ arg
+        /\ (forall result: t_Output. inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result
+          -> inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result)
+end
+module M_ghost__fn_ghost__impl_FnMut_for_FnGhostWrapper_F__call_mut__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::FnMut<I>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  
+  type t_F
+  
+  type t_FnGhostWrapper_F = { f0: t_F }
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+  
+  predicate invariant_refmut_FnGhostWrapper_F [@inline:trivial] (self: MutBorrow.t t_FnGhostWrapper_F) =
+    inv_FnGhostWrapper_F self.current /\ inv_FnGhostWrapper_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_FnGhostWrapper_F
+  
+  predicate inv_refmut_FnGhostWrapper_F [@inline:trivial] (_1: MutBorrow.t t_FnGhostWrapper_F) =
+    invariant_refmut_FnGhostWrapper_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_FnGhostWrapper_F
+  
+  type t_I
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate precondition_F (self: t_F) (args: t_I)
+  
+  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
+    precondition_F self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
+  
+  type t_Output
+  
+  predicate inv_Output (_1: t_Output)
+  
+  predicate postcondition_mut_F (self: t_F) (args: t_I) (result_state: t_F) (result: t_Output)
+  
+  predicate postcondition_mut_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result_state: t_FnGhostWrapper_F) (result: t_Output) =
+    postcondition_mut_F self.f0 args result_state.f0 result
+  
+  meta "rewrite_def" predicate postcondition_mut_FnGhostWrapper_F
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: MutBorrow.t t_FnGhostWrapper_F. forall arg: t_I. inv_refmut_FnGhostWrapper_F self_
+          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_.current arg
+        -> inv_refmut_FnGhostWrapper_F self_
+        /\ inv_I arg
+        /\ precondition_FnGhostWrapper_F self_.current arg
+        /\ (forall result: t_Output. inv_Output result
+            /\ postcondition_mut_FnGhostWrapper_F self_.current arg self_.final result
+          -> inv_Output result /\ postcondition_mut_FnGhostWrapper_F self_.current arg self_.final result)
+end
+module M_ghost__fn_ghost__impl_Fn_for_FnGhostWrapper_F__call__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::Fn<I>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_F
+  
+  type t_FnGhostWrapper_F = { f0: t_F }
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+  
+  predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
+  
+  meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
+  
+  predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = invariant_ref_FnGhostWrapper_F _1
+  
+  meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
+  
+  type t_I
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate precondition_F (self: t_F) (args: t_I)
+  
+  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
+    precondition_F self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
+  
+  type t_Output
+  
+  predicate inv_Output (_1: t_Output)
+  
+  predicate postcondition_F (self: t_F) (args: t_I) (result: t_Output)
+  
+  predicate postcondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
+    postcondition_F self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_FnGhostWrapper_F
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_FnGhostWrapper_F. forall arg: t_I. inv_ref_FnGhostWrapper_F self_
+          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_ arg
+        -> inv_ref_FnGhostWrapper_F self_
+        /\ inv_I arg
+        /\ precondition_FnGhostWrapper_F self_ arg
+        /\ (forall result: t_Output. inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result
+          -> inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result)
+end
+module M_ghost__perm__impl_Resolve_for_Perm_C__resolve_coherence__refines (* <ghost::perm::Perm<C> as resolve::Resolve> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Perm_C
+  
+  predicate inv_Perm_C (_1: t_Perm_C)
+  
+  predicate structural_resolve_Perm_C (_1: t_Perm_C)
+  
+  type t_Value
+  
+  predicate resolve_ref_Value [@inline:trivial] (_1: t_Value) = true
+  
+  meta "rewrite_def" predicate resolve_ref_Value
+  
+  function val_C (self: t_Perm_C) : t_Value
+  
+  predicate resolve_Perm_C [@inline:trivial] (self: t_Perm_C) = resolve_ref_Value (val_C self)
+  
+  meta "rewrite_def" predicate resolve_Perm_C
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Perm_C. inv_Perm_C self /\ structural_resolve_Perm_C self
+      -> inv_Perm_C self
+      /\ structural_resolve_Perm_C self /\ (forall result: (). resolve_Perm_C self -> resolve_Perm_C self)
 end
 module M_invariant__impl_Resolve_for_Subset_T__resolve_coherence__refines (* <invariant::Subset<T> as resolve::Resolve> *)
   type namespace_other
@@ -49890,761 +50608,6 @@ module M_std__vec__impl_Resolve_for_IntoIter_T_A__resolve_coherence__refines (* 
   goal refines: forall self: t_IntoIter_T_A. inv_IntoIter_T_A self /\ structural_resolve_IntoIter_T_A self
       -> structural_resolve_IntoIter_T_A self
       /\ (forall result: (). resolve_IntoIter_T_A self -> resolve_IntoIter_T_A self)
-end
-module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_F
-  
-  type t_FnGhostWrapper_F = { f0: t_F }
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
-  
-  predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
-  
-  meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
-  
-  predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = invariant_ref_FnGhostWrapper_F _1
-  
-  meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
-  
-  predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F)
-  
-  axiom postcondition_fndef:
-    forall args: t_F, res: t_F [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in inv_F res)
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone (self: ()) (args: t_F) (result_state: ()) (result: t_F)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_F, res: t_F [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
-      -> (let self_ = args in inv_F res)
-  
-  function fn_mut_once_clone (self: ()) (args: t_F) (res: t_F) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_F, res: t_F. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_F) (res_state: ()) (res: t_F) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_F, res_state: (), res: t_F. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone (self: ()) (args: t_F) (result: t_F)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_F, res: t_F [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_F res)
-  
-  function fn_once_clone (self: ()) (args: t_F) (res: t_F) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: t_F, res: t_F. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_F) (res_state: ()) (res: t_F) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_F, res_state: (), res: t_F. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
-  
-  meta "rewrite_def" predicate invariant_ref_F
-  
-  predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
-  
-  meta "rewrite_def" predicate inv_ref_F
-  
-  predicate precondition_clone (self: ()) (args: t_F)
-  
-  axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self_ = args in inv_ref_F self_)
-      -> precondition_clone () args
-  
-  let rec clone_F (self_: t_F) (return (x: t_F)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_F) -> {postcondition_once_clone () self_ result} (! return {result}) ]
-  
-  function view_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) : t_F = self.f0
-  
-  meta "rewrite_def" function view_FnGhostWrapper_F
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self_
-      -> inv_ref_FnGhostWrapper_F self_
-      /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result
-          /\ postcondition_clone () (view_FnGhostWrapper_F self_) (view_FnGhostWrapper_F result)
-        -> inv_FnGhostWrapper_F result)
-end
-module M_ghost__resource__fmap_view__impl_Clone_for_Fragment_K_V__clone__refines (* <ghost::resource::fmap_view::Fragment<K, V> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  use mach.int.Int
-  use map.Const
-  
-  type t_Resource_View_AuthViewRel_FMap_K_Ag_V
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Fragment_K_V = { f0: t_Resource_View_AuthViewRel_FMap_K_Ag_V; f1: t_K; f2: t_V }
-  
-  type t_FMap_K_Ag_V
-  
-  type t_Ag_V = { f0'0: t_V }
-  
-  type t_Option_Ag_V = None | Some t_Ag_V
-  
-  function view_FMap_K_Ag_V (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (view_FMap_K_Ag_V self) k
-  
-  meta "rewrite_def" function get_K
-  
-  type t_View_AuthViewRel_FMap_K_Ag_V
-  
-  type t_Option_FMap_K_Ag_V = None'0 | Some'0 t_FMap_K_Ag_V
-  
-  function and_then_Option_FMap_K_Ag_V (self: t_Option_FMap_K_Ag_V) (f: Map.map t_FMap_K_Ag_V t_Option_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
-   = match self with
-      | None'0 -> None'0
-      | Some'0 x -> Map.get f x
-      end
-  
-  type t_Option_Option_Ag_V = None'1 | Some'1 t_Option_Ag_V
-  
-  function and_then_Option_Option_Ag_V (self: t_Option_Option_Ag_V) (f: Map.map t_Option_Ag_V t_Option_Option_Ag_V) : t_Option_Option_Ag_V
-   = match self with
-      | None'1 -> None'1
-      | Some'1 x -> Map.get f x
-      end
-  
-  type tup2_Option_Ag_V_Option_Ag_V = { f0'1: t_Option_Ag_V; f1'1: t_Option_Ag_V }
-  
-  function map_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Option_Ag_V =
-    match self with
-      | None -> None'1
-      | Some x -> Some'1 (Map.get f x)
-      end
-  
-  function and_then_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Ag_V =
-    match self with
-      | None -> None
-      | Some x -> Map.get f x
-      end
-  
-  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0'0 = other.f0'0 then Some self else None
-  
-  function associative_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) : ()
-  
-  axiom associative_Ag_V_spec:
-    forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V. and_then_Option_Ag_V (op_Ag_V a b) (fun (ab: t_Ag_V) -> op_Ag_V ab c)
-      = and_then_Option_Ag_V (op_Ag_V b c) (fun (bc: t_Ag_V) -> op_Ag_V a bc)
-  
-  function commutative_Ag_V (a: t_Ag_V) (b: t_Ag_V) : ()
-  
-  axiom commutative_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V. op_Ag_V a b = op_Ag_V b a
-  
-  function op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) : t_Option_Option_Ag_V = match { f0'1 = self;
-                                                                                                        f1'1 = other } with
-      | {f0'1 = None} -> Some'1 other
-      | {f1'1 = None} -> Some'1 self
-      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some z)
-      end
-  
-  function associative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
-  
-  axiom associative_Option_Ag_V_spec:
-    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. and_then_Option_Option_Ag_V (op_Option_Ag_V a b) (fun (ab: t_Option_Ag_V) -> op_Option_Ag_V ab c)
-      = and_then_Option_Option_Ag_V (op_Option_Ag_V b c) (fun (bc: t_Option_Ag_V) -> op_Option_Ag_V a bc)
-  
-  function commutative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) : ()
-  
-  axiom commutative_Option_Ag_V_spec: forall a: t_Option_Ag_V, b: t_Option_Ag_V. op_Option_Ag_V a b = op_Option_Ag_V b a
-  
-  function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
-  
-  axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
-          <> None'1)
-      -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
-  
-  function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'1 then
-      Some'0 (total_op_K self other)
-    else
-      None'0
-  
-  
-  function associative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
-  
-  axiom associative_FMap_K_Ag_V_spec:
-    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V a b) (fun (ab: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V ab c)
-      = and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V b c) (fun (bc: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V a bc)
-  
-  function commutative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) : ()
-  
-  axiom commutative_FMap_K_Ag_V_spec: forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V. op_FMap_K_Ag_V a b = op_FMap_K_Ag_V b a
-  
-  function len_K (self: t_FMap_K_Ag_V) : int
-  
-  axiom len_K_spec: forall self: t_FMap_K_Ag_V. len_K self >= 0
-  
-  constant empty_K : t_FMap_K_Ag_V
-  
-  axiom empty_K_spec: len_K empty_K = 0
-  
-  axiom empty_K_spec'0: view_FMap_K_Ag_V empty_K = Const.const (None)
-  
-  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K
-  
-  axiom unit_FMap_K_Ag_V_spec:
-    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'0 x
-  
-  function factor_Ag_V (self: t_Ag_V) (factor: t_Ag_V) : t_Option_Ag_V = op_Ag_V self factor
-  
-  axiom factor_Ag_V_spec: forall self: t_Ag_V, factor: t_Ag_V. match factor_Ag_V self factor with
-        | Some c -> op_Ag_V factor c = Some self
-        | None -> forall c: t_Ag_V. op_Ag_V factor c <> Some self
-        end
-  
-  function factor_Option_Ag_V (self: t_Option_Ag_V) (factor: t_Option_Ag_V) : t_Option_Option_Ag_V =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None} -> Some'1 x
-      | {f0'1 = None} -> None'1
-      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Ag_V x y with
-        | Some z -> Some'1 (Some z)
-        | None -> if x = y then Some'1 (None) else None'1
-        end
-      end
-  
-  axiom factor_Option_Ag_V_spec:
-    forall self: t_Option_Ag_V, factor: t_Option_Ag_V. match factor_Option_Ag_V self factor with
-        | Some'1 c -> op_Option_Ag_V factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_V. op_Option_Ag_V factor c <> Some'1 self
-        end
-  
-  predicate incl_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) = factor_Option_Ag_V other self <> None'1
-  
-  function incl_transitive_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
-  
-  axiom incl_transitive_Option_Ag_V_spec:
-    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. incl_Option_Ag_V a b
-      -> incl_Option_Ag_V b c -> incl_Option_Ag_V a c
-  
-  function incl_op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) (comb: t_Option_Ag_V) : ()
-  
-  axiom incl_op_Option_Ag_V_spec:
-    forall self: t_Option_Ag_V, other: t_Option_Ag_V, comb: t_Option_Ag_V. op_Option_Ag_V self other = Some'1 comb
-      -> incl_Option_Ag_V self comb
-  
-  type tup2_K_Ag_V = { f0'2: t_K; f1'2: t_Ag_V }
-  
-  function index_Mapping_tup2_K_Ag_V_Option_Ag_V [@inline:trivial] (self: Map.map tup2_K_Ag_V t_Option_Ag_V) (a: tup2_K_Ag_V) : t_Option_Ag_V
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_K_Ag_V_Option_Ag_V
-  
-  function filter_map_K (self: t_FMap_K_Ag_V) (f: Map.map tup2_K_Ag_V t_Option_Ag_V) : t_FMap_K_Ag_V
-  
-  axiom filter_map_K_spec:
-    forall self: t_FMap_K_Ag_V, f: Map.map tup2_K_Ag_V t_Option_Ag_V. forall k: t_K [get_K (filter_map_K self f) k]. get_K (filter_map_K self f) k
-        = match get_K self k with
-          | None -> None
-          | Some v -> index_Mapping_tup2_K_Ag_V_Option_Ag_V f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (factor: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. incl_Option_Ag_V (get_K factor k) (get_K self k) then
-      let res = filter_map_K self (fun (__0: tup2_K_Ag_V) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_V (Some vo) (get_K factor k) with
-        | Some'1 r -> r
-        | None'1 -> None
-        end) in Some'0 res
-    else
-      None'0
-  
-  
-  axiom factor_FMap_K_Ag_V_spec:
-    forall self: t_FMap_K_Ag_V, factor: t_FMap_K_Ag_V. match factor_FMap_K_Ag_V self factor with
-        | Some'0 c -> op_FMap_K_Ag_V factor c = Some'0 self
-        | None'0 -> forall c: t_FMap_K_Ag_V. op_FMap_K_Ag_V factor c <> Some'0 self
-        end
-  
-  predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) = factor_FMap_K_Ag_V other self <> None'0
-  
-  function incl_transitive_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
-  
-  axiom incl_transitive_FMap_K_Ag_V_spec:
-    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. incl_FMap_K_Ag_V a b
-      -> incl_FMap_K_Ag_V b c -> incl_FMap_K_Ag_V a c
-  
-  function incl_op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) (comb: t_FMap_K_Ag_V) : ()
-  
-  axiom incl_op_FMap_K_Ag_V_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V, comb: t_FMap_K_Ag_V. op_FMap_K_Ag_V self other = Some'0 comb
-      -> incl_FMap_K_Ag_V self comb
-  
-  predicate rel_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f: t_FMap_K_Ag_V) =
-    match a with
-      | Some'0 a'0 -> incl_FMap_K_Ag_V f a'0
-      | None'0 -> true
-      end
-  
-  function rel_unit_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) : ()
-  
-  axiom rel_unit_AuthViewRel_FMap_K_Ag_V_spec:
-    forall a: t_Option_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V a unit_FMap_K_Ag_V
-  
-  function rel_none_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f: t_FMap_K_Ag_V) : ()
-  
-  axiom rel_none_AuthViewRel_FMap_K_Ag_V_spec:
-    forall a: t_Option_FMap_K_Ag_V, f: t_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V (None'0) f
-  
-  function rel_mono_AuthViewRel_FMap_K_Ag_V (a: t_Option_FMap_K_Ag_V) (f1'0: t_FMap_K_Ag_V) (f2'0: t_FMap_K_Ag_V) : ()
-  
-  axiom rel_mono_AuthViewRel_FMap_K_Ag_V_spec:
-    forall a: t_Option_FMap_K_Ag_V, f1'0: t_FMap_K_Ag_V, f2'0: t_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V a f1'0
-      -> incl_FMap_K_Ag_V f2'0 f1'0 -> rel_AuthViewRel_FMap_K_Ag_V a f2'0
-  
-  function auth_AuthViewRel_FMap_K_Ag_V (self: t_View_AuthViewRel_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
-  
-  function frag_AuthViewRel_FMap_K_Ag_V (self: t_View_AuthViewRel_FMap_K_Ag_V) : t_FMap_K_Ag_V
-  
-  axiom frag_AuthViewRel_FMap_K_Ag_V_spec:
-    forall self: t_View_AuthViewRel_FMap_K_Ag_V. rel_AuthViewRel_FMap_K_Ag_V (auth_AuthViewRel_FMap_K_Ag_V self) (frag_AuthViewRel_FMap_K_Ag_V self)
-  
-  function val_View_AuthViewRel_FMap_K_Ag_V (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_View_AuthViewRel_FMap_K_Ag_V
-  
-  function view_Resource_View_AuthViewRel_FMap_K_Ag_V [@inline:trivial] (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_View_AuthViewRel_FMap_K_Ag_V
-   = val_View_AuthViewRel_FMap_K_Ag_V self
-  
-  meta "rewrite_def" function view_Resource_View_AuthViewRel_FMap_K_Ag_V
-  
-  predicate invariant_Fragment_K_V (self: t_Fragment_K_V) =
-    get_K (frag_AuthViewRel_FMap_K_Ag_V (view_Resource_View_AuthViewRel_FMap_K_Ag_V self.f0)) self.f1
-    = Some { f0'0 = self.f2 }
-  
-  predicate inv_Fragment_K_V (_1: t_Fragment_K_V)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Fragment_K_V [inv_Fragment_K_V x]. inv_Fragment_K_V x
-      = invariant_Fragment_K_V x
-  
-  predicate invariant_ref_Fragment_K_V [@inline:trivial] (self: t_Fragment_K_V) = inv_Fragment_K_V self
-  
-  meta "rewrite_def" predicate invariant_ref_Fragment_K_V
-  
-  predicate inv_ref_Fragment_K_V [@inline:trivial] (_1: t_Fragment_K_V) = invariant_ref_Fragment_K_V _1
-  
-  meta "rewrite_def" predicate inv_ref_Fragment_K_V
-  
-  type tup2_K_V = { f0'3: t_K; f1'3: t_V }
-  
-  function view_Fragment_K_V (self: t_Fragment_K_V) : tup2_K_V = { f0'3 = self.f1; f1'3 = self.f2 }
-  
-  type t_Id
-  
-  function id_View_AuthViewRel_FMap_K_Ag_V (self: t_Resource_View_AuthViewRel_FMap_K_Ag_V) : t_Id
-  
-  function id_K (self: t_Fragment_K_V) : t_Id = id_View_AuthViewRel_FMap_K_Ag_V self.f0
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_Fragment_K_V. inv_ref_Fragment_K_V self_
-      -> inv_ref_Fragment_K_V self_
-      /\ (forall result: t_Fragment_K_V. inv_Fragment_K_V result
-          /\ view_Fragment_K_V result = view_Fragment_K_V self_ /\ id_K result = id_K self_ -> inv_Fragment_K_V result)
-end
-module M_ghost__impl_Clone_for_Ghost_T__clone__refines (* <ghost::Ghost<T> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_T
-  
-  predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_T
-  
-  predicate invariant_ref_Ghost_T [@inline:trivial] (self: t_T) = inv_Ghost_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Ghost_T
-  
-  predicate inv_ref_Ghost_T [@inline:trivial] (_1: t_T) = invariant_ref_Ghost_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Ghost_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_T. inv_ref_Ghost_T self_
-      -> inv_ref_Ghost_T self_ /\ (forall result: t_T. inv_Ghost_T result /\ result = self_ -> inv_Ghost_T result)
-end
-module M_logic__fmap__impl_Clone_for_FMap_K_V__clone__refines (* <logic::fmap::FMap<K, V> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_FMap_K_V
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Option_V = None | Some t_V
-  
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
-  
-  meta "rewrite_def" function get_K
-  
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
-  
-  meta "rewrite_def" predicate contains_K
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_V_bool
-  
-  function such_that_V (p: Map.map t_V bool) : t_V
-  
-  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
-      -> index_Mapping_V_bool p (such_that_V p)
-  
-  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
-      | Some x -> x
-      | None -> such_that_V (fun (__0: t_V) -> true)
-      end
-  
-  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
-  
-  meta "rewrite_def" function lookup_K
-  
-  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
-  
-  meta "rewrite_def" function index_FMap_K_V
-  
-  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
-    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
-  
-  meta "rewrite_def" predicate invariant_FMap_K_V
-  
-  predicate inv_FMap_K_V (_1: t_FMap_K_V)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
-  
-  predicate invariant_ref_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) = inv_FMap_K_V self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_K_V
-  
-  predicate inv_ref_FMap_K_V [@inline:trivial] (_1: t_FMap_K_V) = invariant_ref_FMap_K_V _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_K_V
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_FMap_K_V. inv_ref_FMap_K_V self_
-      -> inv_ref_FMap_K_V self_
-      /\ (forall result: t_FMap_K_V. inv_FMap_K_V result /\ result = self_ -> inv_FMap_K_V result)
-end
-module M_logic__fset__impl_Clone_for_FSet_T__clone__refines (* <logic::fset::FSet<T> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use set.Fset
-  
-  type t_T
-  
-  predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_T
-  
-  predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_T
-  
-  predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_T
-  
-  predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: Fset.fset t_T. inv_ref_FSet_T self_
-      -> inv_ref_FSet_T self_
-      /\ (forall result: Fset.fset t_T. inv_FSet_T result /\ result = self_ -> inv_FSet_T result)
-end
-module M_logic__seq__impl_Clone_for_Seq_T__clone__refines (* <logic::seq::Seq<T> as std::clone::Clone> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use mach.int.Int
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_Box_T_Global (self: t_T) = inv_T self
-  
-  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_T_Global
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_T_Global (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: Seq.seq t_T. inv_ref_Seq_T self_
-      -> inv_ref_Seq_T self_ /\ (forall result: Seq.seq t_T. inv_Seq_T result /\ result = self_ -> inv_Seq_T result)
-end
-module M_ghost__fn_ghost__impl_FnOnce_for_FnGhostWrapper_F__call_once__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::FnOnce<I>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  type t_FnGhostWrapper_F = { f0: t_F }
-  
-  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
-  
-  type t_I
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate precondition_F (self: t_F) (args: t_I)
-  
-  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
-    precondition_F self.f0 args
-  
-  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
-  
-  type t_Output
-  
-  predicate inv_Output (_1: t_Output)
-  
-  predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output)
-  
-  predicate postcondition_once_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
-    postcondition_once_F self.f0 args result
-  
-  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_F
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_FnGhostWrapper_F. forall arg: t_I. inv_FnGhostWrapper_F self_
-          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_ arg
-        -> inv_FnGhostWrapper_F self_
-        /\ inv_I arg
-        /\ precondition_FnGhostWrapper_F self_ arg
-        /\ (forall result: t_Output. inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result
-          -> inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result)
-end
-module M_ghost__fn_ghost__impl_FnMut_for_FnGhostWrapper_F__call_mut__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::FnMut<I>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.MutBorrow
-  
-  type t_F
-  
-  type t_FnGhostWrapper_F = { f0: t_F }
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
-  
-  predicate invariant_refmut_FnGhostWrapper_F [@inline:trivial] (self: MutBorrow.t t_FnGhostWrapper_F) =
-    inv_FnGhostWrapper_F self.current /\ inv_FnGhostWrapper_F self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_FnGhostWrapper_F
-  
-  predicate inv_refmut_FnGhostWrapper_F [@inline:trivial] (_1: MutBorrow.t t_FnGhostWrapper_F) =
-    invariant_refmut_FnGhostWrapper_F _1
-  
-  meta "rewrite_def" predicate inv_refmut_FnGhostWrapper_F
-  
-  type t_I
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate precondition_F (self: t_F) (args: t_I)
-  
-  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
-    precondition_F self.f0 args
-  
-  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
-  
-  type t_Output
-  
-  predicate inv_Output (_1: t_Output)
-  
-  predicate postcondition_mut_F (self: t_F) (args: t_I) (result_state: t_F) (result: t_Output)
-  
-  predicate postcondition_mut_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result_state: t_FnGhostWrapper_F) (result: t_Output) =
-    postcondition_mut_F self.f0 args result_state.f0 result
-  
-  meta "rewrite_def" predicate postcondition_mut_FnGhostWrapper_F
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: MutBorrow.t t_FnGhostWrapper_F. forall arg: t_I. inv_refmut_FnGhostWrapper_F self_
-          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_.current arg
-        -> inv_refmut_FnGhostWrapper_F self_
-        /\ inv_I arg
-        /\ precondition_FnGhostWrapper_F self_.current arg
-        /\ (forall result: t_Output. inv_Output result
-            /\ postcondition_mut_FnGhostWrapper_F self_.current arg self_.final result
-          -> inv_Output result /\ postcondition_mut_FnGhostWrapper_F self_.current arg self_.final result)
-end
-module M_ghost__fn_ghost__impl_Fn_for_FnGhostWrapper_F__call__refines (* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::Fn<I>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_F
-  
-  type t_FnGhostWrapper_F = { f0: t_F }
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
-  
-  predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
-  
-  meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
-  
-  predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = invariant_ref_FnGhostWrapper_F _1
-  
-  meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
-  
-  type t_I
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate precondition_F (self: t_F) (args: t_I)
-  
-  predicate precondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) =
-    precondition_F self.f0 args
-  
-  meta "rewrite_def" predicate precondition_FnGhostWrapper_F
-  
-  type t_Output
-  
-  predicate inv_Output (_1: t_Output)
-  
-  predicate postcondition_F (self: t_F) (args: t_I) (result: t_Output)
-  
-  predicate postcondition_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
-    postcondition_F self.f0 args result
-  
-  meta "rewrite_def" predicate postcondition_FnGhostWrapper_F
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_FnGhostWrapper_F. forall arg: t_I. inv_ref_FnGhostWrapper_F self_
-          /\ inv_I arg /\ precondition_FnGhostWrapper_F self_ arg
-        -> inv_ref_FnGhostWrapper_F self_
-        /\ inv_I arg
-        /\ precondition_FnGhostWrapper_F self_ arg
-        /\ (forall result: t_Output. inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result
-          -> inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result)
 end
 module M_invariant__impl_PartialEq_for_Subset_T__eq__refines (* <invariant::Subset<T> as std::cmp::PartialEq> *)
   type namespace_other
@@ -73760,22 +73723,22 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   meta "rewrite_def" predicate inv_refmut_slice_T
   
-  type t_PtrOwn_slice_T
+  type t_Perm_ptr_slice_T
   
-  type tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_slice_T }
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
+  predicate ptr_is_aligned_opaque_slice_T (self: t_Perm_ptr_slice_T)
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
   meta "rewrite_def" predicate metadata_matches_slice_T
   
-  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -73802,49 +73765,49 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (tied_slice_T self)
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (tied_ptr_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (tied_ptr_slice_T self))
+    /\ size_of_val_slice_T (val_ptr_slice_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_slice_T self)) + size_of_val_slice_T (val_ptr_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T (val_slice_T self)
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
   
-  predicate invariant_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_PtrOwn_slice_T self.current /\ inv_PtrOwn_slice_T self.final
+  predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_refmut_Perm_ptr_slice_T
   
-  predicate inv_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_refmut_PtrOwn_slice_T _1
+  predicate inv_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_refmut_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_refmut_Perm_ptr_slice_T
   
-  predicate invariant_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) =
-    inv_refmut_PtrOwn_slice_T self
+  predicate invariant_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_refmut_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_slice_T
   
-  predicate inv_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: MutBorrow.t t_PtrOwn_slice_T) =
-    invariant_Ghost_refmut_PtrOwn_slice_T _1
+  predicate inv_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_Ghost_refmut_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) =
-    inv_Ghost_refmut_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) =
+    inv_Ghost_refmut_Perm_ptr_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T
   
-  function fin_Ghost_refmut_PtrOwn_slice_T [@inline:trivial] (self: MutBorrow.t t_PtrOwn_slice_T) : t_PtrOwn_slice_T =
-    self.final
+  function fin_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) : t_Perm_ptr_slice_T
+   = self.final
   
-  meta "rewrite_def" function fin_Ghost_refmut_PtrOwn_slice_T
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_slice_T
   
   meta "compute_max_steps" 1000000
   
@@ -73852,11 +73815,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_refmut_slice_T self
       -> inv_refmut_slice_T self
-      /\ (forall result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result
-          /\ result.f0 = Opaque.thin (tied_slice_T result.f1.current)
-          /\ self.current = val_slice_T result.f1.current
-          /\ self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1)
-        -> inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result)
+      /\ (forall result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T. inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result
+          /\ result.f0 = Opaque.thin (tied_ptr_slice_T result.f1.current)
+          /\ self.current = val_ptr_slice_T result.f1.current
+          /\ self.final = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1)
+        -> inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
 end
 module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as std::slice::SliceExt<T>> *)
   type namespace_other
@@ -73904,22 +73867,22 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  type t_PtrOwn_slice_T
+  type t_Perm_ptr_slice_T
   
-  type tup2_ptr_T_Ghost_ref_PtrOwn_slice_T = { f0: Opaque.ptr; f1: t_PtrOwn_slice_T }
+  type tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: t_Perm_ptr_slice_T }
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
+  predicate ptr_is_aligned_opaque_slice_T (self: t_Perm_ptr_slice_T)
   
   predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
     Seq.length (Slice64.view _value) = UInt64.t'int _metadata
   
   meta "rewrite_def" predicate metadata_matches_slice_T
   
-  function val_slice_T (self: t_PtrOwn_slice_T) : Slice64.slice t_T
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
   
   function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
   
@@ -73938,41 +73901,42 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (tied_slice_T self)
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (tied_ptr_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
-    /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (tied_ptr_slice_T self))
+    /\ size_of_val_slice_T (val_ptr_slice_T self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_slice_T self)) + size_of_val_slice_T (val_ptr_slice_T self)
       <= UInt64.t'int const_MAX'0
-    /\ inv_ref_slice_T (val_slice_T self)
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
   
-  predicate inv_PtrOwn_slice_T (_1: t_PtrOwn_slice_T)
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_slice_T [inv_PtrOwn_slice_T x]. inv_PtrOwn_slice_T x
-      = invariant_PtrOwn_slice_T x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
   
-  predicate invariant_ref_PtrOwn_slice_T [@inline:trivial] (self: t_PtrOwn_slice_T) = inv_PtrOwn_slice_T self
+  predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
   
-  predicate inv_ref_PtrOwn_slice_T [@inline:trivial] (_1: t_PtrOwn_slice_T) = invariant_ref_PtrOwn_slice_T _1
+  predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
   
-  predicate invariant_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (self: t_PtrOwn_slice_T) = inv_ref_PtrOwn_slice_T self
+  predicate invariant_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) =
+    inv_ref_Perm_ptr_slice_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_slice_T
   
-  predicate inv_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: t_PtrOwn_slice_T) =
-    invariant_Ghost_ref_PtrOwn_slice_T _1
+  predicate inv_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) =
+    invariant_Ghost_ref_Perm_ptr_slice_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_slice_T
   
-  predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) =
-    inv_Ghost_ref_PtrOwn_slice_T _1.f1
+  predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) =
+    inv_Ghost_ref_Perm_ptr_slice_T _1.f1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
   
   meta "compute_max_steps" 1000000
   
@@ -73980,7 +73944,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   goal refines: forall self: Slice64.slice t_T. inv_ref_slice_T self
       -> inv_ref_slice_T self
-      /\ (forall result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result
-          /\ result.f0 = Opaque.thin (tied_slice_T result.f1) /\ self = val_slice_T result.f1
-        -> inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result)
+      /\ (forall result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T. inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result
+          /\ result.f0 = Opaque.thin (tied_ptr_slice_T result.f1) /\ self = val_ptr_slice_T result.f1
+        -> inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
 end

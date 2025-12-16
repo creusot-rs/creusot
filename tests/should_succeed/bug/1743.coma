@@ -8,21 +8,21 @@ module M_impl_S__minimize (* S *)
   use creusot.int.Int64
   use creusot.prelude.Any
   
-  type t_PtrOwn_i32
+  type t_Perm_ptr_i32
   
-  type t_S = { perm: t_PtrOwn_i32; ptr: Opaque.ptr }
+  type t_S = { perm: t_Perm_ptr_i32; ptr: Opaque.ptr }
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function tied_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function tied_ptr_i32 (self: t_Perm_ptr_i32) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
+  predicate ptr_is_aligned_opaque_i32 (self: t_Perm_ptr_i32)
   
   predicate metadata_matches_i32 [@inline:trivial] (_value: Int32.t) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_i32 (self: t_PtrOwn_i32) : Int32.t
+  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -46,29 +46,31 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate inv_ref_i32
   
-  predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (tied_i32 self)
+  predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
+    not is_null_ptr_i32 (tied_ptr_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (tied_i32 self))
-    /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_i32 (val_i32 self)
+    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (tied_ptr_i32 self))
+    /\ size_of_val_i32 (val_ptr_i32 self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_ptr_i32 self)) + size_of_val_i32 (val_ptr_i32 self)
+      <= UInt64.t'int const_MAX'0
+    /\ inv_ref_i32 (val_ptr_i32 self)
   
-  predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
+  predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_i32 [inv_PtrOwn_i32 x]. inv_PtrOwn_i32 x = invariant_PtrOwn_i32 x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_i32 [inv_Perm_ptr_i32 x]. inv_Perm_ptr_i32 x
+      = invariant_Perm_ptr_i32 x
   
-  predicate invariant_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_Ghost_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_Ghost_Perm_ptr_i32
   
-  predicate inv_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_Ghost_PtrOwn_i32 _1
+  predicate inv_Ghost_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Ghost_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate inv_Ghost_Perm_ptr_i32
   
   predicate inv_S (_1: t_S)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv_S x]. inv_S x = inv_Ghost_PtrOwn_i32 x.perm
+  axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv_S x]. inv_S x = inv_Ghost_Perm_ptr_i32 x.perm
   
   predicate invariant_refmut_S [@inline:trivial] (self: MutBorrow.t t_S) = inv_S self.current /\ inv_S self.final
   
@@ -82,63 +84,64 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate resolve_refmut_S
   
-  predicate invariant_ref_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_Ghost_PtrOwn_i32 self
+  predicate invariant_ref_Ghost_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Ghost_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_ref_Ghost_Perm_ptr_i32
   
-  predicate inv_ref_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_Ghost_PtrOwn_i32 _1
+  predicate inv_ref_Ghost_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Ghost_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_PtrOwn_i32
+  meta "rewrite_def" predicate inv_ref_Ghost_Perm_ptr_i32
   
-  predicate invariant_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_i32
   
-  predicate inv_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_PtrOwn_i32 _1
+  predicate inv_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_i32
   
-  let rec deref_Ghost_PtrOwn_i32 (self: t_PtrOwn_i32) (return (x: t_PtrOwn_i32)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_PtrOwn_i32 self}
-    any [ return (result: t_PtrOwn_i32) -> {inv_ref_PtrOwn_i32 result} {result = self} (! return {result}) ]
+  let rec deref_Ghost_Perm_ptr_i32 (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Perm_ptr_i32 self}
+    any [ return (result: t_Perm_ptr_i32) -> {inv_ref_Perm_ptr_i32 result} {result = self} (! return {result}) ]
   
-  predicate invariant_Ghost_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_ref_PtrOwn_i32 self
+  predicate invariant_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_ref_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_i32
   
-  predicate inv_Ghost_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_Ghost_ref_PtrOwn_i32 _1
+  predicate inv_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Ghost_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let rec new_ref_PtrOwn_i32 (x: t_PtrOwn_i32) (return (x'0: t_PtrOwn_i32)) =
-    {[@expl:new 'x' type invariant] inv_ref_PtrOwn_i32 x}
-    any [ return (result: t_PtrOwn_i32) -> {inv_Ghost_ref_PtrOwn_i32 result} {result = x} (! return {result}) ]
+  let rec new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
+    {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
+    any [ return (result: t_Perm_ptr_i32) -> {inv_Ghost_ref_Perm_ptr_i32 result} {result = x} (! return {result}) ]
   
-  let rec as_ref_i32 (ptr'0: Opaque.ptr) (own: t_PtrOwn_i32) (return (x: Int32.t)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_i32 own}
-    {[@expl:as_ref requires] ptr'0 = tied_i32 own}
-    any [ return (result: Int32.t) -> {result = val_i32 own} (! return {result}) ]
+  let rec as_ref_i32 (ptr'0: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
+    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own}
+    {[@expl:as_ref requires] ptr'0 = tied_ptr_i32 own}
+    any [ return (result: Int32.t) -> {result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec minimize (self: MutBorrow.t t_S) (return (x: ())) = {[@expl:minimize 'self' type invariant] inv_refmut_S self}
-    {[@expl:minimize requires #0] Int32.to_int (val_i32 self.current.perm) = 1}
-    {[@expl:minimize requires #1] tied_i32 self.current.perm = self.current.ptr}
+    {[@expl:minimize requires #0] Int32.to_int (val_ptr_i32 self.current.perm) = 1}
+    {[@expl:minimize requires #1] tied_ptr_i32 self.current.perm = self.current.ptr}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_S self} any) ]
       | s1 = -{resolve_refmut_S self}- s2
-      | s2 = deref_Ghost_PtrOwn_i32 {self.current.perm} (fun (_x: t_PtrOwn_i32) -> [ &_12 <- _x ] s3)
+      | s2 = deref_Ghost_Perm_ptr_i32 {self.current.perm} (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
       | s3 = [ &_11 <- _12 ] s4
-      | s4 = new_ref_PtrOwn_i32 {_11} (fun (_x: t_PtrOwn_i32) -> [ &_9 <- _x ] s5)
+      | s4 = new_ref_Perm_ptr_i32 {_11} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
       | s5 = as_ref_i32 {self.current.ptr} {_9} (fun (_x: Int32.t) -> [ &r <- _x ] s6)
       | s6 = bb4 ]
-    | bb4 = bb4 [ bb4 = {[@expl:loop invariant] 0 <= Int32.to_int (val_i32 self.current.perm)} (! s0) [ s0 = bb4 ] ] ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:loop invariant] 0 <= Int32.to_int (val_ptr_i32 self.current.perm)} (! s0) [ s0 = bb4 ] ] ]
     [ & self: MutBorrow.t t_S = self
     | & r: Int32.t = Any.any_l ()
-    | & _9: t_PtrOwn_i32 = Any.any_l ()
-    | & _11: t_PtrOwn_i32 = Any.any_l ()
-    | & _12: t_PtrOwn_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _9: t_Perm_ptr_i32 = Any.any_l ()
+    | & _11: t_Perm_ptr_i32 = Any.any_l ()
+    | & _12: t_Perm_ptr_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -5,7 +5,7 @@ mod implementation {
     #[cfg(creusot)]
     use creusot_contracts::logic::such_that;
     use creusot_contracts::{
-        ghost::PtrOwn,
+        ghost::perm::Perm,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
         prelude::*,
@@ -53,7 +53,7 @@ mod implementation {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        perms: FMap<Element, PtrOwn<Node<T>>>,
+        perms: FMap<Element, Perm<*const Node<T>>>,
         /// Map each element in [`Self::domain`] to its payload.
         // `img` in the why3 proof
         payloads: Snapshot<Mapping<Element, T>>,
@@ -73,7 +73,7 @@ mod implementation {
             (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(e) ==>
                 // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
                 self.0.perms.contains(e) &&
-                self.0.perms[e].tied() == e.0 as *const Node<T> &&
+                *self.0.perms[e].tied() == e.0 as *const Node<T> &&
                 self.0.domain.contains(self.0.roots[e]) &&
                 self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                 match *self.0.perms[e].val() {
@@ -189,20 +189,20 @@ mod implementation {
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
     pub fn make<T>(mut uf: Ghost<&mut UnionFind<T>>, payload: T) -> Element {
         let payload_snap = snapshot!(payload);
-        let (ptr, perm) = PtrOwn::new(Node::Root { rank: PeanoInt::new(), payload });
+        let (ptr, perm) = Perm::new(Node::Root { rank: PeanoInt::new(), payload });
         let elt = Element(ptr as *mut ());
         ghost! {
             let (mut perm, uf) = (perm.into_inner(), uf.into_inner());
 
             // In order to prove that the new element does not have the same address as
             // an existing one, we use an oracle to find a potentially conflicting element,
-            // and then use `PtrOwn::disjoint_lemma` to prove that they are different.
+            // and then use `Perm::disjoint_lemma` to prove that they are different.
             let other_elt_ptr_snap = snapshot!(such_that(|e|
                 uf.in_domain(e) && e.deep_model() == elt.deep_model()).0);
             let other_elt = Element(other_elt_ptr_snap.into_ghost().into_inner());
             match uf.0.perms.get_ghost(&other_elt) {
                 None => {},
-                Some(other_perm) => PtrOwn::disjoint_lemma(&mut perm, other_perm),
+                Some(other_perm) => Perm::disjoint_lemma(&mut perm, other_perm),
             }
 
             uf.0.perms.insert_ghost(elt, perm);
@@ -225,7 +225,7 @@ mod implementation {
     #[variant(*uf.0.max_depth - uf.0.depth[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element) -> Element {
         let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
-        match unsafe { PtrOwn::as_ref(elem.0 as *const _, perm) } {
+        match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             &Node::Root { .. } => elem,
             &Node::Link(e) => {
                 let root = find_inner(ghost! {&mut **uf}, e);
@@ -233,7 +233,7 @@ mod implementation {
                 ghost_let!(mut uf = &mut uf.0);
                 proof_assert!(uf.depth[elem] < uf.depth[root]);
                 let mut_perm = ghost!(uf.perms.get_mut_ghost(&elem).unwrap());
-                unsafe { *PtrOwn::as_mut(elem.0 as *mut Node<T>, mut_perm) = Node::Link(root) };
+                unsafe { *Perm::as_mut(elem.0 as *mut Node<T>, mut_perm) = Node::Link(root) };
                 root
             }
         }
@@ -257,7 +257,7 @@ mod implementation {
     #[ensures(*result == uf.payload(elem))]
     pub fn get<T>(uf: Ghost<&UnionFind<T>>, elem: Element) -> &T {
         let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
-        match unsafe { PtrOwn::as_ref(elem.0 as *const _, perm) } {
+        match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             Node::Root { payload, .. } => payload,
             _ => unreachable!(),
         }
@@ -294,9 +294,8 @@ mod implementation {
         ghost_let!(mut uf = &mut uf.0);
 
         let (perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
-        let bx = unsafe { PtrOwn::as_mut(x.0 as *mut Node<T>, perm_x) };
-        let by =
-            unsafe { PtrOwn::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut_ghost(&y).unwrap())) };
+        let bx = unsafe { Perm::as_mut(x.0 as *mut Node<T>, perm_x) };
+        let by = unsafe { Perm::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut_ghost(&y).unwrap())) };
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };
         let Node::Root { rank: ry, .. } = by else { unreachable!() };

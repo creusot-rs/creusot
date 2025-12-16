@@ -1,8 +1,11 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
-    cell::{PermCell, PermCellOwn},
-    ghost::local_invariant::{
-        LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+    cell::PermCell,
+    ghost::{
+        local_invariant::{
+            LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+        },
+        perm::Perm,
     },
     prelude::*,
 };
@@ -21,7 +24,7 @@ impl<T> Invariant for CellInv<T> {
     }
 }
 
-struct PermCellLocalInv<T>(PermCellOwn<T>);
+struct PermCellLocalInv<T>(Perm<PermCell<T>>);
 impl<T> Protocol for PermCellLocalInv<T> {
     type Public = PermCell<T>;
 

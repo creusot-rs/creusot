@@ -3,5 +3,5 @@
 mod permcell;
 mod predcell;
 
-pub use permcell::{PermCell, PermCellOwn};
+pub use permcell::PermCell;
 pub use predcell::PredCell;

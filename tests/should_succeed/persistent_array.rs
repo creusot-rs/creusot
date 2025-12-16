@@ -3,11 +3,12 @@ extern crate creusot_contracts;
 pub mod implementation {
     use ::std::rc::Rc;
     use creusot_contracts::{
-        cell::{PermCell, PermCellOwn},
+        cell::PermCell,
         ghost::{
             local_invariant::{
                 LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
             },
+            perm::Perm,
             resource::fmap_view::{Authority, Fragment},
         },
         logic::{FMap, Id, Mapping},
@@ -80,7 +81,7 @@ pub mod implementation {
     /// Structure describing the invariants respected by the pointers.
     struct PA<T> {
         /// Holds the permission for each pointer.
-        perms: FMap<Snapshot<PermCell<Inner<T>>>, PermCellOwn<Inner<T>>>,
+        perms: FMap<Snapshot<PermCell<Inner<T>>>, Perm<PermCell<Inner<T>>>>,
         /// Holds the 'authoritative' version of the map of logical values.
         ///
         /// When we open the invariant, we get (a mutable borrow to) this, and can learn
@@ -128,13 +129,13 @@ pub mod implementation {
         #[ensures(result@ == v@)]
         pub fn new(v: Vec<T>) -> Self {
             let seq = snapshot!(v@);
-            let (permcell, permcellown) = PermCell::new(Inner::Direct(v));
+            let (permcell, perm) = PermCell::new(Inner::Direct(v));
             let mut auth = Authority::new();
-            let frag = ghost!(auth.insert(snapshot!(*permcellown.tied()), seq));
+            let frag = ghost!(auth.insert(snapshot!(*perm.tied()), seq));
 
             let inv = ghost! {
                 let mut perms = FMap::new();
-                perms.insert_ghost(snapshot!(*permcellown.tied()), permcellown.into_inner());
+                perms.insert_ghost(snapshot!(*perm.tied()), perm.into_inner());
                 let local_inv = LocalInvariant::new(
                     ghost!(PA {
                         perms: perms.into_inner(),
@@ -156,7 +157,7 @@ pub mod implementation {
         #[ensures(result@ == self@.set(index@, value))]
         pub fn set(&self, index: usize, value: T, tokens: Ghost<Tokens>) -> Self {
             let new_seq = snapshot!(self@.set(index@, value));
-            let (permcell, permcellown) =
+            let (permcell, perm) =
                 PermCell::new(Inner::Link { index, value, next: self.permcell.clone() });
             let frag = self.inv.open(tokens, |mut pa| {
                 ghost! {
@@ -164,9 +165,9 @@ pub mod implementation {
                     pa.auth.contains(&self.frag);
                     // prove that we are inserting a _new_ value
                     if let Some(other) = pa.perms.get_mut_ghost(&snapshot!(permcell)) {
-                        PermCellOwn::disjoint_lemma(other, &permcellown);
+                        Perm::disjoint_lemma(other, &perm);
                     }
-                    pa.perms.insert_ghost(snapshot!(permcell), permcellown.into_inner());
+                    pa.perms.insert_ghost(snapshot!(permcell), perm.into_inner());
                     pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell@] + 1));
                     pa.auth.insert(snapshot!(permcell), new_seq)
                 }

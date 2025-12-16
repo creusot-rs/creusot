@@ -149,10 +149,10 @@ contracts_items! {
     "postcondition_mut"         PostconditionMut
     "postcondition_once"        PostconditionOnce
     "precondition"              Precondition
-    "ptr_own_as_mut"            PtrOwnAsMut
-    "ptr_own_as_ref"            PtrOwnAsRef
-    "ptr_own_from_mut"          PtrOwnFromMut
-    "ptr_own_from_ref"          PtrOwnFromRef
+    "perm_as_mut"               PermAsMut
+    "perm_as_ref"               PermAsRef
+    "perm_from_mut"             PermFromMut
+    "perm_from_ref"             PermFromRef
     "resolve"                   Resolve
     "resolve_method"            ResolveMethod
     "seq_literal"               SeqLiteral

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, prelude::*};
+use creusot_contracts::{ghost::perm::Perm, prelude::*};
 
 fn foo(x: i32) -> i32 {
     x
@@ -102,8 +102,8 @@ pub unsafe fn test_ptr<'a, T>(x: *mut T) -> &'a T {
 
 #[erasure(test_ptr)]
 #[requires(false)] // don't care about proofs
-pub unsafe fn test_ptr2<T>(x: *mut T, own: Ghost<&PtrOwn<T>>) -> &T {
-    unsafe { PtrOwn::as_ref(x, own) }
+pub unsafe fn test_ptr2<T>(x: *mut T, own: Ghost<&Perm<*const T>>) -> &T {
+    unsafe { Perm::as_ref(x, own) }
 }
 
 #[trusted]
@@ -113,8 +113,8 @@ pub unsafe fn test_ptr_mut<'a, T>(x: *mut T) -> &'a mut T {
 
 #[erasure(test_ptr_mut)]
 #[requires(false)]
-pub unsafe fn test_ptr_mut2<T>(x: *mut T, own: Ghost<&mut PtrOwn<T>>) -> &mut T {
-    unsafe { PtrOwn::as_mut(x, own) }
+pub unsafe fn test_ptr_mut2<T>(x: *mut T, own: Ghost<&mut Perm<*const T>>) -> &mut T {
+    unsafe { Perm::as_mut(x, own) }
 }
 
 pub fn no_specs() {
@@ -162,7 +162,7 @@ pub fn slice_as_ptr<T>(s: &[T]) -> *const T {
 }
 
 #[erasure(slice_as_ptr)]
-pub fn slice_as_ptr_own<T>(s: &[T]) -> (*const T, Ghost<&PtrOwn<[T]>>) {
+pub fn slice_as_ptr_own<T>(s: &[T]) -> (*const T, Ghost<&Perm<*const [T]>>) {
     s.as_ptr_own()
 }
 
@@ -171,6 +171,6 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 }
 
 #[erasure(slice_as_mut_ptr)]
-pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut PtrOwn<[T]>>) {
+pub fn slice_as_mut_ptr_own<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
     s.as_mut_ptr_own()
 }

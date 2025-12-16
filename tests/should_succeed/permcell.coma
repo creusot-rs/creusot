@@ -5,61 +5,80 @@ module M_foo
   
   type t_PermCell_i32
   
-  type t_PermCellOwn_i32
+  type t_Perm_PermCell_i32
   
-  type tup2_PermCell_i32_Ghost_PermCellOwn_i32 = { f0: t_PermCell_i32; f1: t_PermCellOwn_i32 }
+  type tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = { f0: t_PermCell_i32; f1: t_Perm_PermCell_i32 }
   
-  function tied_i32 (self: t_PermCellOwn_i32) : t_PermCell_i32
+  function tied_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function val_i32 (self: t_PermCellOwn_i32) : Int32.t
+  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
-  function view_PermCellOwn_i32 [@inline:trivial] (self: t_PermCellOwn_i32) : Int32.t = val_i32 self
+  function view_Perm_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_PermCell_i32 self
   
-  meta "rewrite_def" function view_PermCellOwn_i32
+  meta "rewrite_def" function view_Perm_PermCell_i32
   
-  let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_PermCellOwn_i32)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> {result.f0 = tied_i32 result.f1}
-      {view_PermCellOwn_i32 result.f1 = value}
+  let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32)) = any
+    [ return (result: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> {result.f0 = tied_PermCell_i32 result.f1}
+      {view_Perm_PermCell_i32 result.f1 = value}
       (! return {result}) ]
   
-  let rec borrow_PermCellOwn_i32 (self: t_PermCellOwn_i32) (return (x: t_PermCellOwn_i32)) = any
-    [ return (result: t_PermCellOwn_i32) -> {result = self} (! return {result}) ]
+  let rec borrow_Perm_PermCell_i32 (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
+    [ return (result: t_Perm_PermCell_i32) -> {result = self} (! return {result}) ]
   
-  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] self = tied_i32 perm}
-    any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
+  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
+    {[@expl:borrow requires] self = tied_PermCell_i32 perm}
+    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
-  let rec borrow_mut_PermCellOwn_i32 (self: MutBorrow.t t_PermCellOwn_i32) (return (x: MutBorrow.t t_PermCellOwn_i32)) =
-    any [ return (result: MutBorrow.t t_PermCellOwn_i32) -> {result = self} (! return {result}) ]
+  let rec borrow_mut_Perm_PermCell_i32 (self: MutBorrow.t t_Perm_PermCell_i32)
+    (return (x: MutBorrow.t t_Perm_PermCell_i32)) = any
+    [ return (result: MutBorrow.t t_Perm_PermCell_i32) -> {result = self} (! return {result}) ]
   
-  function fin_Ghost_refmut_PermCellOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_i32) : t_PermCellOwn_i32
+  function fin_Ghost_refmut_Perm_PermCell_i32 [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_i32) : t_Perm_PermCell_i32
    = self.final
   
-  meta "rewrite_def" function fin_Ghost_refmut_PermCellOwn_i32
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_i32
   
-  let rec borrow_mut_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_PermCellOwn_i32)
-    (return (x: MutBorrow.t Int32.t)) = {[@expl:borrow_mut requires] self = tied_i32 perm.current}
+  let rec borrow_mut_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32)
+    (return (x: MutBorrow.t Int32.t)) = {[@expl:borrow_mut requires] self = tied_PermCell_i32 perm.current}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {self = tied_i32 (fin_Ghost_refmut_PermCellOwn_i32 perm)}
-      {result.current = view_PermCellOwn_i32 perm.current}
-      {result.final = view_PermCellOwn_i32 (fin_Ghost_refmut_PermCellOwn_i32 perm)}
+    [ return (result: MutBorrow.t Int32.t) -> {self = tied_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
+      {result.current = view_Perm_PermCell_i32 perm.current}
+      {result.final = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec replace_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_PermCellOwn_i32) (val': Int32.t)
-    (return (x: Int32.t)) = {[@expl:replace requires] self = tied_i32 perm.current}
+  let rec replace_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32) (val': Int32.t)
+    (return (x: Int32.t)) = {[@expl:replace requires] self = tied_PermCell_i32 perm.current}
     any
-    [ return (result: Int32.t) -> {val' = view_PermCellOwn_i32 (fin_Ghost_refmut_PermCellOwn_i32 perm)}
-      {result = view_PermCellOwn_i32 perm.current}
-      {self = tied_i32 (fin_Ghost_refmut_PermCellOwn_i32 perm)}
+    [ return (result: Int32.t) -> {val' = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
+      {result = view_Perm_PermCell_i32 perm.current}
+      {self = tied_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       (! return {result}) ]
   
-  let rec into_inner_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:into_inner requires] self = tied_i32 perm}
-    any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
+  let rec into_inner_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
+    {[@expl:into_inner requires] self = tied_PermCell_i32 perm}
+    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
+  
+  predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true
+  
+  meta "rewrite_def" predicate resolve_ref_i32
+  
+  predicate resolve_Perm_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) =
+    resolve_ref_i32 (val_PermCell_i32 self)
+  
+  meta "rewrite_def" predicate resolve_Perm_PermCell_i32
+  
+  predicate resolve_Perm_PermCell_i32'0 (_1: t_Perm_PermCell_i32)
+  
+  axiom resolve_axiom: forall x: t_Perm_PermCell_i32 [resolve_Perm_PermCell_i32'0 x]. resolve_Perm_PermCell_i32'0 x
+      -> resolve_Perm_PermCell_i32 x
+  
+  predicate resolve_Ghost_Perm_PermCell_i32 [@inline:trivial] (_1: t_Perm_PermCell_i32) = resolve_Perm_PermCell_i32'0 _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Perm_PermCell_i32
   
   predicate resolve_PermCell_i32 (_1: t_PermCell_i32)
   
@@ -69,51 +88,54 @@ module M_foo
   
   let rec foo (return (x: Int32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> [ &_4 <- _x ] s1)
+      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> [ &_4 <- _x ] s1)
       | s1 = [ &p <- _4.f0 ] s2
       | s2 = [ &own <- _4.f1 ] s3
-      | s3 = borrow_PermCellOwn_i32 {own} (fun (_x: t_PermCellOwn_i32) -> [ &_10 <- _x ] s4)
+      | s3 = borrow_Perm_PermCell_i32 {own} (fun (_x: t_Perm_PermCell_i32) -> [ &_10 <- _x ] s4)
       | s4 = borrow_i32 {p} {_10} (fun (_x: Int32.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_6 <- _8 = (1: Int32.t) ] s6
       | s6 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_PermCellOwn_i32> {own}
-          (fun (_bor: MutBorrow.t t_PermCellOwn_i32) -> [ &_17 <- _bor ] [ &own <- _bor.final ] s1)
-      | s1 = borrow_mut_PermCellOwn_i32 {_17} (fun (_x: MutBorrow.t t_PermCellOwn_i32) -> [ &_16 <- _x ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_Perm_PermCell_i32> {own}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_i32) -> [ &_17 <- _bor ] [ &own <- _bor.final ] s1)
+      | s1 = borrow_mut_Perm_PermCell_i32 {_17} (fun (_x: MutBorrow.t t_Perm_PermCell_i32) -> [ &_16 <- _x ] s2)
       | s2 = borrow_mut_i32 {p} {_16} (fun (_x: MutBorrow.t Int32.t) -> [ &_14 <- _x ] s3)
       | s3 = [ &_14 <- { _14 with current = (2: Int32.t) } ] s4
       | s4 = -{resolve_refmut_i32 _14}- s5
-      | s5 = borrow_PermCellOwn_i32 {own} (fun (_x: t_PermCellOwn_i32) -> [ &_23 <- _x ] s6)
+      | s5 = borrow_Perm_PermCell_i32 {own} (fun (_x: t_Perm_PermCell_i32) -> [ &_23 <- _x ] s6)
       | s6 = borrow_i32 {p} {_23} (fun (_x: Int32.t) -> [ &_21 <- _x ] s7)
       | s7 = [ &_19 <- _21 = (2: Int32.t) ] s8
       | s8 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = MutBorrow.borrow_mut <t_PermCellOwn_i32> {own}
-          (fun (_bor: MutBorrow.t t_PermCellOwn_i32) -> [ &_31 <- _bor ] [ &own <- _bor.final ] s1)
-      | s1 = borrow_mut_PermCellOwn_i32 {_31} (fun (_x: MutBorrow.t t_PermCellOwn_i32) -> [ &_30 <- _x ] s2)
+      [ s0 = MutBorrow.borrow_mut <t_Perm_PermCell_i32> {own}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_i32) -> [ &_31 <- _bor ] [ &own <- _bor.final ] s1)
+      | s1 = borrow_mut_Perm_PermCell_i32 {_31} (fun (_x: MutBorrow.t t_Perm_PermCell_i32) -> [ &_30 <- _x ] s2)
       | s2 = replace_i32 {p} {_30} {(3: Int32.t)} (fun (_x: Int32.t) -> [ &_28 <- _x ] s3)
       | s3 = [ &_27 <- _28 = (2: Int32.t) ] s4
       | s4 = any [ br0 -> {_27 = false} (! bb15) | br1 -> {_27} (! bb14) ] ]
     | bb14 = s0 [ s0 = into_inner_i32 {p} {own} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
-    | bb15 = s0 [ s0 = -{resolve_PermCell_i32 p}- s1 | s1 = {false} any ]
-    | bb11 = s0 [ s0 = -{resolve_PermCell_i32 p}- s1 | s1 = {false} any ]
-    | bb5 = s0 [ s0 = -{resolve_PermCell_i32 p}- s1 | s1 = {false} any ] ]
+    | bb15 = s0
+      [ s0 = -{resolve_Ghost_Perm_PermCell_i32 own}- s1 | s1 = -{resolve_PermCell_i32 p}- s2 | s2 = {false} any ]
+    | bb11 = s0
+      [ s0 = -{resolve_Ghost_Perm_PermCell_i32 own}- s1 | s1 = -{resolve_PermCell_i32 p}- s2 | s2 = {false} any ]
+    | bb5 = s0
+      [ s0 = -{resolve_Ghost_Perm_PermCell_i32 own}- s1 | s1 = -{resolve_PermCell_i32 p}- s2 | s2 = {false} any ] ]
     [ & _ret: Int32.t = Any.any_l ()
     | & p: t_PermCell_i32 = Any.any_l ()
-    | & own: t_PermCellOwn_i32 = Any.any_l ()
-    | & _4: tup2_PermCell_i32_Ghost_PermCellOwn_i32 = Any.any_l ()
+    | & own: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _4: tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _8: Int32.t = Any.any_l ()
-    | & _10: t_PermCellOwn_i32 = Any.any_l ()
+    | & _10: t_Perm_PermCell_i32 = Any.any_l ()
     | & _14: MutBorrow.t Int32.t = Any.any_l ()
-    | & _16: MutBorrow.t t_PermCellOwn_i32 = Any.any_l ()
-    | & _17: MutBorrow.t t_PermCellOwn_i32 = Any.any_l ()
+    | & _16: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
+    | & _17: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _21: Int32.t = Any.any_l ()
-    | & _23: t_PermCellOwn_i32 = Any.any_l ()
+    | & _23: t_Perm_PermCell_i32 = Any.any_l ()
     | & _27: bool = Any.any_l ()
     | & _28: Int32.t = Any.any_l ()
-    | & _30: MutBorrow.t t_PermCellOwn_i32 = Any.any_l ()
-    | & _31: MutBorrow.t t_PermCellOwn_i32 = Any.any_l () ])
+    | & _30: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
+    | & _31: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l () ])
     [ return (result: Int32.t) -> {[@expl:foo ensures] Int32.to_int result = 3} (! return {result}) ]
 end

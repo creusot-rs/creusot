@@ -40,10 +40,10 @@ The `#[erasure]` check performs the following operations.
 
 Additional rules for pointers:
 
-- [`PtrOwn::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
-- [`PtrOwn::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
-- [`PtrOwn::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
-- [`PtrOwn::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.PtrOwn.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
+- [`Perm::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
+- [`Perm::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
+- [`Perm::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
+- [`Perm::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
 
 ## Example
 
