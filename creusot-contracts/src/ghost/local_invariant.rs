@@ -10,8 +10,11 @@
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_contracts::{
-//! #     cell::{PermCell, PermCellOwn},
-//! #     ghost::local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
+//! #     cell::PermCell,
+//! #     ghost::{
+//! #         local_invariant::{LocalInvariant, Protocol, Tokens, declare_namespace},
+//! #         perm::Perm,
+//! #     },
 //! #     logic::Id,
 //! #     prelude::*,
 //! # };
@@ -29,7 +32,7 @@
 //!     }
 //! }
 //!
-//! struct PermCellLocalInv<T>(PermCellOwn<T>);
+//! struct PermCellLocalInv<T>(Perm<PermCell<T>>);
 //! impl<T: Invariant> Protocol for PermCellLocalInv<T> {
 //!     type Public = Id;
 //!

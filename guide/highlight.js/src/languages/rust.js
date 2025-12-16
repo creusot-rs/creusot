@@ -106,7 +106,6 @@ export const CREUSOT_TYPES = [
   "Mapping",
   "Perm",
   "PermCell",
-  "PermCellOwn",
   "PeanoInt",
   "PredCell",
   "Real",
