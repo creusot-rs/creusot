@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{
     ghost::{
         Committer,
-        invariant::{AtomicInvariant, Protocol, declare_namespace},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         resource::Resource,
     },
     logic::{
@@ -34,20 +34,23 @@ impl Protocol for ParallelAddAtomicInv {
             self.auth1.id() == data.1 &&
             self.auth2.id() == data.2 &&
             self.auth1@.auth() != None &&
-            self.auth2@.auth() != None
+            self.auth2@.auth() != None &&
+            self.own.val()@ ==
+                if self.auth1@.auth().unwrap_logic().unwrap_logic().0 { 1 } else { 0 }
+                // NOTE: + if self.auth2@.auth().unwrap_logic().unwrap_logic().0 { 1 } else { 0 }
         }
     }
 }
 
-pub fn parallel_add() {
+#[requires(tokens.contains(PARALLEL_ADD()))]
+pub fn parallel_add(mut tokens: Ghost<Tokens>) {
     let (atomic, own) = AtomicI32Own::new(0);
 
     let false_ = Some(Excl(false));
-    let true_ = Some(Excl(true));
 
     let mut auth1 = Resource::alloc(snapshot!(Auth::new(Some(false_), false_)));
     let mut auth2 = Resource::alloc(snapshot!(Auth::new(Some(false_), false_)));
-    let mut frag1 = ghost! {auth1.split_off(snapshot!(Auth::new_frag(false_)), snapshot!(Auth::new_auth(false_)))};
+    let frag1 = ghost! {auth1.split_off(snapshot!(Auth::new_frag(false_)), snapshot!(Auth::new_auth(false_)))};
     let frag2 = ghost! {auth2.split_off(snapshot!(Auth::new_frag(false_)), snapshot!(Auth::new_auth(false_)))};
 
     let inv = AtomicInvariant::new(
@@ -60,20 +63,22 @@ pub fn parallel_add() {
         snapshot!(PARALLEL_ADD()),
     );
 
-    let inv_borrow = inv.borrow();
-    let mut frag1_borrow = frag1.borrow_mut();
-
     thread::scope(|s| {
         let t1 = s.spawn(|tokens| {
+            let inv = &inv;
+            let mut frag1 = frag1;
+
+            let true_ = Some(Excl(true));
+
             atomic.store(
                 1,
                 ghost! {
                     #[check(ghost)]
                     |c: &mut Committer| {
-                        inv_borrow.open(tokens.into_inner(), #[check(ghost)] move |inv: &mut ParallelAddAtomicInv| {
-                            inv.auth1.join_in(frag1_borrow.take());
+                        inv.open(tokens.into_inner(), #[check(ghost)] move |inv: &mut ParallelAddAtomicInv| {
+                            inv.auth1.join_in(frag1.take());
                             inv.auth1.update(ViewUpdate(snapshot!(|()| (true_, true_))));
-                            **frag1_borrow = inv.auth1.split_off(snapshot!(Auth::new_frag(true_)), snapshot!(Auth::new_auth(true_)));
+                            *frag1 = inv.auth1.split_off(snapshot!(Auth::new_frag(true_)), snapshot!(Auth::new_auth(true_)));
                             c.shoot(&mut inv.own);
                         })
                     }
@@ -81,11 +86,35 @@ pub fn parallel_add() {
             );
         });
 
-        let t2 = s.spawn(|_| {});
+        // NOTE: let t2 = s.spawn(|tokens| {
+        //     let inv = &inv;
+        //     let mut frag2 = frag2;
+        //
+        //     let true_ = Some(Excl(true))
+        //
+        //     atomic.store(
+        //         1,
+        //         ghost! {
+        //             #[check(ghost)]
+        //             |c: &mut Committer| {
+        //                 inv.open(tokens.into_inner(), #[check(ghost)] move |inv: &mut ParallelAddAtomicInv| {
+        //                     inv.auth2.join_in(frag2.take());
+        //                     inv.auth2.update(ViewUpdate(snapshot!(|()| (true_, true_))));
+        //                     *frag2 = inv.auth2.split_off(snapshot!(Auth::new_frag(true_)), snapshot!(Auth::new_auth(true_)));
+        //                     c.shoot(&mut inv.own);
+        //                 })
+        //             }
+        //         },
+        //     );
+        // });
 
         let _ = t1.join_unwrap();
-        let _ = t2.join_unwrap();
+        // NOTE: let _ = t2.join_unwrap();
 
-        // proof_assert!(own.val() == 1i32);
+        ghost! {
+            inv.open(tokens.into_inner(), #[check(ghost)] move |inv: &mut ParallelAddAtomicInv| {
+                proof_assert!(inv.own.val() == 1i32);
+            })
+        };
     });
 }
