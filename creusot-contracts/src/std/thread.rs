@@ -92,8 +92,8 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
 }
 
 /// Creusot wrapper around [`std::thread::scope`].
-#[requires(forall<s> f.precondition((s,)))]
-#[ensures(exists<s> f.postcondition_once((s,),result))]
+#[requires(forall<s> inv(s) ==> f.precondition((s,)))]
+#[ensures(exists<s> inv(s) && f.postcondition_once((s,),result))]
 #[trusted]
 pub fn scope<'env, F, T>(f: F) -> T
 where
