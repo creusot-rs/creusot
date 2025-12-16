@@ -242,7 +242,7 @@ impl Committer {
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
     #[logic(opaque)]
-    pub fn id(self) -> crate::std::sync::AtomicI32 {
+    pub fn tied(self) -> crate::std::sync::AtomicI32 {
         dead
     }
 
@@ -256,9 +256,9 @@ impl Committer {
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
     #[requires(!self.shot())]
-    #[requires(self.id() == own.id())]
+    #[requires(self.tied() == own.tied())]
     #[ensures((^self).shot())]
-    #[ensures((^own).id() == (*own).id())]
+    #[ensures((^own).tied() == (*own).tied())]
     #[ensures((^own).val() == self.final_value())]
     #[check(ghost)]
     #[trusted]

@@ -60,8 +60,10 @@
 //! For now, [`Tokens`] must be explicitely passed to [`open`](NonAtomicInvariant::open).
 //! We plan to relax this limitation at some point.
 
-use crate::{logic::Set, prelude::*};
-use std::{cell::UnsafeCell, marker::PhantomData};
+#![allow(unused_variables)]
+
+use crate::{ghost::FnGhost, logic::Set, prelude::*};
+use std::marker::PhantomData;
 
 /// Declare a new namespace.
 ///
@@ -178,7 +180,6 @@ impl Tokens<'_> {
     #[ensures(result.0.contains(*ns))]
     #[ensures(result.1.namespaces() == self.namespaces().remove(*ns))]
     #[check(ghost)]
-    #[allow(unused_variables)]
     pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
         (Tokens(PhantomData, PhantomData), Tokens(PhantomData, PhantomData))
     }
@@ -208,11 +209,11 @@ pub trait Protocol {
 }
 
 #[opaque]
-pub struct AtomicInvariant<T: Protocol> {
-    value: UnsafeCell<T>,
-}
+pub struct AtomicInvariant<T: Protocol>(PhantomData<T>);
 
-impl<T: Protocol + Send> AtomicInvariant<T> {
+unsafe impl<T: Protocol + Send> Sync for AtomicInvariant<T> {}
+
+impl<T: Protocol> AtomicInvariant<T> {
     /// Construct a `AtomicInvariant`
     ///
     /// # Parameters
@@ -228,10 +229,10 @@ impl<T: Protocol + Send> AtomicInvariant<T> {
     #[check(ghost)]
     pub fn new(
         value: Ghost<T>,
-        #[allow(unused)] public: Snapshot<T::Public>,
-        #[allow(unused)] namespace: Snapshot<Namespace>,
+        public: Snapshot<T::Public>,
+        namespace: Snapshot<Namespace>,
     ) -> Ghost<Self> {
-        ghost!(Self { value: UnsafeCell::new(value.into_inner()) })
+        Ghost::conjure()
     }
 
     /// Get the namespace associated with this invariant.
@@ -251,32 +252,32 @@ impl<T: Protocol + Send> AtomicInvariant<T> {
     /// This will call the closure `f` with the inner data. You must restore the
     /// contained [`Protocol`] before returning from the closure.
     #[trusted]
-    #[requires(tokens.contains(this.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> t.protocol(this.public()) && inv(t) ==>
+    #[requires(tokens.contains(self.namespace()))]
+    #[requires(forall<t: &mut T> t.protocol(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(this.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> t.protocol(this.public()) && f.postcondition_once((t,), result))]
-    pub fn open<'a, A>(
-        this: Ghost<&'a Self>,
-        tokens: Ghost<Tokens<'a>>,
-        f: impl FnOnce(Ghost<&'a mut T>) -> A,
-    ) -> A {
-        let _ = tokens;
-        // SAFETY: this operation happens in a ghost block, meaning it only
-        // make sense when compiling with creusot: in this case, Creusot will
-        // make sure that this is in fact safe.
-        let borrow = ghost!(unsafe { &mut *this.value.get() });
-        f(borrow)
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(self.public())))]
+    #[ensures(exists<t: &mut T> t.protocol(self.public()) && f.postcondition_once((t,), result))]
+    #[check(ghost)]
+    pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
+        panic!("Should not be called outside ghost code")
+    }
+
+    /// Open the invariant to get the data stored inside, immutably.
+    /// This allows reentrant access to the invariant.
+    #[trusted]
+    #[requires(tokens.contains(self.namespace()))]
+    #[ensures(result.protocol(self.public()))]
+    #[check(ghost)]
+    pub fn open_const<'a>(&'a self, tokens: &'a Tokens) -> &'a T {
+        panic!("Should not be called outside ghost code")
     }
 }
 
 /// A ghost structure, that holds a piece of data (`T`) together with an
 /// [protocol](Protocol).
 #[opaque]
-pub struct NonAtomicInvariant<T: Protocol> {
-    value: UnsafeCell<T>,
-}
+pub struct NonAtomicInvariant<T: Protocol>(PhantomData<T>);
 
 /// Define method call syntax for [`NonAtomicInvariant::open`].
 pub trait NonAtomicInvariantExt<'a> {
@@ -361,10 +362,10 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     #[check(ghost)]
     pub fn new(
         value: Ghost<T>,
-        #[allow(unused)] public: Snapshot<T::Public>,
-        #[allow(unused)] namespace: Snapshot<Namespace>,
+        public: Snapshot<T::Public>,
+        namespace: Snapshot<Namespace>,
     ) -> Ghost<Self> {
-        ghost!(Self { value: UnsafeCell::new(value.into_inner()) })
+        Ghost::conjure()
     }
 
     /// Get the namespace associated with this invariant.
@@ -395,12 +396,7 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         tokens: Ghost<Tokens<'a>>,
         f: impl FnOnce(Ghost<&'a mut T>) -> A,
     ) -> A {
-        let _ = tokens;
-        // SAFETY: this operation happens in a ghost block, meaning it only
-        // make sense when compiling with creusot: in this case, Creusot will
-        // make sure that this is in fact safe.
-        let borrow = ghost!(unsafe { &mut *this.value.get() });
-        f(borrow)
+        f(Ghost::conjure())
     }
 
     /// Open the invariant to get the data stored inside, immutably.
@@ -410,7 +406,6 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     #[ensures(result.protocol(self.public()))]
     #[check(ghost)]
     pub fn open_const<'a>(&'a self, tokens: &'a Tokens) -> &'a T {
-        let _ = tokens;
-        unsafe { &*self.value.get() }
+        panic!("Should not be called outside ghost code")
     }
 }

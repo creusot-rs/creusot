@@ -66,12 +66,12 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     ///
     /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut Committer> !c.shot() ==> c.id() == *self ==> c.final_value() == val ==>
+    #[requires(forall<c: &mut Committer> !c.shot() ==> c.tied() == *self ==> c.final_value() == val ==>
         f.precondition((c,)) &&
         (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut Committer>
-        !c.shot() && c.id() == *self && c.final_value() == val &&
+        !c.shot() && c.tied() == *self && c.final_value() == val &&
         f.postcondition_once((c,), *result)
     )]
     #[trusted]
@@ -90,9 +90,9 @@ impl AtomicI32 {
 pub struct AtomicI32Own;
 
 impl AtomicI32Own {
-    /// Which atomic does this holds the ownership for
+    /// The atomic which this [`AtomicI32Own`] holds the ownership for
     #[logic(opaque)]
-    pub fn id(self) -> AtomicI32 {
+    pub fn tied(self) -> AtomicI32 {
         dead
     }
 
@@ -103,7 +103,7 @@ impl AtomicI32Own {
     }
 
     #[ensures(result.1.val() == val)]
-    #[ensures(result.1.id() == result.0)]
+    #[ensures(result.1.tied() == result.0)]
     #[trusted]
     pub fn new(val: i32) -> (AtomicI32, Ghost<AtomicI32Own>) {
         (AtomicI32(std::sync::atomic::AtomicI32::new(val)), Ghost::conjure())
