@@ -81,7 +81,7 @@ pub mod implementation {
     /// Structure describing the invariants respected by the pointers.
     struct PA<T> {
         /// Holds the permission for each pointer.
-        perms: FMap<Snapshot<PermCell<Inner<T>>>, Perm<PermCell<Inner<T>>>>,
+        perms: FMap<Snapshot<PermCell<Inner<T>>>, Box<Perm<PermCell<Inner<T>>>>>,
         /// Holds the 'authoritative' version of the map of logical values.
         ///
         /// When we open the invariant, we get (a mutable borrow to) this, and can learn
@@ -233,8 +233,9 @@ pub mod implementation {
                 // prove that self is contained in the map by validity
                 ghost! { pa.auth.contains(&self.frag) };
                 Self::reroot(&self.permcell, auth_id, ghost!(&mut *pa));
-                let perm =
-                    ghost!(pa.into_inner().perms.get_ghost(&snapshot!(*self.permcell@)).unwrap());
+                let perm = ghost!(
+                    &**pa.into_inner().perms.get_ghost(&snapshot!(*self.permcell@)).unwrap()
+                );
                 let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
                     unreachable!()
                 };
@@ -276,7 +277,7 @@ pub mod implementation {
             let next = std::mem::replace(next, cur.clone());
 
             // Take the ownership of next
-            let perm_next = ghost! { pa.perms.get_mut_ghost(&snapshot!(*next@)).unwrap() };
+            let perm_next = ghost! { &mut **pa.perms.get_mut_ghost(&snapshot!(*next@)).unwrap() };
             let bor_next = unsafe { next.borrow_mut(perm_next) };
 
             // Exchange the value field witht the content of the array

@@ -53,7 +53,7 @@ mod implementation {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        perms: FMap<Element, Perm<*const Node<T>>>,
+        perms: FMap<Element, Box<Perm<*const Node<T>>>>,
         /// Map each element in [`Self::domain`] to its payload.
         // `img` in the why3 proof
         payloads: Snapshot<Mapping<Element, T>>,
@@ -224,7 +224,7 @@ mod implementation {
     #[ensures(uf.0.depth[result] >= uf.0.depth[elem])]
     #[variant(*uf.0.max_depth - uf.0.depth[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element) -> Element {
-        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
+        let perm = ghost!(&**uf.0.perms.get_ghost(&elem).unwrap());
         match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             &Node::Root { .. } => elem,
             &Node::Link(e) => {
@@ -232,7 +232,7 @@ mod implementation {
                 // path compression
                 ghost_let!(mut uf = &mut uf.0);
                 proof_assert!(uf.depth[elem] < uf.depth[root]);
-                let mut_perm = ghost!(uf.perms.get_mut_ghost(&elem).unwrap());
+                let mut_perm = ghost!(&mut **uf.perms.get_mut_ghost(&elem).unwrap());
                 unsafe { *Perm::as_mut(elem.0 as *mut Node<T>, mut_perm) = Node::Link(root) };
                 root
             }
@@ -256,7 +256,7 @@ mod implementation {
     #[requires(uf.root(elem) == elem)]
     #[ensures(*result == uf.payload(elem))]
     pub fn get<T>(uf: Ghost<&UnionFind<T>>, elem: Element) -> &T {
-        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
+        let perm = ghost!(&**uf.0.perms.get_ghost(&elem).unwrap());
         match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             Node::Root { payload, .. } => payload,
             _ => unreachable!(),
@@ -293,8 +293,8 @@ mod implementation {
 
         ghost_let!(mut uf = &mut uf.0);
 
-        let (perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
-        let bx = unsafe { Perm::as_mut(x.0 as *mut Node<T>, perm_x) };
+        let (mut perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
+        let bx = unsafe { Perm::as_mut(x.0 as *mut Node<T>, ghost!(&mut **perm_x)) };
         let by = unsafe { Perm::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut_ghost(&y).unwrap())) };
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };

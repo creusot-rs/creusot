@@ -60,17 +60,25 @@ module M_impl_S__minimize (* S *)
   axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_i32 [inv_Perm_ptr_i32 x]. inv_Perm_ptr_i32 x
       = invariant_Perm_ptr_i32 x
   
-  predicate invariant_Ghost_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
+  predicate invariant_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_Perm_ptr_i32
+  predicate inv_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Box_Perm_ptr_i32_Global _1
   
-  predicate inv_Ghost_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Ghost_Perm_ptr_i32 _1
+  meta "rewrite_def" predicate inv_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate inv_Ghost_Perm_ptr_i32
+  predicate invariant_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Box_Perm_ptr_i32_Global self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Box_Perm_ptr_i32_Global
+  
+  predicate inv_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_Ghost_Box_Perm_ptr_i32_Global _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Box_Perm_ptr_i32_Global
   
   predicate inv_S (_1: t_S)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv_S x]. inv_S x = inv_Ghost_Perm_ptr_i32 x.perm
+  axiom inv_axiom'0 [@rewrite]: forall x: t_S [inv_S x]. inv_S x = inv_Ghost_Box_Perm_ptr_i32_Global x.perm
   
   predicate invariant_refmut_S [@inline:trivial] (self: MutBorrow.t t_S) = inv_S self.current /\ inv_S self.final
   
@@ -84,13 +92,30 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate resolve_refmut_S
   
-  predicate invariant_ref_Ghost_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Ghost_Perm_ptr_i32 self
+  predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Ghost_Box_Perm_ptr_i32_Global self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_Perm_ptr_i32
+  meta "rewrite_def" predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global
   
-  predicate inv_ref_Ghost_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Ghost_Perm_ptr_i32 _1
+  predicate inv_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_ref_Ghost_Box_Perm_ptr_i32_Global _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_Perm_ptr_i32
+  meta "rewrite_def" predicate inv_ref_Ghost_Box_Perm_ptr_i32_Global
+  
+  predicate invariant_ref_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Box_Perm_ptr_i32_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Box_Perm_ptr_i32_Global
+  
+  predicate inv_ref_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_ref_Box_Perm_ptr_i32_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_i32_Global
+  
+  let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
+    any
+    [ return (result: t_Perm_ptr_i32) -> {inv_ref_Box_Perm_ptr_i32_Global result} {result = self} (! return {result}) ]
   
   predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
@@ -99,10 +124,6 @@ module M_impl_S__minimize (* S *)
   predicate inv_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Perm_ptr_i32 _1
   
   meta "rewrite_def" predicate inv_ref_Perm_ptr_i32
-  
-  let rec deref_Ghost_Perm_ptr_i32 (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Perm_ptr_i32 self}
-    any [ return (result: t_Perm_ptr_i32) -> {inv_ref_Perm_ptr_i32 result} {result = self} (! return {result}) ]
   
   predicate invariant_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_ref_Perm_ptr_i32 self
   
@@ -132,7 +153,7 @@ module M_impl_S__minimize (* S *)
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_S self} any) ]
       | s1 = -{resolve_refmut_S self}- s2
-      | s2 = deref_Ghost_Perm_ptr_i32 {self.current.perm} (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
+      | s2 = deref_Ghost_Box_Perm_ptr_i32_Global {self.current.perm} (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
       | s3 = [ &_11 <- _12 ] s4
       | s4 = new_ref_Perm_ptr_i32 {_11} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
       | s5 = as_ref_i32 {self.current.ptr} {_9} (fun (_x: Int32.t) -> [ &r <- _x ] s6)

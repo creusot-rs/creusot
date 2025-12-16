@@ -11,7 +11,7 @@ pub fn wrong_permcell_permission() {
     let (_, perm) = PermCell::new(1i32);
 
     // does not work: we know that `perm` is not `cell`'s permission
-    let _ = unsafe { cell.borrow(perm.borrow()) };
+    let _ = unsafe { cell.borrow(ghost!(&**perm)) };
 }
 
 pub fn unknown_ptr_perm_permission(ptr: *const i32, perm: Ghost<&Perm<*const i32>>) {
@@ -23,5 +23,5 @@ pub fn wrong_ptr_perm_permission() {
     let (_, perm) = Perm::new(1i32);
 
     // does not work: we know that `perm` is not `ptr`'s permission
-    let _ = unsafe { Perm::as_ref(ptr, perm.borrow()) };
+    let _ = unsafe { Perm::as_ref(ptr, ghost!(&**perm)) };
 }

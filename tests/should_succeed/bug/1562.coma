@@ -110,9 +110,23 @@ module M_impl_List_T__foo (* List<T> *)
   
   type t_Perm_PermCell_List_T
   
-  let rec borrow_mut_Perm_PermCell_List_T (self: MutBorrow.t t_Perm_PermCell_List_T)
+  let rec deref_mut_Ghost_Box_Perm_PermCell_List_T_Global (self: MutBorrow.t t_Perm_PermCell_List_T)
     (return (x: MutBorrow.t t_Perm_PermCell_List_T)) = any
     [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {result = self} (! return {result}) ]
+  
+  predicate resolve_refmut_Box_Perm_PermCell_List_T_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_List_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Box_Perm_PermCell_List_T_Global
+  
+  predicate resolve_refmut_Perm_PermCell_List_T [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_List_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_List_T
+  
+  let rec new_refmut_Perm_PermCell_List_T (x: MutBorrow.t t_Perm_PermCell_List_T)
+    (return (x'0: MutBorrow.t t_Perm_PermCell_List_T)) = any
+    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {result = x} (! return {result}) ]
   
   function ward_PermCell_List_T (self: t_Perm_PermCell_List_T) : t_PermCell_List_T
   
@@ -152,10 +166,15 @@ module M_impl_List_T__foo (* List<T> *)
     forall x: t_Perm_PermCell_List_T [resolve_Perm_PermCell_List_T'0 x]. resolve_Perm_PermCell_List_T'0 x
       -> resolve_Perm_PermCell_List_T x
   
-  predicate resolve_Ghost_Perm_PermCell_List_T [@inline:trivial] (_1: t_Perm_PermCell_List_T) =
+  predicate resolve_Box_Perm_PermCell_List_T_Global [@inline:trivial] (_1: t_Perm_PermCell_List_T) =
     resolve_Perm_PermCell_List_T'0 _1
   
-  meta "rewrite_def" predicate resolve_Ghost_Perm_PermCell_List_T
+  meta "rewrite_def" predicate resolve_Box_Perm_PermCell_List_T_Global
+  
+  predicate resolve_Ghost_Box_Perm_PermCell_List_T_Global [@inline:trivial] (_1: t_Perm_PermCell_List_T) =
+    resolve_Box_Perm_PermCell_List_T_Global _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Box_Perm_PermCell_List_T_Global
   
   meta "compute_max_steps" 1000000
   
@@ -190,22 +209,36 @@ module M_impl_List_T__foo (* List<T> *)
           | s10 = -{resolve_Rc_PermCell_List_T_Global next'0}- s11
           | s11 = as_ref_Rc_PermCell_List_T_Global {next'0} (fun (_x: t_PermCell_List_T) -> [ &_17 <- _x ] s12)
           | s12 = MutBorrow.borrow_mut <t_Perm_PermCell_List_T> {perm}
-              (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_20 <- _bor ] [ &perm <- _bor.final ] s13)
-          | s13 = borrow_mut_Perm_PermCell_List_T {_20}
-              (fun (_x: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_19 <- _x ] s14)
-          | s14 = borrow_mut_List_T {_17} {_19} (fun (_x: MutBorrow.t t_List_T) -> [ &_15 <- _x ] s15)
-          | s15 = MutBorrow.borrow_final <t_List_T> {_15.current} {MutBorrow.get_id _15}
+              (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_24 <- _bor ] [ &perm <- _bor.final ] s13)
+          | s13 = deref_mut_Ghost_Box_Perm_PermCell_List_T_Global {_24}
+              (fun (_x: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_23 <- _x ] s14)
+          | s14 = MutBorrow.borrow_final <t_Perm_PermCell_List_T> {_23.current} {MutBorrow.get_id _23}
+              (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) ->
+                [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s15)
+          | s15 = MutBorrow.borrow_final <t_Perm_PermCell_List_T> {_22.current} {MutBorrow.get_id _22}
+              (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) ->
+                [ &_21 <- _bor ] [ &_22 <- { _22 with current = _bor.final } ] s16)
+          | s16 = -{resolve_refmut_Box_Perm_PermCell_List_T_Global _23}- s17
+          | s17 = -{resolve_refmut_Perm_PermCell_List_T _22}- s18
+          | s18 = MutBorrow.borrow_final <t_Perm_PermCell_List_T> {_21.current} {MutBorrow.get_id _21}
+              (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) ->
+                [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s19)
+          | s19 = new_refmut_Perm_PermCell_List_T {_20}
+              (fun (_x: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_19 <- _x ] s20)
+          | s20 = -{resolve_refmut_Perm_PermCell_List_T _21}- s21
+          | s21 = borrow_mut_List_T {_17} {_19} (fun (_x: MutBorrow.t t_List_T) -> [ &_15 <- _x ] s22)
+          | s22 = MutBorrow.borrow_final <t_List_T> {_15.current} {MutBorrow.get_id _15}
               (fun (_bor: MutBorrow.t t_List_T) ->
                 [ &_14 <- _bor ] -{inv_List_T _bor.final}-
-                [ &_15 <- { _15 with current = _bor.final } ] s16) [ _ck -> (! {inv_List_T _15.current} any) ]
-          | s16 = [ &p <- _14 ] s17
-          | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T _15} any) ]
-          | s18 = -{resolve_refmut_List_T _15}- s19
-          | s19 = bb1 ] ] ]
+                [ &_15 <- { _15 with current = _bor.final } ] s23) [ _ck -> (! {inv_List_T _15.current} any) ]
+          | s23 = [ &p <- _14 ] s24
+          | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T _15} any) ]
+          | s25 = -{resolve_refmut_List_T _15}- s26
+          | s26 = bb1 ] ] ]
     | bb4 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T p} any) ]
       | s1 = -{resolve_refmut_List_T p}- s2
-      | s2 = -{resolve_Ghost_Perm_PermCell_List_T perm}- s3
+      | s2 = -{resolve_Ghost_Box_Perm_PermCell_List_T_Global perm}- s3
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
@@ -221,5 +254,9 @@ module M_impl_List_T__foo (* List<T> *)
     | & _15: MutBorrow.t t_List_T = Any.any_l ()
     | & _17: t_PermCell_List_T = Any.any_l ()
     | & _19: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l ()
-    | & _20: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _20: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l ()
+    | & _21: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l ()
+    | & _22: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l ()
+    | & _23: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l ()
+    | & _24: MutBorrow.t t_Perm_PermCell_List_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

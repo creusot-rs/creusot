@@ -11,7 +11,7 @@ pub struct List<T> {
 
 impl<T> List<T> {
     #[requires(false)]
-    pub fn foo(&mut self, mut perm: Ghost<Perm<PermCell<List<T>>>>) {
+    pub fn foo(&mut self, mut perm: Ghost<Box<Perm<PermCell<List<T>>>>>) {
         let mut p = self;
         let mut next;
 
@@ -19,7 +19,7 @@ impl<T> List<T> {
             let curr = p.head.take().unwrap();
             next = curr.next.clone();
             unsafe {
-                p = next.as_ref().borrow_mut(perm.borrow_mut());
+                p = next.as_ref().borrow_mut(ghost!(&mut **perm));
             }
         }
     }

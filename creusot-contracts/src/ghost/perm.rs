@@ -19,15 +19,19 @@ pub trait Container {
 /// A `Perm` only exists in the ghost world, and it must be used in conjunction with its container
 /// in order to read or write the value.
 ///
+/// Permissions are made unsized to guarantee that they cannot be replaced in a mutable reference.
+/// This would allow the permission to outlive the reference it has been placed in. This makes it
+/// easier to specify splitting a mutable reference of a permission to a slice, and makes it
+/// possible to specify functions such as `Perm::from_mut`
+///
 /// # Pointer permissions
 ///
 /// A particular case of permissions is the case of permissions for raw pointers (i.e., `C` is
 /// `*const T`). In this case, the permission represents the ownership of the memory cell.
 ///
-/// A warning regarding memory leaks: dropping a `Ghost<Perm<*const T>>` (we only ever handle ghost
-/// `Perm` values) cannot deallocate the memory corresponding to the pointer because it is a ghost
-/// value. One must thus remember to explicitly call [`drop`] in order to free the memory tracked
-/// by a `Perm<*const T>` token.
+/// A warning regarding memory leaks: dropping a `Perm<*const T>` cannot deallocate the memory
+/// corresponding to the pointer because it is a ghost value. One must thus remember to explicitly
+/// call [`drop`] in order to free the memory tracked by a `Perm<*const T>` token.
 ///
 /// ## Safety
 ///
@@ -50,7 +54,7 @@ pub trait Container {
 /// and allocating too large objects contradicts the [`Perm::invariant`] that
 /// allocations have size at most `isize::MAX`.
 #[opaque]
-pub struct Perm<C: ?Sized + Container>(#[allow(unused)] PhantomData<C::Value>);
+pub struct Perm<C: ?Sized + Container>(#[allow(unused)] [PhantomData<C::Value>]);
 
 impl<C: ?Sized + Container> Perm<C> {
     /// Returns the underlying container that is managed by this permission.

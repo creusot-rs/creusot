@@ -32,7 +32,7 @@
 //!     }
 //! }
 //!
-//! struct PermCellLocalInv<T>(Perm<PermCell<T>>);
+//! struct PermCellLocalInv<T>(Box<Perm<PermCell<T>>>);
 //! impl<T: Invariant> Protocol for PermCellLocalInv<T> {
 //!     type Public = Id;
 //!

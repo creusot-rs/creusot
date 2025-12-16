@@ -46,7 +46,7 @@ impl<T> PermCell<T> {
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
     #[ensures((*result.1)@ == value)]
-    pub fn new(value: T) -> (Self, Ghost<Perm<PermCell<T>>>) {
+    pub fn new(value: T) -> (Self, Ghost<Box<Perm<PermCell<T>>>>) {
         let this = Self(UnsafeCell::new(value));
         let perm = Ghost::conjure();
         (this, perm)
@@ -99,7 +99,7 @@ impl<T> PermCell<T> {
     #[check(terminates)]
     #[requires(self == *perm.ward())]
     #[ensures(result == perm@)]
-    pub fn into_inner(self, perm: Ghost<Perm<PermCell<T>>>) -> T {
+    pub fn into_inner(self, perm: Ghost<Box<Perm<PermCell<T>>>>) -> T {
         let _ = perm;
         self.0.into_inner()
     }

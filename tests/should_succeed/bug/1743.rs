@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::{ghost::perm::Perm, prelude::*};
 
 pub struct S {
-    pub perm: Ghost<Perm<*const i32>>,
+    pub perm: Ghost<Box<Perm<*const i32>>>,
     pub ptr: *const i32,
 }
 

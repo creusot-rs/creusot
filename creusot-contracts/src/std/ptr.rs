@@ -472,7 +472,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// cell initialized with `v`.
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0 && *result.1.val() == v)]
-    pub fn new(v: T) -> (*mut T, Ghost<Perm<*const T>>)
+    pub fn new(v: T) -> (*mut T, Ghost<Box<Perm<*const T>>>)
     where
         T: Sized,
     {
@@ -484,7 +484,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0 && *result.1.val() == *val)]
     #[erasure(Box::into_raw)]
-    pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Perm<*const T>>) {
+    pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Box<Perm<*const T>>>) {
         (Box::into_raw(val), Ghost::conjure())
     }
 
@@ -601,7 +601,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
     #[erasure(Box::from_raw)]
-    pub unsafe fn to_box(ptr: *mut T, own: Ghost<Perm<*const T>>) -> Box<T> {
+    pub unsafe fn to_box(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) -> Box<T> {
         unsafe { Box::from_raw(ptr) }
     }
 
@@ -615,7 +615,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// [type documentation](Perm).
     #[check(terminates)]
     #[requires(ptr as *const T == *own.ward())]
-    pub unsafe fn drop(ptr: *mut T, own: Ghost<Perm<*const T>>) {
+    pub unsafe fn drop(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
 
