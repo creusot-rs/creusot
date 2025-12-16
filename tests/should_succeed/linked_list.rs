@@ -23,11 +23,11 @@ impl<T> Invariant for List<T> {
              self.last.is_null_logic())
             ||
             (self.seq.len() > 0 &&
-             self.first == self.seq[0].ptr() &&
-             self.last  == self.seq[self.seq.len() - 1].ptr() &&
+             self.first == self.seq[0].tied() &&
+             self.last  == self.seq[self.seq.len() - 1].tied() &&
              // the cells in `seq` are chained properly
              (forall<i> 0 <= i && i < self.seq.len() - 1 ==>
-                 self.seq[i].val().next == self.seq[i+1].ptr()) &&
+                 self.seq[i].val().next == self.seq[i+1].tied()) &&
              self.seq[self.seq.len() - 1].val().next.is_null_logic())
         }
     }

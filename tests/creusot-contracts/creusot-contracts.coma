@@ -1,57 +1,3 @@
-module M_cell__permcell__impl_PermCellOwn_T__id_ghost (* cell::permcell::PermCellOwn<T> *)
-  use creusot.prelude.Any
-  
-  type t_Id
-  
-  type t_PermCellOwn_T
-  
-  function id_T (self: t_PermCellOwn_T) : t_Id
-  
-  let rec into_ghost_Id (self: t_Id) (return (x: t_Id)) = any
-    [ return (result: t_Id) -> {result = self} (! return {result}) ]
-  
-  predicate inv_PermCellOwn_T (_1: t_PermCellOwn_T)
-  
-  predicate invariant_ref_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) = inv_PermCellOwn_T self
-  
-  meta "rewrite_def" predicate invariant_ref_PermCellOwn_T
-  
-  predicate inv_ref_PermCellOwn_T [@inline:trivial] (_1: t_PermCellOwn_T) = invariant_ref_PermCellOwn_T _1
-  
-  meta "rewrite_def" predicate inv_ref_PermCellOwn_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec id_ghost_T (self: t_PermCellOwn_T) (return (x: t_Id)) =
-    {[@expl:id_ghost 'self' type invariant] inv_ref_PermCellOwn_T self}
-    (! bb0
-    [ bb0 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: t_Id = Any.any_l () | & self: t_PermCellOwn_T = self ])
-    [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_T self} (! return {result}) ]
-end
-module M_cell__permcell__impl_PermCell_T_1__id_ghost (* cell::permcell::PermCell<T> *)
-  use creusot.prelude.Any
-  
-  type t_Id
-  
-  type t_PermCell_T
-  
-  function id_T (self: t_PermCell_T) : t_Id
-  
-  let rec into_ghost_Id (self: t_Id) (return (x: t_Id)) = any
-    [ return (result: t_Id) -> {result = self} (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec id_ghost_T (self: t_PermCell_T) (return (x: t_Id)) = (! bb0
-    [ bb0 = s0 [ s0 = into_ghost_Id {id_T self} (fun (_x: t_Id) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: t_Id = Any.any_l () | & self: t_PermCell_T = self ])
-    [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_T self} (! return {result}) ]
-end
 module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -117,11 +63,7 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   
   meta "rewrite_def" predicate inv_Ghost_refmut_PermCellOwn_T
   
-  type t_Id
-  
-  function id_T (self: t_PermCell_T) : t_Id
-  
-  function id_T'0 (self: t_PermCellOwn_T) : t_Id
+  function tied_T (self: t_PermCellOwn_T) : t_PermCell_T
   
   function view_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) : t_T = val_T self
   
@@ -135,12 +77,12 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   let rec replace_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (val': t_T) (return (x: t_T)) =
     {[@expl:replace 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
     {[@expl:replace 'val' type invariant] inv_T val'}
-    {[@expl:replace requires] id_T self = id_T'0 perm.current}
+    {[@expl:replace requires] self = tied_T perm.current}
     any
     [ return (result: t_T) -> {inv_T result}
       {val' = view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       {result = view_PermCellOwn_T perm.current}
-      {id_T self = id_T'0 (fin_Ghost_refmut_PermCellOwn_T perm)}
+      {self = tied_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       (! return {result}) ]
   
   predicate resolve_default [@inline:trivial] (_1: ()) = true
@@ -204,7 +146,7 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
   
   let rec take_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (return (x: t_T)) =
     {[@expl:take 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
-    {[@expl:take requires] id_T self = id_T'0 perm.current}
+    {[@expl:take requires] self = tied_T perm.current}
     (! bb0
     [ bb0 = s0
       [ s0 = default_T (fun (_x: t_T) -> [ &_15 <- _x ] s1)
@@ -215,7 +157,7 @@ module M_cell__permcell__impl_PermCell_T_2__take (* cell::permcell::PermCell<T> 
     | & perm: MutBorrow.t t_PermCellOwn_T = perm
     | & _15: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@expl:take result type invariant] inv_T result}
-      {[@expl:take ensures #0] id_T self = id_T'0 (fin_Ghost_refmut_PermCellOwn_T perm)}
+      {[@expl:take ensures #0] self = tied_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       {[@expl:take ensures #1] result = view_PermCellOwn_T perm.current}
       {[@expl:take ensures #2] postcondition_default () () (view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm))}
       (! return {result}) ]
@@ -909,7 +851,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
   
   predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
     UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
@@ -933,7 +875,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   
   meta "rewrite_def" predicate is_aligned_ptr_T
   
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
+  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
   
   predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
   
@@ -962,11 +904,11 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
   meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (ptr_T self)
+    not is_null_ptr_T (tied_T self)
     /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
+    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
     /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
@@ -989,7 +931,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
     {[@expl:from_box 'val' type invariant] inv_Box_T_Global val'}
     any
     [ return (result: tup2_ptr_T_Ghost_PtrOwn_T) -> {inv_tup2_ptr_T_Ghost_PtrOwn_T result}
-      {ptr_T result.f1 = result.f0 /\ val_T result.f1 = val'}
+      {tied_T result.f1 = result.f0 /\ val_T result.f1 = val'}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1003,7 +945,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_0__new (* ghost::ptr_own::PtrOwn<T> *)
     [ & _ret: tup2_ptr_T_Ghost_PtrOwn_T = Any.any_l () | & v: t_T = v ])
     [ return (result: tup2_ptr_T_Ghost_PtrOwn_T) ->
     {[@expl:new result type invariant] inv_tup2_ptr_T_Ghost_PtrOwn_T result}
-      {[@expl:new ensures] ptr_T result.f1 = result.f0 /\ val_T result.f1 = v}
+      {[@expl:new ensures] tied_T result.f1 = result.f0 /\ val_T result.f1 = v}
       (! return {result}) ]
 end
 module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
@@ -1024,7 +966,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
   
   predicate is_aligned_T (ptr: Opaque.ptr)
   
@@ -1032,7 +974,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   meta "rewrite_def" predicate is_aligned_ptr_T
   
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
+  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
   
   type t_Metadata
   
@@ -1061,11 +1003,11 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (ptr_T self)
+    not is_null_ptr_T (tied_T self)
     /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
+    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
     /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
@@ -1088,7 +1030,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   let rec to_box_T (ptr: Opaque.ptr) (own: t_PtrOwn_T) (return (x: t_T)) =
     {[@expl:to_box 'own' type invariant] inv_Ghost_PtrOwn_T own}
-    {[@expl:to_box requires] ptr = ptr_T own}
+    {[@expl:to_box requires] ptr = tied_T own}
     any [ return (result: t_T) -> {inv_Box_T_Global result} {result = val_T own} (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -1103,7 +1045,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__drop (* ghost::ptr_own::PtrOwn<T> *)
   
   let rec drop_T (ptr: Opaque.ptr) (own: t_PtrOwn_T) (return (x: ())) =
     {[@expl:drop 'own' type invariant] inv_Ghost_PtrOwn_T own}
-    {[@expl:drop requires] ptr = ptr_T own}
+    {[@expl:drop requires] ptr = tied_T own}
     (! bb0
     [ bb0 = s0
       [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
@@ -1129,7 +1071,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
   
   predicate is_aligned_T (ptr: Opaque.ptr)
   
@@ -1137,7 +1079,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
   
   meta "rewrite_def" predicate is_aligned_ptr_T
   
-  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (ptr_T self)
+  predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T) = is_aligned_ptr_T (tied_T self)
   
   type t_T
   
@@ -1168,11 +1110,11 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
   meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (ptr_T self)
+    not is_null_ptr_T (tied_T self)
     /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
+    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
     /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
@@ -1195,7 +1137,7 @@ module M_ghost__ptr_own__impl_PtrOwn_T_1__ptr_is_aligned_lemma (* ghost::ptr_own
     {[@expl:ptr_is_aligned_lemma 'self' type invariant] inv_ref_PtrOwn_T self}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:ptr_is_aligned_lemma ensures] is_aligned_ptr_T (ptr_T self)} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:ptr_is_aligned_lemma ensures] is_aligned_ptr_T (tied_T self)} (! return {result}) ]
 end
 module M_ghost__resource__fmap_view__impl_Authority_K_V__new (* ghost::resource::fmap_view::Authority<K, V> *)
   type namespace_other
@@ -48419,7 +48361,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -48448,11 +48390,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -48488,7 +48430,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
     any
     [ return (result: tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T) ->
     {inv_tup2_ptr_slice_T_Ghost_ref_PtrOwn_slice_T result}
-      {ptr_slice_T result.f1 = result.f0}
+      {tied_slice_T result.f1 = result.f0}
       {val_slice_T result.f1 = r}
       (! return {result}) ]
   
@@ -48521,7 +48463,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own (* <[T] as std::slice
     | & _11: Opaque.ptr = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) ->
     {[@expl:as_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
-      {[@expl:as_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr_slice_T result.f1'0)}
+      {[@expl:as_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_slice_T result.f1'0)}
       {[@expl:as_ptr_own ensures #1] self = val_slice_T result.f1'0}
       (! return {result}) ]
 end
@@ -48580,7 +48522,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -48617,11 +48559,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
   meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -48661,7 +48603,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
     any
     [ return (result: tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T) ->
     {inv_tup2_ptr_slice_T_Ghost_refmut_PtrOwn_slice_T result}
-      {ptr_slice_T result.f1.current = result.f0}
+      {tied_slice_T result.f1.current = result.f0}
       {val_slice_T result.f1.current = r.current}
       {val_slice_T result.f1.final = r.final}
       (! return {result}) ]
@@ -48712,7 +48654,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own (* <[T] as std::s
     | & _13: Opaque.ptr = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) ->
     {[@expl:as_mut_ptr_own result type invariant] inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
-      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (ptr_slice_T result.f1'0.current)}
+      {[@expl:as_mut_ptr_own ensures #0] result.f0'0 = Opaque.thin (tied_slice_T result.f1'0.current)}
       {[@expl:as_mut_ptr_own ensures #1] self.current = val_slice_T result.f1'0.current}
       {[@expl:as_mut_ptr_own ensures #2] self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1'0)}
       (! return {result}) ]
@@ -73824,7 +73766,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -73861,11 +73803,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -73911,7 +73853,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_own__refines (* <[T] 
   goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_refmut_slice_T self
       -> inv_refmut_slice_T self
       /\ (forall result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result
-          /\ result.f0 = Opaque.thin (ptr_slice_T result.f1.current)
+          /\ result.f0 = Opaque.thin (tied_slice_T result.f1.current)
           /\ self.current = val_slice_T result.f1.current
           /\ self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1)
         -> inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result)
@@ -73968,7 +73910,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -73997,11 +73939,11 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -74039,6 +73981,6 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
   goal refines: forall self: Slice64.slice t_T. inv_ref_slice_T self
       -> inv_ref_slice_T self
       /\ (forall result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result
-          /\ result.f0 = Opaque.thin (ptr_slice_T result.f1) /\ self = val_slice_T result.f1
+          /\ result.f0 = Opaque.thin (tied_slice_T result.f1) /\ self = val_slice_T result.f1
         -> inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result)
 end

@@ -14,7 +14,7 @@ module M_foo
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function tied_i32 (self: t_PtrOwn_i32) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
   
@@ -47,11 +47,11 @@ module M_foo
   meta "rewrite_def" predicate inv_ref_i32
   
   predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (ptr_i32 self)
+    not is_null_ptr_i32 (tied_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (ptr_i32 self))
+    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (tied_i32 self))
     /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_i32 (val_i32 self)
   
   predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
@@ -73,7 +73,7 @@ module M_foo
   
   let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_PtrOwn_i32)) = any
     [ return (result: tup2_ptr_i32_Ghost_PtrOwn_i32) -> {inv_tup2_ptr_i32_Ghost_PtrOwn_i32 result}
-      {ptr_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
+      {tied_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
       (! return {result}) ]
   
   predicate invariant_refmut_Ghost_PtrOwn_i32 [@inline:trivial] (self: MutBorrow.t t_PtrOwn_i32) =
@@ -131,7 +131,7 @@ module M_foo
     {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_i32 own2}
     {[@expl:disjoint_lemma requires] size_of_i32 <> 0}
     any
-    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_i32 own1.current) <> Ptr.addr_logic_u64 (ptr_i32 own2)}
+    [ return (result: ()) -> {Ptr.addr_logic_u64 (tied_i32 own1.current) <> Ptr.addr_logic_u64 (tied_i32 own2)}
       {own1.current = own1.final}
       (! return {result}) ]
   

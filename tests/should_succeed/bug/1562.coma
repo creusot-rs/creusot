@@ -178,11 +178,7 @@ module M_impl_List_T__foo (* List<T> *)
       {result = self}
       (! return {result}) ]
   
-  type t_Id
-  
-  function id_List_T (self: t_PermCell_List_T) : t_Id
-  
-  function id_List_T'0 (self: t_PermCellOwn_List_T) : t_Id
+  function tied_List_T (self: t_PermCellOwn_List_T) : t_PermCell_List_T
   
   function fin_Ghost_refmut_PermCellOwn_List_T [@inline:trivial] (self: MutBorrow.t t_PermCellOwn_List_T) : t_PermCellOwn_List_T
    = self.final
@@ -196,10 +192,10 @@ module M_impl_List_T__foo (* List<T> *)
   let rec borrow_mut_List_T (self: t_PermCell_List_T) (perm: MutBorrow.t t_PermCellOwn_List_T)
     (return (x: MutBorrow.t t_List_T)) =
     {[@expl:borrow_mut 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_List_T perm}
-    {[@expl:borrow_mut requires] id_List_T self = id_List_T'0 perm.current}
+    {[@expl:borrow_mut requires] self = tied_List_T perm.current}
     any
     [ return (result: MutBorrow.t t_List_T) -> {inv_refmut_List_T result}
-      {id_List_T self = id_List_T'0 (fin_Ghost_refmut_PermCellOwn_List_T perm)}
+      {self = tied_List_T (fin_Ghost_refmut_PermCellOwn_List_T perm)}
       {result.current = view_PermCellOwn_List_T perm.current}
       {result.final = view_PermCellOwn_List_T (fin_Ghost_refmut_PermCellOwn_List_T perm)}
       (! return {result}) ]

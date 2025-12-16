@@ -15,7 +15,7 @@ module M_impl_List_T__new (* List<T> *)
   
   type t_PtrOwn_Cell_T
   
-  function ptr_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
+  function tied_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_Cell_T (self: t_PtrOwn_Cell_T)
   
@@ -60,11 +60,11 @@ module M_impl_List_T__new (* List<T> *)
   meta "rewrite_def" predicate inv_ref_Cell_T
   
   predicate invariant_PtrOwn_Cell_T (self: t_PtrOwn_Cell_T) =
-    not is_null_ptr_Cell_T (ptr_Cell_T self)
+    not is_null_ptr_Cell_T (tied_Cell_T self)
     /\ ptr_is_aligned_opaque_Cell_T self
-    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (ptr_Cell_T self))
+    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (tied_Cell_T self))
     /\ size_of_val_Cell_T (val_Cell_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_Cell_T (val_Cell_T self)
   
@@ -108,10 +108,10 @@ module M_impl_List_T__new (* List<T> *)
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
-    /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
-    /\ self.last = ptr_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ self.first = tied_Cell_T (Seq.get self.seq 0)
+    /\ self.last = tied_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
+        -> (val_Cell_T (Seq.get self.seq i)).next = tied_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
@@ -183,7 +183,7 @@ module M_impl_List_T__push_back (* List<T> *)
   
   meta "rewrite_def" predicate inv_Box_Cell_T_Global
   
-  function ptr_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
+  function tied_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_Cell_T (self: t_PtrOwn_Cell_T)
   
@@ -218,11 +218,11 @@ module M_impl_List_T__push_back (* List<T> *)
   meta "rewrite_def" predicate inv_ref_Cell_T
   
   predicate invariant_PtrOwn_Cell_T (self: t_PtrOwn_Cell_T) =
-    not is_null_ptr_Cell_T (ptr_Cell_T self)
+    not is_null_ptr_Cell_T (tied_Cell_T self)
     /\ ptr_is_aligned_opaque_Cell_T self
-    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (ptr_Cell_T self))
+    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (tied_Cell_T self))
     /\ size_of_val_Cell_T (val_Cell_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_Cell_T (val_Cell_T self)
   
@@ -248,7 +248,7 @@ module M_impl_List_T__push_back (* List<T> *)
     {[@expl:from_box 'val' type invariant] inv_Box_Cell_T_Global val'}
     any
     [ return (result: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> {inv_tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T result}
-      {ptr_Cell_T result.f1 = result.f0 /\ val_Cell_T result.f1 = val'}
+      {tied_Cell_T result.f1 = result.f0 /\ val_Cell_T result.f1 = val'}
       (! return {result}) ]
   
   type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_PtrOwn_Cell_T }
@@ -442,11 +442,11 @@ module M_impl_List_T__push_back (* List<T> *)
   
   let rec as_mut_Cell_T (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_Cell_T) (return (x: MutBorrow.t t_Cell_T)) =
     {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_PtrOwn_Cell_T own}
-    {[@expl:as_mut requires] ptr = ptr_Cell_T own.current}
+    {[@expl:as_mut requires] ptr = tied_Cell_T own.current}
     any
     [ return (result: MutBorrow.t t_Cell_T) -> {inv_refmut_Cell_T result}
       {result.current = val_Cell_T own.current}
-      {ptr_Cell_T (fin_Ghost_refmut_PtrOwn_Cell_T own) = ptr_Cell_T own.current}
+      {tied_Cell_T (fin_Ghost_refmut_PtrOwn_Cell_T own) = tied_Cell_T own.current}
       {val_Cell_T (fin_Ghost_refmut_PtrOwn_Cell_T own) = result.final}
       (! return {result}) ]
   
@@ -466,10 +466,10 @@ module M_impl_List_T__push_back (* List<T> *)
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
-    /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
-    /\ self.last = ptr_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ self.first = tied_Cell_T (Seq.get self.seq 0)
+    /\ self.last = tied_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
+        -> (val_Cell_T (Seq.get self.seq i)).next = tied_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
@@ -653,7 +653,7 @@ module M_impl_List_T__push_front (* List<T> *)
   
   predicate is_null_ptr_Cell_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
+  function tied_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_Cell_T (self: t_PtrOwn_Cell_T)
   
@@ -688,11 +688,11 @@ module M_impl_List_T__push_front (* List<T> *)
   meta "rewrite_def" predicate inv_ref_Cell_T
   
   predicate invariant_PtrOwn_Cell_T (self: t_PtrOwn_Cell_T) =
-    not is_null_ptr_Cell_T (ptr_Cell_T self)
+    not is_null_ptr_Cell_T (tied_Cell_T self)
     /\ ptr_is_aligned_opaque_Cell_T self
-    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (ptr_Cell_T self))
+    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (tied_Cell_T self))
     /\ size_of_val_Cell_T (val_Cell_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_Cell_T (val_Cell_T self)
   
@@ -718,7 +718,7 @@ module M_impl_List_T__push_front (* List<T> *)
     {[@expl:new 'v' type invariant] inv_Cell_T v'0}
     any
     [ return (result: tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T) -> {inv_tup2_ptr_Cell_T_Ghost_PtrOwn_Cell_T result}
-      {ptr_Cell_T result.f1 = result.f0 /\ val_Cell_T result.f1 = v'0}
+      {tied_Cell_T result.f1 = result.f0 /\ val_Cell_T result.f1 = v'0}
       (! return {result}) ]
   
   let rec is_null_Cell_T (self_: Opaque.ptr) (return (x: bool)) = any
@@ -799,10 +799,10 @@ module M_impl_List_T__push_front (* List<T> *)
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
-    /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
-    /\ self.last = ptr_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ self.first = tied_Cell_T (Seq.get self.seq 0)
+    /\ self.last = tied_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
+        -> (val_Cell_T (Seq.get self.seq i)).next = tied_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
@@ -913,7 +913,7 @@ module M_impl_List_T__pop_front (* List<T> *)
   let rec is_null_Cell_T (self_: Opaque.ptr) (return (x: bool)) = any
     [ return (result: bool) -> {result = is_null_ptr_Cell_T self_} (! return {result}) ]
   
-  function ptr_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
+  function tied_Cell_T (self: t_PtrOwn_Cell_T) : Opaque.ptr
   
   type t_T
   
@@ -924,10 +924,10 @@ module M_impl_List_T__pop_front (* List<T> *)
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_PtrOwn_Cell_T) /\ is_null_ptr_Cell_T self.first /\ is_null_ptr_Cell_T self.last
     \/ Seq.length self.seq > 0
-    /\ self.first = ptr_Cell_T (Seq.get self.seq 0)
-    /\ self.last = ptr_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ self.first = tied_Cell_T (Seq.get self.seq 0)
+    /\ self.last = tied_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_Cell_T (Seq.get self.seq i)).next = ptr_Cell_T (Seq.get self.seq (i + 1)))
+        -> (val_Cell_T (Seq.get self.seq i)).next = tied_Cell_T (Seq.get self.seq (i + 1)))
     /\ is_null_ptr_Cell_T (val_Cell_T (Seq.get self.seq (Seq.length self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
@@ -969,11 +969,11 @@ module M_impl_List_T__pop_front (* List<T> *)
   meta "rewrite_def" predicate inv_ref_Cell_T
   
   predicate invariant_PtrOwn_Cell_T (self: t_PtrOwn_Cell_T) =
-    not is_null_ptr_Cell_T (ptr_Cell_T self)
+    not is_null_ptr_Cell_T (tied_Cell_T self)
     /\ ptr_is_aligned_opaque_Cell_T self
-    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (ptr_Cell_T self))
+    /\ metadata_matches_Cell_T (val_Cell_T self) (metadata_Cell_T (tied_Cell_T self))
     /\ size_of_val_Cell_T (val_Cell_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_Cell_T self)) + size_of_val_Cell_T (val_Cell_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_Cell_T (val_Cell_T self)
   
@@ -1111,7 +1111,7 @@ module M_impl_List_T__pop_front (* List<T> *)
   
   let rec to_box_Cell_T (ptr: Opaque.ptr) (own: t_PtrOwn_Cell_T) (return (x: t_Cell_T)) =
     {[@expl:to_box 'own' type invariant] inv_Ghost_PtrOwn_Cell_T own}
-    {[@expl:to_box requires] ptr = ptr_Cell_T own}
+    {[@expl:to_box requires] ptr = tied_Cell_T own}
     any [ return (result: t_Cell_T) -> {inv_Box_Cell_T_Global result} {result = val_Cell_T own} (! return {result}) ]
   
   predicate is_null_ptr_Cell_T'0 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)

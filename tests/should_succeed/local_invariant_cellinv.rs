@@ -4,35 +4,34 @@ use creusot_contracts::{
     ghost::local_invariant::{
         LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
     },
-    logic::Id,
     prelude::*,
 };
 
 declare_namespace! { PERMCELL }
 
 /// A cell that simply asserts its content's invariant.
-pub struct CellInv<T: Invariant> {
+pub struct CellInv<T> {
     data: PermCell<T>,
     permission: Ghost<LocalInvariant<PermCellLocalInv<T>>>,
 }
-impl<T: Invariant> Invariant for CellInv<T> {
+impl<T> Invariant for CellInv<T> {
     #[logic]
     fn invariant(self) -> bool {
-        self.permission.namespace() == PERMCELL() && self.permission.public() == self.data.id()
+        self.permission.namespace() == PERMCELL() && self.permission.public() == self.data
     }
 }
 
 struct PermCellLocalInv<T>(PermCellOwn<T>);
-impl<T: Invariant> Protocol for PermCellLocalInv<T> {
-    type Public = Id;
+impl<T> Protocol for PermCellLocalInv<T> {
+    type Public = PermCell<T>;
 
     #[logic]
-    fn protocol(self, id: Id) -> bool {
-        self.0.id() == id
+    fn protocol(self, pc: PermCell<T>) -> bool {
+        *self.0.tied() == pc
     }
 }
 
-impl<T: Invariant> CellInv<T> {
+impl<T> CellInv<T> {
     #[requires(tokens.contains(PERMCELL()))]
     pub fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
         self.permission

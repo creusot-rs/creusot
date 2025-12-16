@@ -13,11 +13,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   type t_T
   
-  predicate invariant_T (self: t_T)
-  
   predicate inv_T (_1: t_T)
-  
-  axiom inv_axiom: forall x: t_T [inv_T x]. inv_T x -> invariant_T x
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
@@ -35,12 +31,12 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   predicate inv_PermCellOwn_T (_1: t_PermCellOwn_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
+  axiom inv_axiom [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
       = invariant_PermCellOwn_T x
   
   predicate inv_PermCellLocalInv_T (_1: t_PermCellLocalInv_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellLocalInv_T [inv_PermCellLocalInv_T x]. inv_PermCellLocalInv_T x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PermCellLocalInv_T [inv_PermCellLocalInv_T x]. inv_PermCellLocalInv_T x
       = inv_PermCellOwn_T x.f0
   
   predicate invariant_refmut_PermCellLocalInv_T [@inline:trivial] (self: MutBorrow.t t_PermCellLocalInv_T) =
@@ -104,11 +100,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   type closure0 = { c0: t_CellInv_T }
   
-  type t_Id
-  
-  function id_T (self: t_PermCell_T) : t_Id
-  
-  function id_T'0 (self: t_PermCellOwn_T) : t_Id
+  function tied_T (self: t_PermCellOwn_T) : t_PermCell_T
   
   function view_PermCellOwn_T [@inline:trivial] (self: t_PermCellOwn_T) : t_T = val_T self
   
@@ -116,20 +108,20 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   let rec borrow_T (self: t_PermCell_T) (perm: t_PermCellOwn_T) (return (x: t_T)) =
     {[@expl:borrow 'perm' type invariant] inv_Ghost_ref_PermCellOwn_T perm}
-    {[@expl:borrow requires] id_T self = id_T'0 perm}
+    {[@expl:borrow requires] self = tied_T perm}
     any [ return (result: t_T) -> {inv_ref_T result} {result = view_PermCellOwn_T perm} (! return {result}) ]
   
   function namespace_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_Namespace
   
-  function public_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_Id
+  function public_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_PermCell_T
   
   predicate invariant_CellInv_T (self: t_CellInv_T) =
     namespace_PermCellLocalInv_T self.permission = Namespace_PERMCELL 0
-    /\ public_PermCellLocalInv_T self.permission = id_T self.data
+    /\ public_PermCellLocalInv_T self.permission = self.data
   
   predicate inv_CellInv_T (_1: t_CellInv_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_CellInv_T [inv_CellInv_T x]. inv_CellInv_T x = invariant_CellInv_T x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_CellInv_T [inv_CellInv_T x]. inv_CellInv_T x = invariant_CellInv_T x
   
   predicate invariant_ref_CellInv_T [@inline:trivial] (self: t_CellInv_T) = inv_CellInv_T self
   
@@ -179,7 +171,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  predicate protocol_PermCellLocalInv_T (self: t_PermCellLocalInv_T) (id: t_Id) = id_T'0 self.f0 = id
+  predicate protocol_PermCellLocalInv_T (self: t_PermCellLocalInv_T) (pc: t_PermCell_T) = tied_T self.f0 = pc
   
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv_T) =
     let perm = args in closure0'pre self perm
@@ -338,11 +330,7 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   type t_T
   
-  predicate invariant_T (self: t_T)
-  
   predicate inv_T (_1: t_T)
-  
-  axiom inv_axiom: forall x: t_T [inv_T x]. inv_T x -> invariant_T x
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
   
@@ -360,12 +348,12 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   predicate inv_PermCellOwn_T (_1: t_PermCellOwn_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
+  axiom inv_axiom [@rewrite]: forall x: t_PermCellOwn_T [inv_PermCellOwn_T x]. inv_PermCellOwn_T x
       = invariant_PermCellOwn_T x
   
   predicate inv_PermCellLocalInv_T (_1: t_PermCellLocalInv_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_PermCellLocalInv_T [inv_PermCellLocalInv_T x]. inv_PermCellLocalInv_T x
+  axiom inv_axiom'0 [@rewrite]: forall x: t_PermCellLocalInv_T [inv_PermCellLocalInv_T x]. inv_PermCellLocalInv_T x
       = inv_PermCellOwn_T x.f0
   
   predicate invariant_refmut_PermCellLocalInv_T [@inline:trivial] (self: MutBorrow.t t_PermCellLocalInv_T) =
@@ -440,11 +428,7 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   type closure0 = { c0: t_CellInv_T; c1: t_T }
   
-  type t_Id
-  
-  function id_T (self: t_PermCell_T) : t_Id
-  
-  function id_T'0 (self: t_PermCellOwn_T) : t_Id
+  function tied_T (self: t_PermCellOwn_T) : t_PermCell_T
   
   predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
@@ -465,10 +449,10 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   let rec borrow_mut_T (self: t_PermCell_T) (perm: MutBorrow.t t_PermCellOwn_T) (return (x: MutBorrow.t t_T)) =
     {[@expl:borrow_mut 'perm' type invariant] inv_Ghost_refmut_PermCellOwn_T perm}
-    {[@expl:borrow_mut requires] id_T self = id_T'0 perm.current}
+    {[@expl:borrow_mut requires] self = tied_T perm.current}
     any
     [ return (result: MutBorrow.t t_T) -> {inv_refmut_T result}
-      {id_T self = id_T'0 (fin_Ghost_refmut_PermCellOwn_T perm)}
+      {self = tied_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       {result.current = view_PermCellOwn_T perm.current}
       {result.final = view_PermCellOwn_T (fin_Ghost_refmut_PermCellOwn_T perm)}
       (! return {result}) ]
@@ -481,15 +465,15 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   function namespace_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_Namespace
   
-  function public_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_Id
+  function public_PermCellLocalInv_T (self: t_LocalInvariant_PermCellLocalInv_T) : t_PermCell_T
   
   predicate invariant_CellInv_T (self: t_CellInv_T) =
     namespace_PermCellLocalInv_T self.permission = Namespace_PERMCELL 0
-    /\ public_PermCellLocalInv_T self.permission = id_T self.data
+    /\ public_PermCellLocalInv_T self.permission = self.data
   
   predicate inv_CellInv_T (_1: t_CellInv_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_CellInv_T [inv_CellInv_T x]. inv_CellInv_T x = invariant_CellInv_T x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_CellInv_T [inv_CellInv_T x]. inv_CellInv_T x = invariant_CellInv_T x
   
   predicate invariant_ref_CellInv_T [@inline:trivial] (self: t_CellInv_T) = inv_CellInv_T self
   
@@ -564,7 +548,7 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  predicate protocol_PermCellLocalInv_T (self: t_PermCellLocalInv_T) (id: t_Id) = id_T'0 self.f0 = id
+  predicate protocol_PermCellLocalInv_T (self: t_PermCellLocalInv_T) (pc: t_PermCell_T) = tied_T self.f0 = pc
   
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_PermCellLocalInv_T) =
     let perm = args in closure0'pre self perm

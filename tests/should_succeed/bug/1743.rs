@@ -8,7 +8,7 @@ pub struct S {
 
 impl S {
     #[requires(self.perm.val()@ == 1)]
-    #[requires(self.perm.ptr() == self.ptr)]
+    #[requires(self.perm.tied() == self.ptr)]
     pub fn minimize(&mut self) {
         let r = unsafe { PtrOwn::as_ref(self.ptr, ghost!(&*self.perm)) };
         #[invariant(0 <= self.perm.val()@)]

@@ -3,9 +3,9 @@
 //! This allows a form of interior mutability, using [ghost](mod@crate::ghost) code to keep
 //! track of the logical value.
 
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{logic::Id, prelude::*};
 use std::{cell::UnsafeCell, marker::PhantomData};
 
 /// Cell with ghost permissions
@@ -61,11 +61,9 @@ impl<T: Sized> Invariant for PermCellOwn<T> {
 }
 
 impl<T: ?Sized> PermCellOwn<T> {
-    /// Returns the logical identity of the cell.
-    ///
-    /// To use a [`PermCell`], this and [`PermCell::id`] must agree.
+    /// Returns the underlying [`PermCell`].
     #[logic(opaque)]
-    pub fn id(self) -> Id {
+    pub fn tied<'a>(self) -> &'a PermCell<T> {
         dead
     }
 
@@ -75,16 +73,10 @@ impl<T: ?Sized> PermCellOwn<T> {
         dead
     }
 
-    #[check(ghost)]
-    #[ensures(*result == self.id())]
-    pub fn id_ghost(&self) -> Ghost<Id> {
-        snapshot!(self.id()).into_ghost()
-    }
-
-    /// If one owns two `PermCellOwn`s in ghost code, then they have different ids.
+    /// If one owns two `PermCellOwn`s in ghost code, then they correspond to different objects.
     #[trusted]
     #[check(ghost)]
-    #[ensures(own1.id() != own2.id())]
+    #[ensures(own1.tied() != own2.tied())]
     #[ensures(*own1 == ^own1)]
     #[allow(unused_variables)]
     pub fn disjoint_lemma(own1: &mut PermCellOwn<T>, own2: &PermCellOwn<T>) {}
@@ -94,7 +86,7 @@ impl<T> PermCell<T> {
     /// Creates a new `PermCell` containing the given value.
     #[trusted]
     #[check(terminates)]
-    #[ensures(result.0.id() == result.1.id())]
+    #[ensures(result.0 == *result.1.tied())]
     #[ensures((*result.1)@ == value)]
     pub fn new(value: T) -> (Self, Ghost<PermCellOwn<T>>) {
         let this = Self(UnsafeCell::new(value));
@@ -113,10 +105,10 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
+    #[requires(self == perm.tied())]
     #[ensures(val == (^perm)@)]
     #[ensures(resolve(perm@))]
-    #[ensures(self.id() == (^perm).id())]
+    #[ensures(self == (^perm).tied())]
     pub unsafe fn set(&self, perm: Ghost<&mut PermCellOwn<T>>, val: T) {
         let _ = perm;
         unsafe {
@@ -135,10 +127,10 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
+    #[requires(self == perm.tied())]
     #[ensures(val == (^perm)@)]
     #[ensures(result == perm@)]
-    #[ensures(self.id() == (^perm).id())]
+    #[ensures(self == (^perm).tied())]
     pub unsafe fn replace(&self, perm: Ghost<&mut PermCellOwn<T>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
@@ -147,7 +139,7 @@ impl<T> PermCell<T> {
     /// Unwraps the value, consuming the cell.
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
+    #[requires(self == *perm.tied())]
     #[ensures(result == perm@)]
     pub fn into_inner(self, perm: Ghost<PermCellOwn<T>>) -> T {
         let _ = perm;
@@ -168,7 +160,7 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
+    #[requires(self == perm.tied())]
     #[ensures(*result == perm@)]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a PermCellOwn<T>>) -> &'a T {
         let _ = perm;
@@ -189,8 +181,8 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
-    #[ensures(self.id() == (^perm).id())]
+    #[requires(self == perm.tied())]
+    #[ensures(self == (^perm).tied())]
     #[ensures(*result == perm@)]
     #[ensures(^result == (^perm)@)]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut PermCellOwn<T>>) -> &'a mut T {
@@ -211,7 +203,7 @@ impl<T: Copy> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self.id() == perm.id())]
+    #[requires(self == perm.tied())]
     #[ensures(result == (**perm)@)]
     pub unsafe fn get(&self, perm: Ghost<&PermCellOwn<T>>) -> T {
         let _ = perm;
@@ -220,20 +212,6 @@ impl<T: Copy> PermCell<T> {
 }
 
 impl<T> PermCell<T> {
-    /// Returns the logical identity of the cell.
-    ///
-    /// This is used to guarantee that a [`PermCellOwn`] is always used with the right [`PermCell`].
-    #[logic(opaque)]
-    pub fn id(self) -> Id {
-        dead
-    }
-
-    #[check(ghost)]
-    #[ensures(*result == self.id())]
-    pub fn id_ghost(&self) -> Ghost<Id> {
-        snapshot!(self.id()).into_ghost()
-    }
-
     /// Returns a raw pointer to the underlying data in this cell.
     #[trusted]
     #[ensures(true)]
@@ -244,7 +222,7 @@ impl<T> PermCell<T> {
     /// Returns a `&PermCell<T>` from a `&mut T`
     #[trusted]
     #[check(terminates)]
-    #[ensures(result.0.id() == result.1.id())]
+    #[ensures(result.0 == result.1.tied())]
     #[ensures(^t == (^result.1)@)]
     #[ensures(*t == result.1@)]
     pub fn from_mut(t: &mut T) -> (&PermCell<T>, Ghost<&mut PermCellOwn<T>>) {
@@ -266,8 +244,8 @@ impl<T: Default> PermCell<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
-    #[requires(self.id() == perm.id())]
-    #[ensures(self.id() == (^perm).id())]
+    #[requires(self == perm.tied())]
+    #[ensures(self == (^perm).tied())]
     #[ensures(result == perm@)]
     #[ensures(T::default.postcondition((), (^perm)@))]
     pub unsafe fn take(&self, perm: Ghost<&mut PermCellOwn<T>>) -> T {

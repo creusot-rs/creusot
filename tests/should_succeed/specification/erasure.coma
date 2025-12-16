@@ -287,7 +287,7 @@ module M_test_ptr2
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T)
   
@@ -324,11 +324,11 @@ module M_test_ptr2
   meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (ptr_T self)
+    not is_null_ptr_T (tied_T self)
     /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
+    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
     /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
@@ -353,7 +353,7 @@ module M_test_ptr2
   
   let rec as_ref_T (ptr: Opaque.ptr) (own: t_PtrOwn_T) (return (x: t_T)) =
     {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_T own}
-    {[@expl:as_ref requires] ptr = ptr_T own}
+    {[@expl:as_ref requires] ptr = tied_T own}
     any [ return (result: t_T) -> {inv_ref_T result} {result = val_T own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -384,7 +384,7 @@ module M_test_ptr_mut2
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_T (self: t_PtrOwn_T) : Opaque.ptr
+  function tied_T (self: t_PtrOwn_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_T (self: t_PtrOwn_T)
   
@@ -421,11 +421,11 @@ module M_test_ptr_mut2
   meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_PtrOwn_T (self: t_PtrOwn_T) =
-    not is_null_ptr_T (ptr_T self)
+    not is_null_ptr_T (tied_T self)
     /\ ptr_is_aligned_opaque_T self
-    /\ metadata_matches_T (val_T self) (metadata_T (ptr_T self))
+    /\ metadata_matches_T (val_T self) (metadata_T (tied_T self))
     /\ size_of_val_T (val_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_T self)) + size_of_val_T (val_T self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_T (val_T self)
   
   predicate inv_PtrOwn_T (_1: t_PtrOwn_T)
@@ -464,11 +464,11 @@ module M_test_ptr_mut2
   
   let rec as_mut_T (ptr: Opaque.ptr) (own: MutBorrow.t t_PtrOwn_T) (return (x: MutBorrow.t t_T)) =
     {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_PtrOwn_T own}
-    {[@expl:as_mut requires] ptr = ptr_T own.current}
+    {[@expl:as_mut requires] ptr = tied_T own.current}
     any
     [ return (result: MutBorrow.t t_T) -> {inv_refmut_T result}
       {result.current = val_T own.current}
-      {ptr_T (fin_Ghost_refmut_PtrOwn_T own) = ptr_T own.current}
+      {tied_T (fin_Ghost_refmut_PtrOwn_T own) = tied_T own.current}
       {val_T (fin_Ghost_refmut_PtrOwn_T own) = result.final}
       (! return {result}) ]
   
@@ -770,7 +770,7 @@ module M_slice_as_ptr_own
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -799,11 +799,11 @@ module M_slice_as_ptr_own
   constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -838,7 +838,7 @@ module M_slice_as_ptr_own
     {[@expl:as_ptr_own 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T) -> {inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result}
-      {result.f0 = Opaque.thin (ptr_slice_T result.f1)}
+      {result.f0 = Opaque.thin (tied_slice_T result.f1)}
       {self = val_slice_T result.f1}
       (! return {result}) ]
   
@@ -978,7 +978,7 @@ module M_slice_as_mut_ptr_own
   
   predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
+  function tied_slice_T (self: t_PtrOwn_slice_T) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_slice_T (self: t_PtrOwn_slice_T)
   
@@ -1015,11 +1015,11 @@ module M_slice_as_mut_ptr_own
   meta "rewrite_def" predicate inv_ref_slice_T
   
   predicate invariant_PtrOwn_slice_T (self: t_PtrOwn_slice_T) =
-    not is_null_ptr_slice_T (ptr_slice_T self)
+    not is_null_ptr_slice_T (tied_slice_T self)
     /\ ptr_is_aligned_opaque_slice_T self
-    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (ptr_slice_T self))
+    /\ metadata_matches_slice_T (val_slice_T self) (metadata_slice_T (tied_slice_T self))
     /\ size_of_val_slice_T (val_slice_T self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_slice_T self)) + size_of_val_slice_T (val_slice_T self)
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_slice_T self)) + size_of_val_slice_T (val_slice_T self)
       <= UInt64.t'int const_MAX'0
     /\ inv_ref_slice_T (val_slice_T self)
   
@@ -1063,7 +1063,7 @@ module M_slice_as_mut_ptr_own
     {[@expl:as_mut_ptr_own 'self' type invariant] inv_refmut_slice_T self}
     any
     [ return (result: tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T) -> {inv_tup2_ptr_T_Ghost_refmut_PtrOwn_slice_T result}
-      {result.f0 = Opaque.thin (ptr_slice_T result.f1.current)}
+      {result.f0 = Opaque.thin (tied_slice_T result.f1.current)}
       {self.current = val_slice_T result.f1.current}
       {self.final = val_slice_T (fin_Ghost_refmut_PtrOwn_slice_T result.f1)}
       (! return {result}) ]

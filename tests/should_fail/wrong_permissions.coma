@@ -6,11 +6,7 @@ module M_unknown_permcell_permission
   
   type t_PermCellOwn_i32
   
-  type t_Id
-  
-  function id_i32 (self: t_PermCell_i32) : t_Id
-  
-  function id_i32'0 (self: t_PermCellOwn_i32) : t_Id
+  function tied_i32 (self: t_PermCellOwn_i32) : t_PermCell_i32
   
   function val_i32 (self: t_PermCellOwn_i32) : Int32.t
   
@@ -19,7 +15,7 @@ module M_unknown_permcell_permission
   meta "rewrite_def" function view_PermCellOwn_i32
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] id_i32 self = id_i32'0 perm}
+    {[@expl:borrow requires] self = tied_i32 perm}
     any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -43,11 +39,7 @@ module M_wrong_permcell_permission
   
   type tup2_PermCell_i32_Ghost_PermCellOwn_i32 = { f0: t_PermCell_i32; f1: t_PermCellOwn_i32 }
   
-  type t_Id
-  
-  function id_i32 (self: t_PermCell_i32) : t_Id
-  
-  function id_i32'0 (self: t_PermCellOwn_i32) : t_Id
+  function tied_i32 (self: t_PermCellOwn_i32) : t_PermCell_i32
   
   function val_i32 (self: t_PermCellOwn_i32) : Int32.t
   
@@ -56,7 +48,7 @@ module M_wrong_permcell_permission
   meta "rewrite_def" function view_PermCellOwn_i32
   
   let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_PermCellOwn_i32)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> {id_i32 result.f0 = id_i32'0 result.f1}
+    [ return (result: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> {result.f0 = tied_i32 result.f1}
       {view_PermCellOwn_i32 result.f1 = value}
       (! return {result}) ]
   
@@ -66,7 +58,7 @@ module M_wrong_permcell_permission
     [ return (result: t_PermCellOwn_i32) -> {result = self} (! return {result}) ]
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] id_i32 self = id_i32'0 perm}
+    {[@expl:borrow requires] self = tied_i32 perm}
     any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -105,7 +97,7 @@ module M_unknown_ptr_own_permission
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function tied_i32 (self: t_PtrOwn_i32) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
   
@@ -138,11 +130,11 @@ module M_unknown_ptr_own_permission
   meta "rewrite_def" predicate inv_ref_i32
   
   predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (ptr_i32 self)
+    not is_null_ptr_i32 (tied_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (ptr_i32 self))
+    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (tied_i32 self))
     /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_i32 (val_i32 self)
   
   predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
@@ -167,7 +159,7 @@ module M_unknown_ptr_own_permission
   
   let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_PtrOwn_i32) (return (x: Int32.t)) =
     {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_i32 own}
-    {[@expl:as_ref requires] ptr = ptr_i32 own}
+    {[@expl:as_ref requires] ptr = tied_i32 own}
     any [ return (result: Int32.t) -> {result = val_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -198,7 +190,7 @@ module M_wrong_ptr_own_permission
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function tied_i32 (self: t_PtrOwn_i32) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
   
@@ -231,11 +223,11 @@ module M_wrong_ptr_own_permission
   meta "rewrite_def" predicate inv_ref_i32
   
   predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (ptr_i32 self)
+    not is_null_ptr_i32 (tied_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (ptr_i32 self))
+    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (tied_i32 self))
     /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
     /\ inv_ref_i32 (val_i32 self)
   
   predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
@@ -257,7 +249,7 @@ module M_wrong_ptr_own_permission
   
   let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_PtrOwn_i32)) = any
     [ return (result: tup2_ptr_i32_Ghost_PtrOwn_i32) -> {inv_tup2_ptr_i32_Ghost_PtrOwn_i32 result}
-      {ptr_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
+      {tied_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
       (! return {result}) ]
   
   predicate resolve_PtrOwn_i32 (_1: t_PtrOwn_i32)
@@ -301,7 +293,7 @@ module M_wrong_ptr_own_permission
   
   let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_PtrOwn_i32) (return (x: Int32.t)) =
     {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_i32 own}
-    {[@expl:as_ref requires] ptr = ptr_i32 own}
+    {[@expl:as_ref requires] ptr = tied_i32 own}
     any [ return (result: Int32.t) -> {result = val_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000

@@ -73,7 +73,7 @@ mod implementation {
             (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(e) ==>
                 // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
                 self.0.perms.contains(e) &&
-                self.0.perms[e].ptr() == e.0 as *const Node<T> &&
+                self.0.perms[e].tied() == e.0 as *const Node<T> &&
                 self.0.domain.contains(self.0.roots[e]) &&
                 self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                 match *self.0.perms[e].val() {

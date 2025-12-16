@@ -55,7 +55,7 @@ module M_zst_pointers_may_be_equal
   
   predicate is_null_ptr_unit (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_unit (self: t_PtrOwn_unit) : Opaque.ptr
+  function tied_unit (self: t_PtrOwn_unit) : Opaque.ptr
   
   predicate ptr_is_aligned_opaque_unit (self: t_PtrOwn_unit)
   
@@ -86,11 +86,11 @@ module M_zst_pointers_may_be_equal
   meta "rewrite_def" predicate inv_ref_unit
   
   predicate invariant_PtrOwn_unit (self: t_PtrOwn_unit) =
-    not is_null_ptr_unit (ptr_unit self)
+    not is_null_ptr_unit (tied_unit self)
     /\ ptr_is_aligned_opaque_unit self
-    /\ metadata_matches_unit (val_unit self) (metadata_unit (ptr_unit self))
+    /\ metadata_matches_unit (val_unit self) (metadata_unit (tied_unit self))
     /\ size_of_val_unit (val_unit self) <= Int64.to_int const_MAX'0
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_unit self)) + size_of_val_unit (val_unit self) <= UInt64.t'int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (tied_unit self)) + size_of_val_unit (val_unit self) <= UInt64.t'int const_MAX
     /\ inv_ref_unit (val_unit self)
   
   predicate inv_PtrOwn_unit (_1: t_PtrOwn_unit)
@@ -123,7 +123,7 @@ module M_zst_pointers_may_be_equal
   
   let rec from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_refmut_PtrOwn_unit)) = any
     [ return (result: tup2_ptr_unit_Ghost_refmut_PtrOwn_unit) -> {inv_tup2_ptr_unit_Ghost_refmut_PtrOwn_unit result}
-      {ptr_unit result.f1.current = result.f0}
+      {tied_unit result.f1.current = result.f0}
       {val_unit result.f1.current = r.current}
       {val_unit result.f1.final = r.final}
       (! return {result}) ]
@@ -161,7 +161,7 @@ module M_zst_pointers_may_be_equal
   
   let rec from_ref_unit (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_PtrOwn_unit)) = any
     [ return (result: tup2_ptr_unit_Ghost_ref_PtrOwn_unit) -> {inv_tup2_ptr_unit_Ghost_ref_PtrOwn_unit result}
-      {ptr_unit result.f1'0 = result.f0'0}
+      {tied_unit result.f1'0 = result.f0'0}
       {val_unit result.f1'0 = r}
       (! return {result}) ]
   
@@ -181,7 +181,7 @@ module M_zst_pointers_may_be_equal
     {[@expl:disjoint_lemma 'own2' type invariant] inv_ref_PtrOwn_unit own2}
     {[@expl:disjoint_lemma requires] size_of_unit <> 0}
     any
-    [ return (result: ()) -> {Ptr.addr_logic_u64 (ptr_unit own1.current) <> Ptr.addr_logic_u64 (ptr_unit own2)}
+    [ return (result: ()) -> {Ptr.addr_logic_u64 (tied_unit own1.current) <> Ptr.addr_logic_u64 (tied_unit own2)}
       {own1.current = own1.final}
       (! return {result}) ]
   
