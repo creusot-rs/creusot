@@ -22,7 +22,7 @@ pub trait Container {
 /// # Pointer permissions
 ///
 /// A particular case of permissions is the case of permissions for raw pointers (i.e., `C` is
-/// is `*const T`). In this case, the permission represents the ownership of the memory cell.
+/// `*const T`). In this case, the permission represents the ownership of the memory cell.
 ///
 /// A warning regarding memory leaks: dropping a `Ghost<Perm<*const T>>` (we only ever handle ghost
 /// `Perm` values) cannot deallocate the memory corresponding to the pointer because it is a ghost
