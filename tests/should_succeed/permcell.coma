@@ -9,7 +9,7 @@ module M_foo
   
   type tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = { f0: t_PermCell_i32; f1: t_Perm_PermCell_i32 }
   
-  function tied_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
+  function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
   function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
@@ -18,7 +18,7 @@ module M_foo
   meta "rewrite_def" function view_Perm_PermCell_i32
   
   let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> {result.f0 = tied_PermCell_i32 result.f1}
+    [ return (result: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> {result.f0 = ward_PermCell_i32 result.f1}
       {view_Perm_PermCell_i32 result.f1 = value}
       (! return {result}) ]
   
@@ -26,7 +26,7 @@ module M_foo
     [ return (result: t_Perm_PermCell_i32) -> {result = self} (! return {result}) ]
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] self = tied_PermCell_i32 perm}
+    {[@expl:borrow requires] self = ward_PermCell_i32 perm}
     any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   let rec borrow_mut_Perm_PermCell_i32 (self: MutBorrow.t t_Perm_PermCell_i32)
@@ -39,9 +39,9 @@ module M_foo
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_i32
   
   let rec borrow_mut_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32)
-    (return (x: MutBorrow.t Int32.t)) = {[@expl:borrow_mut requires] self = tied_PermCell_i32 perm.current}
+    (return (x: MutBorrow.t Int32.t)) = {[@expl:borrow_mut requires] self = ward_PermCell_i32 perm.current}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {self = tied_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
+    [ return (result: MutBorrow.t Int32.t) -> {self = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       {result.current = view_Perm_PermCell_i32 perm.current}
       {result.final = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       (! return {result}) ]
@@ -51,15 +51,15 @@ module M_foo
   meta "rewrite_def" predicate resolve_refmut_i32
   
   let rec replace_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32) (val': Int32.t)
-    (return (x: Int32.t)) = {[@expl:replace requires] self = tied_PermCell_i32 perm.current}
+    (return (x: Int32.t)) = {[@expl:replace requires] self = ward_PermCell_i32 perm.current}
     any
     [ return (result: Int32.t) -> {val' = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       {result = view_Perm_PermCell_i32 perm.current}
-      {self = tied_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
+      {self = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm)}
       (! return {result}) ]
   
   let rec into_inner_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
-    {[@expl:into_inner requires] self = tied_PermCell_i32 perm}
+    {[@expl:into_inner requires] self = ward_PermCell_i32 perm}
     any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true

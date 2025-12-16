@@ -44,7 +44,7 @@ impl<T> PermCell<T> {
     /// Creates a new `PermCell` containing the given value.
     #[trusted]
     #[check(terminates)]
-    #[ensures(result.0 == *result.1.tied())]
+    #[ensures(result.0 == *result.1.ward())]
     #[ensures((*result.1)@ == value)]
     pub fn new(value: T) -> (Self, Ghost<Perm<PermCell<T>>>) {
         let this = Self(UnsafeCell::new(value));
@@ -63,10 +63,10 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self == perm.tied())]
+    #[requires(self == perm.ward())]
     #[ensures(val == (^perm)@)]
     #[ensures(resolve(perm@))]
-    #[ensures(self == (^perm).tied())]
+    #[ensures(self == (^perm).ward())]
     pub unsafe fn set(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T) {
         let _ = perm;
         unsafe {
@@ -85,10 +85,10 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self == perm.tied())]
+    #[requires(self == perm.ward())]
     #[ensures(val == (^perm)@)]
     #[ensures(result == perm@)]
-    #[ensures(self == (^perm).tied())]
+    #[ensures(self == (^perm).ward())]
     pub unsafe fn replace(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T) -> T {
         let _ = perm;
         unsafe { std::ptr::replace(self.0.get(), val) }
@@ -97,7 +97,7 @@ impl<T> PermCell<T> {
     /// Unwraps the value, consuming the cell.
     #[trusted]
     #[check(terminates)]
-    #[requires(self == *perm.tied())]
+    #[requires(self == *perm.ward())]
     #[ensures(result == perm@)]
     pub fn into_inner(self, perm: Ghost<Perm<PermCell<T>>>) -> T {
         let _ = perm;
@@ -118,7 +118,7 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self == perm.tied())]
+    #[requires(self == perm.ward())]
     #[ensures(*result == perm@)]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PermCell<T>>>) -> &'a T {
         let _ = perm;
@@ -139,8 +139,8 @@ impl<T> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self == perm.tied())]
-    #[ensures(self == (^perm).tied())]
+    #[requires(self == perm.ward())]
+    #[ensures(self == (^perm).ward())]
     #[ensures(*result == perm@)]
     #[ensures(^result == (^perm)@)]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PermCell<T>>>) -> &'a mut T {
@@ -161,7 +161,7 @@ impl<T: Copy> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[trusted]
     #[check(terminates)]
-    #[requires(self == perm.tied())]
+    #[requires(self == perm.ward())]
     #[ensures(result == (**perm)@)]
     pub unsafe fn get(&self, perm: Ghost<&Perm<PermCell<T>>>) -> T {
         let _ = perm;
@@ -180,7 +180,7 @@ impl<T> PermCell<T> {
     /// Returns a `&PermCell<T>` from a `&mut T`
     #[trusted]
     #[check(terminates)]
-    #[ensures(result.0 == result.1.tied())]
+    #[ensures(result.0 == result.1.ward())]
     #[ensures(^t == (^result.1)@)]
     #[ensures(*t == result.1@)]
     pub fn from_mut(t: &mut T) -> (&PermCell<T>, Ghost<&mut Perm<PermCell<T>>>) {
@@ -202,8 +202,8 @@ impl<T: Default> PermCell<T> {
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](PermCell#safety).
-    #[requires(self == perm.tied())]
-    #[ensures(self == (^perm).tied())]
+    #[requires(self == perm.ward())]
+    #[ensures(self == (^perm).ward())]
     #[ensures(result == perm@)]
     #[ensures(T::default.postcondition((), (^perm)@))]
     pub unsafe fn take(&self, perm: Ghost<&mut Perm<PermCell<T>>>) -> T {

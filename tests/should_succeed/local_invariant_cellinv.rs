@@ -30,7 +30,7 @@ impl<T> Protocol for PermCellLocalInv<T> {
 
     #[logic]
     fn protocol(self, pc: PermCell<T>) -> bool {
-        *self.0.tied() == pc
+        *self.0.ward() == pc
     }
 }
 

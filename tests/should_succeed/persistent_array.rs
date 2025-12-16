@@ -109,7 +109,7 @@ pub mod implementation {
             pearlite! {
                 self.auth.id() == id &&
                 forall<pc: Snapshot<_>> self.auth@.contains(*pc) && self.perms.contains(pc) ==>
-                    *self.perms[pc].tied() == *pc &&
+                    *self.perms[pc].ward() == *pc &&
                     match self.perms[pc].val() {
                         Inner::Direct(v) => self.auth@[*pc] == v@,
                         Inner::Link { index, value, next } =>
@@ -131,11 +131,11 @@ pub mod implementation {
             let seq = snapshot!(v@);
             let (permcell, perm) = PermCell::new(Inner::Direct(v));
             let mut auth = Authority::new();
-            let frag = ghost!(auth.insert(snapshot!(*perm.tied()), seq));
+            let frag = ghost!(auth.insert(snapshot!(*perm.ward()), seq));
 
             let inv = ghost! {
                 let mut perms = FMap::new();
-                perms.insert_ghost(snapshot!(*perm.tied()), perm.into_inner());
+                perms.insert_ghost(snapshot!(*perm.ward()), perm.into_inner());
                 let local_inv = LocalInvariant::new(
                     ghost!(PA {
                         perms: perms.into_inner(),

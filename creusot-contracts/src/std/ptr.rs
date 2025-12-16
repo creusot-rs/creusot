@@ -454,14 +454,14 @@ impl<T: ?Sized> Invariant for Perm<*const T> {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            !self.tied().is_null_logic()
+            !self.ward().is_null_logic()
                 && self.ptr_is_aligned_opaque()
-                && metadata_matches(*self.val(), metadata_logic(*self.tied()))
+                && metadata_matches(*self.val(), metadata_logic(*self.ward()))
                 // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
                 && size_of_val_logic(*self.val()) <= isize::MAX@
                 // The allocation fits in the address space
                 // (this is needed to verify (a `Perm` variant of) `<*const T>::add`, which checks this condition)
-                && self.tied().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
+                && self.ward().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
                 && inv(self.val())
         }
     }
@@ -471,7 +471,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// Creates a new `Perm<*const T>` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.tied() == result.0 && *result.1.val() == v)]
+    #[ensures(*result.1.ward() == result.0 && *result.1.val() == v)]
     pub fn new(v: T) -> (*mut T, Ghost<Perm<*const T>>)
     where
         T: Sized,
@@ -482,7 +482,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// Creates a ghost `Perm<*const T>` and associated `*const` from an existing [`Box`].
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.tied() == result.0 && *result.1.val() == *val)]
+    #[ensures(*result.1.ward() == result.0 && *result.1.val() == *val)]
     #[erasure(Box::into_raw)]
     pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Perm<*const T>>) {
         (Box::into_raw(val), Ghost::conjure())
@@ -501,7 +501,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// ```
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.tied() == result.0)]
+    #[ensures(*result.1.ward() == result.0)]
     #[ensures(*result.1.val() == *r)]
     #[intrinsic("perm_from_ref")]
     pub fn from_ref(r: &T) -> (*const T, Ghost<&Perm<*const T>>) {
@@ -521,7 +521,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// ```
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.tied() == result.0)]
+    #[ensures(*result.1.ward() == result.0)]
     #[ensures(*result.1.val() == *r)]
     #[ensures(*(^result.1.inner_logic()).val() == ^r)]
     #[intrinsic("perm_from_mut")]
@@ -549,7 +549,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// ```
     #[trusted]
     #[check(terminates)]
-    #[requires(ptr == *own.tied())]
+    #[requires(ptr == *own.ward())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
     #[intrinsic("perm_as_ref")]
@@ -578,9 +578,9 @@ impl<T: ?Sized> Perm<*const T> {
     #[trusted]
     #[check(terminates)]
     #[allow(unused_variables)]
-    #[requires(ptr as *const T == *own.tied())]
+    #[requires(ptr as *const T == *own.ward())]
     #[ensures(*result == *own.val())]
-    #[ensures((^own).tied() == own.tied())]
+    #[ensures((^own).ward() == own.ward())]
     #[ensures(*(^own).val() == ^result)]
     #[intrinsic("perm_as_mut")]
     pub unsafe fn as_mut(ptr: *mut T, own: Ghost<&mut Perm<*const T>>) -> &mut T {
@@ -597,7 +597,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// [type documentation](Perm).
     #[trusted]
     #[check(terminates)]
-    #[requires(ptr as *const T == *own.tied())]
+    #[requires(ptr as *const T == *own.ward())]
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
     #[erasure(Box::from_raw)]
@@ -614,14 +614,14 @@ impl<T: ?Sized> Perm<*const T> {
     /// Creusot will check that all calls to this function are indeed safe: see the
     /// [type documentation](Perm).
     #[check(terminates)]
-    #[requires(ptr as *const T == *own.tied())]
+    #[requires(ptr as *const T == *own.ward())]
     pub unsafe fn drop(ptr: *mut T, own: Ghost<Perm<*const T>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
 
     /// The pointer of a `Perm<*const T>` is always aligned.
     #[check(ghost)]
-    #[ensures(self.tied().is_aligned_logic())]
+    #[ensures(self.ward().is_aligned_logic())]
     pub fn ptr_is_aligned_lemma(&self) {}
 
     /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
@@ -629,6 +629,6 @@ impl<T: ?Sized> Perm<*const T> {
     /// The underlying property is exposed by [`Perm::ptr_is_aligned_lemma`].
     #[logic(open(self))]
     pub fn ptr_is_aligned_opaque(self) -> bool {
-        self.tied().is_aligned_logic()
+        self.ward().is_aligned_logic()
     }
 }

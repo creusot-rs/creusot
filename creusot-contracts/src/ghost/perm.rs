@@ -55,7 +55,7 @@ pub struct Perm<C: ?Sized + Container>(#[allow(unused)] PhantomData<C::Value>);
 impl<C: ?Sized + Container> Perm<C> {
     /// Returns the underlying container that is managed by this permission.
     #[logic(opaque)]
-    pub fn tied<'a>(self) -> &'a C {
+    pub fn ward<'a>(self) -> &'a C {
         dead
     }
 
@@ -68,7 +68,7 @@ impl<C: ?Sized + Container> Perm<C> {
     /// If one owns two permissions in ghost code, then they correspond to different containers.
     #[trusted]
     #[check(ghost)]
-    #[ensures(self.tied().is_disjoint(self.val(), other.tied(), other.val()))]
+    #[ensures(self.ward().is_disjoint(self.val(), other.ward(), other.val()))]
     #[ensures(*self == ^self)]
     #[allow(unused_variables)]
     pub fn disjoint_lemma(&mut self, other: &Self) {}
