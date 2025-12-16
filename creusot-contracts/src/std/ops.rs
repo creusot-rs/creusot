@@ -535,6 +535,9 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for std::range::RangeIn
 
 pub trait RangeInclusiveExt<Idx> {
     #[logic]
+    fn new_log(start: Idx, end: Idx) -> Self;
+
+    #[logic]
     fn start_log(self) -> Idx;
 
     #[logic]
@@ -548,6 +551,13 @@ pub trait RangeInclusiveExt<Idx> {
 }
 
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
+    #[logic(opaque)]
+    #[trusted]
+    #[ensures(start == result.start_log() && end == result.end_log())]
+    fn new_log(start: Idx, end: Idx) -> Self {
+        dead
+    }
+
     #[logic(opaque)]
     fn start_log(self) -> Idx {
         dead

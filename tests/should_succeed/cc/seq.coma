@@ -123,3 +123,72 @@ module M_f
     | & _15: int = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@expl:f ensures] result = (1: UInt64.t)} (! return {result}) ]
 end
+module M_g
+  use creusot.prelude.Any
+  use seq.Seq
+  use mach.int.Int
+  
+  type t_Range_Int = { start: int; end': int }
+  
+  function index_Seq_Int [@inline:trivial] (self: Seq.seq int) (range: t_Range_Int) : Seq.seq int =
+    Seq.([..]) self range.start range.end'
+  
+  meta "rewrite_def" function index_Seq_Int
+  
+  type t_RangeInclusive_Int
+  
+  function start_log_RangeInclusive_Int (self: t_RangeInclusive_Int) : int
+  
+  function end_log_RangeInclusive_Int (self: t_RangeInclusive_Int) : int
+  
+  function index_Seq_Int'0 [@inline:trivial] (self: Seq.seq int) (range: t_RangeInclusive_Int) : Seq.seq int =
+    Seq.([..]) self (start_log_RangeInclusive_Int range) (end_log_RangeInclusive_Int range + 1)
+  
+  meta "rewrite_def" function index_Seq_Int'0
+  
+  function new_log_RangeInclusive_Int (start'0: int) (end''0: int) : t_RangeInclusive_Int
+  
+  axiom new_log_RangeInclusive_Int_spec: forall start'0: int, end''0: int. start'0
+        = start_log_RangeInclusive_Int (new_log_RangeInclusive_Int start'0 end''0)
+      /\ end''0 = end_log_RangeInclusive_Int (new_log_RangeInclusive_Int start'0 end''0)
+  
+  type t_RangeFrom_Int = { start'0: int }
+  
+  function index_Seq_Int'1 [@inline:trivial] (self: Seq.seq int) (range: t_RangeFrom_Int) : Seq.seq int =
+    Seq.([..]) self range.start'0 (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_Int'1
+  
+  type t_RangeTo_Int = { end''0: int }
+  
+  function index_Seq_Int'2 [@inline:trivial] (self: Seq.seq int) (range: t_RangeTo_Int) : Seq.seq int =
+    Seq.([..]) self 0 range.end''0
+  
+  meta "rewrite_def" function index_Seq_Int'2
+  
+  type t_RangeToInclusive_Int = { end''1: int }
+  
+  function index_Seq_Int'3 [@inline:trivial] (self: Seq.seq int) (range: t_RangeToInclusive_Int) : Seq.seq int =
+    Seq.([..]) self 0 (range.end''1 + 1)
+  
+  meta "rewrite_def" function index_Seq_Int'3
+  
+  function index_Seq_Int'4 [@inline:trivial] (self: Seq.seq int) (_2: ()) : Seq.seq int = self
+  
+  meta "rewrite_def" function index_Seq_Int'4
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec g (s: Seq.seq int) (return (x: ())) = {[@expl:g requires] Seq.length s >= 1}
+    (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
+    [ return (result: ()) -> {[@expl:g ensures #0] Seq.length (index_Seq_Int s { start = 0; end' = 1 }) = 1}
+      {[@expl:g ensures #1] Seq.length (index_Seq_Int'0 s (new_log_RangeInclusive_Int 0 0)) = 1}
+      {[@expl:g ensures #2] index_Seq_Int'1 s { start'0 = 0 } = s}
+      {[@expl:g ensures #3] Seq.length (index_Seq_Int'2 s { end''0 = 0 }) = 0}
+      {[@expl:g ensures #4] Seq.length (index_Seq_Int'3 s { end''1 = 0 }) = 1}
+      {[@expl:g ensures #5] index_Seq_Int'4 s () = s}
+      (! return {result}) ]
+end

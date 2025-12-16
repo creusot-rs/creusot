@@ -4,8 +4,12 @@ use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
     prelude::*,
+    std::ops::RangeInclusiveExt as _,
 };
-use std::marker::PhantomData;
+use std::{
+    marker::PhantomData,
+    ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+};
 
 /// A type of sequence usable in pearlite and `ghost!` blocks.
 ///
@@ -424,6 +428,60 @@ impl<T> IndexLogic<Int> for Seq<T> {
     #[builtin("seq.Seq.get")]
     fn index_logic(self, _: Int) -> Self::Item {
         dead
+    }
+}
+
+impl<T> IndexLogic<Range<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, range: Range<Int>) -> Self::Item {
+        self.subsequence(range.start, range.end)
+    }
+}
+
+impl<T> IndexLogic<RangeInclusive<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, range: RangeInclusive<Int>) -> Self::Item {
+        self.subsequence(range.start_log(), range.end_log() + 1)
+    }
+}
+
+impl<T> IndexLogic<RangeFull> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, _: RangeFull) -> Self::Item {
+        self
+    }
+}
+
+impl<T> IndexLogic<RangeFrom<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, range: RangeFrom<Int>) -> Self::Item {
+        self.subsequence(range.start, self.len())
+    }
+}
+
+impl<T> IndexLogic<RangeTo<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, range: RangeTo<Int>) -> Self::Item {
+        self.subsequence(0, range.end)
+    }
+}
+
+impl<T> IndexLogic<RangeToInclusive<Int>> for Seq<T> {
+    type Item = Seq<T>;
+
+    #[logic(open, inline)]
+    fn index_logic(self, range: RangeToInclusive<Int>) -> Self::Item {
+        self.subsequence(0, range.end + 1)
     }
 }
 
