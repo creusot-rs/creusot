@@ -69,6 +69,13 @@ pub trait FromIteratorSpec<A>: FromIterator<A> {
     fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
 }
 
+impl FromIteratorSpec<()> for () {
+    #[logic(open)]
+    fn from_iter_post(_: Seq<()>, _res: Self) -> bool {
+        true
+    }
+}
+
 pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
