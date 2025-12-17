@@ -43,23 +43,13 @@ pub struct NewInitArgs {
 
 fn cargo_template(name: &str, creusot_contracts: Option<String>, no_std: bool) -> String {
     let patch = if let Some(creusot_contracts) = creusot_contracts {
-        if no_std {
-            format!(
-                r#"
-[patch.crates-io]
-creusot-contracts = {{ path = "{}", default-features = false }}
-"#,
-                creusot_contracts
-            )
-        } else {
-            format!(
-                r#"
+        format!(
+            r#"
 [patch.crates-io]
 creusot-contracts = {{ path = "{}" }}
 "#,
-                creusot_contracts
-            )
-        }
+            creusot_contracts
+        )
     } else {
         if !Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap().pre.is_empty() {
             eprintln!(
