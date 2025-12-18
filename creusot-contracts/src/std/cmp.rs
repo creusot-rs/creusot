@@ -1,14 +1,14 @@
 use crate::{logic::OrdLogic, prelude::*};
-use std::cmp::*;
+use core::cmp::*;
 
 #[cfg(creusot)]
 pub use creusot_contracts_proc::PartialEq;
 
 #[cfg(not(creusot))]
-pub use std::cmp::PartialEq;
+pub use core::cmp::PartialEq;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod cmp {
             trait PartialEq<Rhs> {
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]

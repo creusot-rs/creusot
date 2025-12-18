@@ -1,5 +1,5 @@
 use crate::{logic::Mapping, prelude::*};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A (possibly infinite) set type.
 #[opaque]

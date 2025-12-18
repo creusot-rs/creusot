@@ -1,6 +1,6 @@
 use crate::prelude::*;
 #[cfg(creusot)]
-use std::fmt::{Arguments, Debug, Formatter, Result};
+use core::fmt::{Arguments, Debug, Formatter, Result};
 
 extern_spec! {
     mod core {

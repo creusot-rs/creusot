@@ -2,7 +2,7 @@
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
+use core::alloc::Allocator;
 use std::{
     ops::{Deref, DerefMut, Index, IndexMut},
     vec::*,

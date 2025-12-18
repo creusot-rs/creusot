@@ -97,7 +97,7 @@ impl<T> Seq<T> {
     /// ```
     #[logic]
     #[builtin("seq.Seq.get")]
-    pub fn index_logic_unsized(self, ix: Int) -> Box<T> {
+    pub fn index_logic_unsized(self, ix: Int) -> &'static T {
         let _ = ix;
         dead
     }

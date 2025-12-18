@@ -1,8 +1,8 @@
 use crate::prelude::*;
-use std::mem::*;
+use core::mem::*;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod mem {
             #[check(ghost)]
             #[ensures(^dest == src)]

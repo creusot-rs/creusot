@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, prelude::*};
-use std::array::*;
+use core::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
     #[logic(open, prophetic)]
@@ -101,7 +101,7 @@ extern_spec! {
     impl<T, const N: usize> IntoIterator for [T; N] {
         #[check(ghost)]
         #[ensures(self@ == result@)]
-        fn into_iter(self) -> std::array::IntoIter<T, N>;
+        fn into_iter(self) -> core::array::IntoIter<T, N>;
     }
 
     impl<T: Clone, const N: usize> Clone for [T; N] {

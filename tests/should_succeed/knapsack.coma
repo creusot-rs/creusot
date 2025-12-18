@@ -106,14 +106,16 @@ module M_knapsack01_dyn
   
   axiom inv_axiom [@rewrite]: forall x: t_Item_Name [inv_Item_Name x]. inv_Item_Name x = inv_Name x.name
   
-  predicate invariant_Box_Item_Name_Global (self: t_Item_Name) = inv_Item_Name self
+  predicate invariant_ref_Item_Name [@inline:trivial] (self: t_Item_Name) = inv_Item_Name self
   
-  predicate inv_Box_Item_Name_Global [@inline:trivial] (_1: t_Item_Name) = invariant_Box_Item_Name_Global _1
+  meta "rewrite_def" predicate invariant_ref_Item_Name
   
-  meta "rewrite_def" predicate inv_Box_Item_Name_Global
+  predicate inv_ref_Item_Name [@inline:trivial] (_1: t_Item_Name) = invariant_ref_Item_Name _1
+  
+  meta "rewrite_def" predicate inv_ref_Item_Name
   
   predicate invariant_Seq_Item_Name [@inline:trivial] (self: Seq.seq t_Item_Name) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_Item_Name_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item_Name (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_Item_Name
   
@@ -193,14 +195,6 @@ module M_knapsack01_dyn
     UInt64.t'int self < Seq.length seq
   
   meta "rewrite_def" predicate in_bounds_usize
-  
-  predicate invariant_ref_Item_Name [@inline:trivial] (self: t_Item_Name) = inv_Item_Name self
-  
-  meta "rewrite_def" predicate invariant_ref_Item_Name
-  
-  predicate inv_ref_Item_Name [@inline:trivial] (_1: t_Item_Name) = invariant_ref_Item_Name _1
-  
-  meta "rewrite_def" predicate inv_ref_Item_Name
   
   predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item_Name) (out: t_Item_Name) =
     Seq.get seq (UInt64.t'int self) = out
@@ -295,14 +289,16 @@ module M_knapsack01_dyn
   
   type t_Vec_ref_Item_Name_Global
   
-  predicate invariant_Box_ref_Item_Name_Global (self: t_Item_Name) = inv_ref_Item_Name self
+  predicate invariant_ref_ref_Item_Name [@inline:trivial] (self: t_Item_Name) = inv_ref_Item_Name self
   
-  predicate inv_Box_ref_Item_Name_Global [@inline:trivial] (_1: t_Item_Name) = invariant_Box_ref_Item_Name_Global _1
+  meta "rewrite_def" predicate invariant_ref_ref_Item_Name
   
-  meta "rewrite_def" predicate inv_Box_ref_Item_Name_Global
+  predicate inv_ref_ref_Item_Name [@inline:trivial] (_1: t_Item_Name) = invariant_ref_ref_Item_Name _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_Item_Name
   
   predicate invariant_Seq_ref_Item_Name [@inline:trivial] (self: Seq.seq t_Item_Name) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_Box_ref_Item_Name_Global (Seq.get self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_Item_Name (Seq.get self i)
   
   meta "rewrite_def" predicate invariant_Seq_ref_Item_Name
   

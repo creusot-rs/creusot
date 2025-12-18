@@ -1,14 +1,14 @@
 use crate::prelude::*;
-use std::default::*;
+use core::default::*;
 
 #[cfg(creusot)]
 pub use creusot_contracts_proc::Default;
 
 #[cfg(not(creusot))]
-pub use std::default::Default;
+pub use core::default::Default;
 
 extern_spec! {
-    mod std {
+    mod core {
         mod default {
             trait Default {
                 // #[requires(true)]
