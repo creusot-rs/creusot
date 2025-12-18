@@ -246,9 +246,9 @@ impl Committer {
         dead
     }
 
-    /// Value that will be written to the [`AtomicOwn`]
+    /// Value held by the [`AtomicOwn`]
     #[logic(opaque)]
-    pub fn final_value(self) -> i32 {
+    pub fn value(self) -> i32 {
         dead
     }
 
@@ -259,7 +259,8 @@ impl Committer {
     #[requires(self.tied() == own.tied())]
     #[ensures((^self).shot())]
     #[ensures((^own).tied() == (*own).tied())]
-    #[ensures((^own).val() == self.final_value())]
+    #[ensures((*own).val() == (*self).value())]
+    #[ensures((^own).val() == (^self).value())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]

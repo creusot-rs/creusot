@@ -63,15 +63,37 @@ impl<T> View for Arc<T> {
 pub struct AtomicI32(::std::sync::atomic::AtomicI32);
 
 impl AtomicI32 {
-    /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
+    /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
     ///
-    /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut Committer> !c.shot() ==> c.tied() == *self ==> c.final_value() == val ==>
+    /// The fetch and the store are always sequentially consistent.
+    // TODO: Handle overflow wrapping
+    #[requires(forall<c: &mut Committer> !c.shot() ==> c.tied() == *self ==> (^c).value()@ == val@ + (*c).value()@ ==>
         f.precondition((c,)) &&
         (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut Committer>
-        !c.shot() && c.tied() == *self && c.final_value() == val &&
+        !c.shot() && c.tied() == *self && (^c).value()@ == val@ + (*c).value()@ &&
+        f.postcondition_once((c,), *result)
+    )]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn fetch_add<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> Ghost<A>
+    where
+        F: FnGhost + FnOnce(&'a mut Committer) -> A,
+    {
+        self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst);
+        Ghost::conjure()
+    }
+
+    /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
+    ///
+    /// The store is always sequentially consistent.
+    #[requires(forall<c: &mut Committer> !c.shot() ==> c.tied() == *self ==> (^c).value() == val ==>
+        f.precondition((c,)) &&
+        (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
+    )]
+    #[ensures(exists<c: &mut Committer>
+        !c.shot() && c.tied() == *self && (^c).value() == val &&
         f.postcondition_once((c,), *result)
     )]
     #[trusted]
