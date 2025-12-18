@@ -115,11 +115,11 @@ pub fn parallel_add(mut tokens: Ghost<Tokens>) {
 
     ghost! {
         inv.open(tokens.into_inner(), #[check(ghost)] move |inv: &mut ParallelAddAtomicInv| {
-            proof_assert!(frag1@.frag().unwrap_logic().0);
             inv.auth1.join_in(frag1.take());
-
-            proof_assert!(frag2@.frag().unwrap_logic().0);
             inv.auth2.join_in(frag2.take());
+
+            proof_assert!(inv.auth1@.auth().unwrap_logic().unwrap_logic().0);
+            proof_assert!(inv.auth2@.auth().unwrap_logic().unwrap_logic().0);
 
             proof_assert!(inv.own.val() == 2i32);
         })
