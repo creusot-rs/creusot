@@ -1,0 +1,1555 @@
+module M_parallel_add
+  type namespace_other
+  
+  type t_Namespace = Namespace_PARALLEL_ADD int | Other namespace_other
+  
+  use creusot.int.Int32
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use mach.int.Int
+  use creusot.prelude.Any
+  use set.Set
+  
+  type t_AtomicI32
+  
+  type t_AtomicI32Own
+  
+  type tup2_AtomicI32_Ghost_AtomicI32Own = { f0: t_AtomicI32; f1: t_AtomicI32Own }
+  
+  predicate inv_AtomicI32 (_1: t_AtomicI32)
+  
+  predicate inv_tup2_AtomicI32_Ghost_AtomicI32Own [@inline:trivial] (_1: tup2_AtomicI32_Ghost_AtomicI32Own) =
+    inv_AtomicI32 _1.f0
+  
+  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_AtomicI32Own
+  
+  function val' (self: t_AtomicI32Own) : Int32.t
+  
+  function tied (self: t_AtomicI32Own) : t_AtomicI32
+  
+  let rec new (val''0: Int32.t) (return (x: tup2_AtomicI32_Ghost_AtomicI32Own)) = any
+    [ return (result: tup2_AtomicI32_Ghost_AtomicI32Own) -> {inv_tup2_AtomicI32_Ghost_AtomicI32Own result}
+      {val' result.f1 = val''0}
+      {tied result.f1 = result.f0}
+      (! return {result}) ]
+  
+  type t_Excl_bool = { f0'0: bool }
+  
+  type t_Option_Excl_bool = None | Some t_Excl_bool
+  
+  type t_View_AuthViewRel_Option_Excl_bool
+  
+  type t_Option_Option_Excl_bool = None'0 | Some'0 t_Option_Excl_bool
+  
+  function and_then_Option_Option_Excl_bool (self: t_Option_Option_Excl_bool) (f: Map.map t_Option_Excl_bool t_Option_Option_Excl_bool) : t_Option_Option_Excl_bool
+   = match self with
+      | None'0 -> None'0
+      | Some'0 x -> Map.get f x
+      end
+  
+  type tup2_Option_Excl_bool_Option_Excl_bool = { f0'1: t_Option_Excl_bool; f1'1: t_Option_Excl_bool }
+  
+  function map_Option_Excl_bool (self: t_Option_Excl_bool) (f: Map.map t_Excl_bool t_Option_Excl_bool) : t_Option_Option_Excl_bool
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function and_then_Option_Excl_bool (self: t_Option_Excl_bool) (f: Map.map t_Excl_bool t_Option_Excl_bool) : t_Option_Excl_bool
+   = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function op_Excl_bool (self: t_Excl_bool) (_other: t_Excl_bool) : t_Option_Excl_bool = None
+  
+  function associative_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) : ()
+  
+  axiom associative_Excl_bool_spec:
+    forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool. and_then_Option_Excl_bool (op_Excl_bool a b) (fun (ab: t_Excl_bool) -> op_Excl_bool ab c)
+      = and_then_Option_Excl_bool (op_Excl_bool b c) (fun (bc: t_Excl_bool) -> op_Excl_bool a bc)
+  
+  function commutative_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) : ()
+  
+  axiom commutative_Excl_bool_spec: forall a: t_Excl_bool, b: t_Excl_bool. op_Excl_bool a b = op_Excl_bool b a
+  
+  function op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> Some'0 other
+      | {f1'1 = None} -> Some'0 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Excl_bool (op_Excl_bool x y) (fun (z: t_Excl_bool) -> Some z)
+      end
+  
+  function associative_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) : ()
+  
+  axiom associative_Option_Excl_bool_spec:
+    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool. and_then_Option_Option_Excl_bool (op_Option_Excl_bool a b) (fun (ab: t_Option_Excl_bool) -> op_Option_Excl_bool ab c)
+      = and_then_Option_Option_Excl_bool (op_Option_Excl_bool b c) (fun (bc: t_Option_Excl_bool) -> op_Option_Excl_bool a bc)
+  
+  function commutative_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) : ()
+  
+  axiom commutative_Option_Excl_bool_spec: forall a: t_Option_Excl_bool, b: t_Option_Excl_bool. op_Option_Excl_bool a b
+      = op_Option_Excl_bool b a
+  
+  constant unit_Option_Excl_bool: t_Option_Excl_bool = None
+  
+  axiom unit_Option_Excl_bool_spec:
+    forall x: t_Option_Excl_bool [op_Option_Excl_bool x unit_Option_Excl_bool]. op_Option_Excl_bool x unit_Option_Excl_bool
+      = Some'0 x
+  
+  function factor_Excl_bool (self: t_Excl_bool) (factor: t_Excl_bool) : t_Option_Excl_bool = None
+  
+  axiom factor_Excl_bool_spec: forall self: t_Excl_bool, factor: t_Excl_bool. match factor_Excl_bool self factor with
+        | Some c -> op_Excl_bool factor c = Some self
+        | None -> forall c: t_Excl_bool. op_Excl_bool factor c <> Some self
+        end
+  
+  function factor_Option_Excl_bool (self: t_Option_Excl_bool) (factor: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
+    match { f0'1 = self; f1'1 = factor } with
+      | {f0'1 = x; f1'1 = None} -> Some'0 x
+      | {f0'1 = None} -> None'0
+      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Excl_bool x y with
+        | Some z -> Some'0 (Some z)
+        | None -> if x = y then Some'0 (None) else None'0
+        end
+      end
+  
+  axiom factor_Option_Excl_bool_spec:
+    forall self: t_Option_Excl_bool, factor: t_Option_Excl_bool. match factor_Option_Excl_bool self factor with
+        | Some'0 c -> op_Option_Excl_bool factor c = Some'0 self
+        | None'0 -> forall c: t_Option_Excl_bool. op_Option_Excl_bool factor c <> Some'0 self
+        end
+  
+  predicate incl_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) =
+    factor_Option_Excl_bool other self <> None'0
+  
+  function incl_transitive_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) : ()
+  
+  axiom incl_transitive_Option_Excl_bool_spec:
+    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool. incl_Option_Excl_bool a b
+      -> incl_Option_Excl_bool b c -> incl_Option_Excl_bool a c
+  
+  function incl_op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) (comb: t_Option_Excl_bool) : ()
+  
+  axiom incl_op_Option_Excl_bool_spec:
+    forall self: t_Option_Excl_bool, other: t_Option_Excl_bool, comb: t_Option_Excl_bool. op_Option_Excl_bool self other
+        = Some'0 comb -> incl_Option_Excl_bool self comb
+  
+  predicate rel_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f: t_Option_Excl_bool) =
+    match a with
+      | Some'0 a'0 -> incl_Option_Excl_bool f a'0
+      | None'0 -> true
+      end
+  
+  function rel_unit_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) : ()
+  
+  axiom rel_unit_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_Option_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool a unit_Option_Excl_bool
+  
+  function rel_none_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f: t_Option_Excl_bool) : ()
+  
+  axiom rel_none_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_Option_Option_Excl_bool, f: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool (None'0) f
+  
+  function rel_mono_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f1'0: t_Option_Excl_bool) (f2: t_Option_Excl_bool) : ()
+  
+  axiom rel_mono_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_Option_Option_Excl_bool, f1'0: t_Option_Excl_bool, f2: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool a f1'0
+      -> incl_Option_Excl_bool f2 f1'0 -> rel_AuthViewRel_Option_Excl_bool a f2
+  
+  function auth_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) : t_Option_Option_Excl_bool
+  
+  function frag_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) : t_Option_Excl_bool
+  
+  axiom frag_AuthViewRel_Option_Excl_bool_spec:
+    forall self: t_View_AuthViewRel_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool self) (frag_AuthViewRel_Option_Excl_bool self)
+  
+  function new_AuthViewRel_Option_Excl_bool (auth: t_Option_Option_Excl_bool) (frag: t_Option_Excl_bool) : t_View_AuthViewRel_Option_Excl_bool
+  
+  axiom new_AuthViewRel_Option_Excl_bool_spec:
+    forall auth: t_Option_Option_Excl_bool, frag: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool auth frag
+      -> auth_AuthViewRel_Option_Excl_bool (new_AuthViewRel_Option_Excl_bool auth frag) = auth
+  
+  axiom new_AuthViewRel_Option_Excl_bool_spec'0:
+    forall auth: t_Option_Option_Excl_bool, frag: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool auth frag
+      -> frag_AuthViewRel_Option_Excl_bool (new_AuthViewRel_Option_Excl_bool auth frag) = frag
+  
+  type t_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  function val_View_AuthViewRel_Option_Excl_bool (self: t_Resource_View_AuthViewRel_Option_Excl_bool) : t_View_AuthViewRel_Option_Excl_bool
+  
+  function view_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (self: t_Resource_View_AuthViewRel_Option_Excl_bool) : t_View_AuthViewRel_Option_Excl_bool
+   = val_View_AuthViewRel_Option_Excl_bool self
+  
+  meta "rewrite_def" function view_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  let rec alloc_View_AuthViewRel_Option_Excl_bool (r: t_View_AuthViewRel_Option_Excl_bool)
+    (return (x: t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+    {view_Resource_View_AuthViewRel_Option_Excl_bool result = r}
+      (! return {result}) ]
+  
+  let rec deref_mut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool
+    (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (return (x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> {result = self} (! return {result}) ]
+  
+  function new_frag_AuthViewRel_Option_Excl_bool [@inline:trivial] (frag: t_Option_Excl_bool) : t_View_AuthViewRel_Option_Excl_bool
+   = new_AuthViewRel_Option_Excl_bool (None'0) frag
+  
+  meta "rewrite_def" function new_frag_AuthViewRel_Option_Excl_bool
+  
+  function new_auth_AuthViewRel_Option_Excl_bool [@inline:trivial] (auth: t_Option_Excl_bool) : t_View_AuthViewRel_Option_Excl_bool
+   = new_AuthViewRel_Option_Excl_bool (Some'0 auth) unit_Option_Excl_bool
+  
+  meta "rewrite_def" function new_auth_AuthViewRel_Option_Excl_bool
+  
+  type t_Option_View_AuthViewRel_Option_Excl_bool = None'1 | Some'1 t_View_AuthViewRel_Option_Excl_bool
+  
+  function and_then_Option_View_AuthViewRel_Option_Excl_bool (self: t_Option_View_AuthViewRel_Option_Excl_bool) (f: Map.map t_View_AuthViewRel_Option_Excl_bool t_Option_View_AuthViewRel_Option_Excl_bool) : t_Option_View_AuthViewRel_Option_Excl_bool
+   = match self with
+      | None'1 -> None'1
+      | Some'1 x -> Map.get f x
+      end
+  
+  type tup2_Option_Option_Excl_bool_Option_Option_Excl_bool = {
+    f0'2: t_Option_Option_Excl_bool;
+    f1'2: t_Option_Option_Excl_bool }
+  
+  function op_View_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) (other: t_View_AuthViewRel_Option_Excl_bool) : t_Option_View_AuthViewRel_Option_Excl_bool
+   = match op_Option_Excl_bool (frag_AuthViewRel_Option_Excl_bool self) (frag_AuthViewRel_Option_Excl_bool other) with
+      | Some'0 f -> match { f0'2 = auth_AuthViewRel_Option_Excl_bool self;
+                            f1'2 = auth_AuthViewRel_Option_Excl_bool other } with
+        | {f0'2 = None'0; f1'2 = a} -> if rel_AuthViewRel_Option_Excl_bool a f then
+          Some'1 (new_AuthViewRel_Option_Excl_bool a f)
+        else
+          None'1
+        
+        | {f0'2 = a; f1'2 = None'0} -> if rel_AuthViewRel_Option_Excl_bool a f then
+          Some'1 (new_AuthViewRel_Option_Excl_bool a f)
+        else
+          None'1
+        
+        | _ -> None'1
+        end
+      | None'0 -> None'1
+      end
+  
+  function associative_View_AuthViewRel_Option_Excl_bool (a: t_View_AuthViewRel_Option_Excl_bool) (b: t_View_AuthViewRel_Option_Excl_bool) (c: t_View_AuthViewRel_Option_Excl_bool) : ()
+  
+  axiom associative_View_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_View_AuthViewRel_Option_Excl_bool, b: t_View_AuthViewRel_Option_Excl_bool, c: t_View_AuthViewRel_Option_Excl_bool. and_then_Option_View_AuthViewRel_Option_Excl_bool (op_View_AuthViewRel_Option_Excl_bool a b) (fun (ab: t_View_AuthViewRel_Option_Excl_bool) -> op_View_AuthViewRel_Option_Excl_bool ab c)
+      = and_then_Option_View_AuthViewRel_Option_Excl_bool (op_View_AuthViewRel_Option_Excl_bool b c) (fun (bc: t_View_AuthViewRel_Option_Excl_bool) -> op_View_AuthViewRel_Option_Excl_bool a bc)
+  
+  function commutative_View_AuthViewRel_Option_Excl_bool (a: t_View_AuthViewRel_Option_Excl_bool) (b: t_View_AuthViewRel_Option_Excl_bool) : ()
+  
+  axiom commutative_View_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_View_AuthViewRel_Option_Excl_bool, b: t_View_AuthViewRel_Option_Excl_bool. op_View_AuthViewRel_Option_Excl_bool a b
+      = op_View_AuthViewRel_Option_Excl_bool b a
+  
+  function factor_View_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) (factor: t_View_AuthViewRel_Option_Excl_bool) : t_Option_View_AuthViewRel_Option_Excl_bool
+   =
+    match factor_Option_Excl_bool (frag_AuthViewRel_Option_Excl_bool self) (frag_AuthViewRel_Option_Excl_bool factor) with
+      | Some'0 f -> match { f0'2 = auth_AuthViewRel_Option_Excl_bool self;
+                            f1'2 = auth_AuthViewRel_Option_Excl_bool factor } with
+        | {f0'2 = Some'0 a; f1'2 = None'0} -> Some'1 (new_AuthViewRel_Option_Excl_bool (Some'0 a) f)
+        | {f0'2 = a1; f1'2 = a2} -> if a1 = a2 then Some'1 (new_frag_AuthViewRel_Option_Excl_bool f) else None'1
+        end
+      | None'0 -> None'1
+      end
+  
+  axiom factor_View_AuthViewRel_Option_Excl_bool_spec:
+    forall self: t_View_AuthViewRel_Option_Excl_bool, factor: t_View_AuthViewRel_Option_Excl_bool. match factor_View_AuthViewRel_Option_Excl_bool self factor with
+        | Some'1 c -> op_View_AuthViewRel_Option_Excl_bool factor c = Some'1 self
+        | None'1 -> forall c: t_View_AuthViewRel_Option_Excl_bool. op_View_AuthViewRel_Option_Excl_bool factor c
+          <> Some'1 self
+        end
+  
+  predicate incl_View_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) (other: t_View_AuthViewRel_Option_Excl_bool) =
+    factor_View_AuthViewRel_Option_Excl_bool other self <> None'1
+  
+  function incl_transitive_View_AuthViewRel_Option_Excl_bool (a: t_View_AuthViewRel_Option_Excl_bool) (b: t_View_AuthViewRel_Option_Excl_bool) (c: t_View_AuthViewRel_Option_Excl_bool) : ()
+  
+  axiom incl_transitive_View_AuthViewRel_Option_Excl_bool_spec:
+    forall a: t_View_AuthViewRel_Option_Excl_bool, b: t_View_AuthViewRel_Option_Excl_bool, c: t_View_AuthViewRel_Option_Excl_bool. incl_View_AuthViewRel_Option_Excl_bool a b
+      -> incl_View_AuthViewRel_Option_Excl_bool b c -> incl_View_AuthViewRel_Option_Excl_bool a c
+  
+  function incl_op_View_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) (other: t_View_AuthViewRel_Option_Excl_bool) (comb: t_View_AuthViewRel_Option_Excl_bool) : ()
+  
+  axiom incl_op_View_AuthViewRel_Option_Excl_bool_spec:
+    forall self: t_View_AuthViewRel_Option_Excl_bool, other: t_View_AuthViewRel_Option_Excl_bool, comb: t_View_AuthViewRel_Option_Excl_bool. op_View_AuthViewRel_Option_Excl_bool self other
+        = Some'1 comb -> incl_View_AuthViewRel_Option_Excl_bool self comb
+  
+  predicate incl_eq_View_AuthViewRel_Option_Excl_bool (self: t_View_AuthViewRel_Option_Excl_bool) (other: t_View_AuthViewRel_Option_Excl_bool) =
+    self = other \/ incl_View_AuthViewRel_Option_Excl_bool self other
+  
+  predicate incl_eq_op_View_AuthViewRel_Option_Excl_bool (a: t_View_AuthViewRel_Option_Excl_bool) (b: t_View_AuthViewRel_Option_Excl_bool) (x: t_View_AuthViewRel_Option_Excl_bool) =
+    match op_View_AuthViewRel_Option_Excl_bool a b with
+      | None'1 -> false
+      | Some'1 ab -> incl_eq_View_AuthViewRel_Option_Excl_bool ab x
+      end
+  
+  type t_Id
+  
+  function id_View_AuthViewRel_Option_Excl_bool (self: t_Resource_View_AuthViewRel_Option_Excl_bool) : t_Id
+  
+  let rec split_off_View_AuthViewRel_Option_Excl_bool (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (r: t_View_AuthViewRel_Option_Excl_bool) (s: t_View_AuthViewRel_Option_Excl_bool)
+    (return (x: t_Resource_View_AuthViewRel_Option_Excl_bool)) =
+    {[@expl:split_off requires] incl_eq_op_View_AuthViewRel_Option_Excl_bool r s (view_Resource_View_AuthViewRel_Option_Excl_bool self.current)}
+    any
+    [ return (result: t_Resource_View_AuthViewRel_Option_Excl_bool) -> {id_View_AuthViewRel_Option_Excl_bool self.final
+        = id_View_AuthViewRel_Option_Excl_bool self.current
+      /\ id_View_AuthViewRel_Option_Excl_bool result = id_View_AuthViewRel_Option_Excl_bool self.current}
+      {view_Resource_View_AuthViewRel_Option_Excl_bool self.final = s}
+      {view_Resource_View_AuthViewRel_Option_Excl_bool result = r}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (_1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  let rec new_Resource_View_AuthViewRel_Option_Excl_bool (x: t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (return (x'0: t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: t_Resource_View_AuthViewRel_Option_Excl_bool) -> {result = x} (! return {result}) ]
+  
+  let rec into_inner_AtomicI32Own (self: t_AtomicI32Own) (return (x: t_AtomicI32Own)) = any
+    [ return (result: t_AtomicI32Own) -> {result = self} (! return {result}) ]
+  
+  let rec into_inner_Resource_View_AuthViewRel_Option_Excl_bool (self: t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (return (x: t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: t_Resource_View_AuthViewRel_Option_Excl_bool) -> {result = self} (! return {result}) ]
+  
+  type t_ParallelAddAtomicInv = {
+    own: t_AtomicI32Own;
+    auth1: t_Resource_View_AuthViewRel_Option_Excl_bool;
+    auth2: t_Resource_View_AuthViewRel_Option_Excl_bool }
+  
+  let rec new_ParallelAddAtomicInv (x: t_ParallelAddAtomicInv) (return (x'0: t_ParallelAddAtomicInv)) = any
+    [ return (result: t_ParallelAddAtomicInv) -> {result = x} (! return {result}) ]
+  
+  type tup3_AtomicI32_Id_Id = { f0'3: t_AtomicI32; f1'3: t_Id; f2'3: t_Id }
+  
+  type t_AtomicInvariant_ParallelAddAtomicInv
+  
+  predicate index_Mapping_Excl_bool_bool [@inline:trivial] (self: Map.map t_Excl_bool bool) (a: t_Excl_bool) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Excl_bool_bool
+  
+  function such_that_Excl_bool (p: Map.map t_Excl_bool bool) : t_Excl_bool
+  
+  axiom such_that_Excl_bool_spec:
+    forall p: Map.map t_Excl_bool bool. (exists x: t_Excl_bool. index_Mapping_Excl_bool_bool p x)
+      -> index_Mapping_Excl_bool_bool p (such_that_Excl_bool p)
+  
+  function unwrap_Option_Excl_bool (self: t_Option_Excl_bool) : t_Excl_bool = match self with
+      | Some x -> x
+      | None -> such_that_Excl_bool (fun (__0: t_Excl_bool) -> true)
+      end
+  
+  predicate index_Mapping_Option_Excl_bool_bool [@inline:trivial] (self: Map.map t_Option_Excl_bool bool) (a: t_Option_Excl_bool) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Option_Excl_bool_bool
+  
+  function such_that_Option_Excl_bool (p: Map.map t_Option_Excl_bool bool) : t_Option_Excl_bool
+  
+  axiom such_that_Option_Excl_bool_spec:
+    forall p: Map.map t_Option_Excl_bool bool. (exists x: t_Option_Excl_bool. index_Mapping_Option_Excl_bool_bool p x)
+      -> index_Mapping_Option_Excl_bool_bool p (such_that_Option_Excl_bool p)
+  
+  function unwrap_Option_Option_Excl_bool (self: t_Option_Option_Excl_bool) : t_Option_Excl_bool = match self with
+      | Some'0 x -> x
+      | None'0 -> such_that_Option_Excl_bool (fun (__0: t_Option_Excl_bool) -> true)
+      end
+  
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup3_AtomicI32_Id_Id) =
+    tied self.own = data.f0'3
+    /\ id_View_AuthViewRel_Option_Excl_bool self.auth1 = data.f1'3
+    /\ id_View_AuthViewRel_Option_Excl_bool self.auth2 = data.f2'3
+    /\ auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.auth1) <> None'0
+    /\ auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.auth2) <> None'0
+    /\ Int32.to_int (val' self.own)
+    = (if (unwrap_Option_Excl_bool (unwrap_Option_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.auth1)))).f0'0 then
+        1
+      else
+        0
+      )
+    + (if (unwrap_Option_Excl_bool (unwrap_Option_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.auth2)))).f0'0 then
+      1
+    else
+      0
+    )
+  
+  meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
+  
+  function public_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup3_AtomicI32_Id_Id
+  
+  function namespace_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : t_Namespace
+  
+  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (public: tup3_AtomicI32_Id_Id)
+    (namespace: t_Namespace) (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) =
+    {[@expl:new requires] protocol_ParallelAddAtomicInv value public}
+    any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) -> {public_ParallelAddAtomicInv result = public}
+      {namespace_ParallelAddAtomicInv result = namespace}
+      (! return {result}) ]
+  
+  predicate resolve_AtomicI32 (_1: t_AtomicI32)
+  
+  type closure0 = {
+    c0: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c2: t_AtomicInvariant_ParallelAddAtomicInv;
+    c3: t_AtomicI32 }
+  
+  let rec borrow_mut_Resource_View_AuthViewRel_Option_Excl_bool
+    (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (return (x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> {result = self} (! return {result}) ]
+  
+  type closure0'0 = {
+    c0'0: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1'0: t_AtomicI32;
+    c2'0: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool }
+  
+  type t_Tokens
+  
+  type closure0'1 = {
+    c0'1: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1'1: t_Tokens;
+    c2'1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c3'1: t_Option_Excl_bool }
+  
+  let rec deref_Ghost_AtomicInvariant_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
+    (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) = any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) -> {result = self} (! return {result}) ]
+  
+  let rec into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
+    [ return (result: t_Tokens) -> {result = self} (! return {result}) ]
+  
+  type t_Committer
+  
+  type closure0'2 = {
+    c0'2: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c1'2: t_Option_Excl_bool;
+    c2'2: MutBorrow.t t_Committer }
+  
+  let rec deref_mut_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool
+    (self: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool))
+    (return (x: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) -> {result = self}
+      (! return {result}) ]
+  
+  constant unit_View_AuthViewRel_Option_Excl_bool : t_View_AuthViewRel_Option_Excl_bool
+  
+  axiom unit_View_AuthViewRel_Option_Excl_bool_spec:
+    forall x: t_View_AuthViewRel_Option_Excl_bool [op_View_AuthViewRel_Option_Excl_bool x unit_View_AuthViewRel_Option_Excl_bool]. op_View_AuthViewRel_Option_Excl_bool x unit_View_AuthViewRel_Option_Excl_bool
+      = Some'1 x
+  
+  let rec take_View_AuthViewRel_Option_Excl_bool (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (return (x: t_Resource_View_AuthViewRel_Option_Excl_bool)) = any
+    [ return (result: t_Resource_View_AuthViewRel_Option_Excl_bool) -> {id_View_AuthViewRel_Option_Excl_bool self.final
+        = id_View_AuthViewRel_Option_Excl_bool self.current
+      /\ id_View_AuthViewRel_Option_Excl_bool result = id_View_AuthViewRel_Option_Excl_bool self.current}
+      {view_Resource_View_AuthViewRel_Option_Excl_bool self.final = unit_View_AuthViewRel_Option_Excl_bool}
+      {view_Resource_View_AuthViewRel_Option_Excl_bool result
+      = view_Resource_View_AuthViewRel_Option_Excl_bool self.current}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  let rec join_in_View_AuthViewRel_Option_Excl_bool (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (other: t_Resource_View_AuthViewRel_Option_Excl_bool) (return (x: ())) =
+    {[@expl:join_in requires] id_View_AuthViewRel_Option_Excl_bool self.current
+    = id_View_AuthViewRel_Option_Excl_bool other}
+    any
+    [ return (result: ()) -> {id_View_AuthViewRel_Option_Excl_bool self.final
+      = id_View_AuthViewRel_Option_Excl_bool self.current}
+      {Some'1 (view_Resource_View_AuthViewRel_Option_Excl_bool self.final)
+      = op_View_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.current) (view_Resource_View_AuthViewRel_Option_Excl_bool other)}
+      (! return {result}) ]
+  
+  type t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit = { f0'4: Map.map () tup2_Option_Excl_bool_Option_Excl_bool }
+  
+  function index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool [@inline:trivial] (self: Map.map () tup2_Option_Excl_bool_Option_Excl_bool) (a: ()) : tup2_Option_Excl_bool_Option_Excl_bool
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool
+  
+  predicate premise_ViewUpdate_AuthViewRel_Option_Excl_bool_unit (self: t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit) (from: t_View_AuthViewRel_Option_Excl_bool) =
+    auth_AuthViewRel_Option_Excl_bool from <> None'0
+    /\ (forall ch: (). rel_AuthViewRel_Option_Excl_bool (Some'0 ((index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f0'1)) (index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f1'1)
+    /\ (forall frame: t_Option_Excl_bool. match op_Option_Excl_bool (frag_AuthViewRel_Option_Excl_bool from) frame with
+          | Some'0 ff -> rel_AuthViewRel_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool from) ff
+          | None'0 -> false
+          end
+      -> (exists ch: (). match op_Option_Excl_bool (index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f1'1 frame with
+          | Some'0 ff -> rel_AuthViewRel_Option_Excl_bool (Some'0 ((index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f0'1)) ff
+          | None'0 -> false
+          end))
+  
+  function update_ViewUpdate_AuthViewRel_Option_Excl_bool_unit (self: t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit) (from: t_View_AuthViewRel_Option_Excl_bool) (ch: ()) : t_View_AuthViewRel_Option_Excl_bool
+   =
+    new_AuthViewRel_Option_Excl_bool (Some'0 ((index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f0'1)) (index_Mapping_unit_tup2_Option_Excl_bool_Option_Excl_bool self.f0'4 ch).f1'1
+  
+  let rec update_View_AuthViewRel_Option_Excl_bool (self: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)
+    (upd: t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit) (return (x: ())) =
+    {[@expl:update requires] premise_ViewUpdate_AuthViewRel_Option_Excl_bool_unit upd (view_Resource_View_AuthViewRel_Option_Excl_bool self.current)}
+    any
+    [ return (result: ()) -> {id_View_AuthViewRel_Option_Excl_bool self.final
+      = id_View_AuthViewRel_Option_Excl_bool self.current}
+      {view_Resource_View_AuthViewRel_Option_Excl_bool self.final
+      = update_ViewUpdate_AuthViewRel_Option_Excl_bool_unit upd (view_Resource_View_AuthViewRel_Option_Excl_bool self.current) result}
+      (! return {result}) ]
+  
+  predicate resolve_Resource_View_AuthViewRel_Option_Excl_bool (_1: t_Resource_View_AuthViewRel_Option_Excl_bool)
+  
+  predicate shot (self: t_Committer)
+  
+  function tied'0 (self: t_Committer) : t_AtomicI32
+  
+  function value (self: t_Committer) : Int32.t
+  
+  let rec shoot (self: MutBorrow.t t_Committer) (own'0: MutBorrow.t t_AtomicI32Own) (return (x: ())) =
+    {[@expl:shoot requires #0] not shot self.current}
+    {[@expl:shoot requires #1] tied'0 self.current = tied own'0.current}
+    any
+    [ return (result: ()) -> {shot self.final}
+      {tied own'0.final = tied own'0.current}
+      {val' own'0.current = value self.current}
+      {val' own'0.final = value self.final}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_AtomicI32Own [@inline:trivial] (_1: MutBorrow.t t_AtomicI32Own) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_AtomicI32Own
+  
+  predicate resolve_refmut_ParallelAddAtomicInv [@inline:trivial] (_1: MutBorrow.t t_ParallelAddAtomicInv) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_ParallelAddAtomicInv
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'2) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate resolve_refmut_Committer [@inline:trivial] (_1: MutBorrow.t t_Committer) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer
+  
+  predicate resolve_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (_1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) =
+    resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0'2) =
+    resolve_refmut_Committer _1.c2'2 /\ resolve_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool _1.c0'2
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 [@inline:trivial] (self: closure0'2) (result_state: closure0'2) = true
+  
+  meta "rewrite_def" predicate hist_inv_closure0
+  
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0'2) (inv: MutBorrow.t t_ParallelAddAtomicInv)
+    (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 =
+        {[@expl:assertion] not (unwrap_Option_Excl_bool (frag_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.current.c0'2.current))).f0'0}
+        s1
+      | s1 = MutBorrow.borrow_mut <MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c0'2}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) ->
+            [ &_11 <- _bor ] [ &self <- { self with current = { self.current with c0'2 = _bor.final } } ] s2)
+      | s2 = deref_mut_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool {_11}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) -> [ &_10 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {_10.current.current}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_9 <- _bor ] [ &_10 <- { _10 with current = { _10.current with current = _bor.final } } ] s4)
+      | s4 = take_View_AuthViewRel_Option_Excl_bool {_9}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_8 <- _x ] s5)
+      | s5 = -{resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool _10}- s6
+      | s6 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth1}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_7 <- _bor ] [ &inv <- { inv with current = { inv.current with auth1 = _bor.final } } ] s7)
+      | s7 = join_in_View_AuthViewRel_Option_Excl_bool {_7} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s8)
+      | s8 = [ &_14 <- { f0'4 = fun (__0: ()) -> let () = __0 in { f0'1 = self.current.c1'2;
+                                                                   f1'1 = self.current.c1'2 } } ] s9
+      | s9 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth1}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_13 <- _bor ] [ &inv <- { inv with current = { inv.current with auth1 = _bor.final } } ] s10)
+      | s10 = update_View_AuthViewRel_Option_Excl_bool {_13} {_14} (fun (_x: ()) -> [ &_12 <- _x ] s11)
+      | s11 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth1}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_19 <- _bor ] [ &inv <- { inv with current = { inv.current with auth1 = _bor.final } } ] s12)
+      | s12 = split_off_View_AuthViewRel_Option_Excl_bool {_19}
+          {new_frag_AuthViewRel_Option_Excl_bool self.current.c1'2}
+          {new_auth_AuthViewRel_Option_Excl_bool self.current.c1'2}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_18 <- _x ] s13)
+      | s13 = MutBorrow.borrow_final <MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c0'2}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) ->
+            [ &_27 <- _bor ] [ &self <- { self with current = { self.current with c0'2 = _bor.final } } ] s14)
+      | s14 = deref_mut_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool {_27}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) -> [ &_26 <- _x ] s15)
+      | s15 = -{resolve_Resource_View_AuthViewRel_Option_Excl_bool _26.current.current}- s16
+      | s16 = [ &_26 <- { _26 with current = { _26.current with current = _18 } } ] s17
+      | s17 = -{resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool _26}- s18
+      | s18 = MutBorrow.borrow_final <t_AtomicI32Own> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
+          (fun (_bor: MutBorrow.t t_AtomicI32Own) ->
+            [ &_31 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s19)
+      | s19 = MutBorrow.borrow_mut <t_Committer> {self.current.c2'2.current}
+          (fun (_bor: MutBorrow.t t_Committer) ->
+            [ &_29 <- _bor ]
+            [ &self <- { self with current = { self.current with c2'2 = { self.current.c2'2 with current = _bor.final } } } ]
+            s20)
+      | s20 = MutBorrow.borrow_final <t_AtomicI32Own> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_AtomicI32Own) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s21)
+      | s21 = shoot {_29} {_30} (fun (_x: ()) -> [ &_28 <- _x ] s22)
+      | s22 = -{resolve_refmut_AtomicI32Own _31}- s23
+      | s23 = -{resolve_refmut_ParallelAddAtomicInv inv}- s24
+      | s24 = -{resolve_refmut_closure0 self}- s25
+      | s25 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure0'2 = self
+    | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
+    | & _6: () = Any.any_l ()
+    | & _7: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _8: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _9: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _10: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _11: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _12: () = Any.any_l ()
+    | & _13: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _14: t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit = Any.any_l ()
+    | & _18: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _19: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _26: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _27: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _28: () = Any.any_l ()
+    | & _29: MutBorrow.t t_Committer = Any.any_l ()
+    | & _30: MutBorrow.t t_AtomicI32Own = Any.any_l ()
+    | & _31: MutBorrow.t t_AtomicI32Own = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'2) (result: ()) =
+    let inv = args in exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure0 self args res
+      = (exists res_state: closure0'2. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: closure0'2) (b: closure0'2) (c: closure0'2) : ()
+  
+  axiom hist_inv_trans_closure0_spec: forall self: closure0'2, b: closure0'2, c: closure0'2. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: closure0'2) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: closure0'2. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'2) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'2, res: (). postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  type t_FnGhostWrapper_closure0 = { f0'5: closure0'2 }
+  
+  function view_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) : closure0'2 = self.f0'5
+  
+  meta "rewrite_def" function view_FnGhostWrapper_closure0
+  
+  let rec __new_closure0 (f: closure0'2) (return (x: t_FnGhostWrapper_closure0)) = any
+    [ return (result: t_FnGhostWrapper_closure0) -> {view_FnGhostWrapper_closure0 result = f} (! return {result}) ]
+  
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
+  predicate inv_refmut_ParallelAddAtomicInv [@inline:trivial] (_1: MutBorrow.t t_ParallelAddAtomicInv) = true
+  
+  meta "rewrite_def" predicate inv_refmut_ParallelAddAtomicInv
+  
+  predicate precondition_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    let inv = args in forall bor_self: MutBorrow.t closure0'2. bor_self.current = self -> closure0'pre bor_self inv
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    precondition_closure0 self.f0'5 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    postcondition_once_closure0 self.f0'5 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
+  
+  let rec open_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) (tokens: t_Tokens)
+    (f: t_FnGhostWrapper_closure0) (return (x: ())) =
+    {[@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self)}
+    {[@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ inv_refmut_ParallelAddAtomicInv t
+      -> precondition_FnGhostWrapper_closure0 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self))}
+    any
+    [ return (result: ()) ->
+    {exists t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+      (! return {result}) ]
+  
+  let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_AtomicInvariant_ParallelAddAtomicInv {self.c0'1}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_4 <- _x ] s1)
+      | s1 = into_inner_Tokens {self.c1'1} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_9 <- { c0'2 = self.c2'1; c1'2 = self.c3'1; c2'2 = c } ] s3
+      | s3 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s4)
+      | s4 = open_ParallelAddAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0'1 = self
+    | & c: MutBorrow.t t_Committer = c
+    | & _4: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _6: t_Tokens = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
+    | & _9: closure0'2 = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'0'pre
+  
+  meta "rewrite_def" predicate closure0'0'post'return
+  
+  type t_FnGhostWrapper_closure0'0 = { f0'6: closure0'1 }
+  
+  function view_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) : closure0'1 = self.f0'6
+  
+  meta "rewrite_def" function view_FnGhostWrapper_closure0'0
+  
+  let rec __new_closure0'0 (f: closure0'1) (return (x: t_FnGhostWrapper_closure0'0)) = any
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {view_FnGhostWrapper_closure0'0 result = f} (! return {result}) ]
+  
+  let rec new_FnGhostWrapper_closure0 (x: t_FnGhostWrapper_closure0'0) (return (x'0: t_FnGhostWrapper_closure0'0)) = any
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {result = x} (! return {result}) ]
+  
+  predicate invariant_ref_AtomicI32 [@inline:trivial] (self: t_AtomicI32) = inv_AtomicI32 self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicI32
+  
+  predicate inv_ref_AtomicI32 [@inline:trivial] (_1: t_AtomicI32) = invariant_ref_AtomicI32 _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicI32
+  
+  predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer) =
+    let c = args in closure0'0'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure0'0
+  
+  predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer) =
+    precondition_closure0'0 self.f0'6 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
+  
+  predicate postcondition_once_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer) (result: ()) =
+    let c = args in closure0'0'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer) (result: ()) =
+    postcondition_once_closure0'0 self.f0'6 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
+  
+  let rec fetch_add_unit (self: t_AtomicI32) (val''0: Int32.t) (f: t_FnGhostWrapper_closure0'0) (return (x: ())) =
+    {[@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self}
+    {[@expl:fetch_add requires] forall c: MutBorrow.t t_Committer. not shot c.current
+      -> tied'0 c.current = self
+      -> Int32.to_int (value c.final) = Int32.to_int val''0 + Int32.to_int (value c.current)
+      -> precondition_FnGhostWrapper_closure0'0 f c
+      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot c.final)}
+    any
+    [ return (result: ()) -> {exists c: MutBorrow.t t_Committer. not shot c.current
+        /\ tied'0 c.current = self
+        /\ Int32.to_int (value c.final) = Int32.to_int val''0 + Int32.to_int (value c.current)
+        /\ postcondition_once_FnGhostWrapper_closure0'0 f c result}
+      (! return {result}) ]
+  
+  predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
+    let {c0'0 = x0; c1'0 = x1; c2'0 = x2} = _1 in inv_ref_AtomicI32 x1
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  let rec closure0'1 [@coma:extspec] (self: closure0'0) (tokens: t_Tokens) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = [ &inv <- self.c0'0 ] s1
+      | s1 = [ &_5 <- { f0'0 = true } ] s2
+      | s2 = [ &true_ <- Some _5 ] s3
+      | s3 = [ &_10 <- { c0'1 = inv; c1'1 = tokens; c2'1 = self.c2'0; c3'1 = true_ } ] s4
+      | s4 = __new_closure0'0 {_10} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_9 <- _x ] s5)
+      | s5 = new_FnGhostWrapper_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_8 <- _x ] s6)
+      | s6 = fetch_add_unit {self.c1'0} {(1: Int32.t)} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0'0 = self
+    | & tokens: t_Tokens = tokens
+    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & true_: t_Option_Excl_bool = Any.any_l ()
+    | & _5: t_Excl_bool = Any.any_l ()
+    | & _6: () = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0'0 = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure0'0 = Any.any_l ()
+    | & _10: closure0'1 = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'1'pre
+  
+  meta "rewrite_def" predicate closure0'1'post'return
+  
+  type t_Scope
+  
+  predicate inv_Scope (_1: t_Scope)
+  
+  type t_ScopedJoinHandle_unit
+  
+  predicate invariant_refmut_Scope [@inline:trivial] (self: MutBorrow.t t_Scope) =
+    inv_Scope self.current /\ inv_Scope self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Scope
+  
+  predicate inv_refmut_Scope [@inline:trivial] (_1: MutBorrow.t t_Scope) = invariant_refmut_Scope _1
+  
+  meta "rewrite_def" predicate inv_refmut_Scope
+  
+  predicate precondition_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) =
+    let tokens = args in closure0'1'pre self tokens
+  
+  meta "rewrite_def" predicate precondition_closure0'1
+  
+  predicate inv_ScopedJoinHandle_unit (_1: t_ScopedJoinHandle_unit)
+  
+  predicate valid_result_ScopedJoinHandle_unit (self: t_ScopedJoinHandle_unit) (_x: ())
+  
+  predicate postcondition_once_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) (result: ()) =
+    let tokens = args in closure0'1'post'return self tokens result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'1
+  
+  let rec spawn_closure0 (self: MutBorrow.t t_Scope) (f: closure0'0) (return (x: t_ScopedJoinHandle_unit)) =
+    {[@expl:spawn 'self' type invariant] inv_refmut_Scope self}
+    {[@expl:spawn 'f' type invariant] inv_closure0 f}
+    {[@expl:spawn requires] forall t: t_Tokens. (forall ns: t_Namespace. contains t ns) -> precondition_closure0'1 f t}
+    any
+    [ return (result: t_ScopedJoinHandle_unit) -> {inv_ScopedJoinHandle_unit result}
+      {exists t: t_Tokens. (forall ns: t_Namespace. contains t ns)
+        /\ (forall r: (). valid_result_ScopedJoinHandle_unit result r -> postcondition_once_closure0'1 f t r)}
+      (! return {result}) ]
+  
+  type closure1 = {
+    c0'3: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1'3: t_AtomicI32;
+    c2'3: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool }
+  
+  type closure0'3 = {
+    c0'4: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1'4: t_Tokens;
+    c2'4: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c3'4: t_Option_Excl_bool }
+  
+  type closure0'4 = {
+    c0'5: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c1'5: t_Option_Excl_bool;
+    c2'5: MutBorrow.t t_Committer }
+  
+  predicate resolve_refmut_closure0'0 [@inline:trivial] (_1: MutBorrow.t closure0'4) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0'0
+  
+  predicate resolve_closure0'0 [@inline:trivial] (_1: closure0'4) =
+    resolve_refmut_Committer _1.c2'5 /\ resolve_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool _1.c0'5
+  
+  meta "rewrite_def" predicate resolve_closure0'0
+  
+  predicate hist_inv_closure0'0 [@inline:trivial] (self: closure0'4) (result_state: closure0'4) = true
+  
+  meta "rewrite_def" predicate hist_inv_closure0'0
+  
+  let rec closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'4) (inv: MutBorrow.t t_ParallelAddAtomicInv)
+    (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 =
+        {[@expl:assertion] not (unwrap_Option_Excl_bool (frag_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.current.c0'5.current))).f0'0}
+        s1
+      | s1 = MutBorrow.borrow_mut <MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c0'5}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) ->
+            [ &_11 <- _bor ] [ &self <- { self with current = { self.current with c0'5 = _bor.final } } ] s2)
+      | s2 = deref_mut_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool {_11}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) -> [ &_10 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {_10.current.current}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_9 <- _bor ] [ &_10 <- { _10 with current = { _10.current with current = _bor.final } } ] s4)
+      | s4 = take_View_AuthViewRel_Option_Excl_bool {_9}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_8 <- _x ] s5)
+      | s5 = -{resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool _10}- s6
+      | s6 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_7 <- _bor ] [ &inv <- { inv with current = { inv.current with auth2 = _bor.final } } ] s7)
+      | s7 = join_in_View_AuthViewRel_Option_Excl_bool {_7} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s8)
+      | s8 = [ &_14 <- { f0'4 = fun (__0: ()) -> let () = __0 in { f0'1 = self.current.c1'5;
+                                                                   f1'1 = self.current.c1'5 } } ] s9
+      | s9 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_13 <- _bor ] [ &inv <- { inv with current = { inv.current with auth2 = _bor.final } } ] s10)
+      | s10 = update_View_AuthViewRel_Option_Excl_bool {_13} {_14} (fun (_x: ()) -> [ &_12 <- _x ] s11)
+      | s11 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth2}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 3}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_19 <- _bor ] [ &inv <- { inv with current = { inv.current with auth2 = _bor.final } } ] s12)
+      | s12 = split_off_View_AuthViewRel_Option_Excl_bool {_19}
+          {new_frag_AuthViewRel_Option_Excl_bool self.current.c1'5}
+          {new_auth_AuthViewRel_Option_Excl_bool self.current.c1'5}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_18 <- _x ] s13)
+      | s13 = MutBorrow.borrow_final <MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c0'5}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) ->
+            [ &_27 <- _bor ] [ &self <- { self with current = { self.current with c0'5 = _bor.final } } ] s14)
+      | s14 = deref_mut_Ghost_refmut_Resource_View_AuthViewRel_Option_Excl_bool {_27}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool)) -> [ &_26 <- _x ] s15)
+      | s15 = -{resolve_Resource_View_AuthViewRel_Option_Excl_bool _26.current.current}- s16
+      | s16 = [ &_26 <- { _26 with current = { _26.current with current = _18 } } ] s17
+      | s17 = -{resolve_refmut_refmut_Resource_View_AuthViewRel_Option_Excl_bool _26}- s18
+      | s18 = MutBorrow.borrow_final <t_AtomicI32Own> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
+          (fun (_bor: MutBorrow.t t_AtomicI32Own) ->
+            [ &_31 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s19)
+      | s19 = MutBorrow.borrow_mut <t_Committer> {self.current.c2'5.current}
+          (fun (_bor: MutBorrow.t t_Committer) ->
+            [ &_29 <- _bor ]
+            [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _bor.final } } } ]
+            s20)
+      | s20 = MutBorrow.borrow_final <t_AtomicI32Own> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_AtomicI32Own) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s21)
+      | s21 = shoot {_29} {_30} (fun (_x: ()) -> [ &_28 <- _x ] s22)
+      | s22 = -{resolve_refmut_AtomicI32Own _31}- s23
+      | s23 = -{resolve_refmut_ParallelAddAtomicInv inv}- s24
+      | s24 = -{resolve_refmut_closure0'0 self}- s25
+      | s25 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure0'4 = self
+    | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
+    | & _6: () = Any.any_l ()
+    | & _7: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _8: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _9: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _10: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _11: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _12: () = Any.any_l ()
+    | & _13: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _14: t_ViewUpdate_AuthViewRel_Option_Excl_bool_unit = Any.any_l ()
+    | & _18: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _19: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _26: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _27: MutBorrow.t (MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) = Any.any_l ()
+    | & _28: () = Any.any_l ()
+    | & _29: MutBorrow.t t_Committer = Any.any_l ()
+    | & _30: MutBorrow.t t_AtomicI32Own = Any.any_l ()
+    | & _31: MutBorrow.t t_AtomicI32Own = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'2'pre
+  
+  meta "rewrite_def" predicate closure0'2'post'return
+  
+  predicate postcondition_once_closure0'2 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    let inv = args in exists e: closure0'4. (exists bor_self: MutBorrow.t closure0'4. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0'0 self e)
+      /\ resolve_closure0'0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'2
+  
+  predicate postcondition_mut_closure0'0 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'4) (result: ()) =
+    let inv = args in exists bor_self: MutBorrow.t closure0'4. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0'0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0'0
+  
+  function fn_mut_once_closure0'0 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
+  
+  axiom fn_mut_once_closure0_spec'0:
+    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure0'2 self args res
+      = (exists res_state: closure0'4. postcondition_mut_closure0'0 self args res_state res
+        /\ resolve_closure0'0 res_state)
+  
+  function hist_inv_trans_closure0'0 (self: closure0'4) (b: closure0'4) (c: closure0'4) : ()
+  
+  axiom hist_inv_trans_closure0_spec'0:
+    forall self: closure0'4, b: closure0'4, c: closure0'4. hist_inv_closure0'0 self b
+      -> hist_inv_closure0'0 b c -> hist_inv_closure0'0 self c
+  
+  function hist_inv_refl_closure0'0 (self: closure0'4) : ()
+  
+  axiom hist_inv_refl_closure0_spec'0: forall self: closure0'4. hist_inv_closure0'0 self self
+  
+  function postcondition_mut_hist_inv_closure0'0 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'4) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec'0:
+    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'4, res: (). postcondition_mut_closure0'0 self args res_state res
+      -> hist_inv_closure0'0 self res_state
+  
+  type t_FnGhostWrapper_closure0'1 = { f0'7: closure0'4 }
+  
+  function view_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) : closure0'4 = self.f0'7
+  
+  meta "rewrite_def" function view_FnGhostWrapper_closure0'1
+  
+  let rec __new_closure0'1 (f: closure0'4) (return (x: t_FnGhostWrapper_closure0'1)) = any
+    [ return (result: t_FnGhostWrapper_closure0'1) -> {view_FnGhostWrapper_closure0'1 result = f} (! return {result}) ]
+  
+  predicate precondition_closure0'2 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    let inv = args in forall bor_self: MutBorrow.t closure0'4. bor_self.current = self -> closure0'2'pre bor_self inv
+  
+  meta "rewrite_def" predicate precondition_closure0'2
+  
+  predicate precondition_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    precondition_closure0'2 self.f0'7 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
+  
+  predicate postcondition_once_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    postcondition_once_closure0'2 self.f0'7 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
+  
+  let rec open_ParallelAddAtomicInv'0 (self: t_AtomicInvariant_ParallelAddAtomicInv) (tokens: t_Tokens)
+    (f: t_FnGhostWrapper_closure0'1) (return (x: ())) =
+    {[@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self)}
+    {[@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ inv_refmut_ParallelAddAtomicInv t
+      -> precondition_FnGhostWrapper_closure0'1 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0'1 f t res
+        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self))}
+    any
+    [ return (result: ()) ->
+    {exists t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
+      (! return {result}) ]
+  
+  let rec closure0'3 [@coma:extspec] (self: closure0'3) (c: MutBorrow.t t_Committer) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_AtomicInvariant_ParallelAddAtomicInv {self.c0'4}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_4 <- _x ] s1)
+      | s1 = into_inner_Tokens {self.c1'4} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_9 <- { c0'5 = self.c2'4; c1'5 = self.c3'4; c2'5 = c } ] s3
+      | s3 = __new_closure0'1 {_9} (fun (_x: t_FnGhostWrapper_closure0'1) -> [ &_8 <- _x ] s4)
+      | s4 = open_ParallelAddAtomicInv'0 {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0'3 = self
+    | & c: MutBorrow.t t_Committer = c
+    | & _4: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _6: t_Tokens = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0'1 = Any.any_l ()
+    | & _9: closure0'4 = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'3'pre
+  
+  meta "rewrite_def" predicate closure0'3'post'return
+  
+  type t_FnGhostWrapper_closure0'2 = { f0'8: closure0'3 }
+  
+  function view_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) : closure0'3 = self.f0'8
+  
+  meta "rewrite_def" function view_FnGhostWrapper_closure0'2
+  
+  let rec __new_closure0'2 (f: closure0'3) (return (x: t_FnGhostWrapper_closure0'2)) = any
+    [ return (result: t_FnGhostWrapper_closure0'2) -> {view_FnGhostWrapper_closure0'2 result = f} (! return {result}) ]
+  
+  let rec new_FnGhostWrapper_closure0'0 (x: t_FnGhostWrapper_closure0'2) (return (x'0: t_FnGhostWrapper_closure0'2)) =
+    any [ return (result: t_FnGhostWrapper_closure0'2) -> {result = x} (! return {result}) ]
+  
+  predicate precondition_closure0'3 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_Committer) =
+    let c = args in closure0'3'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure0'3
+  
+  predicate precondition_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer) =
+    precondition_closure0'3 self.f0'8 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
+  
+  predicate postcondition_once_closure0'3 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_Committer) (result: ()) =
+    let c = args in closure0'3'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'3
+  
+  predicate postcondition_once_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer) (result: ()) =
+    postcondition_once_closure0'3 self.f0'8 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'2
+  
+  let rec fetch_add_unit'0 (self: t_AtomicI32) (val''0: Int32.t) (f: t_FnGhostWrapper_closure0'2) (return (x: ())) =
+    {[@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self}
+    {[@expl:fetch_add requires] forall c: MutBorrow.t t_Committer. not shot c.current
+      -> tied'0 c.current = self
+      -> Int32.to_int (value c.final) = Int32.to_int val''0 + Int32.to_int (value c.current)
+      -> precondition_FnGhostWrapper_closure0'2 f c
+      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'2 f c r -> shot c.final)}
+    any
+    [ return (result: ()) -> {exists c: MutBorrow.t t_Committer. not shot c.current
+        /\ tied'0 c.current = self
+        /\ Int32.to_int (value c.final) = Int32.to_int val''0 + Int32.to_int (value c.current)
+        /\ postcondition_once_FnGhostWrapper_closure0'2 f c result}
+      (! return {result}) ]
+  
+  predicate inv_closure1 [@inline:trivial] (_1: closure1) =
+    let {c0'3 = x0; c1'3 = x1; c2'3 = x2} = _1 in inv_ref_AtomicI32 x1
+  
+  meta "rewrite_def" predicate inv_closure1
+  
+  let rec closure1 [@coma:extspec] (self: closure1) (tokens: t_Tokens) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = [ &inv <- self.c0'3 ] s1
+      | s1 = [ &_5 <- { f0'0 = true } ] s2
+      | s2 = [ &true_ <- Some _5 ] s3
+      | s3 = [ &_10 <- { c0'4 = inv; c1'4 = tokens; c2'4 = self.c2'3; c3'4 = true_ } ] s4
+      | s4 = __new_closure0'2 {_10} (fun (_x: t_FnGhostWrapper_closure0'2) -> [ &_9 <- _x ] s5)
+      | s5 = new_FnGhostWrapper_closure0'0 {_9} (fun (_x: t_FnGhostWrapper_closure0'2) -> [ &_8 <- _x ] s6)
+      | s6 = fetch_add_unit'0 {self.c1'3} {(1: Int32.t)} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure1 = self
+    | & tokens: t_Tokens = tokens
+    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & true_: t_Option_Excl_bool = Any.any_l ()
+    | & _5: t_Excl_bool = Any.any_l ()
+    | & _6: () = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0'2 = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure0'2 = Any.any_l ()
+    | & _10: closure0'3 = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure1'pre
+  
+  meta "rewrite_def" predicate closure1'post'return
+  
+  predicate precondition_closure1 [@inline:trivial] (self: closure1) (args: t_Tokens) =
+    let tokens = args in closure1'pre self tokens
+  
+  meta "rewrite_def" predicate precondition_closure1
+  
+  predicate postcondition_once_closure1 [@inline:trivial] (self: closure1) (args: t_Tokens) (result: ()) =
+    let tokens = args in closure1'post'return self tokens result
+  
+  meta "rewrite_def" predicate postcondition_once_closure1
+  
+  let rec spawn_closure1 (self: MutBorrow.t t_Scope) (f: closure1) (return (x: t_ScopedJoinHandle_unit)) =
+    {[@expl:spawn 'self' type invariant] inv_refmut_Scope self}
+    {[@expl:spawn 'f' type invariant] inv_closure1 f}
+    {[@expl:spawn requires] forall t: t_Tokens. (forall ns: t_Namespace. contains t ns) -> precondition_closure1 f t}
+    any
+    [ return (result: t_ScopedJoinHandle_unit) -> {inv_ScopedJoinHandle_unit result}
+      {exists t: t_Tokens. (forall ns: t_Namespace. contains t ns)
+        /\ (forall r: (). valid_result_ScopedJoinHandle_unit result r -> postcondition_once_closure1 f t r)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Scope [@inline:trivial] (_1: MutBorrow.t t_Scope) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Scope
+  
+  let rec join_unwrap_ScopedJoinHandle_unit (self: t_ScopedJoinHandle_unit) (return (x: ())) =
+    {[@expl:join_unwrap 'self' type invariant] inv_ScopedJoinHandle_unit self}
+    any [ return (result: ()) -> {valid_result_ScopedJoinHandle_unit self result} (! return {result}) ]
+  
+  predicate inv_closure0'0 [@inline:trivial] (_1: closure0) =
+    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv_ref_AtomicI32 x3
+  
+  meta "rewrite_def" predicate inv_closure0'0
+  
+  predicate resolve_refmut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (_1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  predicate resolve_closure0'1 [@inline:trivial] (_1: closure0) =
+    resolve_refmut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool _1.c1
+    /\ resolve_refmut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure0'1
+  
+  let rec closure0'4 [@coma:extspec] (self: closure0) (s: MutBorrow.t t_Scope) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {self.c0.current}
+          {MutBorrow.get_id self.c0}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_4 <- _bor ] [ &self <- { self with c0 = { self.c0 with current = _bor.final } } ] s1)
+      | s1 = borrow_mut_Resource_View_AuthViewRel_Option_Excl_bool {_4}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &frag1 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {self.c1.current}
+          {MutBorrow.get_id self.c1}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_6 <- _bor ] [ &self <- { self with c1 = { self.c1 with current = _bor.final } } ] s3)
+      | s3 = borrow_mut_Resource_View_AuthViewRel_Option_Excl_bool {_6}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &frag2 <- _x ] s4)
+      | s4 = [ &_9 <- { c0'0 = self.c2; c1'0 = self.c3; c2'0 = frag1 } ] s5
+      | s5 = MutBorrow.borrow_mut <t_Scope> {s.current}
+          (fun (_bor: MutBorrow.t t_Scope) ->
+            [ &_8 <- _bor ] -{inv_Scope _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s6) [ _ck -> (! {inv_Scope s.current} any) ]
+      | s6 = spawn_closure0 {_8} {_9} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t1 <- _x ] s7)
+      | s7 = [ &_14 <- { c0'3 = self.c2; c1'3 = self.c3; c2'3 = frag2 } ] s8
+      | s8 = MutBorrow.borrow_final <t_Scope> {s.current} {MutBorrow.get_id s}
+          (fun (_bor: MutBorrow.t t_Scope) ->
+            [ &_13 <- _bor ] -{inv_Scope _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s9) [ _ck -> (! {inv_Scope s.current} any) ]
+      | s9 = spawn_closure1 {_13} {_14} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t2 <- _x ] s10)
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Scope s} any) ]
+      | s11 = -{resolve_refmut_Scope s}- s12
+      | s12 = join_unwrap_ScopedJoinHandle_unit {t1} (fun (_x: ()) -> [ &_17 <- _x ] s13)
+      | s13 = join_unwrap_ScopedJoinHandle_unit {t2} (fun (_x: ()) -> [ &_19 <- _x ] s14)
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_closure0'0 self} any) ]
+      | s15 = -{resolve_closure0'1 self}- s16
+      | s16 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0 = self
+    | & s: MutBorrow.t t_Scope = s
+    | & frag1: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _4: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & frag2: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _6: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & t1: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & _8: MutBorrow.t t_Scope = Any.any_l ()
+    | & _9: closure0'0 = Any.any_l ()
+    | & t2: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & _13: MutBorrow.t t_Scope = Any.any_l ()
+    | & _14: closure1 = Any.any_l ()
+    | & _17: () = Any.any_l ()
+    | & _19: () = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure0'4'pre
+  
+  meta "rewrite_def" predicate closure0'4'post'return
+  
+  predicate precondition_closure0'4 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) =
+    let s = args in closure0'4'pre self s
+  
+  meta "rewrite_def" predicate precondition_closure0'4
+  
+  predicate postcondition_once_closure0'4 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) (result: ()) =
+    let s = args in closure0'4'post'return self s result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'4
+  
+  let rec scope_closure0 (f: closure0) (return (x: ())) = {[@expl:scope 'f' type invariant] inv_closure0'0 f}
+    {[@expl:scope requires] forall s: MutBorrow.t t_Scope. inv_refmut_Scope s -> precondition_closure0'4 f s}
+    any
+    [ return (result: ()) -> {exists s: MutBorrow.t t_Scope. inv_refmut_Scope s
+        /\ postcondition_once_closure0'4 f s result}
+      (! return {result}) ]
+  
+  predicate resolve_AtomicInvariant_ParallelAddAtomicInv (_1: t_AtomicInvariant_ParallelAddAtomicInv)
+  
+  predicate resolve_Ghost_AtomicInvariant_ParallelAddAtomicInv [@inline:trivial] (_1: t_AtomicInvariant_ParallelAddAtomicInv) =
+    resolve_AtomicInvariant_ParallelAddAtomicInv _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_AtomicInvariant_ParallelAddAtomicInv
+  
+  type closure10 = {
+    c0'6: t_Resource_View_AuthViewRel_Option_Excl_bool;
+    c1'6: t_Resource_View_AuthViewRel_Option_Excl_bool }
+  
+  predicate resolve_refmut_closure10 [@inline:trivial] (_1: MutBorrow.t closure10) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure10
+  
+  predicate resolve_Ghost_Resource_View_AuthViewRel_Option_Excl_bool [@inline:trivial] (_1: t_Resource_View_AuthViewRel_Option_Excl_bool) =
+    resolve_Resource_View_AuthViewRel_Option_Excl_bool _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Resource_View_AuthViewRel_Option_Excl_bool
+  
+  predicate resolve_closure10 [@inline:trivial] (_1: closure10) =
+    resolve_Ghost_Resource_View_AuthViewRel_Option_Excl_bool _1.c1'6
+    /\ resolve_Ghost_Resource_View_AuthViewRel_Option_Excl_bool _1.c0'6
+  
+  meta "rewrite_def" predicate resolve_closure10
+  
+  predicate hist_inv_closure10 [@inline:trivial] (self: closure10) (result_state: closure10) = true
+  
+  meta "rewrite_def" predicate hist_inv_closure10
+  
+  let rec closure10 [@coma:extspec] (self: MutBorrow.t closure10) (inv: MutBorrow.t t_ParallelAddAtomicInv)
+    (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c0'6}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_8 <- _bor ] [ &self <- { self with current = { self.current with c0'6 = _bor.final } } ] s1)
+      | s1 = deref_mut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool {_8}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_7 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_6 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s3)
+      | s3 = take_View_AuthViewRel_Option_Excl_bool {_6}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_5 <- _x ] s4)
+      | s4 = -{resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool _7}- s5
+      | s5 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth1}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_4 <- _bor ] [ &inv <- { inv with current = { inv.current with auth1 = _bor.final } } ] s6)
+      | s6 = join_in_View_AuthViewRel_Option_Excl_bool {_4} {_5} (fun (_x: ()) -> [ &_3 <- _x ] s7)
+      | s7 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {self.current.c1'6}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_14 <- _bor ] [ &self <- { self with current = { self.current with c1'6 = _bor.final } } ] s8)
+      | s8 = deref_mut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool {_14}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_13 <- _x ] s9)
+      | s9 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {_13.current} {MutBorrow.get_id _13}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s10)
+      | s10 = take_View_AuthViewRel_Option_Excl_bool {_12}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_11 <- _x ] s11)
+      | s11 = -{resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool _13}- s12
+      | s12 = -{resolve_refmut_closure10 self}- s13
+      | s13 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {inv.current.auth2}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 3}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_10 <- _bor ] [ &inv <- { inv with current = { inv.current with auth2 = _bor.final } } ] s14)
+      | s14 = join_in_View_AuthViewRel_Option_Excl_bool {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s15)
+      | s15 = -{resolve_refmut_ParallelAddAtomicInv inv}- s16
+      | s16 =
+        {[@expl:assertion] (unwrap_Option_Excl_bool (unwrap_Option_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool inv.current.auth1)))).f0'0}
+        s17
+      | s17 =
+        {[@expl:assertion] (unwrap_Option_Excl_bool (unwrap_Option_Option_Excl_bool (auth_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool inv.current.auth2)))).f0'0}
+        s18
+      | s18 = {[@expl:assertion] val' inv.current.own = (2: Int32.t)} s19
+      | s19 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure10 = self
+    | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _5: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _6: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _7: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _8: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _9: () = Any.any_l ()
+    | & _10: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _11: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _12: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _13: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _14: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l () ]
+  
+  meta "rewrite_def" predicate closure10'pre
+  
+  meta "rewrite_def" predicate closure10'post'return
+  
+  predicate postcondition_once_closure10 [@inline:trivial] (self: closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    let inv = args in exists e: closure10. (exists bor_self: MutBorrow.t closure10. bor_self.current = self
+          /\ bor_self.final = e /\ closure10'post'return bor_self inv result /\ hist_inv_closure10 self e)
+      /\ resolve_closure10 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure10
+  
+  predicate postcondition_mut_closure10 [@inline:trivial] (self: closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure10) (result: ()) =
+    let inv = args in exists bor_self: MutBorrow.t closure10. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure10'post'return bor_self inv result /\ hist_inv_closure10 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure10
+  
+  function fn_mut_once_closure10 (self: closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
+  
+  axiom fn_mut_once_closure10_spec:
+    forall self: closure10, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure10 self args res
+      = (exists res_state: closure10. postcondition_mut_closure10 self args res_state res
+        /\ resolve_closure10 res_state)
+  
+  function hist_inv_trans_closure10 (self: closure10) (b: closure10) (c: closure10) : ()
+  
+  axiom hist_inv_trans_closure10_spec: forall self: closure10, b: closure10, c: closure10. hist_inv_closure10 self b
+      -> hist_inv_closure10 b c -> hist_inv_closure10 self c
+  
+  function hist_inv_refl_closure10 (self: closure10) : ()
+  
+  axiom hist_inv_refl_closure10_spec: forall self: closure10. hist_inv_closure10 self self
+  
+  function postcondition_mut_hist_inv_closure10 (self: closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure10) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure10_spec:
+    forall self: closure10, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure10, res: (). postcondition_mut_closure10 self args res_state res
+      -> hist_inv_closure10 self res_state
+  
+  type t_FnGhostWrapper_closure10 = { f0'9: closure10 }
+  
+  function view_FnGhostWrapper_closure10 [@inline:trivial] (self: t_FnGhostWrapper_closure10) : closure10 = self.f0'9
+  
+  meta "rewrite_def" function view_FnGhostWrapper_closure10
+  
+  let rec __new_closure10 (f: closure10) (return (x: t_FnGhostWrapper_closure10)) = any
+    [ return (result: t_FnGhostWrapper_closure10) -> {view_FnGhostWrapper_closure10 result = f} (! return {result}) ]
+  
+  predicate precondition_closure10 [@inline:trivial] (self: closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    let inv = args in forall bor_self: MutBorrow.t closure10. bor_self.current = self -> closure10'pre bor_self inv
+  
+  meta "rewrite_def" predicate precondition_closure10
+  
+  predicate precondition_FnGhostWrapper_closure10 [@inline:trivial] (self: t_FnGhostWrapper_closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    precondition_closure10 self.f0'9 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure10
+  
+  predicate postcondition_once_FnGhostWrapper_closure10 [@inline:trivial] (self: t_FnGhostWrapper_closure10) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    postcondition_once_closure10 self.f0'9 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure10
+  
+  let rec open_ParallelAddAtomicInv'1 (self: t_AtomicInvariant_ParallelAddAtomicInv) (tokens: t_Tokens)
+    (f: t_FnGhostWrapper_closure10) (return (x: ())) =
+    {[@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self)}
+    {[@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ inv_refmut_ParallelAddAtomicInv t
+      -> precondition_FnGhostWrapper_closure10 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure10 f t res
+        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self))}
+    any
+    [ return (result: ()) ->
+    {exists t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ postcondition_once_FnGhostWrapper_closure10 f t result}
+      (! return {result}) ]
+  
+  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec parallel_add (tokens: t_Tokens) (return (x: ())) =
+    {[@expl:parallel_add requires] contains tokens (Namespace_PARALLEL_ADD 0)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_AtomicI32Own) -> [ &_6 <- _x ] s1)
+      | s1 = [ &atomic <- _6.f0 ] s2
+      | s2 = [ &own'0 <- _6.f1 ] s3
+      | s3 = [ &_8 <- { f0'0 = false } ] s4
+      | s4 = [ &false_ <- Some _8 ] s5
+      | s5 = alloc_View_AuthViewRel_Option_Excl_bool {new_AuthViewRel_Option_Excl_bool (Some'0 false_) false_}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &auth1'0 <- _x ] s6)
+      | s6 = alloc_View_AuthViewRel_Option_Excl_bool {new_AuthViewRel_Option_Excl_bool (Some'0 false_) false_}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &auth2'0 <- _x ] s7)
+      | s7 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {auth1'0}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_21 <- _bor ] [ &auth1'0 <- _bor.final ] s8)
+      | s8 = deref_mut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool {_21}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_20 <- _x ] s9)
+      | s9 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {_20.current} {MutBorrow.get_id _20}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s10)
+      | s10 = split_off_View_AuthViewRel_Option_Excl_bool {_19} {new_frag_AuthViewRel_Option_Excl_bool false_}
+          {new_auth_AuthViewRel_Option_Excl_bool false_}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_18 <- _x ] s11)
+      | s11 = -{resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool _20}- s12
+      | s12 = new_Resource_View_AuthViewRel_Option_Excl_bool {_18}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &frag1 <- _x ] s13)
+      | s13 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {auth2'0}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_32 <- _bor ] [ &auth2'0 <- _bor.final ] s14)
+      | s14 = deref_mut_Ghost_Resource_View_AuthViewRel_Option_Excl_bool {_32}
+          (fun (_x: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_31 <- _x ] s15)
+      | s15 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_Option_Excl_bool> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s16)
+      | s16 = split_off_View_AuthViewRel_Option_Excl_bool {_30} {new_frag_AuthViewRel_Option_Excl_bool false_}
+          {new_auth_AuthViewRel_Option_Excl_bool false_}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_29 <- _x ] s17)
+      | s17 = -{resolve_refmut_Resource_View_AuthViewRel_Option_Excl_bool _31}- s18
+      | s18 = new_Resource_View_AuthViewRel_Option_Excl_bool {_29}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &frag2 <- _x ] s19)
+      | s19 = into_inner_AtomicI32Own {own'0} (fun (_x: t_AtomicI32Own) -> [ &_42 <- _x ] s20)
+      | s20 = into_inner_Resource_View_AuthViewRel_Option_Excl_bool {auth1'0}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_44 <- _x ] s21)
+      | s21 = into_inner_Resource_View_AuthViewRel_Option_Excl_bool {auth2'0}
+          (fun (_x: t_Resource_View_AuthViewRel_Option_Excl_bool) -> [ &_46 <- _x ] s22)
+      | s22 = [ &_41 <- { own = _42; auth1 = _44; auth2 = _46 } ] s23
+      | s23 = new_ParallelAddAtomicInv {_41} (fun (_x: t_ParallelAddAtomicInv) -> [ &_40 <- _x ] s24)
+      | s24 = new_ParallelAddAtomicInv'0 {_40} {{ f0'3 = atomic;
+                                                  f1'3 = id_View_AuthViewRel_Option_Excl_bool frag1;
+                                                  f2'3 = id_View_AuthViewRel_Option_Excl_bool frag2 }}
+          {Namespace_PARALLEL_ADD 0} (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s25)
+      | s25 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {frag1}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_57 <- _bor ] [ &frag1 <- _bor.final ] s26)
+      | s26 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_Option_Excl_bool> {frag2}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool) ->
+            [ &_58 <- _bor ] [ &frag2 <- _bor.final ] s27)
+      | s27 = s28 [ _ck -> (! {[@expl:type invariant] inv_AtomicI32 atomic} any) ]
+      | s28 = -{resolve_AtomicI32 atomic}- s29
+      | s29 = [ &_56 <- { c0 = _57; c1 = _58; c2 = inv; c3 = atomic } ] s30
+      | s30 = scope_closure0 {_56} (fun (_x: ()) -> [ &_55 <- _x ] s31)
+      | s31 = -{resolve_Ghost_AtomicInvariant_ParallelAddAtomicInv inv}- s32
+      | s32 = deref_Ghost_AtomicInvariant_ParallelAddAtomicInv {inv}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_64 <- _x ] s33)
+      | s33 = into_inner_Tokens {tokens} (fun (_x: t_Tokens) -> [ &_66 <- _x ] s34)
+      | s34 = [ &_69 <- { c0'6 = frag1; c1'6 = frag2 } ] s35
+      | s35 = __new_closure10 {_69} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_68 <- _x ] s36)
+      | s36 = open_ParallelAddAtomicInv'1 {_64} {_66} {_68} (fun (_x: ()) -> [ &_62 <- _x ] s37)
+      | s37 = new_unit {_62} (fun (_x: ()) -> [ &_61 <- _x ] s38)
+      | s38 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & tokens: t_Tokens = tokens
+    | & atomic: t_AtomicI32 = Any.any_l ()
+    | & own'0: t_AtomicI32Own = Any.any_l ()
+    | & _6: tup2_AtomicI32_Ghost_AtomicI32Own = Any.any_l ()
+    | & false_: t_Option_Excl_bool = Any.any_l ()
+    | & _8: t_Excl_bool = Any.any_l ()
+    | & auth1'0: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & auth2'0: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & frag1: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _18: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _19: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _20: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _21: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & frag2: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _29: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _30: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _31: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _32: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _40: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _41: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _42: t_AtomicI32Own = Any.any_l ()
+    | & _44: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _46: t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _55: () = Any.any_l ()
+    | & _56: closure0 = Any.any_l ()
+    | & _57: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _58: MutBorrow.t t_Resource_View_AuthViewRel_Option_Excl_bool = Any.any_l ()
+    | & _61: () = Any.any_l ()
+    | & _62: () = Any.any_l ()
+    | & _64: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _66: t_Tokens = Any.any_l ()
+    | & _68: t_FnGhostWrapper_closure10 = Any.any_l ()
+    | & _69: closure10 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
