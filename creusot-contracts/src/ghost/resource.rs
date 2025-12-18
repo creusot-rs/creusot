@@ -41,7 +41,7 @@ mod m {
     use crate::{
         logic::{
             Id, Set,
-            ra::{RA, update::Update},
+            ra::{RA, UnitRA, update::Update},
         },
         prelude::*,
     };
@@ -250,6 +250,17 @@ mod m {
             let _ = snapshot!(U::frame_preserving);
             let r = self.update_raw(target_s);
             snapshot!(such_that(|ch| upd.update(*v, ch) == *r))
+        }
+    }
+
+    impl<R: UnitRA> Resource<R> {
+        #[check(ghost)]
+        #[ensures((^self).id() == self.id() && result.id() == self.id())]
+        #[ensures((^self)@ == UnitRA::unit())]
+        #[ensures(result@ == self@)]
+        pub fn take(&mut self) -> Self {
+            let r = snapshot!(self@);
+            self.split_off(r, snapshot!(UnitRA::unit()))
         }
     }
 }

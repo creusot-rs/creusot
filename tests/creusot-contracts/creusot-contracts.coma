@@ -367,7 +367,7 @@ module M_ghost__fn_ghost__impl_FnGhostWrapper_F__new (* ghost::fn_ghost::FnGhost
       {[@expl:__new ensures] view_FnGhostWrapper_F result = f}
       (! return {result}) ]
 end
-module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvariant_T__open (* <ghost::Ghost<&'a ghost::local_invariant::LocalInvariant<T>> as ghost::local_invariant::LocalInvariantExt<'a>> *)
+module M_ghost__invariant__impl_NonAtomicInvariantExt_for_Ghost_ref_NonAtomicInvariant_T__open (* <ghost::Ghost<&'a ghost::invariant::NonAtomicInvariant<T>> as ghost::invariant::NonAtomicInvariantExt<'a>> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -376,7 +376,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  type t_LocalInvariant_T
+  type t_NonAtomicInvariant_T
   
   type t_Tokens
   
@@ -394,7 +394,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  function namespace_T (self: t_LocalInvariant_T) : t_Namespace
+  function namespace_T (self: t_NonAtomicInvariant_T) : t_Namespace
   
   type t_T
   
@@ -402,7 +402,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   
   predicate protocol_T (self: t_T) (data: t_Public)
   
-  function public_T (self: t_LocalInvariant_T) : t_Public
+  function public_T (self: t_NonAtomicInvariant_T) : t_Public
   
   predicate inv_T (_1: t_T)
   
@@ -432,7 +432,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   
   predicate inv_A (_1: t_A)
   
-  let rec open_T (this: t_LocalInvariant_T) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
+  let rec open_T (this: t_NonAtomicInvariant_T) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
     {[@expl:open 'f' type invariant] inv_F f}
     {[@expl:open requires #0] contains tokens (namespace_T this)}
     {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T this) /\ inv_Ghost_refmut_T t
@@ -447,21 +447,21 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_LocalInvar
   
   meta "select_lsinst" "all"
   
-  let rec open_Ghost_ref_LocalInvariant_T (self: t_LocalInvariant_T) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
-    {[@expl:open 'f' type invariant] inv_F f}
+  let rec open_Ghost_ref_NonAtomicInvariant_T (self: t_NonAtomicInvariant_T) (tokens: t_Tokens) (f: t_F)
+    (return (x: t_A)) = {[@expl:open 'f' type invariant] inv_F f}
     {[@expl:open requires #0] contains tokens (namespace_T self)}
     {[@expl:open requires #1] forall t: MutBorrow.t t_T. protocol_T t.current (public_T self) /\ inv_Ghost_refmut_T t
       -> precondition_F f t
       /\ (forall res: t_A. postcondition_once_F f t res -> protocol_T (fin_Ghost_refmut_T t) (public_T self))}
     (! bb0
     [ bb0 = s0 [ s0 = open_T {self} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: t_A = Any.any_l () | & self: t_LocalInvariant_T = self | & tokens: t_Tokens = tokens | & f: t_F = f ])
+    [ & _ret: t_A = Any.any_l () | & self: t_NonAtomicInvariant_T = self | & tokens: t_Tokens = tokens | & f: t_F = f ])
     [ return (result: t_A) -> {[@expl:open result type invariant] inv_A result}
       {[@expl:open ensures] exists t: MutBorrow.t t_T. protocol_T t.current (public_T self)
         /\ postcondition_once_F f t result}
       (! return {result}) ]
 end
-module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_T__open (* <ghost::Ghost<&'a T> as ghost::local_invariant::LocalInvariantExt<'a>> *)
+module M_ghost__invariant__impl_NonAtomicInvariantExt_for_Ghost_ref_T__open (* <ghost::Ghost<&'a T> as ghost::invariant::NonAtomicInvariantExt<'a>> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -722,7 +722,7 @@ module M_ghost__local_invariant__impl_LocalInvariantExt_for_Ghost_ref_T__open (*
         /\ postcondition_open () { f0 = new_ref_Target'0 this; f1 = tokens; f2 = f } result}
       (! return {result}) ]
 end
-module M_ghost__local_invariant__impl_LocalInvariantExt_for_ref_Ghost_L__open (* <&'a ghost::Ghost<L> as ghost::local_invariant::LocalInvariantExt<'a>> *)
+module M_ghost__invariant__impl_NonAtomicInvariantExt_for_ref_Ghost_L__open (* <&'a ghost::Ghost<L> as ghost::invariant::NonAtomicInvariantExt<'a>> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -3565,6 +3565,124 @@ module M_ghost__resource__m__impl_Resource_R__update (* ghost::resource::m::Reso
     | & _30: MutBorrow.t t_Resource_R = Any.any_l () ])
     [ return (result: t_Choice) -> {[@expl:update ensures #0] id_R self.final = id_R self.current}
       {[@expl:update ensures #1] view_Resource_R self.final = update_U upd (view_Resource_R self.current) result}
+      (! return {result}) ]
+end
+module M_ghost__resource__m__impl_Resource_R_0__take (* ghost::resource::m::Resource<R> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  
+  type t_Resource_R
+  
+  type t_R
+  
+  function val_R (self: t_Resource_R) : t_R
+  
+  function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
+  
+  meta "rewrite_def" function view_Resource_R
+  
+  type t_Option_R = None | Some t_R
+  
+  function and_then_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_R = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom associative_R_spec: forall a: t_R, b: t_R, c: t_R. and_then_Option_R (op_R a b) (fun (ab: t_R) -> op_R ab c)
+      = and_then_Option_R (op_R b c) (fun (bc: t_R) -> op_R a bc)
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. op_R (core_total_R self) (core_total_R self) = Some (core_total_R self)
+  
+  axiom core_total_R_spec'0: forall self: t_R. op_R (core_total_R self) self = Some self
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate incl_eq_R (self: t_R) (other: t_R) = self = other \/ incl_R self other
+  
+  predicate incl_eq_op_R (a: t_R) (b: t_R) (x: t_R) =
+    match op_R a b with
+      | None -> false
+      | Some ab -> incl_eq_R ab x
+      end
+  
+  type t_Id
+  
+  function id_R (self: t_Resource_R) : t_Id
+  
+  let rec split_off_R (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
+    {[@expl:split_off requires] incl_eq_op_R r s (view_Resource_R self.current)}
+    any
+    [ return (result: t_Resource_R) -> {id_R self.final = id_R self.current /\ id_R result = id_R self.current}
+      {view_Resource_R self.final = s}
+      {view_Resource_R result = r}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Resource_R
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec take_R (self: MutBorrow.t t_Resource_R) (return (x: t_Resource_R)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &r <- view_Resource_R self.current ] s1
+      | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_11 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+      | s2 = split_off_R {_11} {r} {unit_R} (fun (_x: t_Resource_R) -> [ &_ret <- _x ] s3)
+      | s3 = -{resolve_refmut_Resource_R self}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Resource_R = Any.any_l ()
+    | & self: MutBorrow.t t_Resource_R = self
+    | & r: t_R = Any.any_l ()
+    | & _11: MutBorrow.t t_Resource_R = Any.any_l () ])
+    [ return (result: t_Resource_R) -> {[@expl:take ensures #0] id_R self.final = id_R self.current
+      /\ id_R result = id_R self.current}
+      {[@expl:take ensures #1] view_Resource_R self.final = unit_R}
+      {[@expl:take ensures #2] view_Resource_R result = view_Resource_R self.current}
       (! return {result}) ]
 end
 module M_ghost__impl_Clone_for_Ghost_T__clone (* <ghost::Ghost<T> as std::clone::Clone> *)
@@ -74041,4 +74159,52 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_own__refines (* <[T] as s
       /\ (forall result: tup2_ptr_T_Ghost_ref_PtrOwn_slice_T. inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result
           /\ result.f0 = Opaque.thin (ptr_slice_T result.f1) /\ self = val_slice_T result.f1
         -> inv_tup2_ptr_T_Ghost_ref_PtrOwn_slice_T result)
+end
+module M_std__thread__impl_JoinHandleExt_for_JoinHandle_T__join_unwrap__refines (* <std::thread::JoinHandle<T> as std::thread::JoinHandleExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_JoinHandle_T
+  
+  predicate inv_JoinHandle_T (_1: t_JoinHandle_T)
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate valid_result_JoinHandle_T (self: t_JoinHandle_T) (_x: t_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_JoinHandle_T. inv_JoinHandle_T self
+      -> inv_JoinHandle_T self
+      /\ (forall result: t_T. inv_T result /\ valid_result_JoinHandle_T self result
+        -> inv_T result /\ valid_result_JoinHandle_T self result)
+end
+module M_std__thread__impl_JoinHandleExt_for_ScopedJoinHandle_T__join_unwrap__refines (* <std::thread::ScopedJoinHandle<'_, T> as std::thread::JoinHandleExt<T>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_ScopedJoinHandle_T
+  
+  predicate inv_ScopedJoinHandle_T (_1: t_ScopedJoinHandle_T)
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate valid_result_ScopedJoinHandle_T (self: t_ScopedJoinHandle_T) (_x: t_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_ScopedJoinHandle_T. inv_ScopedJoinHandle_T self
+      -> inv_ScopedJoinHandle_T self
+      /\ (forall result: t_T. inv_T result /\ valid_result_ScopedJoinHandle_T self result
+        -> inv_T result /\ valid_result_ScopedJoinHandle_T self result)
 end

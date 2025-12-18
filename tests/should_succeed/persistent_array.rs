@@ -5,8 +5,8 @@ pub mod implementation {
     use creusot_contracts::{
         cell::{PermCell, PermCellOwn},
         ghost::{
-            local_invariant::{
-                LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+            invariant::{
+                NonAtomicInvariant, NonAtomicInvariantExt as _, Protocol, Tokens, declare_namespace,
             },
             resource::fmap_view::{Authority, Fragment},
         },
@@ -38,7 +38,7 @@ pub mod implementation {
         /// The corresponding value is the logical value of the map.
         frag: Ghost<Fragment<Id, Seq<T>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
-        inv: Ghost<Rc<LocalInvariant<PA<T>>>>,
+        inv: Ghost<Rc<NonAtomicInvariant<PA<T>>>>,
     }
 
     impl<T> Clone for PersistentArray<T> {
@@ -135,7 +135,7 @@ pub mod implementation {
             let inv = ghost! {
                 let mut perms = FMap::new();
                 perms.insert_ghost(*permcellown.id_ghost(), permcellown.into_inner());
-                let local_inv = LocalInvariant::new(
+                let na_inv = NonAtomicInvariant::new(
                     ghost!(PA {
                         perms: perms.into_inner(),
                         auth: auth.into_inner(),
@@ -144,7 +144,7 @@ pub mod implementation {
                     snapshot!(frag.id()),
                     snapshot!(PARRAY()),
                 );
-                Rc::new(local_inv.into_inner())
+                Rc::new(na_inv.into_inner())
             };
 
             Self { permcell: Rc::new(permcell), frag, inv }
@@ -296,7 +296,7 @@ pub mod implementation {
 }
 
 use creusot_contracts::{
-    ghost::local_invariant::Tokens,
+    ghost::invariant::Tokens,
     prelude::{vec, *},
 };
 use implementation::PersistentArray;
