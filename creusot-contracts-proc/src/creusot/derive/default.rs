@@ -17,7 +17,7 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let body_spec = default_spec(&input.data);
 
     quote! {
-        impl #impl_generics ::std::default::Default for #name #ty_generics #where_clause {
+        impl #impl_generics ::core::default::Default for #name #ty_generics #where_clause {
             #[::creusot_contracts::macros::ensures(#body_spec)]
             fn default() -> Self {
                 #body_code
@@ -31,7 +31,7 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(::std::default::Default));
+            type_param.bounds.push(parse_quote!(::core::default::Default));
         }
     }
     generics
@@ -72,13 +72,13 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
         Fields::Named(fields) => {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                quote_spanned! { f.span() => #name: ::std::default::Default::default() }
+                quote_spanned! { f.span() => #name: ::core::default::Default::default() }
             });
             quote! { { #(#fs),* } }
         }
         Fields::Unnamed(fields) => {
             let fs = fields.unnamed.iter().map(|f| {
-                quote_spanned! { f.span() => ::std::default::Default::default() }
+                quote_spanned! { f.span() => ::core::default::Default::default() }
             });
             quote! { ( #(#fs),* ) }
         }
@@ -141,9 +141,9 @@ fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 if with_result {
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), result.#name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#name) }
                 } else {
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }
@@ -152,10 +152,10 @@ fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
             let fs = fields.unnamed.iter().enumerate().map(|(i, f)| {
                 if with_result {
                     let i = syn::LitInt::new(&format!("{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), result.#i) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#i) }
                 } else {
                     let name = Ident::new(&format!("x{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::std::default::Default::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_contracts::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }
