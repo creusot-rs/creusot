@@ -369,17 +369,6 @@ impl<T> FSet<T> {
         panic!()
     }
 
-    /// Same as [`Self::insert_ghost`], but for unsized values.
-    #[cfg(feature = "std")]
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(^self == (*self).insert(*value))]
-    #[ensures(result == !(*self).contains(*value))]
-    pub fn insert_ghost_unsized(&mut self, value: Box<T>) -> bool {
-        let _ = value;
-        panic!()
-    }
-
     /// Removes a value from the set. Returns whether the value was present in the set.
     ///
     /// # Example

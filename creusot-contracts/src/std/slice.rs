@@ -1,8 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
-#[cfg(feature = "nightly")]
-#[allow(unused_imports)]
+#[cfg(all(feature = "nightly", feature = "std"))]
 use core::alloc::Allocator;
 use core::{
     ops::{

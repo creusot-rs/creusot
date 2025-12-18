@@ -111,16 +111,6 @@ pub fn add_one(a: i64) -> i64 {
 }
 "#;
 
-const LIB_TEMPLATE_NOSTD: &str = r#"#![no_std]
-use creusot_contracts::prelude::*;
-
-#[requires(a@ < i64::MAX@)]
-#[ensures(result@ == a@ + 1)]
-pub fn add_one(a: i64) -> i64 {
-    a + 1
-}
-"#;
-
 pub fn new(args: NewArgs) -> Result<()> {
     validate_name(&args.name)?;
     if args.args.main && args.args.no_std {
@@ -172,7 +162,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
             write("src/main.rs", &bin_template(&name));
         }
         if args.no_std {
-            write("src/lib.rs", LIB_TEMPLATE_NOSTD);
+            write("src/lib.rs", format!("#![no_std]\n{LIB_TEMPLATE}").as_str());
         } else {
             write("src/lib.rs", LIB_TEMPLATE);
         }

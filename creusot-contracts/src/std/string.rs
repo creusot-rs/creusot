@@ -1,5 +1,5 @@
 use crate::prelude::*;
-#[allow(unused_imports)]
+#[cfg(feature = "std")]
 use core::ops::Deref;
 
 impl View for str {
