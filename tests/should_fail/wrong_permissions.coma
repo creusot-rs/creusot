@@ -4,33 +4,29 @@ module M_unknown_permcell_permission
   
   type t_PermCell_i32
   
-  type t_PermCellOwn_i32
+  type t_Perm_PermCell_i32
   
-  type t_Id
+  function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function id_i32 (self: t_PermCell_i32) : t_Id
+  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
-  function id_i32'0 (self: t_PermCellOwn_i32) : t_Id
+  function view_Perm_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_PermCell_i32 self
   
-  function val_i32 (self: t_PermCellOwn_i32) : Int32.t
+  meta "rewrite_def" function view_Perm_PermCell_i32
   
-  function view_PermCellOwn_i32 [@inline:trivial] (self: t_PermCellOwn_i32) : Int32.t = val_i32 self
-  
-  meta "rewrite_def" function view_PermCellOwn_i32
-  
-  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] id_i32 self = id_i32'0 perm}
-    any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
+  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
+    {[@expl:borrow requires] self = ward_PermCell_i32 perm}
+    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unknown_permcell_permission (cell: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: ())) = (! bb0
+  let rec unknown_permcell_permission (cell: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = borrow_i32 {cell} {perm} (fun (_x: Int32.t) -> [ &_3 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & cell: t_PermCell_i32 = cell
-    | & perm: t_PermCellOwn_i32 = perm
+    | & perm: t_Perm_PermCell_i32 = perm
     | & _3: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_wrong_permcell_permission
@@ -39,35 +35,63 @@ module M_wrong_permcell_permission
   
   type t_PermCell_i32
   
-  type t_PermCellOwn_i32
+  type t_Perm_PermCell_i32
   
-  type tup2_PermCell_i32_Ghost_PermCellOwn_i32 = { f0: t_PermCell_i32; f1: t_PermCellOwn_i32 }
+  type tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global = { f0: t_PermCell_i32; f1: t_Perm_PermCell_i32 }
   
-  type t_Id
+  function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function id_i32 (self: t_PermCell_i32) : t_Id
+  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
-  function id_i32'0 (self: t_PermCellOwn_i32) : t_Id
+  function view_Perm_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_PermCell_i32 self
   
-  function val_i32 (self: t_PermCellOwn_i32) : Int32.t
+  meta "rewrite_def" function view_Perm_PermCell_i32
   
-  function view_PermCellOwn_i32 [@inline:trivial] (self: t_PermCellOwn_i32) : Int32.t = val_i32 self
+  function view_Box_Perm_PermCell_i32_Global [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t =
+    view_Perm_PermCell_i32 self
   
-  meta "rewrite_def" function view_PermCellOwn_i32
+  meta "rewrite_def" function view_Box_Perm_PermCell_i32_Global
   
-  let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_PermCellOwn_i32)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> {id_i32 result.f0 = id_i32'0 result.f1}
-      {view_PermCellOwn_i32 result.f1 = value}
+  let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global)) = any
+    [ return (result: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> {result.f0 = ward_PermCell_i32 result.f1}
+      {view_Box_Perm_PermCell_i32_Global result.f1 = value}
       (! return {result}) ]
+  
+  predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true
+  
+  meta "rewrite_def" predicate resolve_ref_i32
+  
+  predicate resolve_Perm_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) =
+    resolve_ref_i32 (val_PermCell_i32 self)
+  
+  meta "rewrite_def" predicate resolve_Perm_PermCell_i32
+  
+  predicate resolve_Perm_PermCell_i32'0 (_1: t_Perm_PermCell_i32)
+  
+  axiom resolve_axiom: forall x: t_Perm_PermCell_i32 [resolve_Perm_PermCell_i32'0 x]. resolve_Perm_PermCell_i32'0 x
+      -> resolve_Perm_PermCell_i32 x
+  
+  predicate resolve_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: t_Perm_PermCell_i32) =
+    resolve_Perm_PermCell_i32'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_Perm_PermCell_i32_Global
+  
+  predicate resolve_Ghost_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: t_Perm_PermCell_i32) =
+    resolve_Box_Perm_PermCell_i32_Global _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Box_Perm_PermCell_i32_Global
   
   predicate resolve_PermCell_i32 (_1: t_PermCell_i32)
   
-  let rec borrow_PermCellOwn_i32 (self: t_PermCellOwn_i32) (return (x: t_PermCellOwn_i32)) = any
-    [ return (result: t_PermCellOwn_i32) -> {result = self} (! return {result}) ]
+  let rec deref_Ghost_Box_Perm_PermCell_i32_Global (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
+    [ return (result: t_Perm_PermCell_i32) -> {result = self} (! return {result}) ]
   
-  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_PermCellOwn_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] id_i32 self = id_i32'0 perm}
-    any [ return (result: Int32.t) -> {result = view_PermCellOwn_i32 perm} (! return {result}) ]
+  let rec new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
+    [ return (result: t_Perm_PermCell_i32) -> {result = x} (! return {result}) ]
+  
+  let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
+    {[@expl:borrow requires] self = ward_PermCell_i32 perm}
+    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -75,24 +99,30 @@ module M_wrong_permcell_permission
   
   let rec wrong_permcell_permission (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> [ &_2 <- _x ] s1)
-      | s1 = [ &cell <- _2.f0 ] s2
-      | s2 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_PermCellOwn_i32) -> [ &_4 <- _x ] s3)
-      | s3 = -{resolve_PermCell_i32 _4.f0}- s4
-      | s4 = [ &perm <- _4.f1 ] s5
-      | s5 = -{resolve_PermCell_i32 cell}- s6
-      | s6 = borrow_PermCellOwn_i32 {perm} (fun (_x: t_PermCellOwn_i32) -> [ &_7 <- _x ] s7)
-      | s7 = borrow_i32 {cell} {_7} (fun (_x: Int32.t) -> [ &_5 <- _x ] s8)
-      | s8 = return {_ret} ] ]
+      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> [ &_2 <- _x ] s1)
+      | s1 = -{resolve_Ghost_Box_Perm_PermCell_i32_Global _2.f1}- s2
+      | s2 = [ &cell <- _2.f0 ] s3
+      | s3 = new_i32 {(1: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> [ &_4 <- _x ] s4)
+      | s4 = -{resolve_PermCell_i32 _4.f0}- s5
+      | s5 = [ &perm <- _4.f1 ] s6
+      | s6 = -{resolve_PermCell_i32 cell}- s7
+      | s7 = -{resolve_Ghost_Box_Perm_PermCell_i32_Global perm}- s8
+      | s8 = deref_Ghost_Box_Perm_PermCell_i32_Global {perm} (fun (_x: t_Perm_PermCell_i32) -> [ &_10 <- _x ] s9)
+      | s9 = [ &_9 <- _10 ] s10
+      | s10 = new_ref_Perm_PermCell_i32 {_9} (fun (_x: t_Perm_PermCell_i32) -> [ &_7 <- _x ] s11)
+      | s11 = borrow_i32 {cell} {_7} (fun (_x: Int32.t) -> [ &_5 <- _x ] s12)
+      | s12 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & cell: t_PermCell_i32 = Any.any_l ()
-    | & _2: tup2_PermCell_i32_Ghost_PermCellOwn_i32 = Any.any_l ()
-    | & perm: t_PermCellOwn_i32 = Any.any_l ()
-    | & _4: tup2_PermCell_i32_Ghost_PermCellOwn_i32 = Any.any_l ()
+    | & _2: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & perm: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _4: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
-    | & _7: t_PermCellOwn_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _7: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _9: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _10: t_Perm_PermCell_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_unknown_ptr_own_permission
+module M_unknown_ptr_perm_permission
   use creusot.prelude.Opaque
   use creusot.int.Int32
   use creusot.prelude.Ptr
@@ -101,19 +131,19 @@ module M_unknown_ptr_own_permission
   use creusot.int.Int64
   use creusot.prelude.Any
   
-  type t_PtrOwn_i32
+  type t_Perm_ptr_i32
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function ward_ptr_i32 (self: t_Perm_ptr_i32) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
+  predicate ptr_is_aligned_opaque_i32 (self: t_Perm_ptr_i32)
   
   predicate metadata_matches_i32 [@inline:trivial] (_value: Int32.t) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_i32 (self: t_PtrOwn_i32) : Int32.t
+  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -137,53 +167,55 @@ module M_unknown_ptr_own_permission
   
   meta "rewrite_def" predicate inv_ref_i32
   
-  predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (ptr_i32 self)
+  predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
+    not is_null_ptr_i32 (ward_ptr_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (ptr_i32 self))
-    /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_i32 (val_i32 self)
+    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ size_of_val_i32 (val_ptr_i32 self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ward_ptr_i32 self)) + size_of_val_i32 (val_ptr_i32 self)
+      <= UInt64.t'int const_MAX'0
+    /\ inv_ref_i32 (val_ptr_i32 self)
   
-  predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
+  predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_i32 [inv_PtrOwn_i32 x]. inv_PtrOwn_i32 x = invariant_PtrOwn_i32 x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_i32 [inv_Perm_ptr_i32 x]. inv_Perm_ptr_i32 x
+      = invariant_Perm_ptr_i32 x
   
-  predicate invariant_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_i32
   
-  predicate inv_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_PtrOwn_i32 _1
+  predicate inv_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_i32
   
-  predicate invariant_Ghost_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_ref_PtrOwn_i32 self
+  predicate invariant_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_ref_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_i32
   
-  predicate inv_Ghost_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_Ghost_ref_PtrOwn_i32 _1
+  predicate inv_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Ghost_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_PtrOwn_i32) (return (x: Int32.t)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_i32 own}
-    {[@expl:as_ref requires] ptr = ptr_i32 own}
-    any [ return (result: Int32.t) -> {result = val_i32 own} (! return {result}) ]
+  let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
+    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own}
+    {[@expl:as_ref requires] ptr = ward_ptr_i32 own}
+    any [ return (result: Int32.t) -> {result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec unknown_ptr_own_permission (ptr: Opaque.ptr) (perm: t_PtrOwn_i32) (return (x: ())) =
-    {[@expl:unknown_ptr_own_permission 'perm' type invariant] inv_Ghost_ref_PtrOwn_i32 perm}
+  let rec unknown_ptr_perm_permission (ptr: Opaque.ptr) (perm: t_Perm_ptr_i32) (return (x: ())) =
+    {[@expl:unknown_ptr_perm_permission 'perm' type invariant] inv_Ghost_ref_Perm_ptr_i32 perm}
     (! bb0
     [ bb0 = s0 [ s0 = as_ref_i32 {ptr} {perm} (fun (_x: Int32.t) -> [ &_3 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & ptr: Opaque.ptr = ptr
-    | & perm: t_PtrOwn_i32 = perm
+    | & perm: t_Perm_ptr_i32 = perm
     | & _3: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
-module M_wrong_ptr_own_permission
+module M_wrong_ptr_perm_permission
   use creusot.int.Int32
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
@@ -192,21 +224,21 @@ module M_wrong_ptr_own_permission
   use creusot.int.Int64
   use creusot.prelude.Any
   
-  type t_PtrOwn_i32
+  type t_Perm_ptr_i32
   
-  type tup2_ptr_i32_Ghost_PtrOwn_i32 = { f0: Opaque.ptr; f1: t_PtrOwn_i32 }
+  type tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global = { f0: Opaque.ptr; f1: t_Perm_ptr_i32 }
   
   predicate is_null_ptr_i32 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ptr_i32 (self: t_PtrOwn_i32) : Opaque.ptr
+  function ward_ptr_i32 (self: t_Perm_ptr_i32) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_i32 (self: t_PtrOwn_i32)
+  predicate ptr_is_aligned_opaque_i32 (self: t_Perm_ptr_i32)
   
   predicate metadata_matches_i32 [@inline:trivial] (_value: Int32.t) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_i32 (self: t_PtrOwn_i32) : Int32.t
+  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -230,102 +262,121 @@ module M_wrong_ptr_own_permission
   
   meta "rewrite_def" predicate inv_ref_i32
   
-  predicate invariant_PtrOwn_i32 (self: t_PtrOwn_i32) =
-    not is_null_ptr_i32 (ptr_i32 self)
+  predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
+    not is_null_ptr_i32 (ward_ptr_i32 self)
     /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_i32 self) (metadata_i32 (ptr_i32 self))
-    /\ size_of_val_i32 (val_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ptr_i32 self)) + size_of_val_i32 (val_i32 self) <= UInt64.t'int const_MAX'0
-    /\ inv_ref_i32 (val_i32 self)
+    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ size_of_val_i32 (val_ptr_i32 self) <= Int64.to_int const_MAX
+    /\ UInt64.t'int (Ptr.addr_logic_u64 (ward_ptr_i32 self)) + size_of_val_i32 (val_ptr_i32 self)
+      <= UInt64.t'int const_MAX'0
+    /\ inv_ref_i32 (val_ptr_i32 self)
   
-  predicate inv_PtrOwn_i32 (_1: t_PtrOwn_i32)
+  predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
-  axiom inv_axiom [@rewrite]: forall x: t_PtrOwn_i32 [inv_PtrOwn_i32 x]. inv_PtrOwn_i32 x = invariant_PtrOwn_i32 x
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_i32 [inv_Perm_ptr_i32 x]. inv_Perm_ptr_i32 x
+      = invariant_Perm_ptr_i32 x
   
-  predicate invariant_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_PtrOwn_i32
+  predicate inv_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Box_Perm_ptr_i32_Global _1
   
-  predicate inv_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_Ghost_PtrOwn_i32 _1
+  meta "rewrite_def" predicate inv_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate inv_Ghost_PtrOwn_i32
+  predicate invariant_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Box_Perm_ptr_i32_Global self
   
-  predicate inv_tup2_ptr_i32_Ghost_PtrOwn_i32 [@inline:trivial] (_1: tup2_ptr_i32_Ghost_PtrOwn_i32) =
-    inv_Ghost_PtrOwn_i32 _1.f1
+  meta "rewrite_def" predicate invariant_Ghost_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate inv_tup2_ptr_i32_Ghost_PtrOwn_i32
+  predicate inv_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_Ghost_Box_Perm_ptr_i32_Global _1
   
-  let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_PtrOwn_i32)) = any
-    [ return (result: tup2_ptr_i32_Ghost_PtrOwn_i32) -> {inv_tup2_ptr_i32_Ghost_PtrOwn_i32 result}
-      {ptr_i32 result.f1 = result.f0 /\ val_i32 result.f1 = v}
+  meta "rewrite_def" predicate inv_Ghost_Box_Perm_ptr_i32_Global
+  
+  predicate inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) =
+    inv_Ghost_Box_Perm_ptr_i32_Global _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global
+  
+  let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
+    [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
+    {inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result}
+      {ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v}
       (! return {result}) ]
   
-  predicate resolve_PtrOwn_i32 (_1: t_PtrOwn_i32)
+  predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Ghost_Box_Perm_ptr_i32_Global self
   
-  predicate resolve_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = resolve_PtrOwn_i32 _1
+  meta "rewrite_def" predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate resolve_Ghost_PtrOwn_i32
+  predicate inv_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_ref_Ghost_Box_Perm_ptr_i32_Global _1
   
-  predicate resolve_tup2_ptr_i32_Ghost_PtrOwn_i32 [@inline:trivial] (_1: tup2_ptr_i32_Ghost_PtrOwn_i32) =
-    resolve_Ghost_PtrOwn_i32 _1.f1
+  meta "rewrite_def" predicate inv_ref_Ghost_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate resolve_tup2_ptr_i32_Ghost_PtrOwn_i32
+  predicate invariant_ref_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
+    inv_Box_Perm_ptr_i32_Global self
   
-  predicate invariant_ref_Ghost_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_Ghost_PtrOwn_i32 self
+  meta "rewrite_def" predicate invariant_ref_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_PtrOwn_i32
+  predicate inv_ref_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: t_Perm_ptr_i32) =
+    invariant_ref_Box_Perm_ptr_i32_Global _1
   
-  predicate inv_ref_Ghost_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_Ghost_PtrOwn_i32 _1
+  meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_i32_Global
   
-  meta "rewrite_def" predicate inv_ref_Ghost_PtrOwn_i32
+  let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
+    any
+    [ return (result: t_Perm_ptr_i32) -> {inv_ref_Box_Perm_ptr_i32_Global result} {result = self} (! return {result}) ]
   
-  predicate invariant_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_PtrOwn_i32 self
+  predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_i32
   
-  predicate inv_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_ref_PtrOwn_i32 _1
+  predicate inv_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_i32
   
-  predicate invariant_Ghost_ref_PtrOwn_i32 [@inline:trivial] (self: t_PtrOwn_i32) = inv_ref_PtrOwn_i32 self
+  predicate invariant_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_ref_Perm_ptr_i32 self
   
-  meta "rewrite_def" predicate invariant_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_i32
   
-  predicate inv_Ghost_ref_PtrOwn_i32 [@inline:trivial] (_1: t_PtrOwn_i32) = invariant_Ghost_ref_PtrOwn_i32 _1
+  predicate inv_Ghost_ref_Perm_ptr_i32 [@inline:trivial] (_1: t_Perm_ptr_i32) = invariant_Ghost_ref_Perm_ptr_i32 _1
   
-  meta "rewrite_def" predicate inv_Ghost_ref_PtrOwn_i32
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let rec borrow_PtrOwn_i32 (self: t_PtrOwn_i32) (return (x: t_PtrOwn_i32)) =
-    {[@expl:borrow 'self' type invariant] inv_ref_Ghost_PtrOwn_i32 self}
-    any [ return (result: t_PtrOwn_i32) -> {inv_Ghost_ref_PtrOwn_i32 result} {result = self} (! return {result}) ]
+  let rec new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
+    {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
+    any [ return (result: t_Perm_ptr_i32) -> {inv_Ghost_ref_Perm_ptr_i32 result} {result = x} (! return {result}) ]
   
-  let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_PtrOwn_i32) (return (x: Int32.t)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_PtrOwn_i32 own}
-    {[@expl:as_ref requires] ptr = ptr_i32 own}
-    any [ return (result: Int32.t) -> {result = val_i32 own} (! return {result}) ]
+  let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
+    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own}
+    {[@expl:as_ref requires] ptr = ward_ptr_i32 own}
+    any [ return (result: Int32.t) -> {result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec wrong_ptr_own_permission (return (x: ())) = (! bb0
+  let rec wrong_ptr_perm_permission (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_2 <- _x ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_tup2_ptr_i32_Ghost_PtrOwn_i32 _2} any) ]
-      | s2 = -{resolve_tup2_ptr_i32_Ghost_PtrOwn_i32 _2}- s3
-      | s3 = [ &ptr <- _2.f0 ] s4
-      | s4 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_PtrOwn_i32) -> [ &_4 <- _x ] s5)
-      | s5 = [ &perm <- _4.f1 ] s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_PtrOwn_i32 perm} any) ]
-      | s7 = -{resolve_Ghost_PtrOwn_i32 perm}- s8
-      | s8 = borrow_PtrOwn_i32 {perm} (fun (_x: t_PtrOwn_i32) -> [ &_8 <- _x ] s9)
+      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) -> [ &_2 <- _x ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global _2} any) ]
+      | s2 = [ &ptr <- _2.f0 ] s3
+      | s3 = new_i32 {(1: Int32.t)} (fun (_x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) -> [ &_4 <- _x ] s4)
+      | s4 = [ &perm <- _4.f1 ] s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global perm} any) ]
+      | s6 = deref_Ghost_Box_Perm_ptr_i32_Global {perm} (fun (_x: t_Perm_ptr_i32) -> [ &_11 <- _x ] s7)
+      | s7 = [ &_10 <- _11 ] s8
+      | s8 = new_ref_Perm_ptr_i32 {_10} (fun (_x: t_Perm_ptr_i32) -> [ &_8 <- _x ] s9)
       | s9 = as_ref_i32 {ptr} {_8} (fun (_x: Int32.t) -> [ &_5 <- _x ] s10)
       | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & ptr: Opaque.ptr = Any.any_l ()
-    | & _2: tup2_ptr_i32_Ghost_PtrOwn_i32 = Any.any_l ()
-    | & perm: t_PtrOwn_i32 = Any.any_l ()
-    | & _4: tup2_ptr_i32_Ghost_PtrOwn_i32 = Any.any_l ()
+    | & _2: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global = Any.any_l ()
+    | & perm: t_Perm_ptr_i32 = Any.any_l ()
+    | & _4: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global = Any.any_l ()
     | & _5: Int32.t = Any.any_l ()
-    | & _8: t_PtrOwn_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _8: t_Perm_ptr_i32 = Any.any_l ()
+    | & _10: t_Perm_ptr_i32 = Any.any_l ()
+    | & _11: t_Perm_ptr_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

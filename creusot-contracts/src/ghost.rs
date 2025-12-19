@@ -23,10 +23,9 @@ use std::{
 
 mod fn_ghost;
 pub mod local_invariant;
-mod ptr_own;
 pub mod resource;
 pub use fn_ghost::{FnGhost, FnGhostWrapper};
-pub use ptr_own::PtrOwn;
+pub mod perm;
 
 /// A type that can be used in [`ghost!`] context.
 ///
@@ -213,7 +212,7 @@ impl<T, U: ?Sized> Ghost<(T, U)> {
 ///
 /// For example, Booleans and integers are plain, but references are not, be they
 /// mutable or not. Indeed, the ownership of a shared reference can be used to deduce
-/// facts, for example with `PtrOwn::disjoint_lemma`.
+/// facts, for example with `Perm::disjoint_lemma`.
 #[trusted]
 pub trait Plain: Copy {}
 

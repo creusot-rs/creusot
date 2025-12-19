@@ -1,6 +1,9 @@
-use crate::prelude::*;
 #[cfg(creusot)]
-use crate::std::mem::{align_of_logic, size_of_logic};
+use crate::std::mem::{align_of_logic, size_of_logic, size_of_val_logic};
+use crate::{
+    ghost::perm::{Container, Perm},
+    prelude::*,
+};
 use std::ptr::*;
 
 /// Metadata of a pointer in logic.
@@ -56,7 +59,7 @@ fn metadata_matches_str(value: str, len: usize) -> bool {
 ///
 /// This is a logic version of [`<*const T>::is_aligned`][is_aligned],
 /// but extended with an additional rule for `[U]`. We make use of this property
-/// in [`ghost::PtrOwn`] to define a more precise invariant for slice pointers.
+/// in [`ghost::perm::Perm<*const T>`] to define a more precise invariant for slice pointers.
 ///
 /// - For `T: Sized`, specializes to [`is_aligned_logic_sized`].
 /// - For `T = [U]`, specializes to [`is_aligned_logic_slice`].
@@ -432,5 +435,200 @@ extern_spec! {
         fn clone(&self) -> *const T {
             *self
         }
+    }
+}
+
+impl<T: ?Sized> Container for *const T {
+    type Value = T;
+
+    #[logic(open, inline)]
+    fn is_disjoint(&self, self_val: &T, other: &Self, other_val: &T) -> bool {
+        pearlite! {
+            size_of_val_logic(*self_val) != 0 && size_of_val_logic(*other_val) != 0 ==>
+            self.addr_logic() != other.addr_logic()
+        }
+    }
+}
+
+impl<T: ?Sized> Invariant for Perm<*const T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            !self.ward().is_null_logic()
+                && self.ptr_is_aligned_opaque()
+                && metadata_matches(*self.val(), metadata_logic(*self.ward()))
+                // Allocations can never be larger than `isize` (source: https://doc.rust-lang.org/std/ptr/index.html#allocation)
+                && size_of_val_logic(*self.val()) <= isize::MAX@
+                // The allocation fits in the address space
+                // (this is needed to verify (a `Perm` variant of) `<*const T>::add`, which checks this condition)
+                && self.ward().addr_logic()@ + size_of_val_logic(*self.val()) <= usize::MAX@
+                && inv(self.val())
+        }
+    }
+}
+
+impl<T: ?Sized> Perm<*const T> {
+    /// Creates a new `Perm<*const T>` and associated `*const` by allocating a new memory
+    /// cell initialized with `v`.
+    #[check(terminates)] // can overflow the number of available pointer adresses
+    #[ensures(*result.1.ward() == result.0 && *result.1.val() == v)]
+    pub fn new(v: T) -> (*mut T, Ghost<Box<Perm<*const T>>>)
+    where
+        T: Sized,
+    {
+        Self::from_box(Box::new(v))
+    }
+
+    /// Creates a ghost `Perm<*const T>` and associated `*const` from an existing [`Box`].
+    #[trusted]
+    #[check(terminates)] // can overflow the number of available pointer adresses
+    #[ensures(*result.1.ward() == result.0 && *result.1.val() == *val)]
+    #[erasure(Box::into_raw)]
+    pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Box<Perm<*const T>>>) {
+        (Box::into_raw(val), Ghost::conjure())
+    }
+
+    /// Decompose a shared reference into a raw pointer and a ghost `Perm<*const T>`.
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a raw reborrow of a reference.
+    ///
+    /// ```ignore
+    /// Perm::from_ref(r)
+    /// // erases to
+    /// r as *const T  // or *mut T (both are allowed)
+    /// ```
+    #[trusted]
+    #[check(terminates)] // can overflow the number of available pointer adresses
+    #[ensures(*result.1.ward() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[intrinsic("perm_from_ref")]
+    pub fn from_ref(r: &T) -> (*const T, Ghost<&Perm<*const T>>) {
+        (r, Ghost::conjure())
+    }
+
+    /// Decompose a mutable reference into a raw pointer and a ghost `Perm<*const T>`.
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a raw reborrow of a reference.
+    ///
+    /// ```ignore
+    /// Perm::from_mut(r)
+    /// // erases to
+    /// r as *const T  // or *mut T (both are allowed)
+    /// ```
+    #[trusted]
+    #[check(terminates)] // can overflow the number of available pointer adresses
+    #[ensures(*result.1.ward() == result.0)]
+    #[ensures(*result.1.val() == *r)]
+    #[ensures(*(^result.1.inner_logic()).val() == ^r)]
+    #[intrinsic("perm_from_mut")]
+    pub fn from_mut(r: &mut T) -> (*mut T, Ghost<&mut Perm<*const T>>) {
+        (r, Ghost::conjure())
+    }
+
+    /// Immutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&*ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](Perm).
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a cast from raw pointer to shared reference.
+    ///
+    /// ```ignore
+    /// Perm::as_ref(ptr, own)
+    /// // erases to
+    /// & *ptr
+    /// ```
+    #[trusted]
+    #[check(terminates)]
+    #[requires(ptr == *own.ward())]
+    #[ensures(*result == *own.val())]
+    #[allow(unused_variables)]
+    #[intrinsic("perm_as_ref")]
+    pub unsafe fn as_ref(ptr: *const T, own: Ghost<&Perm<*const T>>) -> &T {
+        unsafe { &*ptr }
+    }
+
+    /// Mutably borrows the underlying `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as a direct dereference: `&mut *ptr`.
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](Perm).
+    ///
+    /// # Erasure
+    ///
+    /// This function erases to a cast from raw pointer to mutable reference.
+    ///
+    /// ```ignore
+    /// Perm::as_mut(ptr, own)
+    /// // erases to
+    /// &mut *ptr
+    /// ```
+    #[trusted]
+    #[check(terminates)]
+    #[allow(unused_variables)]
+    #[requires(ptr as *const T == *own.ward())]
+    #[ensures(*result == *own.val())]
+    #[ensures((^own).ward() == own.ward())]
+    #[ensures(*(^own).val() == ^result)]
+    #[intrinsic("perm_as_mut")]
+    pub unsafe fn as_mut(ptr: *mut T, own: Ghost<&mut Perm<*const T>>) -> &mut T {
+        unsafe { &mut *ptr }
+    }
+
+    /// Transfers ownership of `own` back into a [`Box`].
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](Perm).
+    #[trusted]
+    #[check(terminates)]
+    #[requires(ptr as *const T == *own.ward())]
+    #[ensures(*result == *own.val())]
+    #[allow(unused_variables)]
+    #[erasure(Box::from_raw)]
+    pub unsafe fn to_box(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) -> Box<T> {
+        unsafe { Box::from_raw(ptr) }
+    }
+
+    /// Deallocates the memory pointed by `ptr`.
+    ///
+    /// # Safety
+    ///
+    /// Safety requirements are the same as [`Box::from_raw`].
+    ///
+    /// Creusot will check that all calls to this function are indeed safe: see the
+    /// [type documentation](Perm).
+    #[check(terminates)]
+    #[requires(ptr as *const T == *own.ward())]
+    pub unsafe fn drop(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) {
+        let _ = unsafe { Self::to_box(ptr, own) };
+    }
+
+    /// The pointer of a `Perm<*const T>` is always aligned.
+    #[check(ghost)]
+    #[ensures(self.ward().is_aligned_logic())]
+    pub fn ptr_is_aligned_lemma(&self) {}
+
+    /// Opaque wrapper around [`std::ptr::is_aligned_logic`].
+    /// We use this to hide alignment logic by default in `invariant` because it confuses SMT solvers sometimes.
+    /// The underlying property is exposed by [`Perm::ptr_is_aligned_lemma`].
+    #[logic(open(self))]
+    pub fn ptr_is_aligned_opaque(self) -> bool {
+        self.ward().is_aligned_logic()
     }
 }

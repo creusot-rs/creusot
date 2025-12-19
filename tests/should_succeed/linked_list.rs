@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::PtrOwn, logic::Mapping, prelude::*};
+use creusot_contracts::{ghost::perm::Perm, logic::Mapping, prelude::*};
 
 struct Cell<T> {
     v: T,
@@ -11,7 +11,7 @@ pub struct List<T> {
     first: *const Cell<T>,
     last: *const Cell<T>,
     // ghost
-    seq: Ghost<Seq<PtrOwn<Cell<T>>>>,
+    seq: Ghost<Seq<Box<Perm<*const Cell<T>>>>>,
 }
 
 impl<T> Invariant for List<T> {
@@ -23,11 +23,11 @@ impl<T> Invariant for List<T> {
              self.last.is_null_logic())
             ||
             (self.seq.len() > 0 &&
-             self.first == self.seq[0].ptr() &&
-             self.last  == self.seq[self.seq.len() - 1].ptr() &&
+             self.first == *self.seq[0].ward() &&
+             self.last  == *self.seq[self.seq.len() - 1].ward() &&
              // the cells in `seq` are chained properly
              (forall<i> 0 <= i && i < self.seq.len() - 1 ==>
-                 self.seq[i].val().next == self.seq[i+1].ptr()) &&
+                 self.seq[i].val().next == *self.seq[i+1].ward()) &&
              self.seq[self.seq.len() - 1].val().next.is_null_logic())
         }
     }
@@ -39,7 +39,7 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            seq_map(*self.seq, |ptr_own: PtrOwn<Cell<T>>| ptr_own.val().v)
+            seq_map(*self.seq, |ptr_perm: Box<Perm<*const Cell<T>>>| ptr_perm.val().v)
         }
     }
 }
@@ -58,13 +58,13 @@ impl<T> List<T> {
     #[ensures((^self)@ == (*self)@.push_back(x))]
     pub fn push_back(&mut self, x: T) {
         let cell = Box::new(Cell { v: x, next: std::ptr::null() });
-        let (cell_ptr, cell_own) = PtrOwn::from_box(cell);
+        let (cell_ptr, cell_own) = Perm::from_box(cell);
         if self.last.is_null() {
             self.first = cell_ptr;
             self.last = cell_ptr;
         } else {
             let cell_last = unsafe {
-                PtrOwn::as_mut(
+                Perm::as_mut(
                     self.last as *mut Cell<T>,
                     ghost! {
                         let off = self.seq.len_ghost() - 1int;
@@ -80,7 +80,7 @@ impl<T> List<T> {
 
     #[ensures((^self)@ == (*self)@.push_front(x))]
     pub fn push_front(&mut self, x: T) {
-        let (cell_ptr, cell_own) = PtrOwn::new(Cell { v: x, next: self.first });
+        let (cell_ptr, cell_own) = Perm::new(Cell { v: x, next: self.first });
         self.first = cell_ptr;
         if self.last.is_null() {
             self.last = cell_ptr;
@@ -97,7 +97,7 @@ impl<T> List<T> {
             return None;
         }
         let own = ghost! { self.seq.pop_front_ghost().unwrap() };
-        let cell = unsafe { *PtrOwn::to_box(self.first as *mut Cell<T>, own) };
+        let cell = unsafe { *Perm::to_box(self.first as *mut Cell<T>, own) };
         self.first = cell.next;
         if self.first.is_null() {
             self.last = std::ptr::null_mut();
