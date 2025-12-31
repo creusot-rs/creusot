@@ -200,7 +200,8 @@ impl View for Tokens<'_> {
 
 /// A variant of [`Invariant`] for use in [`AtomicInvariant`]s and [`NonAtomicInvariant`]s.
 ///
-/// This allows to specify an invariant that depends on some [public data](NonAtomicInvariant::public).
+/// This allows to specify an invariant that depends on some public data
+/// (`AtomicInvariant::public`, `NonAtomicInvariant::public`).
 pub trait Protocol {
     type Public;
 
@@ -209,9 +210,9 @@ pub trait Protocol {
 }
 
 #[opaque]
-pub struct AtomicInvariant<T: Protocol>(PhantomData<T>);
+pub struct AtomicInvariant<T>(PhantomData<T>);
 
-unsafe impl<T: Protocol + Send> Sync for AtomicInvariant<T> {}
+unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
 impl<T: Protocol> AtomicInvariant<T> {
     /// Construct a `AtomicInvariant`
@@ -247,24 +248,38 @@ impl<T: Protocol> AtomicInvariant<T> {
         dead
     }
 
+    /// Gives the actual invariant held by the [`AtomicInvariant`].
+    #[trusted]
+    #[ensures(result.protocol(self.public()))]
+    #[check(ghost)]
+    pub fn into_inner(self) -> Ghost<T> {
+        Ghost::conjure()
+    }
+
     /// Open the invariant to get the data stored inside.
     ///
     /// This will call the closure `f` with the inner data. You must restore the
     /// contained [`Protocol`] before returning from the closure.
+    ///
+    /// NOTE: This function can only be called from ghost code, because atomic
+    /// invariants are always wrapped in `Ghost`. This guarantees atomicity.
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
     #[requires(forall<t: &mut T> t.protocol(self.public()) && inv(t) ==>
         f.precondition((t,)) &&
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(self.public())))]
-    #[ensures(exists<t: &mut T> t.protocol(self.public()) && f.postcondition_once((t,), result))]
+    #[ensures(exists<t: &mut T> inv(t) && t.protocol(self.public()) && f.postcondition_once((t,), result))]
     #[check(ghost)]
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
     }
 
     /// Open the invariant to get the data stored inside, immutably.
-    /// This allows reentrant access to the invariant.
+    ///
+    /// NOTE: This is the counterpart of [`NonAtomicInvariant::open_const`], but
+    /// it is not expected to be useful in practice as atomicity prevents
+    /// re-entrancy anyway.
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
     #[ensures(result.protocol(self.public()))]
@@ -390,7 +405,7 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         f.precondition((t,)) &&
         // f must restore the invariant
         (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(this.public())))]
-    #[ensures(exists<t: Ghost<&mut T>> t.protocol(this.public()) && f.postcondition_once((t,), result))]
+    #[ensures(exists<t: Ghost<&mut T>> inv(t) && t.protocol(this.public()) && f.postcondition_once((t,), result))]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,
         tokens: Ghost<Tokens<'a>>,

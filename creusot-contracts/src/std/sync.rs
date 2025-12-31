@@ -105,6 +105,14 @@ impl AtomicI32 {
         self.0.store(val, std::sync::atomic::Ordering::SeqCst);
         Ghost::conjure()
     }
+
+    /// Wrapper for [`std::sync::atomic::AtomicI32::into_inner`].
+    #[requires(self == own.tied())]
+    #[ensures(result == own.val())]
+    #[trusted]
+    pub fn into_inner(self, own: Ghost<AtomicI32Own>) -> i32 {
+        self.0.into_inner()
+    }
 }
 
 /// Ownership for a [`AtomicI32`].

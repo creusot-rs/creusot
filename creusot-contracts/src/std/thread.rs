@@ -9,8 +9,8 @@ pub trait JoinHandleExt<T> {
 
     /// This function is a wrapper `self.join().unwrap()`.
     ///
-    /// This functions panics only on stack-overflow or OOM on the spawned thread.
-    // NOTE: This is a way to avoid ::std::thread::Result, which :
+    /// This function panics only on stack-overflow or OOM on the spawned thread.
+    // NOTE: This is a way to avoid ::std::thread::Result, which:
     //  - contains a dyn;
     //  - we don't know how to handle the Err case in Creusot.
     #[ensures(self.valid_result(result))]
