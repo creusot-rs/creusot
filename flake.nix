@@ -106,7 +106,8 @@
             || (builtins.match ".*/rust-toolchain" path != null)
             || (builtins.match ".*/messages.ftl" path != null)
             || (builtins.match ".*/*.coma" path != null)
-            || (builtins.match ".*/*.json" path != null);
+            || (builtins.match ".*/*.json" path != null)
+            || (builtins.match ".*/*.stderr" path != null);
         };
       in {
         tools = let
@@ -170,7 +171,6 @@
               inherit cargoExtraArgs meta pname src version;
             };
 
-            doCheck = false;
             doNotRemoveReferencesToRustToolchain = true;
 
             postInstall = with lib.strings; ''
