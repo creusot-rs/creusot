@@ -73,12 +73,25 @@
       };
 
       rust = let
-        rustToolchain = (pkgs.lib.importTOML ./rust-toolchain).toolchain;
+        inherit ((pkgs.lib.importTOML ./rust-toolchain).toolchain) channel components;
+        devComponents = ["clippy" "rust-analyzer" "rust-src" "rustfmt"];
+
+        mkRustToolchain = components: let
+          toolchain = {
+            inherit channel components;
+            profile = "minimal";
+          };
+        in
+          pkgs.rust-bin.fromRustupToolchain toolchain;
       in {
         lib = crane.mkLib pkgs;
 
-        toolchain = pkgs.rust-bin.fromRustupToolchain rustToolchain;
-        env = rust.lib.overrideToolchain rust.toolchain;
+        toolchain = {
+          build = mkRustToolchain components;
+          dev = mkRustToolchain (components ++ devComponents);
+        };
+
+        envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
       };
     in rec {
       inherit lib;
@@ -116,19 +129,16 @@
           pname = "prelude-generator";
           cargoExtraArgs = "--bin prelude-generator";
 
-          cargoArtifacts = rust.env.buildDepsOnly {
+          cargoArtifacts = rust.envBuilder.buildDepsOnly {
             inherit (pins.creusot) meta version;
             inherit cargoExtraArgs pname src;
           };
 
-          preludeBinary = rust.env.buildPackage {
+          preludeBinary = rust.envBuilder.buildPackage {
             inherit cargoArtifacts cargoExtraArgs meta pname src version;
 
-            buildInputs = [rust.toolchain];
             nativeBuildInputs = with pkgs;
               lib.optionals stdenv.isDarwin [libiconv libzip];
-
-            doCheck = false;
           };
         in
           pkgs.runCommand "prelude" {
@@ -149,15 +159,14 @@
           pname = "cargo-creusot";
           cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
         in
-          rust.env.buildPackage rec {
+          rust.envBuilder.buildPackage rec {
             inherit cargoExtraArgs meta pname src version;
 
-            buildInputs = [rust.toolchain];
             nativeBuildInputs = with pkgs;
               [makeWrapper]
               ++ lib.optionals stdenv.isDarwin [libiconv libzip];
 
-            cargoArtifacts = rust.env.buildDepsOnly {
+            cargoArtifacts = rust.envBuilder.buildDepsOnly {
               inherit cargoExtraArgs meta pname src version;
             };
 
@@ -174,14 +183,14 @@
                 --set CREUSOT_RUSTC $out/bin/creusot-rustc \
 
               wrapProgram $out/bin/creusot-rustc \
-                --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}" \
-                --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}"
+                --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}" \
+                --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}"
             '';
           };
 
         default = pkgs.buildEnv {
           name = "creusot-env";
-          paths = [pkgs.gcc packages.creusot packages.tools rust.toolchain];
+          paths = [pkgs.gcc packages.creusot packages.tools rust.toolchain.build];
 
           nativeBuildInputs = [pkgs.makeWrapper];
           postBuild = ''
@@ -194,11 +203,11 @@
 
       devShells.default = pkgs.mkShell {
         inputsFrom = [packages.creusot];
-        packages = [packages.tools];
+        packages = [packages.tools rust.toolchain.dev];
 
         CREUSOT_DATA_HOME = packages.tools;
-        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
-        DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
+        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+        DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
       };
 
       formatter = pkgs.alejandra;
