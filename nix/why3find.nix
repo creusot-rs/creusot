@@ -27,7 +27,7 @@ with ocamlPackages; let
     ];
   };
 in
-  pkgs.writeShellScriptBin "why3find" ''
+  (pkgs.writeShellScriptBin "why3find" ''
     CMD=$1; shift
     FOLDER=$(mktemp -d)
 
@@ -39,4 +39,6 @@ in
     ${why3find}/bin/why3find $CMD --root $FOLDER $@
 
     rm -rf $FOLDER
-  ''
+  '').overrideAttrs({
+    passthru = { inherit why3find; };
+  })
