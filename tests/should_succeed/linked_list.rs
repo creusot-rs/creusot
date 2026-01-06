@@ -1,17 +1,17 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::perm::Perm, logic::Mapping, prelude::*};
+use creusot_contracts::{ghost::perm::Perm, prelude::*};
 
-struct Cell<T> {
-    v: T,
-    next: *const Cell<T>,
+struct Link<T> {
+    value: T,
+    next: *const Link<T>,
 }
 
 pub struct List<T> {
     // actual data
-    first: *const Cell<T>,
-    last: *const Cell<T>,
+    first: *const Link<T>,
+    last: *const Link<T>,
     // ghost
-    seq: Ghost<Seq<Box<Perm<*const Cell<T>>>>>,
+    seq: Ghost<Seq<Box<Perm<*const Link<T>>>>>,
 }
 
 impl<T> Invariant for List<T> {
@@ -25,7 +25,7 @@ impl<T> Invariant for List<T> {
             (self.seq.len() > 0 &&
              self.first == *self.seq[0].ward() &&
              self.last  == *self.seq[self.seq.len() - 1].ward() &&
-             // the cells in `seq` are chained properly
+             // the links in `seq` are chained properly
              (forall<i> 0 <= i && i < self.seq.len() - 1 ==>
                  self.seq[i].val().next == *self.seq[i+1].ward()) &&
              self.seq[self.seq.len() - 1].val().next.is_null_logic())
@@ -39,14 +39,9 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            seq_map(*self.seq, |ptr_perm: Box<Perm<*const Cell<T>>>| ptr_perm.val().v)
+            (*self.seq).map(|ptr_perm: Box<Perm<*const Link<T>>>| ptr_perm.val().value)
         }
     }
-}
-
-#[logic]
-pub fn seq_map<T, U>(s: Seq<T>, f: Mapping<T, U>) -> Seq<U> {
-    Seq::create(s.len(), |i| f.get(s[i]))
 }
 
 impl<T> List<T> {
@@ -55,37 +50,37 @@ impl<T> List<T> {
         List { first: std::ptr::null(), last: std::ptr::null(), seq: Seq::new() }
     }
 
-    #[ensures((^self)@ == (*self)@.push_back(x))]
-    pub fn push_back(&mut self, x: T) {
-        let cell = Box::new(Cell { v: x, next: std::ptr::null() });
-        let (cell_ptr, cell_own) = Perm::from_box(cell);
+    #[ensures((^self)@ == (*self)@.push_back(value))]
+    pub fn push_back(&mut self, value: T) {
+        let link = Box::new(Link { value, next: std::ptr::null() });
+        let (link_ptr, link_own) = Perm::from_box(link);
         if self.last.is_null() {
-            self.first = cell_ptr;
-            self.last = cell_ptr;
+            self.first = link_ptr;
+            self.last = link_ptr;
         } else {
-            let cell_last = unsafe {
+            let link_last = unsafe {
                 Perm::as_mut(
-                    self.last as *mut Cell<T>,
+                    self.last as *mut Link<T>,
                     ghost! {
                         let off = self.seq.len_ghost() - 1int;
                         self.seq.get_mut_ghost(off).unwrap()
                     },
                 )
             };
-            cell_last.next = cell_ptr;
-            self.last = cell_ptr;
+            link_last.next = link_ptr;
+            self.last = link_ptr;
         }
-        ghost! { self.seq.push_back_ghost(cell_own.into_inner()) };
+        ghost! { self.seq.push_back_ghost(link_own.into_inner()) };
     }
 
-    #[ensures((^self)@ == (*self)@.push_front(x))]
-    pub fn push_front(&mut self, x: T) {
-        let (cell_ptr, cell_own) = Perm::new(Cell { v: x, next: self.first });
-        self.first = cell_ptr;
+    #[ensures((^self)@ == (*self)@.push_front(value))]
+    pub fn push_front(&mut self, value: T) {
+        let (link_ptr, link_own) = Perm::new(Link { value, next: self.first });
+        self.first = link_ptr;
         if self.last.is_null() {
-            self.last = cell_ptr;
+            self.last = link_ptr;
         }
-        ghost! { self.seq.push_front_ghost(cell_own.into_inner()) };
+        ghost! { self.seq.push_front_ghost(link_own.into_inner()) };
     }
 
     #[ensures(match result {
@@ -97,11 +92,11 @@ impl<T> List<T> {
             return None;
         }
         let own = ghost! { self.seq.pop_front_ghost().unwrap() };
-        let cell = unsafe { *Perm::to_box(self.first as *mut Cell<T>, own) };
-        self.first = cell.next;
+        let link = unsafe { *Perm::to_box(self.first as *mut Link<T>, own) };
+        self.first = link.next;
         if self.first.is_null() {
             self.last = std::ptr::null_mut();
         }
-        Some(cell.v)
+        Some(link.value)
     }
 }
