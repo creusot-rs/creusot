@@ -244,9 +244,8 @@ fn main() {
 
             let mut why3find = Command::new(paths.why3find());
             why3find.env("WHY3CONFIG", paths.why3_conf());
+            why3find.env("DUNE_DIR_LOCATIONS", "why3find:lib:target/creusot/");
             why3find.arg("prove").arg(file.canonicalize().unwrap());
-            why3find.arg("--root");
-            why3find.arg("target");
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }

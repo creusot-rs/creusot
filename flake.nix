@@ -145,13 +145,12 @@
           pkgs.runCommand "prelude" {
             nativeBuildInputs = [preludeBinary];
           } ''
-            mkdir -p $out/share/why3find/packages/creusot/creusot ./prelude-generator ./target/creusot
-            cp ${src}/why3find.json .
+            mkdir -p $out/share/why3find ./prelude-generator ./target/creusot
             cp ${src}/prelude-generator/*.coma ./prelude-generator
 
             CARGO_MANIFEST_DIR=./target ${preludeBinary}/bin/prelude-generator
 
-            cp ./target/creusot/*.coma $out/share/why3find/packages/creusot/creusot
+            cp -r ./target/creusot/packages $out/share/why3find/.
           '';
 
         creusot = let
@@ -206,11 +205,7 @@
         inputsFrom = [packages.creusot];
         packages = [packages.why3Framework rust.toolchain.dev];
 
-        CREUSOT_DATA_HOME = pkgs.buildEnv {
-          name = "creusot-env";
-          paths = (with packages; [prelude why3Framework]);
-        };
-
+        CREUSOT_DATA_HOME = packages.why3Framework;
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
         DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
 
