@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{ghost::perm::Perm, logic::Mapping, prelude::*};
+use creusot_contracts::{ghost::perm::Perm, prelude::*};
 
 struct Cell<T> {
     v: T,
@@ -39,14 +39,9 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            seq_map(*self.seq, |ptr_perm: Box<Perm<*const Cell<T>>>| ptr_perm.val().v)
+            (*self.seq).map(|ptr_perm: Box<Perm<*const Cell<T>>>| ptr_perm.val().v)
         }
     }
-}
-
-#[logic]
-pub fn seq_map<T, U>(s: Seq<T>, f: Mapping<T, U>) -> Seq<U> {
-    Seq::create(s.len(), |i| f.get(s[i]))
 }
 
 impl<T> List<T> {
