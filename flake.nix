@@ -209,9 +209,7 @@
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
         DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
 
-        passthru = {
-          toolchain = rust.toolchain.dev;
-        };
+        passthru = rust.toolchain.dev.passthru.availableComponents;
       };
 
       formatter = pkgs.alejandra;
