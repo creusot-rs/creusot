@@ -2,7 +2,8 @@
    It is extended with rules for highlighting Creusot annotations (requires, ensures, invariant, etc.).
 
    Build instructions:
-   1. git clone https://github.com/highlightjs/highlight.js
+   1. git clone -b third-party-first https://github.com/Lysxia/highlight.js
+      (patch to allow overriding `rust.js`)
    2. cd highlight.js
    3. ln -s /path/to/creusot/guide/highlight.js extra/creusot
    4. npm install
