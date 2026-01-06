@@ -69,7 +69,7 @@ impl CreusotPaths {
     }
 
     pub fn prelude(&self) -> PathBuf {
-        self.data_dir().join("_opam/share/why3find/packages/creusot")
+        self.data_dir().join("share/why3find")
     }
 }
 
