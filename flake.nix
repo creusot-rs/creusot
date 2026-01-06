@@ -26,11 +26,6 @@
       overlays = [rust-overlay.overlays.default];
       pkgs = import nixpkgs {inherit overlays system;};
 
-      tools = {
-        gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-        unfree = tools.gpl ++ (with lib.pkgs; [alt-ergo]);
-      };
-
       pins = {
         why3 = {
           version = "51e0579b3561f51a305069042dd9fba56154e600";
@@ -110,7 +105,12 @@
             || (builtins.match ".*/*.stderr" path != null);
         };
       in {
-        tools = let
+        why3Framework = let
+          licence = {
+            gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
+            unfree = licence.gpl ++ (with lib.pkgs; [alt-ergo]);
+          };
+
           why3json = pkgs.writeTextFile {
             destination = "/why3find.json";
             name = "why3find.json";
@@ -118,8 +118,8 @@
           };
         in
           pkgs.symlinkJoin {
-            name = "creusot-tools";
-            paths = tools.unfree ++ [why3json];
+            name = "creusot-why3";
+            paths = licence.unfree ++ [why3json];
             postBuild = "ln -s $out $out/creusot";
           };
 
@@ -145,13 +145,13 @@
           pkgs.runCommand "prelude" {
             nativeBuildInputs = [preludeBinary];
           } ''
-            mkdir -p $out/{creusot,prelude-generator,target/creusot}
-            cp ${src}/why3find.json $out
-            find ${src}/prelude-generator -name "*.coma" -exec cp {} $out/prelude-generator \;
+            mkdir -p $out/share/why3find/packages/creusot/creusot ./prelude-generator ./target/creusot
+            cp ${src}/why3find.json .
+            cp ${src}/prelude-generator/*.coma ./prelude-generator
 
-            CARGO_MANIFEST_DIR=$out/target ${preludeBinary}/bin/prelude-generator
-            find $out/target -name "*.coma" -exec mv {} $out/creusot \;
-            rm -rf $out/prelude-generator $out/target $out/why3find.json
+            CARGO_MANIFEST_DIR=./target ${preludeBinary}/bin/prelude-generator
+
+            cp ./target/creusot/*.coma $out/share/why3find/packages/creusot/creusot
           '';
 
         creusot = let
@@ -190,20 +190,21 @@
 
         default = pkgs.buildEnv {
           name = "creusot-env";
-          paths = [pkgs.gcc packages.creusot packages.tools rust.toolchain.build];
+          paths =
+            [pkgs.gcc rust.toolchain.build]
+            ++ (with packages; [creusot prelude why3Framework]);
 
           nativeBuildInputs = [pkgs.makeWrapper];
           postBuild = ''
             wrapProgram $out/bin/cargo-creusot \
-              --set CREUSOT_DATA_HOME "${packages.tools}" \
-              --set CREUSOT_PRELUDE "${packages.prelude}"
+              --set CREUSOT_DATA_HOME "$out"
           '';
         };
       };
 
       devShells.default = pkgs.mkShell {
         inputsFrom = [packages.creusot];
-        packages = [packages.tools rust.toolchain.dev];
+        packages = [packages.why3Framework rust.toolchain.dev];
 
         CREUSOT_DATA_HOME = packages.tools;
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
