@@ -55,7 +55,10 @@ use petgraph::{
     graph,
     visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
 };
-use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
 use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir::{self, visit::Visitor},
@@ -337,10 +340,17 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         for bound in bounds {
             let Some(clause) = bound.as_trait_clause() else { continue };
             let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
-
+            if !matches!(ctx.def_kind(trait_ref.def_id), DefKind::Trait) {
+                // Some bounds can be trait aliases and we skip them.
+                // The implied bounds should already appear separately.
+                continue;
+            }
             // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
             // used by this trait solving, including those that are used indirectly.
             for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
+                if !matches!(ctx.def_kind(item), DefKind::AssocFn) {
+                    continue;
+                }
                 let TraitResolved::Instance { def: (item_id, _), impl_ } =
                     TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
                 else {
