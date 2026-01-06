@@ -118,6 +118,7 @@ fn main() {
         sessiondir.set_file_name(file.file_stem().unwrap());
 
         let output;
+        let library = paths.prelude().join("packages/creusot").display().to_string();
         let mut why3 = Command::new(paths.why3());
         why3.arg("-C").arg(paths.why3_conf());
         why3.arg("--warn-off=unused_variable");
@@ -180,7 +181,7 @@ fn main() {
 
             // There is a session directory. Try to replay the session.
             why3.arg("replay");
-            why3.args(&["-L", "target/"]);
+            why3.args(&["-L", &library]);
             why3.arg(sessiondir.clone());
 
             output = why3.ok();
@@ -217,7 +218,7 @@ fn main() {
         } else if header_line.contains("NO_REPLAY") {
             // Simply parse the file using "why3 prove".
             why3.arg("prove");
-            why3.args(&["-L", "target/", "-F", "coma"]);
+            why3.args(&["-L", &library, "-F", "coma"]);
             why3.arg(file);
             output = why3.ok();
             if output.is_ok() && !args.quiet {
