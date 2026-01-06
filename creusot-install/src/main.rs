@@ -114,6 +114,7 @@ fn install(args: Args) -> anyhow::Result<()> {
 
 fn create_dirs(paths: &CreusotPaths) -> anyhow::Result<()> {
     fs::create_dir_all(&paths.config_dir())?;
+    fs::create_dir_all(&paths.prelude().join("packages/creusot/creusot"))?;
     fs::create_dir_all(&paths.bin())?;
     Ok(())
 }
@@ -204,15 +205,19 @@ fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()>
 
 fn install_prelude(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
     println!("Installing prelude...");
-    run(&mut Command::new(paths.why3find())
-        .current_dir("target")
-        .args(["install", "--global", "creusot"]))?;
+    let out_dir = &paths.prelude().join("packages/creusot/creusot");
+    for entry in fs::read_dir(&PathBuf::from("target/creusot/packages/creusot/creusot"))? {
+        let entry = entry?;
+        assert!(entry.file_type()?.is_file());
+
+        fs::copy(entry.path(), out_dir.join(&entry.file_name()))?;
+    }
     Ok(())
 }
 
 fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     // Default why3find.json for `cargo creusot new`.
-    fs::copy("creusot-install/why3find.json", paths.data_dir().join("why3find.json"))?;
+    fs::copy("why3find.json", paths.data_dir().join("why3find.json"))?;
     generate_why3_conf(paths, args.provers_parallelism)?;
     Ok(())
 }
