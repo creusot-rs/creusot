@@ -58,7 +58,7 @@
         };
 
         creusot = {
-          version = "0.7.0";
+          inherit ((pkgs.lib.importTOML ./Cargo.toml).workspace.package) version;
 
           meta = with pkgs.lib; {
             homepage = "https://github.com/creusot-rs/creusot";
@@ -206,7 +206,11 @@
         inputsFrom = [packages.creusot];
         packages = [packages.why3Framework rust.toolchain.dev];
 
-        CREUSOT_DATA_HOME = packages.tools;
+        CREUSOT_DATA_HOME = pkgs.buildEnv {
+          name = "creusot-env";
+          paths = (with packages; [prelude why3Framework]);
+        };
+
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
         DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
 
