@@ -12,7 +12,7 @@ fn main() -> anyhow::Result<()> {
 
     // Get the path  to the crate directory
     let crate_dirpath = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
-    let tgt_prelude_dirpath = crate_dirpath.join("..").join("target").join("creusot");
+    let tgt_prelude_dirpath = crate_dirpath.join("../target/creusot/packages/creusot/creusot");
     create_dir_all(&tgt_prelude_dirpath)?;
 
     let src_prelude_dirpath = crate_dirpath.join("..").join("prelude-generator");
@@ -31,12 +31,6 @@ fn main() -> anyhow::Result<()> {
         tgt_prelude_dirpath.join("prelude.coma"),
     )?;
     copy_if_newer(src_prelude_dirpath.join("float.coma"), tgt_prelude_dirpath.join("float.coma"))?;
-
-    // Copy why3find conf in target directory
-    copy_if_newer(
-        crate_dirpath.join("..").join("why3find.json"),
-        crate_dirpath.join("..").join("target").join("why3find.json"),
-    )?;
 
     Ok(())
 }

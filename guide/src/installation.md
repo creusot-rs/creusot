@@ -61,9 +61,9 @@ nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/
     TOOLCHAIN=$(grep "nightly-[0-9-]*" --only-matching rust-toolchain)
     cargo install --path cargo-creusot --root $XDG_DATA_HOME/creusot/toolchain/$TOOLCHAIN/bin
 
-    # Install the Creusot prelude with Why3find
+    # Install the Creusot prelude
     cargo run --bin prelude-generator
-    (cd target && why3find install --global creusot)
+    cp -rT target/creusot/packages $XDG_DATA_HOME/creusot/packages
 
     # Copy why3find.json in the installation directory
     cp cargo-install/why3find.json $XDG_DATA_HOME/creusot/why3find.json
@@ -98,9 +98,7 @@ Everything Creusot needs to run.
     - `why3find.json`, which is used to create new Creusot projects with
         `cargo creusot new` or `cargo creusot init`.
 
-- The Creusot prelude, a Why3find package
-    (with the local switch from the Quick installation, on Linux,
-    the prelude is located at `~/.local/share/creusot/_opam/lib/why3find/package/creusot`).
+    - `packages/creusot/creusot/`: the Creusot prelude (a Coma library).
 
 ## Why3
 

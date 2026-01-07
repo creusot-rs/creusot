@@ -26,11 +26,6 @@
       overlays = [rust-overlay.overlays.default];
       pkgs = import nixpkgs {inherit overlays system;};
 
-      tools = {
-        gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-        unfree = tools.gpl ++ (with lib.pkgs; [alt-ergo]);
-      };
-
       pins = {
         why3 = {
           version = "51e0579b3561f51a305069042dd9fba56154e600";
@@ -63,7 +58,7 @@
         };
 
         creusot = {
-          version = "0.7.0";
+          inherit ((pkgs.lib.importTOML ./Cargo.toml).workspace.package) version;
 
           meta = with pkgs.lib; {
             homepage = "https://github.com/creusot-rs/creusot";
@@ -73,12 +68,25 @@
       };
 
       rust = let
-        rustToolchain = (pkgs.lib.importTOML ./rust-toolchain).toolchain;
+        inherit ((pkgs.lib.importTOML ./rust-toolchain).toolchain) channel components;
+        devComponents = ["clippy" "rust-analyzer" "rust-src" "rustfmt"];
+
+        mkRustToolchain = components: let
+          toolchain = {
+            inherit channel components;
+            profile = "minimal";
+          };
+        in
+          pkgs.rust-bin.fromRustupToolchain toolchain;
       in {
         lib = crane.mkLib pkgs;
 
-        toolchain = pkgs.rust-bin.fromRustupToolchain rustToolchain;
-        env = rust.lib.overrideToolchain rust.toolchain;
+        toolchain = {
+          build = mkRustToolchain components;
+          dev = mkRustToolchain (components ++ devComponents);
+        };
+
+        envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
       };
     in rec {
       inherit lib;
@@ -93,10 +101,16 @@
             || (builtins.match ".*/rust-toolchain" path != null)
             || (builtins.match ".*/messages.ftl" path != null)
             || (builtins.match ".*/*.coma" path != null)
-            || (builtins.match ".*/*.json" path != null);
+            || (builtins.match ".*/*.json" path != null)
+            || (builtins.match ".*/*.stderr" path != null);
         };
       in {
-        tools = let
+        why3Framework = let
+          licence = {
+            gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
+            unfree = licence.gpl ++ (with lib.pkgs; [alt-ergo]);
+          };
+
           why3json = pkgs.writeTextFile {
             destination = "/why3find.json";
             name = "why3find.json";
@@ -104,8 +118,8 @@
           };
         in
           pkgs.symlinkJoin {
-            name = "creusot-tools";
-            paths = tools.unfree ++ [why3json];
+            name = "creusot-why3";
+            paths = licence.unfree ++ [why3json];
             postBuild = "ln -s $out $out/creusot";
           };
 
@@ -116,31 +130,27 @@
           pname = "prelude-generator";
           cargoExtraArgs = "--bin prelude-generator";
 
-          cargoArtifacts = rust.env.buildDepsOnly {
+          cargoArtifacts = rust.envBuilder.buildDepsOnly {
             inherit (pins.creusot) meta version;
             inherit cargoExtraArgs pname src;
           };
 
-          preludeBinary = rust.env.buildPackage {
+          preludeBinary = rust.envBuilder.buildPackage {
             inherit cargoArtifacts cargoExtraArgs meta pname src version;
 
-            buildInputs = [rust.toolchain];
             nativeBuildInputs = with pkgs;
               lib.optionals stdenv.isDarwin [libiconv libzip];
-
-            doCheck = false;
           };
         in
           pkgs.runCommand "prelude" {
             nativeBuildInputs = [preludeBinary];
           } ''
-            mkdir -p $out/{creusot,prelude-generator,target/creusot}
-            cp ${src}/why3find.json $out
-            find ${src}/prelude-generator -name "*.coma" -exec cp {} $out/prelude-generator \;
+            mkdir -p $out/share/why3find ./prelude-generator ./target/creusot
+            cp ${src}/prelude-generator/*.coma ./prelude-generator
 
-            CARGO_MANIFEST_DIR=$out/target ${preludeBinary}/bin/prelude-generator
-            find $out/target -name "*.coma" -exec mv {} $out/creusot \;
-            rm -rf $out/prelude-generator $out/target $out/why3find.json
+            CARGO_MANIFEST_DIR=./target ${preludeBinary}/bin/prelude-generator
+
+            cp -r ./target/creusot/packages $out/share/why3find/.
           '';
 
         creusot = let
@@ -149,19 +159,17 @@
           pname = "cargo-creusot";
           cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
         in
-          rust.env.buildPackage rec {
+          rust.envBuilder.buildPackage rec {
             inherit cargoExtraArgs meta pname src version;
 
-            buildInputs = [rust.toolchain];
             nativeBuildInputs = with pkgs;
               [makeWrapper]
               ++ lib.optionals stdenv.isDarwin [libiconv libzip];
 
-            cargoArtifacts = rust.env.buildDepsOnly {
+            cargoArtifacts = rust.envBuilder.buildDepsOnly {
               inherit cargoExtraArgs meta pname src version;
             };
 
-            doCheck = false;
             doNotRemoveReferencesToRustToolchain = true;
 
             postInstall = with lib.strings; ''
@@ -174,31 +182,34 @@
                 --set CREUSOT_RUSTC $out/bin/creusot-rustc \
 
               wrapProgram $out/bin/creusot-rustc \
-                --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}" \
-                --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [rust.toolchain]}"
+                --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}" \
+                --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}"
             '';
           };
 
         default = pkgs.buildEnv {
           name = "creusot-env";
-          paths = [pkgs.gcc packages.creusot packages.tools rust.toolchain];
+          paths =
+            [pkgs.gcc rust.toolchain.build]
+            ++ (with packages; [creusot prelude why3Framework]);
 
           nativeBuildInputs = [pkgs.makeWrapper];
           postBuild = ''
             wrapProgram $out/bin/cargo-creusot \
-              --set CREUSOT_DATA_HOME "${packages.tools}" \
-              --set CREUSOT_PRELUDE "${packages.prelude}"
+              --set CREUSOT_DATA_HOME "$out"
           '';
         };
       };
 
       devShells.default = pkgs.mkShell {
         inputsFrom = [packages.creusot];
-        packages = [packages.tools];
+        packages = [packages.why3Framework rust.toolchain.dev];
 
-        CREUSOT_DATA_HOME = packages.tools;
-        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
-        DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain];
+        CREUSOT_DATA_HOME = packages.why3Framework;
+        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+        DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+
+        passthru = rust.toolchain.dev.passthru.availableComponents;
       };
 
       formatter = pkgs.alejandra;

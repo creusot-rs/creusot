@@ -86,6 +86,7 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     path.push(":");
     path.push(std::env::var("PATH").unwrap());
     why3find.env("PATH", path);
+    why3find.env("DUNE_DIR_LOCATIONS", format!("why3find:lib:{}", paths.prelude().display()));
     why3find
         .env("WHY3CONFIG", &paths.why3_conf())
         .status()
