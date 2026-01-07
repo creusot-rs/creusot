@@ -342,8 +342,7 @@ impl<T> Seq<T> {
     /// Returns `true` if:
     /// - `self` and `other` have the same length
     /// - `start` and `end` are in bounds (between `0` and `self.len()` included)
-    /// - Every element of `self` between `start` (included) and `end` (excluded) can
-    ///   also be found in `other` between `start` and `end`, and vice-versa
+    /// - Every element occurs as many times in `self[start..end]` as in `other[start..end]`.
     #[logic]
     #[builtin("seq.Permut.permut")]
     pub fn permut(self, other: Self, start: Int, end: Int) -> bool {
