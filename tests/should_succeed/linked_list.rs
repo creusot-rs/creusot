@@ -45,11 +45,13 @@ impl<T> View for List<T> {
 }
 
 impl<T> List<T> {
+    #[check(ghost)]
     #[ensures(result@ == Seq::empty())]
     pub fn new() -> List<T> {
         List { first: std::ptr::null(), last: std::ptr::null(), seq: Seq::new() }
     }
 
+    #[check(terminates)]
     #[ensures((^self)@ == (*self)@.push_back(value))]
     pub fn push_back(&mut self, value: T) {
         let link = Box::new(Link { value, next: std::ptr::null() });
@@ -73,6 +75,7 @@ impl<T> List<T> {
         ghost! { self.seq.push_back_ghost(link_own.into_inner()) };
     }
 
+    #[check(terminates)]
     #[ensures((^self)@ == (*self)@.push_front(value))]
     pub fn push_front(&mut self, value: T) {
         let (link_ptr, link_own) = Perm::new(Link { value, next: self.first });
@@ -83,6 +86,7 @@ impl<T> List<T> {
         ghost! { self.seq.push_front_ghost(link_own.into_inner()) };
     }
 
+    #[check(terminates)]
     #[ensures(match result {
         None => (*self)@ == Seq::empty() && (^self)@ == Seq::empty(),
         Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.pop_front()
