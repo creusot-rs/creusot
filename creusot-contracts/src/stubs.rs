@@ -42,14 +42,14 @@ pub fn implication(_: bool, _: bool) -> bool {
 
 #[logic(opaque)]
 #[intrinsic("old")]
-pub fn old<T: ?Sized>(_: T) -> &'static T {
+pub fn old<'a, T: ?Sized>(_: T) -> &'a T {
     dead
 }
 
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
-pub fn dead<T: ?Sized>() -> &'static T {
+pub fn dead<'a, T: ?Sized>() -> &'a T {
     dead
 }
 
