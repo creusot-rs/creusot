@@ -222,13 +222,18 @@ jobs:
     - name: test no_std build
       run: |
         set -x
-        rustup target add x86_64-unknown-none
+        TLC=$(rustup show active-toolchain | cut -d " " -f1)
+        rustup component add --toolchain $TLC rustfmt
+        rustup component add --toolchain $TLC rust-src
+        rustup target add thumbv7em-none-eabi
         cd ..
         cargo creusot new test-project-nostd --no-std --creusot-contracts ../creusot/creusot-contracts
         cd test-project-nostd
+        echo $TLC > rust-toolchain
         cargo fmt --check
-        cargo build -Zbuild-std --target x86_64-unknown-none
+        cargo build 
+        cargo build --target thumbv7em-none-eabi -Zbuild-std=core,alloc
         cargo creusot prove
-        cargo creusot prove -- --target x86_64-unknown-none
+        cargo creusot prove -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
     - name: Minimize Opam cache
       run: opam clean --all-switches --download-cache --logs --repo-cache
