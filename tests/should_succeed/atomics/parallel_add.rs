@@ -74,8 +74,8 @@ pub fn parallel_add(mut tokens: Ghost<Tokens>) {
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { #[check(ghost)] |c: &mut Committer| {
-                    inv.open(tokens.into_inner(), #[check(ghost)] |inv: &mut ParallelAddAtomicInv| {
+                ghost! { |c: &mut Committer| {
+                    inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth1.update(*frag1, snapshot!((Some(Excl(true)), Some(Excl(true)))));
                         c.shoot(&mut inv.own);
                     })
@@ -86,8 +86,8 @@ pub fn parallel_add(mut tokens: Ghost<Tokens>) {
         let t2 = s.spawn(move |tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { #[check(ghost)] |c: &mut Committer| {
-                    inv.open(tokens.into_inner(), #[check(ghost)] |inv: &mut ParallelAddAtomicInv| {
+                ghost! { |c: &mut Committer| {
+                    inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth2.update(*frag2, snapshot!((Some(Excl(true)), Some(Excl(true)))));
                         c.shoot(&mut inv.own);
                     })

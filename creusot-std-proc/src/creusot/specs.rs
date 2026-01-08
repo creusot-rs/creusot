@@ -173,25 +173,14 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
     }
     let item = tokens.clone();
     let item = parse_macro_input!(item as ContractSubject);
-    let is_closure = if ghost {
-        match item {
-            ContractSubject::FnOrMethod(fn_or_method) => {
-                if let Some(def) = fn_or_method.defaultness {
-                    return syn::Error::new(
-                        def.span(),
-                        "`ghost` functions cannot use the `default` modifier",
-                    )
-                    .into_compile_error()
-                    .into();
-                } else {
-                    false
-                }
-            }
-            ContractSubject::Closure(_) => true,
-        }
-    } else {
-        false
-    };
+    if ghost
+        && let ContractSubject::FnOrMethod(fn_or_method) = &item
+        && let Some(def) = &fn_or_method.defaultness
+    {
+        return syn::Error::new(def.span(), "`ghost` functions cannot use the `default` modifier")
+            .into_compile_error()
+            .into();
+    }
 
     let Attributes { attrs, rest } = syn::parse(tokens).unwrap();
     let mut result = quote! {
@@ -200,7 +189,7 @@ pub fn check(args: TS1, tokens: TS1) -> TS1 {
         #documentation
         #rest
     };
-    if is_closure {
+    if ghost && let ContractSubject::Closure(_) = item {
         // Implement `FnGhost` on the closure
         result = quote! {
             ::creusot_std::ghost::FnGhostWrapper::__new(#result)
