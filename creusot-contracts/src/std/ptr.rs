@@ -6,6 +6,9 @@ use crate::{
 };
 use core::ptr::*;
 
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 /// Metadata of a pointer in logic.
 ///
 /// [`std::ptr::metadata`] in logic.

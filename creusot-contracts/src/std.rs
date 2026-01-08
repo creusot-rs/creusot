@@ -1,6 +1,7 @@
 //! Specifications for the `std` crate
 mod array;
 mod borrow;
+mod boxed;
 pub mod cell;
 pub mod char;
 pub mod clone;
@@ -18,16 +19,16 @@ pub mod option;
 pub mod panicking;
 pub mod ptr;
 pub mod range;
+pub mod rc;
 pub mod result;
 pub mod slice;
 pub mod string;
 pub mod time;
 mod tuples;
+pub mod vec;
 
 // Every std-dependent part of the Creusot Standard Library must be disabled when
 // compiling with [no_std].
-#[cfg(feature = "std")]
-pub mod boxed;
 
 #[cfg(feature = "std")]
 pub mod collections {
@@ -42,10 +43,4 @@ pub mod deque;
 pub mod io;
 
 #[cfg(feature = "std")]
-pub mod rc;
-
-#[cfg(feature = "std")]
 mod sync;
-
-#[cfg(feature = "std")]
-pub mod vec;

@@ -73,6 +73,8 @@
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 extern crate creusot_contracts_proc as base_macros;
 extern crate self as creusot_contracts;
 

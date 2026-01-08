@@ -4,7 +4,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub trait Container {
     type Value: ?Sized;

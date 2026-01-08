@@ -1,7 +1,8 @@
 use crate::prelude::*;
+use alloc::{boxed::Box, rc::Rc};
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
-use std::{ops::Deref, rc::Rc};
+use core::ops::Deref;
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
@@ -22,7 +23,7 @@ impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
 }
 
 extern_spec! {
-    mod std {
+    mod alloc {
         mod rc {
             impl<T> Rc<T> {
                 #[check(ghost)]

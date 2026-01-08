@@ -9,6 +9,9 @@ use crate::{
 };
 use core::cell::UnsafeCell;
 
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
+
 /// Cell with ghost permissions
 ///
 /// When writing/reading the cell, you need to explicitly pass a [`Perm`] object.
