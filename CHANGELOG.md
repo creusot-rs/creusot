@@ -4,13 +4,36 @@ Following is the changelog of Creusot, a verification tool for safe Rust program
 
 Creusot allows you to annotate your code using *contracts* which describe correctness conditions for your program. Creusot then uses SMT solvers to check that these contracts hold for all possible runs of the program. All of this is done statically without running your program, and contracts are erased at compilation time.
 
-Creusot is currently best suited for the verification of code like data-structures or algorithm implementations, and less so for systems which interact heavily with the outside world or exploit concurrency. Notable projects using Creusot include the [CreuSAT](https://github.com/sarsko/creusat) verified SAT solver and the [Sprout](https://github.com/xldenis/cdsat) SMT solver.
+Creusot is currently best suited for the verification of code like data-structures or algorithm implementations, and less so for systems which interact heavily with the outside world. Notable projects using Creusot include the [CreuSAT](https://github.com/sarsko/creusat) verified SAT solver and the [Sprout](https://github.com/xldenis/cdsat) SMT solver.
 
 **Creusot is still very experimental software, you should expect some obscure crashes and missing features.**
 
 <!-- next-header -->
 
-## [Unreleased] - ReleaseDate
+## [Unreleased] - 2026-01-10
+
+### New features
+
+- [**Loop invariants: infer type invariants**](https://github.com/creusot-rs/creusot/pull/1854)
+- [Rename creusot-contracts to creusot-std](https://github.com/creusot-rs/creusot/pull/1868)
+- [**Operations on `AtomicI32`**](https://github.com/creusot-rs/creusot/pull/1844)
+- [**Ensure compatibility with `#![no_std]` projects**](https://github.com/creusot-rs/creusot/pull/1855)
+- [Support ranges in `IndexLogic`](https://github.com/creusot-rs/creusot/pull/1858)
+- [Refactor permission types](https://github.com/creusot-rs/creusot/pull/1859): add `Perm` type that factors out common logic between `PtrOwn` and `PermCellOwn`.
+    - Rename `PtrOwn<T>` to `Perm<*const T>`
+    - Rename `PermCellOwn` to `Perm<PermCell<T>>`
+    - Rename `PtrOwn::ptr` and `PermCellOwn::id` to `Perm::ward`
+- [Add `impl FromIteratorSpec<()> for ()`](https://github.com/creusot-rs/creusot/pull/1861)
+- [Make the Why3 IDE strategy copy the Why3find strategy](https://github.com/creusot-rs/creusot/pull/1875)
+
+### Install
+
+- [Remove why3find install](https://github.com/creusot-rs/creusot/pull/1864): change the install location of the prelude
+
+### Bugfix
+
+- [Fix `check(terminates)` in the presence of trait aliases](https://github.com/creusot-rs/creusot/pull/1867)
+- [Add inline to `MapInv` and `Map` logic methods](https://github.com/creusot-rs/creusot/pull/1873)
 
 ## [0.8.0] - 2025-12-12
 
