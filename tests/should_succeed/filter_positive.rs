@@ -24,8 +24,8 @@
 // policy, and its supports in Creusot, this separation comes here for
 // free.
 
-extern crate creusot_contracts;
-use creusot_contracts::prelude::{vec, *};
+extern crate creusot_std;
+use creusot_std::prelude::{vec, *};
 
 // number of positive elements of `t` between `i` (included) and `j`
 // (excluded)

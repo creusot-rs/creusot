@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn test_array() {
     let mut a = [1, 2].iter();

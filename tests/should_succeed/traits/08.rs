@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{logic::Int, prelude::*};
+use creusot_std::{logic::Int, prelude::*};
 
 // Ensure that different kinds of functions are translated to the
 // correct abstract symbol in Rust

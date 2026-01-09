@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 pub fn f<T: ?Sized>(p: *const T) {
     proof_assert!(p == (p as *mut T) as *const T)

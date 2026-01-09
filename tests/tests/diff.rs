@@ -115,7 +115,7 @@ fn normalize_spans(s: &str) -> String {
 
 /// Replace relative paths to the cargo registry with an absolute path, and strip the hash.
 ///
-/// For now this is only used when testing creusot-contracts.
+/// For now this is only used when testing creusot-std.
 fn normalize_cargo_paths(input: &str) -> String {
     static CARGO_REGISTRY: LazyLock<Regex> = LazyLock::new(|| {
         regex::Regex::new(r"(\.\.\/)*.cargo\/registry\/src\/index\.crates\.io-[a-zA-Z0-9]*")

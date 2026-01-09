@@ -880,7 +880,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 }
 
-/// Analysis to run from crates that don't have access to creusot-contracts.
+/// Analysis to run from crates that don't have access to creusot-std.
 // TODO: this will be used very soon
 #[allow(dead_code)]
 pub(crate) fn run_without_specs<'a, 'tcx>(
@@ -900,7 +900,7 @@ pub(crate) fn run_without_specs<'a, 'tcx>(
     analysis.data
 }
 
-/// Analysis to run from crates that use creusot-contracts.
+/// Analysis to run from crates that use creusot-std.
 pub(crate) fn run_with_specs<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     body: &BodyWithBorrowckFacts<'tcx>,

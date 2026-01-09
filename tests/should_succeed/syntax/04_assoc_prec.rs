@@ -1,8 +1,8 @@
 // NO_REPLAY
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 // TODO: these could be unit tests in the why3 crate
 

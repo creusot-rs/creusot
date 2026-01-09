@@ -1,3 +1,3 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn meta(_x: usize) {}

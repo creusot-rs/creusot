@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 pub fn test_mut_ref() {
     let mut a = [1, 2].iter();

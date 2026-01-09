@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::FMap, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::FMap, prelude::*};
 
 pub fn ghost_map() {
     let mut map = FMap::<i32, i32>::new();

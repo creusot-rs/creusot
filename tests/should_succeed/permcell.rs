@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{cell::PermCell, prelude::*};
+extern crate creusot_std;
+use creusot_std::{cell::PermCell, prelude::*};
 
 #[ensures(result@ == 3)]
 pub fn foo() -> i32 {

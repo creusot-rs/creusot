@@ -72,7 +72,7 @@ fn swap() {
 
 To determine the invariant of a particular type, Creusot considers:
 
-- User-provided definitions, defined with the [`Invariant`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/invariant/trait.Invariant.html) trait.
+- User-provided definitions, defined with the [`Invariant`](https://creusot-rs.github.io/creusot/doc/creusot_std/invariant/trait.Invariant.html) trait.
 - Invariants that can be derived automatically based on the type's definition.
 
 The second category is called _structural invariants_.

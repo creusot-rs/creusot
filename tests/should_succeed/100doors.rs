@@ -12,8 +12,8 @@
 //! +   Absence of integer overflows
 //! +   Absence of array access out of bounds
 
-extern crate creusot_contracts;
-use creusot_contracts::prelude::{vec, *};
+extern crate creusot_std;
+use creusot_std::prelude::{vec, *};
 
 pub fn f() {
     let mut door_open: Vec<bool> = vec![false; 100];

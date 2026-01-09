@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[ensures((^v)@.len() == v@.len())]
 #[ensures(forall<i> 0 <= i && i < v@.len() ==> (^v)[i] == v[i])]

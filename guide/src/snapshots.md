@@ -1,6 +1,6 @@
 # Snapshots
 
-A useful tool to have in proofs is the `Snapshot<T>` type (`creusot_contracts::Snapshot`). `Snapshot<T>` is:
+A useful tool to have in proofs is the `Snapshot<T>` type (`creusot_std::Snapshot`). `Snapshot<T>` is:
 
 - a zero-sized-type
 - created with the `snapshot!` macro

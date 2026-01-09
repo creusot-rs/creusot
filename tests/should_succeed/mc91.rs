@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[ensures(x <= 100u32 ==> result@ == 91 &&
     x > 100u32 ==> result@ == x@ - 10)]

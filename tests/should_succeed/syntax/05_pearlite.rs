@@ -1,7 +1,7 @@
 // NO_REPLAY
 
-extern crate creusot_contracts;
-use creusot_contracts::{logic::Mapping, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::Mapping, prelude::*};
 
 // Test postfix model operator
 

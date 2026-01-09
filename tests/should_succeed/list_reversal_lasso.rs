@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{logic::ops::IndexLogic, prelude::*};
+use creusot_std::{logic::ops::IndexLogic, prelude::*};
 use std::ops::{Index, IndexMut};
 
 /* Memory model */

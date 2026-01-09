@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn float_operation() -> f32 {
     let x: f32 = 0.0;

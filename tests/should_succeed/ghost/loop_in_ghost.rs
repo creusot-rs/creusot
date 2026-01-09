@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[ensures(*result == x)]
 pub fn foo(x: u32) -> Ghost<u32> {

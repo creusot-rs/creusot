@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::Seq, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::Seq, prelude::*};
 
 pub fn ghost_arg(g: Snapshot<u32>) {
     let _x: Snapshot<u32> = snapshot! { *g };

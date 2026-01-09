@@ -1,7 +1,7 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
-// Fails because its already defined in `creusot-contracts`
+// Fails because its already defined in `creusot-std`
 extern_spec! {
     mod std {
         mod vec {

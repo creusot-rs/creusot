@@ -1,6 +1,6 @@
 // NO_REPLAY
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 fn generic_closure<A, B, F: Fn(A) -> B>(f: F, a: A) -> B {
     f(a)

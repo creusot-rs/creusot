@@ -111,7 +111,7 @@ impl From<Symbol> for String {
 /// and deserialize them in a different process with a new `FRESH_COUNTER`,
 /// we could end up with the same `Ident` from different crates, for example
 /// if `f` from a user's crate depends on a function `f` with the same name
-/// in `creusot_contracts`. That's why `Ident` also contains a `src` field,
+/// in `creusot_std`. That's why `Ident` also contains a `src` field,
 /// which is the name of the crate that created the identifier, which will be
 /// different from the crate that deserializes it.
 /// The `src` field is only used for disambiguation; it is not part of the

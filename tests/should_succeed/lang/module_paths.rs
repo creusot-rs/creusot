@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // Check that module paths are properly printed in coma.
 

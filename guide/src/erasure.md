@@ -40,10 +40,10 @@ The `#[erasure]` check performs the following operations.
 
 Additional rules for pointers:
 
-- [`Perm::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
-- [`Perm::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
-- [`Perm::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
-- [`Perm::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Perm.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
+- [`Perm::as_ref(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Perm.html#method.as_ref) erases to `&*ptr` (pointer-to-reference coercion).
+- [`Perm::as_mut(ptr)`](https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Perm.html#method.as_mut) erases to `&mut *ptr` (pointer-to-reference coercion).
+- [`Perm::from_ref(r)`](https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Perm.html#method.from_ref) erases to `r as *const T` (reference-to-pointer coercion).
+- [`Perm::from_mut(r)`](https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Perm.html#method.from_mut) erases to `r as *mut T` (reference-to-pointer coercion).
 
 ## Example
 
@@ -197,8 +197,8 @@ Ghost functions are those that may appear outside of ghost blocks
 but are completely eraseable. The main examples are [`Ghost::split`][ghost-split]
 and [`Ghost::borrow`][ghost-borrow]. They are identified by the attribute `#[erasure(_)]`.
 
-[ghost-split]: https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Ghost.html#method.split
-[ghost-borrow]: https://creusot-rs.github.io/creusot/doc/creusot_contracts/ghost/struct.Ghost.html#method.borrow
+[ghost-split]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Ghost.html#method.split
+[ghost-borrow]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Ghost.html#method.borrow
 
 ```rust
 #[trusted]

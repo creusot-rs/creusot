@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{
+extern crate creusot_std;
+use creusot_std::{
     cell::PermCell,
     ghost::{
         local_invariant::{

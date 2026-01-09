@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // Broken because of trait generics
 pub trait A {

@@ -183,7 +183,7 @@ fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BodyWithBorrowckFact
     })
 }
 
-/// Callback for libraries that don't depend on creusot-contracts, to store metadata needed in later passes
+/// Callback for libraries that don't depend on creusot-std, to store metadata needed in later passes
 pub struct WithoutContracts {
     opts: Options,
 }

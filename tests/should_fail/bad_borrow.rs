@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 fn bad_borrow() {
     let mut x = 0;

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 pub trait One: Sized {
     #[logic]
@@ -20,7 +20,7 @@ pub trait Tr: Sized {
 
 mod m {
     use crate::{One, Tr};
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
 
     impl<T> Tr for T {
         #[logic(law)]

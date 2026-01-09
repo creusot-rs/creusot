@@ -1,8 +1,8 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 mod m {
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
 
     pub struct S<A, B> {
         pub a: A,

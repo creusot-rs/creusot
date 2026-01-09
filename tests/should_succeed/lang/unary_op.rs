@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // Simple check that unary operators can be translated
 pub fn f() {

@@ -126,9 +126,7 @@ fn main() {
         why3.arg("--warn-off=axiom_abstract");
         why3.arg("--debug=coma_no_trivial,stack_trace");
 
-        if header_line.contains("WHY3PROVE")
-            || file.file_name().unwrap() == "creusot-contracts.coma"
-        {
+        if header_line.contains("WHY3PROVE") || file.file_name().unwrap() == "creusot-std.coma" {
             if sessiondir.join("proof.json").is_file() {
                 write!(out, "{current}").unwrap();
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();

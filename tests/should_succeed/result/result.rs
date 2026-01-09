@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn test_result() {
     let mut ok: Result<i32, i32> = Ok(1);

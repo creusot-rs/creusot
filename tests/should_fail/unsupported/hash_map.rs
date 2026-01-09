@@ -1,7 +1,7 @@
 // WHY3PROVE
-extern crate creusot_contracts;
+extern crate creusot_std;
 use ::std::collections::HashMap;
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 pub struct Foo(HashMap<u64, u8>);
 

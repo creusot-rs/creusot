@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub struct MyType(pub Option<u32>);
 

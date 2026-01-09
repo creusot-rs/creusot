@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 use ::std::rc::Rc;
-use creusot_contracts::{cell::PermCell, ghost::perm::Perm, prelude::*};
+use creusot_std::{cell::PermCell, ghost::perm::Perm, prelude::*};
 
 pub struct Node<T> {
     next: Rc<PermCell<List<T>>>,

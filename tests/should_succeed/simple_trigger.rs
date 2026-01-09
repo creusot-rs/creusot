@@ -1,7 +1,7 @@
 // CREUSOT_ARG=--simple-triggers=true
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[logic]
 #[requires(i >= 0)]

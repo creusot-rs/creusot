@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 #[allow(unused_imports)]
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 pub trait Tr {
     type A;

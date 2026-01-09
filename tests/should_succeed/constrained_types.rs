@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{logic::OrdLogic, prelude::*};
+use creusot_std::{logic::OrdLogic, prelude::*};
 
 extern_spec! {
     impl<U: PartialOrd<U> + DeepModel, T: PartialOrd<T> + DeepModel> PartialOrd for (U, T)

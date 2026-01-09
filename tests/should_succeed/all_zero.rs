@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{logic::Int, prelude::*};
+use creusot_std::{logic::Int, prelude::*};
 
 pub enum List {
     Cons(u32, Box<List>),

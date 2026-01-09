@@ -1,4 +1,4 @@
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[logic]
 fn is_zero(v: Option<Int>) -> Int {

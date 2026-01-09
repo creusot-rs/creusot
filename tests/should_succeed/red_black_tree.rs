@@ -1,10 +1,10 @@
 // TIME 5
 #![feature(box_patterns)]
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 #[cfg(creusot)]
-use creusot_contracts::resolve::structural_resolve;
-use creusot_contracts::{
+use creusot_std::resolve::structural_resolve;
+use creusot_std::{
     logic::Mapping,
     prelude::{Clone, *},
 };

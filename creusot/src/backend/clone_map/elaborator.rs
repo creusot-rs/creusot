@@ -1097,7 +1097,7 @@ fn fn_mut_hist_inv_term<'tcx>(
     }
 }
 
-/// Special definition for `::creusot_contracts::std::mem::size_of_logic`.
+/// Special definition for `::creusot_std::std::mem::size_of_logic`.
 ///
 /// The specification of sizes is documented at [`size_of`].
 /// Note: at this point we are guaranteed to have a `Sized` type.

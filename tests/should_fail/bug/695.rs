@@ -1,6 +1,6 @@
 // WHY3PROVE
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[requires(cond.precondition(()) && forall <b:bool> branch.precondition((b,)))]
 #[ensures(exists <b:bool> cond.postcondition((),b) && branch.postcondition_once((!b,),()))]

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::FSet, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::FSet, prelude::*};
 
 pub fn ghost_map() {
     let mut set = FSet::<i32>::new();

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[ensures(result == 10u32)]
 pub fn unused_in_loop(b: bool) -> u32 {

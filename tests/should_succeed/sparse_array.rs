@@ -11,10 +11,10 @@
 // show that the array is not accessed outside its bound: the proof
 // requires to reason about permutation,
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 #[cfg(creusot)]
-use creusot_contracts::resolve::structural_resolve;
-use creusot_contracts::{
+use creusot_std::resolve::structural_resolve;
+use creusot_std::{
     logic::{FSet, Int, Seq},
     prelude::*,
 };

@@ -1,7 +1,7 @@
 // Test a crash when trying to implement collect
 // This test may become should_succeed in the future.
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 struct P();
 

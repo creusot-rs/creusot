@@ -1,8 +1,8 @@
 #![feature(min_specialization)]
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub mod nested {
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
 
     enum Nested {
         Test,

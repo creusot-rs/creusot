@@ -1,6 +1,6 @@
 // WHY3PROVE
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 // Since we reborrow `bor` after `b1`, its prophecy depends on `b2` and not `b1`
 pub fn not_final_borrow<T: Copy>(bor: &mut T) {

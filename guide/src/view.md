@@ -3,7 +3,7 @@
 It is generally convenient to map a Rust type to its logical model.
 This logical model is the type that specifications and clients then use to describe values of this type in the logic.
 
-In Creusot, this is provide using the `creusot_contracts::View` trait, providing a `view` method mapping the type to a `ViewTy` associated type for the model.
+In Creusot, this is provide using the `creusot_std::View` trait, providing a `view` method mapping the type to a `ViewTy` associated type for the model.
 
 Specifications can then use the `@` operator as a syntactic sugar for `.view()` on a type that implements `View`.
 

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 // The standard minimal two-phase borrow example
 #[ensures((^v)[v@.len()]@ == v@.len())]

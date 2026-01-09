@@ -1,6 +1,6 @@
 // WHY3PROVE
-extern crate creusot_contracts;
-use creusot_contracts::{cell::PermCell, ghost::perm::Perm, prelude::*};
+extern crate creusot_std;
+use creusot_std::{cell::PermCell, ghost::perm::Perm, prelude::*};
 
 pub fn unknown_permcell_permission(cell: &PermCell<i32>, perm: Ghost<&Perm<PermCell<i32>>>) {
     // does not work: we don't know if cell and perm have the same id

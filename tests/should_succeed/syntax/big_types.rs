@@ -1,5 +1,5 @@
 // Check our Why3 pretty printer on large types to force line breaks
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub enum BigSum {
     A1,

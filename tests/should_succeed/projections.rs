@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // Tests that various kinds of projections in Rust successfully translate
 

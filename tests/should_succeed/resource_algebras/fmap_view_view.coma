@@ -1,4 +1,4 @@
-module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
+module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
   
   type t_FMap_K_V
@@ -219,7 +219,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as cre
   goal vc_rel_mono_MapRelation_K_V: rel_MapRelation_K_V a f1
     -> incl_FMap_K_Ag_V f2 f1 -> ([@expl:rel_mono ensures] rel_MapRelation_K_V a f2)
 end
-module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
+module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
   
   type t_FMap_K_V
@@ -271,7 +271,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as cre
   
   goal vc_rel_none_MapRelation_K_V: rel_MapRelation_K_V a f -> ([@expl:rel_none ensures] rel_MapRelation_K_V (None) f)
 end
-module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
+module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
   use mach.int.Int
   use map.Const
@@ -2194,7 +2194,154 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
       {[@expl:clone ensures] view_Fragment_K_V result = view_Fragment_K_V self}
       (! return {result}) ]
 end
-module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
+module M_impl_ViewRel_for_MapRelation_K_V__rel_unit__refines (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
+  use map.Map
+  use mach.int.Int
+  use map.Const
+  
+  type t_FMap_K_V
+  
+  type t_Option_FMap_K_V = None | Some t_FMap_K_V
+  
+  type t_FMap_K_Ag_V
+  
+  type t_V
+  
+  type t_Ag_V = { f0: t_V }
+  
+  type t_Option_Ag_V = None'0 | Some'0 t_Ag_V
+  
+  type t_K
+  
+  function view_FMap_K_Ag_V (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (view_FMap_K_Ag_V self) k
+  
+  meta "rewrite_def" function get_K
+  
+  type t_Option_V = None'1 | Some'1 t_V
+  
+  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  
+  meta "rewrite_def" function get_K'0
+  
+  predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
+    match a with
+      | Some a'0 -> forall k: t_K. match get_K f k with
+          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+          | _ -> true
+          end
+      | None -> true
+      end
+  
+  type t_Option_FMap_K_Ag_V = None'2 | Some'2 t_FMap_K_Ag_V
+  
+  function and_then_Option_FMap_K_Ag_V (self: t_Option_FMap_K_Ag_V) (f: Map.map t_FMap_K_Ag_V t_Option_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
+   = match self with
+      | None'2 -> None'2
+      | Some'2 x -> Map.get f x
+      end
+  
+  type t_Option_Option_Ag_V = None'3 | Some'3 t_Option_Ag_V
+  
+  function and_then_Option_Option_Ag_V (self: t_Option_Option_Ag_V) (f: Map.map t_Option_Ag_V t_Option_Option_Ag_V) : t_Option_Option_Ag_V
+   = match self with
+      | None'3 -> None'3
+      | Some'3 x -> Map.get f x
+      end
+  
+  type tup2_Option_Ag_V_Option_Ag_V = { f0'0: t_Option_Ag_V; f1'0: t_Option_Ag_V }
+  
+  function map_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Option_Ag_V =
+    match self with
+      | None'0 -> None'3
+      | Some'0 x -> Some'3 (Map.get f x)
+      end
+  
+  function and_then_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Ag_V =
+    match self with
+      | None'0 -> None'0
+      | Some'0 x -> Map.get f x
+      end
+  
+  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0 = other.f0 then Some'0 self else None'0
+  
+  function associative_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) : ()
+  
+  axiom associative_Ag_V_spec:
+    forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V. and_then_Option_Ag_V (op_Ag_V a b) (fun (ab: t_Ag_V) -> op_Ag_V ab c)
+      = and_then_Option_Ag_V (op_Ag_V b c) (fun (bc: t_Ag_V) -> op_Ag_V a bc)
+  
+  function commutative_Ag_V (a: t_Ag_V) (b: t_Ag_V) : ()
+  
+  axiom commutative_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V. op_Ag_V a b = op_Ag_V b a
+  
+  function op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) : t_Option_Option_Ag_V = match { f0'0 = self;
+                                                                                                        f1'0 = other } with
+      | {f0'0 = None'0} -> Some'3 other
+      | {f1'0 = None'0} -> Some'3 self
+      | {f0'0 = Some'0 x; f1'0 = Some'0 y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some'0 z)
+      end
+  
+  function associative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
+  
+  axiom associative_Option_Ag_V_spec:
+    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. and_then_Option_Option_Ag_V (op_Option_Ag_V a b) (fun (ab: t_Option_Ag_V) -> op_Option_Ag_V ab c)
+      = and_then_Option_Option_Ag_V (op_Option_Ag_V b c) (fun (bc: t_Option_Ag_V) -> op_Option_Ag_V a bc)
+  
+  function commutative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) : ()
+  
+  axiom commutative_Option_Ag_V_spec: forall a: t_Option_Ag_V, b: t_Option_Ag_V. op_Option_Ag_V a b = op_Option_Ag_V b a
+  
+  function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
+  
+  axiom total_op_K_spec:
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+          <> None'3)
+      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+  
+  function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
+    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+      Some'2 (total_op_K self other)
+    else
+      None'2
+  
+  
+  function associative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
+  
+  axiom associative_FMap_K_Ag_V_spec:
+    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V a b) (fun (ab: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V ab c)
+      = and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V b c) (fun (bc: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V a bc)
+  
+  function commutative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) : ()
+  
+  axiom commutative_FMap_K_Ag_V_spec: forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V. op_FMap_K_Ag_V a b = op_FMap_K_Ag_V b a
+  
+  function len_K (self: t_FMap_K_Ag_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_Ag_V. len_K self >= 0
+  
+  constant empty_K : t_FMap_K_Ag_V
+  
+  axiom empty_K_spec: len_K empty_K = 0
+  
+  axiom empty_K_spec'0: view_FMap_K_Ag_V empty_K = Const.const (None'0)
+  
+  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K
+  
+  axiom unit_FMap_K_Ag_V_spec:
+    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'2 x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall a: t_Option_FMap_K_V. forall result: (). rel_MapRelation_K_V a unit_FMap_K_Ag_V
+        -> rel_MapRelation_K_V a unit_FMap_K_Ag_V
+end
+module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
   
   type t_FMap_K_V
@@ -2410,154 +2557,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, 
           -> rel_MapRelation_K_V a f1
           /\ incl_FMap_K_Ag_V f2 f1 /\ (forall result: (). rel_MapRelation_K_V a f2 -> rel_MapRelation_K_V a f2)
 end
-module M_impl_ViewRel_for_MapRelation_K_V__rel_unit__refines (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
-  use map.Map
-  use mach.int.Int
-  use map.Const
-  
-  type t_FMap_K_V
-  
-  type t_Option_FMap_K_V = None | Some t_FMap_K_V
-  
-  type t_FMap_K_Ag_V
-  
-  type t_V
-  
-  type t_Ag_V = { f0: t_V }
-  
-  type t_Option_Ag_V = None'0 | Some'0 t_Ag_V
-  
-  type t_K
-  
-  function view_FMap_K_Ag_V (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (view_FMap_K_Ag_V self) k
-  
-  meta "rewrite_def" function get_K
-  
-  type t_Option_V = None'1 | Some'1 t_V
-  
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
-  
-  meta "rewrite_def" function get_K'0
-  
-  predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
-    match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
-          | _ -> true
-          end
-      | None -> true
-      end
-  
-  type t_Option_FMap_K_Ag_V = None'2 | Some'2 t_FMap_K_Ag_V
-  
-  function and_then_Option_FMap_K_Ag_V (self: t_Option_FMap_K_Ag_V) (f: Map.map t_FMap_K_Ag_V t_Option_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V
-   = match self with
-      | None'2 -> None'2
-      | Some'2 x -> Map.get f x
-      end
-  
-  type t_Option_Option_Ag_V = None'3 | Some'3 t_Option_Ag_V
-  
-  function and_then_Option_Option_Ag_V (self: t_Option_Option_Ag_V) (f: Map.map t_Option_Ag_V t_Option_Option_Ag_V) : t_Option_Option_Ag_V
-   = match self with
-      | None'3 -> None'3
-      | Some'3 x -> Map.get f x
-      end
-  
-  type tup2_Option_Ag_V_Option_Ag_V = { f0'0: t_Option_Ag_V; f1'0: t_Option_Ag_V }
-  
-  function map_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Option_Ag_V =
-    match self with
-      | None'0 -> None'3
-      | Some'0 x -> Some'3 (Map.get f x)
-      end
-  
-  function and_then_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Ag_V =
-    match self with
-      | None'0 -> None'0
-      | Some'0 x -> Map.get f x
-      end
-  
-  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0 = other.f0 then Some'0 self else None'0
-  
-  function associative_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) : ()
-  
-  axiom associative_Ag_V_spec:
-    forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V. and_then_Option_Ag_V (op_Ag_V a b) (fun (ab: t_Ag_V) -> op_Ag_V ab c)
-      = and_then_Option_Ag_V (op_Ag_V b c) (fun (bc: t_Ag_V) -> op_Ag_V a bc)
-  
-  function commutative_Ag_V (a: t_Ag_V) (b: t_Ag_V) : ()
-  
-  axiom commutative_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V. op_Ag_V a b = op_Ag_V b a
-  
-  function op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) : t_Option_Option_Ag_V = match { f0'0 = self;
-                                                                                                        f1'0 = other } with
-      | {f0'0 = None'0} -> Some'3 other
-      | {f1'0 = None'0} -> Some'3 self
-      | {f0'0 = Some'0 x; f1'0 = Some'0 y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some'0 z)
-      end
-  
-  function associative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) (c: t_Option_Ag_V) : ()
-  
-  axiom associative_Option_Ag_V_spec:
-    forall a: t_Option_Ag_V, b: t_Option_Ag_V, c: t_Option_Ag_V. and_then_Option_Option_Ag_V (op_Option_Ag_V a b) (fun (ab: t_Option_Ag_V) -> op_Option_Ag_V ab c)
-      = and_then_Option_Option_Ag_V (op_Option_Ag_V b c) (fun (bc: t_Option_Ag_V) -> op_Option_Ag_V a bc)
-  
-  function commutative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) : ()
-  
-  axiom commutative_Option_Ag_V_spec: forall a: t_Option_Ag_V, b: t_Option_Ag_V. op_Option_Ag_V a b = op_Option_Ag_V b a
-  
-  function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
-  
-  axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
-          <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
-  
-  function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
-      Some'2 (total_op_K self other)
-    else
-      None'2
-  
-  
-  function associative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) (c: t_FMap_K_Ag_V) : ()
-  
-  axiom associative_FMap_K_Ag_V_spec:
-    forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V, c: t_FMap_K_Ag_V. and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V a b) (fun (ab: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V ab c)
-      = and_then_Option_FMap_K_Ag_V (op_FMap_K_Ag_V b c) (fun (bc: t_FMap_K_Ag_V) -> op_FMap_K_Ag_V a bc)
-  
-  function commutative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) : ()
-  
-  axiom commutative_FMap_K_Ag_V_spec: forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V. op_FMap_K_Ag_V a b = op_FMap_K_Ag_V b a
-  
-  function len_K (self: t_FMap_K_Ag_V) : int
-  
-  axiom len_K_spec: forall self: t_FMap_K_Ag_V. len_K self >= 0
-  
-  constant empty_K : t_FMap_K_Ag_V
-  
-  axiom empty_K_spec: len_K empty_K = 0
-  
-  axiom empty_K_spec'0: view_FMap_K_Ag_V empty_K = Const.const (None'0)
-  
-  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K
-  
-  axiom unit_FMap_K_Ag_V_spec:
-    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'2 x
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall a: t_Option_FMap_K_V. forall result: (). rel_MapRelation_K_V a unit_FMap_K_Ag_V
-        -> rel_MapRelation_K_V a unit_FMap_K_Ag_V
-end
-module M_impl_ViewRel_for_MapRelation_K_V__rel_none__refines (* <MapRelation<K, V> as creusot_contracts::logic::ra::view::ViewRel> *)
+module M_impl_ViewRel_for_MapRelation_K_V__rel_none__refines (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
   
   type t_FMap_K_V

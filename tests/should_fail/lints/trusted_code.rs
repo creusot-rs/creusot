@@ -1,7 +1,7 @@
 #![deny(creusot::trusted_code)]
 
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[trusted]
 #[ensures(result == 1i32)]

@@ -1,6 +1,6 @@
 // WHY3PROVE
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 pub fn list_reversal_h(l: usize) -> usize {
     let mut r = 0;
     #[invariant(true)]

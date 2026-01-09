@@ -1,8 +1,8 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub mod implementation {
     use ::std::rc::Rc;
-    use creusot_contracts::{
+    use creusot_std::{
         cell::PermCell,
         ghost::{
             local_invariant::{
@@ -297,7 +297,7 @@ pub mod implementation {
     }
 }
 
-use creusot_contracts::{
+use creusot_std::{
     ghost::local_invariant::Tokens,
     prelude::{vec, *},
 };

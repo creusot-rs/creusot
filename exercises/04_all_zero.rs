@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 // Prove that after the call to this function the vector only contains zeroes
 // Also show that no elements were added or removed

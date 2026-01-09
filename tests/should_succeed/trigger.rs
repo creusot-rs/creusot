@@ -1,9 +1,9 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 mod inner {
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
 
     #[logic(open(self))]
     pub fn id(i: Int) -> Int {

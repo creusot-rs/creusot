@@ -1,6 +1,6 @@
 // WHY3PROVE
-extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, prelude::*};
+extern crate creusot_std;
+use creusot_std::{invariant::Invariant, prelude::*};
 
 pub struct NonZero(pub i32);
 

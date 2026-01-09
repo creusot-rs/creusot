@@ -1,7 +1,7 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 use ::std::cmp::Ordering::*;
-use creusot_contracts::{
+use creusot_std::{
     invariant::{Invariant, inv},
     logic::Mapping,
     peano::PeanoInt,
@@ -11,7 +11,7 @@ use creusot_contracts::{
 /* Axiomatization of bumpalo */
 
 mod bumpalo {
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
 
     #[opaque]
     pub struct Bump();
@@ -29,7 +29,7 @@ mod bumpalo {
 /* Axiomatization of a HashMap library */
 
 mod hashmap {
-    use creusot_contracts::{logic::Mapping, prelude::*};
+    use creusot_std::{logic::Mapping, prelude::*};
 
     pub trait Hash: DeepModel {
         #[ensures(result@ == Self::hash_log(self.deep_model()))]

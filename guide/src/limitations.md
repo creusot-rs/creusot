@@ -7,7 +7,7 @@ Creusot users should take note of the following limitations.
 ## Some panics are allowed
 
 The `Vec` methods that increase capacity (`push`, `insert`, `extend`, etc.)
-panic if the capacity overflows. The current contracts in `creusot-contracts`
+panic if the capacity overflows. The current contracts in `creusot-std`
 do not prevent this.
 
 Because `Vec` is such a fundamental type, bounding
@@ -35,7 +35,7 @@ The vec! macro of Rust's standard library uses special magic to initialize memor
 efficiently. Creusot does not support this magic, hence the version provided by the standard library
 is not supported in Creusot.
 
-Instead, we provide the replacement macro `creusot_contracts::std::vec::vec`, which has the same
+Instead, we provide the replacement macro `creusot_std::std::vec::vec`, which has the same
 semantics and can be used in Creusot, albeit being slightly less efficient (the content of the
 vector is first allocated in the stack, and then moved to the newly allocated vector, instead of
 being directly initialized in the heap). It needs to be explicitly imported in order to not conflict

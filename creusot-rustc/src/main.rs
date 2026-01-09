@@ -67,8 +67,7 @@ fn setup_plugin() {
         })
     });
 
-    let has_contracts =
-        args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
+    let has_contracts = args.iter().any(|arg| arg == "creusot_std" || arg.contains("creusot_std="));
 
     if has_contracts {
         let Some(opts) = opts else {

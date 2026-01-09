@@ -33,35 +33,35 @@ pub struct NewInitArgs {
     /// Create test directory
     #[clap(long)]
     pub tests: bool,
-    /// Path to local creusot-contracts relative to the generated Cargo.toml
-    #[clap(long, env = "CREUSOT_CONTRACTS")]
-    pub creusot_contracts: Option<String>,
+    /// Path to local creusot-std relative to the generated Cargo.toml
+    #[clap(long, env = "CREUSOT_STD")]
+    pub creusot_std: Option<String>,
     /// Disable standard library
     #[clap(long)]
     pub no_std: bool,
 }
 
-fn cargo_template(name: &str, creusot_contracts: Option<String>, no_std: bool) -> String {
-    let patch = if let Some(creusot_contracts) = creusot_contracts {
+fn cargo_template(name: &str, creusot_std: Option<String>, no_std: bool) -> String {
+    let patch = if let Some(creusot_std) = creusot_std {
         format!(
             r#"
 [patch.crates-io]
-creusot-contracts = {{ path = "{}" }}
+creusot-std = {{ path = "{}" }}
 "#,
-            creusot_contracts
+            creusot_std
         )
     } else {
-        if !Version::parse(CREUSOT_CONTRACTS_VERSION).unwrap().pre.is_empty() {
+        if !Version::parse(CREUSOT_STD_VERSION).unwrap().pre.is_empty() {
             eprintln!(
-                "Warning: using dev version of Creusot ({CREUSOT_CONTRACTS_VERSION}), you should set a local path to creusot-contracts.\nSuggestion: cargo creusot init --creusot-contracts <PATH>"
+                "Warning: using dev version of Creusot ({CREUSOT_STD_VERSION}), you should set a local path to creusot-std.\nSuggestion: cargo creusot init --creusot-std <PATH>"
             )
         }
         "".into()
     };
-    let creusot_contracts = if no_std {
-        format!("{{ version = \"{CREUSOT_CONTRACTS_VERSION}\", default-features = false }}")
+    let creusot_std = if no_std {
+        format!("{{ version = \"{CREUSOT_STD_VERSION}\", default-features = false }}")
     } else {
-        format!("\"{CREUSOT_CONTRACTS_VERSION}\"")
+        format!("\"{CREUSOT_STD_VERSION}\"")
     };
     format!(
         r#"[package]
@@ -70,7 +70,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-creusot-contracts = {creusot_contracts}
+creusot-std = {creusot_std}
 
 [lints.rust]
 unexpected_cfgs = {{ level = "warn", check-cfg = ['cfg(creusot)'] }}
@@ -82,7 +82,7 @@ fn bin_template(name: &str) -> String {
     let name = name.replace("-", "_");
     format!(
         r#"#[allow(unused_imports)]
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 use {name}::*;
 
 fn main() {{
@@ -94,7 +94,7 @@ fn main() {{
 }
 
 const TEST_TEMPLATE: &str = r#"#[allow(unused_imports)]
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[test]
 fn it_works() {
@@ -102,7 +102,7 @@ fn it_works() {
 }
 "#;
 
-const LIB_TEMPLATE: &str = r#"use creusot_contracts::prelude::*;
+const LIB_TEMPLATE: &str = r#"use creusot_std::prelude::*;
 
 #[requires(a@ < i64::MAX@)]
 #[ensures(result@ == a@ + 1)]
@@ -152,7 +152,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     if cargo_toml.exists() {
         patch_dep(cargo_toml)?;
     } else {
-        write(cargo_toml, &cargo_template(&name, args.creusot_contracts, args.no_std));
+        write(cargo_toml, &cargo_template(&name, args.creusot_std, args.no_std));
         if args.tests {
             fs::create_dir_all("tests")?;
             write("tests/test.rs", TEST_TEMPLATE);
@@ -226,27 +226,27 @@ fn copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
     }
 }
 
-/// Add or update creusot-contracts in Cargo.toml:
+/// Add or update creusot-std in Cargo.toml:
 ///
 /// ```toml
 /// [dependencies]
-/// creusot-contracts = "X.Y.Z"
+/// creusot-std = "X.Y.Z"
 ///
 /// [patch.crates-io]
-/// creusot-contracts = { path = "/path/to/creusot-contracts" }  # Only for dev versions
+/// creusot-std = { path = "/path/to/creusot-std" }  # Only for dev versions
 /// ```
 fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
     let cargo_toml_path = cargo_toml_path.as_ref();
-    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    let self_version = Version::parse(CREUSOT_STD_VERSION)?;
     let cargo_toml = std::fs::read_to_string(cargo_toml_path)?;
     let mut cargo_toml = cargo_toml.parse::<toml_edit::DocumentMut>()?;
     if cargo_toml.contains_key("package") {
-        implicit_table(&mut cargo_toml, "dependencies")["creusot-contracts"] =
-            toml_edit::value(CREUSOT_CONTRACTS_VERSION);
+        implicit_table(&mut cargo_toml, "dependencies")["creusot-std"] =
+            toml_edit::value(CREUSOT_STD_VERSION);
         if !self_version.pre.is_empty() {
             let patch = implicit_table(&mut cargo_toml, "patch");
-            implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-contracts"]["path"] =
-                toml_edit::value(creusot_contracts_path().display().to_string());
+            implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-std"]["path"] =
+                toml_edit::value(creusot_std_path().display().to_string());
         }
     } else {
         eprintln!(
@@ -274,14 +274,14 @@ fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut t
 }
 
 /// Only remember the version string at compile-time
-pub const CREUSOT_CONTRACTS_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CREUSOT_STD_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn creusot_contracts_path() -> PathBuf {
+fn creusot_std_path() -> PathBuf {
     // This must be the dev version of `cargo-creusot`.
-    // It should have been installed from source and `creusot-contracts`
+    // It should have been installed from source and `creusot-std`
     // should be available next to its source.
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.pop();
-    path.push("creusot-contracts");
+    path.push("creusot-std");
     path
 }

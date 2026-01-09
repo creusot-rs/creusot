@@ -1,6 +1,6 @@
 // NO_REPLAY
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 fn closure_param<F: Fn(u32)>(f: F) {
     (f)(0)

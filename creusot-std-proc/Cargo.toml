@@ -1,0 +1,30 @@
+[package]
+name = "creusot-std-proc"
+version.workspace = true
+authors = ["Xavier Denis <xldenis@gmail.com>"]
+edition = "2024"
+repository = "https://github.com/creusot-rs/creusot"
+license = "LGPL-2.1-or-later"
+description = "Proc macro crate for creusot-std"
+
+[lib]
+proc-macro = true
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# Compile the `crate::creusot` module.
+# This does not change the behavior of the macros (that is controlled by the
+# rustc flag `cfg(creusot)`, which is a different thing from crate features).
+# This feature is enabled by `cargo creusot`,
+# and also by rust-analyzer during development (see `.vscode/settings.json`).
+creusot = ["dep:uuid", "dep:pearlite-syn", "proc-macro2/span-locations"]
+
+[dependencies]
+quote = "1.0"
+uuid = { version = "1.12", features = ["v4"], optional = true }
+pearlite-syn = { version = "0.8.0", path = "../pearlite-syn", features = ["full"], optional = true }
+syn = { version = "2.0", features = ["full", "visit", "visit-mut"] }
+proc-macro2 = { version = "1.0" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }
