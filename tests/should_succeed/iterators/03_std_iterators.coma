@@ -1001,21 +1001,27 @@ module M_counter
   predicate completed_Iter_u32 (self: MutBorrow.t t_Iter_u32) =
     resolve_refmut_Iter_u32 self /\ Slice64.view (view_Iter_u32 self.current) = (Seq.empty: Seq.seq UInt32.t)
   
-  predicate next_precondition_Iter_u32 (iter'0: t_Iter_u32) (func'0: closure0) (produced'0: Seq.seq UInt32.t) =
+  predicate next_precondition_Iter_u32 [@inline:trivial] (iter'0: t_Iter_u32) (func'0: closure0) (produced'0: Seq.seq UInt32.t) =
     forall e: UInt32.t, i: t_Iter_u32. produces_Iter_u32 iter'0 (Seq.singleton e) i
       -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation_Iter_u32 (iter'0: t_Iter_u32) (func'0: closure0) =
+  meta "rewrite_def" predicate next_precondition_Iter_u32
+  
+  predicate preservation_Iter_u32 [@inline:trivial] (iter'0: t_Iter_u32) (func'0: closure0) =
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_Iter_u32. hist_inv_closure0 func'0 f.current
       -> produces_Iter_u32 iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_closure0 f.current { f0 = e1; f1 = s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_Iter_u32 =
+  meta "rewrite_def" predicate preservation_Iter_u32
+  
+  predicate reinitialize_Iter_u32 [@inline:trivial] =
     forall iter'0: MutBorrow.t t_Iter_u32, func'0: closure0. completed_Iter_u32 iter'0
       -> next_precondition_Iter_u32 iter'0.final func'0 (Seq.empty: Seq.seq UInt32.t)
       /\ preservation_Iter_u32 iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u32
   
   predicate preservation_inv_Iter_u32 (iter'0: t_Iter_u32) (func'0: closure0) (produced'0: Seq.seq UInt32.t)
   

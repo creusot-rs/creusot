@@ -90,7 +90,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> core::i
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, F> {
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
@@ -112,7 +112,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -124,7 +124,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, prophetic, inline)]
     pub fn reinitialize() -> bool {
         pearlite! {
             forall<iter: &mut I, func: F>
