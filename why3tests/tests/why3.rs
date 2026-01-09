@@ -118,7 +118,7 @@ fn main() {
         sessiondir.set_file_name(file.file_stem().unwrap());
 
         let output;
-        let library = paths.prelude().join("packages/creusot").display().to_string();
+        let library = std::env::current_dir().unwrap().join("target/creusot");
         let mut why3 = Command::new(paths.why3());
         why3.arg("-C").arg(paths.why3_conf());
         why3.arg("--warn-off=unused_variable");
@@ -178,6 +178,7 @@ fn main() {
             }
 
             // There is a session directory. Try to replay the session.
+            let library = library.join("packages/creusot").display().to_string();
             why3.arg("replay");
             why3.args(&["-L", &library]);
             why3.arg(sessiondir.clone());
@@ -215,6 +216,7 @@ fn main() {
             }
         } else if header_line.contains("NO_REPLAY") {
             // Simply parse the file using "why3 prove".
+            let library = library.join("packages/creusot").display().to_string();
             why3.arg("prove");
             why3.args(&["-L", &library, "-F", "coma"]);
             why3.arg(file);
@@ -243,7 +245,7 @@ fn main() {
 
             let mut why3find = Command::new(paths.why3find());
             why3find.env("WHY3CONFIG", paths.why3_conf());
-            why3find.env("DUNE_DIR_LOCATIONS", "why3find:lib:target/creusot/");
+            why3find.env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()));
             why3find.arg("prove").arg(file.canonicalize().unwrap());
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
