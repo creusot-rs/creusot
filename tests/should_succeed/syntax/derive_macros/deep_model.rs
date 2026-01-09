@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[derive(DeepModel)]
 pub struct UnitStruct;

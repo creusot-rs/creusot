@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 mod mod1 {
     #[allow(dead_code)]

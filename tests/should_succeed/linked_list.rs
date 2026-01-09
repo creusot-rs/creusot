@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{ghost::perm::Perm, prelude::*};
+extern crate creusot_std;
+use creusot_std::{ghost::perm::Perm, prelude::*};
 
 struct Link<T> {
     value: T,

@@ -1,7 +1,7 @@
 #![feature(sized_type_properties)]
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::{Clone, *};
+use creusot_std::prelude::{Clone, *};
 
 const FOO: usize = 42;
 

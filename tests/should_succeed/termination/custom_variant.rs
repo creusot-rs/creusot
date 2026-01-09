@@ -1,5 +1,5 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::{
+use creusot_std::{
     logic::{Mapping, WellFounded},
     prelude::*,
 };

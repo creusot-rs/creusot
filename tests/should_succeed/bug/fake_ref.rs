@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 use ::std::ops::Bound;
 
 // This generates "fake refs" for borrow checking that should be ignored otherwise

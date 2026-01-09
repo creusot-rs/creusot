@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 /* Possible specifications:
  *  result = numof i, 0 <= i < 63, nth_bit(n,i) = 1

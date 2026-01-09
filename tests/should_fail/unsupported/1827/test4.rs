@@ -1,4 +1,4 @@
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[logic]
 pub fn has_zero(v: Option<(Option<Int>, Option<Int>)>) -> Int {

@@ -48,7 +48,7 @@ struct Args {
     bless: bool,
     #[clap(long)]
     with_spans: bool,
-    /// Run #[erasure] checks on creusot-contracts (and only that)
+    /// Run #[erasure] checks on creusot-std (and only that)
     #[clap(long)]
     erasure_check: bool,
     /// Only run tests which contain this string
@@ -86,16 +86,16 @@ fn main() {
         return;
     }
 
-    let mut test_creusot_contracts = true;
+    let mut test_creusot_std = true;
     if let Some(ref filter) = args.filter {
-        if !"tests/creusot-contracts/creusot-contracts.rs".contains(filter) {
-            test_creusot_contracts = false;
+        if !"tests/creusot-std/creusot-std.rs".contains(filter) {
+            test_creusot_std = false;
         }
     }
-    let contracts_success = translate_creusot_contracts(&args, &paths, test_creusot_contracts);
+    let contracts_success = translate_creusot_std(&args, &paths, test_creusot_std);
 
     let (mut failed, mut total) =
-        (if contracts_success { 0 } else { 1 }, if test_creusot_contracts { 1 } else { 0 });
+        (if contracts_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
     let (fail1, total1) = should_fail("tests/should_fail/**/*.rs", &args, |p| {
         run_creusot(p, &paths, args.with_spans)
     });
@@ -153,31 +153,24 @@ impl CreusotPaths {
         Self {
             creusot_rustc: base.join(CREUSOT_RUSTC),
             deps: creusot.join("deps"),
-            rlib: creusot.join("libcreusot_contracts.rlib"),
-            cmeta: creusot.join("libcreusot_contracts.cmeta"),
+            rlib: creusot.join("libcreusot_std.rlib"),
+            cmeta: creusot.join("libcreusot_std.cmeta"),
         }
     }
 }
 
 /// Returns `false` if the translation changed
 ///
-/// This will only check the output of `creusot-contracts` if `test_creusot_contracts` is true.
-fn translate_creusot_contracts(
-    args: &Args,
-    paths: &CreusotPaths,
-    test_creusot_contracts: bool,
-) -> bool {
-    if test_creusot_contracts {
-        print!("Translating creusot-contracts... ");
+/// This will only check the output of `creusot-std` if `test_creusot_std` is true.
+fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bool) -> bool {
+    if test_creusot_std {
+        print!("Translating creusot-std... ");
         std::io::stdout().flush().unwrap();
-        std::process::Command::new("touch")
-            .args(["creusot-contracts/src/lib.rs"])
-            .status()
-            .unwrap();
+        std::process::Command::new("touch").args(["creusot-std/src/lib.rs"]).status().unwrap();
     }
-    let mut build = build_creusot_contracts(paths, true, ErasureCheck::No, args.with_spans);
+    let mut build = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans);
     let mut out = args.stream();
-    let output = build.output().expect("could not translate `creusot_contracts`");
+    let output = build.output().expect("could not translate `creusot_std`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
@@ -185,15 +178,15 @@ fn translate_creusot_contracts(
         std::process::exit(1);
     }
 
-    if !test_creusot_contracts {
+    if !test_creusot_std {
         return true;
     }
 
-    let expect = PathBuf::from("tests/creusot-contracts/creusot-contracts.coma");
+    let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
     let mut succeeded = true;
     let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
 
-    // Warnings in creusot-contracts will be counted as an error at the end,
+    // Warnings in creusot-std will be counted as an error at the end,
     // but we still allow --bless so we can experiment without resolving warnings immediately.
     if !output.stderr.is_empty() {
         writeln_color!(out, Color::Yellow, "warnings");
@@ -204,7 +197,7 @@ fn translate_creusot_contracts(
 
     if args.bless {
         if output.stdout.is_empty() {
-            panic!("creusot-contracts should have an output!")
+            panic!("creusot-std should have an output!")
         }
 
         if success {
@@ -235,7 +228,7 @@ enum ErasureCheck {
     Error,
 }
 
-fn build_creusot_contracts(
+fn build_creusot_std(
     paths: &CreusotPaths,
     output_cmeta: bool,
     erasure_check: ErasureCheck,
@@ -249,7 +242,7 @@ fn build_creusot_contracts(
         ErasureCheck::Error => "--erasure-check=error",
     });
     if output_cmeta {
-        build.args(["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);
+        build.args(["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
     } else {
         build.arg("--export-metadata=false");
     }
@@ -258,9 +251,9 @@ fn build_creusot_contracts(
     } else {
         build.arg("--span-mode=off");
     }
-    build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-contracts"]);
+    build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-std"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
-    build.args(["--", "--package", "creusot-contracts", "--quiet"]).env("CREUSOT_CONTINUE", "true");
+    build.args(["--", "--package", "creusot-std", "--quiet"]).env("CREUSOT_CONTINUE", "true");
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
     }
@@ -291,7 +284,7 @@ fn run_creusot(
         .collect();
 
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_contracts={}", paths.rlib.display())]);
+    cmd.args(&["--extern", &format!("creusot_std={}", paths.rlib.display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
@@ -313,7 +306,7 @@ fn run_creusot(
         }
     }
     cmd.args(args);
-    cmd.args(&["--creusot-extern", &format!("creusot_contracts={}", paths.cmeta.display())]);
+    cmd.args(&["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
 
     Some(cmd)
 }
@@ -508,7 +501,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let mut build = build_creusot_contracts(paths, false, erasure_check, false);
+        let mut build = build_creusot_std(paths, false, erasure_check, false);
         let output = build.output().unwrap();
         if !output.status.success() {
             println!("failed");
@@ -520,7 +513,7 @@ fn erasure_check(paths: &CreusotPaths) {
         println!("ok")
     };
     // The first build is in warning mode
-    // (1) in case there is a stale _creusot_erasure/creusot_contracts (it get rewritten at the end)
+    // (1) in case there is a stale _creusot_erasure/creusot_std (it get rewritten at the end)
     // (2) to check that warning mode doesn't error
     build_once(ErasureCheck::Warn, "Collect #[erasure] requests... ");
     fs::remove_dir_all("target/creusot").unwrap();

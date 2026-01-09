@@ -1,4 +1,4 @@
-//! Special symbols defined in [`creusot_contracts`] and annotated with
+//! Special symbols defined in [`creusot_std`] and annotated with
 //! `#[creusot::intrinsics = "..."]`
 
 use crate::{contracts_items::get_intrinsic, ctx::TranslationCtx, metadata::Metadata};
@@ -65,18 +65,18 @@ macro_rules! contracts_items {
             )*
             if no_items {
                 tcx.dcx().struct_span_fatal(DUMMY_SP,
-                    "The `creusot_contracts` crate is not loaded. You will not be able to verify any code using Creusot until you do so."
-                ).with_note("Don't forget to actually use creusot_contracts: `use creusot_contracts::prelude::*;`").emit()
+                    "The `creusot_std` crate is not loaded. You will not be able to verify any code using Creusot until you do so."
+                ).with_note("Don't forget to actually use creusot_std: `use creusot_std::prelude::*;`").emit()
             } else if !missing_items.is_empty() {
                 let mut message =
-                    String::from("The `creusot_contracts` crate is loaded, but the following items are missing: ");
+                    String::from("The `creusot_std` crate is loaded, but the following items are missing: ");
                 for (i, item) in missing_items.iter().enumerate() {
                     if i != 0 {
                         message.push_str(", ");
                     }
                     message.push_str(item);
                 }
-                message.push_str(". Maybe your version of `creusot-contracts` is wrong?");
+                message.push_str(". Maybe your version of `creusot-std` is wrong?");
                 tcx.dcx().struct_span_fatal(DUMMY_SP, message).emit()
             }
             (raw, int2did, did2int)

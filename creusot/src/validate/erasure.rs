@@ -584,7 +584,7 @@ pub fn a_normal_form_for_export<'tcx>(
 }
 
 /// Convert a THIR expression to ANF, without access to `TranslationCtx`.
-/// This is used in crates that don't depend on `creusot-contracts`.
+/// This is used in crates that don't depend on `creusot-std`.
 pub fn a_normal_form_without_specs<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,

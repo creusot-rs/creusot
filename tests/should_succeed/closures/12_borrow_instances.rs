@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{prelude::*, std::ops::*};
+extern crate creusot_std;
+use creusot_std::{prelude::*, std::ops::*};
 
 #[logic(open)]
 #[ensures(FnExt::postcondition(x, n, r) == FnExt::postcondition(*x, n, r))]

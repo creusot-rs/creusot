@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::FMap, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::FMap, prelude::*};
 
 pub trait Trait<T: DeepModel, U: DeepModel>:
     DeepModel<DeepModelTy = FMap<T::DeepModelTy, U::DeepModelTy>>

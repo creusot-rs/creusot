@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::FMap, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::FMap, prelude::*};
 
 #[ensures(result == m)]
 pub fn complicated_identity<K, V>(m: Ghost<FMap<K, V>>) -> Ghost<FMap<K, V>> {

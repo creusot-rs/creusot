@@ -1,6 +1,6 @@
 #![allow(unused)]
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[logic]
 fn division(x: i32, y: i32) -> i32 {

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::{vec, *};
+extern crate creusot_std;
+use creusot_std::prelude::{vec, *};
 
 pub fn can_extend() {
     let mut v = vec![1, 2, 3];

@@ -18,7 +18,7 @@ jobs:
       run: |
         shopt -s globstar
         rustfmt **/*.rs --check
-  contracts-build:
+  creusot-std-build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -29,12 +29,12 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-contracts-${{ hashFiles('**/Cargo.lock') }}
-    - name: Build creusot-contracts with nightly rustc
-      run: cargo build -p creusot-contracts -F nightly
+        key: ${{ runner.os }}-creusot-std-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build creusot-std with nightly rustc
+      run: cargo build -p creusot-std -F nightly
       env:
         RUSTFLAGS: -D warnings
-  contracts-build-stable:
+  creusot-std-build-stable:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -45,9 +45,9 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: ${{ runner.os }}-contracts-stable-${{ hashFiles('Cargo.lock') }}
-    - name: Build creusot-contracts with stable rustc
-      run: cargo +stable build -p creusot-contracts
+        key: ${{ runner.os }}-creusot-std-stable-${{ hashFiles('Cargo.lock') }}
+    - name: Build creusot-std with stable rustc
+      run: cargo +stable build -p creusot-std
       env:
         RUSTFLAGS: -D warnings
   build:
@@ -211,7 +211,7 @@ jobs:
       run: |
         set -x
         cd ..
-        cargo creusot new test-project --main --creusot-contracts ../creusot/creusot-contracts
+        cargo creusot new test-project --main --creusot-std ../creusot/creusot-std
         cd test-project
         cargo fmt --check
         cargo build
@@ -227,7 +227,7 @@ jobs:
         rustup component add --toolchain $TLC rust-src
         rustup target add thumbv7em-none-eabi
         cd ..
-        cargo creusot new test-project-nostd --no-std --creusot-contracts ../creusot/creusot-contracts
+        cargo creusot new test-project-nostd --no-std --creusot-std ../creusot/creusot-std
         cd test-project-nostd
         echo $TLC > rust-toolchain
         cargo fmt --check

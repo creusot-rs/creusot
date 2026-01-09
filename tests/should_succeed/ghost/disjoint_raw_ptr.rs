@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{ghost::perm::Perm, prelude::*};
+extern crate creusot_std;
+use creusot_std::{ghost::perm::Perm, prelude::*};
 
 pub fn foo() {
     let (p1, mut own1) = Perm::new(1i32);

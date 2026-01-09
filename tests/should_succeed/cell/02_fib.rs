@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{cell::PredCell, prelude::*};
+use creusot_std::{cell::PredCell, prelude::*};
 
 #[logic(open)]
 #[variant(i)]

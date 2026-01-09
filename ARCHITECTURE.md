@@ -67,8 +67,8 @@ The following sections will discuss the architecture of Creusot as a system, wha
 
 The project is composed of a few main crates which we will cover in the following sections:
 - `creusot`: Implements the compiler, and provides the binaries to run things. Could probably be split up into a few crates at some point.
-- `creusot-contracts`: The crate that provides the specification macros for users. Also provides primitives for various logical operations (equality, resolution, quantification, mathematical integers).
-- `creusot-contracts-proc`: Proc macro crate for `creusot-contracts`
+- `creusot-std`: The "standard library of Creusot". Provides the specification macros for users, the specifications of many functions from Rust's standard library, and various logical operations (equality, resolution, quantification, mathematical integers).
+- `creusot-std-proc`: Proc macro crate for `creusot-std`
 - `why3`: A why3 AST / printer.
 
 ## Binaries
@@ -170,7 +170,7 @@ exists<i : Int> i == 0
 becomes
 
 ```rust
-creusot_contracts :: stubs :: exists (| i : Int | { i == 0 })
+creusot_std :: stubs :: exists (| i : Int | { i == 0 })
 
 ```
 

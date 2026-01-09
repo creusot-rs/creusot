@@ -1,6 +1,6 @@
 // NO_REPLAY
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn test_u8(inp: u8) {
     let _bing = inp as usize;

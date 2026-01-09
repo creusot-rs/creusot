@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 // Implement and prove the Euclidean division
 fn divide(u: i64, b: i64) -> i64 {

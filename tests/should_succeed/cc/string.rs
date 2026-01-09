@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::seq::flat_map_singleton, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::seq::flat_map_singleton, prelude::*};
 
 #[requires(s@ == seq!['Ã'])]
 #[requires('Ã'.to_utf8() == seq![0xC3u8, 0x83u8])]

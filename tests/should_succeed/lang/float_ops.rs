@@ -1,8 +1,8 @@
 // NO_REPLAY
 // FIXME: all this should work...
 
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[ensures(result == false)]
 pub fn eq() -> bool {

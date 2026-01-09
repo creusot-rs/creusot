@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::Id, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::Id, prelude::*};
 
 // This tests showcases specialization of purity attribute when calling trait implementations.
 
@@ -38,7 +38,7 @@ pub fn result() {
     proof_assert!(calls_g() == 1);
 }
 
-// Shows that a trait impl in an external crate (creusot_contracts) is correctly specialized.
+// Shows that a trait impl in an external crate (creusot_std) is correctly specialized.
 #[check(ghost)]
 pub fn clone_id(i: Id) {
     let _ = i.clone();

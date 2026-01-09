@@ -1,6 +1,6 @@
 #![allow(unreachable_patterns)]
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn ex() {
     let a = 0;

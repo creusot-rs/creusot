@@ -1,7 +1,7 @@
 // test some extern specs on slcies
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[requires(forall<i> 0 <= i && i < s@.len() ==> s[i]@ == i)]
 #[requires(s@.len() == 5)]

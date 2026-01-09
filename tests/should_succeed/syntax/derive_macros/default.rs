@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::Default;
+extern crate creusot_std;
+use creusot_std::prelude::Default;
 
 #[derive(Default)]
 pub struct Unit;

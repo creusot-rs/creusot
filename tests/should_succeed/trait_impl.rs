@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // This file tests that the implementation of a trait is correctly translated
 

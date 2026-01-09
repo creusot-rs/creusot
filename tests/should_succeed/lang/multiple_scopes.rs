@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // make sure that local translation handles variable shadowing well
 pub fn multiple_scopes() {

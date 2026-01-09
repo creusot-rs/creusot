@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 // Verifies that instances are properly cloned as interfaces in
 // the interfaces of functions. Also ensures that we don't attempt

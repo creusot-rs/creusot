@@ -1,8 +1,8 @@
 // WHY3PROVE
 #![feature(unboxed_closures)]
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{invariant::Invariant, logic::Mapping, prelude::*};
+use creusot_std::{invariant::Invariant, logic::Mapping, prelude::*};
 
 mod common;
 use common::Iterator;

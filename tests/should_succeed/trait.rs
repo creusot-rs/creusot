@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // fn uses_ord<T: Ord>(t: T) -> bool {
 // 	true

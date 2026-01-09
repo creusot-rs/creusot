@@ -14,18 +14,18 @@ cargo creusot new project-name
 
 > [!NOTE]
 > If you are using the development version of Creusot (`master` branch), you
-> should also point your project to your local copy of `creusot-contracts`,
-> using the `--creusot-contracts` option (otherwise the default is to use the
+> should also point your project to your local copy of `creusot-std`,
+> using the `--creusot-std` option (otherwise the default is to use the
 > released version on crates.io). To avoid hard-coding local paths in your
-> configuration, one approach is to set `--creusot-contracts creusot-contracts`,
-> and make a symbolic link `creusot-contracts` pointing to your local
-> `creusot-contracts`.
+> configuration, one approach is to set `--creusot-std creusot-std`,
+> and make a symbolic link `creusot-std` pointing to your local
+> `creusot-std`.
 
 That command creates a directory `package-name` containing the basic elements of a Rust project verified with Creusot. The file `src/lib.rs` is initialized with an example function annotated with a contract:
 
 ```rust
 // src/lib.rs
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[requires(x@ < i64::MAX@)]
 #[ensures(result@ == x@ + 1)]
@@ -92,14 +92,14 @@ We also recommend section 2.3 of this [thesis](https://sarsko.github.io/_pages/S
 If you get an error like this
 
 ```
-error: The `creusot_contracts` crate is loaded, but the following items are missing: <a list of identifiers> Maybe your version of `creusot-contracts` is wrong?
+error: The `creusot_std` crate is loaded, but the following items are missing: <a list of identifiers> Maybe your version of `creusot-std` is wrong?
 ```
 
 Add the following to your `Cargo.toml` file:
 
 ```
 [patch.crates-io]
-creusot-contracts = { path = "/relative/or/absolute/path/to/creusot-contracts/in/creusot/directory" }
+creusot-std = { path = "/relative/or/absolute/path/to/creusot-std/in/creusot/directory" }
 ```
 
 And please notify the Creusot developers that the version of Creusot should be bumped to `NEXT_VERSION-dev` to prevent this error.

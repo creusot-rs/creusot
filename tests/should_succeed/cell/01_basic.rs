@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{cell::PredCell, prelude::*};
+use creusot_std::{cell::PredCell, prelude::*};
 
 #[requires(c@ == |z: u32| z@ % 2 == 0)]
 pub fn adds_two(c: &PredCell<u32>) {

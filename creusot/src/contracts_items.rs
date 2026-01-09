@@ -1,4 +1,4 @@
-//! This modules groups together special items defined in [`creusot_contracts`].
+//! This modules groups together special items defined in [`creusot_std`].
 //!
 //! This includes attributes like `#[creusot::logic]`, and intrinsics like `Snapshot`.
 

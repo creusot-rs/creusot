@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[trusted]
 pub fn call_external() {
@@ -31,14 +31,14 @@ pub fn innocent_victim() -> u32 {
 
 #[trusted]
 mod foo {
-    use creusot_contracts::prelude::*;
+    use creusot_std::prelude::*;
     #[ensures(false)]
     pub fn my_unverified_code() -> u32 {
         0
     }
 
     pub mod another_module {
-        use creusot_contracts::prelude::*;
+        use creusot_std::prelude::*;
         #[ensures(false)]
         pub fn im_out_of_control() -> u32 {
             5

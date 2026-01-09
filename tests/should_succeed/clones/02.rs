@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 // Here we want to ensure that `program` properly shares
 // the implementation of simple between itself and `uses_simple`.

@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{logic::*, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::*, prelude::*};
 
 #[logic]
 fn x<T>(v: &Vec<T>) -> Int {

@@ -1,7 +1,7 @@
 // This is an other implementation of fmap_view, but using the View RA directly instead of Auth.
 
-extern crate creusot_contracts;
-use creusot_contracts::{
+extern crate creusot_std;
+use creusot_std::{
     ghost::resource::Resource,
     logic::{
         FMap, Id,

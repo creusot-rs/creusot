@@ -1,6 +1,6 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{cell::PredCell, logic::Mapping, prelude::*};
+use creusot_std::{cell::PredCell, logic::Mapping, prelude::*};
 
 #[requires(forall<s: &[u32]> cell@[*s] == (s@.len() == 2 && s[0]@ % 2 == 0 && s[1]@ % 2 == 1))]
 #[ensures(result.0@ % 2 == 0 && result.1@ % 2 == 1)]

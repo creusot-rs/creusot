@@ -7,7 +7,7 @@ Usual imperative structures like `Vec`, `HashMap` or `HashSet` cannot be used in
 This is because this function (and other like it) allocate memory, which on the actual machine, is finite. This currently translates to a possible inconsistency when using `Vec` in ghost code:
 
 ```rust
-use creusot_contracts::{proof_assert, ghost};
+use creusot_std::{proof_assert, ghost};
 ghost! {
     let mut v = Vec::new();
     for _ in 0..=usize::MAX as u128 + 1 {
@@ -27,7 +27,7 @@ As such, ghost code uses the mathematical structures `Seq`, `FMap` and `FSet`, a
 The above snippet becomes:
 
 ```rust
-use creusot_contracts::{proof_assert, ghost, Int, logic::Seq};
+use creusot_std::{proof_assert, ghost, Int, logic::Seq};
 ghost! {
     let mut s: Seq<Int> = Seq::new();
     for _ in 0..=usize::MAX as u128 + 1 {

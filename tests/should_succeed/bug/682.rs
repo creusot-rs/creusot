@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[requires((*a)@ <= u64::MAX@ / 2)]
 #[ensures(^a > *a)]

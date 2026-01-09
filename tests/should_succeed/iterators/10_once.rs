@@ -1,6 +1,6 @@
 // TACTIC +inline_goal
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 mod common;
 pub use common::Iterator;

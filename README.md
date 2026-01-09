@@ -17,7 +17,7 @@ If you need help using Creusot or would like to discuss, you can post on the [di
 ## Documentation
 
 - To learn how to write code with Creusot: [guide](https://creusot-rs.github.io/creusot/guide)
-- To see the API of `creusot_contracts` (Creusot's "standard library"): [`creusot_contracts` API](https://creusot-rs.github.io/creusot/doc/creusot_contracts)
+- To see the API of `creusot_std` (Creusot's "standard library"): [`creusot_std` API](https://creusot-rs.github.io/creusot/doc/creusot_std)
 
 ## Citing Creusot
 

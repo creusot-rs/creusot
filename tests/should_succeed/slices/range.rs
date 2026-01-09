@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[requires(a@ == seq![0u32, 0u32, 0u32, 0u32])]
 #[ensures((^a)@ == seq![0u32, 1u32, 1u32, 0u32])]

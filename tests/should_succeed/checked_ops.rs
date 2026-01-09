@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 /// Tests addition of `u8`s with some examples
 pub fn test_u8_add_example() {

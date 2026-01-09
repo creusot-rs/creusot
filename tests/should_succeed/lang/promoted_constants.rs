@@ -1,4 +1,4 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 pub fn promoted_none() -> Option<i32> {
     let _ix = Some(0);

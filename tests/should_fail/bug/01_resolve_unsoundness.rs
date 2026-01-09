@@ -1,7 +1,7 @@
 // WHY3PROVE
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 // This program exhibited a bug where we resolve the borrow of `push`, causing
 // us to prove an invalid loop invariant

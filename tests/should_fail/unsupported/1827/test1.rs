@@ -1,6 +1,6 @@
 // ISSUE 1827: Pattern matching on Int is unsupported by Pearlite
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[logic]
 #[variant(arr.len())]

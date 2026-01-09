@@ -65,7 +65,7 @@ proof_assert!(borrow == reborrow); // unprovable
 Or if there is an indirection based on a runtime value:
 
 ```rust
-let mut list = creusot_contracts::vec![1, 2];
+let mut list = creusot_std::vec![1, 2];
 let borrow: &mut [i32] = &mut list;
 let borrow_0 = &mut borrow[0];
 proof_assert!(borrow_0 == &mut borrow[0]); // unprovable

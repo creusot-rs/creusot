@@ -1,6 +1,6 @@
 // TACTIC +inline_goal
-extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, prelude::*};
+extern crate creusot_std;
+use creusot_std::{logic::Int, prelude::*};
 
 #[requires(slice@.len() < 1000)]
 #[ensures(result@ == slice@.len())]

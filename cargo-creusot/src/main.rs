@@ -87,7 +87,7 @@ fn invoke_cargo(
     let mut cmd = Command::new(cargo_path);
     cmd.arg(cargo_cmd)
         .args(cargo_flags)
-        .args(["-F", "creusot-contracts/creusot creusot-contracts/nightly"])
+        .args(["-F", "creusot-std/creusot creusot-std/nightly"])
         .env("RUSTUP_TOOLCHAIN", toolchain)
         .env("RUSTC", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
@@ -143,7 +143,7 @@ pub struct CargoCreusotArgs {
     /// Options for creusot-rustc
     #[clap(flatten)]
     pub creusot_args: CreusotArgs,
-    /// Allow mismatching creusot-contracts versions (use at your own risk!)
+    /// Allow mismatching creusot-std versions (use at your own risk!)
     #[clap(long)]
     pub no_check_version: bool,
     /// Path to creusot-rustc (for testing and for Nix)
@@ -336,24 +336,24 @@ fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
 
 fn check_contracts_version() -> Result<()> {
     use std::cmp::Ordering;
-    // The cargo-creusot version should be the same as the creusot-contracts version
-    let self_version = Version::parse(CREUSOT_CONTRACTS_VERSION)?;
+    // The cargo-creusot version should be the same as the creusot-std version
+    let self_version = Version::parse(CREUSOT_STD_VERSION)?;
     let contracts_version = get_contracts_version()?;
     let err = |msg, fixes| {
         bail!(
             r"{msg}
-    creusot-contracts {contracts_version}
+    creusot-std {contracts_version}
     creusot           {self_version}
 {fixes}"
         )
     };
     match self_version.cmp(&contracts_version) {
         Ordering::Less => err(
-            "creusot-contracts is newer than Creusot.",
+            "creusot-std is newer than Creusot.",
             "Possible fixes: upgrade Creusot, or run `cargo creusot init`.",
         ),
         Ordering::Greater => err(
-            "creusot-contracts is out of date.",
+            "creusot-std is out of date.",
             "Possible fixes: run `cargo creusot init` or downgrade Creusot.",
         ),
         Ordering::Equal => Ok(()),
@@ -363,11 +363,11 @@ fn check_contracts_version() -> Result<()> {
 fn get_contracts_version() -> Result<Version> {
     let metadata = cargo_metadata::MetadataCommand::new().exec()?;
     for package in metadata.packages {
-        if package.name == "creusot-contracts" {
+        if package.name == "creusot-std" {
             return Ok(package.version);
         }
     }
-    Err(anyhow::anyhow!("creusot-contracts not found in dependencies"))
+    Err(anyhow::anyhow!("creusot-std not found in dependencies"))
 }
 
 /// Arguments for `cargo creusot why3`.

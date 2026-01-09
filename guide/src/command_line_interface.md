@@ -109,7 +109,7 @@ which ensures that the Coma artifacts are always up to date.
 ### `new`
 
 ```
-cargo creusot new <NAME> [--main] [--creusot-contracts <PATH>]
+cargo creusot new <NAME> [--main] [--creusot-std <PATH>]
 ```
 
 Create or update package named `<NAME>`.
@@ -119,7 +119,7 @@ Create directory `<NAME>` if it doesn't already exist, and run `cargo creusot in
 #### Options
 
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
-- `--creusot-contracts <PATH>`: Path to local `creusot-contracts` used to set the `[patch.crates-io]` section of `Cargo.toml`.
+- `--creusot-std <PATH>`: Path to local `creusot-std` used to set the `[patch.crates-io]` section of `Cargo.toml`.
 
 ### `init`
 
@@ -133,15 +133,15 @@ If `Cargo.toml` doesn't exist, create a new package with starting configuration 
 
 If `Cargo.toml` exists, update an existing package for verification with Creusot:
 
-- add or update `creusot-contracts` in the list of dependencies with the version matching your Creusot installation;
+- add or update `creusot-std` in the list of dependencies with the version matching your Creusot installation;
 
-    For released versions of Creusot, this is equivalent to `cargo add creusot-contracts@<VERSION>` just with the right version.
+    For released versions of Creusot, this is equivalent to `cargo add creusot-std@<VERSION>` just with the right version.
 
     For a development version of Creusot (prerelease version `-dev`), this also adds the following lines:
 
     ```
     [patch.crates-io]
-    creusot-contracts = { path = "/path/to/creusot-contracts" }
+    creusot-std = { path = "/path/to/creusot-std" }
     ```
 
     This setting is documented in [The Cargo Book: Overriding Dependencies](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html).
@@ -152,7 +152,7 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 
 - `<NAME>`: Name of the package. (By default, it is the name of the directory.)
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
-- `--creusot-contracts <PATH>`: Path to local `creusot-contracts` used to set the `[patch.crates-io]` section of `Cargo.toml`.
+- `--creusot-std <PATH>`: Path to local `creusot-std` used to set the `[patch.crates-io]` section of `Cargo.toml`.
 
 ## Configuration
 

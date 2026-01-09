@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::{logic::Int, prelude::*};
+use creusot_std::{logic::Int, prelude::*};
 
 #[requires(y@ > 0)]
 fn division(x: usize, y: usize) -> usize {

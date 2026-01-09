@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 #[ensures(result == x.0.1)]
 pub fn g<'a>(x: ((i32, &'a mut i32), i32)) -> &'a mut i32 {

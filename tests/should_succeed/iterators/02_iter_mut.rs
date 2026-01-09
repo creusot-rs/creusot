@@ -1,5 +1,5 @@
-extern crate creusot_contracts;
-use creusot_contracts::{invariant::Invariant, logic::Seq, prelude::*};
+extern crate creusot_std;
+use creusot_std::{invariant::Invariant, logic::Seq, prelude::*};
 
 mod common;
 use common::Iterator;

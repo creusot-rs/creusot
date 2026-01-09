@@ -1,10 +1,10 @@
-extern crate creusot_contracts;
+extern crate creusot_std;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
 mod implementation {
     #[cfg(creusot)]
-    use creusot_contracts::logic::such_that;
-    use creusot_contracts::{
+    use creusot_std::logic::such_that;
+    use creusot_std::{
         ghost::perm::Perm,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,

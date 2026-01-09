@@ -1,8 +1,8 @@
 #![feature(allocator_api)]
 
-extern crate creusot_contracts;
+extern crate creusot_std;
 
-use creusot_contracts::prelude::*;
+use creusot_std::prelude::*;
 
 #[opaque]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
@@ -42,7 +42,7 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
 }
 
 impl<K: DeepModel, V> View for BTreeMap<K, V> {
-    type ViewTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
+    type ViewTy = creusot_std::logic::Mapping<K::DeepModelTy, Option<V>>;
 
     #[trusted]
     #[logic(opaque)]

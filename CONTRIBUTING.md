@@ -18,9 +18,9 @@ If you have made changes to the Creusot translation and the UI tests show a diff
 When contributing or updating tests, we ask that you minimize avoidable warnings, in particular, top-level declarations should be marked public, and unused arguments removed or replaced by wildcards.
 The warnings and errors of each test are recorded in an accompanying `stderr` file if any were present.
 
-The `ui` test also runs the Creusot translation on `creusot-contracts`.
-The result is located at `tests/creusot-contracts/creusot-contracts.coma`.
-To run the translation only on `creusot-contracts`, use a pattern that matches nothing, like `cargo test --test ui qq`
+The `ui` test also runs the Creusot translation on `creusot-std`.
+The result is located at `tests/creusot-std/creusot-std.coma`.
+To run the translation only on `creusot-std`, use a pattern that matches nothing, like `cargo test --test ui qq`
 
 # 3. Verifying proofs
 
@@ -103,8 +103,8 @@ of the file (URLs and `git-XXXX` versions), and the `git-XXXX` versions in the
 ## Release
 
 To make a release, you must be added as an owner of the relevant crates to publish on crates.io
-(`why3`, `pearlite-syn`, `creusot-contracts-proc`, `creusot-contracts`). Ask the current owners to add you
-(listed on https://crates.io/crates/creusot-contracts).
+(`why3`, `pearlite-syn`, `creusot-std-proc`, `creusot-std`). Ask the current owners to add you
+(listed on https://crates.io/crates/creusot-std).
 
 Install the `cargo-release` tool, which automates various tasks:
 
@@ -128,7 +128,7 @@ cargo install cargo-release
 
 ## Pre-release versioning
 
-Whenever `creusot-contracts` changes, if the current version is `0.Y.0`, you should bump all versions to `0.{Y+1}.0-dev`. The `-dev` prerelease suffix
+Whenever `creusot-std` changes, if the current version is `0.Y.0`, you should bump all versions to `0.{Y+1}.0-dev`. The `-dev` prerelease suffix
 lets `cargo-creusot` tell the difference from the released version on crates.io and remind you to do a `cargo creusot init` to update dependencies
 in `Cargo.toml` (or you can run Creusot with `cargo creusot --no-check-version` if you really want to use the released version).
 When that involves a breaking change in `creusot-rustc`, CI will probably fail so that will remind you to do this anyway.

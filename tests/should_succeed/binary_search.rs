@@ -7,8 +7,8 @@
 //    traits is not obvious.
 // 3. Lists are restricted to size < 1,000,000 this is because of (1), since there is no upper
 //    bound on the size of a list.
-extern crate creusot_contracts;
-use creusot_contracts::prelude::*;
+extern crate creusot_std;
+use creusot_std::prelude::*;
 
 pub enum List<T> {
     Cons(T, Box<List<T>>),
