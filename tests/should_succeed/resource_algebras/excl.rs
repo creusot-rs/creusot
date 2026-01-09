@@ -5,7 +5,7 @@ use creusot_std::{ghost::resource::Resource, logic::ra::excl::Excl, prelude::*};
 #[ensures(*x == ^x)]
 pub fn exclusivity(x: &mut Resource<Excl<i32>>, y: &Resource<Excl<i32>>) {
     if x.id_ghost() == y.id_ghost() {
-        x.valid_shared(y);
+        x.valid_op_lemma(y);
         assert!(false); // x * y cannot be valid
     }
 }

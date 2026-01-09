@@ -59,12 +59,22 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
-        Some(self.core_total())
+        match self {
+            None => Some(None),
+            Some(x) => Some(x.core()),
+        }
+    }
+
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {
+        self.core_total_idemp()
     }
 
     #[logic]
@@ -90,8 +100,7 @@ impl<T: RA> UnitRA for Option<T> {
     }
 
     #[logic(open)]
-    #[ensures(result.op(result) == Some(result))]
-    #[ensures(result.op(self) == Some(self))]
+    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         match self {
             None => None,
@@ -100,8 +109,11 @@ impl<T: RA> UnitRA for Option<T> {
     }
 
     #[logic]
-    #[ensures(self.core() == Some(self.core_total()))]
-    fn core_is_total(self) {}
+    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
+    #[ensures(self.core_total().op(self) == Some(self))]
+    fn core_total_idemp(self) {
+        let _ = T::core_idemp;
+    }
 }
 
 pub struct OptionUpdate<U>(pub U);

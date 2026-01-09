@@ -49,15 +49,23 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
         match self {
             Self::Left(x) => x.core().map_logic(|l| Self::Left(l)),
             Self::Right(x) => x.core().map_logic(|r| Self::Right(r)),
         }
+    }
+
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {
+        let _ = R1::core_idemp;
+        let _ = R2::core_idemp;
     }
 
     #[logic]

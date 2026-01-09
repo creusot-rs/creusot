@@ -15,6 +15,9 @@ use crate::{
 /// - both [`Auth`](ViewRel::Auth) and [`Frag`](ViewRel::Frag) are the same type
 /// - the relation between the two is specified by [`AuthViewRel`]: it asserts that
 ///   `Frag` must always be included in `Auth`
+///
+/// If this type is directly used as a ghost resource, on should rather use
+/// [`crate::ghost::resource::auth`], which provides convenient wrappers which the provers prefer.
 pub type Auth<T> = View<AuthViewRel<T>>;
 
 /// The relation that specifies [`Auth`].
@@ -60,12 +63,10 @@ impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
         }
     }
 
-    #[logic(open)]
+    #[logic]
     #[requires(self.premise(from))]
-    #[ensures({
-        let (auth, frag) = self.0.update(from.auth().unwrap_logic(), from.frag());
-        AuthViewRel::rel(Some(auth), frag)
-    })]
+    #[ensures(result.auth() == Some(self.0.update(from.auth().unwrap_logic(), from.frag()).0))]
+    #[ensures(result.frag() == self.0.update(from.auth().unwrap_logic(), from.frag()).1)]
     fn update(self, from: Auth<R>, _: ()) -> Auth<R> {
         let from_auth = from.auth().unwrap_logic();
         let (auth, frag) = self.0.update(from_auth, from.frag());

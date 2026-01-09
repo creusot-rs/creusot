@@ -33,15 +33,23 @@ impl<T: RA, U: RA> RA for (T, U) {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
         match (self.0.core(), self.1.core()) {
             (Some(x), Some(y)) => Some((x, y)),
             _ => None,
         }
+    }
+
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {
+        self.0.core_idemp();
+        self.1.core_idemp();
     }
 
     #[logic]
@@ -65,17 +73,17 @@ impl<T: UnitRA, U: UnitRA> UnitRA for (T, U) {
     }
 
     #[logic(open)]
-    #[ensures(result.op(result) == Some(result))]
-    #[ensures(result.op(self) == Some(self))]
+    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         (self.0.core_total(), self.1.core_total())
     }
 
     #[logic]
-    #[ensures(self.core() == Some(self.core_total()))]
-    fn core_is_total(self) {
-        self.0.core_is_total();
-        self.1.core_is_total();
+    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
+    #[ensures(self.core_total().op(self) == Some(self))]
+    fn core_total_idemp(self) {
+        self.0.core_total_idemp();
+        self.1.core_total_idemp();
     }
 }
 

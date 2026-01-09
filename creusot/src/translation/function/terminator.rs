@@ -34,7 +34,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, loc: Location) {
         let span = terminator.source_info.span;
         self.resolve_at(loc, span);
-        self.activate_two_phase(loc, span);
+        self.activate_two_phases(loc, span);
         let mut term = match &terminator.kind {
             Goto { target } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {

@@ -43,4 +43,7 @@ pub mod deque;
 pub mod io;
 
 #[cfg(feature = "std")]
-mod sync;
+pub mod sync;
+
+#[cfg(feature = "std")]
+pub mod thread;
