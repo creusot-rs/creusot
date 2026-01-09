@@ -3,7 +3,15 @@
 - [Quickstart](./quickstart.md)
   - [Editor configuration](./quickstart/editor_config.md)
 - [Installation](./installation.md)
+
+---
+
 - [Tutorial](./tutorial.md)
+  - [Gnome sort](./tutorial/gnome_sort.md)
+  - [Linked list](./tutorial/linked_list.md)
+
+---
+
 - [Basic concepts](./basic_concepts.md)
   - [`requires` and `ensures`](basic_concepts/requires_ensures.md)
   - [Invariants](basic_concepts/invariants.md)
