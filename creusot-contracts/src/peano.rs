@@ -29,12 +29,12 @@ use crate::{
     logic::ord::ord_laws_impl,
     prelude::{Clone, Default, *},
 };
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 /// A peano integer wrapping a 64-bits integer.
 ///
 /// See the [module](crate::peano) explanation.
-#[derive(Clone, Copy, Default, Eq)]
+#[derive(Default, Clone, Copy, Eq)]
 #[non_exhaustive]
 #[repr(transparent)]
 pub struct PeanoInt(pub u64);
@@ -153,7 +153,7 @@ impl PeanoInt {
     pub fn incr(self) -> Self {
         // Use volatile read, to avoid optimizing successive increments.
         // SAFETY: using `read_volatile` on a reference of a `Copy` object is always safe.
-        let x = unsafe { std::ptr::read_volatile(&self.0) };
+        let x = unsafe { core::ptr::read_volatile(&self.0) };
         Self(x + 1)
     }
 

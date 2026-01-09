@@ -1,12 +1,10 @@
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
+use alloc::vec::*;
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
-use std::{
-    ops::{Deref, DerefMut, Index, IndexMut},
-    vec::*,
-};
+use core::alloc::Allocator;
+use core::ops::{Deref, DerefMut, Index, IndexMut};
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for Vec<T, A> {
@@ -90,7 +88,7 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
 }
 
 extern_spec! {
-    mod std {
+    mod alloc {
         mod vec {
             impl<T> Vec<T> {
                 #[check(ghost)]
@@ -213,13 +211,13 @@ extern_spec! {
     impl<'a, T, A: Allocator> IntoIterator for &'a Vec<T, A> {
         #[check(ghost)]
         #[ensures(self@ == result@@)]
-        fn into_iter(self) -> std::slice::Iter<'a, T>;
+        fn into_iter(self) -> core::slice::Iter<'a, T>;
     }
 
     impl<'a, T, A: Allocator> IntoIterator for &'a mut Vec<T, A> {
         #[check(ghost)]
         #[ensures(self@ == result@@)]
-        fn into_iter(self) -> std::slice::IterMut<'a, T>;
+        fn into_iter(self) -> core::slice::IterMut<'a, T>;
     }
 
     impl<T> Default for Vec<T> {
@@ -297,7 +295,7 @@ impl<T> FromIteratorSpec<T> for Vec<T> {
 #[cfg(not(feature = "nightly"))]
 mod impls {
     use crate::prelude::*;
-    use std::vec::*;
+    use alloc::vec::*;
 
     impl<T> View for Vec<T> {
         type ViewTy = Seq<T>;

@@ -3,7 +3,7 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use std::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
 
 /// A user-defined _type invariant_.
 ///

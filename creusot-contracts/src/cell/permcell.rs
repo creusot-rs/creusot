@@ -7,7 +7,10 @@ use crate::{
     ghost::perm::{Container, Perm},
     prelude::*,
 };
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
+
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 
 /// Cell with ghost permissions
 ///
@@ -91,7 +94,7 @@ impl<T> PermCell<T> {
     #[ensures(self == (^perm).ward())]
     pub unsafe fn replace(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T) -> T {
         let _ = perm;
-        unsafe { std::ptr::replace(self.0.get(), val) }
+        unsafe { core::ptr::replace(self.0.get(), val) }
     }
 
     /// Unwraps the value, consuming the cell.

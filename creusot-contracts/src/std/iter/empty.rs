@@ -23,7 +23,7 @@ impl<T> IteratorSpec for Empty<T> {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod iter {
             impl<T> Iterator for Empty<T> {
                 #[check(ghost)]

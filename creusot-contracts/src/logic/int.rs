@@ -3,7 +3,7 @@ use crate::{
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     prelude::*,
 };
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 /// An unbounded, mathematical integer.
 ///
@@ -257,7 +257,7 @@ impl PartialOrd for Int {
     #[check(ghost)]
     #[ensures(result == Some((*self).cmp_log(*other)))]
     #[allow(unused_variables)]
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         panic!()
     }
 

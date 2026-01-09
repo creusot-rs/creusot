@@ -1,5 +1,5 @@
 use crate::{invariant::*, prelude::*};
-use std::iter::Zip;
+use core::iter::Zip;
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
     #[logic]

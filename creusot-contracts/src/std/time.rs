@@ -1,8 +1,11 @@
 use crate::prelude::*;
-use std::{
+use core::{
     ops::{Add, Sub},
     time::*,
 };
+
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 impl View for Duration {
     type ViewTy = Int;
@@ -43,6 +46,7 @@ pub fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
 }
 
+#[cfg(feature = "std")]
 impl View for Instant {
     type ViewTy = Int;
 
@@ -54,6 +58,7 @@ impl View for Instant {
     }
 }
 
+#[cfg(feature = "std")]
 impl DeepModel for Instant {
     type DeepModelTy = Int;
 
@@ -64,7 +69,7 @@ impl DeepModel for Instant {
 }
 
 extern_spec! {
-    mod std {
+    mod core {
         mod time {
             impl Duration {
                 #[check(ghost)]
@@ -145,7 +150,14 @@ extern_spec! {
                 #[ensures(rhs != 0u32 ==> result.deep_model() == Some(self@ / rhs@))]
                 fn checked_div(self, rhs: u32) -> Option<Duration>;
             }
+        }
+    }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
+    mod std {
+        mod time {
             impl Instant {
                 #[ensures(result@ >= 0)]
                 fn now() -> Instant;
@@ -196,7 +208,10 @@ extern_spec! {
         #[ensures(self@ - rhs@ == result@)]
         fn sub(self, rhs: Duration) -> Duration;
     }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
     impl Add<Duration> for Instant {
         #[check(ghost)]
         #[ensures(rhs@ == 0 ==> self@ == result@)]

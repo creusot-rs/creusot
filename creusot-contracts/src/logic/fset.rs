@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{logic::Mapping, prelude::*};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A finite set type usable in pearlite and `ghost!` blocks.
 ///
@@ -365,16 +365,6 @@ impl<T> FSet<T> {
     #[ensures(^self == (*self).insert(value))]
     #[ensures(result == !(*self).contains(value))]
     pub fn insert_ghost(&mut self, value: T) -> bool {
-        let _ = value;
-        panic!()
-    }
-
-    /// Same as [`Self::insert_ghost`], but for unsized values.
-    #[trusted]
-    #[check(ghost)]
-    #[ensures(^self == (*self).insert(*value))]
-    #[ensures(result == !(*self).contains(*value))]
-    pub fn insert_ghost_unsized(&mut self, value: Box<T>) -> bool {
         let _ = value;
         panic!()
     }

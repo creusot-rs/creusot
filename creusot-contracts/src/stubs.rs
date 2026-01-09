@@ -18,13 +18,13 @@ pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
 
 #[logic(opaque)]
 #[intrinsic("exists")]
-pub fn exists<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+pub fn exists<Tup: core::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     dead
 }
 
 #[logic(opaque)]
 #[intrinsic("forall")]
-pub fn forall<Tup: std::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
+pub fn forall<Tup: core::marker::Tuple, F: Fn<Tup, Output = bool>>(_: F) -> bool {
     dead
 }
 
@@ -42,14 +42,14 @@ pub fn implication(_: bool, _: bool) -> bool {
 
 #[logic(opaque)]
 #[intrinsic("old")]
-pub fn old<T: ?Sized>(_: T) -> Box<T> {
+pub fn old<'a, T: ?Sized>(_: T) -> &'a T {
     dead
 }
 
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
-pub fn dead<T: ?Sized>() -> Box<T> {
+pub fn dead<'a, T: ?Sized>() -> &'a T {
     dead
 }
 

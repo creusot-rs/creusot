@@ -41,14 +41,13 @@
 //! 5. [`cell`][mod@cell]: Interior mutability
 //!
 //! 6. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
+#![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
 #![cfg_attr(
     feature = "nightly",
-    allow(incomplete_features, internal_features),
     feature(
         core_intrinsics,
         const_destruct,
         fn_traits,
-        print_internals,
         fmt_internals,
         fmt_helpers_for_derive,
         step_trait,
@@ -57,8 +56,6 @@
         unboxed_closures,
         tuple_trait,
         panic_internals,
-        libstd_sys_internals,
-        rt,
         never_type,
         ptr_metadata,
         hint_must_use,
@@ -70,6 +67,13 @@
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
+#![cfg_attr(
+    all(feature = "nightly", feature = "std"),
+    feature(print_internals, libstd_sys_internals, rt,)
+)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
 
 extern crate creusot_contracts_proc as base_macros;
 extern crate self as creusot_contracts;
@@ -538,8 +542,10 @@ mod base_prelude {
         clone::Clone,
         cmp::PartialEq,
         default::Default,
-        vec::vec,
     };
+
+    #[cfg(feature = "std")]
+    pub use crate::std::vec::vec;
 
     // Export extension traits anonymously
     pub use crate::std::{

@@ -58,7 +58,7 @@
 //! We plan to relax this limitation at some point.
 
 use crate::{logic::Set, prelude::*};
-use std::{cell::UnsafeCell, marker::PhantomData};
+use core::{cell::UnsafeCell, marker::PhantomData};
 
 /// Declare a new namespace.
 ///
@@ -240,7 +240,7 @@ impl<'a, T: Protocol> LocalInvariantExt<'a> for Ghost<&'a LocalInvariant<T>> {
 
 impl<'a, T> LocalInvariantExt<'a> for Ghost<&'a T>
 where
-    T: std::ops::Deref,
+    T: core::ops::Deref,
     Ghost<&'a T::Target>: LocalInvariantExt<'a>,
 {
     type Inner = <Ghost<&'a T::Target> as LocalInvariantExt<'a>>::Inner;

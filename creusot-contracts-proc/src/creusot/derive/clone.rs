@@ -23,7 +23,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     };
 
     let expanded = quote! {
-        impl #impl_generics ::std::clone::Clone for #name #ty_generics #where_clause {
+        impl #impl_generics ::core::clone::Clone for #name #ty_generics #where_clause {
             #[::creusot_contracts::macros::ensures(#post)]
             fn clone(&self) -> Self {
                 #body
@@ -37,7 +37,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(::std::clone::Clone));
+            type_param.bounds.push(parse_quote!(::core::clone::Clone));
         }
     }
     generics
@@ -49,14 +49,14 @@ fn clone(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
             Fields::Named(ref fields) => {
                 let recurse = fields.named.iter().map(|f| {
                     let name = &f.ident;
-                    quote_spanned! {f.span()=> #name: ::std::clone::Clone::clone(&self.#name) }
+                    quote_spanned! {f.span()=> #name: ::core::clone::Clone::clone(&self.#name) }
                 });
                 Ok(quote! { #base_ident { #(#recurse),*} })
             }
             Fields::Unnamed(ref fields) => {
                 let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
                     let index = Index::from(i);
-                    quote_spanned! {f.span()=> ::std::clone::Clone::clone(&self.#index) }
+                    quote_spanned! {f.span()=> ::core::clone::Clone::clone(&self.#index) }
                 });
                 Ok(quote! { #base_ident (#(#recurse),*) })
             }
@@ -106,7 +106,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         };
         let name_1 = format_ident!("{}_1", name_base);
 
-        let call = quote!(::std::clone::Clone::clone(&#name_1));
+        let call = quote!(::core::clone::Clone::clone(&#name_1));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));
             acc.body.push(quote!(#name_base: #call));
@@ -126,7 +126,7 @@ fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
                     let name = &f.ident;
                     let ty = &f.ty;
                     quote_spanned! {f.span()=>
-                        <#ty as ::std::clone::Clone>::clone.postcondition((&self.#name,), result.#name)
+                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#name,), result.#name)
                     }
                 });
                 quote! { #(#conjuncts) && * }
@@ -136,7 +136,7 @@ fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
                     let index = Index::from(i);
                     let ty = &f.ty;
                     quote_spanned! {f.span()=>
-                        <#ty as ::std::clone::Clone>::clone.postcondition((&self.#index,), result.#index)
+                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#index,), result.#index)
                     }
                 });
                 quote! { #(#conjuncts) && * }
@@ -198,7 +198,7 @@ fn gen_match_arm_post<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmA
         let ty = &field.ty;
 
         acc.body.push(quote!(
-            <#ty as ::std::clone::Clone>::clone.postcondition((&#name_1,), #name_r)
+            <#ty as ::core::clone::Clone>::clone.postcondition((&#name_1,), #name_r)
         ));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));

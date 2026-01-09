@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
-use std::iter::Copied;
+use core::iter::Copied;
 
 pub trait CopiedExt<I> {
     #[logic]

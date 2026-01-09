@@ -2,7 +2,10 @@
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
+use core::alloc::Allocator;
+
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
@@ -47,7 +50,7 @@ impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
 }
 
 extern_spec! {
-    mod std {
+    mod alloc {
         mod boxed {
             impl<T> Box<T> {
                 #[check(ghost)]

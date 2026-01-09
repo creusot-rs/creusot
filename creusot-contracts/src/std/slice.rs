@@ -1,9 +1,9 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
-#[cfg(feature = "nightly")]
-use std::alloc::Allocator;
-use std::{
+#[cfg(all(feature = "nightly", feature = "std"))]
+use core::alloc::Allocator;
+use core::{
     ops::{
         Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
     },
@@ -375,10 +375,6 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
-        #[check(terminates)] // can OOM (?)
-        #[ensures(result@ == self_@)]
-        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
-
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         unsafe fn get_unchecked<I: SliceIndexSpec<[T]>>(&self, ix: I)
@@ -443,13 +439,7 @@ extern_spec! {
         fn default() -> &'a [T];
     }
 
-    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
-        fn clone(&self) -> Box<[T], A>;
-    }
-
-    mod std {
+    mod core {
         mod slice {
             #[check(ghost)]
             #[ensures(result@.len() == 1)]
@@ -463,6 +453,21 @@ extern_spec! {
             #[ensures((^result)@[0] == ^s)]
             fn from_mut<T>(s: &mut T) -> &mut [T];
         }
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<T> [T] {
+        #[check(terminates)] // can OOM (?)
+        #[ensures(result@ == self_@)]
+        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+    }
+
+    impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i]))]
+        fn clone(&self) -> Box<[T], A>;
     }
 }
 

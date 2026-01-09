@@ -1,6 +1,6 @@
 use crate::prelude::*;
 #[cfg(feature = "nightly")]
-use std::alloc::Allocator;
+use core::alloc::Allocator;
 use std::sync::Arc;
 
 #[cfg(feature = "nightly")]

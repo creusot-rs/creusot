@@ -1,7 +1,10 @@
 use crate::prelude::*;
+#[cfg(all(creusot, feature = "std"))]
+use core::any::Any;
+#[cfg(creusot)]
+use core::fmt;
 #[cfg(feature = "nightly")]
 use core::panicking::*;
-use std::{any::Any, fmt};
 
 extern_spec! {
     mod core {
@@ -43,7 +46,10 @@ extern_spec! {
 
         }
     }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
     mod std {
         mod rt {
             #[check(ghost)]

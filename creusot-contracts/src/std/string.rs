@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use std::ops::Deref;
+#[cfg(feature = "std")]
+use core::ops::Deref;
 
 impl View for str {
     type ViewTy = Seq<char>;
@@ -10,6 +11,7 @@ impl View for str {
     }
 }
 
+#[cfg(feature = "std")]
 extern_spec! {
     mod std {
         mod string {
@@ -45,7 +47,10 @@ extern_spec! {
         #[ensures(result.0@.to_bytes().len() == ix@)]
         fn split_at(&self, ix: usize) -> (&str, &str);
     }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
     impl Clone for Box<str> {
         #[check(ghost)]
         #[ensures((*result)@ == (**self)@)]
