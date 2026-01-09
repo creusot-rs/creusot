@@ -261,21 +261,27 @@ module M_impl_Board__new (* Board *)
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
-  predicate next_precondition_Range_usize (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
+  predicate next_precondition_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
     forall e: UInt64.t, i: t_Range_usize. produces_Range_usize iter'0 (Seq.singleton e) i
       -> precondition_closure3 func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation_Range_usize (iter'0: t_Range_usize) (func'0: closure3) =
+  meta "rewrite_def" predicate next_precondition_Range_usize
+  
+  predicate preservation_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) =
     forall s: Seq.seq UInt64.t, e1: UInt64.t, e2: UInt64.t, f: MutBorrow.t closure3, b: t_Vec_usize_Global, i: t_Range_usize. hist_inv_closure3 func'0 f.current
       -> produces_Range_usize iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_closure3 f.current { f0 = e1; f1 = s }
       -> postcondition_mut_closure3 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure3 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_Range_usize =
+  meta "rewrite_def" predicate preservation_Range_usize
+  
+  predicate reinitialize_Range_usize [@inline:trivial] =
     forall iter'0: MutBorrow.t t_Range_usize, func'0: closure3. completed_Range_usize iter'0
       -> next_precondition_Range_usize iter'0.final func'0 (Seq.empty: Seq.seq UInt64.t)
       /\ preservation_Range_usize iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_Range_usize
   
   predicate preservation_inv_Range_usize (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t)
   

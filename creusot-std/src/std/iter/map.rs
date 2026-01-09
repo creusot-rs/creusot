@@ -87,7 +87,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-#[logic(open, prophetic)]
+#[logic(open, prophetic, inline)]
 pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
         forall<e: I::Item, i: I>
@@ -97,7 +97,7 @@ pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, fu
     }
 }
 
-#[logic(open, prophetic)]
+#[logic(open, prophetic, inline)]
 pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
@@ -110,7 +110,7 @@ pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F
     }
 }
 
-#[logic(open, prophetic)]
+#[logic(open, prophetic, inline)]
 pub fn reinitialize<I: IteratorSpec, B, F: FnMut(I::Item) -> B>() -> bool {
     pearlite! {
         forall<iter: &mut I, func: F>

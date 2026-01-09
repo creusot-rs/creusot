@@ -38386,9 +38386,11 @@ module M_std__iter__map__impl_Invariant_for_Map_I_F__invariant (* <std::iter::Ma
   
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate next_precondition_I (iter: t_I) (func: t_F) =
+  predicate next_precondition_I [@inline:trivial] (iter: t_I) (func: t_F) =
     forall e: t_Item, i: t_I [produces_I iter (Seq.singleton e) i]. produces_I iter (Seq.singleton e) i
       -> precondition_F func e
+  
+  meta "rewrite_def" predicate next_precondition_I
   
   type t_B
   
@@ -38420,14 +38422,18 @@ module M_std__iter__map__impl_Invariant_for_Map_I_F__invariant (* <std::iter::Ma
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate preservation_I (iter: t_I) (func: t_F) =
+  predicate preservation_I [@inline:trivial] (iter: t_I) (func: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current e1 f.final b]. hist_inv_F func f.current
       -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current e1 -> postcondition_mut_F f.current e1 f.final b -> precondition_F f.final e2
   
-  predicate reinitialize_I =
+  meta "rewrite_def" predicate preservation_I
+  
+  predicate reinitialize_I [@inline:trivial] =
     forall iter: MutBorrow.t t_I, func: t_F. completed_I iter
       -> next_precondition_I iter.final func /\ preservation_I iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_I
   
   meta "compute_max_steps" 1000000
   
@@ -38989,19 +38995,25 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
       {postcondition_mut_F self_.current arg self_.final result}
       (! return {result}) ]
   
-  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+  predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
-  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+  meta "rewrite_def" predicate next_precondition_I
+  
+  predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_I =
+  meta "rewrite_def" predicate preservation_I
+  
+  predicate reinitialize_I [@inline:trivial] =
     forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
       -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_I
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
@@ -39228,12 +39240,14 @@ module M_std__iter__map_inv__impl_MapInv_I_F__preservation_inv (* std::iter::map
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate preservation_I (iter: t_I) (func: t_F) =
+  predicate preservation_I [@inline:trivial] (iter: t_I) (func: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func f.current
       -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  
+  meta "rewrite_def" predicate preservation_I
   
   meta "compute_max_steps" 1000000
   
@@ -39290,8 +39304,10 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+  predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+  
+  meta "rewrite_def" predicate next_precondition_I
   
   predicate postcondition_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (result: t_B)
   
@@ -39322,16 +39338,20 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+  predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_I =
+  meta "rewrite_def" predicate preservation_I
+  
+  predicate reinitialize_I [@inline:trivial] =
     forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
       -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_I
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
@@ -40622,9 +40642,11 @@ module M_std__iter__trait_IteratorSpec__map_inv
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate next_precondition_Self (iter'0: t_Self) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+  predicate next_precondition_Self [@inline:trivial] (iter'0: t_Self) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall e: t_Item, i: t_Self. produces_Self iter'0 (Seq.singleton e) i
       -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+  
+  meta "rewrite_def" predicate next_precondition_Self
   
   type t_B
   
@@ -40657,16 +40679,20 @@ module M_std__iter__trait_IteratorSpec__map_inv
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate preservation_Self (iter'0: t_Self) (func'0: t_F) =
+  predicate preservation_Self [@inline:trivial] (iter'0: t_Self) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_Self. hist_inv_F func'0 f.current
       -> produces_Self iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_Self =
+  meta "rewrite_def" predicate preservation_Self
+  
+  predicate reinitialize_Self [@inline:trivial] =
     forall iter'0: MutBorrow.t t_Self, func'0: t_F. completed_Self iter'0
       -> next_precondition_Self iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_Self iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_Self
   
   predicate preservation_inv_Self (iter'0: t_Self) (func'0: t_F) (produced'0: Seq.seq t_Item)
   
@@ -52103,8 +52129,10 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
-  predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
+  predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+  
+  meta "rewrite_def" predicate next_precondition_I
   
   type t_B
   
@@ -52137,16 +52165,20 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate preservation_I (iter'0: t_I) (func'0: t_F) =
+  predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
-  predicate reinitialize_I =
+  meta "rewrite_def" predicate preservation_I
+  
+  predicate reinitialize_I [@inline:trivial] =
     forall iter'0: MutBorrow.t t_I, func'0: t_F. completed_I iter'0
       -> next_precondition_I iter'0.final func'0 (Seq.empty: Seq.seq t_Item) /\ preservation_I iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_I
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
