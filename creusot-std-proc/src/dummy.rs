@@ -1,7 +1,7 @@
-use crate::common::ContractSubject;
+use crate::common::{ContractSubject, GhostClosuresVisitor, GhostLet, ghost_int_lit_suffix};
 use proc_macro::TokenStream as TS1;
 use quote::ToTokens as _;
-use syn::visit_mut::VisitMut;
+use syn::{Block, parse_macro_input, visit_mut::VisitMut};
 
 // #[proc_macro]
 
@@ -23,15 +23,10 @@ pub fn declare_namespace(_: TS1) -> TS1 {
 
 pub fn ghost(body: TS1) -> TS1 {
     let group = proc_macro2::Group::new(proc_macro2::Delimiter::Brace, body.into());
-    let body = group.into_token_stream();
-    let body = match syn::parse2(body.clone()) {
-        Err(_) => body,
-        Ok(mut b) => {
-            DeleteInvariants.visit_block_mut(&mut b);
-            b.into_token_stream()
-        }
-    };
-    let body = crate::ghost::ghost_preprocess(body);
+    let body = ghost_int_lit_suffix(group.into_token_stream()).into();
+    let mut body = parse_macro_input!(body as Block);
+    GhostClosuresVisitor.visit_block_mut(&mut body);
+    DeleteInvariants.visit_block_mut(&mut body);
     quote::quote! { if false {
         ::creusot_std::ghost::Ghost::new({ #body })
     } else {
@@ -41,8 +36,16 @@ pub fn ghost(body: TS1) -> TS1 {
 }
 
 pub fn ghost_let(body: TS1) -> TS1 {
-    let body: TS1 = body.into_iter().skip(2).collect();
-    ghost(body)
+    let body = ghost_int_lit_suffix(proc_macro2::TokenStream::from(body)).into();
+    let GhostLet { mutability, var, mut body } = parse_macro_input!(body);
+    GhostClosuresVisitor.visit_expr_mut(&mut body);
+    DeleteInvariants.visit_expr_mut(&mut body);
+    quote::quote! { let #mutability #var = if false {
+        ::creusot_std::ghost::Ghost::new(#body)
+    } else {
+        ::creusot_std::ghost::Ghost::conjure()
+    } }
+    .into()
 }
 
 pub fn requires(_: TS1, tokens: TS1) -> TS1 {

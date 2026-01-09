@@ -13,8 +13,7 @@
 
 use proc_macro::TokenStream as TS1;
 
-pub(crate) mod common;
-mod ghost;
+mod common;
 
 /// Macro implementations used by `cargo creusot`.
 #[cfg(feature = "creusot")]

@@ -24,7 +24,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(super) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         let si = statement.source_info;
         self.resolve_at(loc, si.span);
-        self.activate_two_phase(loc, si.span);
+        self.activate_two_phases(loc, si.span);
         match statement.kind {
             StatementKind::Assign(box (pl, ref rv)) => {
                 self.translate_assign(si, pl, rv, loc);
@@ -89,7 +89,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
                 Mut { .. } => {
                     let Some(borrow_data) = &self.borrow_data else { self.error_no_borrow_data() };
-                    if self.erased_locals.contains(pl.local) || borrow_data.is_two_phase_at(loc) {
+                    if self.erased_locals.contains(pl.local) || borrow_data.is_two_phases_at(loc) {
                         return;
                     }
                     let is_final = borrow_data.is_final_at(loc);
@@ -219,11 +219,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         }
     }
 
-    pub(super) fn activate_two_phase(&mut self, loc: Location, span: Span) {
+    pub(super) fn activate_two_phases(&mut self, loc: Location, span: Span) {
         let Some(borrow_data) = &mut self.borrow_data else {
             return;
         };
-        for (lhs, rhs, is_final) in borrow_data.remove_two_phase_activated_at(loc) {
+        for (lhs, rhs, is_final) in borrow_data.remove_two_phases_activated_at(loc) {
             self.emit_mut_borrow(lhs, rhs, is_final, span)
         }
     }

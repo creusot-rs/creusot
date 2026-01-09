@@ -81,7 +81,7 @@ pub trait RA: Sized {
         other.factor(self) != None
     }
 
-    #[logic(law, sealed)]
+    #[logic(law)]
     #[requires(self.op(other) == Some(comb))]
     #[ensures(self.incl(comb))]
     fn incl_op(self, other: Self, comb: Self) {}
@@ -131,7 +131,7 @@ pub trait RA: Sized {
     fn associative(a: Self, b: Self, c: Self);
 
     /// [`RA::incl`] is transitive.
-    #[logic(open(self), law, sealed)]
+    #[logic(law)]
     #[requires(a.incl(b))]
     #[requires(b.incl(c))]
     #[ensures(a.incl(c))]
@@ -142,14 +142,23 @@ pub trait RA: Sized {
     /// The core of an element, when it exists, is included in that element,
     /// and idempotent. Note that the statement `c.op(self) == Some(self)` is
     /// equivalent to `c.incl(self)` for idempotent elements.
+    ///
+    /// The specification of this function is not part of an ensures clause,
+    /// because it has a tendency to make the provers loop.
     #[logic]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self>;
 
-    /// The core maximal, if there exists an idempotent element included in self
+    /// The specification of [`core`].
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self);
+
+    /// The core maximal among idempotent elements included in self
     #[logic]
     #[requires(i.op(i) == Some(i))]
     #[requires(i.op(self) == Some(self))]
@@ -160,30 +169,39 @@ pub trait RA: Sized {
     fn core_is_maximal_idemp(self, i: Self);
 }
 
+/// Unitary RAs are RA with a neutral element.
 pub trait UnitRA: RA {
+    /// The unit element
     #[logic]
     #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self;
 
-    #[logic(law, sealed)]
+    /// In unitary RAs, the inclusion relation is reflexive
+    #[logic(law)]
     #[ensures(forall<x: Self> x.incl(x))]
     fn incl_refl() {
         let _ = Self::unit();
     }
 
-    #[logic(law, sealed)]
-    #[ensures(Self::unit().core_total() == Self::unit())]
-    fn unit_core() {}
-
+    /// In unitary RAs, the core is a total function. For better automation, it
+    /// is given a simpler, total definition.
     #[logic(open)]
-    #[ensures(result.op(result) == Some(result))]
-    #[ensures(result.op(self) == Some(self))]
+    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
-        let _ = self.core_is_maximal_idemp(Self::unit());
+        self.core_is_maximal_idemp(Self::unit());
         self.core().unwrap_logic()
     }
 
-    #[logic] // TODO: make this a law
-    #[ensures(self.core() == Some(self.core_total()))]
-    fn core_is_total(self);
+    /// The specification of [`core_total`]
+    #[logic]
+    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
+    #[ensures(self.core_total().op(self) == Some(self))]
+    fn core_total_idemp(self);
+
+    /// The unit is its own core
+    #[logic(law)]
+    #[ensures(Self::unit().core_total() == Self::unit())]
+    fn unit_core() {
+        Self::unit().core_idemp()
+    }
 }

@@ -116,7 +116,7 @@ pub fn declare_namespace(namespace: TS1) -> TS1 {
         #[logic(opaque)]
         #[creusot::decl::new_namespace]
         #[allow(nonstandard_style)]
-        pub fn #ident() -> ::creusot_std::ghost::local_invariant::Namespace {
+        pub fn #ident() -> ::creusot_std::ghost::invariant::Namespace {
             dead
         }
     }

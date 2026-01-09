@@ -30,13 +30,17 @@ impl<T> RA for Ag<T> {
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
         Some(self)
     }
+
+    #[logic]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {}
 
     #[logic]
     #[requires(i.op(i) == Some(i))]

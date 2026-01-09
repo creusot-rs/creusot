@@ -69,12 +69,19 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
-        Some(self.core_total())
+        Some(self.filter_map(|(_, v): (K, V)| v.core()))
+    }
+
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {
+        self.core_total_idemp()
     }
 
     #[logic]
@@ -98,18 +105,20 @@ impl<K, V: RA> UnitRA for FMap<K, V> {
     }
 
     #[logic(open)]
-    #[ensures(result.op(result) == Some(result))]
-    #[ensures(result.op(self) == Some(self))]
+    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
-        let r = self.filter_map(|(_, v): (K, V)| v.core());
-        proof_assert!(r.op(r).unwrap_logic().ext_eq(r));
-        proof_assert!(r.op(self).unwrap_logic().ext_eq(self));
-        r
+        self.filter_map(|(_, v): (K, V)| v.core())
     }
 
     #[logic]
-    #[ensures(self.core() == Some(self.core_total()))]
-    fn core_is_total(self) {}
+    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
+    #[ensures(self.core_total().op(self) == Some(self))]
+    fn core_total_idemp(self) {
+        let _ = V::core_idemp;
+        let c = self.core_total();
+        proof_assert!(c.op(c).unwrap_logic().ext_eq(c));
+        proof_assert!(c.op(self).unwrap_logic().ext_eq(self));
+    }
 }
 
 impl<K, V: RA> FMap<K, V> {

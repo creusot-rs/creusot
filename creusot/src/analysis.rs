@@ -75,9 +75,9 @@ pub struct BorrowData<'tcx> {
     final_borrows: HashMap<Orphan<Location>, BorrowId>,
     /// Locations where two-phase borrows are created.
     /// We will use this to delay the creation of two-phase borrows in our translation.
-    two_phase_created: HashSet<Orphan<Location>>,
+    two_phases_created: HashSet<Orphan<Location>>,
     /// Locations where two-phase borrows are activated, with the lhs, rhs of the borrow assignment, and whether the borrow is final
-    two_phase_activated: HashMap<Orphan<Location>, Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)>>,
+    two_phases_activated: HashMap<Orphan<Location>, Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)>>,
 }
 
 impl<'tcx> BorrowData<'tcx> {
@@ -85,8 +85,8 @@ impl<'tcx> BorrowData<'tcx> {
         BorrowData {
             resolved_at: HashMap::new(),
             resolved_between_blocks: HashMap::new(),
-            two_phase_created: HashSet::new(),
-            two_phase_activated: HashMap::new(),
+            two_phases_created: HashSet::new(),
+            two_phases_activated: HashMap::new(),
             final_borrows: HashMap::new(),
         }
     }
@@ -113,15 +113,15 @@ impl<'tcx> BorrowData<'tcx> {
             .map_or(fmir::BorrowKind::Mut, fmir::BorrowKind::Final)
     }
 
-    pub(crate) fn is_two_phase_at(&self, loc: Location) -> bool {
-        self.two_phase_created.contains(&Orphan(loc))
+    pub(crate) fn is_two_phases_at(&self, loc: Location) -> bool {
+        self.two_phases_created.contains(&Orphan(loc))
     }
 
-    pub(crate) fn remove_two_phase_activated_at(
+    pub(crate) fn remove_two_phases_activated_at(
         &mut self,
         loc: Location,
     ) -> Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)> {
-        self.two_phase_activated.remove(&Orphan(loc)).unwrap_or(vec![])
+        self.two_phases_activated.remove(&Orphan(loc)).unwrap_or(vec![])
     }
 }
 
@@ -681,7 +681,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     fn analyze_statement(&mut self, statement: &mir::Statement<'tcx>, loc: Location) {
-        self.activate_two_phase(loc);
+        self.activate_two_phases(loc);
         use mir::StatementKind::*;
         match statement.kind {
             Assign(box (pl, ref rvalue)) => {
@@ -726,7 +726,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     fn analyze_assign(&mut self, rvalue: &mir::Rvalue<'tcx>, loc: Location, si: mir::SourceInfo) {
         match rvalue {
             mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, pl) => {
-                if !self.is_two_phase(loc) {
+                if !self.is_two_phases(loc) {
                     self.check_final(pl, loc);
                 }
             }
@@ -761,7 +761,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     fn analyze_terminator(&mut self, terminator: &mir::Terminator<'tcx>, mut loc: Location) {
-        self.activate_two_phase(loc);
+        self.activate_two_phases(loc);
         use mir::TerminatorKind::*;
         match terminator.kind {
             Return => {
@@ -840,19 +840,19 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     /// Store the location if it is a two-phase borrow creation.
-    fn is_two_phase(&mut self, loc: Location) -> bool {
+    fn is_two_phases(&mut self, loc: Location) -> bool {
         let borrows = self.resolver.borrow_set();
-        let is_two_phase = borrows.location_map().get(&loc).iter().any(|borrow| {
+        let is_two_phases = borrows.location_map().get(&loc).iter().any(|borrow| {
             matches!(borrow.activation_location(), TwoPhaseActivation::ActivatedAt(_))
         });
-        if is_two_phase {
-            self.data.two_phase_created.insert(Orphan(loc));
+        if is_two_phases {
+            self.data.two_phases_created.insert(Orphan(loc));
         }
-        is_two_phase
+        is_two_phases
     }
 
     /// Collect two-phase borrows activated at this location.
-    fn activate_two_phase(&mut self, loc: Location) {
+    fn activate_two_phases(&mut self, loc: Location) {
         let not_final_places = &mut self.not_final_places;
         let borrows = self.resolver.borrow_set();
         let mut activations = Vec::new();
@@ -863,7 +863,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             activations.push((borrow.assigned_place(), borrowed, is_final))
         }
         if !activations.is_empty() {
-            self.data.two_phase_activated.insert(Orphan(loc), activations);
+            self.data.two_phases_activated.insert(Orphan(loc), activations);
         }
     }
 

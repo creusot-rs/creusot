@@ -2,8 +2,8 @@ extern crate creusot_std;
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        local_invariant::{
-            LocalInvariant, LocalInvariantExt as _, Protocol, Tokens, declare_namespace,
+        invariant::{
+            NonAtomicInvariant, NonAtomicInvariantExt as _, Protocol, Tokens, declare_namespace,
         },
         perm::Perm,
     },
@@ -15,7 +15,7 @@ declare_namespace! { PERMCELL }
 /// A cell that simply asserts its content's invariant.
 pub struct CellInv<T> {
     data: PermCell<T>,
-    permission: Ghost<LocalInvariant<PermCellLocalInv<T>>>,
+    permission: Ghost<NonAtomicInvariant<PermCellNAInv<T>>>,
 }
 impl<T> Invariant for CellInv<T> {
     #[logic]
@@ -24,8 +24,8 @@ impl<T> Invariant for CellInv<T> {
     }
 }
 
-struct PermCellLocalInv<T>(Box<Perm<PermCell<T>>>);
-impl<T> Protocol for PermCellLocalInv<T> {
+struct PermCellNAInv<T>(Box<Perm<PermCell<T>>>);
+impl<T> Protocol for PermCellNAInv<T> {
     type Public = PermCell<T>;
 
     #[logic]

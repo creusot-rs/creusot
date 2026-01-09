@@ -2,7 +2,8 @@
 //!
 //! See [`Resource`].
 
-pub mod fmap_view;
+mod auth;
+pub use auth::{Authority, Fragment};
 
 // We use a nested module that we re-export, to make sure that the definitions
 // are opaque to the fmap_view module
@@ -41,7 +42,7 @@ mod m {
     use crate::{
         logic::{
             Id, Set,
-            ra::{RA, update::Update},
+            ra::{RA, UnitRA, update::Update},
         },
         prelude::*,
     };
@@ -68,8 +69,8 @@ mod m {
         /// Get the id for this resource.
         ///
         /// This is the same as [`Self::id`], but for ghost code.
-        #[check(ghost)]
         #[trusted]
+        #[check(ghost)]
         #[ensures(result == self.id())]
         pub fn id_ghost(&self) -> Id {
             panic!("ghost code only")
@@ -91,6 +92,17 @@ mod m {
         #[ensures(result@ == *r)]
         pub fn alloc(r: Snapshot<R>) -> Ghost<Self> {
             Ghost::conjure()
+        }
+
+        /// Create a unit resource for a given identifier
+        #[trusted]
+        #[check(ghost)]
+        #[ensures(result@ == R::unit() && result.id() == id)]
+        pub fn new_unit(id: Id) -> Self
+        where
+            R: UnitRA,
+        {
+            panic!("ghost code only")
         }
 
         /// Dummy resource.
@@ -161,7 +173,7 @@ mod m {
 
         /// Join two owned resources together.
         ///
-        /// See also [`Self::join_mut`] and [`Self::join_shared`].
+        /// See also [`Self::join_in`] and [`Self::join_shared`].
         ///
         /// # Corresponding reasoning
         ///
@@ -216,7 +228,7 @@ mod m {
         #[requires(self.id() == other.id())]
         #[ensures(^self == *self)]
         #[ensures(self@.op(other@) != None)]
-        pub fn valid_shared(&mut self, other: &Self) {}
+        pub fn valid_op_lemma(&mut self, other: &Self) {}
 
         /// This private function axiomatizes updates as they are formalized in Iris.
         #[trusted]
@@ -250,6 +262,17 @@ mod m {
             let _ = snapshot!(U::frame_preserving);
             let r = self.update_raw(target_s);
             snapshot!(such_that(|ch| upd.update(*v, ch) == *r))
+        }
+    }
+
+    impl<R: UnitRA> Resource<R> {
+        #[check(ghost)]
+        #[ensures((^self).id() == self.id() && result.id() == self.id())]
+        #[ensures((^self)@ == UnitRA::unit())]
+        #[ensures(result@ == self@)]
+        pub fn take(&mut self) -> Self {
+            let r = snapshot!(self@);
+            self.split_off(r, snapshot!(UnitRA::unit()))
         }
     }
 }

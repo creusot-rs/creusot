@@ -1,9 +1,10 @@
 //! Common definitions for `creusot` and `dummy` macro implementations.
-use proc_macro2::TokenStream;
-use quote::{ToTokens, TokenStreamExt};
+use proc_macro2::{Delimiter, Group, Literal, TokenStream, TokenTree};
+use quote::{ToTokens, TokenStreamExt, quote_spanned};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
+    visit_mut::{VisitMut, visit_expr_closure_mut},
     *,
 };
 
@@ -110,5 +111,62 @@ impl ToTokens for ContractSubject {
             ContractSubject::FnOrMethod(tr) => tr.to_tokens(tokens),
             ContractSubject::Closure(closure) => closure.to_tokens(tokens),
         }
+    }
+}
+
+pub(crate) struct GhostLet {
+    pub mutability: Option<syn::Token![mut]>,
+    pub var: syn::Ident,
+    pub body: syn::Expr,
+}
+
+impl syn::parse::Parse for GhostLet {
+    fn parse(input: parse::ParseStream) -> syn::Result<Self> {
+        let mutability = input.parse()?;
+        let var = input.parse()?;
+        let _: syn::Token![=] = input.parse()?;
+        let body = input.parse()?;
+        Ok(Self { mutability, var, body })
+    }
+}
+
+/// Change `xxxint` into `*::creusot_std::logic::Int::new(xxx)`.
+pub(crate) fn ghost_int_lit_suffix(tokens: TokenStream) -> TokenStream {
+    tokens
+        .into_iter()
+        .map(|t| match t {
+            TokenTree::Group(group) => {
+                let mut result = Group::new(group.delimiter(), ghost_int_lit_suffix(group.stream()));
+                result.set_span(group.span());
+                TokenTree::Group(result)
+            }
+            TokenTree::Literal(literal) => {
+                let lit = literal.to_string();
+                if let Some(lit) = lit.strip_suffix("int") {
+                    let span = proc_macro2::Span::from(literal.span());
+                    let mut lit = Literal::i128_suffixed(lit.parse::<i128>().unwrap());
+                    lit.set_span(span);
+                    let mut group = Group::new(
+                        Delimiter::None,
+                        quote_spanned!(span => ::creusot_std::ghost::Ghost::into_inner(::creusot_std::logic::Int::new(#lit))).into(),
+                    );
+                    group.set_span(literal.span());
+                    TokenTree::Group(group)
+                } else {
+                    TokenTree::Literal(literal)
+                }
+            }
+            TokenTree::Ident(_) | TokenTree::Punct(_) => t,
+        })
+        .collect()
+}
+
+pub(crate) struct GhostClosuresVisitor;
+
+impl VisitMut for GhostClosuresVisitor {
+    fn visit_expr_closure_mut(&mut self, i: &mut ExprClosure) {
+        let attr: Attribute = parse_quote!(#[check(ghost)]);
+        i.attrs.push(attr);
+        visit_expr_closure_mut(self, i);
     }
 }

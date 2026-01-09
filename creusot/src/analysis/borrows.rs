@@ -29,6 +29,9 @@ pub struct Borrows<'a, 'mir, 'tcx> {
 //     while we do it at the start of the "primary effects". Our before effects
 //     are no-ops. This is important that before effect be no-ops, because we
 //     want to observe the evolution of the analysis state through instructions.
+//
+// TODO: in Creusot, we should consider active borrows rather than reserved
+// borrows (which makes a difference when having two-phase borrows).
 
 impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     pub fn new(

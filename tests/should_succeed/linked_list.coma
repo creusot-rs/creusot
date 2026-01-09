@@ -462,6 +462,10 @@ module M_impl_List_T__push_back (* List<T> *)
   
   meta "rewrite_def" predicate inv_refmut_Perm_ptr_Link_T
   
+  predicate resolve_refmut_Perm_ptr_Link_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_Link_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_ptr_Link_T
+  
   predicate invariant_Ghost_refmut_Perm_ptr_Link_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_Link_T) =
     inv_refmut_Perm_ptr_Link_T self
   
@@ -478,10 +482,6 @@ module M_impl_List_T__push_back (* List<T> *)
     [ return (result: MutBorrow.t t_Perm_ptr_Link_T) -> {inv_Ghost_refmut_Perm_ptr_Link_T result}
       {result = x}
       (! return {result}) ]
-  
-  predicate resolve_refmut_Perm_ptr_Link_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_Link_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Perm_ptr_Link_T
   
   predicate invariant_refmut_Link_T [@inline:trivial] (self: MutBorrow.t t_Link_T) =
     inv_Link_T self.current /\ inv_Link_T self.final
@@ -599,75 +599,81 @@ module M_impl_List_T__push_back (* List<T> *)
     | bb7 = s0
       [ s0 = [ &_21 <- self.current.last ] s1
       | s1 = deref_Ghost_Seq_Box_Perm_ptr_Link_T_Global {self.current.seq}
-          (fun (_x: Seq.seq t_Perm_ptr_Link_T) -> [ &_29 <- _x ] s2)
-      | s2 = len_ghost_Box_Perm_ptr_Link_T_Global {_29} (fun (_x: int) -> [ &_27 <- _x ] s3)
-      | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_32 <- _x ] s4)
-      | s4 = into_inner_Int {_32} (fun (_x: int) -> [ &_31 <- _x ] s5)
-      | s5 = sub_Int {_27} {_31} (fun (_x: int) -> [ &off <- _x ] s6)
+          (fun (_x: Seq.seq t_Perm_ptr_Link_T) -> [ &_30 <- _x ] s2)
+      | s2 = len_ghost_Box_Perm_ptr_Link_T_Global {_30} (fun (_x: int) -> [ &_28 <- _x ] s3)
+      | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_33 <- _x ] s4)
+      | s4 = into_inner_Int {_33} (fun (_x: int) -> [ &_32 <- _x ] s5)
+      | s5 = sub_Int {_28} {_32} (fun (_x: int) -> [ &off <- _x ] s6)
       | s6 = MutBorrow.borrow_mut <Seq.seq t_Perm_ptr_Link_T> {self.current.seq}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_37 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &_38 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
             [ &self <- { self with current = { self.current with seq = _bor.final } } ] s7)
         [ _ck -> (! {inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current.seq} any) ]
-      | s7 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_37}
-          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_36 <- _x ] s8)
-      | s8 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_36.current} {MutBorrow.get_id _36}
+      | s7 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_38}
+          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_37 <- _x ] s8)
+      | s8 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_35 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
-            [ &_36 <- { _36 with current = _bor.final } ] s9)
-        [ _ck -> (! {inv_Seq_Box_Perm_ptr_Link_T_Global _36.current} any) ]
-      | s9 = get_mut_ghost_Box_Perm_ptr_Link_T_Global {_35} {off}
-          (fun (_x: t_Option_refmut_Box_Perm_ptr_Link_T_Global) -> [ &_34 <- _x ] s10)
-      | s10 = unwrap_refmut_Box_Perm_ptr_Link_T_Global {_34}
-          (fun (_x: MutBorrow.t t_Perm_ptr_Link_T) -> [ &_33 <- _x ] s11)
-      | s11 = MutBorrow.borrow_final <t_Perm_ptr_Link_T> {_33.current} {MutBorrow.get_id _33}
+            [ &_36 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &_37 <- { _37 with current = _bor.final } ] s9)
+        [ _ck -> (! {inv_Seq_Box_Perm_ptr_Link_T_Global _37.current} any) ]
+      | s9 = get_mut_ghost_Box_Perm_ptr_Link_T_Global {_36} {off}
+          (fun (_x: t_Option_refmut_Box_Perm_ptr_Link_T_Global) -> [ &_35 <- _x ] s10)
+      | s10 = unwrap_refmut_Box_Perm_ptr_Link_T_Global {_35}
+          (fun (_x: MutBorrow.t t_Perm_ptr_Link_T) -> [ &_34 <- _x ] s11)
+      | s11 = MutBorrow.borrow_final <t_Perm_ptr_Link_T> {_34.current} {MutBorrow.get_id _34}
+          (fun (_bor: MutBorrow.t t_Perm_ptr_Link_T) ->
+            [ &_26 <- _bor ] -{inv_Perm_ptr_Link_T _bor.final}-
+            [ &_34 <- { _34 with current = _bor.final } ] s12) [ _ck -> (! {inv_Perm_ptr_Link_T _34.current} any) ]
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _37} any) ]
+      | s13 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _37}- s14
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Link_T_Global _34} any) ]
+      | s15 = -{resolve_refmut_Box_Perm_ptr_Link_T_Global _34}- s16
+      | s16 = MutBorrow.borrow_final <t_Perm_ptr_Link_T> {_26.current} {MutBorrow.get_id _26}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Link_T) ->
             [ &_25 <- _bor ] -{inv_Perm_ptr_Link_T _bor.final}-
-            [ &_33 <- { _33 with current = _bor.final } ] s12) [ _ck -> (! {inv_Perm_ptr_Link_T _33.current} any) ]
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _36} any) ]
-      | s13 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _36}- s14
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Link_T_Global _33} any) ]
-      | s15 = -{resolve_refmut_Box_Perm_ptr_Link_T_Global _33}- s16
-      | s16 = MutBorrow.borrow_final <t_Perm_ptr_Link_T> {_25.current} {MutBorrow.get_id _25}
+            [ &_26 <- { _26 with current = _bor.final } ] s17) [ _ck -> (! {inv_Perm_ptr_Link_T _26.current} any) ]
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Link_T _26} any) ]
+      | s18 = -{resolve_refmut_Perm_ptr_Link_T _26}- s19
+      | s19 = MutBorrow.borrow_final <t_Perm_ptr_Link_T> {_25.current} {MutBorrow.get_id _25}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Link_T) ->
             [ &_24 <- _bor ] -{inv_Perm_ptr_Link_T _bor.final}-
-            [ &_25 <- { _25 with current = _bor.final } ] s17) [ _ck -> (! {inv_Perm_ptr_Link_T _25.current} any) ]
-      | s17 = new_refmut_Perm_ptr_Link_T {_24} (fun (_x: MutBorrow.t t_Perm_ptr_Link_T) -> [ &_23 <- _x ] s18)
-      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Link_T _25} any) ]
-      | s19 = -{resolve_refmut_Perm_ptr_Link_T _25}- s20
-      | s20 = as_mut_Link_T {_21} {_23} (fun (_x: MutBorrow.t t_Link_T) -> [ &_20 <- _x ] s21)
-      | s21 = MutBorrow.borrow_final <t_Link_T> {_20.current} {MutBorrow.get_id _20}
+            [ &_25 <- { _25 with current = _bor.final } ] s20) [ _ck -> (! {inv_Perm_ptr_Link_T _25.current} any) ]
+      | s20 = new_refmut_Perm_ptr_Link_T {_24} (fun (_x: MutBorrow.t t_Perm_ptr_Link_T) -> [ &_23 <- _x ] s21)
+      | s21 = s22 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Link_T _25} any) ]
+      | s22 = -{resolve_refmut_Perm_ptr_Link_T _25}- s23
+      | s23 = as_mut_Link_T {_21} {_23} (fun (_x: MutBorrow.t t_Link_T) -> [ &_20 <- _x ] s24)
+      | s24 = MutBorrow.borrow_final <t_Link_T> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_Link_T) ->
             [ &link_last <- _bor ] -{inv_Link_T _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s22) [ _ck -> (! {inv_Link_T _20.current} any) ]
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Link_T _20} any) ]
-      | s23 = -{resolve_refmut_Link_T _20}- s24
-      | s24 = [ &link_last <- { link_last with current = { link_last.current with next = link_ptr } } ] s25
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Link_T link_last} any) ]
-      | s26 = -{resolve_refmut_Link_T link_last}- s27
-      | s27 = [ &self <- { self with current = { self.current with last = link_ptr } } ] s28
-      | s28 = bb18 ]
+            [ &_20 <- { _20 with current = _bor.final } ] s25) [ _ck -> (! {inv_Link_T _20.current} any) ]
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Link_T _20} any) ]
+      | s26 = -{resolve_refmut_Link_T _20}- s27
+      | s27 = [ &link_last <- { link_last with current = { link_last.current with next = link_ptr } } ] s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_Link_T link_last} any) ]
+      | s29 = -{resolve_refmut_Link_T link_last}- s30
+      | s30 = [ &self <- { self with current = { self.current with last = link_ptr } } ] s31
+      | s31 = bb18 ]
     | bb18 = s0
       [ s0 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {self.current.seq}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 3}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_45 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &_46 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
             [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
         [ _ck -> (! {inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current.seq} any) ]
-      | s1 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_45}
-          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_44 <- _x ] s2)
-      | s2 = into_inner_Box_Perm_ptr_Link_T_Global {link_own} (fun (_x: t_Perm_ptr_Link_T) -> [ &_46 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_44.current} {MutBorrow.get_id _44}
+      | s1 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_46}
+          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_45 <- _x ] s2)
+      | s2 = into_inner_Box_Perm_ptr_Link_T_Global {link_own} (fun (_x: t_Perm_ptr_Link_T) -> [ &_47 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_45.current} {MutBorrow.get_id _45}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_43 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
-            [ &_44 <- { _44 with current = _bor.final } ] s4)
-        [ _ck -> (! {inv_Seq_Box_Perm_ptr_Link_T_Global _44.current} any) ]
-      | s4 = push_back_ghost_Box_Perm_ptr_Link_T_Global {_43} {_46} (fun (_x: ()) -> [ &_42 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _44} any) ]
-      | s6 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _44}- s7
+            [ &_44 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &_45 <- { _45 with current = _bor.final } ] s4)
+        [ _ck -> (! {inv_Seq_Box_Perm_ptr_Link_T_Global _45.current} any) ]
+      | s4 = push_back_ghost_Box_Perm_ptr_Link_T_Global {_44} {_47} (fun (_x: ()) -> [ &_43 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _45} any) ]
+      | s6 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _45}- s7
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
       | s8 = -{resolve_refmut_List_T self}- s9
-      | s9 = new_unit {_42} (fun (_x: ()) -> [ &_41 <- _x ] s10)
+      | s9 = new_unit {_43} (fun (_x: ()) -> [ &_42 <- _x ] s10)
       | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_List_T = self
@@ -685,22 +691,23 @@ module M_impl_List_T__push_back (* List<T> *)
     | & _23: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
     | & _24: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
     | & _25: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
+    | & _26: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
     | & off: int = Any.any_l ()
-    | & _27: int = Any.any_l ()
-    | & _29: Seq.seq t_Perm_ptr_Link_T = Any.any_l ()
-    | & _31: int = Any.any_l ()
+    | & _28: int = Any.any_l ()
+    | & _30: Seq.seq t_Perm_ptr_Link_T = Any.any_l ()
     | & _32: int = Any.any_l ()
-    | & _33: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
-    | & _34: t_Option_refmut_Box_Perm_ptr_Link_T_Global = Any.any_l ()
-    | & _35: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & _33: int = Any.any_l ()
+    | & _34: MutBorrow.t t_Perm_ptr_Link_T = Any.any_l ()
+    | & _35: t_Option_refmut_Box_Perm_ptr_Link_T_Global = Any.any_l ()
     | & _36: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
     | & _37: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
-    | & _41: () = Any.any_l ()
+    | & _38: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
     | & _42: () = Any.any_l ()
-    | & _43: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & _43: () = Any.any_l ()
     | & _44: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
     | & _45: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
-    | & _46: t_Perm_ptr_Link_T = Any.any_l () ])
+    | & _46: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & _47: t_Perm_ptr_Link_T = Any.any_l () ])
     [ return (result: ()) -> {[@expl:push_back ensures] view_List_T self.final
       = Seq.snoc (view_List_T self.current) value'0}
       (! return {result}) ]

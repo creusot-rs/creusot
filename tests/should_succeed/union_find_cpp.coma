@@ -1679,82 +1679,88 @@ module M_implementation__find
       [ s0 = elim_Link {_21} (fun (r0: t_Elem) -> [ &e <- r0 ] s1)
       | s1 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_33 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &_34 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
             [ &uf <- _bor.final ] s2) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
-      | s2 = deref_mut_Ghost_refmut_UF_T {_33} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_32 <- _x ] s3)
-      | s3 = MutBorrow.borrow_mut <t_UF_T> {_32.current.current}
+      | s2 = deref_mut_Ghost_refmut_UF_T {_34} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_33 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_UF_T> {_33.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_32 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_33 <- { _33 with current = { _33.current with current = _bor.final } } ] s4)
+        [ _ck -> (! {inv_UF_T _33.current.current} any) ]
+      | s4 = MutBorrow.borrow_final <t_UF_T> {_32.current} {MutBorrow.get_id _32}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_31 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_32 <- { _32 with current = { _32.current with current = _bor.final } } ] s4)
-        [ _ck -> (! {inv_UF_T _32.current.current} any) ]
-      | s4 = MutBorrow.borrow_final <t_UF_T> {_31.current} {MutBorrow.get_id _31}
+            [ &_32 <- { _32 with current = _bor.final } ] s5) [ _ck -> (! {inv_UF_T _32.current} any) ]
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _33} any) ]
+      | s6 = -{resolve_refmut_refmut_UF_T _33}- s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _32} any) ]
+      | s8 = -{resolve_refmut_UF_T _32}- s9
+      | s9 = MutBorrow.borrow_final <t_UF_T> {_31.current} {MutBorrow.get_id _31}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_30 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_31 <- { _31 with current = _bor.final } ] s5) [ _ck -> (! {inv_UF_T _31.current} any) ]
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _32} any) ]
-      | s6 = -{resolve_refmut_refmut_UF_T _32}- s7
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _31} any) ]
-      | s8 = -{resolve_refmut_UF_T _31}- s9
-      | s9 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
+            [ &_31 <- { _31 with current = _bor.final } ] s10) [ _ck -> (! {inv_UF_T _31.current} any) ]
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _31} any) ]
+      | s11 = -{resolve_refmut_UF_T _31}- s12
+      | s12 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_29 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_30 <- { _30 with current = _bor.final } ] s10) [ _ck -> (! {inv_UF_T _30.current} any) ]
-      | s10 = new_refmut_UF_T {_29} (fun (_x: MutBorrow.t t_UF_T) -> [ &_28 <- _x ] s11)
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
-      | s12 = -{resolve_refmut_UF_T _30}- s13
-      | s13 = find_T {_28} {e} (fun (_x: t_Elem) -> [ &root <- _x ] s14)
-      | s14 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+            [ &_30 <- { _30 with current = _bor.final } ] s13) [ _ck -> (! {inv_UF_T _30.current} any) ]
+      | s13 = new_refmut_UF_T {_29} (fun (_x: MutBorrow.t t_UF_T) -> [ &_28 <- _x ] s14)
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
+      | s15 = -{resolve_refmut_UF_T _30}- s16
+      | s16 = find_T {_28} {e} (fun (_x: t_Elem) -> [ &root <- _x ] s17)
+      | s17 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_37 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s15) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
-      | s15 = deref_mut_Ghost_refmut_UF_T {_37} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_36 <- _x ] s16)
-      | s16 = MutBorrow.borrow_mut <t_UFInner_T> {_36.current.current.f0'0}
+            [ &_38 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s18) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
+      | s18 = deref_mut_Ghost_refmut_UF_T {_38} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_37 <- _x ] s19)
+      | s19 = MutBorrow.borrow_mut <t_UFInner_T> {_37.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp'0 <- _bor ] -{inv_UFInner_T _bor.final}-
-            [ &_36 <- { _36 with current = { _36.current with current = { f0'0 = _bor.final } } } ] s17)
-        [ _ck -> (! {inv_UFInner_T _36.current.current.f0'0} any) ]
-      | s17 = new_refmut_UFInner_T {__temp'0} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s18)
-      | s18 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+            [ &_37 <- { _37 with current = { _37.current with current = { f0'0 = _bor.final } } } ] s20)
+        [ _ck -> (! {inv_UFInner_T _37.current.current.f0'0} any) ]
+      | s20 = new_refmut_UFInner_T {__temp'0} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s21)
+      | s21 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_45 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
-            [ &uf'0 <- _bor.final ] s19) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
-      | s19 = deref_mut_Ghost_refmut_UFInner_T {_45}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_44 <- _x ] s20)
-      | s20 = [ &_47 <- elem ] s21
-      | s21 = MutBorrow.borrow_mut <t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {_44.current.current.perms}
+            [ &_46 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &uf'0 <- _bor.final ] s22) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s22 = deref_mut_Ghost_refmut_UFInner_T {_46}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_45 <- _x ] s23)
+      | s23 = [ &_48 <- elem ] s24
+      | s24 = MutBorrow.borrow_mut <t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {_45.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) ->
-            [ &_43 <- _bor ] -{inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
-            [ &_44 <- { _44 with current = { _44.current with current = { _44.current.current with perms = _bor.final } } } ]
-            s22) [ _ck -> (! {inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _44.current.current.perms} any) ]
-      | s22 = get_mut_ghost_Elem {_43} {_47}
-          (fun (_x: t_Option_refmut_Box_Perm_ptr_Node_T_Global) -> [ &_42 <- _x ] s23)
-      | s23 = unwrap_refmut_Box_Perm_ptr_Node_T_Global {_42}
-          (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_41 <- _x ] s24)
-      | s24 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_41.current} {MutBorrow.get_id _41}
+            [ &_44 <- _bor ] -{inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
+            [ &_45 <- { _45 with current = { _45.current with current = { _45.current.current with perms = _bor.final } } } ]
+            s25) [ _ck -> (! {inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _45.current.current.perms} any) ]
+      | s25 = get_mut_ghost_Elem {_44} {_48}
+          (fun (_x: t_Option_refmut_Box_Perm_ptr_Node_T_Global) -> [ &_43 <- _x ] s26)
+      | s26 = unwrap_refmut_Box_Perm_ptr_Node_T_Global {_43}
+          (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_42 <- _x ] s27)
+      | s27 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_42.current} {MutBorrow.get_id _42}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
             [ &__temp'1 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
-            [ &_41 <- { _41 with current = _bor.final } ] s25) [ _ck -> (! {inv_Perm_ptr_Node_T _41.current} any) ]
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _44} any) ]
-      | s26 = -{resolve_refmut_refmut_UFInner_T _44}- s27
-      | s27 = new_refmut_Perm_ptr_Node_T {__temp'1} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &mut_perm <- _x ] s28)
-      | s28 = [ &_51 <- Link root ] s29
-      | s29 = [ &_54 <- elem.f0 ] s30
-      | s30 = as_mut_Node_T {_54} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_53 <- _x ] s31)
-      | s31 = s32 [ _ck -> (! {[@expl:type invariant] inv_Node_T _53.current} any) ]
-      | s32 = -{resolve_Node_T _53.current}- s33
-      | s33 = [ &_53 <- { _53 with current = _51 } ] s34
-      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _53} any) ]
-      | s35 = -{resolve_refmut_Node_T _53}- s36
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _41} any) ]
-      | s37 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _41}- s38
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
-      | s39 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s40
-      | s40 = s41 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _36} any) ]
-      | s41 = -{resolve_refmut_refmut_UF_T _36}- s42
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s43 = -{resolve_Ghost_refmut_UF_T uf}- s44
-      | s44 = [ &_ret <- root ] s45
-      | s45 = return {_ret} ]
+            [ &_42 <- { _42 with current = _bor.final } ] s28) [ _ck -> (! {inv_Perm_ptr_Node_T _42.current} any) ]
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _45} any) ]
+      | s29 = -{resolve_refmut_refmut_UFInner_T _45}- s30
+      | s30 = new_refmut_Perm_ptr_Node_T {__temp'1} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &mut_perm <- _x ] s31)
+      | s31 = [ &_52 <- Link root ] s32
+      | s32 = [ &_55 <- elem.f0 ] s33
+      | s33 = as_mut_Node_T {_55} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_54 <- _x ] s34)
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_Node_T _54.current} any) ]
+      | s35 = -{resolve_Node_T _54.current}- s36
+      | s36 = [ &_54 <- { _54 with current = _52 } ] s37
+      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _54} any) ]
+      | s38 = -{resolve_refmut_Node_T _54}- s39
+      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _42} any) ]
+      | s40 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _42}- s41
+      | s41 = s42 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
+      | s42 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s43
+      | s43 = s44 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _37} any) ]
+      | s44 = -{resolve_refmut_refmut_UF_T _37}- s45
+      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s46 = -{resolve_Ghost_refmut_UF_T uf}- s47
+      | s47 = [ &_ret <- root ] s48
+      | s48 = return {_ret} ]
     | bb7 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
       | s1 = -{resolve_Ghost_refmut_UF_T uf}- s2
@@ -1777,23 +1783,24 @@ module M_implementation__find
     | & _29: MutBorrow.t t_UF_T = Any.any_l ()
     | & _30: MutBorrow.t t_UF_T = Any.any_l ()
     | & _31: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _32: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _32: MutBorrow.t t_UF_T = Any.any_l ()
     | & _33: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _34: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & __temp'0: MutBorrow.t t_UFInner_T = Any.any_l ()
-    | & _36: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & _37: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _38: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & uf'0: MutBorrow.t t_UFInner_T = Any.any_l ()
     | & __temp'1: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
-    | & _41: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
-    | & _42: t_Option_refmut_Box_Perm_ptr_Node_T_Global = Any.any_l ()
-    | & _43: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global = Any.any_l ()
-    | & _44: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _42: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
+    | & _43: t_Option_refmut_Box_Perm_ptr_Node_T_Global = Any.any_l ()
+    | & _44: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global = Any.any_l ()
     | & _45: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _47: t_Elem = Any.any_l ()
+    | & _46: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _48: t_Elem = Any.any_l ()
     | & mut_perm: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
-    | & _51: t_Node_T = Any.any_l ()
-    | & _53: MutBorrow.t t_Node_T = Any.any_l ()
-    | & _54: Opaque.ptr = Any.any_l () ])
+    | & _52: t_Node_T = Any.any_l ()
+    | & _54: MutBorrow.t t_Node_T = Any.any_l ()
+    | & _55: Opaque.ptr = Any.any_l () ])
     [ return (result: t_Elem) -> {[@expl:find ensures #0] result = root_T uf.current elem}
       {[@expl:find ensures #1] unchanged_T uf}
       (! return {result}) ]
@@ -2775,6 +2782,10 @@ module M_implementation__link
   
   meta "rewrite_def" predicate resolve_refmut_refmut_Box_Perm_ptr_Node_T_Global
   
+  predicate resolve_refmut_Perm_ptr_Node_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_Node_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_ptr_Node_T
+  
   predicate invariant_Ghost_refmut_Perm_ptr_Node_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_Node_T) =
     inv_refmut_Perm_ptr_Node_T self
   
@@ -2791,10 +2802,6 @@ module M_implementation__link
     [ return (result: MutBorrow.t t_Perm_ptr_Node_T) -> {inv_Ghost_refmut_Perm_ptr_Node_T result}
       {result = x}
       (! return {result}) ]
-  
-  predicate resolve_refmut_Perm_ptr_Node_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_Node_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Perm_ptr_Node_T
   
   predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
     inv_Node_T self.current /\ inv_Node_T self.final
@@ -3134,77 +3141,89 @@ module M_implementation__link
       | s11 = [ &_71 <- x.f0 ] s12
       | s12 = MutBorrow.borrow_mut <MutBorrow.t t_Perm_ptr_Node_T> {perm_x'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) ->
-            [ &_78 <- _bor ] -{inv_Ghost_refmut_Box_Perm_ptr_Node_T_Global _bor.final}-
+            [ &_79 <- _bor ] -{inv_Ghost_refmut_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &perm_x'0 <- _bor.final ] s13) [ _ck -> (! {inv_Ghost_refmut_Box_Perm_ptr_Node_T_Global perm_x'0} any) ]
-      | s13 = deref_mut_Ghost_refmut_Box_Perm_ptr_Node_T_Global {_78}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) -> [ &_77 <- _x ] s14)
-      | s14 = MutBorrow.borrow_mut <t_Perm_ptr_Node_T> {_77.current.current}
+      | s13 = deref_mut_Ghost_refmut_Box_Perm_ptr_Node_T_Global {_79}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) -> [ &_78 <- _x ] s14)
+      | s14 = MutBorrow.borrow_mut <t_Perm_ptr_Node_T> {_78.current.current}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
-            [ &_76 <- _bor ] -{inv_Box_Perm_ptr_Node_T_Global _bor.final}-
-            [ &_77 <- { _77 with current = { _77.current with current = _bor.final } } ] s15)
-        [ _ck -> (! {inv_Box_Perm_ptr_Node_T_Global _77.current.current} any) ]
-      | s15 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_76.current} {MutBorrow.get_id _76}
+            [ &_77 <- _bor ] -{inv_Box_Perm_ptr_Node_T_Global _bor.final}-
+            [ &_78 <- { _78 with current = { _78.current with current = _bor.final } } ] s15)
+        [ _ck -> (! {inv_Box_Perm_ptr_Node_T_Global _78.current.current} any) ]
+      | s15 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_77.current} {MutBorrow.get_id _77}
+          (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
+            [ &_76 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
+            [ &_77 <- { _77 with current = _bor.final } ] s16) [ _ck -> (! {inv_Perm_ptr_Node_T _77.current} any) ]
+      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_Box_Perm_ptr_Node_T_Global _78} any) ]
+      | s17 = -{resolve_refmut_refmut_Box_Perm_ptr_Node_T_Global _78}- s18
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _77} any) ]
+      | s19 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _77}- s20
+      | s20 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_76.current} {MutBorrow.get_id _76}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
             [ &_75 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
-            [ &_76 <- { _76 with current = _bor.final } ] s16) [ _ck -> (! {inv_Perm_ptr_Node_T _76.current} any) ]
-      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_Box_Perm_ptr_Node_T_Global _77} any) ]
-      | s17 = -{resolve_refmut_refmut_Box_Perm_ptr_Node_T_Global _77}- s18
-      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _76} any) ]
-      | s19 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _76}- s20
-      | s20 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_75.current} {MutBorrow.get_id _75}
+            [ &_76 <- { _76 with current = _bor.final } ] s21) [ _ck -> (! {inv_Perm_ptr_Node_T _76.current} any) ]
+      | s21 = s22 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _76} any) ]
+      | s22 = -{resolve_refmut_Perm_ptr_Node_T _76}- s23
+      | s23 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_75.current} {MutBorrow.get_id _75}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
             [ &_74 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
-            [ &_75 <- { _75 with current = _bor.final } ] s21) [ _ck -> (! {inv_Perm_ptr_Node_T _75.current} any) ]
-      | s21 = new_refmut_Perm_ptr_Node_T {_74} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_73 <- _x ] s22)
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _75} any) ]
-      | s23 = -{resolve_refmut_Perm_ptr_Node_T _75}- s24
-      | s24 = as_mut_Node_T {_71} {_73} (fun (_x: MutBorrow.t t_Node_T) -> [ &_70 <- _x ] s25)
-      | s25 = MutBorrow.borrow_final <t_Node_T> {_70.current} {MutBorrow.get_id _70}
+            [ &_75 <- { _75 with current = _bor.final } ] s24) [ _ck -> (! {inv_Perm_ptr_Node_T _75.current} any) ]
+      | s24 = new_refmut_Perm_ptr_Node_T {_74} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_73 <- _x ] s25)
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _75} any) ]
+      | s26 = -{resolve_refmut_Perm_ptr_Node_T _75}- s27
+      | s27 = as_mut_Node_T {_71} {_73} (fun (_x: MutBorrow.t t_Node_T) -> [ &_70 <- _x ] s28)
+      | s28 = MutBorrow.borrow_final <t_Node_T> {_70.current} {MutBorrow.get_id _70}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &bx <- _bor ] -{inv_Node_T _bor.final}-
-            [ &_70 <- { _70 with current = _bor.final } ] s26) [ _ck -> (! {inv_Node_T _70.current} any) ]
-      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _70} any) ]
-      | s27 = -{resolve_refmut_Node_T _70}- s28
-      | s28 = [ &_81 <- y.f0 ] s29
-      | s29 = MutBorrow.borrow_mut <MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {m'0}
+            [ &_70 <- { _70 with current = _bor.final } ] s29) [ _ck -> (! {inv_Node_T _70.current} any) ]
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _70} any) ]
+      | s30 = -{resolve_refmut_Node_T _70}- s31
+      | s31 = [ &_82 <- y.f0 ] s32
+      | s32 = MutBorrow.borrow_mut <MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {m'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global)) ->
-            [ &_90 <- _bor ] -{inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
-            [ &m'0 <- _bor.final ] s30) [ _ck -> (! {inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0} any) ]
-      | s30 = deref_mut_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global {_90}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global)) -> [ &_89 <- _x ] s31)
-      | s31 = [ &_92 <- y ] s32
-      | s32 = MutBorrow.borrow_mut <t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {_89.current.current}
+            [ &_92 <- _bor ] -{inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
+            [ &m'0 <- _bor.final ] s33) [ _ck -> (! {inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0} any) ]
+      | s33 = deref_mut_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global {_92}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global)) -> [ &_91 <- _x ] s34)
+      | s34 = [ &_94 <- y ] s35
+      | s35 = MutBorrow.borrow_mut <t_FMap_Elem_Box_Perm_ptr_Node_T_Global> {_91.current.current}
           (fun (_bor: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) ->
-            [ &_88 <- _bor ] -{inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
-            [ &_89 <- { _89 with current = { _89.current with current = _bor.final } } ] s33)
-        [ _ck -> (! {inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _89.current.current} any) ]
-      | s33 = get_mut_ghost_Elem {_88} {_92}
-          (fun (_x: t_Option_refmut_Box_Perm_ptr_Node_T_Global) -> [ &_87 <- _x ] s34)
-      | s34 = unwrap_refmut_Box_Perm_ptr_Node_T_Global {_87}
-          (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_86 <- _x ] s35)
-      | s35 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_86.current} {MutBorrow.get_id _86}
+            [ &_90 <- _bor ] -{inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _bor.final}-
+            [ &_91 <- { _91 with current = { _91.current with current = _bor.final } } ] s36)
+        [ _ck -> (! {inv_FMap_Elem_Box_Perm_ptr_Node_T_Global _91.current.current} any) ]
+      | s36 = get_mut_ghost_Elem {_90} {_94}
+          (fun (_x: t_Option_refmut_Box_Perm_ptr_Node_T_Global) -> [ &_89 <- _x ] s37)
+      | s37 = unwrap_refmut_Box_Perm_ptr_Node_T_Global {_89}
+          (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_88 <- _x ] s38)
+      | s38 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_88.current} {MutBorrow.get_id _88}
+          (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
+            [ &_87 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
+            [ &_88 <- { _88 with current = _bor.final } ] s39) [ _ck -> (! {inv_Perm_ptr_Node_T _88.current} any) ]
+      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _91} any) ]
+      | s40 = -{resolve_refmut_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _91}- s41
+      | s41 = s42 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _88} any) ]
+      | s42 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _88}- s43
+      | s43 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_87.current} {MutBorrow.get_id _87}
+          (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
+            [ &_86 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
+            [ &_87 <- { _87 with current = _bor.final } ] s44) [ _ck -> (! {inv_Perm_ptr_Node_T _87.current} any) ]
+      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _87} any) ]
+      | s45 = -{resolve_refmut_Perm_ptr_Node_T _87}- s46
+      | s46 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_86.current} {MutBorrow.get_id _86}
           (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
             [ &_85 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
-            [ &_86 <- { _86 with current = _bor.final } ] s36) [ _ck -> (! {inv_Perm_ptr_Node_T _86.current} any) ]
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _89} any) ]
-      | s37 = -{resolve_refmut_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global _89}- s38
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global _86} any) ]
-      | s39 = -{resolve_refmut_Box_Perm_ptr_Node_T_Global _86}- s40
-      | s40 = MutBorrow.borrow_final <t_Perm_ptr_Node_T> {_85.current} {MutBorrow.get_id _85}
-          (fun (_bor: MutBorrow.t t_Perm_ptr_Node_T) ->
-            [ &_84 <- _bor ] -{inv_Perm_ptr_Node_T _bor.final}-
-            [ &_85 <- { _85 with current = _bor.final } ] s41) [ _ck -> (! {inv_Perm_ptr_Node_T _85.current} any) ]
-      | s41 = new_refmut_Perm_ptr_Node_T {_84} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_83 <- _x ] s42)
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _85} any) ]
-      | s43 = -{resolve_refmut_Perm_ptr_Node_T _85}- s44
-      | s44 = as_mut_Node_T {_81} {_83} (fun (_x: MutBorrow.t t_Node_T) -> [ &_80 <- _x ] s45)
-      | s45 = MutBorrow.borrow_final <t_Node_T> {_80.current} {MutBorrow.get_id _80}
+            [ &_86 <- { _86 with current = _bor.final } ] s47) [ _ck -> (! {inv_Perm_ptr_Node_T _86.current} any) ]
+      | s47 = new_refmut_Perm_ptr_Node_T {_85} (fun (_x: MutBorrow.t t_Perm_ptr_Node_T) -> [ &_84 <- _x ] s48)
+      | s48 = s49 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_Node_T _86} any) ]
+      | s49 = -{resolve_refmut_Perm_ptr_Node_T _86}- s50
+      | s50 = as_mut_Node_T {_82} {_84} (fun (_x: MutBorrow.t t_Node_T) -> [ &_81 <- _x ] s51)
+      | s51 = MutBorrow.borrow_final <t_Node_T> {_81.current} {MutBorrow.get_id _81}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &by' <- _bor ] -{inv_Node_T _bor.final}-
-            [ &_80 <- { _80 with current = _bor.final } ] s46) [ _ck -> (! {inv_Node_T _80.current} any) ]
-      | s46 = s47 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _80} any) ]
-      | s47 = -{resolve_refmut_Node_T _80}- s48
-      | s48 = any
+            [ &_81 <- { _81 with current = _bor.final } ] s52) [ _ck -> (! {inv_Node_T _81.current} any) ]
+      | s52 = s53 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _81} any) ]
+      | s53 = -{resolve_refmut_Node_T _81}- s54
+      | s54 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {bx.current = Root x0 x1} (! bb31)
         | br1 (x0: t_Elem) -> {bx.current = Link x0} (! bb29) ] ]
     | bb29 = s0
@@ -3234,10 +3253,10 @@ module M_implementation__link
               (fun (_bor: MutBorrow.t t_PeanoInt) ->
                 [ &ry <- _bor ] [ &by' <- { by' with current = Root _bor.final rpayload } ] s1))
       | s1 = MutBorrow.borrow_final <t_PeanoInt> {ry.current} {MutBorrow.get_id ry}
-          (fun (_bor: MutBorrow.t t_PeanoInt) -> [ &_102 <- _bor ] [ &ry <- { ry with current = _bor.final } ] s2)
-      | s2 = -{resolve_refmut_PeanoInt _102}- s3
-      | s3 = lt_refmut_PeanoInt {rx} {_102} (fun (_x: bool) -> [ &_99 <- _x ] s4)
-      | s4 = any [ br0 -> {_99 = false} (! bb43) | br1 -> {_99} (! bb36) ] ]
+          (fun (_bor: MutBorrow.t t_PeanoInt) -> [ &_104 <- _bor ] [ &ry <- { ry with current = _bor.final } ] s2)
+      | s2 = -{resolve_refmut_PeanoInt _104}- s3
+      | s3 = lt_refmut_PeanoInt {rx} {_104} (fun (_x: bool) -> [ &_101 <- _x ] s4)
+      | s4 = any [ br0 -> {_101 = false} (! bb43) | br1 -> {_101} (! bb36) ] ]
     | bb36 = s0
       [ s0 = -{resolve_refmut_PeanoInt ry}- s1
       | s1 = -{resolve_refmut_PeanoInt rx}- s2
@@ -3245,46 +3264,46 @@ module M_implementation__link
       | s3 = -{resolve_refmut_Node_T by'}- s4
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0} any) ]
       | s5 = -{resolve_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0}- s6
-      | s6 = [ &_103 <- Link y ] s7
+      | s6 = [ &_105 <- Link y ] s7
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Node_T bx.current} any) ]
       | s8 = -{resolve_Node_T bx.current}- s9
-      | s9 = [ &bx <- { bx with current = _103 } ] s10
+      | s9 = [ &bx <- { bx with current = _105 } ] s10
       | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
       | s11 = -{resolve_refmut_Node_T bx}- s12
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_Box_Perm_ptr_Node_T_Global perm_x'0} any) ]
       | s13 = -{resolve_Ghost_refmut_Box_Perm_ptr_Node_T_Global perm_x'0}- s14
-      | s14 = [ &_107 <- fun (z: t_Elem) -> if index_Mapping_Elem_Elem uf'0.current.roots z = x then
+      | s14 = [ &_109 <- fun (z: t_Elem) -> if index_Mapping_Elem_Elem uf'0.current.roots z = x then
           y
         else
           index_Mapping_Elem_Elem uf'0.current.roots z
          ] s15
       | s15 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_113 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &_115 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
             [ &uf'0 <- _bor.final ] s16) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
-      | s16 = deref_mut_Ghost_refmut_UFInner_T {_113}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_112 <- _x ] s17)
+      | s16 = deref_mut_Ghost_refmut_UFInner_T {_115}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_114 <- _x ] s17)
       | s17 =
-        [ &_112 <- { _112 with current = { _112.current with current = { _112.current.current with roots = _107 } } } ]
+        [ &_114 <- { _114 with current = { _114.current with current = { _114.current.current with roots = _109 } } } ]
         s18
-      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _112} any) ]
-      | s19 = -{resolve_refmut_refmut_UFInner_T _112}- s20
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _114} any) ]
+      | s19 = -{resolve_refmut_refmut_UFInner_T _114}- s20
       | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
       | s21 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s22
       | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _25} any) ]
       | s23 = -{resolve_refmut_refmut_UF_T _25}- s24
       | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
       | s25 = -{resolve_Ghost_refmut_UF_T uf}- s26
-      | s26 = new_unit {_106} (fun (_x: ()) -> [ &_105 <- _x ] s27)
+      | s26 = new_unit {_108} (fun (_x: ()) -> [ &_107 <- _x ] s27)
       | s27 = [ &_ret <- y ] s28
       | s28 = return {_ret} ]
     | bb43 = s0
       [ s0 = -{resolve_refmut_PeanoInt ry}- s1
-      | s1 = eq_refmut_PeanoInt {rx} {ry} (fun (_x: bool) -> [ &_115 <- _x ] s2)
-      | s2 = any [ br0 -> {_115 = false} (! bb47) | br1 -> {_115} (! bb45) ] ]
+      | s1 = eq_refmut_PeanoInt {rx} {ry} (fun (_x: bool) -> [ &_117 <- _x ] s2)
+      | s2 = any [ br0 -> {_117 = false} (! bb47) | br1 -> {_117} (! bb45) ] ]
     | bb45 = s0
       [ s0 = -{resolve_refmut_PeanoInt rx}- s1
-      | s1 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_118 <- _x ] s2)
+      | s1 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_120 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
       | s3 = -{resolve_refmut_Node_T bx}- s4
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_Box_Perm_ptr_Node_T_Global perm_x'0} any) ]
@@ -3298,37 +3317,37 @@ module M_implementation__link
       | s4 = -{resolve_Ghost_refmut_Box_Perm_ptr_Node_T_Global perm_x'0}- s5
       | s5 = bb48 ]
     | bb48 = s0
-      [ s0 = [ &_120 <- Link x ] s1
+      [ s0 = [ &_122 <- Link x ] s1
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Node_T by'.current} any) ]
       | s2 = -{resolve_Node_T by'.current}- s3
-      | s3 = [ &by' <- { by' with current = _120 } ] s4
+      | s3 = [ &by' <- { by' with current = _122 } ] s4
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
       | s5 = -{resolve_refmut_Node_T by'}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0} any) ]
       | s7 = -{resolve_Ghost_refmut_FMap_Elem_Box_Perm_ptr_Node_T_Global m'0}- s8
-      | s8 = [ &_124 <- fun (z: t_Elem) -> if index_Mapping_Elem_Elem uf'0.current.roots z = y then
+      | s8 = [ &_126 <- fun (z: t_Elem) -> if index_Mapping_Elem_Elem uf'0.current.roots z = y then
           x
         else
           index_Mapping_Elem_Elem uf'0.current.roots z
          ] s9
       | s9 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
-            [ &_130 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
+            [ &_132 <- _bor ] -{inv_Ghost_refmut_UFInner_T _bor.final}-
             [ &uf'0 <- _bor.final ] s10) [ _ck -> (! {inv_Ghost_refmut_UFInner_T uf'0} any) ]
-      | s10 = deref_mut_Ghost_refmut_UFInner_T {_130}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_129 <- _x ] s11)
+      | s10 = deref_mut_Ghost_refmut_UFInner_T {_132}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_131 <- _x ] s11)
       | s11 =
-        [ &_129 <- { _129 with current = { _129.current with current = { _129.current.current with roots = _124 } } } ]
+        [ &_131 <- { _131 with current = { _131.current with current = { _131.current.current with roots = _126 } } } ]
         s12
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _129} any) ]
-      | s13 = -{resolve_refmut_refmut_UFInner_T _129}- s14
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UFInner_T _131} any) ]
+      | s13 = -{resolve_refmut_refmut_UFInner_T _131}- s14
       | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UFInner_T uf'0} any) ]
       | s15 = -{resolve_Ghost_refmut_UFInner_T uf'0}- s16
       | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _25} any) ]
       | s17 = -{resolve_refmut_refmut_UF_T _25}- s18
       | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
       | s19 = -{resolve_Ghost_refmut_UF_T uf}- s20
-      | s20 = new_unit {_123} (fun (_x: ()) -> [ &_122 <- _x ] s21)
+      | s20 = new_unit {_125} (fun (_x: ()) -> [ &_124 <- _x ] s21)
       | s21 = [ &_ret <- x ] s22
       | s22 = return {_ret} ] ]
     [ & _ret: t_Elem = Any.any_l ()
@@ -3372,38 +3391,40 @@ module M_implementation__link
     | & _74: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _75: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _76: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
-    | & _77: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T) = Any.any_l ()
+    | & _77: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _78: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T) = Any.any_l ()
+    | & _79: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T) = Any.any_l ()
     | & by': MutBorrow.t t_Node_T = Any.any_l ()
-    | & _80: MutBorrow.t t_Node_T = Any.any_l ()
-    | & _81: Opaque.ptr = Any.any_l ()
-    | & _83: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
+    | & _81: MutBorrow.t t_Node_T = Any.any_l ()
+    | & _82: Opaque.ptr = Any.any_l ()
     | & _84: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _85: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _86: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
-    | & _87: t_Option_refmut_Box_Perm_ptr_Node_T_Global = Any.any_l ()
-    | & _88: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global = Any.any_l ()
-    | & _89: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) = Any.any_l ()
-    | & _90: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) = Any.any_l ()
-    | & _92: t_Elem = Any.any_l ()
+    | & _87: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
+    | & _88: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
+    | & _89: t_Option_refmut_Box_Perm_ptr_Node_T_Global = Any.any_l ()
+    | & _90: MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global = Any.any_l ()
+    | & _91: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) = Any.any_l ()
+    | & _92: MutBorrow.t (MutBorrow.t t_FMap_Elem_Box_Perm_ptr_Node_T_Global) = Any.any_l ()
+    | & _94: t_Elem = Any.any_l ()
     | & rx: MutBorrow.t t_PeanoInt = Any.any_l ()
     | & ry: MutBorrow.t t_PeanoInt = Any.any_l ()
-    | & _99: bool = Any.any_l ()
-    | & _102: MutBorrow.t t_PeanoInt = Any.any_l ()
-    | & _103: t_Node_T = Any.any_l ()
-    | & _105: () = Any.any_l ()
-    | & _106: () = Any.any_l ()
-    | & _107: Map.map t_Elem t_Elem = Any.any_l ()
-    | & _112: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _113: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _115: bool = Any.any_l ()
-    | & _118: t_PeanoInt = Any.any_l ()
-    | & _120: t_Node_T = Any.any_l ()
-    | & _122: () = Any.any_l ()
-    | & _123: () = Any.any_l ()
-    | & _124: Map.map t_Elem t_Elem = Any.any_l ()
-    | & _129: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _130: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l () ])
+    | & _101: bool = Any.any_l ()
+    | & _104: MutBorrow.t t_PeanoInt = Any.any_l ()
+    | & _105: t_Node_T = Any.any_l ()
+    | & _107: () = Any.any_l ()
+    | & _108: () = Any.any_l ()
+    | & _109: Map.map t_Elem t_Elem = Any.any_l ()
+    | & _114: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _115: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _117: bool = Any.any_l ()
+    | & _120: t_PeanoInt = Any.any_l ()
+    | & _122: t_Node_T = Any.any_l ()
+    | & _124: () = Any.any_l ()
+    | & _125: () = Any.any_l ()
+    | & _126: Map.map t_Elem t_Elem = Any.any_l ()
+    | & _131: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _132: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l () ])
     [ return (result: t_Elem) -> {[@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
       {[@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
       {[@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UF_T uf) result}
@@ -3729,58 +3750,70 @@ module M_implementation__union
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_24 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &_25 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
-      | s1 = deref_mut_Ghost_refmut_UF_T {_24} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_23 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_UF_T> {_23.current.current}
+      | s1 = deref_mut_Ghost_refmut_UF_T {_25} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_24 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_UF_T> {_24.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_23 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_24 <- { _24 with current = { _24.current with current = _bor.final } } ] s3)
+        [ _ck -> (! {inv_UF_T _24.current.current} any) ]
+      | s3 = MutBorrow.borrow_final <t_UF_T> {_23.current} {MutBorrow.get_id _23}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_22 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_23 <- { _23 with current = { _23.current with current = _bor.final } } ] s3)
-        [ _ck -> (! {inv_UF_T _23.current.current} any) ]
-      | s3 = MutBorrow.borrow_final <t_UF_T> {_22.current} {MutBorrow.get_id _22}
+            [ &_23 <- { _23 with current = _bor.final } ] s4) [ _ck -> (! {inv_UF_T _23.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _24} any) ]
+      | s5 = -{resolve_refmut_refmut_UF_T _24}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _23} any) ]
+      | s7 = -{resolve_refmut_UF_T _23}- s8
+      | s8 = MutBorrow.borrow_final <t_UF_T> {_22.current} {MutBorrow.get_id _22}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_21 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_22 <- { _22 with current = _bor.final } ] s4) [ _ck -> (! {inv_UF_T _22.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _23} any) ]
-      | s5 = -{resolve_refmut_refmut_UF_T _23}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _22} any) ]
-      | s7 = -{resolve_refmut_UF_T _22}- s8
-      | s8 = MutBorrow.borrow_final <t_UF_T> {_21.current} {MutBorrow.get_id _21}
+            [ &_22 <- { _22 with current = _bor.final } ] s9) [ _ck -> (! {inv_UF_T _22.current} any) ]
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _22} any) ]
+      | s10 = -{resolve_refmut_UF_T _22}- s11
+      | s11 = MutBorrow.borrow_final <t_UF_T> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_20 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_21 <- { _21 with current = _bor.final } ] s9) [ _ck -> (! {inv_UF_T _21.current} any) ]
-      | s9 = new_refmut_UF_T {_20} (fun (_x: MutBorrow.t t_UF_T) -> [ &_19 <- _x ] s10)
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _21} any) ]
-      | s11 = -{resolve_refmut_UF_T _21}- s12
-      | s12 = find_T {_19} {x} (fun (_x: t_Elem) -> [ &rx <- _x ] s13)
-      | s13 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+            [ &_21 <- { _21 with current = _bor.final } ] s12) [ _ck -> (! {inv_UF_T _21.current} any) ]
+      | s12 = new_refmut_UF_T {_20} (fun (_x: MutBorrow.t t_UF_T) -> [ &_19 <- _x ] s13)
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _21} any) ]
+      | s14 = -{resolve_refmut_UF_T _21}- s15
+      | s15 = find_T {_19} {x} (fun (_x: t_Elem) -> [ &rx <- _x ] s16)
+      | s16 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_32 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s14) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
-      | s14 = deref_mut_Ghost_refmut_UF_T {_32} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_31 <- _x ] s15)
-      | s15 = MutBorrow.borrow_mut <t_UF_T> {_31.current.current}
+            [ &_34 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s17) [ _ck -> (! {inv_Ghost_refmut_UF_T uf} any) ]
+      | s17 = deref_mut_Ghost_refmut_UF_T {_34} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_33 <- _x ] s18)
+      | s18 = MutBorrow.borrow_mut <t_UF_T> {_33.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_32 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_33 <- { _33 with current = { _33.current with current = _bor.final } } ] s19)
+        [ _ck -> (! {inv_UF_T _33.current.current} any) ]
+      | s19 = MutBorrow.borrow_final <t_UF_T> {_32.current} {MutBorrow.get_id _32}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_31 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_32 <- { _32 with current = _bor.final } ] s20) [ _ck -> (! {inv_UF_T _32.current} any) ]
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _33} any) ]
+      | s21 = -{resolve_refmut_refmut_UF_T _33}- s22
+      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _32} any) ]
+      | s23 = -{resolve_refmut_UF_T _32}- s24
+      | s24 = MutBorrow.borrow_final <t_UF_T> {_31.current} {MutBorrow.get_id _31}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_30 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_31 <- { _31 with current = { _31.current with current = _bor.final } } ] s16)
-        [ _ck -> (! {inv_UF_T _31.current.current} any) ]
-      | s16 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
+            [ &_31 <- { _31 with current = _bor.final } ] s25) [ _ck -> (! {inv_UF_T _31.current} any) ]
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _31} any) ]
+      | s26 = -{resolve_refmut_UF_T _31}- s27
+      | s27 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_29 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_30 <- { _30 with current = _bor.final } ] s17) [ _ck -> (! {inv_UF_T _30.current} any) ]
-      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _31} any) ]
-      | s18 = -{resolve_refmut_refmut_UF_T _31}- s19
-      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
-      | s20 = -{resolve_refmut_UF_T _30}- s21
-      | s21 = MutBorrow.borrow_final <t_UF_T> {_29.current} {MutBorrow.get_id _29}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_28 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_29 <- { _29 with current = _bor.final } ] s22) [ _ck -> (! {inv_UF_T _29.current} any) ]
-      | s22 = new_refmut_UF_T {_28} (fun (_x: MutBorrow.t t_UF_T) -> [ &_27 <- _x ] s23)
-      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _29} any) ]
-      | s24 = -{resolve_refmut_UF_T _29}- s25
-      | s25 = find_T {_27} {y} (fun (_x: t_Elem) -> [ &ry <- _x ] s26)
-      | s26 = link_T {uf} {rx} {ry} (fun (_x: t_Elem) -> [ &_ret <- _x ] s27)
-      | s27 = return {_ret} ] ]
+            [ &_30 <- { _30 with current = _bor.final } ] s28) [ _ck -> (! {inv_UF_T _30.current} any) ]
+      | s28 = new_refmut_UF_T {_29} (fun (_x: MutBorrow.t t_UF_T) -> [ &_28 <- _x ] s29)
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
+      | s30 = -{resolve_refmut_UF_T _30}- s31
+      | s31 = find_T {_28} {y} (fun (_x: t_Elem) -> [ &ry <- _x ] s32)
+      | s32 = link_T {uf} {rx} {ry} (fun (_x: t_Elem) -> [ &_ret <- _x ] s33)
+      | s33 = return {_ret} ] ]
     [ & _ret: t_Elem = Any.any_l ()
     | & uf: MutBorrow.t t_UF_T = uf
     | & x: t_Elem = x
@@ -3790,15 +3823,17 @@ module M_implementation__union
     | & _20: MutBorrow.t t_UF_T = Any.any_l ()
     | & _21: MutBorrow.t t_UF_T = Any.any_l ()
     | & _22: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _23: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _23: MutBorrow.t t_UF_T = Any.any_l ()
     | & _24: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _25: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & ry: t_Elem = Any.any_l ()
-    | & _27: MutBorrow.t t_UF_T = Any.any_l ()
     | & _28: MutBorrow.t t_UF_T = Any.any_l ()
     | & _29: MutBorrow.t t_UF_T = Any.any_l ()
     | & _30: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _31: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & _32: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l () ])
+    | & _31: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _32: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _33: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _34: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l () ])
     [ return (result: t_Elem) -> {[@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
       {[@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
       {[@expl:union ensures #2] forall z: t_Elem. in_domain_T uf.current z

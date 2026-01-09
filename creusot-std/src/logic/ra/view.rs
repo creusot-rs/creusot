@@ -174,12 +174,19 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => c.op(c) == Some(c) && c.op(self) == Some(self),
-        None => true
-    })]
     fn core(self) -> Option<Self> {
-        Some(self.core_total())
+        Some(Self::new_frag(self.frag().core_total()))
+    }
+
+    #[logic]
+    #[requires(self.core() != None)]
+    #[ensures({
+        let c = self.core().unwrap_logic();
+        c.op(c) == Some(c)
+    })]
+    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
+    fn core_idemp(self) {
+        self.core_total_idemp()
     }
 
     #[logic]
@@ -190,7 +197,7 @@ impl<R: ViewRel> RA for View<R> {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self) {
-        let _ = R::Frag::core_is_total;
+        self.frag().core_total_idemp();
         self.frag().core_is_maximal_idemp(i.frag())
     }
 }
@@ -204,17 +211,18 @@ impl<R: ViewRel> UnitRA for View<R> {
     }
 
     #[logic(open)]
-    #[ensures(result.op(result) == Some(result))]
-    #[ensures(result.op(self) == Some(self))]
+    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
-        let _ = R::Frag::core_is_total;
-        let _ = Self::ext_eq;
+        self.frag().core_total_idemp();
         Self::new_frag(self.frag().core_total())
     }
 
     #[logic]
-    #[ensures(self.core() == Some(self.core_total()))]
-    fn core_is_total(self) {}
+    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
+    #[ensures(self.core_total().op(self) == Some(self))]
+    fn core_total_idemp(self) {
+        let _ = Self::ext_eq;
+    }
 }
 
 pub struct ViewUpdate<R: ViewRel, Choice>(pub Snapshot<Mapping<Choice, (R::Auth, R::Frag)>>);

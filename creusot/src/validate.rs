@@ -28,6 +28,7 @@ use rustc_middle::ty::{Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 
 use crate::{
+    backend::is_trusted_item,
     contracts_items::{get_builtin, get_intrinsic, is_extern_spec, is_no_translate, is_spec},
     ctx::TranslationCtx,
     validate::{erasure::validate_erasures, tokens_new::validate_tokens_new},
@@ -61,7 +62,9 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
         }
         if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_purity(ctx, def_id, thir);
-            validate_tokens_new(ctx, def_id, thir);
+            if !is_trusted_item(ctx.tcx, def_id) {
+                validate_tokens_new(ctx, def_id, thir);
+            }
             validate_incorrect_attributes(ctx.tcx, def_id);
         }
         if is_extern_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
