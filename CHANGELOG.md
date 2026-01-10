@@ -10,7 +10,9 @@ Creusot is currently best suited for the verification of code like data-structur
 
 <!-- next-header -->
 
-## [Unreleased] - 2026-01-10
+## [Unreleased] - ReleaseDate
+
+## [0.9.0] - 2026-01-10
 
 ### New features
 
