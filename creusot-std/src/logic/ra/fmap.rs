@@ -56,7 +56,7 @@ impl<K, V: RA> RA for FMap<K, V> {
         })
     }
 
-    #[logic(law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         match (a.op(b), b.op(c)) {
@@ -136,12 +136,12 @@ impl<K, V: RA> FMap<K, V> {
 pub struct FMapInsertLocalUpdate<K, V>(pub Snapshot<K>, pub Snapshot<V>);
 
 impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from_auth: FMap<K, V>, _: FMap<K, V>) -> bool {
         from_auth.get(*self.0) == None
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn update(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> (FMap<K, V>, FMap<K, V>) {
         (from_auth.insert(*self.0, *self.1), from_frag.insert(*self.0, *self.1))
     }

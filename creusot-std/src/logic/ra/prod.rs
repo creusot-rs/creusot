@@ -24,11 +24,11 @@ impl<T: RA, U: RA> RA for (T, U) {
         }
     }
 
-    #[logic(open(self), law)]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[logic(open(self), law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
@@ -92,12 +92,12 @@ pub struct ProdUpdate<U1, U2>(pub U1, pub U2);
 impl<R1: RA, R2: RA, U1: Update<R1>, U2: Update<R2>> Update<(R1, R2)> for ProdUpdate<U1, U2> {
     type Choice = (U1::Choice, U2::Choice);
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: (R1, R2)) -> bool {
         self.0.premise(from.0) && self.1.premise(from.1)
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: (R1, R2), ch: (U1::Choice, U2::Choice)) -> (R1, R2) {
         (self.0.update(from.0, ch.0), self.1.update(from.1, ch.1))
@@ -117,12 +117,12 @@ pub struct ProdLocalUpdate<U1, U2>(pub U1, pub U2);
 impl<R1: RA, R2: RA, U1: LocalUpdate<R1>, U2: LocalUpdate<R2>> LocalUpdate<(R1, R2)>
     for ProdLocalUpdate<U1, U2>
 {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from_auth: (R1, R2), from_frag: (R1, R2)) -> bool {
         self.0.premise(from_auth.0, from_frag.0) && self.1.premise(from_auth.1, from_frag.1)
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn update(self, from_auth: (R1, R2), from_frag: (R1, R2)) -> ((R1, R2), (R1, R2)) {
         let (to_auth0, to_frag0) = self.0.update(from_auth.0, from_frag.0);
         let (to_auth1, to_frag1) = self.1.update(from_auth.1, from_frag.1);

@@ -150,11 +150,11 @@ impl<R: ViewRel> RA for View<R> {
         }
     }
 
-    #[logic(open(self), law)]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[logic(open(self), law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         match (a.frag().op(b.frag()), b.frag().op(c.frag())) {
@@ -230,7 +230,7 @@ pub struct ViewUpdate<R: ViewRel, Choice>(pub Snapshot<Mapping<Choice, (R::Auth,
 impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
     type Choice = Choice;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: View<R>) -> bool {
         pearlite! {
             from.auth() != None &&
@@ -248,7 +248,7 @@ impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: View<R>, ch: Choice) -> View<R> {
         View::new(Some(self.0[ch].0), self.0[ch].1)
@@ -268,7 +268,7 @@ pub struct ViewUpdateInsert<R: ViewRel>(pub Snapshot<R::Auth>, pub Snapshot<R::F
 impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
     type Choice = ();
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: View<R>) -> bool {
         pearlite! {
             from.auth() != None &&
@@ -280,7 +280,7 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     #[ensures(R::rel(Some(*self.0), *self.1))]
     fn update(self, from: View<R>, _: ()) -> View<R> {
@@ -301,7 +301,7 @@ pub struct ViewUpdateRemove<R: ViewRel>(pub Snapshot<R::Auth>);
 impl<R: ViewRel> Update<View<R>> for ViewUpdateRemove<R> {
     type Choice = ();
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: View<R>) -> bool {
         pearlite! {
             from.auth() != None &&
@@ -314,7 +314,7 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateRemove<R> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     #[ensures(R::rel(Some(*self.0), R::Frag::unit()))]
     fn update(self, from: View<R>, _: ()) -> View<R> {

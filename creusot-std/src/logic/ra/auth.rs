@@ -55,7 +55,7 @@ pub struct AuthUpdate<U>(pub U);
 impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
     type Choice = ();
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: Auth<R>) -> bool {
         match from.auth() {
             Some(auth) => self.0.premise(auth, from.frag()),
