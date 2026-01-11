@@ -25,14 +25,14 @@ pub trait Update<R: RA> {
 impl<R: RA> Update<R> for Snapshot<R> {
     type Choice = ();
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: R) -> bool {
         pearlite! {
             forall<y: R> from.op(y) != None ==> self.op(y) != None
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: R, _: ()) -> R {
         *self
@@ -48,7 +48,7 @@ impl<R: RA> Update<R> for Snapshot<R> {
 impl<R: RA, Choice> Update<R> for Snapshot<Mapping<Choice, R>> {
     type Choice = Choice;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: R) -> bool {
         pearlite! {
             forall<y: R> from.op(y) != None ==>
@@ -56,7 +56,7 @@ impl<R: RA, Choice> Update<R> for Snapshot<Mapping<Choice, R>> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: R, ch: Choice) -> R {
         self[ch]
@@ -89,7 +89,7 @@ pub trait LocalUpdate<R: RA>: Sized {
 }
 
 impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from_auth: R, from_frag: R) -> bool {
         pearlite! {
             forall<f: Option<R>>
@@ -98,7 +98,7 @@ impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn update(self, _: R, _: R) -> (R, R) {
         *self
     }

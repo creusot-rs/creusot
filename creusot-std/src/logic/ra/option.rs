@@ -37,26 +37,15 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
-    #[logic(open(self), law)]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
         let _ = <T as RA>::commutative;
     }
 
-    #[logic(open(self), law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
-    fn associative(a: Self, b: Self, c: Self) {
-        pearlite! {
-            match (a, b, c) {
-                (None, _, _) => {},
-                (_, None, _) => {},
-                (_, _, None) => {},
-                (Some(aa), Some(bb), Some(cc)) => {
-                    <T as RA>::associative(aa, bb, cc)
-                }
-            }
-        }
-    }
+    fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
     fn core(self) -> Option<Self> {
@@ -121,7 +110,7 @@ pub struct OptionUpdate<U>(pub U);
 impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
     type Choice = U::Choice;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: Option<R>) -> bool {
         match from {
             Some(from) => self.0.premise(from),
@@ -129,7 +118,7 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: Option<R>, ch: U::Choice) -> Option<R> {
         match from {

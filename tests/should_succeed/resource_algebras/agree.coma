@@ -1,6 +1,5 @@
 module M_agreement
   use creusot.int.Int32
-  use map.Map
   use creusot.prelude.Any
   
   type t_Resource_Ag_i32
@@ -13,23 +12,11 @@ module M_agreement
   
   type t_Option_Ag_i32 = None | Some t_Ag_i32
   
-  function and_then_Option_Ag_i32 (self: t_Option_Ag_i32) (f: Map.map t_Ag_i32 t_Option_Ag_i32) : t_Option_Ag_i32 =
-    match self with
-      | None -> None
-      | Some x -> Map.get f x
-      end
-  
   function op_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) : t_Option_Ag_i32 = if self.f0 = other.f0 then
       Some self
     else
       None
   
-  
-  function associative_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) (c: t_Ag_i32) : ()
-  
-  axiom associative_Ag_i32_spec:
-    forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32. and_then_Option_Ag_i32 (op_Ag_i32 a b) (fun (ab: t_Ag_i32) -> op_Ag_i32 ab c)
-      = and_then_Option_Ag_i32 (op_Ag_i32 b c) (fun (bc: t_Ag_i32) -> op_Ag_i32 a bc)
   
   function commutative_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) : ()
   
@@ -48,6 +35,17 @@ module M_agreement
   
   axiom incl_transitive_Ag_i32_spec: forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32. incl_Ag_i32 a b
       -> incl_Ag_i32 b c -> incl_Ag_i32 a c
+  
+  function associative_some_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) (c: t_Ag_i32) (ab: t_Ag_i32) (bc: t_Ag_i32) : ()
+  
+  axiom associative_some_Ag_i32_spec:
+    forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32, ab: t_Ag_i32, bc: t_Ag_i32. op_Ag_i32 a b = Some ab
+      -> op_Ag_i32 b c = Some bc -> op_Ag_i32 a bc = op_Ag_i32 ab c
+  
+  function associative_none_Ag_i32 (a: t_Ag_i32) (b: t_Ag_i32) (c: t_Ag_i32) (bc: t_Ag_i32) : ()
+  
+  axiom associative_none_Ag_i32_spec: forall a: t_Ag_i32, b: t_Ag_i32, c: t_Ag_i32, bc: t_Ag_i32. op_Ag_i32 a b = None
+      -> op_Ag_i32 b c = Some bc -> op_Ag_i32 a bc = None
   
   function incl_op_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) (comb: t_Ag_i32) : ()
   

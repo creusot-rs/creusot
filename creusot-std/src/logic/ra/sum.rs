@@ -40,11 +40,11 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
         }
     }
 
-    #[logic(open(self), law)]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[logic(open(self), law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
@@ -89,7 +89,7 @@ pub struct SumUpdateL<U>(pub U);
 impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
     type Choice = U::Choice;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: Sum<R1, R2>) -> bool {
         match from {
             Sum::Left(from) => self.0.premise(from),
@@ -97,7 +97,7 @@ impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: Sum<R1, R2>, ch: U::Choice) -> Sum<R1, R2> {
         match from {
@@ -123,7 +123,7 @@ pub struct SumUpdateR<U>(pub U);
 impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
     type Choice = U::Choice;
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from: Sum<V, R>) -> bool {
         match from {
             Sum::Right(from) => self.0.premise(from),
@@ -131,7 +131,7 @@ impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: Sum<V, R>, ch: U::Choice) -> Sum<V, R> {
         match from {
@@ -155,7 +155,7 @@ impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
 pub struct SumLocalUpdateL<U>(pub U);
 
 impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUpdateL<U> {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from_auth: Sum<R1, R2>, from_frag: Sum<R1, R2>) -> bool {
         match (from_auth, from_frag) {
             (Sum::Left(from_auth), Sum::Left(from_frag)) => self.0.premise(from_auth, from_frag),
@@ -164,7 +164,7 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn update(self, from_auth: Sum<R1, R2>, from_frag: Sum<R1, R2>) -> (Sum<R1, R2>, Sum<R1, R2>) {
         match (from_auth, from_frag) {
             (Sum::Left(from_auth), Sum::Left(from_frag)) => {
@@ -203,7 +203,7 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
 pub struct SumLocalUpdateR<U>(pub U);
 
 impl<R1: RA, R2: RA, U: LocalUpdate<R2>> LocalUpdate<Sum<R1, R2>> for SumLocalUpdateR<U> {
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, from_auth: Sum<R1, R2>, from_frag: Sum<R1, R2>) -> bool {
         match (from_auth, from_frag) {
             (Sum::Right(from_auth), Sum::Right(from_frag)) => self.0.premise(from_auth, from_frag),
@@ -212,7 +212,7 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R2>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
         }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn update(self, from_auth: Sum<R1, R2>, from_frag: Sum<R1, R2>) -> (Sum<R1, R2>, Sum<R1, R2>) {
         match (from_auth, from_frag) {
             (Sum::Right(from_auth), Sum::Right(from_frag)) => {

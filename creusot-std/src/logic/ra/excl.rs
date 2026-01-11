@@ -25,11 +25,11 @@ impl<T> RA for Excl<T> {
         None
     }
 
-    #[logic(open(self), law)]
+    #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
 
-    #[logic(open(self), law)]
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
@@ -62,12 +62,12 @@ pub struct ExclUpdate<T>(pub Snapshot<T>);
 impl<T> Update<Excl<T>> for ExclUpdate<T> {
     type Choice = ();
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn premise(self, _: Excl<T>) -> bool {
         true
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[requires(self.premise(from))]
     fn update(self, from: Excl<T>, _: ()) -> Excl<T> {
         Excl(*self.0)

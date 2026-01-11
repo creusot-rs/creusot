@@ -126,9 +126,36 @@ pub trait RA: Sized {
     fn commutative(a: Self, b: Self);
 
     /// [`Self::op`] is associative.
-    #[logic(law)]
+    ///
+    /// This version uses `and_then_logic` for brevity, but is not easily used by provers.
+    /// Thus, we have [`Self::associative_none`] and  [`Self::associative_some`] as laws,
+    /// which are more friendly to provers.
+    #[logic]
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self);
+
+    /// Specialized version of [`Self::associative`], in the case where `a.op(b) == None`.
+    ///
+    /// By commutativity, it also covers the case where `b.op(c) == None`.
+    #[logic(law)]
+    #[requires(a.op(b) == None)]
+    #[requires(b.op(c) == Some(bc))]
+    #[ensures(a.op(bc) == None)]
+    fn associative_none(a: Self, b: Self, c: Self, bc: Self) {
+        Self::associative(a, b, c);
+    }
+
+    /// Specialized version of [`Self::associative`], in the case where `a.op(b)` and `b.op(c)`
+    /// are both valid.
+    ///
+    /// By commutativity, it also covers the case where `b.op(c) == None`.
+    #[logic(law)]
+    #[requires(a.op(b) == Some(ab))]
+    #[requires(b.op(c) == Some(bc))]
+    #[ensures(a.op(bc) == ab.op(c))]
+    fn associative_some(a: Self, b: Self, c: Self, ab: Self, bc: Self) {
+        Self::associative(a, b, c);
+    }
 
     /// [`RA::incl`] is transitive.
     #[logic(law)]
