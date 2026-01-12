@@ -70,9 +70,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
             && if visited.len() == 0 { self.func() == succ.func() }
                else { *fs[0] == self.func() &&  ^fs[visited.len() - 1] == succ.func() }
             && forall<i> 0 <= i && i < visited.len() ==>
-                 self.func().hist_inv(*fs[i])
-                 && (*fs[i]).precondition((s[i],))
-                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
+                 self.func().hist_inv(*fs[i]) && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
         }
     }
 
@@ -104,7 +102,6 @@ pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F
             #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
             func.hist_inv(*f) ==>
             iter.produces(s.push_back(e1).push_back(e2), i) ==>
-            (*f).precondition((e1,)) ==>
             (*f).postcondition_mut((e1,), ^f, b) ==>
             (^f).precondition((e2, ))
     }

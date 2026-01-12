@@ -61,10 +61,7 @@ extern_spec! {
                 }
 
                 #[erasure]
-                #[requires(match self {
-                    None => true,
-                    Some(t) => f.precondition((t,)),
-                })]
+                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
                 #[ensures(match self {
                     None => result == false,
                     Some(t) => f.postcondition_once((t,), result),
@@ -206,10 +203,7 @@ extern_spec! {
                 }
 
                 #[erasure]
-                #[requires(match self {
-                    None => true,
-                    Some(t) => f.precondition((t,)),
-                })]
+                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
                 #[ensures(match self {
                     None => result == None,
                     Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
@@ -221,10 +215,7 @@ extern_spec! {
                     }
                 }
 
-                #[requires(match self {
-                    None => true,
-                    Some(t) => f.precondition((&t,)),
-                })]
+                #[requires(match self { None => true, Some(t) => f.precondition((&t,)) })]
                 #[ensures(result == self)]
                 #[ensures(match self {
                     None => true,
@@ -237,10 +228,7 @@ extern_spec! {
                     }
                 }
 
-                #[requires(match self {
-                    None => true,
-                    Some(t) => f.precondition((t,)),
-                })]
+                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
                 #[ensures(match self {
                     None => result == default,
                     Some(t) => f.postcondition_once((t,), result)
@@ -301,10 +289,7 @@ extern_spec! {
                     }
                 }
 
-                #[requires(match self {
-                    None => true,
-                    Some(t) => f.precondition((t,)),
-                })]
+                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
                 #[ensures(match self {
                     None => result == None,
                     Some(t) => f.postcondition_once((t,), result),
@@ -316,10 +301,7 @@ extern_spec! {
                     }
                 }
 
-                #[requires(match self {
-                    None => true,
-                    Some(t) => predicate.precondition((&t,))
-                })]
+                #[requires(match self { None => true, Some(t) => predicate.precondition((&t,)) })]
                 #[ensures(match self {
                     None => result == None,
                     Some(t) => match result {
@@ -371,10 +353,7 @@ extern_spec! {
                 }
 
                 #[check(ghost)]
-                #[ensures(match *self {
-                    Some(t) => resolve(t),
-                    None => true,
-                })]
+                #[ensures(match *self { Some(t) => resolve(t), None => true })]
                 #[ensures(*result == value && ^self == Some(^result))]
                 fn insert(&mut self, value: T) -> &mut T {
                     *self = Some(value);

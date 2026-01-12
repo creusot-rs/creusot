@@ -49,8 +49,7 @@ pub trait IteratorSpec: Iterator {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[check(ghost)]
-    #[requires(forall<e, i2>
-                    self.produces(Seq::singleton(e), i2) ==>
+    #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) ==>
                     func.precondition((e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
     #[requires(MapInv::<Self, F>::preservation(self, func))]
@@ -126,8 +125,7 @@ extern_spec! {
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[check(ghost)]
-                #[requires(forall<e, i2>
-                                self.produces(Seq::singleton(e), i2) ==>
+                #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) ==>
                                 f.precondition((e,)))]
                 #[requires(map::reinitialize::<Self, B, F>())]
                 #[requires(map::preservation::<Self, B, F>(self, f))]

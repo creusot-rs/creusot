@@ -55,8 +55,6 @@ module M_impl_Iterator_for_Map_I_F__produces_refl (* <Map<I, F> as common::Itera
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
-  
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
     hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
@@ -71,7 +69,6 @@ module M_impl_Iterator_for_Map_I_F__produces_refl (* <Map<I, F> as common::Itera
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -144,8 +141,6 @@ module M_impl_Iterator_for_Map_I_F__produces_trans (* <Map<I, F> as common::Iter
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
-  
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
     hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
@@ -160,7 +155,6 @@ module M_impl_Iterator_for_Map_I_F__produces_trans (* <Map<I, F> as common::Iter
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -328,7 +322,6 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -340,7 +333,6 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
                                                                                                                                                                              f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -414,7 +406,6 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -427,7 +418,6 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
       /\ f.final = succ.func
       /\ produces_I self.iter (Seq.singleton e) succ.iter
       /\ succ.produced = Seq.snoc self.produced e
-      /\ precondition_F f.current { f0 = e; f1 = self.produced }
       /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited
   
   axiom produces_one_I_spec: forall self: t_Map_I_F, visited: t_B, succ: t_Map_I_F. produces_one_I self visited succ
@@ -547,7 +537,6 @@ module M_impl_Map_I_F__preservation_inv (* Map<I, F> *)
   predicate preservation_I (iter: t_I) (func: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func f.current
       -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -567,7 +556,6 @@ module M_impl_Map_I_F__preservation_inv (* Map<I, F> *)
     -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
                                                                                                                                                                                f1 = Seq.(++) produced s } f.final b]. hist_inv_F func f.current
         -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
-        -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced s }
         -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
         -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 })
     = preservation_I iter func
@@ -639,7 +627,6 @@ module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -651,7 +638,6 @@ module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
                                                                                                                                                                              f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -744,8 +730,6 @@ module M_impl_Map_I_F__produces_one (* Map<I, F> *)
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
-  
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
     hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
@@ -760,7 +744,6 @@ module M_impl_Map_I_F__produces_one (* Map<I, F> *)
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -796,7 +779,6 @@ module M_impl_Map_I_F__produces_one (* Map<I, F> *)
         /\ f.final = succ.func
         /\ produces_I self.iter (Seq.singleton e) succ.iter
         /\ succ.produced = Seq.snoc self.produced e
-        /\ precondition_F f.current { f0 = e; f1 = self.produced }
         /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited)
     = produces_Map_I_F self (Seq.singleton visited) succ
 end
@@ -872,7 +854,6 @@ module M_map
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -884,7 +865,6 @@ module M_map
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
                                                                                                                                                                              f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -1015,7 +995,6 @@ module M_identity
   predicate preservation_I (iter'0: t_I) (func'0: ()) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I. hist_inv_closure0 func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -1027,7 +1006,6 @@ module M_identity
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t (), b: t_Item, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
                                                                                                                                                                                       f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -1177,7 +1155,6 @@ module M_increment
   predicate preservation_U (iter'0: t_U) (func'0: ()) =
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U. hist_inv_closure0 func'0 f.current
       -> produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -1189,7 +1166,6 @@ module M_increment
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: UInt32.t, i: t_U [produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
                                                                                                                                                                                               f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
       -> produces_U iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -1237,8 +1213,6 @@ module M_increment
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_closure0 self.func (Seq.get fs i).current
-          /\ precondition_closure0 (Seq.get fs i).current { f0 = Seq.get s i;
-                                                            f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_closure0 (Seq.get fs i).current { f0 = Seq.get s i;
                                                                  f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -1442,7 +1416,6 @@ module M_counter
   predicate preservation_I (iter'0: t_I) (func'0: closure0) =
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I. hist_inv_closure0 func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -1454,7 +1427,6 @@ module M_counter
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current { f0 = e1;
                                                                                                                                                                                                     f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_closure0 func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -1585,7 +1557,6 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
   
@@ -1597,7 +1568,6 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current { f0 = e1;
                                                                                                                                                                              f1 = Seq.(++) produced'0 s } f.final b]. hist_inv_F func'0 f.current
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> precondition_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s }
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
   
@@ -1657,7 +1627,6 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -1670,7 +1639,6 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
       /\ f.final = succ.func
       /\ produces_I self.iter (Seq.singleton e) succ.iter
       /\ succ.produced = Seq.snoc self.produced e
-      /\ precondition_F f.current { f0 = e; f1 = self.produced }
       /\ postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final visited
   
   axiom produces_one_I_spec: forall self: t_Map_I_F, visited: t_B, succ: t_Map_I_F. produces_one_I self visited succ
@@ -1750,8 +1718,6 @@ module M_impl_Iterator_for_Map_I_F__produces_refl__refines (* <Map<I, F> as comm
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
-  
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
     hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
@@ -1766,7 +1732,6 @@ module M_impl_Iterator_for_Map_I_F__produces_refl__refines (* <Map<I, F> as comm
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
@@ -1836,8 +1801,6 @@ module M_impl_Iterator_for_Map_I_F__produces_trans__refines (* <Map<I, F> as com
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
-  
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
     hist_inv_F self.func succ.func
     /\ (exists fs: Seq.seq (MutBorrow.t t_F). Seq.length fs = Seq.length visited
@@ -1852,7 +1815,6 @@ module M_impl_Iterator_for_Map_I_F__produces_trans__refines (* <Map<I, F> as com
           )
         /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> hist_inv_F self.func (Seq.get fs i).current
-          /\ precondition_F (Seq.get fs i).current { f0 = Seq.get s i; f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) }
           /\ postcondition_mut_F (Seq.get fs i).current { f0 = Seq.get s i;
                                                           f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
   
