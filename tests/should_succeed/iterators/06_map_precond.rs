@@ -47,7 +47,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).precondition((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))))
                  && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
     }
@@ -93,7 +92,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
                 #[trigger(iter.produces(s.push_back(e1).push_back(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b))]
                 func.hist_inv(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).precondition((e1, Snapshot::new(produced.concat(s)))) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
                 (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
         }
@@ -105,7 +103,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).precondition((e1, Snapshot::new(s))) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
                 (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
         }
@@ -145,7 +142,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && (*f).precondition((e, self.produced))
                 && (*f).postcondition_mut((e, self.produced), ^f, visited)
         }
     }

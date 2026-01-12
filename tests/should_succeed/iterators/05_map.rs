@@ -44,7 +44,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).precondition((s[i],))
                  && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
         }
     }
@@ -83,7 +82,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
                 #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
                 func.hist_inv(*f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).precondition((e1,)) ==>
                 (*f).postcondition_mut((e1,), ^f, b) ==>
                 (^f).precondition((e2, ))
         }
@@ -121,7 +119,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
                 #[trigger((*f).postcondition_mut((e,), ^f, visited))]
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
-                && (*f).precondition((e,))
                 && (*f).postcondition_mut((e,), ^f, visited)
         }
     }

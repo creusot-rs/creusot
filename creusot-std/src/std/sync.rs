@@ -87,13 +87,11 @@ impl AtomicI32 {
     ///
     /// The fetch and the store are always sequentially consistent.
     #[requires(forall<c: &mut Committer> !c.shot() ==> c.ward() == *self ==> c.new_value() == val + c.old_value() ==>
-        f.precondition((c,)) &&
-        (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
+        f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut Committer>
         !c.shot() && c.ward() == *self && c.new_value() == val + c.old_value() &&
-        c.old_value() == result.0 &&
-        f.postcondition_once((c,), *(result.1))
+        c.old_value() == result.0 && f.postcondition_once((c,), *(result.1))
     )]
     #[trusted]
     #[allow(unused_variables)]
@@ -109,8 +107,7 @@ impl AtomicI32 {
     ///
     /// The store is always sequentially consistent.
     #[requires(forall<c: &mut Committer> !c.shot() ==> c.ward() == *self ==> c.new_value() == val ==>
-        f.precondition((c,)) &&
-        (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
+        f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut Committer>
         !c.shot() && c.ward() == *self && c.new_value() == val &&
