@@ -24,6 +24,12 @@ impl<T: RA, U: RA> RA for (T, U) {
         }
     }
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        self.0.eq(other.0) && self.1.eq(other.1)
+    }
+
     #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}

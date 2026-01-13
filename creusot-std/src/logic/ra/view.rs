@@ -83,13 +83,6 @@ impl<R: ViewRel> View<R> {
         pearlite! { self.0@.frag }
     }
 
-    #[logic(open)]
-    #[ensures(result == (self == other))]
-    pub fn ext_eq(self, other: Self) -> bool {
-        let _ = Subset::<InnerView<R>>::view_inj;
-        self.auth() == other.auth() && self.frag() == other.frag()
-    }
-
     /// Create a new `View` with given authority and fragment.
     #[logic]
     #[requires(R::rel(auth, frag))]
@@ -150,6 +143,13 @@ impl<R: ViewRel> RA for View<R> {
         }
     }
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        let _ = Subset::<InnerView<R>>::view_inj;
+        self.auth() == other.auth() && self.frag() == other.frag()
+    }
+
     #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}
@@ -206,7 +206,7 @@ impl<R: ViewRel> UnitRA for View<R> {
     #[logic]
     #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
-        let _ = Self::ext_eq;
+        let _ = Self::eq;
         Self::new_frag(R::Frag::unit())
     }
 
@@ -221,7 +221,7 @@ impl<R: ViewRel> UnitRA for View<R> {
     #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
     #[ensures(self.core_total().op(self) == Some(self))]
     fn core_total_idemp(self) {
-        let _ = Self::ext_eq;
+        let _ = Self::eq;
     }
 }
 

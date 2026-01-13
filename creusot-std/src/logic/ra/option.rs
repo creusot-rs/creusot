@@ -37,6 +37,16 @@ impl<T: RA> RA for Option<T> {
         }
     }
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        match (self, other) {
+            (Some(s), Some(o)) => s.eq(o),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+
     #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
