@@ -27,10 +27,11 @@ module M_slice_range_inclusive
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
   let rec new_usize (start: UInt64.t) (end': UInt64.t) (return (x: t_RangeInclusive_usize)) = any
-    [ return (result: t_RangeInclusive_usize) -> {inv_RangeInclusive_usize result}
-      {start_log_RangeInclusive_usize result = start}
-      {end_log_RangeInclusive_usize result = end'}
-      {deep_model_usize start <= deep_model_usize end' -> not is_empty_log_RangeInclusive_usize result}
+    [ return (result: t_RangeInclusive_usize) -> {([@expl:new result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@expl:new ensures #0] start_log_RangeInclusive_usize result = start)
+      /\ ([@expl:new ensures #1] end_log_RangeInclusive_usize result = end')
+      /\ ([@expl:new ensures #2] deep_model_usize start <= deep_model_usize end'
+      -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
   predicate in_bounds_RangeInclusive_usize (self: t_RangeInclusive_usize) (seq: Seq.seq UInt32.t)
@@ -62,14 +63,14 @@ module M_slice_range_inclusive
   
   let rec index_mut_slice_u32 (self_: MutBorrow.t (Slice64.slice UInt32.t)) (ix: t_RangeInclusive_usize)
     (return (x: MutBorrow.t (Slice64.slice UInt32.t))) =
-    {[@expl:index_mut 'ix' type invariant] inv_RangeInclusive_usize ix}
-    {[@expl:index_mut requires] in_bounds_RangeInclusive_usize ix (Slice64.view self_.current)}
+    {([@expl:index_mut 'ix' type invariant] inv_RangeInclusive_usize ix)
+    /\ ([@expl:index_mut requires] in_bounds_RangeInclusive_usize ix (Slice64.view self_.current))}
     any
     [ return (result: MutBorrow.t (Slice64.slice UInt32.t)) ->
-    {has_value_RangeInclusive_usize ix (Slice64.view self_.current) result.current}
-      {has_value_RangeInclusive_usize ix (Slice64.view self_.final) result.final}
-      {resolve_elswhere_RangeInclusive_usize ix (Slice64.view self_.current) (Slice64.view self_.final)}
-      {Seq.length (Slice64.view self_.final) = Seq.length (Slice64.view self_.current)}
+    {([@expl:index_mut ensures #0] has_value_RangeInclusive_usize ix (Slice64.view self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeInclusive_usize ix (Slice64.view self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeInclusive_usize ix (Slice64.view self_.current) (Slice64.view self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (Slice64.view self_.final) = Seq.length (Slice64.view self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) =

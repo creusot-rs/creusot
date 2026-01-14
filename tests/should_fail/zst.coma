@@ -23,7 +23,8 @@ module M_zst_pointers_may_be_equal
   meta "rewrite_def" function view_Box_slice_unit_Global
   
   let rec into_vec_unit (self_: Slice64.slice ()) (return (x: t_Vec_unit_Global)) = any
-    [ return (result: t_Vec_unit_Global) -> {view_Vec_unit_Global result = view_Box_slice_unit_Global self_}
+    [ return (result: t_Vec_unit_Global) -> {[@expl:into_vec ensures] view_Vec_unit_Global result
+      = view_Box_slice_unit_Global self_}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq ()) = UInt64.t'int self < Seq.length seq
@@ -43,10 +44,12 @@ module M_zst_pointers_may_be_equal
   let rec index_mut_Vec_unit_Global (self_: MutBorrow.t t_Vec_unit_Global) (ix: UInt64.t) (return (x: MutBorrow.t ())) =
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_unit_Global self_.current)}
     any
-    [ return (result: MutBorrow.t ()) -> {has_value_usize ix (view_Vec_unit_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_unit_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_unit_Global self_.current) (view_Vec_unit_Global self_.final)}
-      {Seq.length (view_Vec_unit_Global self_.final) = Seq.length (view_Vec_unit_Global self_.current)}
+    [ return (result: MutBorrow.t ()) ->
+    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_unit_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_unit_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_unit_Global self_.current) (view_Vec_unit_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_unit_Global self_.final)
+      = Seq.length (view_Vec_unit_Global self_.current))}
       (! return {result}) ]
   
   type t_Perm_ptr_unit
@@ -125,10 +128,11 @@ module M_zst_pointers_may_be_equal
   meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit
   
   let rec from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit)) = any
-    [ return (result: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) -> {inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit result}
-      {ward_ptr_unit result.f1.current = result.f0}
-      {val_ptr_unit result.f1.current = r.current}
-      {val_ptr_unit result.f1.final = r.final}
+    [ return (result: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) ->
+    {([@expl:from_mut result type invariant] inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit result)
+      /\ ([@expl:from_mut ensures #0] ward_ptr_unit result.f1.current = result.f0)
+      /\ ([@expl:from_mut ensures #1] val_ptr_unit result.f1.current = r.current)
+      /\ ([@expl:from_mut ensures #2] val_ptr_unit result.f1.final = r.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_unit [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -137,7 +141,9 @@ module M_zst_pointers_may_be_equal
   
   let rec index_Vec_unit_Global (self_: t_Vec_unit_Global) (ix: UInt64.t) (return (x: ())) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_unit_Global self_)}
-    any [ return (result: ()) -> {has_value_usize ix (view_Vec_unit_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:index ensures] has_value_usize ix (view_Vec_unit_Global self_) result}
+      (! return {result}) ]
   
   type tup2_ptr_unit_Ghost_ref_Perm_ptr_unit = { f0'0: Opaque.ptr; f1'0: t_Perm_ptr_unit }
   
@@ -163,22 +169,27 @@ module M_zst_pointers_may_be_equal
   meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit
   
   let rec from_ref_unit (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit)) = any
-    [ return (result: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) -> {inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit result}
-      {ward_ptr_unit result.f1'0 = result.f0'0}
-      {val_ptr_unit result.f1'0 = r}
+    [ return (result: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) ->
+    {([@expl:from_ref result type invariant] inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit result)
+      /\ ([@expl:from_ref ensures #0] ward_ptr_unit result.f1'0 = result.f0'0)
+      /\ ([@expl:from_ref ensures #1] val_ptr_unit result.f1'0 = r)}
       (! return {result}) ]
   
   let rec into_inner_refmut_Perm_ptr_unit (self: MutBorrow.t t_Perm_ptr_unit)
     (return (x: MutBorrow.t t_Perm_ptr_unit)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_refmut_Perm_ptr_unit self}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_unit) -> {inv_refmut_Perm_ptr_unit result}
-      {result = self}
+    [ return (result: MutBorrow.t t_Perm_ptr_unit) ->
+    {([@expl:into_inner result type invariant] inv_refmut_Perm_ptr_unit result)
+      /\ ([@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   let rec into_inner_ref_Perm_ptr_unit (self: t_Perm_ptr_unit) (return (x: t_Perm_ptr_unit)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_ref_Perm_ptr_unit self}
-    any [ return (result: t_Perm_ptr_unit) -> {inv_ref_Perm_ptr_unit result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_Perm_ptr_unit) -> {([@expl:into_inner result type invariant] inv_ref_Perm_ptr_unit result)
+      /\ ([@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
   
   predicate is_disjoint_ptr_unit [@inline:trivial] (self: Opaque.ptr) (self_val: ()) (other: Opaque.ptr) (other_val: ()) =
     size_of_val_unit self_val <> 0 /\ size_of_val_unit other_val <> 0
@@ -187,19 +198,20 @@ module M_zst_pointers_may_be_equal
   meta "rewrite_def" predicate is_disjoint_ptr_unit
   
   let rec disjoint_lemma_ptr_unit (self: MutBorrow.t t_Perm_ptr_unit) (other: t_Perm_ptr_unit) (return (x: ())) =
-    {[@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_unit self}
-    {[@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_unit other}
+    {([@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_unit self)
+    /\ ([@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_unit other)}
     any
     [ return (result: ()) ->
-    {is_disjoint_ptr_unit (ward_ptr_unit self.current) (val_ptr_unit self.current) (ward_ptr_unit other) (val_ptr_unit other)}
-      {self.current = self.final}
+    {([@expl:disjoint_lemma ensures #0] is_disjoint_ptr_unit (ward_ptr_unit self.current) (val_ptr_unit self.current) (ward_ptr_unit other) (val_ptr_unit other))
+      /\ ([@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_unit) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Perm_ptr_unit
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

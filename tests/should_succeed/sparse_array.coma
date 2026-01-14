@@ -280,8 +280,8 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
   meta "select_lsinst" "all"
   
   let rec get_T (self: t_Sparse_T) (i: UInt64.t) (return (x: t_Option_ref_T)) =
-    {[@expl:get 'self' type invariant] inv_ref_Sparse_T self}
-    {[@expl:get requires] UInt64.t'int i < UInt64.t'int const_SIZE}
+    {([@expl:get 'self' type invariant] inv_ref_Sparse_T self)
+    /\ ([@expl:get requires] UInt64.t'int i < UInt64.t'int const_SIZE)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_12 <- i ] s1
@@ -319,15 +319,15 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
     | & _23: t_T = Any.any_l ()
     | & _24: UInt64.t = Any.any_l ()
     | & _25: bool = Any.any_l () ])
-    [ return (result: t_Option_ref_T) -> {[@expl:get result type invariant] inv_Option_ref_T result}
-      {[@expl:get ensures #0] match result with
-        | None -> Seq.get (view_Sparse_T self) (UInt64.t'int i) = None'0
-        | Some x -> Seq.get (view_Sparse_T self) (UInt64.t'int i) = Some'0 x
-        end}
-      {[@expl:get ensures #1] match Seq.get (view_Sparse_T self) (UInt64.t'int i) with
+    [ return (result: t_Option_ref_T) -> {([@expl:get result type invariant] inv_Option_ref_T result)
+      /\ ([@expl:get ensures #0] match result with
+          | None -> Seq.get (view_Sparse_T self) (UInt64.t'int i) = None'0
+          | Some x -> Seq.get (view_Sparse_T self) (UInt64.t'int i) = Some'0 x
+          end)
+      /\ ([@expl:get ensures #1] match Seq.get (view_Sparse_T self) (UInt64.t'int i) with
         | None'0 -> result = None
         | Some'0 _ -> true
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
@@ -482,19 +482,20 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     -> self.n = const_SIZE
     -> 0 <= i /\ i < UInt64.t'int const_SIZE
     -> (([@expl:lemma_permutation_aux requires #0] inv_Sparse_T self)
-      && ([@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
-      && ([@expl:lemma_permutation_aux requires #2] 0 <= i /\ i < UInt64.t'int const_SIZE)
-      && ([@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (Fset.empty: Fset.fset int) k
+      /\ ([@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
+      /\ ([@expl:lemma_permutation_aux requires #2] 0 <= i /\ i < UInt64.t'int const_SIZE)
+      /\ ([@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (Fset.empty: Fset.fset int) k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
           /\ (k = i \/ contains_Int (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx k))))
-      && ([@expl:lemma_permutation_aux requires #4] i = i
+      /\ ([@expl:lemma_permutation_aux requires #4] i = i
         \/ contains_Int (Fset.empty: Fset.fset int) i
         /\ contains_Int (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx i)))
-      && ([@expl:lemma_permutation_aux requires #5] not contains_Int (Fset.empty: Fset.fset int) i))
-    /\ ((0 <= lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i
+      /\ ([@expl:lemma_permutation_aux requires #5] not contains_Int (Fset.empty: Fset.fset int) i))
+    /\ (([@expl:lemma_permutation_aux ensures #0] 0 <= lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i
         /\ lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i < UInt64.t'int const_SIZE)
-      && UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i)) = i
+      /\ ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i))
+      = i)
     -> (let _ = lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i in [@expl:lemma_permutation ensures] is_elt_T self i))
 end
 module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
@@ -617,35 +618,36 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
     -> not contains_Int seen cur
     -> (if UInt64.t'int (index_array_usize_n self.back cur) = i then
       let result = cur in ([@expl:lemma_permutation_aux ensures #0] 0 <= result /\ result < UInt64.t'int const_SIZE)
-      && ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result) = i)
+      /\ ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result) = i)
     else
       (([@expl:bounded_fset_len requires #0] forall x: int. contains_Int seen x
             -> 0 <= x /\ x < UInt64.t'int const_SIZE)
-        && ([@expl:bounded_fset_len requires #1] UInt64.t'int const_SIZE >= 0))
-      /\ (Fset.cardinal seen <= UInt64.t'int const_SIZE
+        /\ ([@expl:bounded_fset_len requires #1] UInt64.t'int const_SIZE >= 0))
+      /\ (([@expl:bounded_fset_len ensures] Fset.cardinal seen <= UInt64.t'int const_SIZE)
       -> (let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in ((([@expl:lemma_permutation_aux requires #0] inv_Sparse_T self)
-          && ([@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
-          && ([@expl:lemma_permutation_aux requires #2] 0 <= UInt64.t'int (index_array_usize_n self.back cur)
+          /\ ([@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
+          /\ ([@expl:lemma_permutation_aux requires #2] 0 <= UInt64.t'int (index_array_usize_n self.back cur)
             /\ UInt64.t'int (index_array_usize_n self.back cur) < UInt64.t'int const_SIZE)
-          && ([@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (insert_Int seen cur) k
+          /\ ([@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (insert_Int seen cur) k
               -> 0 <= k
               /\ k < UInt64.t'int const_SIZE
               /\ (k = i \/ contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx k))))
-          && ([@expl:lemma_permutation_aux requires #4] i = UInt64.t'int (index_array_usize_n self.back cur)
+          /\ ([@expl:lemma_permutation_aux requires #4] i = UInt64.t'int (index_array_usize_n self.back cur)
             \/ contains_Int (insert_Int seen cur) i
             /\ contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx (UInt64.t'int (index_array_usize_n self.back cur)))))
-          && ([@expl:lemma_permutation_aux requires #5] not contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
+          /\ ([@expl:lemma_permutation_aux requires #5] not contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
         /\ well_founded_relation_Int (UInt64.t'int const_SIZE - Fset.cardinal seen) (UInt64.t'int const_SIZE
         - Fset.cardinal (insert_Int seen cur)))
-      /\ ((0 <= lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
+      /\ (([@expl:lemma_permutation_aux ensures #0] 0
+            <= lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
           /\ lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
           < UInt64.t'int const_SIZE)
-        && UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))))
-        = i
+        /\ ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))))
+        = i)
       -> (let result = lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur)) in ([@expl:lemma_permutation_aux ensures #0] 0
           <= result
         /\ result < UInt64.t'int const_SIZE)
-      && ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result) = i)))))
+      /\ ([@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result) = i)))))
     )
 end
 module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
@@ -679,9 +681,9 @@ module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
     -> (if bnd > 0 then
       ((([@expl:bounded_fset_len requires #0] forall x: int. contains_Int (remove_Int s (bnd - 1)) x
               -> 0 <= x /\ x < bnd - 1)
-          && ([@expl:bounded_fset_len requires #1] bnd - 1 >= 0))
+          /\ ([@expl:bounded_fset_len requires #1] bnd - 1 >= 0))
         /\ well_founded_relation_Int bnd (bnd - 1))
-      /\ (Fset.cardinal (remove_Int s (bnd - 1)) <= bnd - 1
+      /\ (([@expl:bounded_fset_len ensures] Fset.cardinal (remove_Int s (bnd - 1)) <= bnd - 1)
       -> ([@expl:bounded_fset_len ensures] Fset.cardinal s <= bnd))
     else
       [@expl:bounded_fset_len ensures] Fset.cardinal s <= bnd
@@ -874,9 +876,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   meta "select_lsinst" "all"
   
   let rec set_T (self: MutBorrow.t t_Sparse_T) (i: UInt64.t) (v: t_T) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_refmut_Sparse_T self}
-    {[@expl:set 'v' type invariant] inv_T v}
-    {[@expl:set requires] UInt64.t'int i < UInt64.t'int const_SIZE}
+    {([@expl:set 'self' type invariant] inv_refmut_Sparse_T self)
+    /\ ([@expl:set 'v' type invariant] inv_T v) /\ ([@expl:set requires] UInt64.t'int i < UInt64.t'int const_SIZE)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_14 <- i ] s1
@@ -940,10 +941,10 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
     | & _34: bool = Any.any_l ()
     | & _36: UInt64.t = Any.any_l ()
     | & _37: bool = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:set ensures #0] forall j: int. 0 <= j
-          /\ j < UInt64.t'int const_SIZE /\ j <> UInt64.t'int i
-        -> Seq.get (view_Sparse_T self.final) j = Seq.get (view_Sparse_T self.current) j}
-      {[@expl:set ensures #1] Seq.get (view_Sparse_T self.final) (UInt64.t'int i) = Some v}
+    [ return (result: ()) -> {([@expl:set ensures #0] forall j: int. 0 <= j
+            /\ j < UInt64.t'int const_SIZE /\ j <> UInt64.t'int i
+          -> Seq.get (view_Sparse_T self.final) j = Seq.get (view_Sparse_T self.current) j)
+      /\ ([@expl:set ensures #1] Seq.get (view_Sparse_T self.final) (UInt64.t'int i) = Some v)}
       (! return {result}) ]
 end
 module M_create
@@ -1055,9 +1056,9 @@ module M_create
     | & _3: Slice64.array t_T = Any.any_l ()
     | & _5: Slice64.array UInt64.t = Any.any_l ()
     | & _6: Slice64.array UInt64.t = Any.any_l () ])
-    [ return (result: t_Sparse_T) -> {[@expl:create result type invariant] inv_Sparse_T result}
-      {[@expl:create ensures] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE
-        -> Seq.get (view_Sparse_T result) i = None}
+    [ return (result: t_Sparse_T) -> {([@expl:create result type invariant] inv_Sparse_T result)
+      /\ ([@expl:create ensures] forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE
+        -> Seq.get (view_Sparse_T result) i = None)}
       (! return {result}) ]
 end
 module M_f
@@ -1135,8 +1136,9 @@ module M_f
   axiom view_Sparse_i32_spec: forall self: t_Sparse_i32. Seq.length (view_Sparse_i32 self) = UInt64.t'int (10: UInt64.t)
   
   let rec create_i32 (dummy: Int32.t) (return (x: t_Sparse_i32)) = any
-    [ return (result: t_Sparse_i32) -> {inv_Sparse_i32 result}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int (10: UInt64.t) -> Seq.get (view_Sparse_i32 result) i = None}
+    [ return (result: t_Sparse_i32) -> {([@expl:create result type invariant] inv_Sparse_i32 result)
+      /\ ([@expl:create ensures] forall i: int. 0 <= i /\ i < UInt64.t'int (10: UInt64.t)
+        -> Seq.get (view_Sparse_i32 result) i = None)}
       (! return {result}) ]
   
   type t_Sparse_i32'0 = {
@@ -1197,8 +1199,9 @@ module M_f
       = UInt64.t'int (20: UInt64.t)
   
   let rec create_i32'0 (dummy: Int32.t) (return (x: t_Sparse_i32'0)) = any
-    [ return (result: t_Sparse_i32'0) -> {inv_Sparse_i32'0 result}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int (20: UInt64.t) -> Seq.get (view_Sparse_i32'0 result) i = None}
+    [ return (result: t_Sparse_i32'0) -> {([@expl:create result type invariant] inv_Sparse_i32'0 result)
+      /\ ([@expl:create ensures] forall i: int. 0 <= i /\ i < UInt64.t'int (20: UInt64.t)
+        -> Seq.get (view_Sparse_i32'0 result) i = None)}
       (! return {result}) ]
   
   type t_Option_ref_i32 = None'0 | Some'0 Int32.t
@@ -1212,17 +1215,17 @@ module M_f
   meta "rewrite_def" predicate inv_ref_Sparse_i32
   
   let rec get_i32 (self: t_Sparse_i32) (i: UInt64.t) (return (x: t_Option_ref_i32)) =
-    {[@expl:get 'self' type invariant] inv_ref_Sparse_i32 self}
-    {[@expl:get requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t)}
+    {([@expl:get 'self' type invariant] inv_ref_Sparse_i32 self)
+    /\ ([@expl:get requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t))}
     any
-    [ return (result: t_Option_ref_i32) -> {match result with
-        | None'0 -> Seq.get (view_Sparse_i32 self) (UInt64.t'int i) = None
-        | Some'0 x -> Seq.get (view_Sparse_i32 self) (UInt64.t'int i) = Some x
-        end}
-      {match Seq.get (view_Sparse_i32 self) (UInt64.t'int i) with
+    [ return (result: t_Option_ref_i32) -> {([@expl:get ensures #0] match result with
+          | None'0 -> Seq.get (view_Sparse_i32 self) (UInt64.t'int i) = None
+          | Some'0 x -> Seq.get (view_Sparse_i32 self) (UInt64.t'int i) = Some x
+          end)
+      /\ ([@expl:get ensures #1] match Seq.get (view_Sparse_i32 self) (UInt64.t'int i) with
         | None -> result = None'0
         | Some _ -> true
-        end}
+        end)}
       (! return {result}) ]
   
   predicate invariant_ref_Sparse_i32'0 [@inline:trivial] (self: t_Sparse_i32'0) = inv_Sparse_i32'0 self
@@ -1234,17 +1237,17 @@ module M_f
   meta "rewrite_def" predicate inv_ref_Sparse_i32'0
   
   let rec get_i32'0 (self: t_Sparse_i32'0) (i: UInt64.t) (return (x: t_Option_ref_i32)) =
-    {[@expl:get 'self' type invariant] inv_ref_Sparse_i32'0 self}
-    {[@expl:get requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t)}
+    {([@expl:get 'self' type invariant] inv_ref_Sparse_i32'0 self)
+    /\ ([@expl:get requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t))}
     any
-    [ return (result: t_Option_ref_i32) -> {match result with
-        | None'0 -> Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) = None
-        | Some'0 x -> Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) = Some x
-        end}
-      {match Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) with
+    [ return (result: t_Option_ref_i32) -> {([@expl:get ensures #0] match result with
+          | None'0 -> Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) = None
+          | Some'0 x -> Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) = Some x
+          end)
+      /\ ([@expl:get ensures #1] match Seq.get (view_Sparse_i32'0 self) (UInt64.t'int i) with
         | None -> result = None'0
         | Some _ -> true
-        end}
+        end)}
       (! return {result}) ]
   
   predicate invariant_refmut_Sparse_i32 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32) =
@@ -1257,12 +1260,13 @@ module M_f
   meta "rewrite_def" predicate inv_refmut_Sparse_i32
   
   let rec set_i32 (self: MutBorrow.t t_Sparse_i32) (i: UInt64.t) (v: Int32.t) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_refmut_Sparse_i32 self}
-    {[@expl:set requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t)}
+    {([@expl:set 'self' type invariant] inv_refmut_Sparse_i32 self)
+    /\ ([@expl:set requires] UInt64.t'int i < UInt64.t'int (10: UInt64.t))}
     any
-    [ return (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (10: UInt64.t) /\ j <> UInt64.t'int i
-        -> Seq.get (view_Sparse_i32 self.final) j = Seq.get (view_Sparse_i32 self.current) j}
-      {Seq.get (view_Sparse_i32 self.final) (UInt64.t'int i) = Some v}
+    [ return (result: ()) -> {([@expl:set ensures #0] forall j: int. 0 <= j
+            /\ j < UInt64.t'int (10: UInt64.t) /\ j <> UInt64.t'int i
+          -> Seq.get (view_Sparse_i32 self.final) j = Seq.get (view_Sparse_i32 self.current) j)
+      /\ ([@expl:set ensures #1] Seq.get (view_Sparse_i32 self.final) (UInt64.t'int i) = Some v)}
       (! return {result}) ]
   
   predicate invariant_refmut_Sparse_i32'0 [@inline:trivial] (self: MutBorrow.t t_Sparse_i32'0) =
@@ -1276,12 +1280,13 @@ module M_f
   meta "rewrite_def" predicate inv_refmut_Sparse_i32'0
   
   let rec set_i32'0 (self: MutBorrow.t t_Sparse_i32'0) (i: UInt64.t) (v: Int32.t) (return (x: ())) =
-    {[@expl:set 'self' type invariant] inv_refmut_Sparse_i32'0 self}
-    {[@expl:set requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t)}
+    {([@expl:set 'self' type invariant] inv_refmut_Sparse_i32'0 self)
+    /\ ([@expl:set requires] UInt64.t'int i < UInt64.t'int (20: UInt64.t))}
     any
-    [ return (result: ()) -> {forall j: int. 0 <= j /\ j < UInt64.t'int (20: UInt64.t) /\ j <> UInt64.t'int i
-        -> Seq.get (view_Sparse_i32'0 self.final) j = Seq.get (view_Sparse_i32'0 self.current) j}
-      {Seq.get (view_Sparse_i32'0 self.final) (UInt64.t'int i) = Some v}
+    [ return (result: ()) -> {([@expl:set ensures #0] forall j: int. 0 <= j
+            /\ j < UInt64.t'int (20: UInt64.t) /\ j <> UInt64.t'int i
+          -> Seq.get (view_Sparse_i32'0 self.final) j = Seq.get (view_Sparse_i32'0 self.current) j)
+      /\ ([@expl:set ensures #1] Seq.get (view_Sparse_i32'0 self.final) (UInt64.t'int i) = Some v)}
       (! return {result}) ]
   
   predicate resolve_Option_i32 [@inline:trivial] (_1: t_Option_i32) = true

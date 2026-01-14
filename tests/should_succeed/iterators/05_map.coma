@@ -235,7 +235,9 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -322,12 +324,12 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   predicate inv_B (_1: t_B)
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: t_Item) (return (x: t_B)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut 'arg' type invariant] inv_tup1_Item arg}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut 'arg' type invariant] inv_tup1_Item arg)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
     any
-    [ return (result: t_B) -> {inv_B result}
-      {postcondition_mut_F self_.current arg self_.final result}
+    [ return (result: t_B) -> {([@expl:call_mut result type invariant] inv_B result)
+      /\ ([@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result)}
       (! return {result}) ]
   
   predicate inv_Map_I_F (_1: t_Map_I_F)
@@ -431,11 +433,11 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     | & _14: t_B = Any.any_l ()
     | & _15: MutBorrow.t t_F = Any.any_l ()
     | & _16: t_Item = Any.any_l () ])
-    [ return (result: t_Option_B) -> {[@expl:next result type invariant] inv_Option_B result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_B) -> {([@expl:next result type invariant] inv_Option_B result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_Map_I_F self
         | Some'0 v -> produces_one_I self.current v self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
@@ -534,7 +536,7 @@ module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
     -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
         -> produces_I self.iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
     && ([@expl:produces_one_invariant ensures #0] preservation_I iter'0 f.final)
-    && ([@expl:produces_one_invariant ensures #1] next_precondition_I iter'0 f.final)
+    /\ ([@expl:produces_one_invariant ensures #1] next_precondition_I iter'0 f.final)
 end
 module M_impl_Map_I_F__produces_one (* Map<I, F> *)
   use seq.Seq
@@ -724,17 +726,16 @@ module M_map
   
   meta "select_lsinst" "all"
   
-  let rec map_I (iter'0: t_I) (func'0: t_F) (return (x: t_Map_I_F)) = {[@expl:map 'iter' type invariant] inv_I iter'0}
-    {[@expl:map 'func' type invariant] inv_F func'0}
-    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
-      -> precondition_F func'0 e}
-    {[@expl:map requires #1] reinitialize_I}
-    {[@expl:map requires #2] preservation_I iter'0 func'0}
+  let rec map_I (iter'0: t_I) (func'0: t_F) (return (x: t_Map_I_F)) = {([@expl:map 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:map 'func' type invariant] inv_F func'0)
+    /\ ([@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+        -> precondition_F func'0 e)
+    /\ ([@expl:map requires #1] reinitialize_I) /\ ([@expl:map requires #2] preservation_I iter'0 func'0)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; func = func'0 } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Map_I_F = Any.any_l () | & iter'0: t_I = iter'0 | & func'0: t_F = func'0 ])
-    [ return (result: t_Map_I_F) -> {[@expl:map result type invariant] inv_Map_I_F result}
-      {[@expl:map ensures] result = { iter = iter'0; func = func'0 }}
+    [ return (result: t_Map_I_F) -> {([@expl:map result type invariant] inv_Map_I_F result)
+      /\ ([@expl:map ensures] result = { iter = iter'0; func = func'0 })}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Iterator> *)

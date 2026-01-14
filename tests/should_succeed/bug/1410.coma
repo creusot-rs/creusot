@@ -8,7 +8,7 @@ module M_bar
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -43,7 +43,7 @@ module M_bar
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match result with
+    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -104,16 +104,18 @@ module M_bar
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
-    any [ return (result: ()) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    any
+    [ return (result: ()) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec bar_F (f: t_F) (return (x: ())) = {[@expl:bar 'f' type invariant] inv_F f}
-    {[@expl:bar requires] precondition_F f ()}
+  let rec bar_F (f: t_F) (return (x: ())) = {([@expl:bar 'f' type invariant] inv_F f)
+    /\ ([@expl:bar requires] precondition_F f ())}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { start = (0: Int32.t); end' = (1: Int32.t) } ] s1

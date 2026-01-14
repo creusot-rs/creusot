@@ -42,7 +42,8 @@ module M_array
     [ return (_const: Slice64.array Int32.t) -> -{const_X = _const}- return ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   predicate invariant_array_i32_43 (self: Slice64.array Int32.t) =
     inv_Seq_i32 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (43: UInt64.t)
@@ -99,7 +100,8 @@ module M_array_param
   constant const_N : UInt64.t
   
   let rec len_u32 (self_: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -247,7 +249,9 @@ module M_add_one_2
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   let rec add_one (return (x: UInt64.t)) = {[@expl:add_one requires] UInt64.lt const_M const_MAX}
-    any [ return (result: UInt64.t) -> {UInt64.t'int result = UInt64.t'int const_M + 1} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:add_one ensures] UInt64.t'int result = UInt64.t'int const_M + 1}
+      (! return {result}) ]
   
   constant add_one'0: int = UInt64.t'int const_M + 1
   
@@ -321,7 +325,7 @@ module M_nat_i
   constant const_VALUE: UInt64.t = const_N
   
   let rec nat_I_T_U (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = const_VALUE} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:nat ensures] result = const_VALUE} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -475,7 +479,7 @@ module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
       any) ]
   
   let rec clone_ref_Peano (self_: t_Peano) (return (x: t_Peano)) = any
-    [ return (result: t_Peano) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Peano) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   type tup2_Peano_Peano = { f0: t_Peano; f1: t_Peano }
   
@@ -677,7 +681,8 @@ module M_is_zst_z
   
   constant const_IS_ZST: bool = true
   
-  let rec is_zst_Z (return (x: bool)) = any [ return (result: bool) -> {result = const_IS_ZST} (! return {result}) ]
+  let rec is_zst_Z (return (x: bool)) = any
+    [ return (result: bool) -> {[@expl:is_zst ensures] result = const_IS_ZST} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -723,7 +728,7 @@ module M_fn_pointer_test
   use creusot.int.Int32
   
   let rec some_fn_pointer (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {Int32.to_int result = 2} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:some_fn_pointer ensures] Int32.to_int result = 2} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

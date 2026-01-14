@@ -14,7 +14,7 @@ module M_impl_List_T__len_logic (* List<T> *)
   function len_T (self: t_List_T) : int
   
   goal vc_len_T: match self with
-      | Cons _ ls -> len_T ls >= 0 -> ([@expl:len_logic ensures] 1 + len_T ls >= 0)
+      | Cons _ ls -> ([@expl:len_logic ensures] len_T ls >= 0) -> ([@expl:len_logic ensures] 1 + len_T ls >= 0)
       | Nil -> [@expl:len_logic ensures] 0 >= 0
       end
 end
@@ -86,8 +86,7 @@ module M_impl_List_T__index (* List<T> *)
   meta "select_lsinst" "all"
   
   let rec index_T (self: t_List_T) (ix: UInt64.t) (return (x: t_T)) =
-    {[@expl:index 'self' type invariant] inv_ref_List_T self}
-    {[@expl:index requires] UInt64.t'int ix < len_T self}
+    {([@expl:index 'self' type invariant] inv_ref_List_T self) /\ ([@expl:index requires] UInt64.t'int ix < len_T self)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &orig_ix <- ix ] s1 | s1 = [ &l <- self ] s2 | s2 = bb1 ]
     | bb1 = bb1
@@ -117,8 +116,8 @@ module M_impl_List_T__index (* List<T> *)
     | & ls: t_List_T = Any.any_l ()
     | & _25: bool = Any.any_l ()
     | & _28: t_List_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:index result type invariant] inv_ref_T result}
-      {[@expl:index ensures] Some result = get_T self (UInt64.t'int ix)}
+    [ return (result: t_T) -> {([@expl:index result type invariant] inv_ref_T result)
+      /\ ([@expl:index ensures] Some result = get_T self (UInt64.t'int ix))}
       (! return {result}) ]
 end
 module M_impl_List_T__len (* List<T> *)
@@ -218,8 +217,8 @@ module M_impl_List_T__len (* List<T> *)
   
   meta "select_lsinst" "all"
   
-  let rec len_T'0 (self: t_List_T) (return (x: UInt64.t)) = {[@expl:len 'self' type invariant] inv_ref_List_T self}
-    {[@expl:len requires] len_T self <= 1000000}
+  let rec len_T'0 (self: t_List_T) (return (x: UInt64.t)) = {([@expl:len 'self' type invariant] inv_ref_List_T self)
+    /\ ([@expl:len requires] len_T self <= 1000000)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &len <- (0: UInt64.t) ] s1 | s1 = [ &l <- self ] s2 | s2 = bb1 ]
     | bb1 = bb1
@@ -238,8 +237,8 @@ module M_impl_List_T__len (* List<T> *)
     | & len: UInt64.t = Any.any_l ()
     | & l: t_List_T = Any.any_l ()
     | & ls: t_List_T = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@expl:len ensures #0] UInt64.ge result (0: UInt64.t)}
-      {[@expl:len ensures #1] UInt64.t'int result = len_T self}
+    [ return (result: UInt64.t) -> {([@expl:len ensures #0] UInt64.ge result (0: UInt64.t))
+      /\ ([@expl:len ensures #1] UInt64.t'int result = len_T self)}
       (! return {result}) ]
 end
 module M_binary_search
@@ -304,8 +303,8 @@ module M_binary_search
   
   let rec len_u32'0 (self: t_List_u32) (return (x: UInt64.t)) = {[@expl:len requires] len_u32 self <= 1000000}
     any
-    [ return (result: UInt64.t) -> {UInt64.ge result (0: UInt64.t)}
-      {UInt64.t'int result = len_u32 self}
+    [ return (result: UInt64.t) -> {([@expl:len ensures #0] UInt64.ge result (0: UInt64.t))
+      /\ ([@expl:len ensures #1] UInt64.t'int result = len_u32 self)}
       (! return {result}) ]
   
   type t_Result_usize_usize = Ok UInt64.t | Err UInt64.t
@@ -367,7 +366,9 @@ module M_binary_search
   
   let rec index_u32 (self: t_List_u32) (ix: UInt64.t) (return (x: UInt32.t)) = {[@expl:index requires] UInt64.t'int ix
     < len_u32 self}
-    any [ return (result: UInt32.t) -> {Some result = get_u32 self (UInt64.t'int ix)} (! return {result}) ]
+    any
+    [ return (result: UInt32.t) -> {[@expl:index ensures] Some result = get_u32 self (UInt64.t'int ix)}
+      (! return {result}) ]
   
   type tup2_Option_u32_Option_u32 = { f0: t_Option_u32; f1: t_Option_u32 }
   
@@ -384,8 +385,7 @@ module M_binary_search
   meta "select_lsinst" "all"
   
   let rec binary_search (arr: t_List_u32) (elem: UInt32.t) (return (x: t_Result_usize_usize)) =
-    {[@expl:binary_search requires #0] len_u32 arr <= 1000000}
-    {[@expl:binary_search requires #1] is_sorted arr}
+    {([@expl:binary_search requires #0] len_u32 arr <= 1000000) /\ ([@expl:binary_search requires #1] is_sorted arr)}
     (! bb0
     [ bb0 = s0
       [ s0 = len_u32'0 {arr} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
@@ -451,13 +451,13 @@ module M_binary_search
     | & _61: bool = Any.any_l ()
     | & _65: bool = Any.any_l ()
     | & _68: UInt64.t = Any.any_l () ])
-    [ return (result: t_Result_usize_usize) -> {[@expl:binary_search ensures #0] forall x: UInt64.t. result = Ok x
-        -> get_u32 arr (UInt64.t'int x) = Some elem}
-      {[@expl:binary_search ensures #1] forall x: UInt64.t. result = Err x
-        -> (forall i: UInt64.t. 0 <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int x
-          -> UInt32.le (get_default_u32 arr (UInt64.t'int i) (0: UInt32.t)) elem)}
-      {[@expl:binary_search ensures #2] forall x: UInt64.t. result = Err x
+    [ return (result: t_Result_usize_usize) -> {([@expl:binary_search ensures #0] forall x: UInt64.t. result = Ok x
+          -> get_u32 arr (UInt64.t'int x) = Some elem)
+      /\ ([@expl:binary_search ensures #1] forall x: UInt64.t. result = Err x
+          -> (forall i: UInt64.t. 0 <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int x
+            -> UInt32.le (get_default_u32 arr (UInt64.t'int i) (0: UInt32.t)) elem))
+      /\ ([@expl:binary_search ensures #2] forall x: UInt64.t. result = Err x
         -> (forall i: UInt64.t. UInt64.t'int x < UInt64.t'int i /\ UInt64.t'int i < len_u32 arr
-          -> UInt32.lt elem (get_default_u32 arr (UInt64.t'int i) (0: UInt32.t)))}
+          -> UInt32.lt elem (get_default_u32 arr (UInt64.t'int i) (0: UInt32.t))))}
       (! return {result}) ]
 end

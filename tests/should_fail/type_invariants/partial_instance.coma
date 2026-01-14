@@ -8,7 +8,7 @@ module M_mk_s
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
   let rec null_T (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {is_null_ptr_T result} (! return {result}) ]
+    [ return (result: Opaque.ptr) -> {[@expl:null ensures] is_null_ptr_T result} (! return {result}) ]
   
   type t_S_T = { f0: Int32.t; f1: Opaque.ptr }
   
@@ -23,8 +23,8 @@ module M_mk_s
       [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2
       | s2 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
-    [ return (result: t_S_T) -> {[@expl:mk_s result type invariant] inv_S_T result}
-      {[@expl:mk_s ensures] result.f0 = t}
+    [ return (result: t_S_T) -> {([@expl:mk_s result type invariant] inv_S_T result)
+      /\ ([@expl:mk_s ensures] result.f0 = t)}
       (! return {result}) ]
 end
 module M_evil
@@ -41,7 +41,9 @@ module M_evil
   axiom inv_axiom [@rewrite]: forall x: t_S_i32 [inv_S_i32 x]. inv_S_i32 x = invariant_S_i32 x
   
   let rec mk_s_i32 (t: Int32.t) (return (x: t_S_i32)) = any
-    [ return (result: t_S_i32) -> {inv_S_i32 result} {result.f0 = t} (! return {result}) ]
+    [ return (result: t_S_i32) -> {([@expl:mk_s result type invariant] inv_S_i32 result)
+      /\ ([@expl:mk_s ensures] result.f0 = t)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

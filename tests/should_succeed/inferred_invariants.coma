@@ -96,8 +96,7 @@ module M_swapper
   meta "select_lsinst" "all"
   
   let rec swapper_T (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
-    {[@expl:swapper 'x' type invariant] inv_refmut_T x}
-    {[@expl:swapper 'y' type invariant] inv_refmut_T y}
+    {([@expl:swapper 'x' type invariant] inv_refmut_T x) /\ ([@expl:swapper 'y' type invariant] inv_refmut_T y)}
     (! bb0
     [ bb0 = bb0
       [ bb0 = {[@expl:inferred invariant: type invariant] inv_refmut_T y}
@@ -152,8 +151,8 @@ module M_tuple
   meta "select_lsinst" "all"
   
   let rec tuple_T (d: tup2_refmut_T_bool) (e: tup2_refmut_T_bool) (return (x: ())) =
-    {[@expl:tuple 'd' type invariant] inv_tup2_refmut_T_bool d}
-    {[@expl:tuple 'e' type invariant] inv_tup2_refmut_T_bool e}
+    {([@expl:tuple 'd' type invariant] inv_tup2_refmut_T_bool d)
+    /\ ([@expl:tuple 'e' type invariant] inv_tup2_refmut_T_bool e)}
     (! bb0
     [ bb0 = bb0
       [ bb0 = {[@expl:inferred invariant: type invariant] inv_tup2_refmut_T_bool e}
@@ -222,7 +221,8 @@ module M_y
       <= UInt64.t'int const_MAX
   
   let rec len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -243,10 +243,12 @@ module M_y
     (return (x: MutBorrow.t Int32.t)) =
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_i32_Global self_.current)}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    [ return (result: MutBorrow.t Int32.t) ->
+    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -352,7 +354,9 @@ module M_nested_borrows
   
   let rec replace_refmut_i32 (dest: MutBorrow.t (MutBorrow.t Int32.t)) (src: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {dest.final = src} {result = dest.current} (! return {result}) ]
+    [ return (result: MutBorrow.t Int32.t) -> {([@expl:replace ensures #0] dest.final = src)
+      /\ ([@expl:replace ensures #1] result = dest.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
   
@@ -407,7 +411,7 @@ module M_nested_borrows
     | & _22: MutBorrow.t Int32.t = Any.any_l ()
     | & _old: MutBorrow.t Int32.t = Any.any_l ()
     | & _old'0: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:nested_borrows ensures #0] x.final = y}
-      {[@expl:nested_borrows ensures #1] x.current.final = (1: Int32.t)}
+    [ return (result: ()) -> {([@expl:nested_borrows ensures #0] x.final = y)
+      /\ ([@expl:nested_borrows ensures #1] x.current.final = (1: Int32.t))}
       (! return {result}) ]
 end

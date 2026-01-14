@@ -20,14 +20,16 @@ module M_f
   meta "rewrite_def" predicate index_Vec_bool_Global
   
   let rec from_elem_bool (elem: bool) (n: UInt64.t) (return (x: t_Vec_bool_Global)) = any
-    [ return (result: t_Vec_bool_Global) -> {Seq.length (view_Vec_bool_Global result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_bool_Global result i = elem}
+    [ return (result: t_Vec_bool_Global) -> {([@expl:from_elem ensures #0] Seq.length (view_Vec_bool_Global result)
+        = UInt64.t'int n)
+      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_bool_Global result i = elem)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -62,7 +64,7 @@ module M_f
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -91,7 +93,9 @@ module M_f
   
   let rec index_Vec_bool_Global'0 (self_: t_Vec_bool_Global) (ix: UInt64.t) (return (x: bool)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_bool_Global self_)}
-    any [ return (result: bool) -> {has_value_usize ix (view_Vec_bool_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: bool) -> {[@expl:index ensures] has_value_usize ix (view_Vec_bool_Global self_) result}
+      (! return {result}) ]
   
   predicate resolve_elswhere_usize [@inline:trivial] (self: UInt64.t) (old': Seq.seq bool) (fin: Seq.seq bool) =
     forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -102,10 +106,12 @@ module M_f
     (return (x: MutBorrow.t bool)) =
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_bool_Global self_.current)}
     any
-    [ return (result: MutBorrow.t bool) -> {has_value_usize ix (view_Vec_bool_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_bool_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_bool_Global self_.current) (view_Vec_bool_Global self_.final)}
-      {Seq.length (view_Vec_bool_Global self_.final) = Seq.length (view_Vec_bool_Global self_.current)}
+    [ return (result: MutBorrow.t bool) ->
+    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_bool_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_bool_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_bool_Global self_.current) (view_Vec_bool_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_bool_Global self_.final)
+      = Seq.length (view_Vec_bool_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current

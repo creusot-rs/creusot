@@ -23,8 +23,8 @@ module M_roundtrip_hashmap_into_iter
   let rec into_iter_HashMap_K_V_RandomState (self_: t_HashMap_K_V_RandomState) (return (x: t_IntoIter_K_V)) =
     {[@expl:into_iter 'self_' type invariant] inv_HashMap_K_V_RandomState self_}
     any
-    [ return (result: t_IntoIter_K_V) -> {inv_IntoIter_K_V result}
-      {view_HashMap_K_V_RandomState self_ = view_IntoIter_K_V result}
+    [ return (result: t_IntoIter_K_V) -> {([@expl:into_iter result type invariant] inv_IntoIter_K_V result)
+      /\ ([@expl:into_iter ensures] view_HashMap_K_V_RandomState self_ = view_IntoIter_K_V result)}
       (! return {result}) ]
   
   predicate resolve_IntoIter_K_V (_1: t_IntoIter_K_V)
@@ -118,10 +118,11 @@ module M_roundtrip_hashmap_into_iter
   let rec collect_IntoIter_K_V (self_: t_IntoIter_K_V) (return (x: t_HashMap_K_V_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_IntoIter_K_V self_}
     any
-    [ return (result: t_HashMap_K_V_RandomState) -> {inv_HashMap_K_V_RandomState result}
-      {exists done': MutBorrow.t t_IntoIter_K_V, prod: Seq.seq tup2_K_V. resolve_IntoIter_K_V done'.final
+    [ return (result: t_HashMap_K_V_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashMap_K_V_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_IntoIter_K_V, prod: Seq.seq tup2_K_V. resolve_IntoIter_K_V done'.final
         /\ completed_IntoIter_K_V done'
-        /\ produces_IntoIter_K_V self_ prod done'.current /\ from_iter_post_HashMap_K_V_RandomState prod result}
+        /\ produces_IntoIter_K_V self_ prod done'.current /\ from_iter_post_HashMap_K_V_RandomState prod result)}
       (! return {result}) ]
   
   predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
@@ -189,9 +190,9 @@ module M_roundtrip_hashmap_into_iter
     | & it0: t_IntoIter_K_V = Any.any_l ()
     | & r: t_HashMap_K_V_RandomState = Any.any_l () ])
     [ return (result: t_HashMap_K_V_RandomState) ->
-    {[@expl:roundtrip_hashmap_into_iter result type invariant] inv_HashMap_K_V_RandomState result}
-      {[@expl:roundtrip_hashmap_into_iter ensures] view_HashMap_K_V_RandomState result
-      = view_HashMap_K_V_RandomState xs}
+    {([@expl:roundtrip_hashmap_into_iter result type invariant] inv_HashMap_K_V_RandomState result)
+      /\ ([@expl:roundtrip_hashmap_into_iter ensures] view_HashMap_K_V_RandomState result
+      = view_HashMap_K_V_RandomState xs)}
       (! return {result}) ]
 end
 module M_roundtrip_hashmap_iter
@@ -229,8 +230,8 @@ module M_roundtrip_hashmap_iter
   let rec iter_K (self_: t_HashMap_K_V_RandomState) (return (x: t_Iter_K_V)) =
     {[@expl:iter 'self_' type invariant] inv_ref_HashMap_K_V_RandomState self_}
     any
-    [ return (result: t_Iter_K_V) -> {inv_Iter_K_V result}
-      {view_HashMap_K_V_RandomState self_ = view_Iter_K_V result}
+    [ return (result: t_Iter_K_V) -> {([@expl:iter result type invariant] inv_Iter_K_V result)
+      /\ ([@expl:iter ensures] view_HashMap_K_V_RandomState self_ = view_Iter_K_V result)}
       (! return {result}) ]
   
   type t_HashMap_ref_K_ref_V_RandomState
@@ -346,10 +347,11 @@ module M_roundtrip_hashmap_iter
   let rec collect_Iter_K_V (self_: t_Iter_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_Iter_K_V self_}
     any
-    [ return (result: t_HashMap_ref_K_ref_V_RandomState) -> {inv_HashMap_ref_K_ref_V_RandomState result}
-      {exists done': MutBorrow.t t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V. resolve_Iter_K_V done'.final
+    [ return (result: t_HashMap_ref_K_ref_V_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashMap_ref_K_ref_V_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V. resolve_Iter_K_V done'.final
         /\ completed_Iter_K_V done'
-        /\ produces_Iter_K_V self_ prod done'.current /\ from_iter_post_HashMap_ref_K_ref_V_RandomState prod result}
+        /\ produces_Iter_K_V self_ prod done'.current /\ from_iter_post_HashMap_ref_K_ref_V_RandomState prod result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -377,10 +379,10 @@ module M_roundtrip_hashmap_iter
     | & it0: t_Iter_K_V = Any.any_l ()
     | & r: t_HashMap_ref_K_ref_V_RandomState = Any.any_l () ])
     [ return (result: t_HashMap_ref_K_ref_V_RandomState) ->
-    {[@expl:roundtrip_hashmap_iter result type invariant] inv_HashMap_ref_K_ref_V_RandomState result}
-      {[@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
+    {([@expl:roundtrip_hashmap_iter result type invariant] inv_HashMap_ref_K_ref_V_RandomState result)
+      /\ ([@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState result) k
           = Some'0 v)
-        = (get_DeepModelTy (view_HashMap_K_V_RandomState xs) k = Some v)}
+        = (get_DeepModelTy (view_HashMap_K_V_RandomState xs) k = Some v))}
       (! return {result}) ]
 end
 module M_roundtrip_hashmap_iter_mut
@@ -502,16 +504,16 @@ module M_roundtrip_hashmap_iter_mut
   let rec iter_mut_K (self_: MutBorrow.t t_HashMap_K_V_RandomState) (return (x: t_IterMut_K_V)) =
     {[@expl:iter_mut 'self_' type invariant] inv_refmut_HashMap_K_V_RandomState self_}
     any
-    [ return (result: t_IterMut_K_V) -> {inv_IterMut_K_V result}
-      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
-        = contains_DeepModelTy (view_HashMap_K_V_RandomState self_.final) k}
-      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
-        = contains_DeepModelTy'0 (view_IterMut_K_V result) k}
-      {forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+    [ return (result: t_IterMut_K_V) -> {([@expl:iter_mut result type invariant] inv_IterMut_K_V result)
+      /\ ([@expl:iter_mut ensures #0] forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+          = contains_DeepModelTy (view_HashMap_K_V_RandomState self_.final) k)
+      /\ ([@expl:iter_mut ensures #1] forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
+          = contains_DeepModelTy'0 (view_IterMut_K_V result) k)
+      /\ ([@expl:iter_mut ensures #2] forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState self_.current) k
         -> index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState self_.current) k
           = (index_FMap_DeepModelTy_refmut_V (view_IterMut_K_V result) k).current
         /\ index_FMap_DeepModelTy_V (view_HashMap_K_V_RandomState self_.final) k
-        = (index_FMap_DeepModelTy_refmut_V (view_IterMut_K_V result) k).final}
+        = (index_FMap_DeepModelTy_refmut_V (view_IterMut_K_V result) k).final)}
       (! return {result}) ]
   
   type t_HashMap_ref_K_refmut_V_RandomState
@@ -605,11 +607,12 @@ module M_roundtrip_hashmap_iter_mut
   let rec collect_IterMut_K_V (self_: t_IterMut_K_V) (return (x: t_HashMap_ref_K_refmut_V_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_IterMut_K_V self_}
     any
-    [ return (result: t_HashMap_ref_K_refmut_V_RandomState) -> {inv_HashMap_ref_K_refmut_V_RandomState result}
-      {exists done': MutBorrow.t t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V. resolve_IterMut_K_V done'.final
+    [ return (result: t_HashMap_ref_K_refmut_V_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashMap_ref_K_refmut_V_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V. resolve_IterMut_K_V done'.final
         /\ completed_IterMut_K_V done'
         /\ produces_IterMut_K_V self_ prod done'.current
-        /\ from_iter_post_HashMap_ref_K_refmut_V_RandomState prod result}
+        /\ from_iter_post_HashMap_ref_K_refmut_V_RandomState prod result)}
       (! return {result}) ]
   
   predicate resolve_refmut_HashMap_K_V_RandomState [@inline:trivial] (_1: MutBorrow.t t_HashMap_K_V_RandomState) =
@@ -651,19 +654,19 @@ module M_roundtrip_hashmap_iter_mut
     | & it0: t_IterMut_K_V = Any.any_l ()
     | & r: t_HashMap_ref_K_refmut_V_RandomState = Any.any_l () ])
     [ return (result: t_HashMap_ref_K_refmut_V_RandomState) ->
-    {[@expl:roundtrip_hashmap_iter_mut result type invariant] inv_HashMap_ref_K_refmut_V_RandomState result}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState result) k
-          = Some'0 v
-        -> get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k = Some (v.current)
-        /\ get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k = Some (v.final)}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k
+    {([@expl:roundtrip_hashmap_iter_mut result type invariant] inv_HashMap_ref_K_refmut_V_RandomState result)
+      /\ ([@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState result) k
+            = Some'0 v
+          -> get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k = Some (v.current)
+          /\ get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k = Some (v.final))
+      /\ ([@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.current) k
+            = Some v
+          -> contains_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState result) k
+          /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState result) k).current = v)
+      /\ ([@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k
           = Some v
         -> contains_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState result) k
-        /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState result) k).current = v}
-      {[@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState xs.final) k
-          = Some v
-        -> contains_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState result) k
-        /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState result) k).final = v}
+        /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState result) k).final = v)}
       (! return {result}) ]
 end
 module M_roundtrip_hashset_into_iter
@@ -690,8 +693,8 @@ module M_roundtrip_hashset_into_iter
   let rec into_iter_HashSet_T_RandomState (self_: t_HashSet_T_RandomState) (return (x: t_IntoIter_T)) =
     {[@expl:into_iter 'self_' type invariant] inv_HashSet_T_RandomState self_}
     any
-    [ return (result: t_IntoIter_T) -> {inv_IntoIter_T result}
-      {view_HashSet_T_RandomState self_ = view_IntoIter_T result}
+    [ return (result: t_IntoIter_T) -> {([@expl:into_iter result type invariant] inv_IntoIter_T result)
+      /\ ([@expl:into_iter ensures] view_HashSet_T_RandomState self_ = view_IntoIter_T result)}
       (! return {result}) ]
   
   predicate resolve_IntoIter_T (_1: t_IntoIter_T)
@@ -758,10 +761,11 @@ module M_roundtrip_hashset_into_iter
   let rec collect_IntoIter_T (self_: t_IntoIter_T) (return (x: t_HashSet_T_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_IntoIter_T self_}
     any
-    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
-      {exists done': MutBorrow.t t_IntoIter_T, prod: Seq.seq t_T. resolve_IntoIter_T done'.final
+    [ return (result: t_HashSet_T_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_IntoIter_T, prod: Seq.seq t_T. resolve_IntoIter_T done'.final
         /\ completed_IntoIter_T done'
-        /\ produces_IntoIter_T self_ prod done'.current /\ from_iter_post_HashSet_T_RandomState prod result}
+        /\ produces_IntoIter_T self_ prod done'.current /\ from_iter_post_HashSet_T_RandomState prod result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -779,8 +783,9 @@ module M_roundtrip_hashset_into_iter
     | & xs: t_HashSet_T_RandomState = xs
     | & _4: t_IntoIter_T = Any.any_l () ])
     [ return (result: t_HashSet_T_RandomState) ->
-    {[@expl:roundtrip_hashset_into_iter result type invariant] inv_HashSet_T_RandomState result}
-      {[@expl:roundtrip_hashset_into_iter ensures] view_HashSet_T_RandomState result = view_HashSet_T_RandomState xs}
+    {([@expl:roundtrip_hashset_into_iter result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:roundtrip_hashset_into_iter ensures] view_HashSet_T_RandomState result
+      = view_HashSet_T_RandomState xs)}
       (! return {result}) ]
 end
 module M_roundtrip_hashset_iter
@@ -817,8 +822,8 @@ module M_roundtrip_hashset_iter
   let rec iter_T (self_: t_HashSet_T_RandomState) (return (x: t_Iter_T)) =
     {[@expl:iter 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
     any
-    [ return (result: t_Iter_T) -> {inv_Iter_T result}
-      {view_HashSet_T_RandomState self_ = view_Iter_T result}
+    [ return (result: t_Iter_T) -> {([@expl:iter result type invariant] inv_Iter_T result)
+      /\ ([@expl:iter ensures] view_HashSet_T_RandomState self_ = view_Iter_T result)}
       (! return {result}) ]
   
   type t_HashSet_ref_T_RandomState
@@ -896,10 +901,11 @@ module M_roundtrip_hashset_iter
   let rec collect_Iter_T (self_: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_Iter_T self_}
     any
-    [ return (result: t_HashSet_ref_T_RandomState) -> {inv_HashSet_ref_T_RandomState result}
-      {exists done': MutBorrow.t t_Iter_T, prod: Seq.seq t_T. resolve_Iter_T done'.final
+    [ return (result: t_HashSet_ref_T_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashSet_ref_T_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_Iter_T, prod: Seq.seq t_T. resolve_Iter_T done'.final
         /\ completed_Iter_T done'
-        /\ produces_Iter_T self_ prod done'.current /\ from_iter_post_HashSet_ref_T_RandomState prod result}
+        /\ produces_Iter_T self_ prod done'.current /\ from_iter_post_HashSet_ref_T_RandomState prod result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -917,8 +923,8 @@ module M_roundtrip_hashset_iter
     | & xs: t_HashSet_T_RandomState = xs
     | & _4: t_Iter_T = Any.any_l () ])
     [ return (result: t_HashSet_ref_T_RandomState) ->
-    {[@expl:roundtrip_hashset_iter result type invariant] inv_HashSet_ref_T_RandomState result}
-      {[@expl:roundtrip_hashset_iter ensures] view_HashSet_ref_T_RandomState result = view_HashSet_T_RandomState xs}
+    {([@expl:roundtrip_hashset_iter result type invariant] inv_HashSet_ref_T_RandomState result)
+      /\ ([@expl:roundtrip_hashset_iter ensures] view_HashSet_ref_T_RandomState result = view_HashSet_T_RandomState xs)}
       (! return {result}) ]
 end
 module M_hashset_intersection
@@ -954,12 +960,13 @@ module M_hashset_intersection
   
   let rec intersection_T (self_: t_HashSet_T_RandomState) (other: t_HashSet_T_RandomState)
     (return (x: t_Intersection_T_RandomState)) =
-    {[@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
-    {[@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState other}
+    {([@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState self_)
+    /\ ([@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState other)}
     any
-    [ return (result: t_Intersection_T_RandomState) -> {inv_Intersection_T_RandomState result}
-      {view_Intersection_T_RandomState result
-      = Fset.inter (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other)}
+    [ return (result: t_Intersection_T_RandomState) ->
+    {([@expl:intersection result type invariant] inv_Intersection_T_RandomState result)
+      /\ ([@expl:intersection ensures] view_Intersection_T_RandomState result
+      = Fset.inter (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other))}
       (! return {result}) ]
   
   type t_Copied_Intersection_T_RandomState
@@ -981,8 +988,9 @@ module M_hashset_intersection
     (return (x: t_Copied_Intersection_T_RandomState)) =
     {[@expl:copied 'self_' type invariant] inv_Intersection_T_RandomState self_}
     any
-    [ return (result: t_Copied_Intersection_T_RandomState) -> {inv_Copied_Intersection_T_RandomState result}
-      {iter_Copied_Intersection_T_RandomState result = self_}
+    [ return (result: t_Copied_Intersection_T_RandomState) ->
+    {([@expl:copied result type invariant] inv_Copied_Intersection_T_RandomState result)
+      /\ ([@expl:copied ensures] iter_Copied_Intersection_T_RandomState result = self_)}
       (! return {result}) ]
   
   predicate resolve_Intersection_T_RandomState (_1: t_Intersection_T_RandomState)
@@ -1099,11 +1107,12 @@ module M_hashset_intersection
     (return (x: t_HashSet_T_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_Copied_Intersection_T_RandomState self_}
     any
-    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
-      {exists done': MutBorrow.t t_Copied_Intersection_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Intersection_T_RandomState'0 done'.final
+    [ return (result: t_HashSet_T_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_Copied_Intersection_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Intersection_T_RandomState'0 done'.final
         /\ completed_Copied_Intersection_T_RandomState done'
         /\ produces_Copied_Intersection_T_RandomState self_ prod done'.current
-        /\ from_iter_post_HashSet_T_RandomState prod result}
+        /\ from_iter_post_HashSet_T_RandomState prod result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1112,8 +1121,8 @@ module M_hashset_intersection
   
   let rec hashset_intersection_T (xs: t_HashSet_T_RandomState) (ys: t_HashSet_T_RandomState)
     (return (x: t_HashSet_T_RandomState)) =
-    {[@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState xs}
-    {[@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState ys}
+    {([@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState xs)
+    /\ ([@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState ys)}
     (! bb0
     [ bb0 = s0
       [ s0 = intersection_T {xs} {ys} (fun (_x: t_Intersection_T_RandomState) -> [ &_7 <- _x ] s1)
@@ -1126,9 +1135,9 @@ module M_hashset_intersection
     | & _6: t_Copied_Intersection_T_RandomState = Any.any_l ()
     | & _7: t_Intersection_T_RandomState = Any.any_l () ])
     [ return (result: t_HashSet_T_RandomState) ->
-    {[@expl:hashset_intersection result type invariant] inv_HashSet_T_RandomState result}
-      {[@expl:hashset_intersection ensures] view_HashSet_T_RandomState result
-      = Fset.inter (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys)}
+    {([@expl:hashset_intersection result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:hashset_intersection ensures] view_HashSet_T_RandomState result
+      = Fset.inter (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys))}
       (! return {result}) ]
 end
 module M_hashset_difference
@@ -1164,12 +1173,13 @@ module M_hashset_difference
   
   let rec difference_T (self_: t_HashSet_T_RandomState) (other: t_HashSet_T_RandomState)
     (return (x: t_Difference_T_RandomState)) =
-    {[@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState self_}
-    {[@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState other}
+    {([@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState self_)
+    /\ ([@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState other)}
     any
-    [ return (result: t_Difference_T_RandomState) -> {inv_Difference_T_RandomState result}
-      {view_Difference_T_RandomState result
-      = Fset.diff (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other)}
+    [ return (result: t_Difference_T_RandomState) ->
+    {([@expl:difference result type invariant] inv_Difference_T_RandomState result)
+      /\ ([@expl:difference ensures] view_Difference_T_RandomState result
+      = Fset.diff (view_HashSet_T_RandomState self_) (view_HashSet_T_RandomState other))}
       (! return {result}) ]
   
   type t_Copied_Difference_T_RandomState
@@ -1191,8 +1201,9 @@ module M_hashset_difference
     (return (x: t_Copied_Difference_T_RandomState)) =
     {[@expl:copied 'self_' type invariant] inv_Difference_T_RandomState self_}
     any
-    [ return (result: t_Copied_Difference_T_RandomState) -> {inv_Copied_Difference_T_RandomState result}
-      {iter_Copied_Difference_T_RandomState result = self_}
+    [ return (result: t_Copied_Difference_T_RandomState) ->
+    {([@expl:copied result type invariant] inv_Copied_Difference_T_RandomState result)
+      /\ ([@expl:copied ensures] iter_Copied_Difference_T_RandomState result = self_)}
       (! return {result}) ]
   
   predicate resolve_Difference_T_RandomState (_1: t_Difference_T_RandomState)
@@ -1309,11 +1320,12 @@ module M_hashset_difference
     (return (x: t_HashSet_T_RandomState)) =
     {[@expl:collect 'self_' type invariant] inv_Copied_Difference_T_RandomState self_}
     any
-    [ return (result: t_HashSet_T_RandomState) -> {inv_HashSet_T_RandomState result}
-      {exists done': MutBorrow.t t_Copied_Difference_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Difference_T_RandomState'0 done'.final
+    [ return (result: t_HashSet_T_RandomState) ->
+    {([@expl:collect result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_Copied_Difference_T_RandomState, prod: Seq.seq t_T. resolve_Copied_Difference_T_RandomState'0 done'.final
         /\ completed_Copied_Difference_T_RandomState done'
         /\ produces_Copied_Difference_T_RandomState self_ prod done'.current
-        /\ from_iter_post_HashSet_T_RandomState prod result}
+        /\ from_iter_post_HashSet_T_RandomState prod result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1322,8 +1334,8 @@ module M_hashset_difference
   
   let rec hashset_difference_T (xs: t_HashSet_T_RandomState) (ys: t_HashSet_T_RandomState)
     (return (x: t_HashSet_T_RandomState)) =
-    {[@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState xs}
-    {[@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState ys}
+    {([@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState xs)
+    /\ ([@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState ys)}
     (! bb0
     [ bb0 = s0
       [ s0 = difference_T {xs} {ys} (fun (_x: t_Difference_T_RandomState) -> [ &_7 <- _x ] s1)
@@ -1336,8 +1348,8 @@ module M_hashset_difference
     | & _6: t_Copied_Difference_T_RandomState = Any.any_l ()
     | & _7: t_Difference_T_RandomState = Any.any_l () ])
     [ return (result: t_HashSet_T_RandomState) ->
-    {[@expl:hashset_difference result type invariant] inv_HashSet_T_RandomState result}
-      {[@expl:hashset_difference ensures] view_HashSet_T_RandomState result
-      = Fset.diff (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys)}
+    {([@expl:hashset_difference result type invariant] inv_HashSet_T_RandomState result)
+      /\ ([@expl:hashset_difference ensures] view_HashSet_T_RandomState result
+      = Fset.diff (view_HashSet_T_RandomState xs) (view_HashSet_T_RandomState ys))}
       (! return {result}) ]
 end

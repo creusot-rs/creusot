@@ -44,7 +44,7 @@ module M_test_string_len
   
   let rec len (self_: t_String) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv_ref_String self_}
     any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view_String self_))}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (to_bytes (view_String self_))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -52,10 +52,10 @@ module M_test_string_len
   meta "select_lsinst" "all"
   
   let rec test_string_len (s: t_String) (return (x: UInt64.t)) =
-    {[@expl:test_string_len 's' type invariant] inv_String s}
-    {[@expl:test_string_len requires #0] view_String s = Seq.create 1 [|Char.of_int 195|]}
-    {[@expl:test_string_len requires #1] to_utf8_char (Char.of_int 195)
-    = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
+    {([@expl:test_string_len 's' type invariant] inv_String s)
+    /\ ([@expl:test_string_len requires #0] view_String s = Seq.create 1 [|Char.of_int 195|])
+    /\ ([@expl:test_string_len requires #1] to_utf8_char (Char.of_int 195)
+    = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_String s} any) ]
@@ -95,15 +95,17 @@ module M_test_str_len
   function view_str (self: string) : Seq.seq Char.t
   
   let rec len (self_: string) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (to_bytes (view_str self_))} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (to_bytes (view_str self_))}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_str_len (s: string) (return (x: UInt64.t)) = {[@expl:test_str_len requires #0] view_str s
-    = Seq.create 1 [|Char.of_int 195|]}
-    {[@expl:test_str_len requires #1] to_utf8_char (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
+  let rec test_str_len (s: string) (return (x: UInt64.t)) = {([@expl:test_str_len requires #0] view_str s
+      = Seq.create 1 [|Char.of_int 195|])
+    /\ ([@expl:test_str_len requires #1] to_utf8_char (Char.of_int 195)
+    = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0 [ s0 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & s: string = s ])
@@ -151,17 +153,19 @@ module M_test_split_at
       /\ i0 <= Seq.length (view_str self_)
       /\ Seq.length (to_bytes (Seq.([..]) (view_str self_) 0 i0)) = UInt64.t'int ix}
     any
-    [ return (result: tup2_ref_str_ref_str) -> {Seq.(++) (view_str result.f0) (view_str result.f1) = view_str self_}
-      {Seq.length (to_bytes (view_str result.f0)) = UInt64.t'int ix}
+    [ return (result: tup2_ref_str_ref_str) ->
+    {([@expl:split_at ensures #0] Seq.(++) (view_str result.f0) (view_str result.f1) = view_str self_)
+      /\ ([@expl:split_at ensures #1] Seq.length (to_bytes (view_str result.f0)) = UInt64.t'int ix)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_split_at (s: string) (return (x: tup2_ref_str_ref_str)) = {[@expl:test_split_at requires #0] view_str s
-    = Seq.create 1 [|Char.of_int 195|]}
-    {[@expl:test_split_at requires #1] to_utf8_char (Char.of_int 195) = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|]}
+  let rec test_split_at (s: string) (return (x: tup2_ref_str_ref_str)) = {([@expl:test_split_at requires #0] view_str s
+      = Seq.create 1 [|Char.of_int 195|])
+    /\ ([@expl:test_split_at requires #1] to_utf8_char (Char.of_int 195)
+    = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- flat_map_singleton_char ] s1

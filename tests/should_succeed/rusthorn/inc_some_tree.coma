@@ -18,8 +18,8 @@ module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   function lemma_sum_nonneg (self: t_Tree) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Node tl _ tr -> sum tl >= 0
-      -> (let _ = lemma_sum_nonneg tl in sum tr >= 0
+      | Node tl _ tr -> ([@expl:lemma_sum_nonneg ensures] sum tl >= 0)
+      -> (let _ = lemma_sum_nonneg tl in ([@expl:lemma_sum_nonneg ensures] sum tr >= 0)
       -> (let _ = lemma_sum_nonneg tr in [@expl:lemma_sum_nonneg ensures] sum self >= 0))
       | Leaf -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
@@ -220,9 +220,9 @@ module M_impl_Tree__take_some (* Tree *)
     | & _23: MutBorrow.t t_Tree = Any.any_l ()
     | & _24: MutBorrow.t UInt32.t = Any.any_l ()
     | & _25: MutBorrow.t t_Tree = Any.any_l () ])
-    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_some ensures #0] sum self.final - sum self.current
-      = UInt32.t'int result.final - UInt32.t'int result.current}
-      {[@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current}
+    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+        = UInt32.t'int result.final - UInt32.t'int result.current)
+      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
 end
 module M_inc_some_tree
@@ -239,12 +239,12 @@ module M_inc_some_tree
       end
   
   let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
-    any [ return (result: UInt32.t) -> {UInt32.t'int result = sum self} (! return {result}) ]
+    any [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
   
   let rec take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {sum self.final - sum self.current
-      = UInt32.t'int result.final - UInt32.t'int result.current}
-      {UInt32.t'int result.current <= sum self.current}
+    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+        = UInt32.t'int result.final - UInt32.t'int result.current)
+      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current

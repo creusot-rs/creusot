@@ -45,7 +45,7 @@ module M_sum_weights
     else
       (([@expl:sum_weights requires] 0 <= i + 1 /\ i + 1 <= Seq.length s)
         /\ well_founded_relation_Int (Seq.length s - i) (Seq.length s - (i + 1)))
-      /\ (sum_weights_Name s (i + 1) >= 0
+      /\ (([@expl:sum_weights ensures] sum_weights_Name s (i + 1) >= 0)
       -> ([@expl:sum_weights ensures] UInt64.t'int (Seq.get s i).weight + sum_weights_Name s (i + 1) >= 0))
     )
 end
@@ -112,23 +112,23 @@ module M_subseq_rev
       if i1 < Seq.length s1 then
         if Seq.get s1 i1 = Seq.get s2 (i2 - 1) then
           ((([@expl:subseq_rev requires #0] 0 <= i1 + 1 /\ i1 + 1 <= Seq.length s1)
-              && ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
+              /\ ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
             /\ well_founded_relation_Int i2 (i2 - 1))
           /\ (if subseq_rev_T s1 (i1 + 1) s2 (i2 - 1) then
             true
           else
             (([@expl:subseq_rev requires #0] 0 <= i1 /\ i1 <= Seq.length s1)
-              && ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
+              /\ ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
             /\ well_founded_relation_Int i2 (i2 - 1)
           )
         else
           (([@expl:subseq_rev requires #0] 0 <= i1 /\ i1 <= Seq.length s1)
-            && ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
+            /\ ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
           /\ well_founded_relation_Int i2 (i2 - 1)
       
       else
         (([@expl:subseq_rev requires #0] 0 <= i1 /\ i1 <= Seq.length s1)
-          && ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
+          /\ ([@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
         /\ well_founded_relation_Int i2 (i2 - 1)
     
     )
@@ -191,33 +191,33 @@ module M_m
     -> 0 <= w
     -> (if i = 0 then
       let result = 0 in ([@expl:m ensures #0] result >= 0)
-      && ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+      /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
           /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
         -> sum_values_Name s j <= result)
     else
       if UInt64.t'int (Seq.get items (i - 1)).weight > w then
-        ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) && ([@expl:m requires #1] 0 <= w))
+        ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) /\ ([@expl:m requires #1] 0 <= w))
           /\ well_founded_relation_Int i (i - 1))
-        /\ (m_Name items (i - 1) w >= 0
-          && (forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+        /\ (([@expl:m ensures #0] m_Name items (i - 1) w >= 0)
+          /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
               /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
             -> sum_values_Name s j <= m_Name items (i - 1) w)
         -> (let result = m_Name items (i - 1) w in ([@expl:m ensures #0] result >= 0)
-        && ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+        /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
             /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
           -> sum_values_Name s j <= result)))
       else
-        ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) && ([@expl:m requires #1] 0 <= w))
+        ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items) /\ ([@expl:m requires #1] 0 <= w))
           /\ well_founded_relation_Int i (i - 1))
-        /\ (m_Name items (i - 1) w >= 0
-          && (forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+        /\ (([@expl:m ensures #0] m_Name items (i - 1) w >= 0)
+          /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
               /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
             -> sum_values_Name s j <= m_Name items (i - 1) w)
         -> ((([@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            && ([@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
+            /\ ([@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
           /\ well_founded_relation_Int i (i - 1))
-        /\ (m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight) >= 0
-          && (forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+        /\ (([@expl:m ensures #0] m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight) >= 0)
+          /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
               /\ j <= Seq.length s
               /\ subseq_rev_Item_Name s j items (i - 1)
               /\ sum_weights_Name s j <= w - UInt64.t'int (Seq.get items (i - 1)).weight
@@ -225,7 +225,7 @@ module M_m
         -> (let result = MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
           - UInt64.t'int (Seq.get items (i - 1)).weight)
         + UInt64.t'int (Seq.get items (i - 1)).value) in ([@expl:m ensures #0] result >= 0)
-        && ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+        /\ ([@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
             /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
           -> sum_values_Name s j <= result))))
     
@@ -254,8 +254,10 @@ module M_knapsack01_dyn
   meta "rewrite_def" function index_Vec_usize_Global
   
   let rec from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
-    [ return (result: t_Vec_usize_Global) -> {Seq.length (view_Vec_usize_Global result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_usize_Global result i = elem}
+    [ return (result: t_Vec_usize_Global) -> {([@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int n)
+      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_usize_Global result i = elem)}
       (! return {result}) ]
   
   type t_Vec_Item_Name_Global
@@ -313,7 +315,8 @@ module M_knapsack01_dyn
   let rec len_Item_Name (self_: t_Vec_Item_Name_Global) (return (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] inv_ref_Vec_Item_Name_Global self_}
     any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_Item_Name_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_Item_Name_Global self_)}
       (! return {result}) ]
   
   type t_Vec_Vec_usize_Global_Global
@@ -331,15 +334,16 @@ module M_knapsack01_dyn
   
   let rec from_elem_Vec_usize_Global (elem: t_Vec_usize_Global) (n: UInt64.t)
     (return (x: t_Vec_Vec_usize_Global_Global)) = any
-    [ return (result: t_Vec_Vec_usize_Global_Global) -> {Seq.length (view_Vec_Vec_usize_Global_Global result)
-      = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_Vec_usize_Global_Global result i = elem}
+    [ return (result: t_Vec_Vec_usize_Global_Global) ->
+    {([@expl:from_elem ensures #0] Seq.length (view_Vec_Vec_usize_Global_Global result) = UInt64.t'int n)
+      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_Vec_usize_Global_Global result i = elem)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -374,7 +378,7 @@ module M_knapsack01_dyn
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -456,11 +460,11 @@ module M_knapsack01_dyn
   meta "rewrite_def" predicate has_value_usize
   
   let rec index_Vec_Item_Name_Global (self_: t_Vec_Item_Name_Global) (ix: UInt64.t) (return (x: t_Item_Name)) =
-    {[@expl:index 'self_' type invariant] inv_ref_Vec_Item_Name_Global self_}
-    {[@expl:index requires] in_bounds_usize ix (view_Vec_Item_Name_Global self_)}
+    {([@expl:index 'self_' type invariant] inv_ref_Vec_Item_Name_Global self_)
+    /\ ([@expl:index requires] in_bounds_usize ix (view_Vec_Item_Name_Global self_))}
     any
-    [ return (result: t_Item_Name) -> {inv_ref_Item_Name result}
-      {has_value_usize ix (view_Vec_Item_Name_Global self_) result}
+    [ return (result: t_Item_Name) -> {([@expl:index result type invariant] inv_ref_Item_Name result)
+      /\ ([@expl:index ensures] has_value_usize ix (view_Vec_Item_Name_Global self_) result)}
       (! return {result}) ]
   
   type t_RangeInclusive_usize
@@ -478,17 +482,19 @@ module M_knapsack01_dyn
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
   let rec new_usize (start'0: UInt64.t) (end''0: UInt64.t) (return (x: t_RangeInclusive_usize)) = any
-    [ return (result: t_RangeInclusive_usize) -> {inv_RangeInclusive_usize result}
-      {start_log_RangeInclusive_usize result = start'0}
-      {end_log_RangeInclusive_usize result = end''0}
-      {deep_model_usize start'0 <= deep_model_usize end''0 -> not is_empty_log_RangeInclusive_usize result}
+    [ return (result: t_RangeInclusive_usize) -> {([@expl:new result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@expl:new ensures #0] start_log_RangeInclusive_usize result = start'0)
+      /\ ([@expl:new ensures #1] end_log_RangeInclusive_usize result = end''0)
+      /\ ([@expl:new ensures #2] deep_model_usize start'0 <= deep_model_usize end''0
+      -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
   let rec into_iter_RangeInclusive_usize (self_: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
     {[@expl:into_iter 'self_' type invariant] inv_RangeInclusive_usize self_}
     any
-    [ return (result: t_RangeInclusive_usize) -> {inv_RangeInclusive_usize result}
-      {result = self_}
+    [ return (result: t_RangeInclusive_usize) ->
+    {([@expl:into_iter result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
   predicate invariant_refmut_RangeInclusive_usize [@inline:trivial] (self: MutBorrow.t t_RangeInclusive_usize) =
@@ -535,7 +541,7 @@ module M_knapsack01_dyn
   let rec next_RangeInclusive_usize (self_: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
     {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_usize self_}
     any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_RangeInclusive_usize self_
         | Some v -> produces_RangeInclusive_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -560,7 +566,8 @@ module M_knapsack01_dyn
     (return (x: t_Vec_usize_Global)) =
     {[@expl:index requires] in_bounds_usize'0 ix (view_Vec_Vec_usize_Global_Global self_)}
     any
-    [ return (result: t_Vec_usize_Global) -> {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_) result}
+    [ return (result: t_Vec_usize_Global) ->
+    {[@expl:index ensures] has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_) result}
       (! return {result}) ]
   
   predicate in_bounds_usize'1 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
@@ -575,10 +582,13 @@ module M_knapsack01_dyn
   
   let rec index_Vec_usize_Global'0 (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
     {[@expl:index requires] in_bounds_usize'1 ix (view_Vec_usize_Global self_)}
-    any [ return (result: UInt64.t) -> {has_value_usize'1 ix (view_Vec_usize_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:index ensures] has_value_usize'1 ix (view_Vec_usize_Global self_) result}
+      (! return {result}) ]
   
   let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
+    [ return (result: UInt64.t) -> {[@expl:max ensures] UInt64.t'int result
+      = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
   
   predicate resolve_elswhere_usize [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec_usize_Global) (fin: Seq.seq t_Vec_usize_Global) =
@@ -591,11 +601,11 @@ module M_knapsack01_dyn
     {[@expl:index_mut requires] in_bounds_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.current)}
     any
     [ return (result: MutBorrow.t t_Vec_usize_Global) ->
-    {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.current) result.current}
-      {has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final)}
-      {Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
-      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize'0 ix (view_Vec_Vec_usize_Global_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
+      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_elswhere_usize'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
@@ -608,10 +618,11 @@ module M_knapsack01_dyn
     {[@expl:index_mut requires] in_bounds_usize'1 ix (view_Vec_usize_Global self_.current)}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
-    {has_value_usize'1 ix (view_Vec_usize_Global self_.current) result.current}
-      {has_value_usize'1 ix (view_Vec_usize_Global self_.final) result.final}
-      {resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final)}
-      {Seq.length (view_Vec_usize_Global self_.final) = Seq.length (view_Vec_usize_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_usize'1 ix (view_Vec_usize_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize'1 ix (view_Vec_usize_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_usize_Global self_.final)
+      = Seq.length (view_Vec_usize_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
@@ -659,8 +670,9 @@ module M_knapsack01_dyn
       -> invariant_Vec_ref_Item_Name_Global x
   
   let rec with_capacity_ref_Item_Name (capacity: UInt64.t) (return (x: t_Vec_ref_Item_Name_Global)) = any
-    [ return (result: t_Vec_ref_Item_Name_Global) -> {inv_Vec_ref_Item_Name_Global result}
-      {Seq.length (view_Vec_ref_Item_Name_Global result) = 0}
+    [ return (result: t_Vec_ref_Item_Name_Global) ->
+    {([@expl:with_capacity result type invariant] inv_Vec_ref_Item_Name_Global result)
+      /\ ([@expl:with_capacity ensures] Seq.length (view_Vec_ref_Item_Name_Global result) = 0)}
       (! return {result}) ]
   
   function index_Vec_ref_Item_Name_Global [@inline:trivial] (self: t_Vec_ref_Item_Name_Global) (ix: int) : t_Item_Name =
@@ -679,10 +691,10 @@ module M_knapsack01_dyn
   meta "rewrite_def" predicate inv_refmut_Vec_ref_Item_Name_Global
   
   let rec push_ref_Item_Name (self_: MutBorrow.t t_Vec_ref_Item_Name_Global) (v: t_Item_Name) (return (x: ())) =
-    {[@expl:push 'self_' type invariant] inv_refmut_Vec_ref_Item_Name_Global self_}
-    {[@expl:push 'v' type invariant] inv_ref_Item_Name v}
+    {([@expl:push 'self_' type invariant] inv_refmut_Vec_ref_Item_Name_Global self_)
+    /\ ([@expl:push 'v' type invariant] inv_ref_Item_Name v)}
     any
-    [ return (result: ()) -> {view_Vec_ref_Item_Name_Global self_.final
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_ref_Item_Name_Global self_.final
       = Seq.snoc (view_Vec_ref_Item_Name_Global self_.current) v}
       (! return {result}) ]
   
@@ -697,11 +709,11 @@ module M_knapsack01_dyn
   
   let rec knapsack01_dyn_Name (items: t_Vec_Item_Name_Global) (max_weight: UInt64.t)
     (return (x: t_Vec_ref_Item_Name_Global)) =
-    {[@expl:knapsack01_dyn 'items' type invariant] inv_ref_Vec_Item_Name_Global items}
-    {[@expl:knapsack01_dyn requires #0] Seq.length (view_Vec_Item_Name_Global items) < 10000000}
-    {[@expl:knapsack01_dyn requires #1] UInt64.t'int max_weight < 10000000}
-    {[@expl:knapsack01_dyn requires #2] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_Item_Name_Global items)
-      -> UInt64.t'int (index_Vec_Item_Name_Global'0 items i).value <= 10000000}
+    {([@expl:knapsack01_dyn 'items' type invariant] inv_ref_Vec_Item_Name_Global items)
+    /\ ([@expl:knapsack01_dyn requires #0] Seq.length (view_Vec_Item_Name_Global items) < 10000000)
+    /\ ([@expl:knapsack01_dyn requires #1] UInt64.t'int max_weight < 10000000)
+    /\ ([@expl:knapsack01_dyn requires #2] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_Item_Name_Global items)
+      -> UInt64.t'int (index_Vec_Item_Name_Global'0 items i).value <= 10000000)}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
@@ -945,13 +957,13 @@ module M_knapsack01_dyn
     | & _202: () = Any.any_l ()
     | & _203: MutBorrow.t t_Vec_ref_Item_Name_Global = Any.any_l () ])
     [ return (result: t_Vec_ref_Item_Name_Global) ->
-    {[@expl:knapsack01_dyn result type invariant] inv_Vec_ref_Item_Name_Global result}
-      {[@expl:knapsack01_dyn ensures #0] sum_weights_Name (view_Vec_ref_Item_Name_Global result) (Seq.length (view_Vec_ref_Item_Name_Global result))
-      <= UInt64.t'int max_weight}
-      {[@expl:knapsack01_dyn ensures #1] subseq_rev_Item_Name (view_Vec_ref_Item_Name_Global result) 0 (view_Vec_Item_Name_Global items) (Seq.length (view_Vec_Item_Name_Global items))}
-      {[@expl:knapsack01_dyn ensures #2] forall s: Seq.seq t_Item_Name. subseq_rev_Item_Name s 0 (view_Vec_Item_Name_Global items) (Seq.length (view_Vec_Item_Name_Global items))
+    {([@expl:knapsack01_dyn result type invariant] inv_Vec_ref_Item_Name_Global result)
+      /\ ([@expl:knapsack01_dyn ensures #0] sum_weights_Name (view_Vec_ref_Item_Name_Global result) (Seq.length (view_Vec_ref_Item_Name_Global result))
+        <= UInt64.t'int max_weight)
+      /\ ([@expl:knapsack01_dyn ensures #1] subseq_rev_Item_Name (view_Vec_ref_Item_Name_Global result) 0 (view_Vec_Item_Name_Global items) (Seq.length (view_Vec_Item_Name_Global items)))
+      /\ ([@expl:knapsack01_dyn ensures #2] forall s: Seq.seq t_Item_Name. subseq_rev_Item_Name s 0 (view_Vec_Item_Name_Global items) (Seq.length (view_Vec_Item_Name_Global items))
           /\ sum_weights_Name s (Seq.length s) <= UInt64.t'int max_weight
         -> sum_values_Name s (Seq.length s)
-        <= sum_values_Name (view_Vec_ref_Item_Name_Global result) (Seq.length (view_Vec_ref_Item_Name_Global result))}
+        <= sum_values_Name (view_Vec_ref_Item_Name_Global result) (Seq.length (view_Vec_ref_Item_Name_Global result)))}
       (! return {result}) ]
 end

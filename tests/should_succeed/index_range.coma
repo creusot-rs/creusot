@@ -16,10 +16,12 @@ module M_create_arr
       <= UInt64.t'int const_MAX
   
   let rec new_i32 (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 0} (! return {result}) ]
+    [ return (result: t_Vec_i32_Global) -> {[@expl:new ensures] Seq.length (view_Vec_i32_Global result) = 0}
+      (! return {result}) ]
   
   let rec push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
-    [ return (result: ()) -> {view_Vec_i32_Global self_.final = Seq.snoc (view_Vec_i32_Global self_.current) v}
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_i32_Global self_.final
+      = Seq.snoc (view_Vec_i32_Global self_.current) v}
       (! return {result}) ]
   
   function index_Vec_i32_Global [@inline:trivial] (self: t_Vec_i32_Global) (ix: int) : Int32.t =
@@ -95,7 +97,7 @@ module M_test_range
   meta "rewrite_def" function index_Vec_i32_Global
   
   let rec create_arr (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 5
+    [ return (result: t_Vec_i32_Global) -> {[@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -113,25 +115,28 @@ module M_test_range
   let rec index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_Range_usize) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds_Range_usize ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Slice64.slice Int32.t) -> {has_value_Range_usize ix (view_Vec_i32_Global self_) result}
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@expl:index ensures] has_value_Range_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   let rec deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
-    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view_Vec_i32_Global self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {[@expl:deref ensures] Slice64.view result = view_Vec_i32_Global self_}
+      (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
   let rec get_i32 (self_: Slice64.slice Int32.t) (ix: t_Range_usize) (return (x: t_Option_ref_slice_i32)) = any
-    [ return (result: t_Option_ref_slice_i32) -> {in_bounds_Range_usize ix (Slice64.view self_)
-      -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_Range_usize ix (Slice64.view self_) r)}
-      {in_bounds_Range_usize ix (Slice64.view self_) \/ result = None}
+    [ return (result: t_Option_ref_slice_i32) -> {([@expl:get ensures #0] in_bounds_Range_usize ix (Slice64.view self_)
+        -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_Range_usize ix (Slice64.view self_) r))
+      /\ ([@expl:get ensures #1] in_bounds_Range_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
   let rec is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_Range_usize (self: t_Range_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ (i < UInt64.t'int self.start \/ UInt64.t'int self.end' <= i) /\ i < Seq.length old'
@@ -142,10 +147,11 @@ module M_test_range
     {[@expl:index_mut requires] in_bounds_Range_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
-    {has_value_Range_usize ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_Range_usize ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_Range_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_Range_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_Range_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_Range_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -153,7 +159,8 @@ module M_test_range
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   let rec len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -167,7 +174,9 @@ module M_test_range
   
   let rec index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
-    any [ return (result: Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -452,7 +461,7 @@ module M_test_range_to
   meta "rewrite_def" function index_Vec_i32_Global
   
   let rec create_arr (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 5
+    [ return (result: t_Vec_i32_Global) -> {[@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -470,25 +479,29 @@ module M_test_range_to
   let rec index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_RangeTo_usize) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds_RangeTo_usize ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Slice64.slice Int32.t) -> {has_value_RangeTo_usize ix (view_Vec_i32_Global self_) result}
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@expl:index ensures] has_value_RangeTo_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   let rec deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
-    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view_Vec_i32_Global self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {[@expl:deref ensures] Slice64.view result = view_Vec_i32_Global self_}
+      (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
   let rec get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeTo_usize) (return (x: t_Option_ref_slice_i32)) = any
-    [ return (result: t_Option_ref_slice_i32) -> {in_bounds_RangeTo_usize ix (Slice64.view self_)
-      -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeTo_usize ix (Slice64.view self_) r)}
-      {in_bounds_RangeTo_usize ix (Slice64.view self_) \/ result = None}
+    [ return (result: t_Option_ref_slice_i32) ->
+    {([@expl:get ensures #0] in_bounds_RangeTo_usize ix (Slice64.view self_)
+        -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeTo_usize ix (Slice64.view self_) r))
+      /\ ([@expl:get ensures #1] in_bounds_RangeTo_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
   let rec is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeTo_usize (self: t_RangeTo_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.end' <= i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -498,10 +511,11 @@ module M_test_range_to
     {[@expl:index_mut requires] in_bounds_RangeTo_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
-    {has_value_RangeTo_usize ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_RangeTo_usize ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_RangeTo_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_RangeTo_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeTo_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeTo_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -509,7 +523,8 @@ module M_test_range_to
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   let rec len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -523,7 +538,9 @@ module M_test_range_to
   
   let rec index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
-    any [ return (result: Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -725,7 +742,7 @@ module M_test_range_from
   meta "rewrite_def" function index_Vec_i32_Global
   
   let rec create_arr (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 5
+    [ return (result: t_Vec_i32_Global) -> {[@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -743,25 +760,29 @@ module M_test_range_from
   let rec index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_RangeFrom_usize) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds_RangeFrom_usize ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Slice64.slice Int32.t) -> {has_value_RangeFrom_usize ix (view_Vec_i32_Global self_) result}
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@expl:index ensures] has_value_RangeFrom_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   let rec deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
-    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view_Vec_i32_Global self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {[@expl:deref ensures] Slice64.view result = view_Vec_i32_Global self_}
+      (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
   let rec get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeFrom_usize) (return (x: t_Option_ref_slice_i32)) = any
-    [ return (result: t_Option_ref_slice_i32) -> {in_bounds_RangeFrom_usize ix (Slice64.view self_)
-      -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeFrom_usize ix (Slice64.view self_) r)}
-      {in_bounds_RangeFrom_usize ix (Slice64.view self_) \/ result = None}
+    [ return (result: t_Option_ref_slice_i32) ->
+    {([@expl:get ensures #0] in_bounds_RangeFrom_usize ix (Slice64.view self_)
+        -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeFrom_usize ix (Slice64.view self_) r))
+      /\ ([@expl:get ensures #1] in_bounds_RangeFrom_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
   let rec is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeFrom_usize (self: t_RangeFrom_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ i < UInt64.t'int self.start /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -771,10 +792,11 @@ module M_test_range_from
     {[@expl:index_mut requires] in_bounds_RangeFrom_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
-    {has_value_RangeFrom_usize ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_RangeFrom_usize ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_RangeFrom_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_RangeFrom_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeFrom_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeFrom_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -782,7 +804,8 @@ module M_test_range_from
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   let rec len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -796,7 +819,9 @@ module M_test_range_from
   
   let rec index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
-    any [ return (result: Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1009,7 +1034,7 @@ module M_test_range_full
   meta "rewrite_def" function index_Vec_i32_Global
   
   let rec create_arr (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 5
+    [ return (result: t_Vec_i32_Global) -> {[@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -1023,11 +1048,13 @@ module M_test_range_full
   let rec index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: ()) (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds_RangeFull ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Slice64.slice Int32.t) -> {has_value_RangeFull ix (view_Vec_i32_Global self_) result}
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@expl:index ensures] has_value_RangeFull ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   predicate resolve_elswhere_RangeFull (self: ()) (_old: Seq.seq Int32.t) (_fin: Seq.seq Int32.t) = true
   
@@ -1036,10 +1063,11 @@ module M_test_range_full
     {[@expl:index_mut requires] in_bounds_RangeFull ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
-    {has_value_RangeFull ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_RangeFull ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_RangeFull ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_RangeFull ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeFull ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeFull ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -1047,7 +1075,8 @@ module M_test_range_full
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   let rec len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -1061,7 +1090,9 @@ module M_test_range_full
   
   let rec index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
-    any [ return (result: Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1263,7 +1294,7 @@ module M_test_range_to_inclusive
   meta "rewrite_def" function index_Vec_i32_Global
   
   let rec create_arr (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {Seq.length (view_Vec_i32_Global result) = 5
+    [ return (result: t_Vec_i32_Global) -> {[@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -1282,27 +1313,31 @@ module M_test_range_to_inclusive
     (return (x: Slice64.slice Int32.t)) =
     {[@expl:index requires] in_bounds_RangeToInclusive_usize ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Slice64.slice Int32.t) -> {has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_) result}
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@expl:index ensures] has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   let rec deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
-    [ return (result: Slice64.slice Int32.t) -> {Slice64.view result = view_Vec_i32_Global self_} (! return {result}) ]
+    [ return (result: Slice64.slice Int32.t) -> {[@expl:deref ensures] Slice64.view result = view_Vec_i32_Global self_}
+      (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
   let rec get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeToInclusive_usize) (return (x: t_Option_ref_slice_i32)) =
     any
-    [ return (result: t_Option_ref_slice_i32) -> {in_bounds_RangeToInclusive_usize ix (Slice64.view self_)
-      -> (exists r: Slice64.slice Int32.t. result = Some r
-        /\ has_value_RangeToInclusive_usize ix (Slice64.view self_) r)}
-      {in_bounds_RangeToInclusive_usize ix (Slice64.view self_) \/ result = None}
+    [ return (result: t_Option_ref_slice_i32) ->
+    {([@expl:get ensures #0] in_bounds_RangeToInclusive_usize ix (Slice64.view self_)
+        -> (exists r: Slice64.slice Int32.t. result = Some r
+          /\ has_value_RangeToInclusive_usize ix (Slice64.view self_) r))
+      /\ ([@expl:get ensures #1] in_bounds_RangeToInclusive_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
   let rec is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeToInclusive_usize (self: t_RangeToInclusive_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.end' < i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
@@ -1312,10 +1347,11 @@ module M_test_range_to_inclusive
     {[@expl:index_mut requires] in_bounds_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
-    {has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current) result.current}
-      {has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_.final) result.final}
-      {resolve_elswhere_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final)}
-      {Seq.length (view_Vec_i32_Global self_.final) = Seq.length (view_Vec_i32_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+      = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -1323,7 +1359,8 @@ module M_test_range_to_inclusive
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
   let rec len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+      (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
     UInt64.t'int self < Seq.length seq
@@ -1337,7 +1374,9 @@ module M_test_range_to_inclusive
   
   let rec index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
-    any [ return (result: Int32.t) -> {has_value_usize ix (view_Vec_i32_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

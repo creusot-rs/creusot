@@ -115,17 +115,19 @@ module M_take_first_mut
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_refmut_slice_T (return (x: MutBorrow.t (Slice64.slice t_T))) = any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_refmut_slice_T result}
-      {Slice64.view result.current = (Seq.empty: Seq.seq t_T)}
-      {Slice64.view result.final = (Seq.empty: Seq.seq t_T)}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
+    {([@expl:default result type invariant] inv_refmut_slice_T result)
+      /\ ([@expl:default ensures #0] Slice64.view result.current = (Seq.empty: Seq.seq t_T))
+      /\ ([@expl:default ensures #1] Slice64.view result.final = (Seq.empty: Seq.seq t_T))}
       (! return {result}) ]
   
   let rec take_refmut_slice_T (dest: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
     (return (x: MutBorrow.t (Slice64.slice t_T))) = {[@expl:take 'dest' type invariant] inv_refmut_refmut_slice_T dest}
     any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_refmut_slice_T result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
+    {([@expl:take result type invariant] inv_refmut_slice_T result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   type tup2_refmut_T_refmut_slice_T = { f0: MutBorrow.t t_T; f1: MutBorrow.t (Slice64.slice t_T) }
@@ -164,8 +166,9 @@ module M_take_first_mut
     (return (x: t_Option_tup2_refmut_T_refmut_slice_T)) =
     {[@expl:split_first_mut 'self_' type invariant] inv_refmut_slice_T self_}
     any
-    [ return (result: t_Option_tup2_refmut_T_refmut_slice_T) -> {inv_Option_tup2_refmut_T_refmut_slice_T result}
-      {match result with
+    [ return (result: t_Option_tup2_refmut_T_refmut_slice_T) ->
+    {([@expl:split_first_mut result type invariant] inv_Option_tup2_refmut_T_refmut_slice_T result)
+      /\ ([@expl:split_first_mut ensures] match result with
         | Some {f0 = first; f1 = tail} -> first.current = index_slice_T self_.current 0
         /\ first.final = index_slice_T self_.final 0
         /\ Seq.length (Slice64.view self_.current) > 0
@@ -174,7 +177,7 @@ module M_take_first_mut
         /\ Slice64.view tail.final = tail_T (Slice64.view self_.final)
         | None -> Seq.length (Slice64.view self_.current) = 0
         /\ self_.final = self_.current /\ Slice64.view self_.current = (Seq.empty: Seq.seq t_T)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_tup2_refmut_T_refmut_slice_T) (return (f0'0: tup2_refmut_T_refmut_slice_T)) = any
@@ -268,8 +271,8 @@ module M_take_first_mut
     | & rem: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _12: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _13: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: t_Option_refmut_T) -> {[@expl:take_first_mut result type invariant] inv_Option_refmut_T result}
-      {[@expl:take_first_mut ensures] match result with
+    [ return (result: t_Option_refmut_T) -> {([@expl:take_first_mut result type invariant] inv_Option_refmut_T result)
+      /\ ([@expl:take_first_mut ensures] match result with
         | Some'0 r -> r.current = index_slice_T self_.current.current 0
         /\ r.final = index_slice_T self_.current.final 0
         /\ Seq.length (Slice64.view self_.current.current) > 0
@@ -280,6 +283,6 @@ module M_take_first_mut
         /\ Slice64.view self_.current.final = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.current.current = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.final.final = (Seq.empty: Seq.seq t_T)
-        end}
+        end)}
       (! return {result}) ]
 end

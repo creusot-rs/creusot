@@ -15,7 +15,8 @@ module M_make_vec_of_size
       <= UInt64.t'int const_MAX
   
   let rec new_bool (return (x: t_Vec_bool_Global)) = any
-    [ return (result: t_Vec_bool_Global) -> {Seq.length (view_Vec_bool_Global result) = 0} (! return {result}) ]
+    [ return (result: t_Vec_bool_Global) -> {[@expl:new ensures] Seq.length (view_Vec_bool_Global result) = 0}
+      (! return {result}) ]
   
   type t_Ordering = Less | Equal | Greater
   
@@ -63,7 +64,8 @@ module M_make_vec_of_size
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec push_bool (self_: MutBorrow.t t_Vec_bool_Global) (v: bool) (return (x: ())) = any
-    [ return (result: ()) -> {view_Vec_bool_Global self_.final = Seq.snoc (view_Vec_bool_Global self_.current) v}
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_bool_Global self_.final
+      = Seq.snoc (view_Vec_bool_Global self_.current) v}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

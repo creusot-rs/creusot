@@ -226,7 +226,7 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
       -> (let self_ = args in inv_A res)
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   type t_Option_A = None | Some t_A
   
@@ -313,11 +313,11 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
       | s3 = [ &_ret <- Some _4 ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
-    [ return (result: t_Option_A) -> {[@expl:next result type invariant] inv_Option_A result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_A) -> {([@expl:next result type invariant] inv_Option_A result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_Repeat_A self
         | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Repeat_A__produces_refl__refines (* <Repeat<A> as common::Iterator> *)

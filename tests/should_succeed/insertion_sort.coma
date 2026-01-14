@@ -10,12 +10,13 @@ module M_insertion_sort
   use creusot.prelude.Any
   
   let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -50,7 +51,7 @@ module M_insertion_sort
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -173,11 +174,11 @@ module M_insertion_sort
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
-    {[@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current)}
-    {[@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current)}
+    {([@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current))
+    /\ ([@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current))}
     any
     [ return (result: ()) ->
-    {Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
+    {[@expl:swap ensures] Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -303,7 +304,7 @@ module M_insertion_sort
     | & _old: Slice64.slice Int32.t = Any.any_l ()
     | & _old'0: Slice64.slice Int32.t = Any.any_l () ])
     [ return (result: ()) ->
-    {[@expl:insertion_sort ensures #0] permutation_of_i32 (Slice64.view array.current) (Slice64.view array.final)}
-      {[@expl:insertion_sort ensures #1] sorted_i32 (Slice64.view array.final)}
+    {([@expl:insertion_sort ensures #0] permutation_of_i32 (Slice64.view array.current) (Slice64.view array.final))
+      /\ ([@expl:insertion_sort ensures #1] sorted_i32 (Slice64.view array.final))}
       (! return {result}) ]
 end

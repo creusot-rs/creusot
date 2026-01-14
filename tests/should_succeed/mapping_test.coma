@@ -20,8 +20,8 @@ module M_incr
   
   meta "select_lsinst" "all"
   
-  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int t.current.a}
-    {[@expl:incr requires #1] Int32.to_int t.current.a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {([@expl:incr requires #0] 0 <= Int32.to_int t.current.a)
+    /\ ([@expl:incr requires #1] Int32.to_int t.current.a < 1000)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_t <- t ] s1
@@ -48,10 +48,11 @@ module M_f
   axiom view_T_spec: forall self: t_T. forall i: int. Map.get (view_T self) i
         = (if 0 <= i /\ i < Int32.to_int self.a then 1 else 0)
   
-  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {[@expl:incr requires #0] 0 <= Int32.to_int t.current.a}
-    {[@expl:incr requires #1] Int32.to_int t.current.a < 1000}
+  let rec incr (t: MutBorrow.t t_T) (return (x: ())) = {([@expl:incr requires #0] 0 <= Int32.to_int t.current.a)
+    /\ ([@expl:incr requires #1] Int32.to_int t.current.a < 1000)}
     any
-    [ return (result: ()) -> {view_T t.final = Map.set (view_T t.current) (Int32.to_int t.current.a) 1}
+    [ return (result: ()) -> {[@expl:incr ensures] view_T t.final
+      = Map.set (view_T t.current) (Int32.to_int t.current.a) 1}
       (! return {result}) ]
   
   predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current

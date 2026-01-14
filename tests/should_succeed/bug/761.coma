@@ -43,11 +43,12 @@ module M_try_option
   let rec branch_Option_T (self_: t_Option_T) (return (x: t_ControlFlow_Option_Infallible_T)) =
     {[@expl:branch 'self_' type invariant] inv_Option_T self_}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_T) -> {inv_ControlFlow_Option_Infallible_T result}
-      {match self_ with
+    [ return (result: t_ControlFlow_Option_Infallible_T) ->
+    {([@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_T result)
+      /\ ([@expl:branch ensures] match self_ with
         | Some v -> result = Continue v
         | None -> result = Break (None'0)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Option_Infallible_T) (return (f0: t_Option_Infallible)) = any
@@ -60,7 +61,10 @@ module M_try_option
   
   let rec from_residual_Option_T (residual: t_Option_Infallible) (return (x: t_Option_T)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
-    any [ return (result: t_Option_T) -> {inv_Option_T result} {result = None} (! return {result}) ]
+    any
+    [ return (result: t_Option_T) -> {([@expl:from_residual result type invariant] inv_Option_T result)
+      /\ ([@expl:from_residual ensures] result = None)}
+      (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_T) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Continue f0 = _x} (! return {f0})
@@ -94,8 +98,8 @@ module M_try_option
     | & _5: t_ControlFlow_Option_Infallible_T = Any.any_l ()
     | & residual: t_Option_Infallible = Any.any_l ()
     | & val': t_T = Any.any_l () ])
-    [ return (result: t_Option_T) -> {[@expl:try_option result type invariant] inv_Option_T result}
-      {[@expl:try_option ensures] result = x}
+    [ return (result: t_Option_T) -> {([@expl:try_option result type invariant] inv_Option_T result)
+      /\ ([@expl:try_option ensures] result = x)}
       (! return {result}) ]
 end
 module M_try_result
@@ -147,11 +151,12 @@ module M_try_result
   let rec branch_Result_T_E (self_: t_Result_T_E) (return (x: t_ControlFlow_Result_Infallible_E_T)) =
     {[@expl:branch 'self_' type invariant] inv_Result_T_E self_}
     any
-    [ return (result: t_ControlFlow_Result_Infallible_E_T) -> {inv_ControlFlow_Result_Infallible_E_T result}
-      {match self_ with
+    [ return (result: t_ControlFlow_Result_Infallible_E_T) ->
+    {([@expl:branch result type invariant] inv_ControlFlow_Result_Infallible_E_T result)
+      /\ ([@expl:branch ensures] match self_ with
         | Ok v -> result = Continue v
         | Err e -> result = Break (Err'0 e)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Result_Infallible_E_T) (return (f0: t_Result_Infallible_E)) = any
@@ -223,16 +228,19 @@ module M_try_result
       = (postcondition_from self args res /\ self = res_state)
   
   let rec from_E (self_: t_E) (return (x: t_E)) = {[@expl:from 'self_' type invariant] inv_E self_}
-    any [ return (result: t_E) -> {inv_E result} {result = self_} (! return {result}) ]
+    any
+    [ return (result: t_E) -> {([@expl:from result type invariant] inv_E result)
+      /\ ([@expl:from ensures] result = self_)}
+      (! return {result}) ]
   
   let rec from_residual_Result_T_E (residual: t_Result_Infallible_E) (return (x: t_Result_T_E)) =
     {[@expl:from_residual 'residual' type invariant] inv_Result_Infallible_E residual}
     any
-    [ return (result: t_Result_T_E) -> {inv_Result_T_E result}
-      {match { f0 = result; f1 = residual } with
+    [ return (result: t_Result_T_E) -> {([@expl:from_residual result type invariant] inv_Result_T_E result)
+      /\ ([@expl:from_residual ensures] match { f0 = result; f1 = residual } with
         | {f0 = Err result'0; f1 = Err'0 residual'0} -> postcondition_from () residual'0 result'0
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Result_Infallible_E_T) (return (f0'0: t_T)) = any
@@ -267,8 +275,8 @@ module M_try_result
     | & _5: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()
     | & residual: t_Result_Infallible_E = Any.any_l ()
     | & val': t_T = Any.any_l () ])
-    [ return (result: t_Result_T_E) -> {[@expl:try_result result type invariant] inv_Result_T_E result}
-      {[@expl:try_result ensures] result = x}
+    [ return (result: t_Result_T_E) -> {([@expl:try_result result type invariant] inv_Result_T_E result)
+      /\ ([@expl:try_result ensures] result = x)}
       (! return {result}) ]
 end
 module M_elim_empty

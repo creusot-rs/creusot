@@ -23,8 +23,7 @@ module M_proj_toggle
   meta "select_lsinst" "all"
   
   let rec proj_toggle_T (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:proj_toggle 'a' type invariant] inv_refmut_T a}
-    {[@expl:proj_toggle 'b' type invariant] inv_refmut_T b}
+    {([@expl:proj_toggle 'a' type invariant] inv_refmut_T a) /\ ([@expl:proj_toggle 'b' type invariant] inv_refmut_T b)}
     (! bb0
     [ bb0 = any [ br0 -> {toggle = false} (! bb2) | br1 -> {toggle} (! bb1) ]
     | bb1 = s0
@@ -74,12 +73,12 @@ module M_proj_toggle
     | & _4: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_T = Any.any_l ()
     | & _11: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:proj_toggle result type invariant] inv_refmut_T result}
-      {[@expl:proj_toggle ensures] if toggle then
+    [ return (result: MutBorrow.t t_T) -> {([@expl:proj_toggle result type invariant] inv_refmut_T result)
+      /\ ([@expl:proj_toggle ensures] if toggle then
         result = a /\ b.final = b.current
       else
         result = b /\ a.final = a.current
-      }
+      )}
       (! return {result}) ]
 end
 module M_f
@@ -89,7 +88,7 @@ module M_f
   
   let rec proj_toggle_i32 (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {if toggle then
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:proj_toggle ensures] if toggle then
         result = a /\ b.final = b.current
       else
         result = b /\ a.final = a.current

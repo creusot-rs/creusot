@@ -27,7 +27,9 @@ module M_deref_wrap
       -> (let self_ = args in inv_ref_Target res)
   
   let rec deref_T (self_: t_T) (return (x: t_Target)) = {[@expl:deref requires] precondition_deref () self_}
-    any [ return (result: t_Target) -> {postcondition_once_deref () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_Target) -> {[@expl:deref ensures] postcondition_once_deref () self_ result}
+      (! return {result}) ]
   
   predicate inv_T (_1: t_T)
   
@@ -98,8 +100,8 @@ module M_deref_wrap
   
   meta "select_lsinst" "all"
   
-  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv_ref_T x}
-    {[@expl:deref_wrap requires] precondition_deref () x}
+  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {([@expl:deref_wrap 'x' type invariant] inv_ref_T x)
+    /\ ([@expl:deref_wrap requires] precondition_deref () x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- x ] s1
@@ -107,8 +109,8 @@ module M_deref_wrap
       | s2 = [ &_ret <- _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
-    [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv_ref_Target result}
-      {[@expl:deref_wrap ensures] postcondition_deref () x result}
+    [ return (result: t_Target) -> {([@expl:deref_wrap result type invariant] inv_ref_Target result)
+      /\ ([@expl:deref_wrap ensures] postcondition_deref () x result)}
       (! return {result}) ]
 end
 module M_deref_mut_wrap
@@ -145,7 +147,9 @@ module M_deref_mut_wrap
   
   let rec deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
     {[@expl:deref_mut requires] precondition_deref_mut () self_}
-    any [ return (result: MutBorrow.t t_Target) -> {postcondition_once_deref_mut () self_ result} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+      (! return {result}) ]
   
   predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
@@ -226,8 +230,9 @@ module M_deref_mut_wrap
   meta "select_lsinst" "all"
   
   let rec deref_mut_wrap_T (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_Target)) =
-    {[@expl:deref_mut_wrap 'x' type invariant] inv_refmut_T x}
-    {[@expl:deref_mut_wrap requires] forall y: MutBorrow.t t_T. y.current = x.current -> precondition_deref_mut () y}
+    {([@expl:deref_mut_wrap 'x' type invariant] inv_refmut_T x)
+    /\ ([@expl:deref_mut_wrap requires] forall y: MutBorrow.t t_T. y.current = x.current
+      -> precondition_deref_mut () y)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
@@ -262,7 +267,7 @@ module M_deref_mut_wrap
     | & _7: MutBorrow.t t_Target = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_Target) -> {[@expl:deref_mut_wrap result type invariant] inv_refmut_Target result}
-      {[@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result}
+    [ return (result: MutBorrow.t t_Target) -> {([@expl:deref_mut_wrap result type invariant] inv_refmut_Target result)
+      /\ ([@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result)}
       (! return {result}) ]
 end

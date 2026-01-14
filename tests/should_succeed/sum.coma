@@ -24,16 +24,19 @@ module M_sum_first_n
       -> deep_model_u32 (start_log_RangeInclusive_u32 self) <= deep_model_u32 (end_log_RangeInclusive_u32 self)
   
   let rec new_u32 (start: UInt32.t) (end': UInt32.t) (return (x: t_RangeInclusive_u32)) = any
-    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result}
-      {start_log_RangeInclusive_u32 result = start}
-      {end_log_RangeInclusive_u32 result = end'}
-      {deep_model_u32 start <= deep_model_u32 end' -> not is_empty_log_RangeInclusive_u32 result}
+    [ return (result: t_RangeInclusive_u32) -> {([@expl:new result type invariant] inv_RangeInclusive_u32 result)
+      /\ ([@expl:new ensures #0] start_log_RangeInclusive_u32 result = start)
+      /\ ([@expl:new ensures #1] end_log_RangeInclusive_u32 result = end')
+      /\ ([@expl:new ensures #2] deep_model_u32 start <= deep_model_u32 end'
+      -> not is_empty_log_RangeInclusive_u32 result)}
       (! return {result}) ]
   
   let rec into_iter_RangeInclusive_u32 (self_: t_RangeInclusive_u32) (return (x: t_RangeInclusive_u32)) =
     {[@expl:into_iter 'self_' type invariant] inv_RangeInclusive_u32 self_}
     any
-    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result} {result = self_} (! return {result}) ]
+    [ return (result: t_RangeInclusive_u32) -> {([@expl:into_iter result type invariant] inv_RangeInclusive_u32 result)
+      /\ ([@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -81,7 +84,7 @@ module M_sum_first_n
   let rec next_RangeInclusive_u32 (self_: MutBorrow.t t_RangeInclusive_u32) (return (x: t_Option_u32)) =
     {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_u32 self_}
     any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:next ensures] match result with
         | None -> completed_RangeInclusive_u32 self_
         | Some v -> produces_RangeInclusive_u32 self_.current (Seq.singleton v) self_.final
         end}

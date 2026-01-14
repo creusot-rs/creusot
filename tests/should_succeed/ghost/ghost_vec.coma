@@ -7,7 +7,8 @@ module M_ghost_vec
   use creusot.prelude.Any
   
   let rec new_i32 (return (x: Seq.seq Int32.t)) = any
-    [ return (result: Seq.seq Int32.t) -> {result = (Seq.empty: Seq.seq Int32.t)} (! return {result}) ]
+    [ return (result: Seq.seq Int32.t) -> {[@expl:new ensures] result = (Seq.empty: Seq.seq Int32.t)}
+      (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -18,34 +19,36 @@ module M_ghost_vec
   
   
   let rec deref_Ghost_Seq_i32 (self: Seq.seq Int32.t) (return (x: Seq.seq Int32.t)) = any
-    [ return (result: Seq.seq Int32.t) -> {result = self} (! return {result}) ]
+    [ return (result: Seq.seq Int32.t) -> {[@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec is_empty_ghost_i32 (self: Seq.seq Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (Seq.length self = 0)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_empty_ghost ensures] result = (Seq.length self = 0)} (! return {result}) ]
   
   let rec deref_mut_Ghost_Seq_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: MutBorrow.t (Seq.seq Int32.t))) =
-    any [ return (result: MutBorrow.t (Seq.seq Int32.t)) -> {result = self} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t (Seq.seq Int32.t)) -> {[@expl:deref_mut ensures] result = self} (! return {result}) ]
   
   let rec push_back_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
-    [ return (result: ()) -> {self.final = Seq.snoc self.current x} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+      (! return {result}) ]
   
   predicate resolve_refmut_Seq_i32 [@inline:trivial] (_1: MutBorrow.t (Seq.seq Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Seq_i32
   
   let rec len_ghost_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {result = Seq.length self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
   
   let rec new (value: Int128.t) (return (x: int)) = any
-    [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
+    [ return (result: int) -> {[@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
   let rec into_inner_Int (self: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
   
   type t_Option_ref_i32 = None'0 | Some'0 Int32.t
   
   let rec get_ghost_i32 (self: Seq.seq Int32.t) (index: int) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {match get_i32 self index with
+    [ return (result: t_Option_ref_i32) -> {[@expl:get_ghost ensures] match get_i32 self index with
         | None -> result = None'0
         | Some v -> result = Some'0 v
         end}
@@ -54,12 +57,12 @@ module M_ghost_vec
   type t_Option_refmut_i32 = None'1 | Some'1 (MutBorrow.t Int32.t)
   
   let rec get_mut_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (index: int) (return (x: t_Option_refmut_i32)) = any
-    [ return (result: t_Option_refmut_i32) -> {match result with
-        | None'1 -> get_i32 self.current index = None /\ self.current = self.final
-        | Some'1 r -> get_i32 self.current index = Some (r.current) /\ r.final = Seq.get self.final index
-        end}
-      {forall i: int. i <> index -> get_i32 self.current i = get_i32 self.final i}
-      {Seq.length self.current = Seq.length self.final}
+    [ return (result: t_Option_refmut_i32) -> {([@expl:get_mut_ghost ensures #0] match result with
+          | None'1 -> get_i32 self.current index = None /\ self.current = self.final
+          | Some'1 r -> get_i32 self.current index = Some (r.current) /\ r.final = Seq.get self.final index
+          end)
+      /\ ([@expl:get_mut_ghost ensures #1] forall i: int. i <> index -> get_i32 self.current i = get_i32 self.final i)
+      /\ ([@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -75,25 +78,27 @@ module M_ghost_vec
       any) ]
   
   let rec pop_back_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match result with
+    [ return (result: t_Option_i32) -> {[@expl:pop_back_ghost ensures] match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | Some r -> self.current = Seq.snoc self.final r
         end}
       (! return {result}) ]
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   function push_front_i32 [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
   
   meta "rewrite_def" function push_front_i32
   
   let rec push_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
-    [ return (result: ()) -> {self.final = push_front_i32 self.current x} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:push_front_ghost ensures] self.final = push_front_i32 self.current x}
+      (! return {result}) ]
   
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
   
   let rec pop_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match result with
+    [ return (result: t_Option_i32) -> {[@expl:pop_front_ghost ensures] match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_i32 self.current
         end}

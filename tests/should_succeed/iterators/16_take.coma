@@ -142,7 +142,9 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   predicate inv_Take_I (_1: t_Take_I)
   
@@ -201,11 +203,11 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
     | & self: MutBorrow.t t_Take_I = self
     | & _4: bool = Any.any_l ()
     | & _6: MutBorrow.t t_I = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {[@expl:next result type invariant] inv_Option_Item result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_Take_I self
         | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator> *)

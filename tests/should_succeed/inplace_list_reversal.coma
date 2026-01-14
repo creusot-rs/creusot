@@ -37,10 +37,12 @@ module M_rev
   meta "rewrite_def" predicate inv_refmut_List_T
   
   let rec replace_List_T (dest: MutBorrow.t t_List_T) (src: t_List_T) (return (x: t_List_T)) =
-    {[@expl:replace 'dest' type invariant] inv_refmut_List_T dest}
-    {[@expl:replace 'src' type invariant] inv_List_T src}
+    {([@expl:replace 'dest' type invariant] inv_refmut_List_T dest)
+    /\ ([@expl:replace 'src' type invariant] inv_List_T src)}
     any
-    [ return (result: t_List_T) -> {inv_List_T result} {dest.final = src} {result = dest.current} (! return {result}) ]
+    [ return (result: t_List_T) -> {([@expl:replace result type invariant] inv_List_T result)
+      /\ ([@expl:replace ensures #0] dest.final = src) /\ ([@expl:replace ensures #1] result = dest.current)}
+      (! return {result}) ]
   
   function rev_append_T (n: t_List_T) (o: t_List_T) : t_List_T = match n with
       | Nil -> o

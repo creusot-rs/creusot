@@ -174,8 +174,9 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
   let rec split_off_first_mut_T (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option_refmut_T)) =
     {[@expl:split_off_first_mut 'self_' type invariant] inv_refmut_refmut_slice_T self_}
     any
-    [ return (result: t_Option_refmut_T) -> {inv_Option_refmut_T result}
-      {match result with
+    [ return (result: t_Option_refmut_T) ->
+    {([@expl:split_off_first_mut result type invariant] inv_Option_refmut_T result)
+      /\ ([@expl:split_off_first_mut ensures] match result with
         | Some r -> r.current = index_slice_T self_.current.current 0
         /\ r.final = index_slice_T self_.current.final 0
         /\ Seq.length (Slice64.view self_.current.current) > 0
@@ -186,7 +187,7 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
         /\ Slice64.view self_.current.final = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.current.current = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self_.final.final = (Seq.empty: Seq.seq t_T)
-        end}
+        end)}
       (! return {result}) ]
   
   predicate invariant_IterMut_T (self: t_IterMut_T) =
@@ -257,11 +258,11 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
     [ & _ret: t_Option_refmut_T = Any.any_l ()
     | & self: MutBorrow.t t_IterMut_T = self
     | & _4: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = Any.any_l () ])
-    [ return (result: t_Option_refmut_T) -> {[@expl:next result type invariant] inv_Option_refmut_T result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_refmut_T) -> {([@expl:next result type invariant] inv_Option_refmut_T result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_IterMut_T self
         | Some v -> produces_IterMut_T self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_IterMut_T__into_iter (* IterMut<'a, T> *)
@@ -326,8 +327,8 @@ module M_impl_IterMut_T__into_iter (* IterMut<'a, T> *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_IterMut_T = Any.any_l () | & self: t_IterMut_T = self ])
-    [ return (result: t_IterMut_T) -> {[@expl:into_iter result type invariant] inv_IterMut_T result}
-      {[@expl:into_iter ensures] result = self}
+    [ return (result: t_IterMut_T) -> {([@expl:into_iter result type invariant] inv_IterMut_T result)
+      /\ ([@expl:into_iter ensures] result = self)}
       (! return {result}) ]
 end
 module M_iter_mut
@@ -407,14 +408,16 @@ module M_iter_mut
   
   let rec index_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (ix: ())
     (return (x: MutBorrow.t (Slice64.slice t_T))) =
-    {[@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    {[@expl:index_mut requires] in_bounds_RangeFull ix (view_Vec_T_Global self_.current)}
+    {([@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_)
+    /\ ([@expl:index_mut requires] in_bounds_RangeFull ix (view_Vec_T_Global self_.current))}
     any
-    [ return (result: MutBorrow.t (Slice64.slice t_T)) -> {inv_refmut_slice_T result}
-      {has_value_RangeFull ix (view_Vec_T_Global self_.current) result.current}
-      {has_value_RangeFull ix (view_Vec_T_Global self_.final) result.final}
-      {resolve_elswhere_RangeFull ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final)}
-      {Seq.length (view_Vec_T_Global self_.final) = Seq.length (view_Vec_T_Global self_.current)}
+    [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
+    {([@expl:index_mut result type invariant] inv_refmut_slice_T result)
+      /\ ([@expl:index_mut ensures #0] has_value_RangeFull ix (view_Vec_T_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_RangeFull ix (view_Vec_T_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_RangeFull ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_T_Global self_.final)
+      = Seq.length (view_Vec_T_Global self_.current))}
       (! return {result}) ]
   
   type t_IterMut_T = { inner: MutBorrow.t (Slice64.slice t_T) }
@@ -472,10 +475,11 @@ module M_iter_mut
     | & _10: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
     | & _11: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _12: () = Any.any_l () ])
-    [ return (result: t_IterMut_T) -> {[@expl:iter_mut result type invariant] inv_IterMut_T result}
-      {[@expl:iter_mut ensures #0] Slice64.view result.inner.current = view_Vec_T_Global v.current}
-      {[@expl:iter_mut ensures #1] Slice64.view result.inner.final = view_Vec_T_Global v.final}
-      {[@expl:iter_mut ensures #2] Seq.length (view_Vec_T_Global v.final) = Seq.length (view_Vec_T_Global v.current)}
+    [ return (result: t_IterMut_T) -> {([@expl:iter_mut result type invariant] inv_IterMut_T result)
+      /\ ([@expl:iter_mut ensures #0] Slice64.view result.inner.current = view_Vec_T_Global v.current)
+      /\ ([@expl:iter_mut ensures #1] Slice64.view result.inner.final = view_Vec_T_Global v.final)
+      /\ ([@expl:iter_mut ensures #2] Seq.length (view_Vec_T_Global v.final)
+      = Seq.length (view_Vec_T_Global v.current))}
       (! return {result}) ]
 end
 module M_all_zero
@@ -506,15 +510,19 @@ module M_all_zero
       <= UInt64.t'int const_MAX
   
   let rec iter_mut_usize (v: MutBorrow.t t_Vec_usize_Global) (return (x: t_IterMut_usize)) = any
-    [ return (result: t_IterMut_usize) -> {inv_IterMut_usize result}
-      {Slice64.view result.inner.current = view_Vec_usize_Global v.current}
-      {Slice64.view result.inner.final = view_Vec_usize_Global v.final}
-      {Seq.length (view_Vec_usize_Global v.final) = Seq.length (view_Vec_usize_Global v.current)}
+    [ return (result: t_IterMut_usize) -> {([@expl:iter_mut result type invariant] inv_IterMut_usize result)
+      /\ ([@expl:iter_mut ensures #0] Slice64.view result.inner.current = view_Vec_usize_Global v.current)
+      /\ ([@expl:iter_mut ensures #1] Slice64.view result.inner.final = view_Vec_usize_Global v.final)
+      /\ ([@expl:iter_mut ensures #2] Seq.length (view_Vec_usize_Global v.final)
+      = Seq.length (view_Vec_usize_Global v.current))}
       (! return {result}) ]
   
   let rec into_iter_usize (self: t_IterMut_usize) (return (x: t_IterMut_usize)) =
     {[@expl:into_iter 'self' type invariant] inv_IterMut_usize self}
-    any [ return (result: t_IterMut_usize) -> {inv_IterMut_usize result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_IterMut_usize) -> {([@expl:into_iter result type invariant] inv_IterMut_usize result)
+      /\ ([@expl:into_iter ensures] result = self)}
+      (! return {result}) ]
   
   function index_slice_usize [@inline:trivial] (self: Slice64.slice UInt64.t) (ix: int) : UInt64.t =
     Seq.get (Slice64.view self) ix
@@ -576,7 +584,7 @@ module M_all_zero
   let rec next_IterMut_usize (self: MutBorrow.t t_IterMut_usize) (return (x: t_Option_refmut_usize)) =
     {[@expl:next 'self' type invariant] inv_refmut_IterMut_usize self}
     any
-    [ return (result: t_Option_refmut_usize) -> {match result with
+    [ return (result: t_Option_refmut_usize) -> {[@expl:next ensures] match result with
         | None -> completed_IterMut_usize self
         | Some v -> produces_IterMut_usize self.current (Seq.singleton v) self.final
         end}
@@ -655,10 +663,10 @@ module M_all_zero
     | & _22: t_Option_refmut_usize = Any.any_l ()
     | & _23: MutBorrow.t t_IterMut_usize = Any.any_l ()
     | & x: MutBorrow.t UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:all_zero ensures #0] Seq.length (view_Vec_usize_Global v.final)
-      = Seq.length (view_Vec_usize_Global v.current)}
-      {[@expl:all_zero ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_usize_Global v.current)
-        -> UInt64.t'int (index_Vec_usize_Global v.final i) = 0}
+    [ return (result: ()) -> {([@expl:all_zero ensures #0] Seq.length (view_Vec_usize_Global v.final)
+        = Seq.length (view_Vec_usize_Global v.current))
+      /\ ([@expl:all_zero ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_usize_Global v.current)
+        -> UInt64.t'int (index_Vec_usize_Global v.final i) = 0)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_IterMut_T__produces_trans__refines (* <IterMut<'a, T> as common::Iterator> *)

@@ -89,9 +89,9 @@ module M_peek_bit_array8
   meta "rewrite_def" predicate has_value_usize
   
   let rec get_u8 (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option_ref_u8)) = any
-    [ return (result: t_Option_ref_u8) -> {in_bounds_usize ix (Slice64.view self_)
-      -> (exists r: UInt8.t. result = Some r /\ has_value_usize ix (Slice64.view self_) r)}
-      {in_bounds_usize ix (Slice64.view self_) \/ result = None}
+    [ return (result: t_Option_ref_u8) -> {([@expl:get ensures #0] in_bounds_usize ix (Slice64.view self_)
+        -> (exists r: UInt8.t. result = Some r /\ has_value_usize ix (Slice64.view self_) r))
+      /\ ([@expl:get ensures #1] in_bounds_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_ref_u8) (return (f0: UInt8.t)) = any
@@ -264,7 +264,8 @@ module M_peek
   use creusot.prelude.Any
   
   let rec len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   let rec peek_bit_array8 (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
     {[@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
@@ -324,9 +325,9 @@ module M_peek
   meta "select_lsinst" "all"
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
-    {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
-    {[@expl:peek requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr)}
+    {([@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000)
+    /\ ([@expl:peek requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr))}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s1)
@@ -635,7 +636,8 @@ module M_poke
   use creusot.prelude.Any
   
   let rec len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
   
@@ -693,7 +695,8 @@ module M_poke
   let rec poke_8bit_array (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool) (return (x: ())) =
     {[@expl:poke_8bit_array requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr.current)}
     any
-    [ return (result: ()) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: ()) -> {[@expl:poke_8bit_array ensures] Seq.length (Slice64.view addr.final)
+      = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -701,9 +704,10 @@ module M_poke
   meta "select_lsinst" "all"
   
   let rec poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) = {[@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
-    {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
+    (return (x: Int8.t)) = {([@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000)
+    /\ ([@expl:poke requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length
+    <= 8 * Seq.length (Slice64.view addr.current))}
     (! bb0
     [ bb0 = s0
       [ s0 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &ghost_len <- _x ] s1)
@@ -827,17 +831,19 @@ module M_peekthenpoke
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
-    {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
-    {[@expl:peek requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr)}
+    {([@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000)
+    /\ ([@expl:peek requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr))}
     any [ return (result: UInt64.t) -> (! return {result}) ]
   
   let rec poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) = {[@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
-    {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
+    (return (x: Int8.t)) = {([@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000)
+    /\ ([@expl:poke requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length
+    <= 8 * Seq.length (Slice64.view addr.current))}
     any
-    [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: Int8.t) -> {[@expl:poke ensures] Seq.length (Slice64.view addr.final)
+      = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
@@ -849,10 +855,10 @@ module M_peekthenpoke
   meta "select_lsinst" "all"
   
   let rec peekthenpoke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
-    (return (x: Int8.t)) = {[@expl:peekthenpoke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
-    {[@expl:peekthenpoke requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:peekthenpoke requires #2] UInt64.t'int start + UInt64.t'int length
-    <= 8 * Seq.length (Slice64.view addr.current)}
+    (return (x: Int8.t)) = {([@expl:peekthenpoke requires #0] Seq.length (Slice64.view addr.current) < 10000000)
+    /\ ([@expl:peekthenpoke requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:peekthenpoke requires #2] UInt64.t'int start + UInt64.t'int length
+    <= 8 * Seq.length (Slice64.view addr.current))}
     (! bb0
     [ bb0 = s0
       [ s0 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &value <- _x ] s1)
@@ -927,11 +933,13 @@ module M_pokethenpeek
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) = {[@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000}
-    {[@expl:poke requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr.current)}
+    (return (x: Int8.t)) = {([@expl:poke requires #0] Seq.length (Slice64.view addr.current) < 10000000)
+    /\ ([@expl:poke requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:poke requires #2] UInt64.t'int start + UInt64.t'int length
+    <= 8 * Seq.length (Slice64.view addr.current))}
     any
-    [ return (result: Int8.t) -> {Seq.length (Slice64.view addr.final) = Seq.length (Slice64.view addr.current)}
+    [ return (result: Int8.t) -> {[@expl:poke ensures] Seq.length (Slice64.view addr.final)
+      = Seq.length (Slice64.view addr.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
@@ -939,9 +947,9 @@ module M_pokethenpeek
   meta "rewrite_def" predicate resolve_refmut_slice_u8
   
   let rec peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
-    {[@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000}
-    {[@expl:peek requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr)}
+    {([@expl:peek requires #0] Seq.length (Slice64.view addr) < 10000000)
+    /\ ([@expl:peek requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:peek requires #2] UInt64.t'int start + UInt64.t'int length <= 8 * Seq.length (Slice64.view addr))}
     any [ return (result: UInt64.t) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -949,11 +957,11 @@ module M_pokethenpeek
   meta "select_lsinst" "all"
   
   let rec pokethenpeek (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
-    (value: UInt64.t) (return (x: UInt64.t)) = {[@expl:pokethenpeek requires #0] Seq.length (Slice64.view addr.current)
-    < 10000000}
-    {[@expl:pokethenpeek requires #1] UInt64.le length (64: UInt64.t)}
-    {[@expl:pokethenpeek requires #2] UInt64.t'int start + UInt64.t'int length
-    <= 8 * Seq.length (Slice64.view addr.current)}
+    (value: UInt64.t) (return (x: UInt64.t)) = {([@expl:pokethenpeek requires #0] Seq.length (Slice64.view addr.current)
+      < 10000000)
+    /\ ([@expl:pokethenpeek requires #1] UInt64.le length (64: UInt64.t))
+    /\ ([@expl:pokethenpeek requires #2] UInt64.t'int start + UInt64.t'int length
+    <= 8 * Seq.length (Slice64.view addr.current))}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {addr.current} {MutBorrow.get_id addr}

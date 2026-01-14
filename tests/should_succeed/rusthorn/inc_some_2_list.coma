@@ -18,7 +18,7 @@ module M_impl_List__lemma_sum_nonneg (* List *)
   function lemma_sum_nonneg (self: t_List) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Cons _ l -> sum l >= 0 -> ([@expl:lemma_sum_nonneg ensures] sum self >= 0)
+      | Cons _ l -> ([@expl:lemma_sum_nonneg ensures] sum l >= 0) -> ([@expl:lemma_sum_nonneg ensures] sum self >= 0)
       | Nil -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
@@ -157,11 +157,11 @@ module M_impl_List__take_some_rest (* List *)
     | & _15: MutBorrow.t UInt32.t = Any.any_l ()
     | & _16: MutBorrow.t t_List = Any.any_l ()
     | & _17: MutBorrow.t t_List = Any.any_l () ])
-    [ return (result: tup2_refmut_u32_refmut_List) -> {[@expl:take_some_rest ensures #0] sum self.final
-        - sum self.current
-      = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
-      {[@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current}
-      {[@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current}
+    [ return (result: tup2_refmut_u32_refmut_List) -> {([@expl:take_some_rest ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
+      /\ ([@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
+      /\ ([@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
       (! return {result}) ]
 end
 module M_inc_some_2_list
@@ -178,15 +178,16 @@ module M_inc_some_2_list
       end
   
   let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
-    any [ return (result: UInt32.t) -> {UInt32.t'int result = sum self} (! return {result}) ]
+    any [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
   
   type tup2_refmut_u32_refmut_List = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_List }
   
   let rec take_some_rest (self: MutBorrow.t t_List) (return (x: tup2_refmut_u32_refmut_List)) = any
-    [ return (result: tup2_refmut_u32_refmut_List) -> {sum self.final - sum self.current
-      = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
-      {UInt32.t'int result.f0.current <= sum self.current}
-      {sum result.f1.current <= sum self.current}
+    [ return (result: tup2_refmut_u32_refmut_List) -> {([@expl:take_some_rest ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
+      /\ ([@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
+      /\ ([@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_List [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current

@@ -70,9 +70,9 @@ module M_test_fnmut
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
-      = UInt32.t'int self.current.c0.current + 1}
-      {[@expl:closure hist_inv post] hist_inv_closure1 self.current self.final}
+    [ return (result: Int32.t) -> {([@expl:closure ensures] UInt32.t'int self.final.c0.current
+        = UInt32.t'int self.current.c0.current + 1)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure1 self.current self.final)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -153,18 +153,20 @@ module M_call_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
-    any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnmut_F (f: t_F) (return (x: Int32.t)) = {[@expl:call_fnmut 'f' type invariant] inv_F f}
-    {[@expl:call_fnmut requires #0] precondition_F f ()}
-    {[@expl:call_fnmut requires #1] forall st1: t_F, r: Int32.t. postcondition_mut_F f () st1 r
-      -> precondition_F st1 ()}
+  let rec call_fnmut_F (f: t_F) (return (x: Int32.t)) = {([@expl:call_fnmut 'f' type invariant] inv_F f)
+    /\ ([@expl:call_fnmut requires #0] precondition_F f ())
+    /\ ([@expl:call_fnmut requires #1] forall st1: t_F, r: Int32.t. postcondition_mut_F f () st1 r
+      -> precondition_F st1 ())}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -203,16 +205,17 @@ module M_call_fnonce
   predicate postcondition_once_F (self: t_F) (args: ()) (result: Int32.t)
   
   let rec call_once_F (self_: t_F) (arg: ()) (return (x: Int32.t)) =
-    {[@expl:call_once 'self_' type invariant] inv_F self_}
-    {[@expl:call_once requires] precondition_F self_ arg}
-    any [ return (result: Int32.t) -> {postcondition_once_F self_ arg result} (! return {result}) ]
+    {([@expl:call_once 'self_' type invariant] inv_F self_) /\ ([@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnonce_F (f: t_F) (return (x: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv_F f}
-    {[@expl:call_fnonce requires] precondition_F f ()}
+  let rec call_fnonce_F (f: t_F) (return (x: Int32.t)) = {([@expl:call_fnonce 'f' type invariant] inv_F f)
+    /\ ([@expl:call_fnonce requires] precondition_F f ())}
     (! bb0
     [ bb0 = s0 [ s0 = call_once_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: () = Any.any_l () ])
@@ -290,9 +293,9 @@ module M_test_fnmut2
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
-      = UInt32.t'int self.current.c0.current + 1}
-      {[@expl:closure hist_inv post] hist_inv_closure1 self.current self.final}
+    [ return (result: Int32.t) -> {([@expl:closure ensures] UInt32.t'int self.final.c0.current
+        = UInt32.t'int self.current.c0.current + 1)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure1 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure1 [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int self.c0.current < 1000000
@@ -343,22 +346,22 @@ module M_test_fnmut2
       -> hist_inv_refmut_closure1 self res_state
   
   let rec call_fnmut_refmut_closure1 (f: MutBorrow.t closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_refmut_closure1 f ()}
-    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
-      -> precondition_refmut_closure1 st1 ()}
+    {([@expl:call_fnmut requires #0] precondition_refmut_closure1 f ())
+    /\ ([@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
+      -> precondition_refmut_closure1 st1 ())}
     any
     [ return (result: Int32.t) ->
-    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
+    {[@expl:call_fnmut ensures] exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_refmut_closure1 f () st1 r
         /\ postcondition_mut_refmut_closure1 st1 () st2 result /\ resolve_refmut_closure1 st2}
       (! return {result}) ]
   
   let rec call_fnmut_closure1 (f: closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_closure1 f ()}
-    {[@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut_closure1 f () st1 r
-      -> precondition_closure1 st1 ()}
+    {([@expl:call_fnmut requires #0] precondition_closure1 f ())
+    /\ ([@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut_closure1 f () st1 r
+      -> precondition_closure1 st1 ())}
     any
     [ return (result: Int32.t) ->
-    {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut_closure1 f () st1 r
+    {[@expl:call_fnmut ensures] exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut_closure1 f () st1 r
         /\ postcondition_mut_closure1 st1 () st2 result /\ resolve_closure1 st2}
       (! return {result}) ]
   
@@ -474,11 +477,15 @@ module M_test_fnmut3
   
   let rec call_fnonce_refmut_closure0 (f: MutBorrow.t closure0) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition_refmut_closure0 f ()}
-    any [ return (result: Int32.t) -> {postcondition_once_refmut_closure0 f () result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_refmut_closure0 f () result}
+      (! return {result}) ]
   
   let rec call_fnonce_closure0 (f: closure0) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition_closure0 f ()}
-    any [ return (result: Int32.t) -> {postcondition_once_closure0 f () result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_closure0 f () result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -576,9 +583,9 @@ module M_test_fnmut2box
     | & self: MutBorrow.t closure1 = self
     | & res: Int32.t = Any.any_l ()
     | & res'0: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:closure ensures] UInt32.t'int self.final.c0.current
-      = UInt32.t'int self.current.c0.current + 1}
-      {[@expl:closure hist_inv post] hist_inv_closure1 self.current self.final}
+    [ return (result: Int32.t) -> {([@expl:closure ensures] UInt32.t'int self.final.c0.current
+        = UInt32.t'int self.current.c0.current + 1)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure1 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure1 [@inline:trivial] (self: closure1) (args: ()) = UInt32.t'int self.c0.current < 1000000
@@ -677,12 +684,12 @@ module M_test_fnmut2box
       -> hist_inv_Box_refmut_closure1_Global self res_state
   
   let rec call_fnmut_Box_refmut_closure1_Global (f: MutBorrow.t closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_Box_refmut_closure1_Global f ()}
-    {[@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
-      -> precondition_Box_refmut_closure1_Global st1 ()}
+    {([@expl:call_fnmut requires #0] precondition_Box_refmut_closure1_Global f ())
+    /\ ([@expl:call_fnmut requires #1] forall st1: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
+      -> precondition_Box_refmut_closure1_Global st1 ())}
     any
     [ return (result: Int32.t) ->
-    {exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
+    {[@expl:call_fnmut ensures] exists st1: MutBorrow.t closure1, st2: MutBorrow.t closure1, r: Int32.t. postcondition_mut_Box_refmut_closure1_Global f () st1 r
         /\ postcondition_mut_Box_refmut_closure1_Global st1 () st2 result /\ resolve_Box_refmut_closure1_Global st2}
       (! return {result}) ]
   
@@ -782,12 +789,12 @@ module M_test_fnmut2box
       -> hist_inv_Box_Box_closure1_Global_Global self res_state
   
   let rec call_fnmut_Box_Box_closure1_Global_Global (f: closure1) (return (x: Int32.t)) =
-    {[@expl:call_fnmut requires #0] precondition_Box_Box_closure1_Global_Global f ()}
-    {[@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut_Box_Box_closure1_Global_Global f () st1 r
-      -> precondition_Box_Box_closure1_Global_Global st1 ()}
+    {([@expl:call_fnmut requires #0] precondition_Box_Box_closure1_Global_Global f ())
+    /\ ([@expl:call_fnmut requires #1] forall st1: closure1, r: Int32.t. postcondition_mut_Box_Box_closure1_Global_Global f () st1 r
+      -> precondition_Box_Box_closure1_Global_Global st1 ())}
     any
     [ return (result: Int32.t) ->
-    {exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut_Box_Box_closure1_Global_Global f () st1 r
+    {[@expl:call_fnmut ensures] exists st1: closure1, st2: closure1, r: Int32.t. postcondition_mut_Box_Box_closure1_Global_Global f () st1 r
         /\ postcondition_mut_Box_Box_closure1_Global_Global st1 () st2 result
         /\ resolve_Box_Box_closure1_Global_Global st2}
       (! return {result}) ]
@@ -947,7 +954,9 @@ module M_test_fnmut3box
   
   let rec call_fnonce_refmut_refmut_closure0 (f: MutBorrow.t (MutBorrow.t closure0)) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition_refmut_refmut_closure0 f ()}
-    any [ return (result: Int32.t) -> {postcondition_once_refmut_refmut_closure0 f () result} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_refmut_refmut_closure0 f () result}
+      (! return {result}) ]
   
   predicate precondition_Box_closure0_Global [@inline:trivial] (self: closure0) (args: ()) =
     precondition_closure0 self args
@@ -972,7 +981,9 @@ module M_test_fnmut3box
   let rec call_fnonce_Box_Box_closure0_Global_Global (f: closure0) (return (x: Int32.t)) =
     {[@expl:call_fnonce requires] precondition_Box_Box_closure0_Global_Global f ()}
     any
-    [ return (result: Int32.t) -> {postcondition_once_Box_Box_closure0_Global_Global f () result} (! return {result}) ]
+    [ return (result: Int32.t) ->
+    {[@expl:call_fnonce ensures] postcondition_once_Box_Box_closure0_Global_Global f () result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

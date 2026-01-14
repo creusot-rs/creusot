@@ -47,10 +47,11 @@ module M_lemma_fib_bound
         [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
       else
         (([@expl:lemma_fib_bound requires] 0 <= i - 2) /\ well_founded_relation_Int i (i - 2))
-        /\ (fib (i - 2) <= Pow2int.pow2 (i - 2)
+        /\ (([@expl:lemma_fib_bound ensures] fib (i - 2) <= Pow2int.pow2 (i - 2))
         -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] 0 <= i - 1)
           /\ well_founded_relation_Int i (i - 1))
-        /\ (fib (i - 1) <= Pow2int.pow2 (i - 1) -> ([@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
+        /\ (([@expl:lemma_fib_bound ensures] fib (i - 1) <= Pow2int.pow2 (i - 1))
+        -> ([@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
     
     )
 end
@@ -91,7 +92,7 @@ module M_fib_memo
     {[@expl:index requires] in_bounds_usize ix (view_Vec_PredCell_Option_usize_Global self_)}
     any
     [ return (result: t_PredCell_Option_usize) ->
-    {has_value_usize ix (view_Vec_PredCell_Option_usize_Global self_) result}
+    {[@expl:index ensures] has_value_usize ix (view_Vec_PredCell_Option_usize_Global self_) result}
       (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -104,7 +105,8 @@ module M_fib_memo
   function view_PredCell_Option_usize (self: t_PredCell_Option_usize) : Map.map t_Option_usize bool
   
   let rec get_Option_usize (self: t_PredCell_Option_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) result}
+    [ return (result: t_Option_usize) ->
+    {[@expl:get ensures] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) result}
       (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_usize) (return (f0'0: UInt64.t)) = any
@@ -156,9 +158,9 @@ module M_fib_memo
   meta "select_lsinst" "all"
   
   let rec fib_memo (mem: t_FibCache) (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@expl:fib_memo 'mem' type invariant] inv_ref_FibCache mem}
-    {[@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view_Vec_PredCell_Option_usize_Global mem.f0)}
-    {[@expl:fib_memo requires #1] UInt64.t'int i <= 63}
+    {([@expl:fib_memo 'mem' type invariant] inv_ref_FibCache mem)
+    /\ ([@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view_Vec_PredCell_Option_usize_Global mem.f0))
+    /\ ([@expl:fib_memo requires #1] UInt64.t'int i <= 63)}
     (! bb0
     [ bb0 = s0
       [ s0 = index_Vec_PredCell_Option_usize_Global {mem.f0} {i}

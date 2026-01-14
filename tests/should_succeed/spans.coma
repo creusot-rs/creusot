@@ -80,7 +80,7 @@ module M_baz [#"spans.rs" 37 0 37 25]
       [@expl:baz ensures] [%#sspans'1] i = 0
     else
       (([@expl:baz requires] [%#sspans'0] 0 <= i - 1) /\ well_founded_relation_Int ([%#sspans] i) ([%#sspans] i - 1))
-      /\ (([%#sspans'1] baz (i - 1) = 0) -> ([@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0))
+      /\ (([@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0) -> ([@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0))
     )
 end
 module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
@@ -109,8 +109,8 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   meta "select_lsinst" "all"
   
   let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self}
-    {[@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0}
+    {([@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
+    /\ ([@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_NonNeg self} any) ]
@@ -118,8 +118,8 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
       | s2 = [ &_ret <- { f0 = _6 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _6: UInt64.t = Any.any_l () ])
-    [ return (result: t_NonNeg) -> {[@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result}
-      {[@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+    [ return (result: t_NonNeg) -> {([@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result)
+      /\ ([@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
       (! return {result}) ]
 end
 module M_quux [#"spans.rs" 68 0 68 32]
@@ -150,11 +150,11 @@ module M_quux [#"spans.rs" 68 0 68 32]
   axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
   
   let rec decr (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self}
-    {[@expl:decr requires] [%#sspans'7] 0 < UInt64.t'int self.f0}
+    {([@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self)
+    /\ ([@expl:decr requires] [%#sspans'7] 0 < UInt64.t'int self.f0)}
     any
-    [ return (result: t_NonNeg) -> {[%#sspans'8] inv_NonNeg result}
-      {[%#sspans'9] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1}
+    [ return (result: t_NonNeg) -> {([@expl:decr result type invariant] [%#sspans'8] inv_NonNeg result)
+      /\ ([@expl:decr ensures] [%#sspans'9] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
       (! return {result}) ]
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
@@ -167,8 +167,8 @@ module M_quux [#"spans.rs" 68 0 68 32]
   meta "select_lsinst" "all"
   
   let rec quux [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i}
-    {[@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0}
+    {([@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
+    /\ ([@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- i.f0 = ([%#sspans] (0: UInt64.t)) ] s1

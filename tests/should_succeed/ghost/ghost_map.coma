@@ -35,14 +35,14 @@ module M_ghost_map
   predicate is_empty_i32 (self: t_FMap_i32_i32) = ext_eq_i32 self empty_i32
   
   let rec new_i32 (return (x: t_FMap_i32_i32)) = any
-    [ return (result: t_FMap_i32_i32) -> {is_empty_i32 result} (! return {result}) ]
+    [ return (result: t_FMap_i32_i32) -> {[@expl:new ensures] is_empty_i32 result} (! return {result}) ]
   
   predicate contains_i32 [@inline:trivial] (self: t_FMap_i32_i32) (k: Int32.t) = get_i32 self k <> None
   
   meta "rewrite_def" predicate contains_i32
   
   let rec deref_mut_Ghost_FMap_i32_i32 (self: MutBorrow.t t_FMap_i32_i32) (return (x: MutBorrow.t t_FMap_i32_i32)) = any
-    [ return (result: MutBorrow.t t_FMap_i32_i32) -> {result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_FMap_i32_i32) -> {[@expl:deref_mut ensures] result = self} (! return {result}) ]
   
   function insert_i32 (self: t_FMap_i32_i32) (k: Int32.t) (v: Int32.t) : t_FMap_i32_i32
   
@@ -54,8 +54,8 @@ module M_ghost_map
   
   let rec insert_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (value: Int32.t)
     (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self.final = insert_i32 self.current key value}
-      {result = get_i32 self.current key}
+    [ return (result: t_Option_i32) -> {([@expl:insert_ghost ensures #0] self.final = insert_i32 self.current key value)
+      /\ ([@expl:insert_ghost ensures #1] result = get_i32 self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_FMap_i32_i32 [@inline:trivial] (_1: MutBorrow.t t_FMap_i32_i32) = _1.final = _1.current
@@ -63,10 +63,10 @@ module M_ghost_map
   meta "rewrite_def" predicate resolve_refmut_FMap_i32_i32
   
   let rec deref_Ghost_FMap_i32_i32 (self: t_FMap_i32_i32) (return (x: t_FMap_i32_i32)) = any
-    [ return (result: t_FMap_i32_i32) -> {result = self} (! return {result}) ]
+    [ return (result: t_FMap_i32_i32) -> {[@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec len_ghost_i32 (self: t_FMap_i32_i32) (return (x: int)) = any
-    [ return (result: int) -> {result = len_i32 self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:len_ghost ensures] result = len_i32 self} (! return {result}) ]
   
   predicate index_Mapping_i32_bool [@inline:trivial] (self: Map.map Int32.t bool) (a: Int32.t) = Map.get self a
   
@@ -94,17 +94,17 @@ module M_ghost_map
   meta "rewrite_def" function index_FMap_i32_i32
   
   let rec get_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_refmut_i32)) = any
-    [ return (result: t_Option_refmut_i32) -> {if contains_i32 self.current key then
-        match result with
-          | None'0 -> false
-          | Some'0 r -> contains_i32 self.final key
-          /\ index_FMap_i32_i32 self.current key = r.current /\ index_FMap_i32_i32 self.final key = r.final
-          end
-      else
-        result = None'0 /\ self.current = self.final
-      }
-      {forall k: Int32.t. k <> key -> get_i32 self.current k = get_i32 self.final k}
-      {len_i32 self.current = len_i32 self.final}
+    [ return (result: t_Option_refmut_i32) -> {([@expl:get_mut_ghost ensures #0] if contains_i32 self.current key then
+          match result with
+            | None'0 -> false
+            | Some'0 r -> contains_i32 self.final key
+            /\ index_FMap_i32_i32 self.current key = r.current /\ index_FMap_i32_i32 self.final key = r.final
+            end
+        else
+          result = None'0 /\ self.current = self.final
+        )
+      /\ ([@expl:get_mut_ghost ensures #1] forall k: Int32.t. k <> key -> get_i32 self.current k = get_i32 self.final k)
+      /\ ([@expl:get_mut_ghost ensures #2] len_i32 self.current = len_i32 self.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -132,18 +132,19 @@ module M_ghost_map
   let rec split_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t)
     (return (x: tup2_refmut_i32_refmut_FMap_i32_i32)) = {[@expl:split_mut_ghost requires] contains_i32 self.current key}
     any
-    [ return (result: tup2_refmut_i32_refmut_FMap_i32_i32) -> {result.f1.current = remove_i32 self.current key}
-      {index_FMap_i32_i32 self.current key = result.f0.current
-      /\ self.final = insert_i32 result.f1.final key result.f0.final}
+    [ return (result: tup2_refmut_i32_refmut_FMap_i32_i32) -> {([@expl:split_mut_ghost ensures #0] result.f1.current
+        = remove_i32 self.current key)
+      /\ ([@expl:split_mut_ghost ensures #1] index_FMap_i32_i32 self.current key = result.f0.current
+      /\ self.final = insert_i32 result.f1.final key result.f0.final)}
       (! return {result}) ]
   
   let rec remove_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self.final = remove_i32 self.current key}
-      {result = get_i32 self.current key}
+    [ return (result: t_Option_i32) -> {([@expl:remove_ghost ensures #0] self.final = remove_i32 self.current key)
+      /\ ([@expl:remove_ghost ensures #1] result = get_i32 self.current key)}
       (! return {result}) ]
   
   let rec contains_ghost_i32 (self: t_FMap_i32_i32) (key: Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {result = contains_i32 self key} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:contains_ghost ensures] result = contains_i32 self key} (! return {result}) ]
   
   type t_Option_ref_i32 = None'1 | Some'1 Int32.t
   
@@ -153,10 +154,12 @@ module M_ghost_map
       end
   
   let rec get_ghost_i32 (self: t_FMap_i32_i32) (key: Int32.t) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {result = map_Option_i32 (get_i32 self key) (fun (v: Int32.t) -> v)}
+    [ return (result: t_Option_ref_i32) -> {[@expl:get_ghost ensures] result
+      = map_Option_i32 (get_i32 self key) (fun (v: Int32.t) -> v)}
       (! return {result}) ]
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

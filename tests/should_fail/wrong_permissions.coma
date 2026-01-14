@@ -16,7 +16,8 @@ module M_unknown_permcell_permission
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
     {[@expl:borrow requires] self = ward_PermCell_i32 perm}
-    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:borrow ensures] result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -53,8 +54,9 @@ module M_wrong_permcell_permission
   meta "rewrite_def" function view_Box_Perm_PermCell_i32_Global
   
   let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> {result.f0 = ward_PermCell_i32 result.f1}
-      {view_Box_Perm_PermCell_i32_Global result.f1 = value}
+    [ return (result: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> {([@expl:new ensures #0] result.f0
+        = ward_PermCell_i32 result.f1)
+      /\ ([@expl:new ensures #1] view_Box_Perm_PermCell_i32_Global result.f1 = value)}
       (! return {result}) ]
   
   predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true
@@ -84,14 +86,15 @@ module M_wrong_permcell_permission
   predicate resolve_PermCell_i32 (_1: t_PermCell_i32)
   
   let rec deref_Ghost_Box_Perm_PermCell_i32_Global (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
-    [ return (result: t_Perm_PermCell_i32) -> {result = self} (! return {result}) ]
+    [ return (result: t_Perm_PermCell_i32) -> {[@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
-    [ return (result: t_Perm_PermCell_i32) -> {result = x} (! return {result}) ]
+    [ return (result: t_Perm_PermCell_i32) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
     {[@expl:borrow requires] self = ward_PermCell_i32 perm}
-    any [ return (result: Int32.t) -> {result = view_Perm_PermCell_i32 perm} (! return {result}) ]
+    any
+    [ return (result: Int32.t) -> {[@expl:borrow ensures] result = view_Perm_PermCell_i32 perm} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -198,9 +201,9 @@ module M_unknown_ptr_perm_permission
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
   let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own}
-    {[@expl:as_ref requires] ptr = ward_ptr_i32 own}
-    any [ return (result: Int32.t) -> {result = val_ptr_i32 own} (! return {result}) ]
+    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
+    /\ ([@expl:as_ref requires] ptr = ward_ptr_i32 own)}
+    any [ return (result: Int32.t) -> {[@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -299,8 +302,8 @@ module M_wrong_ptr_perm_permission
   
   let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
     [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
-    {inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result}
-      {ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v}
+    {([@expl:new result type invariant] inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result)
+      /\ ([@expl:new ensures] ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v)}
       (! return {result}) ]
   
   predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
@@ -326,7 +329,9 @@ module M_wrong_ptr_perm_permission
   let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
     {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
     any
-    [ return (result: t_Perm_ptr_i32) -> {inv_ref_Box_Perm_ptr_i32_Global result} {result = self} (! return {result}) ]
+    [ return (result: t_Perm_ptr_i32) -> {([@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
+      /\ ([@expl:deref ensures] result = self)}
+      (! return {result}) ]
   
   predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
   
@@ -346,12 +351,15 @@ module M_wrong_ptr_perm_permission
   
   let rec new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
     {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
-    any [ return (result: t_Perm_ptr_i32) -> {inv_Ghost_ref_Perm_ptr_i32 result} {result = x} (! return {result}) ]
+    any
+    [ return (result: t_Perm_ptr_i32) -> {([@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_i32 result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   let rec as_ref_i32 (ptr: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own}
-    {[@expl:as_ref requires] ptr = ward_ptr_i32 own}
-    any [ return (result: Int32.t) -> {result = val_ptr_i32 own} (! return {result}) ]
+    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
+    /\ ([@expl:as_ref requires] ptr = ward_ptr_i32 own)}
+    any [ return (result: Int32.t) -> {[@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

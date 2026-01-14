@@ -25,10 +25,11 @@ module M_sum_first_n_iter
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
   let rec new_usize (start: UInt64.t) (end': UInt64.t) (return (x: t_RangeInclusive_usize)) = any
-    [ return (result: t_RangeInclusive_usize) -> {inv_RangeInclusive_usize result}
-      {start_log_RangeInclusive_usize result = start}
-      {end_log_RangeInclusive_usize result = end'}
-      {deep_model_usize start <= deep_model_usize end' -> not is_empty_log_RangeInclusive_usize result}
+    [ return (result: t_RangeInclusive_usize) -> {([@expl:new result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@expl:new ensures #0] start_log_RangeInclusive_usize result = start)
+      /\ ([@expl:new ensures #1] end_log_RangeInclusive_usize result = end')
+      /\ ([@expl:new ensures #2] deep_model_usize start <= deep_model_usize end'
+      -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
   type closure0 = { c0: MutBorrow.t UInt64.t }
@@ -204,14 +205,15 @@ module M_sum_first_n_iter
   
   let rec map_inv_RangeInclusive_usize (self: t_RangeInclusive_usize) (func'0: closure0)
     (return (x: t_MapInv_RangeInclusive_usize_closure0)) =
-    {[@expl:map_inv 'self' type invariant] inv_RangeInclusive_usize self}
-    {[@expl:map_inv requires #0] forall e: UInt64.t, i2: t_RangeInclusive_usize. produces_RangeInclusive_usize self (Seq.singleton e) i2
-      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t }}
-    {[@expl:map_inv requires #1] reinitialize_RangeInclusive_usize}
-    {[@expl:map_inv requires #2] preservation_RangeInclusive_usize self func'0}
+    {([@expl:map_inv 'self' type invariant] inv_RangeInclusive_usize self)
+    /\ ([@expl:map_inv requires #0] forall e: UInt64.t, i2: t_RangeInclusive_usize. produces_RangeInclusive_usize self (Seq.singleton e) i2
+        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
+    /\ ([@expl:map_inv requires #1] reinitialize_RangeInclusive_usize)
+    /\ ([@expl:map_inv requires #2] preservation_RangeInclusive_usize self func'0)}
     any
-    [ return (result: t_MapInv_RangeInclusive_usize_closure0) -> {inv_MapInv_RangeInclusive_usize_closure0 result}
-      {result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t }}
+    [ return (result: t_MapInv_RangeInclusive_usize_closure0) ->
+    {([@expl:map_inv result type invariant] inv_MapInv_RangeInclusive_usize_closure0 result)
+      /\ ([@expl:map_inv ensures] result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t })}
       (! return {result}) ]
   
   predicate resolve_RangeInclusive_usize (_1: t_RangeInclusive_usize)
@@ -264,7 +266,7 @@ module M_sum_first_n_iter
     (return (x: ())) = {[@expl:collect 'self_' type invariant] inv_MapInv_RangeInclusive_usize_closure0 self_}
     any
     [ return (result: ()) ->
-    {exists done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (). resolve_MapInv_RangeInclusive_usize_closure0 done'.final
+    {[@expl:collect ensures] exists done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (). resolve_MapInv_RangeInclusive_usize_closure0 done'.final
         /\ completed_MapInv_RangeInclusive_usize_closure0 done'
         /\ produces_MapInv_RangeInclusive_usize_closure0 self_ prod done'.current /\ from_iter_post_unit prod result}
       (! return {result}) ]

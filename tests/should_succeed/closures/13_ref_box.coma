@@ -62,16 +62,15 @@ module M_call_fn
       = (postcondition_F self args res /\ self = res_state)
   
   let rec call_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call 'self_' type invariant] inv_ref_F self_}
-    {[@expl:call requires] precondition_F self_ arg}
-    any [ return (result: Int32.t) -> {postcondition_F self_ arg result} (! return {result}) ]
+    {([@expl:call 'self_' type invariant] inv_ref_F self_) /\ ([@expl:call requires] precondition_F self_ arg)}
+    any [ return (result: Int32.t) -> {[@expl:call ensures] postcondition_F self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fn_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fn 'f' type invariant] inv_F f}
-    {[@expl:call_fn requires] precondition_F f x}
+  let rec call_fn_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:call_fn 'f' type invariant] inv_F f)
+    /\ ([@expl:call_fn requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -130,16 +129,18 @@ module M_call_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
-    any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fnmut 'f' type invariant] inv_F f}
-    {[@expl:call_fnmut requires] precondition_F f x}
+  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:call_fnmut 'f' type invariant] inv_F f)
+    /\ ([@expl:call_fnmut requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -172,16 +173,17 @@ module M_call_fnonce
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
   let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_once 'self_' type invariant] inv_F self_}
-    {[@expl:call_once requires] precondition_F self_ arg}
-    any [ return (result: Int32.t) -> {postcondition_once_F self_ arg result} (! return {result}) ]
+    {([@expl:call_once 'self_' type invariant] inv_F self_) /\ ([@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv_F f}
-    {[@expl:call_fnonce requires] precondition_F f x}
+  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {([@expl:call_fnonce 'f' type invariant] inv_F f) /\ ([@expl:call_fnonce requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_10 <- x ] s1
@@ -315,16 +317,16 @@ module M_test1
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_ref_F self args res_state res
       = (postcondition_ref_F self args res /\ self = res_state)
   
-  let rec call_fn_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fn 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fn requires] precondition_ref_F f x}
-    any [ return (result: Int32.t) -> {postcondition_ref_F f x result} (! return {result}) ]
+  let rec call_fn_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {([@expl:call_fn 'f' type invariant] inv_ref_F f) /\ ([@expl:call_fn requires] precondition_ref_F f x)}
+    any [ return (result: Int32.t) -> {[@expl:call_fn ensures] postcondition_ref_F f x result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test1_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test1 'f' type invariant] inv_F f}
-    {[@expl:test1 requires] precondition_F f x}
+  let rec test1_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test1 'f' type invariant] inv_F f)
+    /\ ([@expl:test1 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -461,16 +463,17 @@ module M_test2
       = (postcondition_Box_F_Global self args res /\ self = res_state)
   
   let rec call_fn_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fn 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fn requires] precondition_Box_F_Global f x}
-    any [ return (result: Int32.t) -> {postcondition_Box_F_Global f x result} (! return {result}) ]
+    {([@expl:call_fn 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fn requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fn ensures] postcondition_Box_F_Global f x result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test2_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test2 'f' type invariant] inv_F f}
-    {[@expl:test2 requires] precondition_F f x}
+  let rec test2_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test2 'f' type invariant] inv_F f)
+    /\ ([@expl:test2 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fn_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
@@ -582,18 +585,18 @@ module M_test3
       -> hist_inv_ref_F self res_state
   
   let rec call_fnmut_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnmut requires] precondition_ref_F f x}
+    {([@expl:call_fnmut 'f' type invariant] inv_ref_F f) /\ ([@expl:call_fnmut requires] precondition_ref_F f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: t_F. postcondition_mut_ref_F f x f2 result /\ resolve_ref_F f2}
+    [ return (result: Int32.t) -> {[@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_ref_F f x f2 result
+        /\ resolve_ref_F f2}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test3_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test3 'f' type invariant] inv_F f}
-    {[@expl:test3 requires] precondition_F f x}
+  let rec test3_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test3 'f' type invariant] inv_F f)
+    /\ ([@expl:test3 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -691,11 +694,11 @@ module M_test4
       -> hist_inv_Box_F_Global self res_state
   
   let rec call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fnmut requires] precondition_Box_F_Global f x}
+    {([@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fnmut requires] precondition_Box_F_Global f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result
-        /\ resolve_Box_F_Global f2}
+    [ return (result: Int32.t) ->
+    {[@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result /\ resolve_Box_F_Global f2}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -719,8 +722,8 @@ module M_test4
   
   meta "select_lsinst" "all"
   
-  let rec test4_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test4 'f' type invariant] inv_F f}
-    {[@expl:test4 requires] precondition_F f x}
+  let rec test4_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test4 'f' type invariant] inv_F f)
+    /\ ([@expl:test4 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
@@ -821,10 +824,10 @@ module M_test5
       -> hist_inv_refmut_F self res_state
   
   let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_refmut_F f}
-    {[@expl:call_fnmut requires] precondition_refmut_F f x}
+    {([@expl:call_fnmut 'f' type invariant] inv_refmut_F f) /\ ([@expl:call_fnmut requires] precondition_refmut_F f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+    [ return (result: Int32.t) ->
+    {[@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
         /\ resolve_refmut_F f2}
       (! return {result}) ]
   
@@ -849,8 +852,8 @@ module M_test5
   
   meta "select_lsinst" "all"
   
-  let rec test5_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test5 'f' type invariant] inv_F f}
-    {[@expl:test5 requires] precondition_F f x}
+  let rec test5_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test5 'f' type invariant] inv_F f)
+    /\ ([@expl:test5 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -936,16 +939,17 @@ module M_test6
   meta "rewrite_def" predicate postcondition_once_ref_F
   
   let rec call_fnonce_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_ref_F f}
-    {[@expl:call_fnonce requires] precondition_ref_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_ref_F f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_ref_F f) /\ ([@expl:call_fnonce requires] precondition_ref_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_ref_F f x result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test6_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test6 'f' type invariant] inv_F f}
-    {[@expl:test6 requires] precondition_F f x}
+  let rec test6_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test6 'f' type invariant] inv_F f)
+    /\ ([@expl:test6 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -982,9 +986,11 @@ module M_test7
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
   let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fnonce requires] precondition_Box_F_Global f x}
-    any [ return (result: Int32.t) -> {postcondition_once_Box_F_Global f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+      (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
@@ -1033,8 +1039,8 @@ module M_test7
   
   meta "select_lsinst" "all"
   
-  let rec test7_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test7 'f' type invariant] inv_F f}
-    {[@expl:test7 requires] precondition_F f x}
+  let rec test7_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test7 'f' type invariant] inv_F f)
+    /\ ([@expl:test7 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
@@ -1099,9 +1105,11 @@ module M_test8
   meta "rewrite_def" predicate postcondition_once_refmut_F
   
   let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_refmut_F f}
-    {[@expl:call_fnonce requires] precondition_refmut_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_refmut_F f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
+    /\ ([@expl:call_fnonce requires] precondition_refmut_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
+      (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
   
@@ -1124,8 +1132,8 @@ module M_test8
   
   meta "select_lsinst" "all"
   
-  let rec test8_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test8 'f' type invariant] inv_F f}
-    {[@expl:test8 requires] precondition_F f x}
+  let rec test8_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test8 'f' type invariant] inv_F f)
+    /\ ([@expl:test8 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -1227,19 +1235,19 @@ module M_test9
       -> hist_inv_Box_F_Global self res_state
   
   let rec call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fnmut requires] precondition_Box_F_Global f x}
+    {([@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fnmut requires] precondition_Box_F_Global f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result
-        /\ resolve_Box_F_Global f2}
+    [ return (result: Int32.t) ->
+    {[@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result /\ resolve_Box_F_Global f2}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test9_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test9 'f' type invariant] inv_F f}
-    {[@expl:test9 requires] precondition_F f x}
+  let rec test9_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test9 'f' type invariant] inv_F f)
+    /\ ([@expl:test9 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
@@ -1342,10 +1350,10 @@ module M_test10
       -> hist_inv_refmut_F self res_state
   
   let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnmut 'f' type invariant] inv_refmut_F f}
-    {[@expl:call_fnmut requires] precondition_refmut_F f x}
+    {([@expl:call_fnmut 'f' type invariant] inv_refmut_F f) /\ ([@expl:call_fnmut requires] precondition_refmut_F f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+    [ return (result: Int32.t) ->
+    {[@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
         /\ resolve_refmut_F f2}
       (! return {result}) ]
   
@@ -1353,8 +1361,8 @@ module M_test10
   
   meta "select_lsinst" "all"
   
-  let rec test10_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test10 'f' type invariant] inv_F f}
-    {[@expl:test10 requires] precondition_F f x}
+  let rec test10_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test10 'f' type invariant] inv_F f)
+    /\ ([@expl:test10 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -1397,9 +1405,11 @@ module M_test11
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
   let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fnonce requires] precondition_Box_F_Global f x}
-    any [ return (result: Int32.t) -> {postcondition_once_Box_F_Global f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+      (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
@@ -1431,8 +1441,8 @@ module M_test11
   
   meta "select_lsinst" "all"
   
-  let rec test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test11 'f' type invariant] inv_F f}
-    {[@expl:test11 requires] precondition_F f x}
+  let rec test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test11 'f' type invariant] inv_F f)
+    /\ ([@expl:test11 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
@@ -1499,16 +1509,18 @@ module M_test12
   meta "rewrite_def" predicate postcondition_once_refmut_F
   
   let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_refmut_F f}
-    {[@expl:call_fnonce requires] precondition_refmut_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_refmut_F f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
+    /\ ([@expl:call_fnonce requires] precondition_refmut_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test12_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test12 'f' type invariant] inv_F f}
-    {[@expl:test12 requires] precondition_F f x}
+  let rec test12_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test12 'f' type invariant] inv_F f)
+    /\ ([@expl:test12 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -1551,16 +1563,18 @@ module M_test13
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
   let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f}
-    {[@expl:call_fnonce requires] precondition_Box_F_Global f x}
-    any [ return (result: Int32.t) -> {postcondition_once_Box_F_Global f x result} (! return {result}) ]
+    {([@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test13 'f' type invariant] inv_F f}
-    {[@expl:test13 requires] precondition_F f x}
+  let rec test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test13 'f' type invariant] inv_F f)
+    /\ ([@expl:test13 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0
       [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
@@ -1605,10 +1619,11 @@ module M_test14
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fnmut 'f' type invariant] inv_F f}
-    {[@expl:call_fnmut requires] precondition_F f x}
+  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:call_fnmut 'f' type invariant] inv_F f)
+    /\ ([@expl:call_fnmut requires] precondition_F f x)}
     any
-    [ return (result: Int32.t) -> {exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    [ return (result: Int32.t) -> {[@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f x f2 result
+        /\ resolve_F f2}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -1632,8 +1647,8 @@ module M_test14
   
   meta "select_lsinst" "all"
   
-  let rec test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test14 'f' type invariant] inv_F f}
-    {[@expl:test14 requires] precondition_F f x}
+  let rec test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test14 'f' type invariant] inv_F f)
+    /\ ([@expl:test14 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
@@ -1651,9 +1666,10 @@ module M_test15
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv_F f}
-    {[@expl:call_fnonce requires] precondition_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_F f x result} (! return {result}) ]
+  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {([@expl:call_fnonce 'f' type invariant] inv_F f) /\ ([@expl:call_fnonce requires] precondition_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_F f x result} (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
@@ -1702,8 +1718,8 @@ module M_test15
   
   meta "select_lsinst" "all"
   
-  let rec test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test15 'f' type invariant] inv_F f}
-    {[@expl:test15 requires] precondition_F f x}
+  let rec test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test15 'f' type invariant] inv_F f)
+    /\ ([@expl:test15 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
@@ -1721,9 +1737,10 @@ module M_test16
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:call_fnonce 'f' type invariant] inv_F f}
-    {[@expl:call_fnonce requires] precondition_F f x}
-    any [ return (result: Int32.t) -> {postcondition_once_F f x result} (! return {result}) ]
+  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {([@expl:call_fnonce 'f' type invariant] inv_F f) /\ ([@expl:call_fnonce requires] precondition_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_fnonce ensures] postcondition_once_F f x result} (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
@@ -1755,8 +1772,8 @@ module M_test16
   
   meta "select_lsinst" "all"
   
-  let rec test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {[@expl:test16 'f' type invariant] inv_F f}
-    {[@expl:test16 requires] precondition_F f x}
+  let rec test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) = {([@expl:test16 'f' type invariant] inv_F f)
+    /\ ([@expl:test16 requires] precondition_F f x)}
     (! bb0
     [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])

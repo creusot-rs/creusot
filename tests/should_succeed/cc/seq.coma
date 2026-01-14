@@ -7,12 +7,14 @@ module M_f
   use creusot.prelude.Any
   
   let rec new_refmut_usize (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
+    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[@expl:new ensures] result
+      = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
       (! return {result}) ]
   
   let rec into_inner_Seq_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t))
     (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
-    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {result = self} (! return {result}) ]
+    [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[@expl:into_inner ensures] result = self}
+      (! return {result}) ]
   
   function push_front_refmut_usize [@inline:trivial] (self: Seq.seq (MutBorrow.t UInt64.t)) (x: MutBorrow.t UInt64.t) : Seq.seq (MutBorrow.t UInt64.t)
    = Seq.cons x self
@@ -21,13 +23,14 @@ module M_f
   
   let rec push_front_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
     (return (x'0: ())) = any
-    [ return (result: ()) -> {self.final = push_front_refmut_usize self.current x} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:push_front_ghost ensures] self.final = push_front_refmut_usize self.current x}
+      (! return {result}) ]
   
   let rec new (value: Int128.t) (return (x: int)) = any
-    [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
+    [ return (result: int) -> {[@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
   let rec deref_Ghost_Int (self: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:deref ensures] result = self} (! return {result}) ]
   
   type t_Option_refmut_refmut_usize = None | Some (MutBorrow.t (MutBorrow.t UInt64.t))
   
@@ -42,17 +45,20 @@ module M_f
   
   let rec get_mut_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
     (return (x: t_Option_refmut_refmut_usize)) = any
-    [ return (result: t_Option_refmut_refmut_usize) -> {match result with
-        | None -> get_refmut_usize self.current index = None'0 /\ self.current = self.final
-        | Some r -> get_refmut_usize self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
-        end}
-      {forall i: int. i <> index -> get_refmut_usize self.current i = get_refmut_usize self.final i}
-      {Seq.length self.current = Seq.length self.final}
+    [ return (result: t_Option_refmut_refmut_usize) -> {([@expl:get_mut_ghost ensures #0] match result with
+          | None -> get_refmut_usize self.current index = None'0 /\ self.current = self.final
+          | Some r -> get_refmut_usize self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+          end)
+      /\ ([@expl:get_mut_ghost ensures #1] forall i: int. i <> index
+          -> get_refmut_usize self.current i = get_refmut_usize self.final i)
+      /\ ([@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   
   let rec unwrap_refmut_refmut_usize (self_: t_Option_refmut_refmut_usize)
     (return (x: MutBorrow.t (MutBorrow.t UInt64.t))) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {Some result = self_} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {[@expl:unwrap ensures] Some result = self_}
+      (! return {result}) ]
   
   predicate resolve_refmut_refmut_usize [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt64.t)) =
     _1.final = _1.current
@@ -82,7 +88,7 @@ module M_f
       -> resolve_Seq_refmut_usize x
   
   let rec new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = x} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -184,11 +190,11 @@ module M_g
   let rec g (s: Seq.seq int) (return (x: ())) = {[@expl:g requires] Seq.length s >= 1}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:g ensures #0] Seq.length (index_Seq_Int s { start = 0; end' = 1 }) = 1}
-      {[@expl:g ensures #1] Seq.length (index_Seq_Int'0 s (new_log_RangeInclusive_Int 0 0)) = 1}
-      {[@expl:g ensures #2] index_Seq_Int'1 s { start'0 = 0 } = s}
-      {[@expl:g ensures #3] Seq.length (index_Seq_Int'2 s { end''0 = 0 }) = 0}
-      {[@expl:g ensures #4] Seq.length (index_Seq_Int'3 s { end''1 = 0 }) = 1}
-      {[@expl:g ensures #5] index_Seq_Int'4 s () = s}
+    [ return (result: ()) -> {([@expl:g ensures #0] Seq.length (index_Seq_Int s { start = 0; end' = 1 }) = 1)
+      /\ ([@expl:g ensures #1] Seq.length (index_Seq_Int'0 s (new_log_RangeInclusive_Int 0 0)) = 1)
+      /\ ([@expl:g ensures #2] index_Seq_Int'1 s { start'0 = 0 } = s)
+      /\ ([@expl:g ensures #3] Seq.length (index_Seq_Int'2 s { end''0 = 0 }) = 0)
+      /\ ([@expl:g ensures #4] Seq.length (index_Seq_Int'3 s { end''1 = 0 }) = 1)
+      /\ ([@expl:g ensures #5] index_Seq_Int'4 s () = s)}
       (! return {result}) ]
 end

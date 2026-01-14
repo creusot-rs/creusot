@@ -245,7 +245,9 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -307,12 +309,12 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut 'arg' type invariant] inv_tup2_Item_Snapshot_Seq_Item arg}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut 'arg' type invariant] inv_tup2_Item_Snapshot_Seq_Item arg)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
     any
-    [ return (result: t_B) -> {inv_B result}
-      {postcondition_mut_F self_.current arg self_.final result}
+    [ return (result: t_B) -> {([@expl:call_mut result type invariant] inv_B result)
+      /\ ([@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result)}
       (! return {result}) ]
   
   predicate next_precondition_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
@@ -471,11 +473,11 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     | & _18: MutBorrow.t t_F = Any.any_l ()
     | & _19: tup2_Item_Snapshot_Seq_Item = Any.any_l ()
     | & _23: () = Any.any_l () ])
-    [ return (result: t_Option_B) -> {[@expl:next result type invariant] inv_Option_B result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_B) -> {([@expl:next result type invariant] inv_Option_B result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_Map_I_F self
         | Some'0 v -> produces_one_I self.current v self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_I_F__preservation_inv (* Map<I, F> *)
@@ -671,7 +673,7 @@ module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
     -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, i: t_I. produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
         -> produces_I self.iter (Seq.snoc (Seq.snoc (Seq.(++) (Seq.singleton e) s) e1) e2) i)
     && ([@expl:produces_one_invariant ensures #0] preservation_inv_I iter'0 f.final (Seq.snoc self.produced e))
-    && ([@expl:produces_one_invariant ensures #1] next_precondition_I iter'0 f.final (Seq.snoc self.produced e))
+    /\ ([@expl:produces_one_invariant ensures #1] next_precondition_I iter'0 f.final (Seq.snoc self.produced e))
 end
 module M_impl_Map_I_F__produces_one (* Map<I, F> *)
   use seq.Seq
@@ -884,18 +886,17 @@ module M_map
   
   meta "select_lsinst" "all"
   
-  let rec map_I (iter'0: t_I) (func'0: t_F) (return (x: t_Map_I_F)) = {[@expl:map 'iter' type invariant] inv_I iter'0}
-    {[@expl:map 'func' type invariant] inv_F func'0}
-    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
-      -> precondition_F func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
-    {[@expl:map requires #1] reinitialize_I}
-    {[@expl:map requires #2] preservation_I iter'0 func'0}
+  let rec map_I (iter'0: t_I) (func'0: t_F) (return (x: t_Map_I_F)) = {([@expl:map 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:map 'func' type invariant] inv_F func'0)
+    /\ ([@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+        -> precondition_F func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item })
+    /\ ([@expl:map requires #1] reinitialize_I) /\ ([@expl:map requires #2] preservation_I iter'0 func'0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_ret <- { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item } ] s1
       | s1 = return {_ret} ] ] [ & _ret: t_Map_I_F = Any.any_l () | & iter'0: t_I = iter'0 | & func'0: t_F = func'0 ])
-    [ return (result: t_Map_I_F) -> {[@expl:map result type invariant] inv_Map_I_F result}
-      {[@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
+    [ return (result: t_Map_I_F) -> {([@expl:map result type invariant] inv_Map_I_F result)
+      /\ ([@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item })}
       (! return {result}) ]
 end
 module M_identity
@@ -1022,14 +1023,13 @@ module M_identity
       = (invariant_Map_I_closure0 x /\ inv_I x.iter)
   
   let rec map_I (iter'0: t_I) (func'0: ()) (return (x: t_Map_I_closure0)) =
-    {[@expl:map 'iter' type invariant] inv_I iter'0}
-    {[@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
-      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item }}
-    {[@expl:map requires #1] reinitialize_I}
-    {[@expl:map requires #2] preservation_I iter'0 func'0}
+    {([@expl:map 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:map requires #0] forall e: t_Item, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item })
+    /\ ([@expl:map requires #1] reinitialize_I) /\ ([@expl:map requires #2] preservation_I iter'0 func'0)}
     any
-    [ return (result: t_Map_I_closure0) -> {inv_Map_I_closure0 result}
-      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item }}
+    [ return (result: t_Map_I_closure0) -> {([@expl:map result type invariant] inv_Map_I_closure0 result)
+      /\ ([@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item })}
       (! return {result}) ]
   
   predicate resolve_I (_1: t_I)
@@ -1182,14 +1182,13 @@ module M_increment
       = (invariant_Map_U_closure0 x /\ inv_U x.iter)
   
   let rec map_U (iter'0: t_U) (func'0: ()) (return (x: t_Map_U_closure0)) =
-    {[@expl:map 'iter' type invariant] inv_U iter'0}
-    {[@expl:map requires #0] forall e: UInt32.t, i2: t_U. produces_U iter'0 (Seq.singleton e) i2
-      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
-    {[@expl:map requires #1] reinitialize_U}
-    {[@expl:map requires #2] preservation_U iter'0 func'0}
+    {([@expl:map 'iter' type invariant] inv_U iter'0)
+    /\ ([@expl:map requires #0] forall e: UInt32.t, i2: t_U. produces_U iter'0 (Seq.singleton e) i2
+        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t })
+    /\ ([@expl:map requires #1] reinitialize_U) /\ ([@expl:map requires #2] preservation_U iter'0 func'0)}
     any
-    [ return (result: t_Map_U_closure0) -> {inv_Map_U_closure0 result}
-      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t }}
+    [ return (result: t_Map_U_closure0) -> {([@expl:map result type invariant] inv_Map_U_closure0 result)
+      /\ ([@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t })}
       (! return {result}) ]
   
   predicate resolve_U (_1: t_U)
@@ -1279,12 +1278,12 @@ module M_increment
   
   meta "select_lsinst" "all"
   
-  let rec increment_U (iter'0: t_U) (return (x: ())) = {[@expl:increment 'iter' type invariant] inv_U iter'0}
-    {[@expl:increment requires #0] forall done': MutBorrow.t t_U. completed_U done'
-      -> (forall next: t_U, steps: Seq.seq UInt32.t. produces_U done'.final steps next
-        -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next)}
-    {[@expl:increment requires #1] forall prod: Seq.seq UInt32.t, fin: t_U. produces_U iter'0 prod fin
-      -> (forall x: int. 0 <= x /\ x < Seq.length prod -> UInt32.le (Seq.get prod x) (10: UInt32.t))}
+  let rec increment_U (iter'0: t_U) (return (x: ())) = {([@expl:increment 'iter' type invariant] inv_U iter'0)
+    /\ ([@expl:increment requires #0] forall done': MutBorrow.t t_U. completed_U done'
+        -> (forall next: t_U, steps: Seq.seq UInt32.t. produces_U done'.final steps next
+          -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next))
+    /\ ([@expl:increment requires #1] forall prod: Seq.seq UInt32.t, fin: t_U. produces_U iter'0 prod fin
+      -> (forall x: int. 0 <= x /\ x < Seq.length prod -> UInt32.le (Seq.get prod x) (10: UInt32.t)))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- () ] s1
@@ -1443,14 +1442,13 @@ module M_counter
       = (invariant_Map_I_closure0 x /\ inv_I x.iter)
   
   let rec map_I (iter'0: t_I) (func'0: closure0) (return (x: t_Map_I_closure0)) =
-    {[@expl:map 'iter' type invariant] inv_I iter'0}
-    {[@expl:map requires #0] forall e: UInt32.t, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
-      -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t }}
-    {[@expl:map requires #1] reinitialize_I}
-    {[@expl:map requires #2] preservation_I iter'0 func'0}
+    {([@expl:map 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:map requires #0] forall e: UInt32.t, i2: t_I. produces_I iter'0 (Seq.singleton e) i2
+        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t })
+    /\ ([@expl:map requires #1] reinitialize_I) /\ ([@expl:map requires #2] preservation_I iter'0 func'0)}
     any
-    [ return (result: t_Map_I_closure0) -> {inv_Map_I_closure0 result}
-      {result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t }}
+    [ return (result: t_Map_I_closure0) -> {([@expl:map result type invariant] inv_Map_I_closure0 result)
+      /\ ([@expl:map ensures] result = { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq UInt32.t })}
       (! return {result}) ]
   
   predicate resolve_I (_1: t_I)
@@ -1466,12 +1464,12 @@ module M_counter
   
   meta "select_lsinst" "all"
   
-  let rec counter_I (iter'0: t_I) (return (x: ())) = {[@expl:counter 'iter' type invariant] inv_I iter'0}
-    {[@expl:counter requires #0] forall done': MutBorrow.t t_I. completed_I done'
-      -> (forall next: t_I, steps: Seq.seq UInt32.t. produces_I done'.final steps next
-        -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next)}
-    {[@expl:counter requires #1] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter'0 prod fin
-      -> Seq.length prod <= UInt64.t'int const_MAX}
+  let rec counter_I (iter'0: t_I) (return (x: ())) = {([@expl:counter 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:counter requires #0] forall done': MutBorrow.t t_I. completed_I done'
+        -> (forall next: t_I, steps: Seq.seq UInt32.t. produces_I done'.final steps next
+          -> steps = (Seq.empty: Seq.seq UInt32.t) /\ done'.final = next))
+    /\ ([@expl:counter requires #1] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter'0 prod fin
+      -> Seq.length prod <= UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &cnt <- (0: UInt64.t) ] s1

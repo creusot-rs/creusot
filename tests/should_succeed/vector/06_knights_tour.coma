@@ -5,7 +5,7 @@ module M_impl_Clone_for_Point__clone (* <Point as std::clone::Clone> *)
   type t_Point = { x: Int64.t; y: Int64.t }
   
   let rec clone_isize (self_: Int64.t) (return (x'0: Int64.t)) = any
-    [ return (result: Int64.t) -> {result = self_} (! return {result}) ]
+    [ return (result: Int64.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
     let self_ = args in result = self_
@@ -100,12 +100,12 @@ module M_impl_Point__mov (* Point *)
   
   meta "select_lsinst" "all"
   
-  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {[@expl:mov requires #0] - 10000
-      <= Int64.to_int self.x
-    /\ Int64.to_int self.x <= 10000}
-    {[@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000}
-    {[@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000}
-    {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000}
+  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {([@expl:mov requires #0] - 10000
+        <= Int64.to_int self.x
+      /\ Int64.to_int self.x <= 10000)
+    /\ ([@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
+    /\ ([@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
+    /\ ([@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
     (! bb0
     [ bb0 = s0
       [ s0 = Int64.add {self.x} {p.f0} (fun (_x: Int64.t) -> [ &_17 <- _x ] s1)
@@ -117,9 +117,9 @@ module M_impl_Point__mov (* Point *)
     | & p: tup2_isize_isize = p
     | & _17: Int64.t = Any.any_l ()
     | & _20: Int64.t = Any.any_l () ])
-    [ return (result: t_Point) -> {[@expl:mov ensures #0] Int64.to_int result.x
-      = Int64.to_int self.x + Int64.to_int p.f0}
-      {[@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1}
+    [ return (result: t_Point) -> {([@expl:mov ensures #0] Int64.to_int result.x
+        = Int64.to_int self.x + Int64.to_int p.f0)
+      /\ ([@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
       (! return {result}) ]
 end
 module M_impl_Board__new (* Board *)
@@ -152,8 +152,10 @@ module M_impl_Board__new (* Board *)
   meta "rewrite_def" function index_Vec_usize_Global
   
   let rec from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
-    [ return (result: t_Vec_usize_Global) -> {Seq.length (view_Vec_usize_Global result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_usize_Global result i = elem}
+    [ return (result: t_Vec_usize_Global) -> {([@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int n)
+      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_usize_Global result i = elem)}
       (! return {result}) ]
   
   type tup2_usize_Snapshot_Seq_usize = { f0: UInt64.t; f1: Seq.seq UInt64.t }
@@ -208,9 +210,9 @@ module M_impl_Board__new (* Board *)
     [ & _ret: t_Vec_usize_Global = Any.any_l ()
     | & self: MutBorrow.t closure3 = self
     | & res: t_Vec_usize_Global = Any.any_l () ])
-    [ return (result: t_Vec_usize_Global) -> {[@expl:closure ensures] Seq.length (view_Vec_usize_Global result)
-      = UInt64.t'int self.final.c0}
-      {[@expl:closure hist_inv post] hist_inv_closure3 self.current self.final}
+    [ return (result: t_Vec_usize_Global) -> {([@expl:closure ensures] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int self.final.c0)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure3 self.current self.final)}
       (! return {result}) ]
   
   function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
@@ -301,13 +303,14 @@ module M_impl_Board__new (* Board *)
       = invariant_MapInv_Range_usize_closure3 x
   
   let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3) (return (x: t_MapInv_Range_usize_closure3)) =
-    {[@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
-      -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t }}
-    {[@expl:map_inv requires #1] reinitialize_Range_usize}
-    {[@expl:map_inv requires #2] preservation_Range_usize self func'0}
+    {([@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
+        -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
+    /\ ([@expl:map_inv requires #1] reinitialize_Range_usize)
+    /\ ([@expl:map_inv requires #2] preservation_Range_usize self func'0)}
     any
-    [ return (result: t_MapInv_Range_usize_closure3) -> {inv_MapInv_Range_usize_closure3 result}
-      {result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t }}
+    [ return (result: t_MapInv_Range_usize_closure3) ->
+    {([@expl:map_inv result type invariant] inv_MapInv_Range_usize_closure3 result)
+      /\ ([@expl:map_inv ensures] result = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t })}
       (! return {result}) ]
   
   type t_Vec_Vec_usize_Global_Global
@@ -365,7 +368,7 @@ module M_impl_Board__new (* Board *)
     {[@expl:collect 'self_' type invariant] inv_MapInv_Range_usize_closure3 self_}
     any
     [ return (result: t_Vec_Vec_usize_Global_Global) ->
-    {exists done': MutBorrow.t t_MapInv_Range_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_closure3 done'.final
+    {[@expl:collect ensures] exists done': MutBorrow.t t_MapInv_Range_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_closure3 done'.final
         /\ completed_MapInv_Range_usize_closure3 done'
         /\ produces_MapInv_Range_usize_closure3 self_ prod done'.current
         /\ from_iter_post_Vec_Vec_usize_Global_Global prod result}
@@ -403,8 +406,7 @@ module M_impl_Board__new (* Board *)
     | & _8: t_MapInv_Range_usize_closure3 = Any.any_l ()
     | & _9: t_Range_usize = Any.any_l ()
     | & _11: closure3 = Any.any_l () ])
-    [ return (result: t_Board) -> {[@expl:new ensures #0] result.size = size'0}
-      {[@expl:new ensures #1] wf result}
+    [ return (result: t_Board) -> {([@expl:new ensures #0] result.size = size'0) /\ ([@expl:new ensures #1] wf result)}
       (! return {result}) ]
 end
 module M_impl_Board__available (* Board *)
@@ -444,7 +446,8 @@ module M_impl_Board__available (* Board *)
     (return (x'0: t_Vec_usize_Global)) =
     {[@expl:index requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_)}
     any
-    [ return (result: t_Vec_usize_Global) -> {has_value_usize ix (view_Vec_Vec_usize_Global_Global self_) result}
+    [ return (result: t_Vec_usize_Global) ->
+    {[@expl:index ensures] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_) result}
       (! return {result}) ]
   
   predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
@@ -464,7 +467,9 @@ module M_impl_Board__available (* Board *)
   
   let rec index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x'0: UInt64.t)) =
     {[@expl:index requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_)}
-    any [ return (result: UInt64.t) -> {has_value_usize'0 ix (view_Vec_usize_Global self_) result} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:index ensures] has_value_usize'0 ix (view_Vec_usize_Global self_) result}
+      (! return {result}) ]
   
   function index_Vec_Vec_usize_Global_Global'0 [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
    = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
@@ -549,12 +554,13 @@ module M_impl_Board__count_degree (* Board *)
   meta "rewrite_def" function index_Vec_tup2_isize_isize_Global
   
   let rec moves (return (x: t_Vec_tup2_isize_isize_Global)) = any
-    [ return (result: t_Vec_tup2_isize_isize_Global) -> {Seq.length (view_Vec_tup2_isize_isize_Global result) = 8}
-      {forall i: int. 0 <= i /\ i < 8
+    [ return (result: t_Vec_tup2_isize_isize_Global) ->
+    {([@expl:moves ensures #0] Seq.length (view_Vec_tup2_isize_isize_Global result) = 8)
+      /\ ([@expl:moves ensures #1] forall i: int. 0 <= i /\ i < 8
         -> - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0
         /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0 <= 2
         /\ - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1
-        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1 <= 2}
+        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1 <= 2)}
       (! return {result}) ]
   
   type t_IntoIter_tup2_isize_isize_Global
@@ -565,8 +571,10 @@ module M_impl_Board__count_degree (* Board *)
   
   let rec into_iter_Vec_tup2_isize_isize_Global (self_: t_Vec_tup2_isize_isize_Global)
     (return (x: t_IntoIter_tup2_isize_isize_Global)) = any
-    [ return (result: t_IntoIter_tup2_isize_isize_Global) -> {inv_IntoIter_tup2_isize_isize_Global result}
-      {view_Vec_tup2_isize_isize_Global self_ = view_IntoIter_tup2_isize_isize_Global result}
+    [ return (result: t_IntoIter_tup2_isize_isize_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_tup2_isize_isize_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_tup2_isize_isize_Global self_
+      = view_IntoIter_tup2_isize_isize_Global result)}
       (! return {result}) ]
   
   type t_Option_tup2_isize_isize = None | Some tup2_isize_isize
@@ -610,7 +618,7 @@ module M_impl_Board__count_degree (* Board *)
     (return (x: t_Option_tup2_isize_isize)) =
     {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
     any
-    [ return (result: t_Option_tup2_isize_isize) -> {match result with
+    [ return (result: t_Option_tup2_isize_isize) -> {[@expl:next ensures] match result with
         | None -> completed_IntoIter_tup2_isize_isize_Global self_
         | Some v -> produces_IntoIter_tup2_isize_isize_Global self_.current (Seq.singleton v) self_.final
         end}
@@ -630,15 +638,16 @@ module M_impl_Board__count_degree (* Board *)
   
   type t_Point = { x: Int64.t; y: Int64.t }
   
-  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {[@expl:mov requires #0] - 10000
-      <= Int64.to_int self.x
-    /\ Int64.to_int self.x <= 10000}
-    {[@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000}
-    {[@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000}
-    {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000}
+  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {([@expl:mov requires #0] - 10000
+        <= Int64.to_int self.x
+      /\ Int64.to_int self.x <= 10000)
+    /\ ([@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
+    /\ ([@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
+    /\ ([@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
     any
-    [ return (result: t_Point) -> {Int64.to_int result.x = Int64.to_int self.x + Int64.to_int p.f0}
-      {Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1}
+    [ return (result: t_Point) -> {([@expl:mov ensures #0] Int64.to_int result.x
+        = Int64.to_int self.x + Int64.to_int p.f0)
+      /\ ([@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
       (! return {result}) ]
   
   type t_Vec_Vec_usize_Global_Global
@@ -674,7 +683,7 @@ module M_impl_Board__count_degree (* Board *)
     /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
   
   let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) = {[@expl:available requires] wf self}
-    any [ return (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:available ensures] result -> in_bounds self p} (! return {result}) ]
   
   predicate resolve_tup2_isize_isize [@inline:trivial] (_1: tup2_isize_isize) = true
   
@@ -697,8 +706,7 @@ module M_impl_Board__count_degree (* Board *)
   meta "select_lsinst" "all"
   
   let rec count_degree (self: t_Board) (p: t_Point) (return (x'0: UInt64.t)) =
-    {[@expl:count_degree requires #0] wf self}
-    {[@expl:count_degree requires #1] in_bounds self p}
+    {([@expl:count_degree requires #0] wf self) /\ ([@expl:count_degree requires #1] in_bounds self p)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &count <- (0: UInt64.t) ] s1
@@ -803,11 +811,11 @@ module M_impl_Board__set (* Board *)
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_.current)}
     any
     [ return (result: MutBorrow.t t_Vec_usize_Global) ->
-    {has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final)}
-      {Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
-      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
+      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current))}
       (! return {result}) ]
   
   predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
@@ -835,10 +843,11 @@ module M_impl_Board__set (* Board *)
     {[@expl:index_mut requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_.current)}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
-    {has_value_usize'0 ix (view_Vec_usize_Global self_.current) result.current}
-      {has_value_usize'0 ix (view_Vec_usize_Global self_.final) result.final}
-      {resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final)}
-      {Seq.length (view_Vec_usize_Global self_.final) = Seq.length (view_Vec_usize_Global self_.current)}
+    {([@expl:index_mut ensures #0] has_value_usize'0 ix (view_Vec_usize_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize'0 ix (view_Vec_usize_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_usize_Global self_.final)
+      = Seq.length (view_Vec_usize_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
@@ -874,8 +883,7 @@ module M_impl_Board__set (* Board *)
   meta "select_lsinst" "all"
   
   let rec set (self: MutBorrow.t t_Board) (p: t_Point) (v: UInt64.t) (return (x'0: ())) =
-    {[@expl:set requires #0] wf self.current}
-    {[@expl:set requires #1] in_bounds self.current p}
+    {([@expl:set requires #0] wf self.current) /\ ([@expl:set requires #1] in_bounds self.current p)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_Vec_usize_Global_Global> {self.current.field}
@@ -905,8 +913,8 @@ module M_impl_Board__set (* Board *)
     | & _17: MutBorrow.t t_Vec_Vec_usize_Global_Global = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _20: UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:set ensures #0] wf self.final}
-      {[@expl:set ensures #1] self.final.size = self.current.size}
+    [ return (result: ()) -> {([@expl:set ensures #0] wf self.final)
+      /\ ([@expl:set ensures #1] self.final.size = self.current.size)}
       (! return {result}) ]
 end
 module M_min
@@ -942,8 +950,10 @@ module M_min
   
   let rec into_iter_ref_Vec_tup2_usize_Point_Global (self_: t_Vec_tup2_usize_Point_Global)
     (return (x'0: t_Iter_tup2_usize_Point)) = any
-    [ return (result: t_Iter_tup2_usize_Point) -> {inv_Iter_tup2_usize_Point result}
-      {view_Vec_tup2_usize_Point_Global self_ = Slice64.view (view_Iter_tup2_usize_Point result)}
+    [ return (result: t_Iter_tup2_usize_Point) ->
+    {([@expl:into_iter result type invariant] inv_Iter_tup2_usize_Point result)
+      /\ ([@expl:into_iter ensures] view_Vec_tup2_usize_Point_Global self_
+      = Slice64.view (view_Iter_tup2_usize_Point result))}
       (! return {result}) ]
   
   predicate invariant_refmut_Iter_tup2_usize_Point [@inline:trivial] (self: MutBorrow.t t_Iter_tup2_usize_Point) =
@@ -1000,7 +1010,7 @@ module M_min
     (return (x'0: t_Option_ref_tup2_usize_Point)) =
     {[@expl:next 'self_' type invariant] inv_refmut_Iter_tup2_usize_Point self_}
     any
-    [ return (result: t_Option_ref_tup2_usize_Point) -> {match result with
+    [ return (result: t_Option_ref_tup2_usize_Point) -> {[@expl:next ensures] match result with
         | None -> completed_Iter_tup2_usize_Point self_
         | Some v -> produces_Iter_tup2_usize_Point self_.current (Seq.singleton v) self_.final
         end}
@@ -1147,7 +1157,9 @@ module M_knights_tour
       -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
   
   let rec new (size'0: UInt64.t) (return (x: t_Board)) = {[@expl:new requires] UInt64.t'int size'0 <= 1000}
-    any [ return (result: t_Board) -> {result.size = size'0} {wf result} (! return {result}) ]
+    any
+    [ return (result: t_Board) -> {([@expl:new ensures #0] result.size = size'0) /\ ([@expl:new ensures #1] wf result)}
+      (! return {result}) ]
   
   type t_Point = { x: Int64.t; y: Int64.t }
   
@@ -1156,9 +1168,11 @@ module M_knights_tour
     /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
   
   let rec set (self: MutBorrow.t t_Board) (p: t_Point) (v: UInt64.t) (return (x'0: ())) =
-    {[@expl:set requires #0] wf self.current}
-    {[@expl:set requires #1] in_bounds self.current p}
-    any [ return (result: ()) -> {wf self.final} {self.final.size = self.current.size} (! return {result}) ]
+    {([@expl:set requires #0] wf self.current) /\ ([@expl:set requires #1] in_bounds self.current p)}
+    any
+    [ return (result: ()) -> {([@expl:set ensures #0] wf self.final)
+      /\ ([@expl:set ensures #1] self.final.size = self.current.size)}
+      (! return {result}) ]
   
   function dumb_nonlinear_arith (a: UInt64.t) : () = ()
   
@@ -1168,7 +1182,7 @@ module M_knights_tour
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x'0: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -1203,7 +1217,7 @@ module M_knights_tour
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x'0: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -1232,7 +1246,8 @@ module M_knights_tour
       <= UInt64.t'int const_MAX
   
   let rec new_tup2_usize_Point (return (x'0: t_Vec_tup2_usize_Point_Global)) = any
-    [ return (result: t_Vec_tup2_usize_Point_Global) -> {Seq.length (view_Vec_tup2_usize_Point_Global result) = 0}
+    [ return (result: t_Vec_tup2_usize_Point_Global) ->
+    {[@expl:new ensures] Seq.length (view_Vec_tup2_usize_Point_Global result) = 0}
       (! return {result}) ]
   
   type t_Vec_tup2_isize_isize_Global
@@ -1251,12 +1266,13 @@ module M_knights_tour
   meta "rewrite_def" function index_Vec_tup2_isize_isize_Global
   
   let rec moves (return (x'0: t_Vec_tup2_isize_isize_Global)) = any
-    [ return (result: t_Vec_tup2_isize_isize_Global) -> {Seq.length (view_Vec_tup2_isize_isize_Global result) = 8}
-      {forall i: int. 0 <= i /\ i < 8
+    [ return (result: t_Vec_tup2_isize_isize_Global) ->
+    {([@expl:moves ensures #0] Seq.length (view_Vec_tup2_isize_isize_Global result) = 8)
+      /\ ([@expl:moves ensures #1] forall i: int. 0 <= i /\ i < 8
         -> - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0'0
         /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0'0 <= 2
         /\ - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1'0
-        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1'0 <= 2}
+        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1'0 <= 2)}
       (! return {result}) ]
   
   type t_IntoIter_tup2_isize_isize_Global
@@ -1267,8 +1283,10 @@ module M_knights_tour
   
   let rec into_iter_Vec_tup2_isize_isize_Global (self_: t_Vec_tup2_isize_isize_Global)
     (return (x'0: t_IntoIter_tup2_isize_isize_Global)) = any
-    [ return (result: t_IntoIter_tup2_isize_isize_Global) -> {inv_IntoIter_tup2_isize_isize_Global result}
-      {view_Vec_tup2_isize_isize_Global self_ = view_IntoIter_tup2_isize_isize_Global result}
+    [ return (result: t_IntoIter_tup2_isize_isize_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_tup2_isize_isize_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_tup2_isize_isize_Global self_
+      = view_IntoIter_tup2_isize_isize_Global result)}
       (! return {result}) ]
   
   type t_Option_tup2_isize_isize = None'0 | Some'0 tup2_isize_isize
@@ -1312,7 +1330,7 @@ module M_knights_tour
     (return (x'0: t_Option_tup2_isize_isize)) =
     {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
     any
-    [ return (result: t_Option_tup2_isize_isize) -> {match result with
+    [ return (result: t_Option_tup2_isize_isize) -> {[@expl:next ensures] match result with
         | None'0 -> completed_IntoIter_tup2_isize_isize_Global self_
         | Some'0 v -> produces_IntoIter_tup2_isize_isize_Global self_.current (Seq.singleton v) self_.final
         end}
@@ -1335,28 +1353,28 @@ module M_knights_tour
         end}
       any) ]
   
-  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {[@expl:mov requires #0] - 10000
-      <= Int64.to_int self.x
-    /\ Int64.to_int self.x <= 10000}
-    {[@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000}
-    {[@expl:mov requires #2] - 10000 <= Int64.to_int p.f0'0 /\ Int64.to_int p.f0'0 <= 10000}
-    {[@expl:mov requires #3] - 10000 <= Int64.to_int p.f1'0 /\ Int64.to_int p.f1'0 <= 10000}
+  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) = {([@expl:mov requires #0] - 10000
+        <= Int64.to_int self.x
+      /\ Int64.to_int self.x <= 10000)
+    /\ ([@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
+    /\ ([@expl:mov requires #2] - 10000 <= Int64.to_int p.f0'0 /\ Int64.to_int p.f0'0 <= 10000)
+    /\ ([@expl:mov requires #3] - 10000 <= Int64.to_int p.f1'0 /\ Int64.to_int p.f1'0 <= 10000)}
     any
-    [ return (result: t_Point) -> {Int64.to_int result.x = Int64.to_int self.x + Int64.to_int p.f0'0}
-      {Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1'0}
+    [ return (result: t_Point) -> {([@expl:mov ensures #0] Int64.to_int result.x
+        = Int64.to_int self.x + Int64.to_int p.f0'0)
+      /\ ([@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1'0)}
       (! return {result}) ]
   
   let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) = {[@expl:available requires] wf self}
-    any [ return (result: bool) -> {result -> in_bounds self p} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:available ensures] result -> in_bounds self p} (! return {result}) ]
   
   let rec count_degree (self: t_Board) (p: t_Point) (return (x'0: UInt64.t)) =
-    {[@expl:count_degree requires #0] wf self}
-    {[@expl:count_degree requires #1] in_bounds self p}
+    {([@expl:count_degree requires #0] wf self) /\ ([@expl:count_degree requires #1] in_bounds self p)}
     any [ return (result: UInt64.t) -> (! return {result}) ]
   
   let rec push_tup2_usize_Point (self_: MutBorrow.t t_Vec_tup2_usize_Point_Global) (v: tup2_usize_Point)
     (return (x'0: ())) = any
-    [ return (result: ()) -> {view_Vec_tup2_usize_Point_Global self_.final
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_tup2_usize_Point_Global self_.final
       = Seq.snoc (view_Vec_tup2_usize_Point_Global self_.current) v}
       (! return {result}) ]
   
@@ -1379,7 +1397,8 @@ module M_knights_tour
   type t_Option_ref_tup2_usize_Point = None'1 | Some'1 tup2_usize_Point
   
   let rec min (v: t_Vec_tup2_usize_Point_Global) (return (x'0: t_Option_ref_tup2_usize_Point)) = any
-    [ return (result: t_Option_ref_tup2_usize_Point) -> {forall r: tup2_usize_Point. result = Some'1 r
+    [ return (result: t_Option_ref_tup2_usize_Point) -> {[@expl:min ensures] forall r: tup2_usize_Point. result
+          = Some'1 r
         -> (exists i: int. 0 <= i
           /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
       (! return {result}) ]
@@ -1448,9 +1467,9 @@ module M_knights_tour
   meta "select_lsinst" "all"
   
   let rec knights_tour (size'0: UInt64.t) (x'0: UInt64.t) (y'0: UInt64.t) (return (x'1: t_Option_Board)) =
-    {[@expl:knights_tour requires #0] 0 < UInt64.t'int size'0 /\ UInt64.t'int size'0 <= 1000}
-    {[@expl:knights_tour requires #1] UInt64.lt x'0 size'0}
-    {[@expl:knights_tour requires #2] UInt64.lt y'0 size'0}
+    {([@expl:knights_tour requires #0] 0 < UInt64.t'int size'0 /\ UInt64.t'int size'0 <= 1000)
+    /\ ([@expl:knights_tour requires #1] UInt64.lt x'0 size'0)
+    /\ ([@expl:knights_tour requires #2] UInt64.lt y'0 size'0)}
     (! bb0
     [ bb0 = s0
       [ s0 = new {size'0} (fun (_x: t_Board) -> [ &board <- _x ] s1)

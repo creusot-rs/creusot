@@ -353,9 +353,11 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
   let rec from_elem_List_tup2_K_V (elem: t_List_tup2_K_V) (n: UInt64.t) (return (x: t_Vec_List_tup2_K_V_Global)) =
     {[@expl:from_elem 'elem' type invariant] inv_List_tup2_K_V elem}
     any
-    [ return (result: t_Vec_List_tup2_K_V_Global) -> {inv_Vec_List_tup2_K_V_Global result}
-      {Seq.length (view_Vec_List_tup2_K_V_Global result) = UInt64.t'int n}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int n -> index_Vec_List_tup2_K_V_Global result i = elem}
+    [ return (result: t_Vec_List_tup2_K_V_Global) ->
+    {([@expl:from_elem result type invariant] inv_Vec_List_tup2_K_V_Global result)
+      /\ ([@expl:from_elem ensures #0] Seq.length (view_Vec_List_tup2_K_V_Global result) = UInt64.t'int n)
+      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_List_tup2_K_V_Global result i = elem)}
       (! return {result}) ]
   
   type t_MyHashMap_K_V = { buckets: t_Vec_List_tup2_K_V_Global }
@@ -419,8 +421,8 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
     | & res: t_MyHashMap_K_V = Any.any_l ()
     | & _6: t_Vec_List_tup2_K_V_Global = Any.any_l ()
     | & _7: t_List_tup2_K_V = Any.any_l () ])
-    [ return (result: t_MyHashMap_K_V) -> {[@expl:new result type invariant] inv_MyHashMap_K_V result}
-      {[@expl:new ensures] forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V result) i = None}
+    [ return (result: t_MyHashMap_K_V) -> {([@expl:new result type invariant] inv_MyHashMap_K_V result)
+      /\ ([@expl:new ensures] forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V result) i = None)}
       (! return {result}) ]
 end
 module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
@@ -512,7 +514,8 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   let rec len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
       (! return {result}) ]
   
   predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
@@ -545,7 +548,8 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
       -> (let self = args in UInt64.t'int res = hash_log_K (deep_model_ref_K self))
   
   let rec hash_K (self: t_K) (return (x: UInt64.t)) = {[@expl:hash requires] precondition_hash () self}
-    any [ return (result: UInt64.t) -> {postcondition_once_hash () self result} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:hash ensures] postcondition_once_hash () self result} (! return {result}) ]
   
   predicate invariant_refmut_Vec_List_tup2_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Vec_List_tup2_K_V_Global) =
     inv_Vec_List_tup2_K_V_Global self.current /\ inv_Vec_List_tup2_K_V_Global self.final
@@ -584,15 +588,16 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   let rec index_mut_Vec_List_tup2_K_V_Global (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t t_List_tup2_K_V)) =
-    {[@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_}
-    {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current)}
+    {([@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_)
+    /\ ([@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current))}
     any
-    [ return (result: MutBorrow.t t_List_tup2_K_V) -> {inv_refmut_List_tup2_K_V result}
-      {has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_List_tup2_K_V_Global self_.current) (view_Vec_List_tup2_K_V_Global self_.final)}
-      {Seq.length (view_Vec_List_tup2_K_V_Global self_.final)
-      = Seq.length (view_Vec_List_tup2_K_V_Global self_.current)}
+    [ return (result: MutBorrow.t t_List_tup2_K_V) ->
+    {([@expl:index_mut result type invariant] inv_refmut_List_tup2_K_V result)
+      /\ ([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_List_tup2_K_V_Global self_.current) (view_Vec_List_tup2_K_V_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_List_tup2_K_V_Global self_.final)
+      = Seq.length (view_Vec_List_tup2_K_V_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_List_tup2_K_V [@inline:trivial] (_1: MutBorrow.t t_List_tup2_K_V) = _1.final = _1.current
@@ -659,7 +664,9 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   let rec eq_K (self_: t_K) (rhs: t_K) (return (x: bool)) = {[@expl:eq requires] precondition_eq () { f0'0 = self_;
                                                                                                       f1'0 = rhs }}
-    any [ return (result: bool) -> {postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result} (! return {result}) ]
+    any
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result}
+      (! return {result}) ]
   
   predicate invariant_refmut_V [@inline:trivial] (self: MutBorrow.t t_V) = inv_V self.current /\ inv_V self.final
   
@@ -760,9 +767,8 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   meta "select_lsinst" "all"
   
   let rec add_K (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self}
-    {[@expl:add 'key' type invariant] inv_K key}
-    {[@expl:add 'val' type invariant] inv_V val'}
+    {([@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self)
+    /\ ([@expl:add 'key' type invariant] inv_K key) /\ ([@expl:add 'val' type invariant] inv_V val')}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -957,7 +963,8 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
       -> (let self = args in UInt64.t'int res = hash_log_K (deep_model_ref_K self))
   
   let rec hash_K (self: t_K) (return (x: UInt64.t)) = {[@expl:hash requires] precondition_hash () self}
-    any [ return (result: UInt64.t) -> {postcondition_once_hash () self result} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:hash ensures] postcondition_once_hash () self result} (! return {result}) ]
   
   type t_Vec_List_tup2_K_V_Global
   
@@ -1035,7 +1042,8 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   let rec len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_List_tup2_K_V) =
@@ -1049,11 +1057,11 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   meta "rewrite_def" predicate has_value_usize
   
   let rec index_Vec_List_tup2_K_V_Global (self_: t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
-    (return (x: t_List_tup2_K_V)) = {[@expl:index 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
-    {[@expl:index requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_)}
+    (return (x: t_List_tup2_K_V)) = {([@expl:index 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_)
+    /\ ([@expl:index requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_))}
     any
-    [ return (result: t_List_tup2_K_V) -> {inv_ref_List_tup2_K_V result}
-      {has_value_usize ix (view_Vec_List_tup2_K_V_Global self_) result}
+    [ return (result: t_List_tup2_K_V) -> {([@expl:index result type invariant] inv_ref_List_tup2_K_V result)
+      /\ ([@expl:index ensures] has_value_usize ix (view_Vec_List_tup2_K_V_Global self_) result)}
       (! return {result}) ]
   
   type t_Option_V = None | Some t_V
@@ -1098,7 +1106,9 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   let rec eq_K (self_: t_K) (rhs: t_K) (return (x: bool)) = {[@expl:eq requires] precondition_eq () { f0'0 = self_;
                                                                                                       f1'0 = rhs }}
-    any [ return (result: bool) -> {postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result} (! return {result}) ]
+    any
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result}
+      (! return {result}) ]
   
   type t_Option_ref_V = None'0 | Some'0 t_V
   
@@ -1154,8 +1164,7 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   meta "select_lsinst" "all"
   
   let rec get_K'0 (self: t_MyHashMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
-    {[@expl:get 'self' type invariant] inv_ref_MyHashMap_K_V self}
-    {[@expl:get 'key' type invariant] inv_K key}
+    {([@expl:get 'self' type invariant] inv_ref_MyHashMap_K_V self) /\ ([@expl:get 'key' type invariant] inv_K key)}
     (! bb0
     [ bb0 = s0
       [ s0 = hash_K {key} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s1)
@@ -1198,11 +1207,11 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
     | & tl: t_List_tup2_K_V = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _36: t_List_tup2_K_V = Any.any_l () ])
-    [ return (result: t_Option_ref_V) -> {[@expl:get result type invariant] inv_Option_ref_V result}
-      {[@expl:get ensures] match result with
+    [ return (result: t_Option_ref_V) -> {([@expl:get result type invariant] inv_Option_ref_V result)
+      /\ ([@expl:get ensures] match result with
         | Some'0 v -> Map.get (view_MyHashMap_K_V self) (deep_model_K key) = Some v
         | None'0 -> Map.get (view_MyHashMap_K_V self) (deep_model_K key) = None
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
@@ -1294,7 +1303,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   let rec len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_List_tup2_K_V_Global self_)}
       (! return {result}) ]
   
   type t_DeepModelTy
@@ -1346,8 +1356,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   
   let rec new_K (size: UInt64.t) (return (x: t_MyHashMap_K_V)) = {[@expl:new requires] 0 < UInt64.t'int size}
     any
-    [ return (result: t_MyHashMap_K_V) -> {inv_MyHashMap_K_V result}
-      {forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V result) i = None}
+    [ return (result: t_MyHashMap_K_V) -> {([@expl:new result type invariant] inv_MyHashMap_K_V result)
+      /\ ([@expl:new ensures] forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V result) i = None)}
       (! return {result}) ]
   
   predicate invariant_refmut_MyHashMap_K_V [@inline:trivial] (self: MutBorrow.t t_MyHashMap_K_V) =
@@ -1397,24 +1407,24 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   
   let rec index_mut_Vec_List_tup2_K_V_Global (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t t_List_tup2_K_V)) =
-    {[@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_}
-    {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current)}
+    {([@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_)
+    /\ ([@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current))}
     any
-    [ return (result: MutBorrow.t t_List_tup2_K_V) -> {inv_refmut_List_tup2_K_V result}
-      {has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_List_tup2_K_V_Global self_.current) (view_Vec_List_tup2_K_V_Global self_.final)}
-      {Seq.length (view_Vec_List_tup2_K_V_Global self_.final)
-      = Seq.length (view_Vec_List_tup2_K_V_Global self_.current)}
+    [ return (result: MutBorrow.t t_List_tup2_K_V) ->
+    {([@expl:index_mut result type invariant] inv_refmut_List_tup2_K_V result)
+      /\ ([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_List_tup2_K_V_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_List_tup2_K_V_Global self_.current) (view_Vec_List_tup2_K_V_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_List_tup2_K_V_Global self_.final)
+      = Seq.length (view_Vec_List_tup2_K_V_Global self_.current))}
       (! return {result}) ]
   
   let rec replace_List_tup2_K_V (dest: MutBorrow.t t_List_tup2_K_V) (src: t_List_tup2_K_V)
-    (return (x: t_List_tup2_K_V)) = {[@expl:replace 'dest' type invariant] inv_refmut_List_tup2_K_V dest}
-    {[@expl:replace 'src' type invariant] inv_List_tup2_K_V src}
+    (return (x: t_List_tup2_K_V)) = {([@expl:replace 'dest' type invariant] inv_refmut_List_tup2_K_V dest)
+    /\ ([@expl:replace 'src' type invariant] inv_List_tup2_K_V src)}
     any
-    [ return (result: t_List_tup2_K_V) -> {inv_List_tup2_K_V result}
-      {dest.final = src}
-      {result = dest.current}
+    [ return (result: t_List_tup2_K_V) -> {([@expl:replace result type invariant] inv_List_tup2_K_V result)
+      /\ ([@expl:replace ensures #0] dest.final = src) /\ ([@expl:replace ensures #1] result = dest.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_List_tup2_K_V [@inline:trivial] (_1: MutBorrow.t t_List_tup2_K_V) = _1.final = _1.current
@@ -1430,11 +1440,10 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
       any) ]
   
   let rec add_K (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self}
-    {[@expl:add 'key' type invariant] inv_K key}
-    {[@expl:add 'val' type invariant] inv_V val'}
+    {([@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self)
+    /\ ([@expl:add 'key' type invariant] inv_K key) /\ ([@expl:add 'val' type invariant] inv_V val')}
     any
-    [ return (result: ()) -> {forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V self.final) i
+    [ return (result: ()) -> {[@expl:add ensures] forall i: t_DeepModelTy. Map.get (view_MyHashMap_K_V self.final) i
         = (if i = deep_model_K key then Some val' else Map.get (view_MyHashMap_K_V self.current) i)}
       (! return {result}) ]
   
@@ -1498,8 +1507,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   meta "select_lsinst" "all"
   
   let rec resize_K (self: MutBorrow.t t_MyHashMap_K_V) (return (x: ())) =
-    {[@expl:resize 'self' type invariant] inv_refmut_MyHashMap_K_V self}
-    {[@expl:resize requires] Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets) < 1000}
+    {([@expl:resize 'self' type invariant] inv_refmut_MyHashMap_K_V self)
+    /\ ([@expl:resize requires] Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets) < 1000)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -1701,8 +1710,8 @@ module M_main
   let rec new_usize (size: UInt64.t) (return (x: t_MyHashMap_usize_isize)) = {[@expl:new requires] 0
     < UInt64.t'int size}
     any
-    [ return (result: t_MyHashMap_usize_isize) -> {inv_MyHashMap_usize_isize result}
-      {forall i: int. Map.get (view_MyHashMap_usize_isize result) i = None}
+    [ return (result: t_MyHashMap_usize_isize) -> {([@expl:new result type invariant] inv_MyHashMap_usize_isize result)
+      /\ ([@expl:new ensures] forall i: int. Map.get (view_MyHashMap_usize_isize result) i = None)}
       (! return {result}) ]
   
   type t_Option_ref_isize = None'0 | Some'0 Int64.t
@@ -1720,7 +1729,7 @@ module M_main
   let rec get_usize'0 (self: t_MyHashMap_usize_isize) (key: UInt64.t) (return (x: t_Option_ref_isize)) =
     {[@expl:get 'self' type invariant] inv_ref_MyHashMap_usize_isize self}
     any
-    [ return (result: t_Option_ref_isize) -> {match result with
+    [ return (result: t_Option_ref_isize) -> {[@expl:get ensures] match result with
         | Some'0 v -> Map.get (view_MyHashMap_usize_isize self) (deep_model_usize key) = Some v
         | None'0 -> Map.get (view_MyHashMap_usize_isize self) (deep_model_usize key) = None
         end}
@@ -1739,7 +1748,7 @@ module M_main
   let rec add_usize (self: MutBorrow.t t_MyHashMap_usize_isize) (key: UInt64.t) (val': Int64.t) (return (x: ())) =
     {[@expl:add 'self' type invariant] inv_refmut_MyHashMap_usize_isize self}
     any
-    [ return (result: ()) -> {forall i: int. Map.get (view_MyHashMap_usize_isize self.final) i
+    [ return (result: ()) -> {[@expl:add ensures] forall i: int. Map.get (view_MyHashMap_usize_isize self.final) i
         = (if i = deep_model_usize key then Some val' else Map.get (view_MyHashMap_usize_isize self.current) i)}
       (! return {result}) ]
   

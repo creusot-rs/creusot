@@ -7,7 +7,7 @@ module M_impl_Default_for_Unit__default (* <Unit as std::default::Default> *)
   
   let rec default_Unit (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:default ensures] true} (! return {result}) ]
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
   use creusot.int.Int32
@@ -15,10 +15,10 @@ module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   let rec default_i64 (return (x: Int64.t)) = any
-    [ return (result: Int64.t) -> {result = (0: Int64.t)} (! return {result}) ]
+    [ return (result: Int64.t) -> {[@expl:default ensures] result = (0: Int64.t)} (! return {result}) ]
   
   type t_Tuple = { f0: Int32.t; f1: Int64.t }
   
@@ -159,7 +159,7 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_T
   
@@ -177,7 +177,8 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
       -> (let () = args in inv_T res)
   
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
-    any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
+    any
+    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
   
   type t_Named_T = { x: Int32.t; y: t_T }
   
@@ -310,8 +311,9 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
       | s2 = [ &_ret <- { x = _2; y = _3 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Named_T = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: t_T = Any.any_l () ])
-    [ return (result: t_Named_T) -> {[@expl:default result type invariant] inv_Named_T result}
-      {[@expl:default ensures] true /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y}
+    [ return (result: t_Named_T) -> {([@expl:default result type invariant] inv_Named_T result)
+      /\ ([@expl:default ensures] true
+      /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y)}
       (! return {result}) ]
 end
 module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
@@ -336,7 +338,7 @@ module M_impl_Default_for_ETuple__default (* <ETuple as std::default::Default> *
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_Vec_i32_Global
   
@@ -436,7 +438,8 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
       -> (let () = args in inv_T res)
   
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
-    any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
+    any
+    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
   
   type t_U
   
@@ -454,7 +457,8 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
       -> (let () = args in inv_U res)
   
   let rec default_U (return (x: t_U)) = {[@expl:default requires] precondition_default'0 () ()}
-    any [ return (result: t_U) -> {postcondition_once_default'0 () () result} (! return {result}) ]
+    any
+    [ return (result: t_U) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
   
   type t_ENamed_T_U = A t_T t_U | B
   
@@ -588,11 +592,11 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
       | s2 = [ &_ret <- A _2 _3 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_ENamed_T_U = Any.any_l () | & _2: t_T = Any.any_l () | & _3: t_U = Any.any_l () ])
-    [ return (result: t_ENamed_T_U) -> {[@expl:default result type invariant] inv_ENamed_T_U result}
-      {[@expl:default ensures] match result with
+    [ return (result: t_ENamed_T_U) -> {([@expl:default result type invariant] inv_ENamed_T_U result)
+      /\ ([@expl:default ensures] match result with
         | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default::Default> *)
@@ -667,7 +671,7 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_i32 (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_T)
   
@@ -737,7 +741,8 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
       -> precondition_default () args
   
   let rec default_T (return (x'0: t_T)) = {[@expl:default requires] precondition_default () ()}
-    any [ return (result: t_T) -> {postcondition_once_default'0 () () result} (! return {result}) ]
+    any
+    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -832,7 +837,8 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
       -> precondition_default () args
   
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
-    any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
+    any
+    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_U)
   
@@ -902,7 +908,8 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
       -> precondition_default'0 () args
   
   let rec default_U (return (x: t_U)) = {[@expl:default requires] precondition_default'0 () ()}
-    any [ return (result: t_U) -> {postcondition_once_default'0 () () result} (! return {result}) ]
+    any
+    [ return (result: t_U) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

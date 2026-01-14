@@ -107,7 +107,7 @@ module M_inc_max_repeat
   type t_Range_u32 = { start: UInt32.t; end': UInt32.t }
   
   let rec into_iter_Range_u32 (self_: t_Range_u32) (return (x: t_Range_u32)) = any
-    [ return (result: t_Range_u32) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_u32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -142,7 +142,7 @@ module M_inc_max_repeat
     resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
   
   let rec next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:next ensures] match result with
         | None -> completed_Range_u32 self_
         | Some v -> produces_Range_u32 self_.current (Seq.singleton v) self_.final
         end}
@@ -206,7 +206,7 @@ module M_inc_max_repeat
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {if UInt32.ge ma.current mb.current then
+    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb

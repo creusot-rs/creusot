@@ -90,10 +90,10 @@ module M_x
   meta "rewrite_def" function deep_model_ref_ref_T
   
   let rec le_ref_T (self_: t_T) (other: t_T) (return (x: bool)) =
-    {[@expl:le 'self_' type invariant] inv_ref_ref_T self_}
-    {[@expl:le 'other' type invariant] inv_ref_ref_T other}
+    {([@expl:le 'self_' type invariant] inv_ref_ref_T self_) /\ ([@expl:le 'other' type invariant] inv_ref_ref_T other)}
     any
-    [ return (result: bool) -> {result = le_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
+    [ return (result: bool) -> {[@expl:le ensures] result
+      = le_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -198,18 +198,18 @@ module M_gt_or_le
   meta "rewrite_def" function deep_model_ref_ref_T
   
   let rec ge_ref_T (self_: t_T) (other: t_T) (return (x: bool)) =
-    {[@expl:ge 'self_' type invariant] inv_ref_ref_T self_}
-    {[@expl:ge 'other' type invariant] inv_ref_ref_T other}
+    {([@expl:ge 'self_' type invariant] inv_ref_ref_T self_) /\ ([@expl:ge 'other' type invariant] inv_ref_ref_T other)}
     any
-    [ return (result: bool) -> {result = ge_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
+    [ return (result: bool) -> {[@expl:ge ensures] result
+      = ge_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec gt_or_le_T (x: t_T) (y: t_T) (return (x'0: bool)) = {[@expl:gt_or_le 'x' type invariant] inv_ref_T x}
-    {[@expl:gt_or_le 'y' type invariant] inv_ref_T y}
+  let rec gt_or_le_T (x: t_T) (y: t_T) (return (x'0: bool)) = {([@expl:gt_or_le 'x' type invariant] inv_ref_T x)
+    /\ ([@expl:gt_or_le 'y' type invariant] inv_ref_T y)}
     (! bb0
     [ bb0 = s0 [ s0 = ge_ref_T {x} {y} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & x: t_T = x | & y: t_T = y ])

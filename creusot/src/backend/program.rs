@@ -57,7 +57,7 @@ use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Var},
-    declaration::{Attribute, Condition, Contract, Decl, Module},
+    declaration::{Attribute, Contract, Decl, Module},
     exp::{Binder, Constant, Exp},
     ty::Type,
 };
@@ -97,17 +97,12 @@ pub(crate) fn translate_function<'tcx>(
 }
 
 pub(crate) fn val(sig: Prototype, contract: Contract, return_ty: why3::ty::Type) -> Decl {
-    let requires = contract.requires.into_iter().map(Condition::labelled_exp);
-    let cont = requires.rfold(Expr::Any, |acc, cond| Expr::assert(cond, acc));
-
     let mut body = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
-    body = body.black_box();
-    let ensures = contract.ensures.into_iter().map(Condition::unlabelled_exp);
-    body = ensures.rfold(body, |acc, cond| Expr::assert(cond, acc));
+    body = Expr::assert(contract.ensures_conj(), body.black_box());
 
     let params = [Param::Term(name::result(), return_ty)].into();
     let body = Expr::Defn(
-        cont.boxed(),
+        Expr::assert(contract.requires_conj(), Expr::Any).boxed(),
         false,
         [Defn { prototype: Prototype { name: name::return_(), attrs: vec![], params }, body }]
             .into(),
@@ -251,9 +246,8 @@ pub(crate) fn to_why<'tcx>(
     // We remove the barrier around the definition of closures without contracts
     // (automatic inferrence of specifications)
     if !ctx.is_closure_like(def_id) || ctx.sig(def_id).contract.has_user_contract {
-        let ensures = sig.contract.ensures.into_iter().map(Condition::labelled_exp);
         let ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
-        let postcond = ensures.rfold(ret.black_box(), |acc, cond| Expr::assert(cond, acc));
+        let postcond = Expr::assert(sig.contract.ensures_conj(), ret.black_box());
         body = Expr::Defn(
             body.black_box().boxed(),
             false,
@@ -267,8 +261,7 @@ pub(crate) fn to_why<'tcx>(
             }]
             .into(),
         );
-        let requires = sig.contract.requires.into_iter().map(Condition::labelled_exp);
-        body = requires.rfold(body, |acc, req| Expr::assert(req, acc));
+        body = Expr::assert(sig.contract.requires_conj(), body);
     } else {
         sig.prototype.attrs.push(Attribute::Attr("coma:extspec".into()));
     }

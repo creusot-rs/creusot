@@ -16,12 +16,13 @@ module M_all_zero
       <= UInt64.t'int const_MAX
   
   let rec len_u32 (self_: t_Vec_u32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_u32_Global self_)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_u32_Global self_)}
+      (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -56,7 +57,7 @@ module M_all_zero
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {match result with
+    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -98,10 +99,12 @@ module M_all_zero
     (return (x: MutBorrow.t UInt32.t)) =
     {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_u32_Global self_.current)}
     any
-    [ return (result: MutBorrow.t UInt32.t) -> {has_value_usize ix (view_Vec_u32_Global self_.current) result.current}
-      {has_value_usize ix (view_Vec_u32_Global self_.final) result.final}
-      {resolve_elswhere_usize ix (view_Vec_u32_Global self_.current) (view_Vec_u32_Global self_.final)}
-      {Seq.length (view_Vec_u32_Global self_.final) = Seq.length (view_Vec_u32_Global self_.current)}
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_u32_Global self_.current) result.current)
+      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_u32_Global self_.final) result.final)
+      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_u32_Global self_.current) (view_Vec_u32_Global self_.final))
+      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_u32_Global self_.final)
+      = Seq.length (view_Vec_u32_Global self_.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
@@ -170,9 +173,9 @@ module M_all_zero
     | & _42: MutBorrow.t UInt32.t = Any.any_l ()
     | & _43: MutBorrow.t t_Vec_u32_Global = Any.any_l ()
     | & _old: t_Vec_u32_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:all_zero ensures #0] forall i: int. 0 <= i
-          /\ i < Seq.length (view_Vec_u32_Global v.final) -> index_Vec_u32_Global v.final i = (0: UInt32.t)}
-      {[@expl:all_zero ensures #1] Seq.length (view_Vec_u32_Global v.current)
-      = Seq.length (view_Vec_u32_Global v.final)}
+    [ return (result: ()) -> {([@expl:all_zero ensures #0] forall i: int. 0 <= i
+            /\ i < Seq.length (view_Vec_u32_Global v.final) -> index_Vec_u32_Global v.final i = (0: UInt32.t))
+      /\ ([@expl:all_zero ensures #1] Seq.length (view_Vec_u32_Global v.current)
+      = Seq.length (view_Vec_u32_Global v.final))}
       (! return {result}) ]
 end

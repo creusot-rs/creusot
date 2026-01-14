@@ -41,13 +41,14 @@ module M_splits_up
       /\ (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
         -> index_Mapping_u32_bool (Seq.get _pred i) (index_slice_u32 s i)))}
     any
-    [ return (result: Slice64.slice t_PredCell_u32) -> {forall i: int. 0 <= i /\ i < Seq.length _pred
-        -> view_PredCell_u32 (index_slice_PredCell_u32 result i) = Seq.get _pred i}
-      {Seq.length (Slice64.view result) = Seq.length _pred}
+    [ return (result: Slice64.slice t_PredCell_u32) -> {([@expl:as_slice_of_cells ensures #0] forall i: int. 0 <= i
+            /\ i < Seq.length _pred -> view_PredCell_u32 (index_slice_PredCell_u32 result i) = Seq.get _pred i)
+      /\ ([@expl:as_slice_of_cells ensures #1] Seq.length (Slice64.view result) = Seq.length _pred)}
       (! return {result}) ]
   
   let rec get_u32 (self: t_PredCell_u32) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {index_Mapping_u32_bool (view_PredCell_u32 self) result} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@expl:get ensures] index_Mapping_u32_bool (view_PredCell_u32 self) result}
+      (! return {result}) ]
   
   type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
   
