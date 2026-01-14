@@ -2,10 +2,11 @@
 
 use crate::{
     common::{GhostClosuresVisitor, GhostLet, ghost_int_lit_suffix},
-    creusot::pretyping,
+    creusot::{invariant::desugar_invariant, pretyping},
 };
 use pearlite_syn::TBlock;
 use proc_macro::TokenStream as TS1;
+use proc_macro2::{Delimiter, Group};
 use quote::{ToTokens, quote};
 use syn::{
     Block,
@@ -45,7 +46,7 @@ pub fn snapshot(snapshot: TS1) -> TS1 {
 }
 
 pub fn ghost(body: TS1) -> TS1 {
-    let group = proc_macro2::Group::new(proc_macro2::Delimiter::Brace, body.into());
+    let group = Group::new(Delimiter::Brace, body.into());
     let body = ghost_int_lit_suffix(group.into_token_stream()).into();
     let mut body = parse_macro_input!(body as Block);
     GhostClosuresVisitor.visit_block_mut(&mut body);
@@ -71,7 +72,7 @@ pub fn ghost_let(body: TS1) -> TS1 {
 }
 
 pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
-    super::invariant::desugar_invariant(invariant.into(), tokens.into())
+    desugar_invariant(invariant.into(), tokens.into())
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
 }
