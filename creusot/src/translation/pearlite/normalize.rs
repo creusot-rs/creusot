@@ -86,13 +86,13 @@ fn optimize_builtin<'tcx>(
     let builtin_str = builtin.as_ref().map(|s| s.as_str());
 
     if let Some(op) = match builtin_str {
-        Some("mach.int.Int.(+)") => Some(Add),
-        Some("mach.int.Int.(-)") => Some(Sub),
-        Some("mach.int.Int.(*)") => Some(Mul),
-        Some("mach.int.Int.(<=)") => Some(Le),
-        Some("mach.int.Int.(<)") => Some(Lt),
-        Some("mach.int.Int.(>=)") => Some(Ge),
-        Some("mach.int.Int.(>)") => Some(Gt),
+        Some("int.Int.(+)") => Some(Add),
+        Some("int.Int.(-)") => Some(Sub),
+        Some("int.Int.(*)") => Some(Mul),
+        Some("int.Int.(<=)") => Some(Le),
+        Some("int.Int.(<)") => Some(Lt),
+        Some("int.Int.(>=)") => Some(Ge),
+        Some("int.Int.(>)") => Some(Gt),
         _ => None,
     } {
         let [lhs, rhs] = args.into_array().unwrap().map(Box::new);
@@ -114,7 +114,7 @@ fn optimize_builtin<'tcx>(
             let [arg] = *args.into_array::<1>().unwrap();
             return Coerce { arg: Box::new(arg) };
         }
-        Some("mach.int.Int.(-_)") => {
+        Some("int.Int.(-_)") => {
             let [arg] = *args.into_array::<1>().unwrap();
             return Unary { op: Neg, arg: Box::new(arg) };
         }

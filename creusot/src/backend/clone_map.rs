@@ -27,7 +27,7 @@ use rustc_span::Span;
 use why3::{
     Exp, Ident, Name, QName, Symbol,
     coma::{Defn, Expr, Param, Prototype},
-    declaration::{Attribute, Decl, Goal, Span as WSpan, TyDecl},
+    declaration::{Attribute, Decl, Goal, Span as WSpan, TyDecl, Use},
 };
 
 mod elaborator;
@@ -142,40 +142,40 @@ pub(crate) trait Namer<'tcx> {
 
     fn prelude_module_name(&self, module: PreMod) -> Box<[why3::Symbol]> {
         self.dependency(Dependency::PreMod(module));
-        let name = match (module, self.bitwise_mode()) {
-            (PreMod::Float32, _) => ["creusot", "float", "Float32"],
-            (PreMod::Float64, _) => ["creusot", "float", "Float64"],
-            (PreMod::Int, _) => ["mach", "int", "Int"],
-            (PreMod::Int8, false) => ["creusot", "int", "Int8"],
-            (PreMod::Int16, false) => ["creusot", "int", "Int16"],
-            (PreMod::Int32, false) => ["creusot", "int", "Int32"],
-            (PreMod::Int64, false) => ["creusot", "int", "Int64"],
-            (PreMod::Int128, false) => ["creusot", "int", "Int128"],
-            (PreMod::UInt8, false) => ["creusot", "int", "UInt8"],
-            (PreMod::UInt16, false) => ["creusot", "int", "UInt16"],
-            (PreMod::UInt32, false) => ["creusot", "int", "UInt32"],
-            (PreMod::UInt64, false) => ["creusot", "int", "UInt64"],
-            (PreMod::UInt128, false) => ["creusot", "int", "UInt128"],
-            (PreMod::Int8, true) => ["creusot", "int", "Int8BW"],
-            (PreMod::Int16, true) => ["creusot", "int", "Int16BW"],
-            (PreMod::Int32, true) => ["creusot", "int", "Int32BW"],
-            (PreMod::Int64, true) => ["creusot", "int", "Int64BW"],
-            (PreMod::Int128, true) => ["creusot", "int", "Int128BW"],
-            (PreMod::UInt8, true) => ["creusot", "int", "UInt8BW"],
-            (PreMod::UInt16, true) => ["creusot", "int", "UInt16BW"],
-            (PreMod::UInt32, true) => ["creusot", "int", "UInt32BW"],
-            (PreMod::UInt64, true) => ["creusot", "int", "UInt64BW"],
-            (PreMod::UInt128, true) => ["creusot", "int", "UInt128BW"],
-            (PreMod::Char, _) => ["creusot", "prelude", "Char"],
-            (PreMod::Opaque, _) => ["creusot", "prelude", "Opaque"],
-            (PreMod::Bool, _) => ["creusot", "prelude", "Bool"],
-            (PreMod::MutBor, _) => ["creusot", "prelude", "MutBorrow"],
+        let name: &[_] = match (module, self.bitwise_mode()) {
+            (PreMod::Float32, _) => &["creusot", "float", "Float32"],
+            (PreMod::Float64, _) => &["creusot", "float", "Float64"],
+            (PreMod::Int, _) => &["int", "Int"],
+            (PreMod::Int8, false) => &["creusot", "int", "Int8"],
+            (PreMod::Int16, false) => &["creusot", "int", "Int16"],
+            (PreMod::Int32, false) => &["creusot", "int", "Int32"],
+            (PreMod::Int64, false) => &["creusot", "int", "Int64"],
+            (PreMod::Int128, false) => &["creusot", "int", "Int128"],
+            (PreMod::UInt8, false) => &["creusot", "int", "UInt8"],
+            (PreMod::UInt16, false) => &["creusot", "int", "UInt16"],
+            (PreMod::UInt32, false) => &["creusot", "int", "UInt32"],
+            (PreMod::UInt64, false) => &["creusot", "int", "UInt64"],
+            (PreMod::UInt128, false) => &["creusot", "int", "UInt128"],
+            (PreMod::Int8, true) => &["creusot", "int", "Int8BW"],
+            (PreMod::Int16, true) => &["creusot", "int", "Int16BW"],
+            (PreMod::Int32, true) => &["creusot", "int", "Int32BW"],
+            (PreMod::Int64, true) => &["creusot", "int", "Int64BW"],
+            (PreMod::Int128, true) => &["creusot", "int", "Int128BW"],
+            (PreMod::UInt8, true) => &["creusot", "int", "UInt8BW"],
+            (PreMod::UInt16, true) => &["creusot", "int", "UInt16BW"],
+            (PreMod::UInt32, true) => &["creusot", "int", "UInt32BW"],
+            (PreMod::UInt64, true) => &["creusot", "int", "UInt64BW"],
+            (PreMod::UInt128, true) => &["creusot", "int", "UInt128BW"],
+            (PreMod::Char, _) => &["creusot", "prelude", "Char"],
+            (PreMod::Opaque, _) => &["creusot", "prelude", "Opaque"],
+            (PreMod::Bool, _) => &["creusot", "prelude", "Bool"],
+            (PreMod::MutBor, _) => &["creusot", "prelude", "MutBorrow"],
             (PreMod::Slice, _) => {
-                ["creusot", "slice", &format!("Slice{}", self.tcx().sess.target.pointer_width)]
+                &["creusot", "slice", &format!("Slice{}", self.tcx().sess.target.pointer_width)]
             }
-            (PreMod::Any, _) => ["creusot", "prelude", "Any"],
+            (PreMod::Any, _) => &["creusot", "prelude", "Any"],
         };
-        name.into_iter().map(Symbol::intern).collect()
+        name.into_iter().copied().map(Symbol::intern).collect()
     }
 
     fn in_pre(&self, module: PreMod, name: &str) -> QName {
@@ -535,13 +535,22 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         );
 
         // Remove duplicates in `use` declarations, and move them at the beginning of the module
-        let (uses, mut decls): (IndexSet<_>, Vec<_>) = decls
+        let (mut uses, mut decls): (IndexSet<_>, Vec<_>) = decls
             .into_iter()
             .flat_map(|d| {
                 if let Decl::UseDecls(u) = d { Either::Left(u) } else { Either::Right([d]) }
                     .factor_into_iter()
             })
             .partition_map(|x| x);
+
+        // If we use the module int.Int, then we make sure we import it last, because it imports
+        // notations for arithmetic operators (e.g., '+'), which may be shadowed by e.g., real.Real.
+        if let Some(idx) = uses
+            .get_index_of(&Use { name: self.names.prelude_module_name(PreMod::Int), export: false })
+        {
+            uses.move_index(idx, uses.len() - 1);
+        }
+
         if !uses.is_empty() {
             decls.insert(0, Decl::UseDecls(uses.into_iter().collect()));
         }

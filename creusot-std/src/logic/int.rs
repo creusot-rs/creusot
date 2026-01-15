@@ -149,7 +149,7 @@ impl Int {
 impl AddLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(+)")]
+    #[builtin("int.Int.(+)")]
     #[allow(unused_variables)]
     fn add(self, other: Self) -> Self {
         dead
@@ -159,7 +159,7 @@ impl AddLogic for Int {
 impl SubLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(-)")]
+    #[builtin("int.Int.(-)")]
     #[allow(unused_variables)]
     fn sub(self, other: Self) -> Self {
         dead
@@ -169,7 +169,7 @@ impl SubLogic for Int {
 impl MulLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(*)")]
+    #[builtin("int.Int.(*)")]
     #[allow(unused_variables)]
     fn mul(self, other: Self) -> Self {
         dead
@@ -179,7 +179,7 @@ impl MulLogic for Int {
 impl DivLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.div")]
+    #[builtin("int.ComputerDivision.div")]
     #[allow(unused_variables)]
     fn div(self, other: Self) -> Self {
         dead
@@ -189,7 +189,7 @@ impl DivLogic for Int {
 impl RemLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.mod")]
+    #[builtin("int.ComputerDivision.mod")]
     #[allow(unused_variables)]
     fn rem(self, other: Self) -> Self {
         dead
@@ -199,7 +199,7 @@ impl RemLogic for Int {
 impl NegLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(-_)")]
+    #[builtin("int.Int.(-_)")]
     fn neg(self) -> Self {
         dead
     }

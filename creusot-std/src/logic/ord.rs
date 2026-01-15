@@ -207,25 +207,25 @@ impl OrdLogic for Int {
     }
 
     #[logic]
-    #[builtin("mach.int.Int.(<=)")]
+    #[builtin("int.Int.(<=)")]
     fn le_log(self, _: Self) -> bool {
         dead
     }
 
     #[logic]
-    #[builtin("mach.int.Int.(<)")]
+    #[builtin("int.Int.(<)")]
     fn lt_log(self, _: Self) -> bool {
         dead
     }
 
     #[logic]
-    #[builtin("mach.int.Int.(>=)")]
+    #[builtin("int.Int.(>=)")]
     fn ge_log(self, _: Self) -> bool {
         dead
     }
 
     #[logic]
-    #[builtin("mach.int.Int.(>)")]
+    #[builtin("int.Int.(>)")]
     fn gt_log(self, _: Self) -> bool {
         dead
     }
