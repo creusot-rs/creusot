@@ -71,6 +71,25 @@ impl<R: RA, Choice> Update<R> for Snapshot<Mapping<Choice, R>> {
     }
 }
 
+impl<R: RA> Update<R> for () {
+    type Choice = ();
+
+    #[logic(open, inline)]
+    fn premise(self, _: R) -> bool {
+        true
+    }
+
+    #[logic(open, inline)]
+    fn update(self, from: R, _: ()) -> R {
+        from
+    }
+
+    #[logic]
+    #[requires(from.op(frame) != None)]
+    #[ensures(from.op(frame) != None)]
+    fn frame_preserving(self, from: R, frame: R) {}
+}
+
 pub trait LocalUpdate<R: RA>: Sized {
     #[logic]
     fn premise(self, from_auth: R, from_frag: R) -> bool;
@@ -112,4 +131,21 @@ impl<R: RA> LocalUpdate<R> for Snapshot<(R, R)> {
         Some(to_frag).op(frame) == Some(Some(to_auth))
     })]
     fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>) {}
+}
+
+impl<R: RA> LocalUpdate<R> for () {
+    #[logic(open, inline)]
+    fn premise(self, _: R, _: R) -> bool {
+        true
+    }
+
+    #[logic(open, inline)]
+    fn update(self, from_auth: R, from_frag: R) -> (R, R) {
+        (from_auth, from_frag)
+    }
+
+    #[logic]
+    #[requires(Some(frag).op(frame) == Some(Some(auth)))]
+    #[ensures(Some(frag).op(frame) == Some(Some(auth)))]
+    fn frame_preserving(self, auth: R, frag: R, frame: Option<R>) {}
 }
