@@ -36,6 +36,29 @@ pub trait ViewRel {
     fn rel_unit(a: Option<Self::Auth>);
 }
 
+#[cfg_attr(not(creusot), allow(unused))]
+struct ViewInner<R: ViewRel> {
+    /// Authoritative part of the view
+    auth: Option<R::Auth>,
+    /// Fragment part of the view
+    frag: R::Frag,
+}
+
+impl<R: ViewRel> Invariant for ViewInner<R> {
+    #[logic]
+    fn invariant(self) -> bool {
+        R::rel(self.auth, self.frag)
+    }
+}
+
+impl<R: ViewRel> InhabitedInvariant for ViewInner<R> {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self {
+        Self { auth: None, frag: R::Frag::unit() }
+    }
+}
+
 /// The 'view' Resource Algebra.
 ///
 /// This resource is parametrized by a [relation](ViewRel) `R` between an
@@ -45,42 +68,19 @@ pub trait ViewRel {
 /// The authoritative part is unique, while the fragment part might not be. A relation
 /// must hold between the two pasts.
 // NOTE: we could add (discardable) fragments for the auth part
-#[cfg_attr(not(creusot), allow(unused))]
-struct InnerView<R: ViewRel> {
-    /// Authoritative part of the view
-    auth: Option<R::Auth>,
-    /// Fragment part of the view
-    frag: R::Frag,
-}
-
-impl<R: ViewRel> Invariant for InnerView<R> {
-    #[logic]
-    fn invariant(self) -> bool {
-        R::rel(self.auth, self.frag)
-    }
-}
-
-impl<R: ViewRel> InhabitedInvariant for InnerView<R> {
-    #[logic]
-    #[ensures(result.invariant())]
-    fn inhabits() -> Self {
-        Self { auth: None, frag: R::Frag::unit() }
-    }
-}
-
-pub struct View<R: ViewRel>(Subset<InnerView<R>>);
+pub struct View<R: ViewRel>(Subset<ViewInner<R>>);
 
 impl<R: ViewRel> View<R> {
     /// Returns the authoritative part of a given `View`
     #[logic]
     pub fn auth(self) -> Option<R::Auth> {
-        pearlite! { self.0@.auth }
+        pearlite! { self.0.inner().auth }
     }
 
     #[logic]
     #[ensures(R::rel(self.auth(), result))]
     pub fn frag(self) -> R::Frag {
-        pearlite! { self.0@.frag }
+        pearlite! { self.0.inner().frag }
     }
 
     /// Create a new `View` with given authority and fragment.
@@ -89,7 +89,7 @@ impl<R: ViewRel> View<R> {
     #[ensures(result.auth() == auth)]
     #[ensures(result.frag() == frag)]
     pub fn new(auth: Option<R::Auth>, frag: R::Frag) -> Self {
-        Self(Subset::new_logic(InnerView { auth, frag }))
+        Self(Subset::new_logic(ViewInner { auth, frag }))
     }
 
     /// Create a new `View` containing an authoritative version of `x`.
@@ -127,7 +127,7 @@ impl<R: ViewRel> RA for View<R> {
         None => forall<c: Self> factor.op(c) != Some(self),
     })]
     fn factor(self, factor: Self) -> Option<Self> {
-        let _ = Subset::<InnerView<R>>::view_inj;
+        let _ = Subset::<ViewInner<R>>::inner_inj;
         match self.frag().factor(factor.frag()) {
             Some(f) => match (self.auth(), factor.auth()) {
                 (Some(a), None) => Some(Self::new(Some(a), f)),
@@ -146,7 +146,7 @@ impl<R: ViewRel> RA for View<R> {
     #[logic(open, inline)]
     #[ensures(result == (self == other))]
     fn eq(self, other: Self) -> bool {
-        let _ = Subset::<InnerView<R>>::view_inj;
+        let _ = Subset::<ViewInner<R>>::inner_inj;
         self.auth() == other.auth() && self.frag() == other.frag()
     }
 
@@ -170,7 +170,7 @@ impl<R: ViewRel> RA for View<R> {
             },
             _ => (),
         }
-        let _ = Subset::<InnerView<R>>::view_inj;
+        let _ = Subset::<ViewInner<R>>::inner_inj;
     }
 
     #[logic(open)]

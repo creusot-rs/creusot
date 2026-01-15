@@ -63,16 +63,6 @@ impl DeepModel for Int {
     }
 }
 
-#[cfg(feature = "std")]
-impl View for String {
-    type ViewTy = Seq<char>;
-
-    #[logic(opaque)]
-    fn view(self) -> Self::ViewTy {
-        dead
-    }
-}
-
 impl DeepModel for core::cmp::Ordering {
     type DeepModelTy = core::cmp::Ordering;
 

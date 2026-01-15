@@ -28,7 +28,7 @@ impl<F> FnGhost for F {}
 pub struct FnGhostWrapper<F>(pub F);
 
 impl<F: Clone> Clone for FnGhostWrapper<F> {
-    #[ensures(F::clone.postcondition((&self@,), result@))]
+    #[ensures(F::clone.postcondition((&self.0,), result.0))]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -73,17 +73,9 @@ impl<F> FnGhostWrapper<F> {
     /// attribute.
     #[doc(hidden)]
     #[check(ghost)]
-    #[ensures(result@ == f)]
+    #[ensures(result.0 == f)]
     pub fn __new(f: F) -> Self {
         Self(f)
-    }
-}
-impl<F> View for FnGhostWrapper<F> {
-    type ViewTy = F;
-
-    #[logic(open, inline)]
-    fn view(self) -> Self::ViewTy {
-        self.0
     }
 }
 #[cfg(creusot)]

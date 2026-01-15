@@ -12,6 +12,16 @@ impl View for str {
 }
 
 #[cfg(feature = "std")]
+impl View for String {
+    type ViewTy = Seq<char>;
+
+    #[logic(opaque)]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
+
+#[cfg(feature = "std")]
 extern_spec! {
     mod std {
         mod string {

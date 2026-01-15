@@ -222,10 +222,6 @@ module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone (* <ghost::fn_g
     forall self: (), args: t_F, res_state: (), res: t_F. postcondition_mut_clone self args res_state res
       = (postcondition_clone self args res /\ self = res_state)
   
-  function view_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) : t_F = self.f0
-  
-  meta "rewrite_def" function view_FnGhostWrapper_F
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -239,7 +235,7 @@ module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone (* <ghost::fn_g
       | s2 = return {_ret} ] ]
     [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & self: t_FnGhostWrapper_F = self | & _4: t_F = Any.any_l () ])
     [ return (result: t_FnGhostWrapper_F) -> {([@expl:clone result type invariant] inv_FnGhostWrapper_F result)
-      /\ ([@expl:clone ensures] postcondition_clone () (view_FnGhostWrapper_F self) (view_FnGhostWrapper_F result))}
+      /\ ([@expl:clone ensures] postcondition_clone () self.f0 result.f0)}
       (! return {result}) ]
 end
 module M_ghost__fn_ghost__impl_FnGhostWrapper_F__new (* ghost::fn_ghost::FnGhostWrapper<F> *)
@@ -255,10 +251,6 @@ module M_ghost__fn_ghost__impl_FnGhostWrapper_F__new (* ghost::fn_ghost::FnGhost
   
   axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
   
-  function view_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) : t_F = self.f0
-  
-  meta "rewrite_def" function view_FnGhostWrapper_F
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -268,7 +260,7 @@ module M_ghost__fn_ghost__impl_FnGhostWrapper_F__new (* ghost::fn_ghost::FnGhost
     [ bb0 = s0 [ s0 = [ &_ret <- { f0 = f } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & f: t_F = f ])
     [ return (result: t_FnGhostWrapper_F) -> {([@expl:__new result type invariant] inv_FnGhostWrapper_F result)
-      /\ ([@expl:__new ensures] view_FnGhostWrapper_F result = f)}
+      /\ ([@expl:__new ensures] result.f0 = f)}
       (! return {result}) ]
 end
 module M_ghost__invariant__impl_Clone_for_Namespace__clone (* <ghost::invariant::Namespace as std::clone::Clone> *)
@@ -4162,14 +4154,13 @@ module M_invariant__impl_Clone_for_Subset_T__clone (* <invariant::Subset<T> as s
   
   predicate invariant_T (self: t_T)
   
-  function view_Subset_T (self: t_Subset_T) : t_T
+  function inner_T (self: t_Subset_T) : t_T
   
-  axiom view_Subset_T_spec: forall self: t_Subset_T. invariant_T (view_Subset_T self)
+  axiom inner_T_spec: forall self: t_Subset_T. invariant_T (inner_T self)
   
-  function view_inj_T (self: t_Subset_T) (other: t_Subset_T) : ()
+  function inner_inj_T (self: t_Subset_T) (other: t_Subset_T) : ()
   
-  axiom view_inj_T_spec: forall self: t_Subset_T, other: t_Subset_T. view_Subset_T self = view_Subset_T other
-      -> self = other
+  axiom inner_inj_T_spec: forall self: t_Subset_T, other: t_Subset_T. inner_T self = inner_T other -> self = other
   
   predicate inv_T (_1: t_T)
   
@@ -4185,7 +4176,7 @@ module M_invariant__impl_Clone_for_Subset_T__clone (* <invariant::Subset<T> as s
   
   let rec deref_Subset_T (self: t_Subset_T) (return (x: t_T)) = any
     [ return (result: t_T) -> {([@expl:deref result type invariant] inv_ref_T result)
-      /\ ([@expl:deref ensures] result = view_Subset_T self)}
+      /\ ([@expl:deref ensures] result = inner_T self)}
       (! return {result}) ]
   
   predicate precondition_clone (self: ()) (args: t_T)
@@ -4204,7 +4195,7 @@ module M_invariant__impl_Clone_for_Subset_T__clone (* <invariant::Subset<T> as s
   
   function new_T (x: t_T) : t_Subset_T
   
-  axiom new_T_spec: forall x: t_T. invariant_T x -> view_Subset_T (new_T x) = x
+  axiom new_T_spec: forall x: t_T. invariant_T x -> inner_T (new_T x) = x
   
   let rec new_T'0 (x: t_T) (return (x'0: t_Subset_T)) = {[@expl:new 'x' type invariant] inv_T x}
     any [ return (result: t_Subset_T) -> {[@expl:new ensures] result = new_T x} (! return {result}) ]
@@ -4280,8 +4271,7 @@ module M_invariant__impl_Clone_for_Subset_T__clone (* <invariant::Subset<T> as s
     | & _4: () = Any.any_l ()
     | & _6: t_T = Any.any_l ()
     | & _8: t_T = Any.any_l () ])
-    [ return (result: t_Subset_T) ->
-    {[@expl:clone ensures] postcondition_clone () (view_Subset_T self) (view_Subset_T result)}
+    [ return (result: t_Subset_T) -> {[@expl:clone ensures] postcondition_clone () (inner_T self) (inner_T result)}
       (! return {result}) ]
 end
 module M_logic__fmap__impl_FMap_K_V__ext_eq (* logic::fmap::FMap<K, V> *)
@@ -4299,14 +4289,14 @@ module M_logic__fmap__impl_FMap_K_V__ext_eq (* logic::fmap::FMap<K, V> *)
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function view_inj_K (self: t_FMap_K_V) (other: t_FMap_K_V) : () = ()
+  function to_mapping_inj_K (self: t_FMap_K_V) (other: t_FMap_K_V) : () = ()
   
-  axiom view_inj_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V. view_FMap_K_V self = view_FMap_K_V other
+  axiom to_mapping_inj_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V. to_mapping_K self = to_mapping_K other
       -> self = other
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4339,9 +4329,9 @@ module M_logic__fmap__impl_FMap_K_V__filter (* logic::fmap::FMap<K, V> *)
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4423,9 +4413,9 @@ module M_logic__fmap__impl_FMap_K_V_0__contains_ghost (* logic::fmap::FMap<K, V>
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4561,9 +4551,9 @@ module M_logic__fmap__impl_Index_for_FMap_K_V__index (* <logic::fmap::FMap<K, V>
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4698,9 +4688,9 @@ module M_logic__fmap__impl_IntoIterator_for_FMap_K_V__into_iter (* <logic::fmap:
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4784,9 +4774,9 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -4866,14 +4856,14 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next (* <logic::fmap::FMap
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -4994,9 +4984,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIter_K_V__produces_refl (* <logi
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -5059,9 +5049,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIter_K_V__produces_trans (* <log
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -5133,9 +5123,9 @@ module M_logic__fmap__impl_IntoIterator_for_ref_FMap_K_V__into_iter (* <&'a logi
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -5188,10 +5178,10 @@ module M_logic__fmap__impl_IntoIterator_for_ref_FMap_K_V__into_iter (* <&'a logi
   
   type t_Option_ref_V = None'0 | Some'0 t_V
   
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
   
   function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
+    Map.get (to_mapping_ref_K self) k
   
   meta "rewrite_def" function get_ref_K
   
@@ -5346,9 +5336,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl (* <l
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -5369,10 +5359,10 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl (* <l
   
   type t_Option_ref_V = None'1 | Some'1 t_V
   
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
   
   function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
+    Map.get (to_mapping_ref_K self) k
   
   meta "rewrite_def" function get_ref_K
   
@@ -5431,9 +5421,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_trans (* <
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -5454,10 +5444,10 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_trans (* <
   
   type t_Option_ref_V = None'1 | Some'1 t_V
   
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
   
   function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
+    Map.get (to_mapping_ref_K self) k
   
   meta "rewrite_def" function get_ref_K
   
@@ -13212,9 +13202,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__factor (* <logic::fmap::FMap<K, 
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -13401,9 +13391,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__eq (* <logic::fmap::FMap<K, V> a
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -13559,9 +13549,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__commutative (* <logic::fmap::FMa
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -13702,9 +13692,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__associative (* <logic::fmap::FMa
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -13797,9 +13787,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__core_idemp (* <logic::fmap::FMap
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14028,9 +14018,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__core_is_maximal_idemp (* <logic:
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14261,9 +14251,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit (* <logic::fmap::FMap<K
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14318,7 +14308,7 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit (* <logic::fmap::FMap<K
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None'0)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None'0)
   
   predicate index_Mapping_FMap_K_V_bool [@inline:trivial] (self: Map.map t_FMap_K_V bool) (a: t_FMap_K_V) =
     Map.get self a
@@ -14347,11 +14337,11 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit (* <logic::fmap::FMap<K
   function unit_FMap_K_V : t_FMap_K_V
   
   goal vc_unit_FMap_K_V: (forall x: t_FMap_K_V. ([@expl:empty ensures #0] len_K empty_K = 0)
-          /\ ([@expl:empty ensures #1] view_FMap_K_V empty_K = Const.const (None'0))
+          /\ ([@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None'0))
         -> ([@expl:unwrap_logic requires] op_FMap_K_V x empty_K <> None))
     /\ (forall x: t_FMap_K_V. ext_eq_K (unwrap_Option_FMap_K_V (op_FMap_K_V x empty_K)) x)
     && (([@expl:empty ensures #0] len_K empty_K = 0)
-      /\ ([@expl:empty ensures #1] view_FMap_K_V empty_K = Const.const (None'0))
+      /\ ([@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None'0))
     -> (let result = empty_K in [@expl:unit ensures] forall x: t_FMap_K_V [op_FMap_K_V x result]. op_FMap_K_V x result
       = Some x))
 end
@@ -14424,9 +14414,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__core_total (* <logic::fmap::
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14581,9 +14571,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__core_total_idemp (* <logic::
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14777,9 +14767,9 @@ module M_logic__ra__fmap__impl_FMap_K_V__total_op (* logic::fmap::FMap<K, V> *)
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -14873,9 +14863,9 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -15014,8 +15004,8 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some'0 v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some'0 v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -20020,7 +20010,7 @@ module M_logic__ra__update__impl_LocalUpdate_for_Snapshot_tup2_R_R__frame_preser
     -> ([@expl:frame_preserving ensures] let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
     = Some'0 (Some to_auth))
 end
-module M_logic__ra__view__impl_InhabitedInvariant_for_InnerView_R__inhabits (* <logic::ra::view::InnerView<R> as invariant::InhabitedInvariant> *)
+module M_logic__ra__view__impl_InhabitedInvariant_for_ViewInner_R__inhabits (* <logic::ra::view::ViewInner<R> as invariant::InhabitedInvariant> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -20100,27 +20090,27 @@ module M_logic__ra__view__impl_InhabitedInvariant_for_InnerView_R__inhabits (* <
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  function inhabits_InnerView_R : t_InnerView_R
+  function inhabits_ViewInner_R : t_ViewInner_R
   
-  goal vc_inhabits_InnerView_R: ([@expl:unit ensures] forall x: t_Frag [op_Frag x unit_Frag]. op_Frag x unit_Frag
-        = Some'0 x) -> ([@expl:inhabits ensures] invariant_InnerView_R { auth = None; frag = unit_Frag })
+  goal vc_inhabits_ViewInner_R: ([@expl:unit ensures] forall x: t_Frag [op_Frag x unit_Frag]. op_Frag x unit_Frag
+        = Some'0 x) -> ([@expl:inhabits ensures] invariant_ViewInner_R { auth = None; frag = unit_Frag })
 end
 module M_logic__ra__view__impl_View_R__frag (* logic::ra::view::View<R> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Auth
   
@@ -20197,16 +20187,15 @@ module M_logic__ra__view__impl_View_R__frag (* logic::ra::view::View<R> *)
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
   meta "compute_max_steps" 1000000
   
@@ -20216,8 +20205,8 @@ module M_logic__ra__view__impl_View_R__frag (* logic::ra::view::View<R> *)
   
   function frag_R (self: t_View_R) : t_Frag
   
-  goal vc_frag_R: ([@expl:view ensures] invariant_InnerView_R (view_Subset_InnerView_R self.f0))
-    -> ([@expl:frag ensures] rel_R (auth_R self) (view_Subset_InnerView_R self.f0).frag)
+  goal vc_frag_R: ([@expl:inner ensures] invariant_ViewInner_R (inner_ViewInner_R self.f0))
+    -> ([@expl:frag ensures] rel_R (auth_R self) (inner_ViewInner_R self.f0).frag)
 end
 module M_logic__ra__view__impl_View_R__new (* logic::ra::view::View<R> *)
   type namespace_other
@@ -20299,29 +20288,28 @@ module M_logic__ra__view__impl_View_R__new (* logic::ra::view::View<R> *)
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
   meta "compute_max_steps" 1000000
   
@@ -20334,10 +20322,10 @@ module M_logic__ra__view__impl_View_R__new (* logic::ra::view::View<R> *)
   function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R
   
   goal vc_new_R: rel_R auth'0 frag'0
-    -> ([@expl:new_logic requires] invariant_InnerView_R { auth = auth'0; frag = frag'0 })
-    /\ (([@expl:new_logic ensures] view_Subset_InnerView_R (new_InnerView_R { auth = auth'0; frag = frag'0 })
+    -> ([@expl:new_logic requires] invariant_ViewInner_R { auth = auth'0; frag = frag'0 })
+    /\ (([@expl:new_logic ensures] inner_ViewInner_R (new_ViewInner_R { auth = auth'0; frag = frag'0 })
       = { auth = auth'0; frag = frag'0 })
-    -> (let result = { f0 = new_InnerView_R { auth = auth'0; frag = frag'0 } } in ([@expl:new ensures #0] auth_R result
+    -> (let result = { f0 = new_ViewInner_R { auth = auth'0; frag = frag'0 } } in ([@expl:new ensures #0] auth_R result
       = auth'0)
     /\ ([@expl:new ensures #1] frag_R result = frag'0)))
 end
@@ -20421,31 +20409,30 @@ module M_logic__ra__view__impl_View_R__new_frag (* logic::ra::view::View<R> *)
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -20469,9 +20456,9 @@ module M_logic__ra__view__impl_RA_for_View_R__factor (* <logic::ra::view::View<R
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -20550,29 +20537,28 @@ module M_logic__ra__view__impl_RA_for_View_R__factor (* <logic::ra::view::View<R
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -20591,11 +20577,11 @@ module M_logic__ra__view__impl_RA_for_View_R__factor (* <logic::ra::view::View<R
       | None'0 -> None
       end
   
-  function view_inj_InnerView_R (self: t_Subset_InnerView_R) (other: t_Subset_InnerView_R) : ()
+  function inner_inj_ViewInner_R (self: t_Subset_ViewInner_R) (other: t_Subset_ViewInner_R) : ()
   
-  axiom view_inj_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R, other: t_Subset_InnerView_R. view_Subset_InnerView_R self
-        = view_Subset_InnerView_R other -> self = other
+  axiom inner_inj_ViewInner_R_spec:
+    forall self: t_Subset_ViewInner_R, other: t_Subset_ViewInner_R. inner_ViewInner_R self = inner_ViewInner_R other
+      -> self = other
   
   function new_frag_R [@inline:trivial] (frag'0: t_Frag) : t_View_R = new_R (None'1) frag'0
   
@@ -20650,9 +20636,9 @@ module M_logic__ra__view__impl_RA_for_View_R__eq (* <logic::ra::view::View<R> as
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Auth
   
@@ -20729,24 +20715,23 @@ module M_logic__ra__view__impl_RA_for_View_R__eq (* <logic::ra::view::View<R> as
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function view_inj_InnerView_R (self: t_Subset_InnerView_R) (other: t_Subset_InnerView_R) : ()
+  function inner_inj_ViewInner_R (self: t_Subset_ViewInner_R) (other: t_Subset_ViewInner_R) : ()
   
-  axiom view_inj_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R, other: t_Subset_InnerView_R. view_Subset_InnerView_R self
-        = view_Subset_InnerView_R other -> self = other
+  axiom inner_inj_ViewInner_R_spec:
+    forall self: t_Subset_ViewInner_R, other: t_Subset_ViewInner_R. inner_ViewInner_R self = inner_ViewInner_R other
+      -> self = other
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -20773,9 +20758,9 @@ module M_logic__ra__view__impl_RA_for_View_R__commutative (* <logic::ra::view::V
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -20854,29 +20839,28 @@ module M_logic__ra__view__impl_RA_for_View_R__commutative (* <logic::ra::view::V
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -20914,9 +20898,9 @@ module M_logic__ra__view__impl_RA_for_View_R__associative (* <logic::ra::view::V
   
   use map.Map
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21001,29 +20985,28 @@ module M_logic__ra__view__impl_RA_for_View_R__associative (* <logic::ra::view::V
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -21046,11 +21029,11 @@ module M_logic__ra__view__impl_RA_for_View_R__associative (* <logic::ra::view::V
   
   type tup3_Option_Auth_Option_Auth_Option_Auth = { f0'2: t_Option_Auth; f1'2: t_Option_Auth; f2'2: t_Option_Auth }
   
-  function view_inj_InnerView_R (self: t_Subset_InnerView_R) (other: t_Subset_InnerView_R) : ()
+  function inner_inj_ViewInner_R (self: t_Subset_ViewInner_R) (other: t_Subset_ViewInner_R) : ()
   
-  axiom view_inj_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R, other: t_Subset_InnerView_R. view_Subset_InnerView_R self
-        = view_Subset_InnerView_R other -> self = other
+  axiom inner_inj_ViewInner_R_spec:
+    forall self: t_Subset_ViewInner_R, other: t_Subset_ViewInner_R. inner_ViewInner_R self = inner_ViewInner_R other
+      -> self = other
   
   meta "compute_max_steps" 1000000
   
@@ -21093,9 +21076,9 @@ module M_logic__ra__view__impl_RA_for_View_R__core_idemp (* <logic::ra::view::Vi
   
   use map.Map
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21174,27 +21157,26 @@ module M_logic__ra__view__impl_RA_for_View_R__core_idemp (* <logic::ra::view::Vi
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -21274,9 +21256,9 @@ module M_logic__ra__view__impl_RA_for_View_R__core_is_maximal_idemp (* <logic::r
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21355,29 +21337,28 @@ module M_logic__ra__view__impl_RA_for_View_R__core_is_maximal_idemp (* <logic::r
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -21469,9 +21450,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__unit (* <logic::ra::view::View
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21550,29 +21531,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__unit (* <logic::ra::view::View
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -21622,9 +21602,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total (* <logic::ra::view
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21703,29 +21683,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total (* <logic::ra::view
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -21784,9 +21763,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total_idemp (* <logic::ra
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -21865,29 +21844,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total_idemp (* <logic::ra
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22036,27 +22014,26 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__update (* <logic:
   
   type t_ViewUpdate_R_Choice = { f0'0: Map.map t_Choice tup2_Auth_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'1: t_Subset_InnerView_R }
+  type t_View_R = { f0'1: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'1).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'1).auth
   
   function index_Mapping_Choice_tup2_Auth_Frag [@inline:trivial] (self: Map.map t_Choice tup2_Auth_Frag) (a: t_Choice) : tup2_Auth_Frag
    = Map.get self a
   
   meta "rewrite_def" function index_Mapping_Choice_tup2_Auth_Frag
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'1).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'1).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -22074,12 +22051,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__update (* <logic:
   
   meta "rewrite_def" predicate premise_ViewUpdate_R_Choice
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22191,27 +22168,26 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__frame_preserving 
   
   type t_ViewUpdate_R_Choice = { f0'0: Map.map t_Choice tup2_Auth_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'1: t_Subset_InnerView_R }
+  type t_View_R = { f0'1: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'1).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'1).auth
   
   function index_Mapping_Choice_tup2_Auth_Frag [@inline:trivial] (self: Map.map t_Choice tup2_Auth_Frag) (a: t_Choice) : tup2_Auth_Frag
    = Map.get self a
   
   meta "rewrite_def" function index_Mapping_Choice_tup2_Auth_Frag
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'1).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'1).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -22233,12 +22209,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__frame_preserving 
   
   type tup2_Option_Auth_Option_Auth = { f0'2: t_Option_Auth; f1'2: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22382,20 +22358,19 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__update (* <logic::
   
   type t_ViewUpdateInsert_R = { f0: t_Auth; f1: t_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
   predicate premise_ViewUpdateInsert_R [@inline:trivial] (self: t_ViewUpdateInsert_R) (from: t_View_R) =
     auth_R from <> None
@@ -22407,16 +22382,16 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__update (* <logic::
   
   meta "rewrite_def" predicate premise_ViewUpdateInsert_R
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22525,20 +22500,19 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__frame_preserving (
   
   type t_ViewUpdateInsert_R = { f0: t_Auth; f1: t_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
   predicate premise_ViewUpdateInsert_R [@inline:trivial] (self: t_ViewUpdateInsert_R) (from: t_View_R) =
     auth_R from <> None
@@ -22552,18 +22526,18 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__frame_preserving (
   
   type t_Option_View_R = None'1 | Some'1 t_View_R
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'1: t_Option_Auth; f1'1: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22694,22 +22668,21 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__update (* <logic::
   
   type t_ViewUpdateRemove_R = { f0: t_Auth }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -22722,12 +22695,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__update (* <logic::
   
   meta "rewrite_def" predicate premise_ViewUpdateRemove_R
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -22837,22 +22810,21 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__frame_preserving (
   
   type t_ViewUpdateRemove_R = { f0: t_Auth }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -22869,12 +22841,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__frame_preserving (
   
   type tup2_Option_Auth_Option_Auth = { f0'1: t_Option_Auth; f1'1: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -48667,10 +48639,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -48738,10 +48710,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -48819,10 +48791,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_re
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -48895,10 +48867,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_tr
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -48982,10 +48954,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
-   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
+   = Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -49059,10 +49031,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
-   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
+   = Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -49993,18 +49965,13 @@ module M_ghost__fn_ghost__impl_Clone_for_FnGhostWrapper_F__clone__refines (* <gh
   let rec clone_F (self_: t_F) (return (x: t_F)) = {[@expl:clone requires] precondition_clone () self_}
     any [ return (result: t_F) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
-  function view_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) : t_F = self.f0
-  
-  meta "rewrite_def" function view_FnGhostWrapper_F
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines: forall self_: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self_
       -> inv_ref_FnGhostWrapper_F self_
-      /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result
-          /\ postcondition_clone () (view_FnGhostWrapper_F self_) (view_FnGhostWrapper_F result)
+      /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result /\ postcondition_clone () self_.f0 result.f0
         -> inv_FnGhostWrapper_F result)
 end
 module M_ghost__impl_Clone_for_Ghost_T__clone__refines (* <ghost::Ghost<T> as std::clone::Clone> *)
@@ -50054,9 +50021,9 @@ module M_logic__fmap__impl_Clone_for_FMap_K_V__clone__refines (* <logic::fmap::F
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -50416,11 +50383,11 @@ module M_invariant__impl_Resolve_for_Subset_T__resolve_coherence__refines (* <in
   
   predicate invariant_T (self: t_T)
   
-  function view_Subset_T (self: t_Subset_T) : t_T
+  function inner_T (self: t_Subset_T) : t_T
   
-  axiom view_Subset_T_spec: forall self: t_Subset_T. invariant_T (view_Subset_T self)
+  axiom inner_T_spec: forall self: t_Subset_T. invariant_T (inner_T self)
   
-  predicate resolve_Subset_T [@inline:trivial] (self: t_Subset_T) = resolve_T (view_Subset_T self)
+  predicate resolve_Subset_T [@inline:trivial] (self: t_Subset_T) = resolve_T (inner_T self)
   
   meta "rewrite_def" predicate resolve_Subset_T
   
@@ -50446,9 +50413,9 @@ module M_logic__fmap__impl_Resolve_for_FMap_K_V__resolve_coherence__refines (* <
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -50522,9 +50489,9 @@ module M_logic__fmap__impl_Resolve_for_FMapIter_K_V__resolve_coherence__refines 
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -51371,11 +51338,11 @@ module M_invariant__impl_PartialEq_for_Subset_T__eq__refines (* <invariant::Subs
   
   predicate invariant_T (self: t_T)
   
-  function view_Subset_T (self: t_Subset_T) : t_T
+  function inner_T (self: t_Subset_T) : t_T
   
-  axiom view_Subset_T_spec: forall self: t_Subset_T. invariant_T (view_Subset_T self)
+  axiom inner_T_spec: forall self: t_Subset_T. invariant_T (inner_T self)
   
-  function deep_model_Subset_T [@inline:trivial] (self: t_Subset_T) : t_DeepModelTy = deep_model_T (view_Subset_T self)
+  function deep_model_Subset_T [@inline:trivial] (self: t_Subset_T) : t_DeepModelTy = deep_model_T (inner_T self)
   
   meta "rewrite_def" function deep_model_Subset_T
   
@@ -51500,9 +51467,9 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next__refines (* <logic::f
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -51616,7 +51583,7 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next__refines (* <logic::f
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
@@ -51624,8 +51591,8 @@ module M_logic__fmap__impl_Iterator_for_FMapIter_K_V__next__refines (* <logic::f
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -51670,10 +51637,10 @@ module M_logic__fmap__impl_Iterator_for_FMapIterRef_K_V__next__refines (* <logic
   
   type t_Option_ref_V = None | Some t_V
   
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
   
   function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
+    Map.get (to_mapping_ref_K self) k
   
   meta "rewrite_def" function get_ref_K
   
@@ -51770,9 +51737,9 @@ module M_logic__fmap__impl_Iterator_for_FMapIterRef_K_V__next__refines (* <logic
   
   type t_Option_V = None'1 | Some'1 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -51788,7 +51755,7 @@ module M_logic__fmap__impl_Iterator_for_FMapIterRef_K_V__next__refines (* <logic
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None'1)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None'1)
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
@@ -52260,9 +52227,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIter_K_V__produces_trans__refine
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -52326,9 +52293,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIter_K_V__produces_refl__refines
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -52358,92 +52325,6 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIter_K_V__produces_refl__refines
   goal refines:
     forall self: t_FMapIter_K_V. forall result: (). produces_FMapIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
         -> produces_FMapIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
-end
-module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_trans__refines (* <logic::fmap::FMapIterRef<'a, K, V> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use mach.int.Int
-  use map.Map
-  
-  type t_FMap_ref_K_ref_V
-  
-  type t_FMapIterRef_K_V = { inner: t_FMap_ref_K_ref_V }
-  
-  type t_K
-  
-  type t_V
-  
-  type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
-  
-  type t_Option_tup2_ref_K_ref_V = None | Some tup2_ref_K_ref_V
-  
-  function get_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (ix: int) : t_Option_tup2_ref_K_ref_V = if 0 <= ix
-    /\ ix < Seq.length self then
-      Some (Seq.get self ix)
-    else
-      None
-  
-  
-  type t_FMap_K_V
-  
-  type t_Option_V = None'0 | Some'0 t_V
-  
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
-  
-  meta "rewrite_def" function get_K
-  
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
-  
-  meta "rewrite_def" predicate contains_K
-  
-  predicate index_Mapping_FMap_K_V_bool [@inline:trivial] (self: Map.map t_FMap_K_V bool) (a: t_FMap_K_V) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_FMap_K_V_bool
-  
-  function such_that_FMap_K_V (p: Map.map t_FMap_K_V bool) : t_FMap_K_V
-  
-  axiom such_that_FMap_K_V_spec:
-    forall p: Map.map t_FMap_K_V bool. (exists x: t_FMap_K_V. index_Mapping_FMap_K_V_bool p x)
-      -> index_Mapping_FMap_K_V_bool p (such_that_FMap_K_V p)
-  
-  type t_Option_ref_V = None'1 | Some'1 t_V
-  
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
-  
-  function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
-  
-  meta "rewrite_def" function get_ref_K
-  
-  function view_FMapIterRef_K_V (self: t_FMapIterRef_K_V) : t_FMap_K_V =
-    such_that_FMap_K_V (fun (m: t_FMap_K_V) -> forall k: t_K, v: t_V. (get_K m k = Some'0 v)
-      = (get_ref_K self.inner k = Some'1 v))
-  
-  predicate produces_FMapIterRef_K_V (self: t_FMapIterRef_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_FMapIterRef_K_V) =
-    (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_ref_K_ref_V visited i = Some { f0 = k; f1 = v }
-        -> not contains_K (view_FMapIterRef_K_V o) k /\ get_K (view_FMapIterRef_K_V self) k = Some'0 v)
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K (view_FMapIterRef_K_V o) k = get_K (view_FMapIterRef_K_V self) k)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_FMapIterRef_K_V. forall ab: Seq.seq tup2_ref_K_ref_V. forall b: t_FMapIterRef_K_V. forall bc: Seq.seq tup2_ref_K_ref_V. forall c: t_FMapIterRef_K_V. produces_FMapIterRef_K_V a ab b
-                /\ produces_FMapIterRef_K_V b bc c
-              -> produces_FMapIterRef_K_V a ab b
-              /\ produces_FMapIterRef_K_V b bc c
-              /\ (forall result: (). produces_FMapIterRef_K_V a (Seq.(++) ab bc) c
-                -> produces_FMapIterRef_K_V a (Seq.(++) ab bc) c)
 end
 module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl__refines (* <logic::fmap::FMapIterRef<'a, K, V> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -52477,9 +52358,9 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl__refi
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -52500,10 +52381,10 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl__refi
   
   type t_Option_ref_V = None'1 | Some'1 t_V
   
-  function view_FMap_ref_K_ref_V (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
   
   function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
-    Map.get (view_FMap_ref_K_ref_V self) k
+    Map.get (to_mapping_ref_K self) k
   
   meta "rewrite_def" function get_ref_K
   
@@ -52526,6 +52407,92 @@ module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_refl__refi
   goal refines:
     forall self: t_FMapIterRef_K_V. forall result: (). produces_FMapIterRef_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
         -> produces_FMapIterRef_K_V self (Seq.empty: Seq.seq tup2_ref_K_ref_V) self
+end
+module M_logic__fmap__impl_IteratorSpec_for_FMapIterRef_K_V__produces_trans__refines (* <logic::fmap::FMapIterRef<'a, K, V> as std::iter::IteratorSpec> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use mach.int.Int
+  use map.Map
+  
+  type t_FMap_ref_K_ref_V
+  
+  type t_FMapIterRef_K_V = { inner: t_FMap_ref_K_ref_V }
+  
+  type t_K
+  
+  type t_V
+  
+  type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+  
+  type t_Option_tup2_ref_K_ref_V = None | Some tup2_ref_K_ref_V
+  
+  function get_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (ix: int) : t_Option_tup2_ref_K_ref_V = if 0 <= ix
+    /\ ix < Seq.length self then
+      Some (Seq.get self ix)
+    else
+      None
+  
+  
+  type t_FMap_K_V
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+  
+  meta "rewrite_def" predicate contains_K
+  
+  predicate index_Mapping_FMap_K_V_bool [@inline:trivial] (self: Map.map t_FMap_K_V bool) (a: t_FMap_K_V) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_FMap_K_V_bool
+  
+  function such_that_FMap_K_V (p: Map.map t_FMap_K_V bool) : t_FMap_K_V
+  
+  axiom such_that_FMap_K_V_spec:
+    forall p: Map.map t_FMap_K_V bool. (exists x: t_FMap_K_V. index_Mapping_FMap_K_V_bool p x)
+      -> index_Mapping_FMap_K_V_bool p (such_that_FMap_K_V p)
+  
+  type t_Option_ref_V = None'1 | Some'1 t_V
+  
+  function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+  
+  function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
+    Map.get (to_mapping_ref_K self) k
+  
+  meta "rewrite_def" function get_ref_K
+  
+  function view_FMapIterRef_K_V (self: t_FMapIterRef_K_V) : t_FMap_K_V =
+    such_that_FMap_K_V (fun (m: t_FMap_K_V) -> forall k: t_K, v: t_V. (get_K m k = Some'0 v)
+      = (get_ref_K self.inner k = Some'1 v))
+  
+  predicate produces_FMapIterRef_K_V (self: t_FMapIterRef_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_FMapIterRef_K_V) =
+    (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
+        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_ref_K_ref_V visited i = Some { f0 = k; f1 = v }
+        -> not contains_K (view_FMapIterRef_K_V o) k /\ get_K (view_FMapIterRef_K_V self) k = Some'0 v)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
+      -> get_K (view_FMapIterRef_K_V o) k = get_K (view_FMapIterRef_K_V self) k)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: t_FMapIterRef_K_V. forall ab: Seq.seq tup2_ref_K_ref_V. forall b: t_FMapIterRef_K_V. forall bc: Seq.seq tup2_ref_K_ref_V. forall c: t_FMapIterRef_K_V. produces_FMapIterRef_K_V a ab b
+                /\ produces_FMapIterRef_K_V b bc c
+              -> produces_FMapIterRef_K_V a ab b
+              /\ produces_FMapIterRef_K_V b bc c
+              /\ (forall result: (). produces_FMapIterRef_K_V a (Seq.(++) ab bc) c
+                -> produces_FMapIterRef_K_V a (Seq.(++) ab bc) c)
 end
 module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -55238,10 +55205,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -55306,10 +55273,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -55378,10 +55345,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_re
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -55451,10 +55418,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_tr
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_DeepModelTy_V (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
-    Map.get (view_FMap_DeepModelTy_V self) k
+    Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -55528,10 +55495,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
-   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
+   = Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -55606,10 +55573,10 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
   
   type t_Option_refmut_V = None | Some (MutBorrow.t t_V)
   
-  function view_FMap_DeepModelTy_refmut_V (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_refmut_V) : Map.map t_DeepModelTy t_Option_refmut_V
   
   function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_refmut_V) (k: t_DeepModelTy) : t_Option_refmut_V
-   = Map.get (view_FMap_DeepModelTy_refmut_V self) k
+   = Map.get (to_mapping_DeepModelTy self) k
   
   meta "rewrite_def" function get_DeepModelTy
   
@@ -63884,9 +63851,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__core_idemp__refines (* <logic::f
   
   type t_Option_V = None'0 | Some'0 t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -64103,9 +64070,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__associative__refines (* <logic::
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -64227,9 +64194,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__factor__refines (* <logic::fmap:
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -64354,9 +64321,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__core_is_maximal_idemp__refines (
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -64576,9 +64543,9 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__commutative__refines (* <logic::
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -66347,9 +66314,9 @@ module M_logic__ra__view__impl_RA_for_View_R__commutative__refines (* <logic::ra
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -66428,29 +66395,28 @@ module M_logic__ra__view__impl_RA_for_View_R__commutative__refines (* <logic::ra
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -66483,9 +66449,9 @@ module M_logic__ra__view__impl_RA_for_View_R__core_idemp__refines (* <logic::ra:
   
   use map.Map
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -66564,27 +66530,26 @@ module M_logic__ra__view__impl_RA_for_View_R__core_idemp__refines (* <logic::ra:
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -66643,9 +66608,9 @@ module M_logic__ra__view__impl_RA_for_View_R__associative__refines (* <logic::ra
   
   use map.Map
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -66730,29 +66695,28 @@ module M_logic__ra__view__impl_RA_for_View_R__associative__refines (* <logic::ra
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -66786,9 +66750,9 @@ module M_logic__ra__view__impl_RA_for_View_R__eq__refines (* <logic::ra::view::V
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   meta "compute_max_steps" 1000000
   
@@ -66802,9 +66766,9 @@ module M_logic__ra__view__impl_RA_for_View_R__core_is_maximal_idemp__refines (* 
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -66883,29 +66847,28 @@ module M_logic__ra__view__impl_RA_for_View_R__core_is_maximal_idemp__refines (* 
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -66967,9 +66930,9 @@ module M_logic__ra__view__impl_RA_for_View_R__factor__refines (* <logic::ra::vie
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -67048,29 +67011,28 @@ module M_logic__ra__view__impl_RA_for_View_R__factor__refines (* <logic::ra::vie
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -68677,27 +68639,26 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__frame_preserving_
   
   type t_ViewUpdate_R_Choice = { f0'0: Map.map t_Choice tup2_Auth_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'1: t_Subset_InnerView_R }
+  type t_View_R = { f0'1: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'1).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'1).auth
   
   function index_Mapping_Choice_tup2_Auth_Frag [@inline:trivial] (self: Map.map t_Choice tup2_Auth_Frag) (a: t_Choice) : tup2_Auth_Frag
    = Map.get self a
   
   meta "rewrite_def" function index_Mapping_Choice_tup2_Auth_Frag
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'1).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'1).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -68719,12 +68680,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__frame_preserving_
   
   type tup2_Option_Auth_Option_Auth = { f0'2: t_Option_Auth; f1'2: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -68853,27 +68814,26 @@ module M_logic__ra__view__impl_Update_for_ViewUpdate_R_Choice__update__refines (
   
   type t_ViewUpdate_R_Choice = { f0'0: Map.map t_Choice tup2_Auth_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'1: t_Subset_InnerView_R }
+  type t_View_R = { f0'1: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'1).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'1).auth
   
   function index_Mapping_Choice_tup2_Auth_Frag [@inline:trivial] (self: Map.map t_Choice tup2_Auth_Frag) (a: t_Choice) : tup2_Auth_Frag
    = Map.get self a
   
   meta "rewrite_def" function index_Mapping_Choice_tup2_Auth_Frag
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'1).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'1).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -68981,20 +68941,19 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__frame_preserving__
   
   type t_ViewUpdateInsert_R = { f0: t_Auth; f1: t_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
   predicate premise_ViewUpdateInsert_R [@inline:trivial] (self: t_ViewUpdateInsert_R) (from: t_View_R) =
     auth_R from <> None
@@ -69008,18 +68967,18 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__frame_preserving__
   
   type t_Option_View_R = None'1 | Some'1 t_View_R
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'1: t_Option_Auth; f1'1: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -69145,20 +69104,19 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateInsert_R__update__refines (*
   
   type t_ViewUpdateInsert_R = { f0: t_Auth; f1: t_Frag }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
   predicate premise_ViewUpdateInsert_R [@inline:trivial] (self: t_ViewUpdateInsert_R) (from: t_View_R) =
     auth_R from <> None
@@ -69260,22 +69218,21 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__update__refines (*
   
   type t_ViewUpdateRemove_R = { f0: t_Auth }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -69378,22 +69335,21 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__frame_preserving__
   
   type t_ViewUpdateRemove_R = { f0: t_Auth }
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0'0: t_Subset_InnerView_R }
+  type t_View_R = { f0'0: t_Subset_ViewInner_R }
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0'0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0'0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
@@ -69410,12 +69366,12 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__frame_preserving__
   
   type tup2_Option_Auth_Option_Auth = { f0'1: t_Option_Auth; f1'1: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'0 = new_ViewInner_R { auth = auth'0;
                                                                                                   frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -69532,9 +69488,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit__refines (* <logic::fma
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -69657,9 +69613,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__core_total__refines (* <logi
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -69803,9 +69759,9 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__core_total_idemp__refines (*
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -70523,9 +70479,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__unit__refines (* <logic::ra::v
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -70604,29 +70560,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__unit__refines (* <logic::ra::v
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -70661,9 +70616,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total__refines (* <logic:
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -70742,29 +70697,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total__refines (* <logic:
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -70805,9 +70759,9 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total_idemp__refines (* <
   
   type t_Namespace = Other namespace_other
   
-  type t_Subset_InnerView_R
+  type t_Subset_ViewInner_R
   
-  type t_View_R = { f0: t_Subset_InnerView_R }
+  type t_View_R = { f0: t_Subset_ViewInner_R }
   
   type t_Option_View_R = None | Some t_View_R
   
@@ -70886,29 +70840,28 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total_idemp__refines (* <
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
-  function view_Subset_InnerView_R (self: t_Subset_InnerView_R) : t_InnerView_R
+  function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
   
-  axiom view_Subset_InnerView_R_spec:
-    forall self: t_Subset_InnerView_R. invariant_InnerView_R (view_Subset_InnerView_R self)
+  axiom inner_ViewInner_R_spec: forall self: t_Subset_ViewInner_R. invariant_ViewInner_R (inner_ViewInner_R self)
   
-  function auth_R (self: t_View_R) : t_Option_Auth = (view_Subset_InnerView_R self.f0).auth
+  function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0).auth
   
-  function frag_R (self: t_View_R) : t_Frag = (view_Subset_InnerView_R self.f0).frag
+  function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0).frag
   
   axiom frag_R_spec: forall self: t_View_R. rel_R (auth_R self) (frag_R self)
   
   type tup2_Option_Auth_Option_Auth = { f0'0: t_Option_Auth; f1'0: t_Option_Auth }
   
-  function new_InnerView_R (x: t_InnerView_R) : t_Subset_InnerView_R
+  function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
   
-  axiom new_InnerView_R_spec: forall x: t_InnerView_R. invariant_InnerView_R x
-      -> view_Subset_InnerView_R (new_InnerView_R x) = x
+  axiom new_ViewInner_R_spec: forall x: t_ViewInner_R. invariant_ViewInner_R x
+      -> inner_ViewInner_R (new_ViewInner_R x) = x
   
-  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_InnerView_R { auth = auth'0;
+  function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0 = new_ViewInner_R { auth = auth'0;
                                                                                                 frag = frag'0 } }
   
   axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag. rel_R auth'0 frag'0
@@ -70977,9 +70930,9 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -71124,8 +71077,8 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -71779,7 +71732,7 @@ module M_logic__ra__update__impl_LocalUpdate_for_Snapshot_tup2_R_R__frame_preser
               -> (let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
               = Some'0 (Some to_auth)))
 end
-module M_logic__ra__view__impl_InhabitedInvariant_for_InnerView_R__inhabits__refines (* <logic::ra::view::InnerView<R> as invariant::InhabitedInvariant> *)
+module M_logic__ra__view__impl_InhabitedInvariant_for_ViewInner_R__inhabits__refines (* <logic::ra::view::ViewInner<R> as invariant::InhabitedInvariant> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -71859,15 +71812,15 @@ module M_logic__ra__view__impl_InhabitedInvariant_for_InnerView_R__inhabits__ref
   
   axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
   
-  type t_InnerView_R = { auth: t_Option_Auth; frag: t_Frag }
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
   
-  predicate invariant_InnerView_R (self: t_InnerView_R) = rel_R self.auth self.frag
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall result: t_InnerView_R. invariant_InnerView_R result -> invariant_InnerView_R result
+  goal refines: forall result: t_ViewInner_R. invariant_ViewInner_R result -> invariant_ViewInner_R result
 end
 module M_logic__well_founded__impl_WellFounded_for_Int__no_infinite_decreasing_sequence__refines (* <logic::int::Int as logic::well_founded::WellFounded> *)
   type namespace_other

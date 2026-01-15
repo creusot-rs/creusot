@@ -22,7 +22,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
 /// trivial precondition: simplification for sake of proof complexity
 #[logic(open, prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f: F, i: A> f.precondition((i,)) }
+    pearlite! { forall<f: F, i: A> inv(f) && inv(i) ==> f.precondition((i,)) }
 }
 
 /// immutable state: simplification for sake of proof complexity

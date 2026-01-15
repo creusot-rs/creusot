@@ -10,10 +10,10 @@ module M_ghost_map
   
   type t_Option_i32 = None | Some Int32.t
   
-  function view_FMap_i32_i32 (self: t_FMap_i32_i32) : Map.map Int32.t t_Option_i32
+  function to_mapping_i32 (self: t_FMap_i32_i32) : Map.map Int32.t t_Option_i32
   
   function get_i32 [@inline:trivial] (self: t_FMap_i32_i32) (k: Int32.t) : t_Option_i32 =
-    Map.get (view_FMap_i32_i32 self) k
+    Map.get (to_mapping_i32 self) k
   
   meta "rewrite_def" function get_i32
   
@@ -30,7 +30,7 @@ module M_ghost_map
   
   axiom empty_i32_spec: len_i32 empty_i32 = 0
   
-  axiom empty_i32_spec'0: view_FMap_i32_i32 empty_i32 = Const.const (None)
+  axiom empty_i32_spec'0: to_mapping_i32 empty_i32 = Const.const (None)
   
   predicate is_empty_i32 (self: t_FMap_i32_i32) = ext_eq_i32 self empty_i32
   
@@ -46,8 +46,8 @@ module M_ghost_map
   
   function insert_i32 (self: t_FMap_i32_i32) (k: Int32.t) (v: Int32.t) : t_FMap_i32_i32
   
-  axiom insert_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t. view_FMap_i32_i32 (insert_i32 self k v)
-      = Map.set (view_FMap_i32_i32 self) k (Some v)
+  axiom insert_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t. to_mapping_i32 (insert_i32 self k v)
+      = Map.set (to_mapping_i32 self) k (Some v)
   
   axiom insert_i32_spec'0: forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t. len_i32 (insert_i32 self k v)
       = (if contains_i32 self k then len_i32 self else len_i32 self + 1)
@@ -123,8 +123,8 @@ module M_ghost_map
   
   function remove_i32 (self: t_FMap_i32_i32) (k: Int32.t) : t_FMap_i32_i32
   
-  axiom remove_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t. view_FMap_i32_i32 (remove_i32 self k)
-      = Map.set (view_FMap_i32_i32 self) k (None)
+  axiom remove_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t. to_mapping_i32 (remove_i32 self k)
+      = Map.set (to_mapping_i32 self) k (None)
   
   axiom remove_i32_spec'0: forall self: t_FMap_i32_i32, k: Int32.t. len_i32 (remove_i32 self k)
       = (if contains_i32 self k then len_i32 self - 1 else len_i32 self)

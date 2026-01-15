@@ -70,7 +70,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
         pearlite! {
             forall<e: I::Item, i: I>
                 #[trigger(iter.produces(Seq::singleton(e), i))]
-                iter.produces(Seq::singleton(e), i) ==>
+                inv(e) && iter.produces(Seq::singleton(e), i) ==>
                 func.precondition((e,))
         }
     }
@@ -81,6 +81,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
                 func.hist_inv(*f) ==>
+                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).postcondition_mut((e1,), ^f, b) ==>
                 (^f).precondition((e2, ))
@@ -97,6 +98,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     }
 
     #[logic]
+    #[requires(inv(e) && inv(f))]
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
@@ -136,7 +138,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
 }
 
 #[requires(forall<e: I::Item, i2: I>
-                iter.produces(Seq::singleton(e), i2) ==>
+                iter.produces(Seq::singleton(e), i2) && inv(e) ==>
                 func.precondition((e,)))]
 #[requires(Map::<I, F>::reinitialize())]
 #[requires(Map::<I, F>::preservation(iter, func))]

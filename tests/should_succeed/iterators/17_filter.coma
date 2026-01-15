@@ -22,9 +22,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common:
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -108,9 +121,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -319,7 +345,8 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   
   predicate resolve_Item (_1: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate immutable_ref_Item (_1: t_F) = forall f: t_F, g: t_F. hist_inv_F f g -> f = g
   
@@ -505,9 +532,20 @@ module M_filter
   
   predicate immutable_ref_Item (_1: t_P) = forall f: t_P, g: t_P. hist_inv_P f g -> f = g
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_P (self: t_P) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_P) = forall f: t_P, i: t_Item. precondition_P f i
+  predicate no_precondition_ref_Item (_1: t_P) =
+    forall f: t_P, i: t_Item. inv_P f /\ inv_ref_Item i -> precondition_P f i
   
   predicate precise_ref_Item (_1: t_P) =
     forall f1: t_P, f2: t_P, i: t_Item. not (postcondition_mut_P f1 i f2 true /\ postcondition_mut_P f1 i f2 false)
@@ -835,6 +873,8 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   type t_Filter_I_F = { iter: t_I; func: t_F }
   
+  predicate inv_F (_1: t_F)
+  
   type t_Item
   
   predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
@@ -848,9 +888,20 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -890,8 +941,6 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   predicate inv_I (_1: t_I)
   
-  predicate inv_F (_1: t_F)
-  
   predicate inv_Filter_I_F (_1: t_Filter_I_F)
   
   axiom inv_axiom [@rewrite]: forall x: t_Filter_I_F [inv_Filter_I_F x]. inv_Filter_I_F x
@@ -907,8 +956,6 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   meta "rewrite_def" predicate inv_refmut_Filter_I_F
   
   type t_Option_Item = None | Some t_Item
-  
-  predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
@@ -979,9 +1026,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl__refines (* <Filter<I, F> a
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -1061,9 +1121,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans__refines (* <Filter<I, F> 
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   

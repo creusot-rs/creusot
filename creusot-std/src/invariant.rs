@@ -140,27 +140,23 @@ pub trait InhabitedInvariant: Invariant {
 #[opaque]
 pub struct Subset<T: InhabitedInvariant>(T);
 
-impl<T: InhabitedInvariant> View for Subset<T> {
-    type ViewTy = T;
-
-    #[trusted]
-    #[logic(opaque)]
-    #[ensures(result.invariant())]
-    fn view(self) -> T {
-        dead
-    }
-}
-
 impl<T: InhabitedInvariant + DeepModel> DeepModel for Subset<T> {
     type DeepModelTy = T::DeepModelTy;
 
     #[logic(inline)]
     fn deep_model(self) -> T::DeepModelTy {
-        pearlite! { self@.deep_model() }
+        pearlite! { self.inner().deep_model() }
     }
 }
 
 impl<T: InhabitedInvariant> Subset<T> {
+    #[trusted]
+    #[logic(opaque)]
+    #[ensures(result.invariant())]
+    pub fn inner(self) -> T {
+        dead
+    }
+
     /// Create a new element of `Subset<T>` in logic.
     ///
     /// As per the [documentation of Subset](Subset), the returned value will
@@ -168,7 +164,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     #[trusted]
     #[logic(opaque)]
     #[requires(x.invariant())]
-    #[ensures(result@ == x)]
+    #[ensures(result.inner() == x)]
     pub fn new_logic(x: T) -> Self {
         let _ = x;
         dead
@@ -180,18 +176,18 @@ impl<T: InhabitedInvariant> Subset<T> {
     ///
     /// ```
     /// # use creusot_std::{invariant::Subset, prelude::*};
-    /// #[requires(x == y@)]
+    /// #[requires(x == y.inner())]
     /// fn foo<T: InhabitedInvariant>(x: T, y: Subset<T>) {
     ///     let x = Subset::new(x);
-    ///     let _ = snapshot!(Subset::<T>::view_inj);
+    ///     let _ = snapshot!(Subset::<T>::inner_inj);
     ///     proof_assert!(x == y);
     /// }
     /// ```
     #[trusted]
     #[logic(opaque)]
-    #[requires(self@ == other@)]
+    #[requires(self.inner() == other.inner())]
     #[ensures(self == other)]
-    pub fn view_inj(self, other: Self) {}
+    pub fn inner_inj(self, other: Self) {}
 
     /// Create a new element of `Subset<T>`.
     ///
@@ -208,7 +204,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// #     fn inhabits() -> Self { Self(0i32) } }
     ///
     /// let p = Subset::new(Pair(0));
-    /// proof_assert!(p@.0 == 0i32);
+    /// proof_assert!(p.inner().0 == 0i32);
     /// ```
     #[check(ghost)]
     #[trusted]
@@ -240,7 +236,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// ```
     #[check(ghost)]
     #[trusted]
-    #[ensures(result == self@)]
+    #[ensures(result == self.inner())]
     pub fn into_inner(self) -> T {
         self.0
     }
@@ -251,7 +247,7 @@ impl<T: InhabitedInvariant> Deref for Subset<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[ensures(*result == self@)]
+    #[ensures(*result == self.inner())]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -260,17 +256,17 @@ impl<T: InhabitedInvariant> Deref for Subset<T> {
 impl<T: InhabitedInvariant> DerefMut for Subset<T> {
     #[check(ghost)]
     #[trusted]
-    #[ensures(*result == self@)]
-    #[ensures(^result == (^self)@)]
+    #[ensures(*result == self.inner())]
+    #[ensures(^result == (^self).inner())]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
-    #[ensures(T::clone.postcondition((&(self@),), result@))]
+    #[ensures(T::clone.postcondition((&(self.inner()),), result.inner()))]
     fn clone(&self) -> Self {
-        snapshot! { Self::view_inj };
+        snapshot! { Self::inner_inj };
         Self::new(self.deref().clone())
     }
 }
@@ -280,7 +276,7 @@ impl<T: InhabitedInvariant + Copy> Copy for Subset<T> {}
 impl<T: InhabitedInvariant> Resolve for Subset<T> {
     #[logic(open, prophetic, inline)]
     fn resolve(self) -> bool {
-        pearlite! { resolve(self@) }
+        pearlite! { resolve(self.inner()) }
     }
 
     #[trusted]
