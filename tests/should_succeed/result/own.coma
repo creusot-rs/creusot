@@ -71,7 +71,7 @@ module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
   
   let rec is_ok_T (self: t_OwnResult_T_E) (return (x: bool)) =
     {[@expl:is_ok 'self' type invariant] inv_ref_OwnResult_T_E self}
-    any [ return (result: bool) -> {result = (exists t: t_T. self = Ok t)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_ok ensures] result = (exists t: t_T. self = Ok t)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -154,9 +154,9 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
     | & self: t_OwnResult_T_E = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
-    [ return (result: t_Option_T) -> {[@expl:ok result type invariant] inv_Option_T result}
-      {[@expl:ok ensures #0] forall t: t_T. self = Ok t -> result = Some t}
-      {[@expl:ok ensures #1] (exists e: t_E. self = Err e) -> result = None}
+    [ return (result: t_Option_T) -> {([@expl:ok result type invariant] inv_Option_T result)
+      /\ ([@expl:ok ensures #0] forall t: t_T. self = Ok t -> result = Some t)
+      /\ ([@expl:ok ensures #1] (exists e: t_E. self = Err e) -> result = None)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
@@ -228,9 +228,9 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
     | & self: t_OwnResult_T_E = self
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
-    [ return (result: t_Option_E) -> {[@expl:err result type invariant] inv_Option_E result}
-      {[@expl:err ensures #0] (exists t: t_T. self = Ok t) -> result = None}
-      {[@expl:err ensures #1] forall e: t_E. self = Err e -> result = Some e}
+    [ return (result: t_Option_E) -> {([@expl:err result type invariant] inv_Option_E result)
+      /\ ([@expl:err ensures #0] (exists t: t_T. self = Ok t) -> result = None)
+      /\ ([@expl:err ensures #1] forall e: t_E. self = Err e -> result = Some e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
@@ -324,9 +324,9 @@ module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
     | & x: t_T = Any.any_l ()
     | & x'0: t_E = Any.any_l () ])
     [ return (result: t_OwnResult_ref_T_ref_E) ->
-    {[@expl:as_ref result type invariant] inv_OwnResult_ref_T_ref_E result}
-      {[@expl:as_ref ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t}
-      {[@expl:as_ref ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
+    {([@expl:as_ref result type invariant] inv_OwnResult_ref_T_ref_E result)
+      /\ ([@expl:as_ref ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
+      /\ ([@expl:as_ref ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
@@ -465,11 +465,11 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
     | & x'0: MutBorrow.t t_E = Any.any_l ()
     | & _8: MutBorrow.t t_E = Any.any_l () ])
     [ return (result: t_OwnResult_refmut_T_refmut_E) ->
-    {[@expl:as_mut result type invariant] inv_OwnResult_refmut_T_refmut_E result}
-      {[@expl:as_mut ensures] exists t: MutBorrow.t t_T. self.current = Ok (t.current)
+    {([@expl:as_mut result type invariant] inv_OwnResult_refmut_T_refmut_E result)
+      /\ ([@expl:as_mut ensures] exists t: MutBorrow.t t_T. self.current = Ok (t.current)
           /\ self.final = Ok (t.final) /\ result = Ok'0 t
         \/ (exists e: MutBorrow.t t_E. self.current = Err (e.current)
-          /\ self.final = Err (e.final) /\ result = Err'0 e)}
+          /\ self.final = Err (e.final) /\ result = Err'0 e))}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
@@ -516,8 +516,8 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec unwrap_T (self: t_OwnResult_T_E) (return (x: t_T)) =
-    {[@expl:unwrap 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:unwrap requires] exists t: t_T. self = Ok t}
+    {([@expl:unwrap 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:unwrap requires] exists t: t_T. self = Ok t)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
@@ -531,8 +531,8 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
     | & self: t_OwnResult_T_E = self
     | & t: t_T = Any.any_l ()
     | & _e: t_E = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:unwrap result type invariant] inv_T result}
-      {[@expl:unwrap ensures] Ok result = self}
+    [ return (result: t_T) -> {([@expl:unwrap result type invariant] inv_T result)
+      /\ ([@expl:unwrap ensures] Ok result = self)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
@@ -579,8 +579,8 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec expect_T (self: t_OwnResult_T_E) (msg: string) (return (x: t_T)) =
-    {[@expl:expect 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:expect requires] exists t: t_T. self = Ok t}
+    {([@expl:expect 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:expect requires] exists t: t_T. self = Ok t)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
@@ -594,8 +594,8 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
     | & self: t_OwnResult_T_E = self
     | & t: t_T = Any.any_l ()
     | & _e: t_E = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:expect result type invariant] inv_T result}
-      {[@expl:expect ensures] Ok result = self}
+    [ return (result: t_T) -> {([@expl:expect result type invariant] inv_T result)
+      /\ ([@expl:expect ensures] Ok result = self)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
@@ -642,8 +642,8 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec unwrap_err_T (self: t_OwnResult_T_E) (return (x: t_E)) =
-    {[@expl:unwrap_err 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:unwrap_err requires] exists e: t_E. self = Err e}
+    {([@expl:unwrap_err 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:unwrap_err requires] exists e: t_E. self = Err e)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0 [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- e ] s2 | s2 = return {_ret} ]
@@ -656,8 +656,8 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
     | & self: t_OwnResult_T_E = self
     | & _t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_E) -> {[@expl:unwrap_err result type invariant] inv_E result}
-      {[@expl:unwrap_err ensures] Err result = self}
+    [ return (result: t_E) -> {([@expl:unwrap_err result type invariant] inv_E result)
+      /\ ([@expl:unwrap_err ensures] Err result = self)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
@@ -706,8 +706,8 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec unwrap_or_T (self: t_OwnResult_T_E) (default: t_T) (return (x: t_T)) =
-    {[@expl:unwrap_or 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:unwrap_or 'default' type invariant] inv_T default}
+    {([@expl:unwrap_or 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:unwrap_or 'default' type invariant] inv_T default)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
@@ -727,9 +727,9 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
     | & default: t_T = default
     | & t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:unwrap_or result type invariant] inv_T result}
-      {[@expl:unwrap_or ensures #0] forall t: t_T. self = Ok t -> result = t}
-      {[@expl:unwrap_or ensures #1] (exists e: t_E. self = Err e) -> result = default}
+    [ return (result: t_T) -> {([@expl:unwrap_or result type invariant] inv_T result)
+      /\ ([@expl:unwrap_or ensures #0] forall t: t_T. self = Ok t -> result = t)
+      /\ ([@expl:unwrap_or ensures #1] (exists e: t_E. self = Err e) -> result = default)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
@@ -777,7 +777,8 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
       -> (let () = args in inv_T res)
   
   let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
-    any [ return (result: t_T) -> {postcondition_once_default () () result} (! return {result}) ]
+    any
+    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
   
   let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
@@ -858,9 +859,9 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & self: t_OwnResult_T_E = self | & x: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:unwrap_or_default result type invariant] inv_T result}
-      {[@expl:unwrap_or_default ensures #0] forall t: t_T. self = Ok t -> result = t}
-      {[@expl:unwrap_or_default ensures #1] (exists e: t_E. self = Err e) -> postcondition_default () () result}
+    [ return (result: t_T) -> {([@expl:unwrap_or_default result type invariant] inv_T result)
+      /\ ([@expl:unwrap_or_default ensures #0] forall t: t_T. self = Ok t -> result = t)
+      /\ ([@expl:unwrap_or_default ensures #1] (exists e: t_E. self = Err e) -> postcondition_default () () result)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
@@ -933,8 +934,8 @@ module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec and_T (self: t_OwnResult_T_E) (res: t_OwnResult_U_E) (return (x: t_OwnResult_U_E)) =
-    {[@expl:and 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:and 'res' type invariant] inv_OwnResult_U_E res}
+    {([@expl:and 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:and 'res' type invariant] inv_OwnResult_U_E res)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
@@ -954,9 +955,9 @@ module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
     | & res: t_OwnResult_U_E = res
     | & x: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_U_E) -> {[@expl:and result type invariant] inv_OwnResult_U_E result}
-      {[@expl:and ensures #0] (exists t: t_T. self = Ok t) -> result = res}
-      {[@expl:and ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
+    [ return (result: t_OwnResult_U_E) -> {([@expl:and result type invariant] inv_OwnResult_U_E result)
+      /\ ([@expl:and ensures #0] (exists t: t_T. self = Ok t) -> result = res)
+      /\ ([@expl:and ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
@@ -1029,8 +1030,8 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
   meta "select_lsinst" "all"
   
   let rec or_T (self: t_OwnResult_T_E) (res: t_OwnResult_T_F) (return (x: t_OwnResult_T_F)) =
-    {[@expl:or 'self' type invariant] inv_OwnResult_T_E self}
-    {[@expl:or 'res' type invariant] inv_OwnResult_T_F res}
+    {([@expl:or 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@expl:or 'res' type invariant] inv_OwnResult_T_F res)}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
@@ -1050,9 +1051,9 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
     | & res: t_OwnResult_T_F = res
     | & v: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_F) -> {[@expl:or result type invariant] inv_OwnResult_T_F result}
-      {[@expl:or ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t}
-      {[@expl:or ensures #1] (exists e: t_E. self = Err e) -> result = res}
+    [ return (result: t_OwnResult_T_F) -> {([@expl:or result type invariant] inv_OwnResult_T_F result)
+      /\ ([@expl:or ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
+      /\ ([@expl:or ensures #1] (exists e: t_E. self = Err e) -> result = res)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
@@ -1126,9 +1127,9 @@ module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
     | & self: t_OwnResult_ref_T_E = self
     | & t: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_E) -> {[@expl:copied result type invariant] inv_OwnResult_T_E result}
-      {[@expl:copied ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t}
-      {[@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
+    [ return (result: t_OwnResult_T_E) -> {([@expl:copied result type invariant] inv_OwnResult_T_E result)
+      /\ ([@expl:copied ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
+      /\ ([@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
@@ -1180,7 +1181,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
       -> (let self_ = args in inv_T res)
   
   let rec clone_T (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_T) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_T) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate inv_E (_1: t_E)
   
@@ -1277,12 +1278,12 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
     | & t: t_T = Any.any_l ()
     | & _6: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_E) -> {[@expl:cloned result type invariant] inv_OwnResult_T_E result}
-      {[@expl:cloned ensures] match { f0 = self; f1 = result } with
+    [ return (result: t_OwnResult_T_E) -> {([@expl:cloned result type invariant] inv_OwnResult_T_E result)
+      /\ ([@expl:cloned ensures] match { f0 = self; f1 = result } with
         | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () s r
         | {f0 = Err s; f1 = Err'0 r} -> s = r
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
@@ -1365,10 +1366,10 @@ module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
     | & self: t_OwnResult_refmut_T_E = self
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_E) -> {[@expl:copied result type invariant] inv_OwnResult_T_E result}
-      {[@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t
-        -> result = Ok'0 (t.current) /\ resolve_refmut_T t}
-      {[@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e}
+    [ return (result: t_OwnResult_T_E) -> {([@expl:copied result type invariant] inv_OwnResult_T_E result)
+      /\ ([@expl:copied ensures #0] forall t: MutBorrow.t t_T. self = Ok t
+          -> result = Ok'0 (t.current) /\ resolve_refmut_T t)
+      /\ ([@expl:copied ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
@@ -1433,7 +1434,7 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
       -> (let self_ = args in inv_T res)
   
   let rec clone_T (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_T) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_T) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate inv_E (_1: t_E)
   
@@ -1532,12 +1533,12 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
     | & t: MutBorrow.t t_T = Any.any_l ()
     | & _6: t_T = Any.any_l ()
     | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_E) -> {[@expl:cloned result type invariant] inv_OwnResult_T_E result}
-      {[@expl:cloned ensures] match { f0 = self; f1 = result } with
+    [ return (result: t_OwnResult_T_E) -> {([@expl:cloned result type invariant] inv_OwnResult_T_E result)
+      /\ ([@expl:cloned ensures] match { f0 = self; f1 = result } with
         | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () s.current r
         | {f0 = Err s; f1 = Err'0 r} -> s = r
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T>, E> *)
@@ -1645,9 +1646,9 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
     | & e: t_E = Any.any_l ()
     | & _14: t_OwnResult_T_E = Any.any_l () ])
     [ return (result: t_Option_OwnResult_T_E) ->
-    {[@expl:transpose result type invariant] inv_Option_OwnResult_T_E result}
-      {[@expl:transpose ensures #0] self = Ok (None) -> result = None'0}
-      {[@expl:transpose ensures #1] forall t: t_T. self = Ok (Some t) -> result = Some'0 (Ok'0 t)}
-      {[@expl:transpose ensures #2] forall e: t_E. self = Err e -> result = Some'0 (Err'0 e)}
+    {([@expl:transpose result type invariant] inv_Option_OwnResult_T_E result)
+      /\ ([@expl:transpose ensures #0] self = Ok (None) -> result = None'0)
+      /\ ([@expl:transpose ensures #1] forall t: t_T. self = Ok (Some t) -> result = Some'0 (Ok'0 t))
+      /\ ([@expl:transpose ensures #2] forall e: t_E. self = Err e -> result = Some'0 (Err'0 e))}
       (! return {result}) ]
 end

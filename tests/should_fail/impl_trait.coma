@@ -27,7 +27,8 @@ module M_main
   predicate inv_opaque (_1: opaque)
   
   let rec returns_iterator (return (x: opaque)) = any
-    [ return (result: opaque) -> {inv_opaque result} (! return {result}) ]
+    [ return (result: opaque) -> {[@expl:returns_iterator result type invariant] inv_opaque result}
+      (! return {result}) ]
   
   predicate resolve_opaque (_1: opaque)
   
@@ -51,7 +52,7 @@ module M_main
       -> (let self = args in true)
   
   let rec a_opaque (self: opaque) (return (x: bool)) = {[@expl:a requires] precondition_a () self}
-    any [ return (result: bool) -> {postcondition_once_a () self result} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:a ensures] postcondition_once_a () self result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -65,5 +66,5 @@ module M_main
       | s3 = a_opaque {_4} (fun (_x: bool) -> [ &x <- _x ] s4)
       | s4 = {[@expl:assertion] x} s5
       | s5 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:main ensures] true} (! return {result}) ]
+    [ return (result: ()) -> (! return {result}) ]
 end

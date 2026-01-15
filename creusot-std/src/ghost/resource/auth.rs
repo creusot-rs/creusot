@@ -157,7 +157,7 @@ impl<R: UnitRA> Fragment<R> {
 
     /// Split a fragment into two parts, described by `a` and `b`.
     ///
-    /// See also [`Self::split_mut`] and [`Self::split_off`].
+    /// See also [`Self::split_off`].
     #[check(ghost)]
     #[requires(R::incl_eq_op(*a, *b, self@))]
     #[ensures(result.0.id() == self.id() && result.1.id() == self.id())]

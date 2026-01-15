@@ -4,7 +4,7 @@ module M_index_slice
   use creusot.int.UInt32
   use creusot.prelude.Any
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   meta "compute_max_steps" 1000000
   
@@ -76,8 +76,8 @@ module M_slice_first
   use creusot.slice.Slice64
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_T
   
@@ -116,7 +116,9 @@ module M_slice_first
   
   let rec len_T (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
     {[@expl:len 'self_' type invariant] inv_ref_slice_T self_}
-    any [ return (result: UInt64.t) -> {Seq.length (Slice64.view self_) = UInt64.t'int result} (! return {result}) ]
+    any
+    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+      (! return {result}) ]
   
   type t_Option_ref_T = None | Some t_T
   
@@ -160,10 +162,10 @@ module M_slice_first
     | & _9: UInt64.t = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
     | & _11: bool = Any.any_l () ])
-    [ return (result: t_Option_ref_T) -> {[@expl:slice_first result type invariant] inv_Option_ref_T result}
-      {[@expl:slice_first ensures] match result with
+    [ return (result: t_Option_ref_T) -> {([@expl:slice_first result type invariant] inv_Option_ref_T result)
+      /\ ([@expl:slice_first ensures] match result with
         | Some v -> v = index_slice_T a 0
         | None -> Seq.length (Slice64.view a) = 0
-        end}
+        end)}
       (! return {result}) ]
 end

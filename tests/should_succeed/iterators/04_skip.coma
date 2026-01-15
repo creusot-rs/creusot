@@ -1,7 +1,7 @@
 module M_impl_Iterator_for_Skip_I__produces_refl (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -43,7 +43,7 @@ end
 module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -95,8 +95,8 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_I
   
@@ -161,11 +161,11 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_usize (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = (0: UInt64.t)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@expl:default ensures] result = (0: UInt64.t)} (! return {result}) ]
   
   let rec take_usize (dest: MutBorrow.t UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: UInt64.t) -> {([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
@@ -226,7 +226,9 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   predicate resolve_Item (_1: t_Item)
   
@@ -337,18 +339,18 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
     | & x: t_Item = Any.any_l ()
     | & _old: t_Skip_I = Any.any_l ()
     | & _old'0: UInt64.t = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {[@expl:next result type invariant] inv_Option_Item result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_Skip_I self
         | Some v -> produces_Skip_I self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Skip_I__next__refines (* <Skip<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -433,7 +435,7 @@ end
 module M_impl_Iterator_for_Skip_I__produces_refl__refines (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -472,7 +474,7 @@ end
 module M_impl_Iterator_for_Skip_I__produces_trans__refines (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   

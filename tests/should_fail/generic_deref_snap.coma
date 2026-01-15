@@ -27,7 +27,9 @@ module M_deref_wrap
       -> (let self_ = args in inv_ref_Target res)
   
   let rec deref_T (self_: t_T) (return (x: t_Target)) = {[@expl:deref requires] precondition_deref () self_}
-    any [ return (result: t_Target) -> {postcondition_once_deref () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_Target) -> {[@expl:deref ensures] postcondition_once_deref () self_ result}
+      (! return {result}) ]
   
   predicate inv_T (_1: t_T)
   
@@ -98,8 +100,8 @@ module M_deref_wrap
   
   meta "select_lsinst" "all"
   
-  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {[@expl:deref_wrap 'x' type invariant] inv_ref_T x}
-    {[@expl:deref_wrap requires] precondition_deref () x}
+  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) = {([@expl:deref_wrap 'x' type invariant] inv_ref_T x)
+    /\ ([@expl:deref_wrap requires] precondition_deref () x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- x ] s1
@@ -107,8 +109,8 @@ module M_deref_wrap
       | s2 = [ &_ret <- _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
-    [ return (result: t_Target) -> {[@expl:deref_wrap result type invariant] inv_ref_Target result}
-      {[@expl:deref_wrap ensures] postcondition_deref () x result}
+    [ return (result: t_Target) -> {([@expl:deref_wrap result type invariant] inv_ref_Target result)
+      /\ ([@expl:deref_wrap ensures] postcondition_deref () x result)}
       (! return {result}) ]
 end
 module M_bad
@@ -183,7 +185,7 @@ module M_bad
   
   let rec deref_wrap_Snapshot_i32 (x: Int32.t) (return (x'0: Int32.t)) =
     {[@expl:deref_wrap requires] precondition_deref () x}
-    any [ return (result: Int32.t) -> {postcondition_deref () x result} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:deref_wrap ensures] postcondition_deref () x result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

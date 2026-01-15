@@ -379,7 +379,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 contract.subst(&call_subst);
 
                 contract
-                    .requires_conj_labelled()
+                    .requires_conj()
                     .log_and(variant)
                     .log_and(contract.ensures_conj().implies(k(call)))
             }),

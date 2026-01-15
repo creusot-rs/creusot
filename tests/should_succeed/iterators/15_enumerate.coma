@@ -1,7 +1,7 @@
 module M_impl_Iterator_for_Enumerate_I__produces_refl (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -43,7 +43,7 @@ end
 module M_impl_Iterator_for_Enumerate_I__produces_trans (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -94,8 +94,8 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_I
   
@@ -155,7 +155,9 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
@@ -260,11 +262,11 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
     | & n: UInt64.t = Any.any_l ()
     | & _9: tup2_usize_Item = Any.any_l () ])
     [ return (result: t_Option_tup2_usize_Item) ->
-    {[@expl:next result type invariant] inv_Option_tup2_usize_Item result}
-      {[@expl:next ensures] match result with
+    {([@expl:next result type invariant] inv_Option_tup2_usize_Item result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_Enumerate_I self
         | Some'0 v -> produces_Enumerate_I self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_enumerate
@@ -272,7 +274,7 @@ module M_enumerate
   use creusot.prelude.Any
   use seq.Seq
   use creusot.prelude.MutBorrow
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -311,23 +313,24 @@ module M_enumerate
   
   meta "select_lsinst" "all"
   
-  let rec enumerate_I (iter'0: t_I) (return (x: t_Enumerate_I)) = {[@expl:enumerate 'iter' type invariant] inv_I iter'0}
-    {[@expl:enumerate requires #0] forall i: MutBorrow.t t_I. completed_I i
-      -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final}
-    {[@expl:enumerate requires #1] forall s: Seq.seq t_Item, i: t_I. produces_I iter'0 s i
-      -> Seq.length s < UInt64.t'int const_MAX}
+  let rec enumerate_I (iter'0: t_I) (return (x: t_Enumerate_I)) =
+    {([@expl:enumerate 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:enumerate requires #0] forall i: MutBorrow.t t_I. completed_I i
+        -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
+    /\ ([@expl:enumerate requires #1] forall s: Seq.seq t_Item, i: t_I. produces_I iter'0 s i
+      -> Seq.length s < UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; count = (0: UInt64.t) } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Enumerate_I = Any.any_l () | & iter'0: t_I = iter'0 ])
-    [ return (result: t_Enumerate_I) -> {[@expl:enumerate result type invariant] inv_Enumerate_I result}
-      {[@expl:enumerate ensures] result.iter = iter'0 /\ UInt64.t'int result.count = 0}
+    [ return (result: t_Enumerate_I) -> {([@expl:enumerate result type invariant] inv_Enumerate_I result)
+      /\ ([@expl:enumerate ensures] result.iter = iter'0 /\ UInt64.t'int result.count = 0)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Enumerate_I__next__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -425,7 +428,7 @@ end
 module M_impl_Iterator_for_Enumerate_I__produces_trans__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -468,7 +471,7 @@ end
 module M_impl_Iterator_for_Enumerate_I__produces_refl__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   

@@ -86,8 +86,8 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
     {[@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
-    [ return (result: t_Option_T) -> {inv_Option_T result}
-      {result = self_.current /\ self_.final = None}
+    [ return (result: t_Option_T) -> {([@expl:take result type invariant] inv_Option_T result)
+      /\ ([@expl:take ensures] result = self_.current /\ self_.final = None)}
       (! return {result}) ]
   
   predicate inv_Once_T (_1: t_Once_T)
@@ -133,11 +133,11 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_Once_T = self
     | & _4: MutBorrow.t t_Option_T = Any.any_l () ])
-    [ return (result: t_Option_T) -> {[@expl:next result type invariant] inv_Option_T result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_T) -> {([@expl:next result type invariant] inv_Option_T result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_Once_T self
         | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Once_T__next__refines (* <Once<T> as common::Iterator> *)

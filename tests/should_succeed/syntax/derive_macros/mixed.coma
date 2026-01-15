@@ -29,7 +29,7 @@ module M_impl_Clone_for_Product_A_B__clone (* <Product<A, B> as std::clone::Clon
       -> (let self_ = args in inv_A res)
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate inv_B (_1: t_B)
   
@@ -53,7 +53,8 @@ module M_impl_Clone_for_Product_A_B__clone (* <Product<A, B> as std::clone::Clon
       -> (let self_ = args in inv_B res)
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone'0 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone'0 () self_ result} (! return {result}) ]
   
   predicate inv_Product_A_B (_1: t_Product_A_B)
   
@@ -197,8 +198,8 @@ module M_impl_Clone_for_Product_A_B__clone (* <Product<A, B> as std::clone::Clon
     | & _6: t_A = Any.any_l ()
     | & _7: t_B = Any.any_l ()
     | & _9: t_B = Any.any_l () ])
-    [ return (result: t_Product_A_B) -> {[@expl:clone result type invariant] inv_Product_A_B result}
-      {[@expl:clone ensures] postcondition_clone () self.a result.a /\ postcondition_clone'0 () self.b result.b}
+    [ return (result: t_Product_A_B) -> {([@expl:clone result type invariant] inv_Product_A_B result)
+      /\ ([@expl:clone ensures] postcondition_clone () self.a result.a /\ postcondition_clone'0 () self.b result.b)}
       (! return {result}) ]
 end
 module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::PartialEq> *)
@@ -244,7 +245,9 @@ module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::Parti
   
   let rec eq_A (self_: t_A) (rhs: t_A) (return (x: bool)) = {[@expl:eq requires] precondition_eq () { f0 = self_;
                                                                                                       f1 = rhs }}
-    any [ return (result: bool) -> {postcondition_once_eq () { f0 = self_; f1 = rhs } result} (! return {result}) ]
+    any
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq () { f0 = self_; f1 = rhs } result}
+      (! return {result}) ]
   
   type tup2_ref_B_ref_B = { f0'0: t_B; f1'0: t_B }
   
@@ -281,7 +284,8 @@ module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::Parti
   let rec eq_B (self_: t_B) (rhs: t_B) (return (x: bool)) = {[@expl:eq requires] precondition_eq'0 () { f0'0 = self_;
                                                                                                         f1'0 = rhs }}
     any
-    [ return (result: bool) -> {postcondition_once_eq'0 () { f0'0 = self_; f1'0 = rhs } result} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq'0 () { f0'0 = self_; f1'0 = rhs } result}
+      (! return {result}) ]
   
   predicate inv_Product_A_B (_1: t_Product_A_B)
   
@@ -310,8 +314,8 @@ module M_impl_PartialEq_for_Product_A_B__eq (* <Product<A, B> as std::cmp::Parti
   meta "select_lsinst" "all"
   
   let rec eq_Product_A_B (self: t_Product_A_B) (rhs: t_Product_A_B) (return (x: bool)) =
-    {[@expl:eq 'self' type invariant] inv_ref_Product_A_B self}
-    {[@expl:eq 'rhs' type invariant] inv_ref_Product_A_B rhs}
+    {([@expl:eq 'self' type invariant] inv_ref_Product_A_B self)
+    /\ ([@expl:eq 'rhs' type invariant] inv_ref_Product_A_B rhs)}
     (! bb0
     [ bb0 = s0
       [ s0 = eq_A {self.a} {rhs.a} (fun (_x: bool) -> [ &_6 <- _x ] s1)
@@ -365,7 +369,7 @@ module M_impl_Clone_for_Sum_A_B__clone (* <Sum<A, B> as std::clone::Clone> *)
       -> (let self_ = args in inv_B res)
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   let rec elim_A (_x: t_Sum_A_B) (return (f0: t_A)) = any
     [ _k (f0: t_A) -> {A f0 = _x} (! return {f0})
@@ -397,7 +401,8 @@ module M_impl_Clone_for_Sum_A_B__clone (* <Sum<A, B> as std::clone::Clone> *)
       -> (let self_ = args in inv_A res)
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone'0 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone'0 () self_ result} (! return {result}) ]
   
   predicate inv_Sum_A_B (_1: t_Sum_A_B)
   
@@ -555,12 +560,12 @@ module M_impl_Clone_for_Sum_A_B__clone (* <Sum<A, B> as std::clone::Clone> *)
     | & b_1: t_B = Any.any_l ()
     | & _10: t_B = Any.any_l ()
     | & _12: t_B = Any.any_l () ])
-    [ return (result: t_Sum_A_B) -> {[@expl:clone result type invariant] inv_Sum_A_B result}
-      {[@expl:clone ensures] match { f0 = self; f1 = result } with
+    [ return (result: t_Sum_A_B) -> {([@expl:clone result type invariant] inv_Sum_A_B result)
+      /\ ([@expl:clone ensures] match { f0 = self; f1 = result } with
         | {f0 = A v0_1; f1 = A v0_r} -> postcondition_clone () v0_1 v0_r
         | {f0 = B b_1; f1 = B b_r} -> postcondition_clone'0 () b_1 b_r
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
@@ -616,7 +621,9 @@ module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
   
   let rec eq_B (self_: t_B) (rhs: t_B) (return (x: bool)) = {[@expl:eq requires] precondition_eq () { f0'0 = self_;
                                                                                                       f1'0 = rhs }}
-    any [ return (result: bool) -> {postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result} (! return {result}) ]
+    any
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq () { f0'0 = self_; f1'0 = rhs } result}
+      (! return {result}) ]
   
   let rec elim_A (_x: t_Sum_A_B) (return (f0'1: t_A)) = any
     [ _k (f0'1: t_A) -> {A f0'1 = _x} (! return {f0'1})
@@ -661,7 +668,8 @@ module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
   let rec eq_A (self_: t_A) (rhs: t_A) (return (x: bool)) = {[@expl:eq requires] precondition_eq'0 () { f0'1 = self_;
                                                                                                         f1'1 = rhs }}
     any
-    [ return (result: bool) -> {postcondition_once_eq'0 () { f0'1 = self_; f1'1 = rhs } result} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq'0 () { f0'1 = self_; f1'1 = rhs } result}
+      (! return {result}) ]
   
   predicate inv_Sum_A_B (_1: t_Sum_A_B)
   
@@ -696,8 +704,7 @@ module M_impl_PartialEq_for_Sum_A_B__eq (* <Sum<A, B> as std::cmp::PartialEq> *)
   meta "select_lsinst" "all"
   
   let rec eq_Sum_A_B (self: t_Sum_A_B) (rhs: t_Sum_A_B) (return (x: bool)) =
-    {[@expl:eq 'self' type invariant] inv_ref_Sum_A_B self}
-    {[@expl:eq 'rhs' type invariant] inv_ref_Sum_A_B rhs}
+    {([@expl:eq 'self' type invariant] inv_ref_Sum_A_B self) /\ ([@expl:eq 'rhs' type invariant] inv_ref_Sum_A_B rhs)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- { f0 = self; f1 = rhs } ] s1
@@ -750,7 +757,7 @@ module M_impl_Clone_for_Sum2_A_B__clone (* <Sum2<A, B> as std::clone::Clone> *)
       any) ]
   
   let rec clone_bool (self_: bool) (return (x: bool)) = any
-    [ return (result: bool) -> {result = self_} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   predicate inv_B (_1: t_B)
   
@@ -774,7 +781,7 @@ module M_impl_Clone_for_Sum2_A_B__clone (* <Sum2<A, B> as std::clone::Clone> *)
       -> (let self_ = args in inv_B res)
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   let rec elim_X (_x: t_Sum2_A_B) (return (f0: t_A)) = any
     [ _k (f0: t_A) -> {X f0 = _x} (! return {f0})
@@ -806,7 +813,8 @@ module M_impl_Clone_for_Sum2_A_B__clone (* <Sum2<A, B> as std::clone::Clone> *)
       -> (let self_ = args in inv_A res)
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone'0 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone'0 () self_ result} (! return {result}) ]
   
   predicate inv_Sum2_A_B (_1: t_Sum2_A_B)
   
@@ -1028,12 +1036,12 @@ module M_impl_Clone_for_Sum2_A_B__clone (* <Sum2<A, B> as std::clone::Clone> *)
     | & _13: bool = Any.any_l ()
     | & _14: t_B = Any.any_l ()
     | & _16: t_B = Any.any_l () ])
-    [ return (result: t_Sum2_A_B) -> {[@expl:clone result type invariant] inv_Sum2_A_B result}
-      {[@expl:clone ensures] match { f0 = self; f1 = result } with
+    [ return (result: t_Sum2_A_B) -> {([@expl:clone result type invariant] inv_Sum2_A_B result)
+      /\ ([@expl:clone ensures] match { f0 = self; f1 = result } with
         | {f0 = X v0_1; f1 = X v0_r} -> postcondition_clone () v0_1 v0_r
         | {f0 = Y a_1 x_1; f1 = Y a_r x_r} -> postcondition_clone'0 () a_1 a_r /\ postcondition_clone'1 () x_1 x_r
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Clone_for_Product_A_B__clone__refines (* <Product<A, B> as std::clone::Clone> *)
@@ -1134,7 +1142,7 @@ module M_impl_Clone_for_Product_A_B__clone__refines (* <Product<A, B> as std::cl
       -> precondition_clone () args
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate postcondition_once_clone'0 (self: ()) (args: t_B) (result: t_B)
   
@@ -1211,7 +1219,8 @@ module M_impl_Clone_for_Product_A_B__clone__refines (* <Product<A, B> as std::cl
       -> precondition_clone'0 () args
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone'0 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone'0 () self_ result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1327,7 +1336,7 @@ module M_impl_Clone_for_Sum_A_B__clone__refines (* <Sum<A, B> as std::clone::Clo
       -> precondition_clone () args
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate postcondition_once_clone'0 (self: ()) (args: t_B) (result: t_B)
   
@@ -1404,7 +1413,8 @@ module M_impl_Clone_for_Sum_A_B__clone__refines (* <Sum<A, B> as std::clone::Clo
       -> precondition_clone'0 () args
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone'0 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone'0 () self_ result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1523,7 +1533,7 @@ module M_impl_Clone_for_Sum2_A_B__clone__refines (* <Sum2<A, B> as std::clone::C
       -> precondition_clone () args
   
   let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate postcondition_once_clone'0 [@inline:trivial] (self: ()) (args: bool) (result: bool) =
     let self_ = args in result = self_
@@ -1584,7 +1594,7 @@ module M_impl_Clone_for_Sum2_A_B__clone__refines (* <Sum2<A, B> as std::clone::C
       = (postcondition_clone'0 self args res /\ self = res_state)
   
   let rec clone_bool (self_: bool) (return (x: bool)) = any
-    [ return (result: bool) -> {result = self_} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   predicate postcondition_once_clone'1 (self: ()) (args: t_B) (result: t_B)
   
@@ -1661,7 +1671,8 @@ module M_impl_Clone_for_Sum2_A_B__clone__refines (* <Sum2<A, B> as std::clone::C
       -> precondition_clone'0 () args
   
   let rec clone_B (self_: t_B) (return (x: t_B)) = {[@expl:clone requires] precondition_clone'0 () self_}
-    any [ return (result: t_B) -> {postcondition_once_clone'1 () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_B) -> {[@expl:clone ensures] postcondition_once_clone'1 () self_ result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

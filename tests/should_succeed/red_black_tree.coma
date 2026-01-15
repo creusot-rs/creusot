@@ -68,12 +68,12 @@ module M_impl_Tree_K_V__model_acc_has_mapping (* Tree<K, V> *)
   goal vc_model_acc_has_mapping_K: match self with
       | {node = None} -> [@expl:model_acc_has_mapping ensures] Map.get (model_acc_K self accu) k = Map.get accu k
       \/ (exists v: t_V. Map.get (model_acc_K self accu) k = Some'0 v /\ has_mapping_K self k v)
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> Map.get (model_acc_K left'0 accu) k
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> ([@expl:model_acc_has_mapping ensures] Map.get (model_acc_K left'0 accu) k
           = Map.get accu k
-        \/ (exists v: t_V. Map.get (model_acc_K left'0 accu) k = Some'0 v /\ has_mapping_K left'0 k v)
-      -> (let _ = model_acc_has_mapping_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in Map.get (model_acc_K right'0 accu2) k
+        \/ (exists v: t_V. Map.get (model_acc_K left'0 accu) k = Some'0 v /\ has_mapping_K left'0 k v))
+      -> (let _ = model_acc_has_mapping_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in ([@expl:model_acc_has_mapping ensures] Map.get (model_acc_K right'0 accu2) k
           = Map.get accu2 k
-        \/ (exists v: t_V. Map.get (model_acc_K right'0 accu2) k = Some'0 v /\ has_mapping_K right'0 k v)
+        \/ (exists v: t_V. Map.get (model_acc_K right'0 accu2) k = Some'0 v /\ has_mapping_K right'0 k v))
       -> ([@expl:model_acc_has_mapping ensures] Map.get (model_acc_K self accu) k = Map.get accu k
       \/ (exists v: t_V. Map.get (model_acc_K self accu) k = Some'0 v /\ has_mapping_K self k v)))
       end
@@ -205,11 +205,14 @@ module M_impl_Tree_K_V_0__has_mapping_model_acc (* Tree<K, V> *)
       | {node = None} -> [@expl:has_mapping_model_acc ensures] forall v: t_V. has_mapping_K self k v
         -> Map.get (model_acc_K self accu) k = Some'0 v
       | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> ([@expl:has_mapping_model_acc requires] bst_invariant_K left'0)
-      /\ ((forall v: t_V. has_mapping_K left'0 k v -> Map.get (model_acc_K left'0 accu) k = Some'0 v)
+      /\ (([@expl:has_mapping_model_acc ensures] forall v: t_V. has_mapping_K left'0 k v
+          -> Map.get (model_acc_K left'0 accu) k = Some'0 v)
       -> (let _ = has_mapping_model_acc_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in ([@expl:has_mapping_model_acc requires] bst_invariant_K right'0)
-      /\ ((forall v: t_V. has_mapping_K right'0 k v -> Map.get (model_acc_K right'0 accu2) k = Some'0 v)
-      -> (let _ = has_mapping_model_acc_K right'0 accu2 k in Map.get (model_acc_K right'0 accu2) k = Map.get accu2 k
-        \/ (exists v: t_V. Map.get (model_acc_K right'0 accu2) k = Some'0 v /\ has_mapping_K right'0 k v)
+      /\ (([@expl:has_mapping_model_acc ensures] forall v: t_V. has_mapping_K right'0 k v
+          -> Map.get (model_acc_K right'0 accu2) k = Some'0 v)
+      -> (let _ = has_mapping_model_acc_K right'0 accu2 k in ([@expl:model_acc_has_mapping ensures] Map.get (model_acc_K right'0 accu2) k
+          = Map.get accu2 k
+        \/ (exists v: t_V. Map.get (model_acc_K right'0 accu2) k = Some'0 v /\ has_mapping_K right'0 k v))
       -> ([@expl:has_mapping_model_acc ensures] forall v: t_V. has_mapping_K self k v
         -> Map.get (model_acc_K self accu) k = Some'0 v)))))
       end
@@ -348,10 +351,12 @@ module M_impl_Tree_K_V_0__has_mapping_model (* Tree<K, V> *)
   function has_mapping_model_K (self: t_Tree_K_V) (k: t_DeepModelTy) : ()
   
   goal vc_has_mapping_model_K: bst_invariant_K self
-    -> Map.get (model_acc_K self (Const.const (None'0))) k = Map.get (Const.const (None'0)) k
-      \/ (exists v: t_V. Map.get (model_acc_K self (Const.const (None'0))) k = Some'0 v /\ has_mapping_K self k v)
+    -> ([@expl:model_acc_has_mapping ensures] Map.get (model_acc_K self (Const.const (None'0))) k
+        = Map.get (Const.const (None'0)) k
+      \/ (exists v: t_V. Map.get (model_acc_K self (Const.const (None'0))) k = Some'0 v /\ has_mapping_K self k v))
     -> (let _ = model_acc_has_mapping_K self (Const.const (None'0)) k in ([@expl:has_mapping_model_acc requires] bst_invariant_K self)
-    /\ ((forall v: t_V. has_mapping_K self k v -> Map.get (model_acc_K self (Const.const (None'0))) k = Some'0 v)
+    /\ (([@expl:has_mapping_model_acc ensures] forall v: t_V. has_mapping_K self k v
+        -> Map.get (model_acc_K self (Const.const (None'0))) k = Some'0 v)
     -> ([@expl:has_mapping_model ensures] forall v: t_V. has_mapping_K self k v
       = (Map.get (view_Tree_K_V self) k = Some'0 v))))
 end
@@ -502,8 +507,8 @@ module M_impl_Tree_K_V_0__has_mapping_inj (* Tree<K, V> *)
     -> has_mapping_K self k v1
     -> has_mapping_K self k v2
     -> ([@expl:has_mapping_model requires] bst_invariant_K self)
-    /\ ((forall v: t_V. has_mapping_K self k v = (Map.get (view_Tree_K_V self) k = Some'0 v))
-    -> ([@expl:has_mapping_inj ensures] v1 = v2))
+    /\ (([@expl:has_mapping_model ensures] forall v: t_V. has_mapping_K self k v
+        = (Map.get (view_Tree_K_V self) k = Some'0 v)) -> ([@expl:has_mapping_inj ensures] v1 = v2))
 end
 module M_impl_Node_K_V__has_mapping (* Node<K, V> *)
   type t_Color = Red | Black
@@ -707,7 +712,7 @@ module M_impl_Resolve_for_Node_K_V__resolve_coherence (* <Node<K, V> as creusot_
     -> ([@expl:resolve_coherence ensures] resolve_Node_K_V self)
 end
 module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -729,14 +734,14 @@ module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
   
   goal vc_height_K: match self with
       | {node = None} -> [@expl:height ensures] 0 >= 0
-      | {node = Some {left = left'0; color = Red}} -> height_K left'0 >= 0
+      | {node = Some {left = left'0; color = Red}} -> ([@expl:height ensures] height_K left'0 >= 0)
       -> ([@expl:height ensures] height_K left'0 >= 0)
-      | {node = Some {left = left'0; color = Black}} -> height_K left'0 >= 0
+      | {node = Some {left = left'0; color = Black}} -> ([@expl:height ensures] height_K left'0 >= 0)
       -> ([@expl:height ensures] height_K left'0 + 1 >= 0)
       end
 end
 module M_impl_Node_K_V_2__height (* Node<K, V> *)
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -765,10 +770,10 @@ module M_impl_Node_K_V_2__height (* Node<K, V> *)
   function height_K'0 (self: t_Node_K_V) : int
   
   goal vc_height_K: match self.color with
-      | Red -> height_K self.left >= 0
+      | Red -> ([@expl:height ensures] height_K self.left >= 0)
       -> ([@expl:height ensures] forall node'0: t_Node_K_V. self = node'0
         -> height_K self.left = height_K { node = Some node'0 })
-      | Black -> height_K self.left >= 0
+      | Black -> ([@expl:height ensures] height_K self.left >= 0)
       -> ([@expl:height ensures] forall node'0: t_Node_K_V. self = node'0
         -> height_K self.left + 1 = height_K { node = Some node'0 })
       end
@@ -853,7 +858,7 @@ end
 module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -965,17 +970,19 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = None}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:default ensures] result = None)}
       (! return {result}) ]
   
   let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
     (return (x: t_Option_Box_Node_K_V_Global)) =
     {[@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
     any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
@@ -984,9 +991,12 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Option_Box_Node_K_V_Global
   
   let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Node_K_V) -> {inv_Box_Node_K_V_Global result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Tree_K_V [@inline:trivial] (self: MutBorrow.t t_Tree_K_V) =
     inv_Tree_K_V self.current /\ inv_Tree_K_V self.final
@@ -998,9 +1008,11 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   meta "rewrite_def" predicate inv_refmut_Tree_K_V
   
   let rec swap_Tree_K_V (x: MutBorrow.t t_Tree_K_V) (y: MutBorrow.t t_Tree_K_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x}
-    {[@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x) /\ ([@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = _1.final = _1.current
   
@@ -1016,9 +1028,11 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   meta "rewrite_def" predicate inv_refmut_Node_K_V
   
   let rec swap_Node_K_V (x: MutBorrow.t t_Node_K_V) (y: MutBorrow.t t_Node_K_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_Node_K_V x}
-    {[@expl:swap 'y' type invariant] inv_refmut_Node_K_V y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_Node_K_V x) /\ ([@expl:swap 'y' type invariant] inv_refmut_Node_K_V y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
     inv_Box_Node_K_V_Global self.current /\ inv_Box_Node_K_V_Global self.final
@@ -1035,7 +1049,9 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
   let rec swap_Color (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
-    [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_Color [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
@@ -1210,9 +1226,9 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -1312,22 +1328,22 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
     | & _40: MutBorrow.t t_Color = Any.any_l ()
     | & _46: t_Tree_K_V = Any.any_l ()
     | & _47: t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:rotate_right ensures #0] same_mappings_K self.current self.final}
-      {[@expl:rotate_right ensures #1] internal_invariant_K self.final}
-      {[@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final}
-      {[@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {[@expl:rotate_right ensures #4] color_K self.final.right = Red}
-      {[@expl:rotate_right ensures #5] self.final.color = self.current.color}
-      {[@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -1439,17 +1455,19 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = None}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:default ensures] result = None)}
       (! return {result}) ]
   
   let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
     (return (x: t_Option_Box_Node_K_V_Global)) =
     {[@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
     any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
@@ -1458,9 +1476,12 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Option_Box_Node_K_V_Global
   
   let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Node_K_V) -> {inv_Box_Node_K_V_Global result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Tree_K_V [@inline:trivial] (self: MutBorrow.t t_Tree_K_V) =
     inv_Tree_K_V self.current /\ inv_Tree_K_V self.final
@@ -1472,9 +1493,11 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   meta "rewrite_def" predicate inv_refmut_Tree_K_V
   
   let rec swap_Tree_K_V (x: MutBorrow.t t_Tree_K_V) (y: MutBorrow.t t_Tree_K_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x}
-    {[@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x) /\ ([@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = _1.final = _1.current
   
@@ -1490,9 +1513,11 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   meta "rewrite_def" predicate inv_refmut_Node_K_V
   
   let rec swap_Node_K_V (x: MutBorrow.t t_Node_K_V) (y: MutBorrow.t t_Node_K_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_Node_K_V x}
-    {[@expl:swap 'y' type invariant] inv_refmut_Node_K_V y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_Node_K_V x) /\ ([@expl:swap 'y' type invariant] inv_refmut_Node_K_V y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
     inv_Box_Node_K_V_Global self.current /\ inv_Box_Node_K_V_Global self.final
@@ -1509,7 +1534,9 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
   let rec swap_Color (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
-    [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_Color [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
@@ -1684,9 +1711,9 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec rotate_left_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_left requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_left requires #1] color_K self.current.right = Red}
+    {([@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_left requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_left requires #1] color_K self.current.right = Red)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -1786,22 +1813,22 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
     | & _40: MutBorrow.t t_Color = Any.any_l ()
     | & _46: t_Tree_K_V = Any.any_l ()
     | & _47: t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:rotate_left ensures #0] same_mappings_K self.current self.final}
-      {[@expl:rotate_left ensures #1] internal_invariant_K self.final}
-      {[@expl:rotate_left ensures #2] height_K'0 self.current = height_K'0 self.final}
-      {[@expl:rotate_left ensures #3] lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key)}
-      {[@expl:rotate_left ensures #4] color_K self.final.left = Red}
-      {[@expl:rotate_left ensures #5] self.final.color = self.current.color}
-      {[@expl:rotate_left ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
+    [ return (result: ()) -> {([@expl:rotate_left ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_left ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_left ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_left ensures #3] lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key))
+      /\ ([@expl:rotate_left ensures #4] color_K self.final.left = Red)
+      /\ ([@expl:rotate_left ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_left ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
         /\ self.final.left.node = Some l
         /\ { f0 = l.left; f1 = l.right; f2 = self.final.right } = { f0 = self.current.left; f1 = r.left; f2 = r.right }
-        /\ l.key = self.current.key}
+        /\ l.key = self.current.key)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -1877,20 +1904,22 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -1898,7 +1927,9 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
   let rec swap_Color (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
-    [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_Color [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
   
@@ -2047,11 +2078,11 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec flip_colors_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:flip_colors requires #0] internal_invariant_K self.current}
-    {[@expl:flip_colors requires #1] self.current.left.node <> None}
-    {[@expl:flip_colors requires #2] self.current.right.node <> None}
-    {[@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right}
+    {([@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:flip_colors requires #0] internal_invariant_K self.current)
+    /\ ([@expl:flip_colors requires #1] self.current.left.node <> None)
+    /\ ([@expl:flip_colors requires #2] self.current.right.node <> None)
+    /\ ([@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_23 <- self.current.color ] s1
@@ -2106,25 +2137,25 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
     | & _32: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _33: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _34: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:flip_colors ensures #0] internal_invariant_K self.final}
-      {[@expl:flip_colors ensures #1] height_K'0 self.current = height_K'0 self.final}
-      {[@expl:flip_colors ensures #2] same_mappings_K self.current self.final}
-      {[@expl:flip_colors ensures #3] self.current.key = self.final.key}
-      {[@expl:flip_colors ensures #4] exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
-        /\ self.final.left.node = Some l2
-        /\ l1.left = l2.left
-        /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color}
-      {[@expl:flip_colors ensures #5] exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
+    [ return (result: ()) -> {([@expl:flip_colors ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:flip_colors ensures #1] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:flip_colors ensures #2] same_mappings_K self.current self.final)
+      /\ ([@expl:flip_colors ensures #3] self.current.key = self.final.key)
+      /\ ([@expl:flip_colors ensures #4] exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
+          /\ self.final.left.node = Some l2
+          /\ l1.left = l2.left
+          /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color)
+      /\ ([@expl:flip_colors ensures #5] exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
         /\ self.final.right.node = Some r2
         /\ r1.left = r2.left
         /\ r1.right = r2.right
-        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key}
+        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__balance (* Node<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -2179,7 +2210,7 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
       end
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
     inv_Node_K_V self.current /\ inv_Node_K_V self.final
@@ -2313,20 +2344,20 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
   type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
   
   let rec rotate_left_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_left requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_left requires #1] color_K self.current.right = Red}
+    {([@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_left requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_left requires #1] color_K self.current.right = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key)}
-      {color_K self.final.left = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
+    [ return (result: ()) -> {([@expl:rotate_left ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_left ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_left ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_left ensures #3] lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key))
+      /\ ([@expl:rotate_left ensures #4] color_K self.final.left = Red)
+      /\ ([@expl:rotate_left ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_left ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
         /\ self.final.left.node = Some l
         /\ { f0 = l.left; f1 = l.right; f2 = self.final.right } = { f0 = self.current.left; f1 = r.left; f2 = r.right }
-        /\ l.key = self.current.key}
+        /\ l.key = self.current.key)}
       (! return {result}) ]
   
   type t_Option_ref_Box_Node_K_V_Global = None'0 | Some'0 t_Node_K_V
@@ -2362,54 +2393,57 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
     (return (x: t_Option_ref_Box_Node_K_V_Global)) =
     {[@expl:as_ref 'self_' type invariant] inv_ref_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_ref_Box_Node_K_V_Global) -> {inv_Option_ref_Box_Node_K_V_Global result}
-      {self_ = None -> result = None'0}
-      {self_ = None \/ (exists r: t_Node_K_V. result = Some'0 r /\ self_ = Some r)}
+    [ return (result: t_Option_ref_Box_Node_K_V_Global) ->
+    {([@expl:as_ref result type invariant] inv_Option_ref_Box_Node_K_V_Global result)
+      /\ ([@expl:as_ref ensures #0] self_ = None -> result = None'0)
+      /\ ([@expl:as_ref ensures #1] self_ = None \/ (exists r: t_Node_K_V. result = Some'0 r /\ self_ = Some r))}
       (! return {result}) ]
   
   let rec unwrap_ref_Box_Node_K_V_Global (self_: t_Option_ref_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: t_Node_K_V) -> {inv_ref_Box_Node_K_V_Global result} {Some'0 result = self_} (! return {result}) ]
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_ref_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
+      (! return {result}) ]
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {color_K self.final.right = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
   
   let rec flip_colors_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:flip_colors requires #0] internal_invariant_K self.current}
-    {[@expl:flip_colors requires #1] self.current.left.node <> None}
-    {[@expl:flip_colors requires #2] self.current.right.node <> None}
-    {[@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right}
+    {([@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:flip_colors requires #0] internal_invariant_K self.current)
+    /\ ([@expl:flip_colors requires #1] self.current.left.node <> None)
+    /\ ([@expl:flip_colors requires #2] self.current.right.node <> None)
+    /\ ([@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right)}
     any
-    [ return (result: ()) -> {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {same_mappings_K self.current self.final}
-      {self.current.key = self.final.key}
-      {exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
-        /\ self.final.left.node = Some l2
-        /\ l1.left = l2.left
-        /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color}
-      {exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
+    [ return (result: ()) -> {([@expl:flip_colors ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:flip_colors ensures #1] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:flip_colors ensures #2] same_mappings_K self.current self.final)
+      /\ ([@expl:flip_colors ensures #3] self.current.key = self.final.key)
+      /\ ([@expl:flip_colors ensures #4] exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
+          /\ self.final.left.node = Some l2
+          /\ l1.left = l2.left
+          /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color)
+      /\ ([@expl:flip_colors ensures #5] exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
         /\ self.final.right.node = Some r2
         /\ r1.left = r2.left
         /\ r1.right = r2.right
-        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key}
+        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -2455,14 +2489,14 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec balance_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:balance 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:balance requires #0] internal_invariant_K self.current}
-    {[@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
-    -> color_invariant_K self.current.left}
-    {[@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
-    -> color_invariant_K self.current.right}
-    {[@expl:balance requires #3] self.current.color = Red
-      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false}
+    {([@expl:balance 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:balance requires #0] internal_invariant_K self.current)
+    /\ ([@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
+      -> color_invariant_K self.current.left)
+    /\ ([@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
+      -> color_invariant_K self.current.right)
+    /\ ([@expl:balance requires #3] self.current.color = Red
+      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false)}
     (! bb0
     [ bb0 = s0
       [ s0 = is_red_K {self.current.right} (fun (_x: bool) -> [ &_31 <- _x ] s1)
@@ -2532,25 +2566,25 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
     | & _49: bool = Any.any_l ()
     | & _51: () = Any.any_l ()
     | & _52: MutBorrow.t t_Node_K_V = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:balance ensures #0] same_mappings_K self.current self.final}
-      {[@expl:balance ensures #1] internal_invariant_K self.final}
-      {[@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final}
-      {[@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
-      -> self.current = self.final}
-      {[@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
-      -> match_n_K (CPL (Red)) self.final}
-      {[@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final}
-      {[@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final}
-      {[@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
-      -> match_n_K (CPL (Red)) self.final}
+    [ return (result: ()) -> {([@expl:balance ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:balance ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
+        -> self.current = self.final)
+      /\ ([@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
+        -> match_n_K (CPL (Red)) self.final)
+      /\ ([@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
+      -> match_n_K (CPL (Red)) self.final)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -2726,25 +2760,25 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
     forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v = has_mapping_K'0 o k v
   
   let rec flip_colors_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:flip_colors requires #0] internal_invariant_K self.current}
-    {[@expl:flip_colors requires #1] self.current.left.node <> None}
-    {[@expl:flip_colors requires #2] self.current.right.node <> None}
-    {[@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right}
+    {([@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:flip_colors requires #0] internal_invariant_K self.current)
+    /\ ([@expl:flip_colors requires #1] self.current.left.node <> None)
+    /\ ([@expl:flip_colors requires #2] self.current.right.node <> None)
+    /\ ([@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right)}
     any
-    [ return (result: ()) -> {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {same_mappings_K self.current self.final}
-      {self.current.key = self.final.key}
-      {exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
-        /\ self.final.left.node = Some l2
-        /\ l1.left = l2.left
-        /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color}
-      {exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
+    [ return (result: ()) -> {([@expl:flip_colors ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:flip_colors ensures #1] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:flip_colors ensures #2] same_mappings_K self.current self.final)
+      /\ ([@expl:flip_colors ensures #3] self.current.key = self.final.key)
+      /\ ([@expl:flip_colors ensures #4] exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
+          /\ self.final.left.node = Some l2
+          /\ l1.left = l2.left
+          /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color)
+      /\ ([@expl:flip_colors ensures #5] exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
         /\ self.final.right.node = Some r2
         /\ r1.left = r2.left
         /\ r1.right = r2.right
-        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key}
+        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key)}
       (! return {result}) ]
   
   type t_Option_refmut_Box_Node_K_V_Global = None'0 | Some'0 (MutBorrow.t t_Node_K_V)
@@ -2782,20 +2816,22 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -2811,42 +2847,42 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
   meta "rewrite_def" predicate inv_ref_Tree_K_V
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {color_K self.final.right = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
   
   let rec rotate_left_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_left requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_left requires #1] color_K self.current.right = Red}
+    {([@expl:rotate_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_left requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_left requires #1] color_K self.current.right = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key)}
-      {color_K self.final.left = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
+    [ return (result: ()) -> {([@expl:rotate_left ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_left ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_left ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_left ensures #3] lt_log_DeepModelTy (deep_model_K self.current.key) (deep_model_K self.final.key))
+      /\ ([@expl:rotate_left ensures #4] color_K self.final.left = Red)
+      /\ ([@expl:rotate_left ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_left ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.right.node = Some r
         /\ self.final.left.node = Some l
         /\ { f0 = l.left; f1 = l.right; f2 = self.final.right } = { f0 = self.current.left; f1 = r.left; f2 = r.right }
-        /\ l.key = self.current.key}
+        /\ l.key = self.current.key)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -2892,10 +2928,10 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec move_red_left_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_left requires #0] self.current.right.node <> None}
-    {[@expl:move_red_left requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current}
+    {([@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_left requires #0] self.current.right.node <> None)
+    /\ ([@expl:move_red_left requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Node_K_V> {self.current}
@@ -2978,32 +3014,32 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
     | & _44: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _45: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l () ])
     [ return (result: MutBorrow.t t_Node_K_V) ->
-    {[@expl:move_red_left result type invariant] inv_refmut_Node_K_V result}
-      {[@expl:move_red_left ensures #0] internal_invariant_K result.current}
-      {[@expl:move_red_left ensures #1] internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {[@expl:move_red_left ensures #2] height_K'0 result.current = height_K'0 result.final
-      -> height_K'0 self.current = height_K'0 self.final}
-      {[@expl:move_red_left ensures #3] self.current.key = result.current.key}
-      {[@expl:move_red_left ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
-        -> has_mapping_K'0 self.current k v}
-      {[@expl:move_red_left ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v}
-      {[@expl:move_red_left ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {[@expl:move_red_left ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {[@expl:move_red_left ensures #8] color_invariant_K'0 result.final
-        /\ (color_K result.current.right = Black -> result.final.color = Black) -> color_invariant_K'0 self.final}
+    {([@expl:move_red_left result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_left ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_left ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_left ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_left ensures #3] self.current.key = result.current.key)
+      /\ ([@expl:move_red_left ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_left ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_left ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_left ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_left ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.right = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -3179,25 +3215,25 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
     forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v = has_mapping_K'0 o k v
   
   let rec flip_colors_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:flip_colors requires #0] internal_invariant_K self.current}
-    {[@expl:flip_colors requires #1] self.current.left.node <> None}
-    {[@expl:flip_colors requires #2] self.current.right.node <> None}
-    {[@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right}
+    {([@expl:flip_colors 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:flip_colors requires #0] internal_invariant_K self.current)
+    /\ ([@expl:flip_colors requires #1] self.current.left.node <> None)
+    /\ ([@expl:flip_colors requires #2] self.current.right.node <> None)
+    /\ ([@expl:flip_colors requires #3] color_K self.current.left = color_K self.current.right)}
     any
-    [ return (result: ()) -> {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {same_mappings_K self.current self.final}
-      {self.current.key = self.final.key}
-      {exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
-        /\ self.final.left.node = Some l2
-        /\ l1.left = l2.left
-        /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color}
-      {exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
+    [ return (result: ()) -> {([@expl:flip_colors ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:flip_colors ensures #1] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:flip_colors ensures #2] same_mappings_K self.current self.final)
+      /\ ([@expl:flip_colors ensures #3] self.current.key = self.final.key)
+      /\ ([@expl:flip_colors ensures #4] exists l1: t_Node_K_V, l2: t_Node_K_V. self.current.left.node = Some l1
+          /\ self.final.left.node = Some l2
+          /\ l1.left = l2.left
+          /\ l1.right = l2.right /\ l1.key = l2.key /\ self.current.color = l2.color /\ self.final.color = l1.color)
+      /\ ([@expl:flip_colors ensures #5] exists r1: t_Node_K_V, r2: t_Node_K_V. self.current.right.node = Some r1
         /\ self.final.right.node = Some r2
         /\ r1.left = r2.left
         /\ r1.right = r2.right
-        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key}
+        /\ r1.key = r2.key /\ self.current.color = r2.color /\ self.final.color = r1.color /\ r1.key = r2.key)}
       (! return {result}) ]
   
   type t_Option_refmut_Box_Node_K_V_Global = None'0 | Some'0 (MutBorrow.t t_Node_K_V)
@@ -3235,20 +3271,22 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -3264,25 +3302,25 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
   meta "rewrite_def" predicate inv_ref_Tree_K_V
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {color_K self.final.right = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -3328,10 +3366,10 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
   meta "select_lsinst" "all"
   
   let rec move_red_right_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_right requires #0] self.current.left.node <> None}
-    {[@expl:move_red_right requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current}
+    {([@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_right requires #0] self.current.left.node <> None)
+    /\ ([@expl:move_red_right requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Node_K_V> {self.current}
@@ -3395,32 +3433,32 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
     | & _39: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _40: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l () ])
     [ return (result: MutBorrow.t t_Node_K_V) ->
-    {[@expl:move_red_right result type invariant] inv_refmut_Node_K_V result}
-      {[@expl:move_red_right ensures #0] internal_invariant_K result.current}
-      {[@expl:move_red_right ensures #1] internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {[@expl:move_red_right ensures #2] height_K'0 result.current = height_K'0 result.final
-      -> height_K'0 self.current = height_K'0 self.final}
-      {[@expl:move_red_right ensures #3] result.current.key = self.current.key}
-      {[@expl:move_red_right ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
-        -> has_mapping_K'0 self.current k v}
-      {[@expl:move_red_right ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v}
-      {[@expl:move_red_right ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {[@expl:move_red_right ensures #7] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {[@expl:move_red_right ensures #8] color_invariant_K'0 result.final
-        /\ (color_K result.current.left = Black -> result.final.color = Black) -> color_invariant_K'0 self.final}
+    {([@expl:move_red_right result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_right ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_right ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_right ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_right ensures #3] result.current.key = self.current.key)
+      /\ ([@expl:move_red_right ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_right ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_right ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_right ensures #7] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_right ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.left = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
 end
 module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -3628,7 +3666,8 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
   let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
     {[@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}
     any
-    [ return (result: t_Ordering) -> {postcondition_once_cmp () { f0 = self_; f1 = rhs } result} (! return {result}) ]
+    [ return (result: t_Ordering) -> {[@expl:cmp ensures] postcondition_once_cmp () { f0 = self_; f1 = rhs } result}
+      (! return {result}) ]
   
   predicate invariant_refmut_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
     inv_Box_Node_K_V_Global self.current /\ inv_Box_Node_K_V_Global self.final
@@ -3740,26 +3779,28 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec balance_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:balance 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:balance requires #0] internal_invariant_K self.current}
-    {[@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
-    -> color_invariant_K self.current.left}
-    {[@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
-    -> color_invariant_K self.current.right}
-    {[@expl:balance requires #3] self.current.color = Red
-      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false}
+    {([@expl:balance 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:balance requires #0] internal_invariant_K self.current)
+    /\ ([@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
+      -> color_invariant_K self.current.left)
+    /\ ([@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
+      -> color_invariant_K self.current.right)
+    /\ ([@expl:balance requires #3] self.current.color = Red
+      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {color_invariant_K self.current.left /\ color_K self.current.right = Black -> self.current = self.final}
-      {match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
-      -> match_n_K (CPL (Red)) self.final}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current -> match_n_K (CPL (Red)) self.final}
+    [ return (result: ()) -> {([@expl:balance ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:balance ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
+        -> self.current = self.final)
+      /\ ([@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
+        -> match_n_K (CPL (Red)) self.final)
+      /\ ([@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
+      -> match_n_K (CPL (Red)) self.final)}
       (! return {result}) ]
   
   predicate internal_invariant_K'0 (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
@@ -3769,11 +3810,11 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
   meta "select_lsinst" "all"
   
   let rec insert_rec_K (self: MutBorrow.t t_Tree_K_V) (key'0: t_K) (val''0: t_V) (return (x: ())) =
-    {[@expl:insert_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:insert_rec 'key' type invariant] inv_K key'0}
-    {[@expl:insert_rec 'val' type invariant] inv_V val''0}
-    {[@expl:insert_rec requires #0] internal_invariant_K'0 self.current}
-    {[@expl:insert_rec requires #1] color_invariant_K self.current}
+    {([@expl:insert_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:insert_rec 'key' type invariant] inv_K key'0)
+    /\ ([@expl:insert_rec 'val' type invariant] inv_V val''0)
+    /\ ([@expl:insert_rec requires #0] internal_invariant_K'0 self.current)
+    /\ ([@expl:insert_rec requires #1] color_invariant_K self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.node}
@@ -3870,20 +3911,20 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
     | & _45: t_Color = Any.any_l ()
     | & _48: t_Tree_K_V = Any.any_l ()
     | & _49: t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:insert_rec ensures #0] internal_invariant_K'0 self.final}
-      {[@expl:insert_rec ensures #1] height_K self.current = height_K self.final}
-      {[@expl:insert_rec ensures #2] match_t_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final
-        /\ color_K self.current = Red
-      \/ color_invariant_K self.final}
-      {[@expl:insert_rec ensures #3] has_mapping_K self.final (deep_model_K key'0) val''0}
-      {[@expl:insert_rec ensures #4] forall k: t_DeepModelTy, v: t_V. k = deep_model_K key'0
-        \/ has_mapping_K self.current k v = has_mapping_K self.final k v}
+    [ return (result: ()) -> {([@expl:insert_rec ensures #0] internal_invariant_K'0 self.final)
+      /\ ([@expl:insert_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:insert_rec ensures #2] match_t_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final
+          /\ color_K self.current = Red
+        \/ color_invariant_K self.final)
+      /\ ([@expl:insert_rec ensures #3] has_mapping_K self.final (deep_model_K key'0) val''0)
+      /\ ([@expl:insert_rec ensures #4] forall k: t_DeepModelTy, v: t_V. k = deep_model_K key'0
+        \/ has_mapping_K self.current k v = has_mapping_K self.final k v)}
       (! return {result}) ]
 end
 module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -3959,20 +4000,22 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
@@ -3987,9 +4030,9 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   let rec as_mut_Box_Node_K_V_Global'0 (self_: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Box_Node_K_V_Global self_}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {self_.current = result.current}
-      {self_.final = result.final}
+    [ return (result: MutBorrow.t t_Node_K_V) -> {([@expl:as_mut result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:as_mut ensures #0] self_.current = result.current)
+      /\ ([@expl:as_mut ensures #1] self_.final = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -4010,7 +4053,7 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
       end
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -4135,20 +4178,20 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {color_K self.final.right = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -4216,17 +4259,19 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = None}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:default ensures] result = None)}
       (! return {result}) ]
   
   let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
     (return (x: t_Option_Box_Node_K_V_Global)) =
     {[@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
     any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
@@ -4248,9 +4293,12 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Tree_K_V
   
   let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Node_K_V) -> {inv_Box_Node_K_V_Global result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
   
@@ -4330,52 +4378,57 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec move_red_right_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_right requires #0] self.current.left.node <> None}
-    {[@expl:move_red_right requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current}
+    {([@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_right requires #0] self.current.left.node <> None)
+    /\ ([@expl:move_red_right requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {internal_invariant_K result.current}
-      {internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {height_K'0 result.current = height_K'0 result.final -> height_K'0 self.current = height_K'0 self.final}
-      {result.current.key = self.current.key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v -> has_mapping_K'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {color_invariant_K'0 result.final /\ (color_K result.current.left = Black -> result.final.color = Black)
-      -> color_invariant_K'0 self.final}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:move_red_right result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_right ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_right ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_right ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_right ensures #3] result.current.key = self.current.key)
+      /\ ([@expl:move_red_right ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_right ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_right ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_right ensures #7] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_right ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.left = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
   
   let rec balance_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:balance 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:balance requires #0] internal_invariant_K self.current}
-    {[@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
-    -> color_invariant_K self.current.left}
-    {[@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
-    -> color_invariant_K self.current.right}
-    {[@expl:balance requires #3] self.current.color = Red
-      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false}
+    {([@expl:balance 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:balance requires #0] internal_invariant_K self.current)
+    /\ ([@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
+      -> color_invariant_K self.current.left)
+    /\ ([@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
+      -> color_invariant_K self.current.right)
+    /\ ([@expl:balance requires #3] self.current.color = Red
+      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {color_invariant_K self.current.left /\ color_K self.current.right = Black -> self.current = self.final}
-      {match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
-      -> match_n_K (CPL (Red)) self.final}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current -> match_n_K (CPL (Red)) self.final}
+    [ return (result: ()) -> {([@expl:balance ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:balance ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
+        -> self.current = self.final)
+      /\ ([@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
+        -> match_n_K (CPL (Red)) self.final)
+      /\ ([@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
+      -> match_n_K (CPL (Red)) self.final)}
       (! return {result}) ]
   
   predicate internal_invariant_K'0 (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
@@ -4389,10 +4442,10 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   meta "select_lsinst" "all"
   
   let rec delete_max_rec_K (self: MutBorrow.t t_Tree_K_V) (return (x: tup2_K_V)) =
-    {[@expl:delete_max_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_max_rec requires #0] internal_invariant_K'0 self.current}
-    {[@expl:delete_max_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_max_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_max_rec requires #0] internal_invariant_K'0 self.current)
+    /\ ([@expl:delete_max_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.node}
@@ -4513,22 +4566,22 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
     | & _48: MutBorrow.t t_Tree_K_V = Any.any_l ()
     | & _49: () = Any.any_l ()
     | & _50: MutBorrow.t t_Node_K_V = Any.any_l () ])
-    [ return (result: tup2_K_V) -> {[@expl:delete_max_rec result type invariant] inv_tup2_K_V result}
-      {[@expl:delete_max_rec ensures #0] internal_invariant_K'0 self.final}
-      {[@expl:delete_max_rec ensures #1] height_K self.current = height_K self.final}
-      {[@expl:delete_max_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0}
-      {[@expl:delete_max_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
-        -> le_log_DeepModelTy k (deep_model_K result.f0'0)}
-      {[@expl:delete_max_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v)}
-      {[@expl:delete_max_rec ensures #5] color_invariant_K self.final}
-      {[@expl:delete_max_rec ensures #6] color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: tup2_K_V) -> {([@expl:delete_max_rec result type invariant] inv_tup2_K_V result)
+      /\ ([@expl:delete_max_rec ensures #0] internal_invariant_K'0 self.final)
+      /\ ([@expl:delete_max_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_max_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0)
+      /\ ([@expl:delete_max_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
+          -> le_log_DeepModelTy k (deep_model_K result.f0'0))
+      /\ ([@expl:delete_max_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_max_rec ensures #5] color_invariant_K self.final)
+      /\ ([@expl:delete_max_rec ensures #6] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
 end
 module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -4604,20 +4657,22 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
@@ -4632,9 +4687,9 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   let rec as_mut_Box_Node_K_V_Global'0 (self_: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Box_Node_K_V_Global self_}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {self_.current = result.current}
-      {self_.final = result.final}
+    [ return (result: MutBorrow.t t_Node_K_V) -> {([@expl:as_mut result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:as_mut ensures #0] self_.current = result.current)
+      /\ ([@expl:as_mut ensures #1] self_.final = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -4655,7 +4710,7 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
       end
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
   
@@ -4722,17 +4777,19 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = None}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:default ensures] result = None)}
       (! return {result}) ]
   
   let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
     (return (x: t_Option_Box_Node_K_V_Global)) =
     {[@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
     any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
@@ -4754,9 +4811,12 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Tree_K_V
   
   let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Node_K_V) -> {inv_Box_Node_K_V_Global result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   type t_DeepModelTy
   
@@ -4953,55 +5013,60 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
         -> height_K'0 self = height_K { node = Some node'0 }
   
   let rec move_red_left_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_left requires #0] self.current.right.node <> None}
-    {[@expl:move_red_left requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current}
+    {([@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_left requires #0] self.current.right.node <> None)
+    /\ ([@expl:move_red_left requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {internal_invariant_K result.current}
-      {internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {height_K'0 result.current = height_K'0 result.final -> height_K'0 self.current = height_K'0 self.final}
-      {self.current.key = result.current.key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v -> has_mapping_K'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {color_invariant_K'0 result.final /\ (color_K result.current.right = Black -> result.final.color = Black)
-      -> color_invariant_K'0 self.final}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:move_red_left result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_left ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_left ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_left ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_left ensures #3] self.current.key = result.current.key)
+      /\ ([@expl:move_red_left ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_left ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_left ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_left ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_left ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.right = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
   
   predicate same_mappings_K (self: t_Node_K_V) (o: t_Node_K_V) =
     forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v = has_mapping_K'0 o k v
   
   let rec balance_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:balance 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:balance requires #0] internal_invariant_K self.current}
-    {[@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
-    -> color_invariant_K self.current.left}
-    {[@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
-    -> color_invariant_K self.current.right}
-    {[@expl:balance requires #3] self.current.color = Red
-      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false}
+    {([@expl:balance 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:balance requires #0] internal_invariant_K self.current)
+    /\ ([@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
+      -> color_invariant_K self.current.left)
+    /\ ([@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
+      -> color_invariant_K self.current.right)
+    /\ ([@expl:balance requires #3] self.current.color = Red
+      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {color_invariant_K self.current.left /\ color_K self.current.right = Black -> self.current = self.final}
-      {match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
-      -> match_n_K (CPL (Red)) self.final}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current -> match_n_K (CPL (Red)) self.final}
+    [ return (result: ()) -> {([@expl:balance ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:balance ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
+        -> self.current = self.final)
+      /\ ([@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
+        -> match_n_K (CPL (Red)) self.final)
+      /\ ([@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
+      -> match_n_K (CPL (Red)) self.final)}
       (! return {result}) ]
   
   predicate internal_invariant_K'0 (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
@@ -5015,10 +5080,10 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   meta "select_lsinst" "all"
   
   let rec delete_min_rec_K (self: MutBorrow.t t_Tree_K_V) (return (x: tup2_K_V)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_min_rec requires #0] internal_invariant_K'0 self.current}
-    {[@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_min_rec requires #0] internal_invariant_K'0 self.current)
+    /\ ([@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.node}
@@ -5126,24 +5191,24 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
     | & _44: MutBorrow.t t_Tree_K_V = Any.any_l ()
     | & _45: () = Any.any_l ()
     | & _46: MutBorrow.t t_Node_K_V = Any.any_l () ])
-    [ return (result: tup2_K_V) -> {[@expl:delete_min_rec result type invariant] inv_tup2_K_V result}
-      {[@expl:delete_min_rec ensures #0] internal_invariant_K'0 self.final}
-      {[@expl:delete_min_rec ensures #1] height_K self.current = height_K self.final}
-      {[@expl:delete_min_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0) result.f1}
-      {[@expl:delete_min_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
-        -> le_log_DeepModelTy (deep_model_K result.f0) k}
-      {[@expl:delete_min_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_K result.f0 <> k /\ has_mapping_K self.current k v)}
-      {[@expl:delete_min_rec ensures #5] color_invariant_K self.final}
-      {[@expl:delete_min_rec ensures #6] color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: tup2_K_V) -> {([@expl:delete_min_rec result type invariant] inv_tup2_K_V result)
+      /\ ([@expl:delete_min_rec ensures #0] internal_invariant_K'0 self.final)
+      /\ ([@expl:delete_min_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_min_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0) result.f1)
+      /\ ([@expl:delete_min_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
+          -> le_log_DeepModelTy (deep_model_K result.f0) k)
+      /\ ([@expl:delete_min_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_K result.f0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_min_rec ensures #5] color_invariant_K self.final)
+      /\ ([@expl:delete_min_rec ensures #6] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
 end
 module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use map.Map
   use map.Const
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -5219,20 +5284,22 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
@@ -5247,9 +5314,9 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   let rec as_mut_Box_Node_K_V_Global'0 (self_: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Box_Node_K_V_Global self_}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {self_.current = result.current}
-      {self_.final = result.final}
+    [ return (result: MutBorrow.t t_Node_K_V) -> {([@expl:as_mut result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:as_mut ensures #0] self_.current = result.current)
+      /\ ([@expl:as_mut ensures #1] self_.final = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -5341,7 +5408,8 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
     {[@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}
     any
-    [ return (result: t_Ordering) -> {postcondition_once_cmp () { f0 = self_; f1 = rhs } result} (! return {result}) ]
+    [ return (result: t_Ordering) -> {[@expl:cmp ensures] postcondition_once_cmp () { f0 = self_; f1 = rhs } result}
+      (! return {result}) ]
   
   predicate invariant_ref_Tree_K_V [@inline:trivial] (self: t_Tree_K_V) = inv_Tree_K_V self
   
@@ -5357,7 +5425,7 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
       end
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
     match self with
@@ -5422,21 +5490,21 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0'0: t_Tree_K_V; f1'0: t_Tree_K_V; f2'0: t_Tree_K_V }
   
   let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:rotate_right requires #0] internal_invariant_K self.current}
-    {[@expl:rotate_right requires #1] color_K self.current.left = Red}
+    {([@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@expl:rotate_right requires #1] color_K self.current.left = Red)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key)}
-      {color_K self.final.right = Red}
-      {self.final.color = self.current.color}
-      {exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
+    [ return (result: ()) -> {([@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node = Some l
         /\ self.final.right.node = Some r
         /\ { f0'0 = self.final.left; f1'0 = r.left; f2'0 = r.right }
           = { f0'0 = l.left; f1'0 = l.right; f2'0 = self.current.right }
-        /\ r.key = self.current.key}
+        /\ r.key = self.current.key)}
       (! return {result}) ]
   
   type tup2_K_V = { f0'1: t_K; f1'1: t_V }
@@ -5493,9 +5561,10 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     (return (x: t_Option_ref_Box_Node_K_V_Global)) =
     {[@expl:as_ref 'self_' type invariant] inv_ref_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_ref_Box_Node_K_V_Global) -> {inv_Option_ref_Box_Node_K_V_Global result}
-      {self_ = None -> result = None'2}
-      {self_ = None \/ (exists r: t_Node_K_V. result = Some'2 r /\ self_ = Some r)}
+    [ return (result: t_Option_ref_Box_Node_K_V_Global) ->
+    {([@expl:as_ref result type invariant] inv_Option_ref_Box_Node_K_V_Global result)
+      /\ ([@expl:as_ref ensures #0] self_ = None -> result = None'2)
+      /\ ([@expl:as_ref ensures #1] self_ = None \/ (exists r: t_Node_K_V. result = Some'2 r /\ self_ = Some r))}
       (! return {result}) ]
   
   type t_Option_Infallible = None'3 | Some'3 ()
@@ -5528,11 +5597,11 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     {[@expl:branch 'self_' type invariant] inv_Option_ref_Box_Node_K_V_Global self_}
     any
     [ return (result: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) ->
-    {inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global result}
-      {match self_ with
+    {([@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global result)
+      /\ ([@expl:branch ensures] match self_ with
         | Some'2 v -> result = Continue v
         | None'2 -> result = Break (None'3)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global)
@@ -5558,7 +5627,10 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   
   let rec from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
-    any [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result} {result = None'1} (! return {result}) ]
+    any
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:from_residual ensures] result = None'1)}
+      (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) (return (f0'2: t_Node_K_V)) = any
     [ _k (f0'2: t_Node_K_V) -> {Continue f0'2 = _x} (! return {f0'2})
@@ -5603,29 +5675,32 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec move_red_right_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_right requires #0] self.current.left.node <> None}
-    {[@expl:move_red_right requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current}
+    {([@expl:move_red_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_right requires #0] self.current.left.node <> None)
+    /\ ([@expl:move_red_right requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_right requires #2] match_n_K (cpn (Red) (CPL (Black)) (cpn (Black) (CPL (Black)) (CPL (Black)))) self.current)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {internal_invariant_K result.current}
-      {internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {height_K'0 result.current = height_K'0 result.final -> height_K'0 self.current = height_K'0 self.final}
-      {result.current.key = self.current.key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v -> has_mapping_K'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {color_invariant_K'0 result.final /\ (color_K result.current.left = Black -> result.final.color = Black)
-      -> color_invariant_K'0 self.final}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:move_red_right result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_right ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_right ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_right ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_right ensures #3] result.current.key = self.current.key)
+      /\ ([@expl:move_red_right ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_right ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy (deep_model_K self.current.key) k -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_right ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_right ensures #7] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_right ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.left = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
   
   predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
@@ -5689,17 +5764,19 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = None}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:default ensures] result = None)}
       (! return {result}) ]
   
   let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
     (return (x: t_Option_Box_Node_K_V_Global)) =
     {[@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
     any
-    [ return (result: t_Option_Box_Node_K_V_Global) -> {inv_Option_Box_Node_K_V_Global result}
-      {result = dest.current}
-      {postcondition_default () () dest.final}
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {([@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@expl:take ensures #0] result = dest.current)
+      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
@@ -5708,9 +5785,12 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   meta "rewrite_def" predicate resolve_refmut_Option_Box_Node_K_V_Global
   
   let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Node_K_V) -> {inv_Box_Node_K_V_Global result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) -> {([@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
   
@@ -5756,21 +5836,21 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   predicate internal_invariant_K'0 (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
   
   let rec delete_min_rec_K (self: MutBorrow.t t_Tree_K_V) (return (x: tup2_K_V)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_min_rec requires #0] internal_invariant_K'0 self.current}
-    {[@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_min_rec requires #0] internal_invariant_K'0 self.current)
+    /\ ([@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     any
-    [ return (result: tup2_K_V) -> {inv_tup2_K_V result}
-      {internal_invariant_K'0 self.final}
-      {height_K self.current = height_K self.final}
-      {has_mapping_K self.current (deep_model_K result.f0'1) result.f1'1}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
-        -> le_log_DeepModelTy (deep_model_K result.f0'1) k}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_K result.f0'1 <> k /\ has_mapping_K self.current k v)}
-      {color_invariant_K self.final}
-      {color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: tup2_K_V) -> {([@expl:delete_min_rec result type invariant] inv_tup2_K_V result)
+      /\ ([@expl:delete_min_rec ensures #0] internal_invariant_K'0 self.final)
+      /\ ([@expl:delete_min_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_min_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0'1) result.f1'1)
+      /\ ([@expl:delete_min_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
+          -> le_log_DeepModelTy (deep_model_K result.f0'1) k)
+      /\ ([@expl:delete_min_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_K result.f0'1 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_min_rec ensures #5] color_invariant_K self.final)
+      /\ ([@expl:delete_min_rec ensures #6] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
   
   type t_Option_V = None'4 | Some'4 t_V
@@ -5824,9 +5904,11 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   meta "rewrite_def" predicate inv_refmut_K
   
   let rec swap_K (x: MutBorrow.t t_K) (y: MutBorrow.t t_K) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_K x}
-    {[@expl:swap 'y' type invariant] inv_refmut_K y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_K x) /\ ([@expl:swap 'y' type invariant] inv_refmut_K y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_K [@inline:trivial] (_1: MutBorrow.t t_K) = _1.final = _1.current
   
@@ -5841,61 +5923,68 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   meta "rewrite_def" predicate inv_refmut_V
   
   let rec swap_V (x: MutBorrow.t t_V) (y: MutBorrow.t t_V) (return (x'0: ())) =
-    {[@expl:swap 'x' type invariant] inv_refmut_V x}
-    {[@expl:swap 'y' type invariant] inv_refmut_V y}
-    any [ return (result: ()) -> {x.final = y.current} {y.final = x.current} (! return {result}) ]
+    {([@expl:swap 'x' type invariant] inv_refmut_V x) /\ ([@expl:swap 'y' type invariant] inv_refmut_V y)}
+    any
+    [ return (result: ()) -> {([@expl:swap ensures #0] x.final = y.current)
+      /\ ([@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_refmut_V [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_V
   
   let rec move_red_left_K (self: MutBorrow.t t_Node_K_V) (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:move_red_left requires #0] self.current.right.node <> None}
-    {[@expl:move_red_left requires #1] internal_invariant_K self.current}
-    {[@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current}
+    {([@expl:move_red_left 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:move_red_left requires #0] self.current.right.node <> None)
+    /\ ([@expl:move_red_left requires #1] internal_invariant_K self.current)
+    /\ ([@expl:move_red_left requires #2] match_n_K (cpn (Red) (cpn (Black) (CPL (Black)) (CPL (Black))) (CPL (Black))) self.current)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Node_K_V result}
-      {internal_invariant_K result.current}
-      {internal_invariant_K result.final
-        /\ height_K'0 result.current = height_K'0 result.final
-        /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
-      -> internal_invariant_K self.final}
-      {height_K'0 result.current = height_K'0 result.final -> height_K'0 self.current = height_K'0 self.final}
-      {self.current.key = result.current.key}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v -> has_mapping_K'0 self.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
-          /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
-        = (has_mapping_K'0 result.final k v
-        \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v)}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
-      \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current}
-      {color_invariant_K'0 result.final /\ (color_K result.current.right = Black -> result.final.color = Black)
-      -> color_invariant_K'0 self.final}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:move_red_left result type invariant] inv_refmut_Node_K_V result)
+      /\ ([@expl:move_red_left ensures #0] internal_invariant_K result.current)
+      /\ ([@expl:move_red_left ensures #1] internal_invariant_K result.final
+          /\ height_K'0 result.current = height_K'0 result.final
+          /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.final k v -> has_mapping_K'0 result.current k v)
+        -> internal_invariant_K self.final)
+      /\ ([@expl:move_red_left ensures #2] height_K'0 result.current = height_K'0 result.final
+        -> height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:move_red_left ensures #3] self.current.key = result.current.key)
+      /\ ([@expl:move_red_left ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 result.current k v
+          -> has_mapping_K'0 self.current k v)
+      /\ ([@expl:move_red_left ensures #5] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.current k v
+            /\ le_log_DeepModelTy k (deep_model_K self.current.key) -> has_mapping_K'0 result.current k v)
+      /\ ([@expl:move_red_left ensures #6] forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self.final k v
+          = (has_mapping_K'0 result.final k v
+          \/ has_mapping_K'0 self.current k v /\ not has_mapping_K'0 result.current k v))
+      /\ ([@expl:move_red_left ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) result.current
+        \/ match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) result.current)
+      /\ ([@expl:move_red_left ensures #8] color_invariant_K'0 result.final
+        /\ (color_K result.current.right = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
   
   let rec balance_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@expl:balance 'self' type invariant] inv_refmut_Node_K_V self}
-    {[@expl:balance requires #0] internal_invariant_K self.current}
-    {[@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
-    -> color_invariant_K self.current.left}
-    {[@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
-    -> color_invariant_K self.current.right}
-    {[@expl:balance requires #3] self.current.color = Red
-      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false}
+    {([@expl:balance 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@expl:balance requires #0] internal_invariant_K self.current)
+    /\ ([@expl:balance requires #1] self.current.color = Red /\ color_K self.current.left = Red
+      -> color_invariant_K self.current.left)
+    /\ ([@expl:balance requires #2] self.current.color = Red /\ color_K self.current.right = Red
+      -> color_invariant_K self.current.right)
+    /\ ([@expl:balance requires #3] self.current.color = Red
+      /\ color_K self.current.right = Red /\ color_K self.current.left = Red -> false)}
     any
-    [ return (result: ()) -> {same_mappings_K self.current self.final}
-      {internal_invariant_K self.final}
-      {height_K'0 self.current = height_K'0 self.final}
-      {color_invariant_K self.current.left /\ color_K self.current.right = Black -> self.current = self.final}
-      {match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
-      -> match_n_K (CPL (Red)) self.final}
-      {match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
-      -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final}
-      {match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current -> match_n_K (CPL (Red)) self.final}
+    [ return (result: ()) -> {([@expl:balance ensures #0] same_mappings_K self.current self.final)
+      /\ ([@expl:balance ensures #1] internal_invariant_K self.final)
+      /\ ([@expl:balance ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@expl:balance ensures #3] color_invariant_K self.current.left /\ color_K self.current.right = Black
+        -> self.current = self.final)
+      /\ ([@expl:balance ensures #4] match_n_K (cpn (Black) (cpn (Red) (CPL (Red)) (CPL (Black))) (CPL (Black))) self.current
+        -> match_n_K (CPL (Red)) self.final)
+      /\ ([@expl:balance ensures #5] match_n_K (cpn (Black) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #6] match_n_K (cpn (Red) (CPL (Black)) (CPL (Red))) self.current
+        -> match_n_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final)
+      /\ ([@expl:balance ensures #7] match_n_K (cpn (Black) (CPL (Red)) (CPL (Red))) self.current
+      -> match_n_K (CPL (Red)) self.final)}
       (! return {result}) ]
   
   function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
@@ -5907,11 +5996,11 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   meta "select_lsinst" "all"
   
   let rec delete_rec_K (self: MutBorrow.t t_Tree_K_V) (key'0: t_K) (return (x: t_Option_tup2_K_V)) =
-    {[@expl:delete_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_rec 'key' type invariant] inv_ref_K key'0}
-    {[@expl:delete_rec requires #0] internal_invariant_K'0 self.current}
-    {[@expl:delete_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_rec 'key' type invariant] inv_ref_K key'0)
+    /\ ([@expl:delete_rec requires #0] internal_invariant_K'0 self.current)
+    /\ ([@expl:delete_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.node}
@@ -6225,18 +6314,18 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     | & _106: MutBorrow.t t_Tree_K_V = Any.any_l ()
     | & _108: () = Any.any_l ()
     | & _109: MutBorrow.t t_Node_K_V = Any.any_l () ])
-    [ return (result: t_Option_tup2_K_V) -> {[@expl:delete_rec result type invariant] inv_Option_tup2_K_V result}
-      {[@expl:delete_rec ensures #0] internal_invariant_K'0 self.final}
-      {[@expl:delete_rec ensures #1] height_K self.current = height_K self.final}
-      {[@expl:delete_rec ensures #2] match result with
-        | None'1 -> forall v: t_V. not has_mapping_K self.current (deep_model_ref_K key'0) v
-        | Some'1 {f0'1 = k; f1'1 = v} -> deep_model_ref_K key'0 = deep_model_K k
-        /\ has_mapping_K self.current (deep_model_K k) v
-        end}
-      {[@expl:delete_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_ref_K key'0 <> k /\ has_mapping_K self.current k v)}
-      {[@expl:delete_rec ensures #4] color_invariant_K self.final}
-      {[@expl:delete_rec ensures #5] color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:delete_rec result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:delete_rec ensures #0] internal_invariant_K'0 self.final)
+      /\ ([@expl:delete_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_rec ensures #2] match result with
+          | None'1 -> forall v: t_V. not has_mapping_K self.current (deep_model_ref_K key'0) v
+          | Some'1 {f0'1 = k; f1'1 = v} -> deep_model_ref_K key'0 = deep_model_K k
+          /\ has_mapping_K self.current (deep_model_K k) v
+          end)
+      /\ ([@expl:delete_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_ref_K key'0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_rec ensures #4] color_invariant_K self.final)
+      /\ ([@expl:delete_rec ensures #5] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
 end
 module M_impl_Resolve_for_Map_K_V__resolve_coherence (* <Map<K, V> as creusot_std::resolve::Resolve> *)
@@ -6437,9 +6526,9 @@ module M_impl_Resolve_for_Map_K_V__resolve_coherence (* <Map<K, V> as creusot_st
 end
 module M_impl_Map_K_V__new (* Map<K, V> *)
   use creusot.prelude.Any
-  use mach.int.Int
   use map.Map
   use map.Const
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -6627,16 +6716,16 @@ module M_impl_Map_K_V__new (* Map<K, V> *)
     [ & _ret: t_Map_K_V = Any.any_l ()
     | & _2: t_Tree_K_V = Any.any_l ()
     | & _3: t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: t_Map_K_V) -> {[@expl:new result type invariant] inv_Map_K_V result}
-      {[@expl:new ensures] view_Map_K_V result = Const.const (None'0)}
+    [ return (result: t_Map_K_V) -> {([@expl:new result type invariant] inv_Map_K_V result)
+      /\ ([@expl:new ensures] view_Map_K_V result = Const.const (None'0))}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__insert (* Map<K, V> *)
   use map.Map
   use map.Const
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -6853,19 +6942,20 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec insert_rec_K (self: MutBorrow.t t_Tree_K_V) (key'0: t_K) (val''0: t_V) (return (x: ())) =
-    {[@expl:insert_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:insert_rec 'key' type invariant] inv_K key'0}
-    {[@expl:insert_rec 'val' type invariant] inv_V val''0}
-    {[@expl:insert_rec requires #0] internal_invariant_K self.current}
-    {[@expl:insert_rec requires #1] color_invariant_K self.current}
+    {([@expl:insert_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:insert_rec 'key' type invariant] inv_K key'0)
+    /\ ([@expl:insert_rec 'val' type invariant] inv_V val''0)
+    /\ ([@expl:insert_rec requires #0] internal_invariant_K self.current)
+    /\ ([@expl:insert_rec requires #1] color_invariant_K self.current)}
     any
-    [ return (result: ()) -> {internal_invariant_K self.final}
-      {height_K self.current = height_K self.final}
-      {match_t_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final /\ color_K self.current = Red
-      \/ color_invariant_K self.final}
-      {has_mapping_K self.final (deep_model_K key'0) val''0}
-      {forall k: t_DeepModelTy, v: t_V. k = deep_model_K key'0
-        \/ has_mapping_K self.current k v = has_mapping_K self.final k v}
+    [ return (result: ()) -> {([@expl:insert_rec ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:insert_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:insert_rec ensures #2] match_t_K (cpn (Red) (CPL (Red)) (CPL (Black))) self.final
+          /\ color_K self.current = Red
+        \/ color_invariant_K self.final)
+      /\ ([@expl:insert_rec ensures #3] has_mapping_K self.final (deep_model_K key'0) val''0)
+      /\ ([@expl:insert_rec ensures #4] forall k: t_DeepModelTy, v: t_V. k = deep_model_K key'0
+        \/ has_mapping_K self.current k v = has_mapping_K self.final k v)}
       (! return {result}) ]
   
   type t_Option_refmut_Box_Node_K_V_Global = None'1 | Some'1 (MutBorrow.t t_Node_K_V)
@@ -6903,20 +6993,22 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'1 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'1 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'1 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'1}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'1 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
@@ -6951,9 +7043,8 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
   meta "select_lsinst" "all"
   
   let rec insert_K (self: MutBorrow.t t_Map_K_V) (key'0: t_K) (val''0: t_V) (return (x: ())) =
-    {[@expl:insert 'self' type invariant] inv_refmut_Map_K_V self}
-    {[@expl:insert 'key' type invariant] inv_K key'0}
-    {[@expl:insert 'val' type invariant] inv_V val''0}
+    {([@expl:insert 'self' type invariant] inv_refmut_Map_K_V self)
+    /\ ([@expl:insert 'key' type invariant] inv_K key'0) /\ ([@expl:insert 'val' type invariant] inv_V val''0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- () ] s1
@@ -6995,10 +7086,10 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
 end
 module M_impl_Map_K_V__delete_max (* Map<K, V> *)
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use map.Map
   use map.Const
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -7076,11 +7167,12 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   type t_Option_Infallible = None'1 | Some'1 ()
@@ -7115,11 +7207,11 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
     {[@expl:branch 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
     any
     [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result}
-      {match self_ with
+    {([@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:branch ensures] match self_ with
         | Some'0 v -> result = Continue v
         | None'0 -> result = Break (None'1)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
@@ -7282,7 +7374,10 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
   
   let rec from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
-    any [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result} {result = None'2} (! return {result}) ]
+    any
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:from_residual ensures] result = None'2)}
+      (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
@@ -7302,7 +7397,7 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
   meta "rewrite_def" predicate inv_ref_Tree_K_V
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
   
@@ -7333,30 +7428,31 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec delete_max_rec_K (self: MutBorrow.t t_Tree_K_V) (return (x: tup2_K_V)) =
-    {[@expl:delete_max_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_max_rec requires #0] internal_invariant_K self.current}
-    {[@expl:delete_max_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_max_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_max_rec requires #0] internal_invariant_K self.current)
+    /\ ([@expl:delete_max_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     any
-    [ return (result: tup2_K_V) -> {inv_tup2_K_V result}
-      {internal_invariant_K self.final}
-      {height_K self.current = height_K self.final}
-      {has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
-        -> le_log_DeepModelTy k (deep_model_K result.f0'0)}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v)}
-      {color_invariant_K self.final}
-      {color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: tup2_K_V) -> {([@expl:delete_max_rec result type invariant] inv_tup2_K_V result)
+      /\ ([@expl:delete_max_rec ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:delete_max_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_max_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0)
+      /\ ([@expl:delete_max_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
+          -> le_log_DeepModelTy k (deep_model_K result.f0'0))
+      /\ ([@expl:delete_max_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_max_rec ensures #5] color_invariant_K self.final)
+      /\ ([@expl:delete_max_rec ensures #6] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   type t_Option_V = None'3 | Some'3 t_V
@@ -7486,23 +7582,23 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
     | & _24: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _25: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
     | & _26: () = Any.any_l () ])
-    [ return (result: t_Option_tup2_K_V) -> {[@expl:delete_max result type invariant] inv_Option_tup2_K_V result}
-      {[@expl:delete_max ensures] match result with
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:delete_max result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:delete_max ensures] match result with
         | Some'2 {f0'0 = k; f1'0 = v} -> Map.get (view_Map_K_V self.current) (deep_model_K k) = Some'3 v
         /\ (forall k2: t_DeepModelTy. Map.get (view_Map_K_V self.current) k2 = None'3
             \/ le_log_DeepModelTy k2 (deep_model_K k))
         /\ view_Map_K_V self.final = Map.set (view_Map_K_V self.current) (deep_model_K k) (None'3)
         | None'2 -> view_Map_K_V self.final = view_Map_K_V self.current
         /\ view_Map_K_V self.current = Const.const (None'3)
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__delete_min (* Map<K, V> *)
   use map.Map
   use map.Const
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -7695,11 +7791,12 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'1 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'1 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'1 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   type t_Option_Infallible = None'2 | Some'2 ()
@@ -7734,11 +7831,11 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
     {[@expl:branch 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
     any
     [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result}
-      {match self_ with
+    {([@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:branch ensures] match self_ with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
@@ -7823,7 +7920,10 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
   
   let rec from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
-    any [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result} {result = None'3} (! return {result}) ]
+    any
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:from_residual ensures] result = None'3)}
+      (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
@@ -7843,7 +7943,7 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
   meta "rewrite_def" predicate inv_ref_Tree_K_V
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
   
@@ -7874,30 +7974,31 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
   meta "rewrite_def" function cpn
   
   let rec delete_min_rec_K (self: MutBorrow.t t_Tree_K_V) (return (x: tup2_K_V)) =
-    {[@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_min_rec requires #0] internal_invariant_K self.current}
-    {[@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_min_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_min_rec requires #0] internal_invariant_K self.current)
+    /\ ([@expl:delete_min_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     any
-    [ return (result: tup2_K_V) -> {inv_tup2_K_V result}
-      {internal_invariant_K self.final}
-      {height_K self.current = height_K self.final}
-      {has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
-        -> le_log_DeepModelTy (deep_model_K result.f0'0) k}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v)}
-      {color_invariant_K self.final}
-      {color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: tup2_K_V) -> {([@expl:delete_min_rec result type invariant] inv_tup2_K_V result)
+      /\ ([@expl:delete_min_rec ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:delete_min_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_min_rec ensures #2] has_mapping_K self.current (deep_model_K result.f0'0) result.f1'0)
+      /\ ([@expl:delete_min_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.current k v
+          -> le_log_DeepModelTy (deep_model_K result.f0'0) k)
+      /\ ([@expl:delete_min_rec ensures #4] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_K result.f0'0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_min_rec ensures #5] color_invariant_K self.final)
+      /\ ([@expl:delete_min_rec ensures #6] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'1}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'1 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
@@ -7991,23 +8092,23 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
     | & _25: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _26: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _27: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: t_Option_tup2_K_V) -> {[@expl:delete_min result type invariant] inv_Option_tup2_K_V result}
-      {[@expl:delete_min ensures] match result with
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:delete_min result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:delete_min ensures] match result with
         | Some'3 {f0'0 = k; f1'0 = v} -> Map.get (view_Map_K_V self.current) (deep_model_K k) = Some'0 v
         /\ (forall k2: t_DeepModelTy. Map.get (view_Map_K_V self.current) k2 = None'0
             \/ le_log_DeepModelTy (deep_model_K k) k2)
         /\ view_Map_K_V self.final = Map.set (view_Map_K_V self.current) (deep_model_K k) (None'0)
         | None'3 -> view_Map_K_V self.final = view_Map_K_V self.current
         /\ view_Map_K_V self.current = Const.const (None'0)
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__delete (* Map<K, V> *)
   use map.Map
   use map.Const
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -8200,11 +8301,12 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
     (return (x: t_Option_refmut_Box_Node_K_V_Global)) =
     {[@expl:as_mut 'self_' type invariant] inv_refmut_Option_Box_Node_K_V_Global self_}
     any
-    [ return (result: t_Option_refmut_Box_Node_K_V_Global) -> {inv_Option_refmut_Box_Node_K_V_Global result}
-      {self_.current = None -> result = None'1 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_Box_Node_K_V_Global) ->
+    {([@expl:as_mut result type invariant] inv_Option_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:as_mut ensures #0] self_.current = None -> result = None'1 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t t_Node_K_V. result = Some'1 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   type t_Option_Infallible = None'2 | Some'2 ()
@@ -8239,11 +8341,11 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
     {[@expl:branch 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
     any
     [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result}
-      {match self_ with
+    {([@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:branch ensures] match self_ with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
-        end}
+        end)}
       (! return {result}) ]
   
   let rec elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
@@ -8328,7 +8430,10 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
   
   let rec from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
     {[@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
-    any [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result} {result = None'3} (! return {result}) ]
+    any
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:from_residual ensures] result = None'3)}
+      (! return {result}) ]
   
   let rec elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
@@ -8348,7 +8453,7 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
   meta "rewrite_def" predicate inv_ref_Tree_K_V
   
   let rec is_red_K (self: t_Tree_K_V) (return (x: bool)) = {[@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
-    any [ return (result: bool) -> {result = (color_K self = Red)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_red ensures] result = (color_K self = Red)} (! return {result}) ]
   
   predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
   
@@ -8391,33 +8496,34 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
   meta "rewrite_def" function deep_model_ref_K
   
   let rec delete_rec_K (self: MutBorrow.t t_Tree_K_V) (key'0: t_K) (return (x: t_Option_tup2_K_V)) =
-    {[@expl:delete_rec 'self' type invariant] inv_refmut_Tree_K_V self}
-    {[@expl:delete_rec 'key' type invariant] inv_ref_K key'0}
-    {[@expl:delete_rec requires #0] internal_invariant_K self.current}
-    {[@expl:delete_rec requires #1] match_t_K (CPL (Red)) self.current
-    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current}
+    {([@expl:delete_rec 'self' type invariant] inv_refmut_Tree_K_V self)
+    /\ ([@expl:delete_rec 'key' type invariant] inv_ref_K key'0)
+    /\ ([@expl:delete_rec requires #0] internal_invariant_K self.current)
+    /\ ([@expl:delete_rec requires #1] match_t_K (CPL (Red)) self.current
+    \/ match_t_K (cpn (Black) (CPL (Red)) (CPL (Black))) self.current)}
     any
-    [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result}
-      {internal_invariant_K self.final}
-      {height_K self.current = height_K self.final}
-      {match result with
-        | None'3 -> forall v: t_V. not has_mapping_K self.current (deep_model_ref_K key'0) v
-        | Some'3 {f0'0 = k; f1'0 = v} -> deep_model_ref_K key'0 = deep_model_K k
-        /\ has_mapping_K self.current (deep_model_K k) v
-        end}
-      {forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
-        = (deep_model_ref_K key'0 <> k /\ has_mapping_K self.current k v)}
-      {color_invariant_K self.final}
-      {color_K self.current = Black -> color_K self.final = Black}
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:delete_rec result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:delete_rec ensures #0] internal_invariant_K self.final)
+      /\ ([@expl:delete_rec ensures #1] height_K self.current = height_K self.final)
+      /\ ([@expl:delete_rec ensures #2] match result with
+          | None'3 -> forall v: t_V. not has_mapping_K self.current (deep_model_ref_K key'0) v
+          | Some'3 {f0'0 = k; f1'0 = v} -> deep_model_ref_K key'0 = deep_model_K k
+          /\ has_mapping_K self.current (deep_model_K k) v
+          end)
+      /\ ([@expl:delete_rec ensures #3] forall k: t_DeepModelTy, v: t_V. has_mapping_K self.final k v
+          = (deep_model_ref_K key'0 <> k /\ has_mapping_K self.current k v))
+      /\ ([@expl:delete_rec ensures #4] color_invariant_K self.final)
+      /\ ([@expl:delete_rec ensures #5] color_K self.current = Black -> color_K self.final = Black)}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Node_K_V_Global (self_: t_Option_refmut_Box_Node_K_V_Global)
     (return (x: MutBorrow.t t_Node_K_V)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_}
-    {[@expl:unwrap requires] self_ <> None'1}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Node_K_V_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: MutBorrow.t t_Node_K_V) -> {inv_refmut_Box_Node_K_V_Global result}
-      {Some'1 result = self_}
+    [ return (result: MutBorrow.t t_Node_K_V) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Node_K_V_Global result)
+      /\ ([@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
@@ -8427,8 +8533,8 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
   meta "select_lsinst" "all"
   
   let rec delete_K (self: MutBorrow.t t_Map_K_V) (key'0: t_K) (return (x: t_Option_tup2_K_V)) =
-    {[@expl:delete 'self' type invariant] inv_refmut_Map_K_V self}
-    {[@expl:delete 'key' type invariant] inv_ref_K key'0}
+    {([@expl:delete 'self' type invariant] inv_refmut_Map_K_V self)
+    /\ ([@expl:delete 'key' type invariant] inv_ref_K key'0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_9 <- () ] s1
@@ -8513,21 +8619,21 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
     | & _31: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _32: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _33: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: t_Option_tup2_K_V) -> {[@expl:delete result type invariant] inv_Option_tup2_K_V result}
-      {[@expl:delete ensures #0] match result with
-        | Some'3 {f0'0 = k; f1'0 = v} -> deep_model_K k = deep_model_ref_K key'0
-        /\ Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = Some'0 v
-        | None'3 -> Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = None'0
-        end}
-      {[@expl:delete ensures #1] view_Map_K_V self.final
-      = Map.set (view_Map_K_V self.current) (deep_model_ref_K key'0) (None'0)}
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:delete result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:delete ensures #0] match result with
+          | Some'3 {f0'0 = k; f1'0 = v} -> deep_model_K k = deep_model_ref_K key'0
+          /\ Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = Some'0 v
+          | None'3 -> Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = None'0
+          end)
+      /\ ([@expl:delete ensures #1] view_Map_K_V self.final
+      = Map.set (view_Map_K_V self.current) (deep_model_ref_K key'0) (None'0))}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__get (* Map<K, V> *)
   use map.Map
   use map.Const
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -8730,7 +8836,7 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
   let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
     {[@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
     any
-    [ return (result: t_Ordering) -> {postcondition_once_cmp () { f0'0 = self_; f1'0 = rhs } result}
+    [ return (result: t_Ordering) -> {[@expl:cmp ensures] postcondition_once_cmp () { f0'0 = self_; f1'0 = rhs } result}
       (! return {result}) ]
   
   type t_Option_ref_V = None'1 | Some'1 t_V
@@ -8808,8 +8914,7 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
   meta "select_lsinst" "all"
   
   let rec get_K (self: t_Map_K_V) (key'0: t_K) (return (x: t_Option_ref_V)) =
-    {[@expl:get 'self' type invariant] inv_ref_Map_K_V self}
-    {[@expl:get 'key' type invariant] inv_ref_K key'0}
+    {([@expl:get 'self' type invariant] inv_ref_Map_K_V self) /\ ([@expl:get 'key' type invariant] inv_ref_K key'0)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_7 <- () ] s1 | s1 = [ &tree <- self.f0 ] s2 | s2 = bb2 ]
     | bb2 = bb2
@@ -8842,19 +8947,19 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
     | & _28: t_Tree_K_V = Any.any_l ()
     | & _31: t_V = Any.any_l ()
     | & _33: t_Tree_K_V = Any.any_l () ])
-    [ return (result: t_Option_ref_V) -> {[@expl:get result type invariant] inv_Option_ref_V result}
-      {[@expl:get ensures] match result with
+    [ return (result: t_Option_ref_V) -> {([@expl:get result type invariant] inv_Option_ref_V result)
+      /\ ([@expl:get ensures] match result with
         | Some'1 v -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = Some'0 v
         | None'1 -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = None'0
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__get_mut (* Map<K, V> *)
   use map.Map
   use map.Const
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Color = Red | Black
   
@@ -9101,7 +9206,7 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
   let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
     {[@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
     any
-    [ return (result: t_Ordering) -> {postcondition_once_cmp () { f0'0 = self_; f1'0 = rhs } result}
+    [ return (result: t_Ordering) -> {[@expl:cmp ensures] postcondition_once_cmp () { f0'0 = self_; f1'0 = rhs } result}
       (! return {result}) ]
   
   predicate resolve_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = _1.final = _1.current
@@ -9189,8 +9294,8 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
   meta "select_lsinst" "all"
   
   let rec get_mut_K (self: MutBorrow.t t_Map_K_V) (key'0: t_K) (return (x: t_Option_refmut_V)) =
-    {[@expl:get_mut 'self' type invariant] inv_refmut_Map_K_V self}
-    {[@expl:get_mut 'key' type invariant] inv_ref_K key'0}
+    {([@expl:get_mut 'self' type invariant] inv_refmut_Map_K_V self)
+    /\ ([@expl:get_mut 'key' type invariant] inv_ref_K key'0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- () ] s1
@@ -9324,13 +9429,13 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
     | & _55: MutBorrow.t t_V = Any.any_l ()
     | & _56: MutBorrow.t t_Tree_K_V = Any.any_l ()
     | & _57: MutBorrow.t t_Tree_K_V = Any.any_l () ])
-    [ return (result: t_Option_refmut_V) -> {[@expl:get_mut result type invariant] inv_Option_refmut_V result}
-      {[@expl:get_mut ensures] match result with
+    [ return (result: t_Option_refmut_V) -> {([@expl:get_mut result type invariant] inv_Option_refmut_V result)
+      /\ ([@expl:get_mut ensures] match result with
         | Some'1 v -> Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = Some'0 (v.current)
         /\ view_Map_K_V self.final = Map.set (view_Map_K_V self.current) (deep_model_ref_K key'0) (Some'0 (v.final))
         | None'1 -> Map.get (view_Map_K_V self.current) (deep_model_ref_K key'0) = None'0
         /\ view_Map_K_V self.final = view_Map_K_V self.current
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Resolve_for_Tree_K_V__resolve_coherence__refines (* <Tree<K, V> as creusot_std::resolve::Resolve> *)
@@ -9533,9 +9638,9 @@ module M_impl_Resolve_for_Node_K_V__resolve_coherence__refines (* <Node<K, V> as
       -> structural_resolve_Node_K_V self /\ (forall result: (). resolve_Node_K_V self -> resolve_Node_K_V self)
 end
 module M_impl_Resolve_for_Map_K_V__resolve_coherence__refines (* <Map<K, V> as creusot_std::resolve::Resolve> *)
-  use mach.int.Int
   use map.Map
   use map.Const
+  use int.Int
   
   type t_Color = Red | Black
   

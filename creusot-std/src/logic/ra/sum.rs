@@ -40,6 +40,16 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
         }
     }
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        match (self, other) {
+            (Sum::Left(s), Sum::Left(o)) => s.eq(o),
+            (Sum::Right(s), Sum::Right(o)) => s.eq(o),
+            _ => false,
+        }
+    }
+
     #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {}

@@ -2,9 +2,9 @@ module M_test_deque
   use creusot.int.UInt64
   use seq.Seq
   use creusot.int.UInt32
-  use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_VecDeque_u32_Global
   
@@ -16,17 +16,22 @@ module M_test_deque
       <= UInt64.t'int const_MAX
   
   let rec with_capacity_u32 (capacity: UInt64.t) (return (x: t_VecDeque_u32_Global)) = any
-    [ return (result: t_VecDeque_u32_Global) -> {Seq.length (view_VecDeque_u32_Global result) = 0} (! return {result}) ]
+    [ return (result: t_VecDeque_u32_Global) ->
+    {[@expl:with_capacity ensures] Seq.length (view_VecDeque_u32_Global result) = 0}
+      (! return {result}) ]
   
   let rec is_empty_u32 (self_: t_VecDeque_u32_Global) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (Seq.length (view_VecDeque_u32_Global self_) = 0)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_empty ensures] result = (Seq.length (view_VecDeque_u32_Global self_) = 0)}
+      (! return {result}) ]
   
   let rec len_u32 (self_: t_VecDeque_u32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_VecDeque_u32_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_VecDeque_u32_Global self_)}
       (! return {result}) ]
   
   let rec new_u32 (return (x: t_VecDeque_u32_Global)) = any
-    [ return (result: t_VecDeque_u32_Global) -> {Seq.length (view_VecDeque_u32_Global result) = 0} (! return {result}) ]
+    [ return (result: t_VecDeque_u32_Global) -> {[@expl:new ensures] Seq.length (view_VecDeque_u32_Global result) = 0}
+      (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -35,7 +40,7 @@ module M_test_deque
   meta "rewrite_def" function push_front_u32
   
   let rec pop_front_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:pop_front ensures] match result with
         | Some t -> view_VecDeque_u32_Global self_.final
           = Seq.([..]) (view_VecDeque_u32_Global self_.current) 1 (Seq.length (view_VecDeque_u32_Global self_.current))
         /\ view_VecDeque_u32_Global self_.current = push_front_u32 (view_VecDeque_u32_Global self_.final) t
@@ -61,11 +66,12 @@ module M_test_deque
   meta "rewrite_def" function deep_model_ref_Option_u32
   
   let rec eq_Option_u32 (self_: t_Option_u32) (rhs: t_Option_u32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_u32 self_ = deep_model_ref_Option_u32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_u32 self_ = deep_model_ref_Option_u32 rhs)}
       (! return {result}) ]
   
   let rec pop_back_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:pop_back ensures] match result with
         | Some t -> view_VecDeque_u32_Global self_.final
           = Seq.([..]) (view_VecDeque_u32_Global self_.current) 0 (Seq.length (view_VecDeque_u32_Global self_.current)
           - 1)
@@ -75,18 +81,20 @@ module M_test_deque
       (! return {result}) ]
   
   let rec push_front_u32'0 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
-    [ return (result: ()) -> {Seq.length (view_VecDeque_u32_Global self_.final)
-      = Seq.length (view_VecDeque_u32_Global self_.current) + 1}
-      {view_VecDeque_u32_Global self_.final = push_front_u32 (view_VecDeque_u32_Global self_.current) value}
+    [ return (result: ()) -> {([@expl:push_front ensures #0] Seq.length (view_VecDeque_u32_Global self_.final)
+        = Seq.length (view_VecDeque_u32_Global self_.current) + 1)
+      /\ ([@expl:push_front ensures #1] view_VecDeque_u32_Global self_.final
+      = push_front_u32 (view_VecDeque_u32_Global self_.current) value)}
       (! return {result}) ]
   
   let rec push_back_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
-    [ return (result: ()) -> {view_VecDeque_u32_Global self_.final
+    [ return (result: ()) -> {[@expl:push_back ensures] view_VecDeque_u32_Global self_.final
       = Seq.snoc (view_VecDeque_u32_Global self_.current) value}
       (! return {result}) ]
   
   let rec clear_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: ())) = any
-    [ return (result: ()) -> {Seq.length (view_VecDeque_u32_Global self_.final) = 0} (! return {result}) ]
+    [ return (result: ()) -> {[@expl:clear ensures] Seq.length (view_VecDeque_u32_Global self_.final) = 0}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

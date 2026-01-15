@@ -3,9 +3,9 @@ module M_can_extend
   use creusot.int.Int32
   use seq.Seq
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_i32_Global
   
@@ -22,7 +22,8 @@ module M_can_extend
   meta "rewrite_def" function view_Box_slice_i32_Global
   
   let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {view_Vec_i32_Global result = view_Box_slice_i32_Global self_}
+    [ return (result: t_Vec_i32_Global) -> {[@expl:into_vec ensures] view_Vec_i32_Global result
+      = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
   predicate precondition_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) = let self_ = args in true
@@ -36,8 +37,9 @@ module M_can_extend
   function view_IntoIter_i32_Global (self: t_IntoIter_i32_Global) : Seq.seq Int32.t
   
   let rec into_iter_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: t_IntoIter_i32_Global)) = any
-    [ return (result: t_IntoIter_i32_Global) -> {inv_IntoIter_i32_Global result}
-      {view_Vec_i32_Global self_ = view_IntoIter_i32_Global result}
+    [ return (result: t_IntoIter_i32_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_i32_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_i32_Global self_ = view_IntoIter_i32_Global result)}
       (! return {result}) ]
   
   predicate invariant_refmut_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
@@ -142,7 +144,7 @@ module M_can_extend
     {[@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
-    {exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
+    {[@expl:extend ensures] exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
         /\ inv_refmut_IntoIter_i32_Global done'
         /\ inv_Seq_i32 prod
         /\ postcondition_into_iter () iter start_

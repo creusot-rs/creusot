@@ -1,9 +1,9 @@
 module M_change_capacity
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_T_Global
   
@@ -53,19 +53,29 @@ module M_change_capacity
   
   let rec reserve_T (self_: MutBorrow.t t_Vec_T_Global) (additional: UInt64.t) (return (x: ())) =
     {[@expl:reserve 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:reserve ensures] view_Vec_T_Global self_.final = view_Vec_T_Global self_.current}
+      (! return {result}) ]
   
   let rec reserve_exact_T (self_: MutBorrow.t t_Vec_T_Global) (additional: UInt64.t) (return (x: ())) =
     {[@expl:reserve_exact 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:reserve_exact ensures] view_Vec_T_Global self_.final
+      = view_Vec_T_Global self_.current}
+      (! return {result}) ]
   
   let rec shrink_to_fit_T (self_: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
     {[@expl:shrink_to_fit 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:shrink_to_fit ensures] view_Vec_T_Global self_.final
+      = view_Vec_T_Global self_.current}
+      (! return {result}) ]
   
   let rec shrink_to_T (self_: MutBorrow.t t_Vec_T_Global) (min_capacity: UInt64.t) (return (x: ())) =
     {[@expl:shrink_to 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    any [ return (result: ()) -> {view_Vec_T_Global self_.final = view_Vec_T_Global self_.current} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:shrink_to ensures] view_Vec_T_Global self_.final = view_Vec_T_Global self_.current}
+      (! return {result}) ]
   
   predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
   
@@ -117,18 +127,18 @@ module M_change_capacity
     | & _11: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _13: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:change_capacity ensures #0] Seq.length (view_Vec_T_Global v.final)
-      = Seq.length (view_Vec_T_Global v.current)}
-      {[@expl:change_capacity ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_T_Global v.current)
-        -> index_Vec_T_Global v.final i = index_Vec_T_Global v.current i}
+    [ return (result: ()) -> {([@expl:change_capacity ensures #0] Seq.length (view_Vec_T_Global v.final)
+        = Seq.length (view_Vec_T_Global v.current))
+      /\ ([@expl:change_capacity ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_T_Global v.current)
+        -> index_Vec_T_Global v.final i = index_Vec_T_Global v.current i)}
       (! return {result}) ]
 end
 module M_clear_vec
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_T_Global
   
@@ -178,7 +188,9 @@ module M_clear_vec
   
   let rec clear_T (self_: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
     {[@expl:clear 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    any [ return (result: ()) -> {Seq.length (view_Vec_T_Global self_.final) = 0} (! return {result}) ]
+    any
+    [ return (result: ()) -> {[@expl:clear ensures] Seq.length (view_Vec_T_Global self_.final) = 0}
+      (! return {result}) ]
   
   predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
   

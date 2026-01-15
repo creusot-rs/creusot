@@ -3,10 +3,10 @@ module M_foo
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Perm_ptr_i32
   
@@ -83,8 +83,8 @@ module M_foo
   
   let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
     [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
-    {inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result}
-      {ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v}
+    {([@expl:new result type invariant] inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result)
+      /\ ([@expl:new ensures] ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v)}
       (! return {result}) ]
   
   predicate invariant_refmut_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_i32) =
@@ -111,8 +111,9 @@ module M_foo
     (return (x: MutBorrow.t t_Perm_ptr_i32)) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Box_Perm_ptr_i32_Global self}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_i32) -> {inv_refmut_Box_Perm_ptr_i32_Global result}
-      {result = self}
+    [ return (result: MutBorrow.t t_Perm_ptr_i32) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_Box_Perm_ptr_i32_Global result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
@@ -138,7 +139,9 @@ module M_foo
   let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
     {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
     any
-    [ return (result: t_Perm_ptr_i32) -> {inv_ref_Box_Perm_ptr_i32_Global result} {result = self} (! return {result}) ]
+    [ return (result: t_Perm_ptr_i32) -> {([@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
+      /\ ([@expl:deref ensures] result = self)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Perm_ptr_i32 [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_i32) =
     inv_Perm_ptr_i32 self.current /\ inv_Perm_ptr_i32 self.final
@@ -165,12 +168,12 @@ module M_foo
   meta "rewrite_def" predicate is_disjoint_ptr_i32
   
   let rec disjoint_lemma_ptr_i32 (self: MutBorrow.t t_Perm_ptr_i32) (other: t_Perm_ptr_i32) (return (x: ())) =
-    {[@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_i32 self}
-    {[@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_i32 other}
+    {([@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_i32 self)
+    /\ ([@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_i32 other)}
     any
     [ return (result: ()) ->
-    {is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_ptr_i32 self.current) (ward_ptr_i32 other) (val_ptr_i32 other)}
-      {self.current = self.final}
+    {([@expl:disjoint_lemma ensures #0] is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_ptr_i32 self.current) (ward_ptr_i32 other) (val_ptr_i32 other))
+      /\ ([@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_i32) =
@@ -183,7 +186,8 @@ module M_foo
   
   meta "rewrite_def" predicate resolve_refmut_Box_Perm_ptr_i32_Global
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

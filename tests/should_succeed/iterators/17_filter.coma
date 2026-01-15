@@ -1,7 +1,7 @@
 module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
   use map.Map
+  use int.Int
   
   type t_I
   
@@ -22,9 +22,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common:
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -86,8 +99,8 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common:
 end
 module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
   use map.Map
+  use int.Int
   
   type t_I
   
@@ -108,9 +121,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -181,9 +207,9 @@ end
 module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
   use map.Map
+  use int.Int
   
   type t_I
   
@@ -245,7 +271,9 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -308,14 +336,17 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   predicate precondition_F (self: t_F) (args: t_Item)
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: t_Item) (return (x: bool)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut 'arg' type invariant] inv_tup1_ref_Item arg}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
-    any [ return (result: bool) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut 'arg' type invariant] inv_tup1_ref_Item arg)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    any
+    [ return (result: bool) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+      (! return {result}) ]
   
   predicate resolve_Item (_1: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate immutable_ref_Item (_1: t_F) = forall f: t_F, g: t_F. hist_inv_F f g -> f = g
   
@@ -437,11 +468,11 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
     | & _37: t_Item = Any.any_l ()
     | & _39: t_Item = Any.any_l ()
     | & _old: t_Filter_I_F = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {[@expl:next result type invariant] inv_Option_Item result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@expl:next ensures] match result with
         | None -> completed_Filter_I_F self
         | Some v -> produces_Filter_I_F self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_filter
@@ -501,9 +532,20 @@ module M_filter
   
   predicate immutable_ref_Item (_1: t_P) = forall f: t_P, g: t_P. hist_inv_P f g -> f = g
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_P (self: t_P) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_P) = forall f: t_P, i: t_Item. precondition_P f i
+  predicate no_precondition_ref_Item (_1: t_P) =
+    forall f: t_P, i: t_Item. inv_P f /\ inv_ref_Item i -> precondition_P f i
   
   predicate precise_ref_Item (_1: t_P) =
     forall f1: t_P, f2: t_P, i: t_Item. not (postcondition_mut_P f1 i f2 true /\ postcondition_mut_P f1 i f2 false)
@@ -521,26 +563,25 @@ module M_filter
   meta "select_lsinst" "all"
   
   let rec filter_I (iter'0: t_I) (f: t_P) (return (x: t_Filter_I_P)) =
-    {[@expl:filter 'iter' type invariant] inv_I iter'0}
-    {[@expl:filter 'f' type invariant] inv_P f}
-    {[@expl:filter requires #0] immutable_ref_Item f}
-    {[@expl:filter requires #1] no_precondition_ref_Item f}
-    {[@expl:filter requires #2] precise_ref_Item f}
+    {([@expl:filter 'iter' type invariant] inv_I iter'0)
+    /\ ([@expl:filter 'f' type invariant] inv_P f)
+    /\ ([@expl:filter requires #0] immutable_ref_Item f)
+    /\ ([@expl:filter requires #1] no_precondition_ref_Item f) /\ ([@expl:filter requires #2] precise_ref_Item f)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; func = f } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Filter_I_P = Any.any_l () | & iter'0: t_I = iter'0 | & f: t_P = f ])
-    [ return (result: t_Filter_I_P) -> {[@expl:filter result type invariant] inv_Filter_I_P result}
-      {[@expl:filter ensures] result.iter = iter'0 /\ result.func = f}
+    [ return (result: t_Filter_I_P) -> {([@expl:filter result type invariant] inv_Filter_I_P result)
+      /\ ([@expl:filter ensures] result.iter = iter'0 /\ result.func = f)}
       (! return {result}) ]
 end
 module M_less_than
   use creusot.int.UInt32
   use seq.Seq
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use map.Map
+  use int.Int
   
   type t_Vec_u32_Global
   
@@ -558,8 +599,9 @@ module M_less_than
   function view_IntoIter_u32_Global (self: t_IntoIter_u32_Global) : Seq.seq UInt32.t
   
   let rec into_iter_Vec_u32_Global (self_: t_Vec_u32_Global) (return (x: t_IntoIter_u32_Global)) = any
-    [ return (result: t_IntoIter_u32_Global) -> {inv_IntoIter_u32_Global result}
-      {view_Vec_u32_Global self_ = view_IntoIter_u32_Global result}
+    [ return (result: t_IntoIter_u32_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
       (! return {result}) ]
   
   type closure2 = { c0: UInt32.t }
@@ -662,29 +704,34 @@ module M_less_than
     | & self: MutBorrow.t closure2 = self
     | & i: UInt32.t = i
     | & res: bool = Any.any_l () ])
-    [ return (result: bool) -> {[@expl:closure ensures] result = UInt32.lt i self.final.c0}
-      {[@expl:closure hist_inv post] hist_inv_closure2 self.current self.final}
+    [ return (result: bool) -> {([@expl:closure ensures] result = UInt32.lt i self.final.c0)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
       (! return {result}) ]
   
   type t_Filter_IntoIter_u32_Global_closure2
   
   predicate immutable_ref_u32 (_1: closure2) = forall f: closure2, g: closure2. hist_inv_closure2 f g -> f = g
   
+  predicate inv_closure2 [@inline:trivial] (_1: closure2) = true
+  
+  meta "rewrite_def" predicate inv_closure2
+  
+  predicate inv_ref_u32 [@inline:trivial] (_1: UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u32
+  
   predicate precondition_closure2 [@inline:trivial] (self: closure2) (args: UInt32.t) = let i = args in true
   
   meta "rewrite_def" predicate precondition_closure2
   
-  predicate no_precondition_ref_u32 (_1: closure2) = forall f: closure2, i: UInt32.t. precondition_closure2 f i
+  predicate no_precondition_ref_u32 (_1: closure2) =
+    forall f: closure2, i: UInt32.t. inv_closure2 f /\ inv_ref_u32 i -> precondition_closure2 f i
   
   predicate precise_ref_u32 (_1: closure2) =
     forall f1: closure2, f2: closure2, i: UInt32.t. not (postcondition_mut_closure2 f1 i f2 true
       /\ postcondition_mut_closure2 f1 i f2 false)
   
   function iter_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) : t_IntoIter_u32_Global
-  
-  predicate inv_closure2 [@inline:trivial] (_1: closure2) = true
-  
-  meta "rewrite_def" predicate inv_closure2
   
   function func_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) : closure2
   
@@ -709,13 +756,14 @@ module M_less_than
   
   let rec filter_IntoIter_u32_Global (self_: t_IntoIter_u32_Global) (f: closure2)
     (return (x: t_Filter_IntoIter_u32_Global_closure2)) =
-    {[@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_}
-    {[@expl:filter requires #0] immutable_ref_u32 f}
-    {[@expl:filter requires #1] no_precondition_ref_u32 f}
-    {[@expl:filter requires #2] precise_ref_u32 f}
+    {([@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_)
+    /\ ([@expl:filter requires #0] immutable_ref_u32 f)
+    /\ ([@expl:filter requires #1] no_precondition_ref_u32 f) /\ ([@expl:filter requires #2] precise_ref_u32 f)}
     any
-    [ return (result: t_Filter_IntoIter_u32_Global_closure2) -> {inv_Filter_IntoIter_u32_Global_closure2 result}
-      {iter_Filter_IntoIter_u32_Global_closure2 result = self_ /\ func_Filter_IntoIter_u32_Global_closure2 result = f}
+    [ return (result: t_Filter_IntoIter_u32_Global_closure2) ->
+    {([@expl:filter result type invariant] inv_Filter_IntoIter_u32_Global_closure2 result)
+      /\ ([@expl:filter ensures] iter_Filter_IntoIter_u32_Global_closure2 result = self_
+      /\ func_Filter_IntoIter_u32_Global_closure2 result = f)}
       (! return {result}) ]
   
   predicate resolve_Filter_IntoIter_u32_Global_closure2 (_1: t_Filter_IntoIter_u32_Global_closure2)
@@ -781,7 +829,7 @@ module M_less_than
     {[@expl:collect 'self_' type invariant] inv_Filter_IntoIter_u32_Global_closure2 self_}
     any
     [ return (result: t_Vec_u32_Global) ->
-    {exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure2, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure2 done'.final
+    {[@expl:collect ensures] exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure2, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure2 done'.final
         /\ completed_Filter_IntoIter_u32_Global_closure2 done'
         /\ produces_Filter_IntoIter_u32_Global_closure2 self_ prod done'.current
         /\ from_iter_post_Vec_u32_Global prod result}
@@ -812,23 +860,25 @@ module M_less_than
     | & _7: t_Filter_IntoIter_u32_Global_closure2 = Any.any_l ()
     | & _8: t_IntoIter_u32_Global = Any.any_l ()
     | & _10: closure2 = Any.any_l () ])
-    [ return (result: t_Vec_u32_Global) -> {[@expl:less_than ensures #0] forall i: int. 0 <= i
-          /\ i < Seq.length (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n}
-      {[@expl:less_than ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u32_Global result)
-        -> contains_u32 (view_Vec_u32_Global v) (index_Vec_u32_Global result i)}
+    [ return (result: t_Vec_u32_Global) -> {([@expl:less_than ensures #0] forall i: int. 0 <= i
+            /\ i < Seq.length (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n)
+      /\ ([@expl:less_than ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u32_Global result)
+        -> contains_u32 (view_Vec_u32_Global v) (index_Vec_u32_Global result i))}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
   use map.Map
+  use int.Int
   
   type t_I
   
   type t_F
   
   type t_Filter_I_F = { iter: t_I; func: t_F }
+  
+  predicate inv_F (_1: t_F)
   
   type t_Item
   
@@ -843,9 +893,20 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -885,8 +946,6 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   predicate inv_I (_1: t_I)
   
-  predicate inv_F (_1: t_F)
-  
   predicate inv_Filter_I_F (_1: t_Filter_I_F)
   
   axiom inv_axiom [@rewrite]: forall x: t_Filter_I_F [inv_Filter_I_F x]. inv_Filter_I_F x
@@ -902,8 +961,6 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   meta "rewrite_def" predicate inv_refmut_Filter_I_F
   
   type t_Option_Item = None | Some t_Item
-  
-  predicate inv_Item (_1: t_Item)
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
@@ -952,8 +1009,8 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
 end
 module M_impl_Iterator_for_Filter_I_F__produces_refl__refines (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
   use map.Map
+  use int.Int
   
   type t_I
   
@@ -974,9 +1031,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl__refines (* <Filter<I, F> a
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -1034,8 +1104,8 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl__refines (* <Filter<I, F> a
 end
 module M_impl_Iterator_for_Filter_I_F__produces_trans__refines (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
   use map.Map
+  use int.Int
   
   type t_I
   
@@ -1056,9 +1126,22 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans__refines (* <Filter<I, F> 
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   

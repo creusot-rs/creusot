@@ -63,7 +63,7 @@ pub fn parallel_add(mut tokens: Ghost<Tokens>) {
     );
 
     thread::scope(|s| {
-        // We use move closure to make sure that they do not contain borrows of `Ghost<_>`, since
+        // We use move closures to make sure that they do not contain borrows of `Ghost<_>`, since
         // such a borrow would unnecesary consume space in these closures. So, we create the borrows
         // here.
         let mut frag1: Ghost<&mut _> = frag1.borrow_mut();

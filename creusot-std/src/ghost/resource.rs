@@ -10,6 +10,14 @@ pub use auth::{Authority, Fragment};
 mod m {
     #[cfg(creusot)]
     use crate::logic::such_that;
+    use crate::{
+        logic::{
+            Id, Set,
+            ra::{RA, UnitRA, update::Update},
+        },
+        prelude::*,
+    };
+    use core::marker::PhantomData;
 
     /// A ghost wrapper around a [resource algebra](RA).
     ///
@@ -39,14 +47,7 @@ mod m {
     #[opaque]
     pub struct Resource<R>(PhantomData<R>);
 
-    use crate::{
-        logic::{
-            Id, Set,
-            ra::{RA, UnitRA, update::Update},
-        },
-        prelude::*,
-    };
-    use core::marker::PhantomData;
+    unsafe impl<R> Send for Resource<R> {}
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;

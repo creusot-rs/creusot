@@ -99,33 +99,17 @@ impl Contract {
     }
 
     pub fn ensures_conj(&self) -> Exp {
-        let mut ensures = self.ensures.iter().map(|cond| cond.exp.clone());
-        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
-        postcond = ensures.fold(postcond, Exp::lazy_conj);
-        postcond.reassociate();
-        postcond
-    }
-
-    pub fn ensures_conj_labelled(&self) -> Exp {
         let mut ensures = self.ensures.iter().cloned().map(Condition::labelled_exp);
         let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
-        postcond = ensures.fold(postcond, Exp::lazy_conj);
+        postcond = ensures.fold(postcond, Exp::log_and);
         postcond.reassociate();
         postcond
     }
 
     pub fn requires_conj(&self) -> Exp {
-        let mut requires = self.requires.iter().map(|cond| cond.exp.clone());
-        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
-        postcond = requires.fold(postcond, Exp::lazy_conj);
-        postcond.reassociate();
-        postcond
-    }
-
-    pub fn requires_conj_labelled(&self) -> Exp {
         let mut requires = self.requires.iter().cloned().map(Condition::labelled_exp);
         let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
-        postcond = requires.fold(postcond, Exp::lazy_conj);
+        postcond = requires.fold(postcond, Exp::log_and);
         postcond.reassociate();
         postcond
     }

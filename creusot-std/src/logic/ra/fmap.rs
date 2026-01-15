@@ -46,6 +46,15 @@ impl<K, V: RA> RA for FMap<K, V> {
         }
     }
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        pearlite! {
+            let _ = Self::ext_eq;
+            forall<k: K> self.get(k).eq(other.get(k))
+        }
+    }
+
     #[logic(law)]
     #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {

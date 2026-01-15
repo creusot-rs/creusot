@@ -45,7 +45,8 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
       -> (let self = args in inv_Option_A res)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_A)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_A) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_A) -> {[@expl:next ensures] postcondition_once_next () self result} (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_A) (return (f0: t_A)) = any
     [ _k (f0: t_A) -> {Some f0 = _x} (! return {f0})
@@ -137,10 +138,12 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
     forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let rec call_F (self_: t_F) (arg: t_A) (return (x: t_B)) = {[@expl:call 'self_' type invariant] inv_ref_F self_}
-    {[@expl:call 'arg' type invariant] inv_tup1_A arg}
-    {[@expl:call requires] precondition_F self_ arg}
-    any [ return (result: t_B) -> {inv_B result} {postcondition_F self_ arg result} (! return {result}) ]
+  let rec call_F (self_: t_F) (arg: t_A) (return (x: t_B)) = {([@expl:call 'self_' type invariant] inv_ref_F self_)
+    /\ ([@expl:call 'arg' type invariant] inv_tup1_A arg) /\ ([@expl:call requires] precondition_F self_ arg)}
+    any
+    [ return (result: t_B) -> {([@expl:call result type invariant] inv_B result)
+      /\ ([@expl:call ensures] postcondition_F self_ arg result)}
+      (! return {result}) ]
   
   type t_Option_B = None'0 | Some'0 t_B
   

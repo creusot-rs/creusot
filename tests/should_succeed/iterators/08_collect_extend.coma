@@ -2,15 +2,18 @@ module M_extend
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_I
   
   predicate inv_I (_1: t_I)
   
   let rec into_iter_I (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv_I self_}
-    any [ return (result: t_I) -> {inv_I result} {result = self_} (! return {result}) ]
+    any
+    [ return (result: t_I) -> {([@expl:into_iter result type invariant] inv_I result)
+      /\ ([@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
   
   type t_T
   
@@ -64,7 +67,9 @@ module M_extend
         end)
   
   let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_T)) = {[@expl:next requires] precondition_next () self_}
-    any [ return (result: t_Option_T) -> {postcondition_once_next () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_Option_T) -> {[@expl:next ensures] postcondition_once_next () self_ result}
+      (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
@@ -121,10 +126,10 @@ module M_extend
       any) ]
   
   let rec push_T (self_: MutBorrow.t t_Vec_T_Global) (v: t_T) (return (x: ())) =
-    {[@expl:push 'self_' type invariant] inv_refmut_Vec_T_Global self_}
-    {[@expl:push 'v' type invariant] inv_T v}
+    {([@expl:push 'self_' type invariant] inv_refmut_Vec_T_Global self_) /\ ([@expl:push 'v' type invariant] inv_T v)}
     any
-    [ return (result: ()) -> {view_Vec_T_Global self_.final = Seq.snoc (view_Vec_T_Global self_.current) v}
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_T_Global self_.final
+      = Seq.snoc (view_Vec_T_Global self_.current) v}
       (! return {result}) ]
   
   predicate resolve_I (_1: t_I)
@@ -138,8 +143,8 @@ module M_extend
   meta "select_lsinst" "all"
   
   let rec extend_T (vec: MutBorrow.t t_Vec_T_Global) (iter: t_I) (return (x: ())) =
-    {[@expl:extend 'vec' type invariant] inv_refmut_Vec_T_Global vec}
-    {[@expl:extend 'iter' type invariant] inv_I iter}
+    {([@expl:extend 'vec' type invariant] inv_refmut_Vec_T_Global vec)
+    /\ ([@expl:extend 'iter' type invariant] inv_I iter)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_vec <- vec ] s1
@@ -157,25 +162,25 @@ module M_extend
         {[@expl:loop invariant] Seq.(==) (view_Vec_T_Global vec.current) (Seq.(++) (view_Vec_T_Global old_vec.current) produced)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
-            (fun (_bor: MutBorrow.t t_I) -> [ &_30 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
+            (fun (_bor: MutBorrow.t t_I) -> [ &_32 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
           [ _ck -> (! {inv_I iter'0} any) ]
-        | s1 = MutBorrow.borrow_final <t_I> {_30.current} {MutBorrow.get_id _30}
+        | s1 = MutBorrow.borrow_final <t_I> {_32.current} {MutBorrow.get_id _32}
             (fun (_bor: MutBorrow.t t_I) ->
-              [ &_29 <- _bor ] -{inv_I _bor.final}-
-              [ &_30 <- { _30 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _30.current} any) ]
-        | s2 = next_I {_29} (fun (_x: t_Option_T) -> [ &_28 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _30} any) ]
-        | s4 = -{resolve_refmut_I _30}- s5
-        | s5 = any [ br0 -> {_28 = None} (! bb10) | br1 (x0: t_T) -> {_28 = Some x0} (! bb11) ] ]
+              [ &_31 <- _bor ] -{inv_I _bor.final}-
+              [ &_32 <- { _32 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _32.current} any) ]
+        | s2 = next_I {_31} (fun (_x: t_Option_T) -> [ &_30 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _32} any) ]
+        | s4 = -{resolve_refmut_I _32}- s5
+        | s5 = any [ br0 -> {_30 = None} (! bb10) | br1 (x0: t_T) -> {_30 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_28} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_30} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &x <- __creusot_proc_iter_elem ] s3
           | s3 = MutBorrow.borrow_mut <t_Vec_T_Global> {vec.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
-                [ &_39 <- _bor ] -{inv_Vec_T_Global _bor.final}-
+                [ &_42 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &vec <- { vec with current = _bor.final } ] s4) [ _ck -> (! {inv_Vec_T_Global vec.current} any) ]
-          | s4 = push_T {_39} {x} (fun (_x: ()) -> [ &_38 <- _x ] s5)
+          | s4 = push_T {_42} {x} (fun (_x: ()) -> [ &_41 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
@@ -190,13 +195,13 @@ module M_extend
     | & iter'0: t_I = Any.any_l ()
     | & iter_old: t_I = Any.any_l ()
     | & produced: Seq.seq t_T = Any.any_l ()
-    | & _28: t_Option_T = Any.any_l ()
-    | & _29: MutBorrow.t t_I = Any.any_l ()
-    | & _30: MutBorrow.t t_I = Any.any_l ()
+    | & _30: t_Option_T = Any.any_l ()
+    | & _31: MutBorrow.t t_I = Any.any_l ()
+    | & _32: MutBorrow.t t_I = Any.any_l ()
     | & __creusot_proc_iter_elem: t_T = Any.any_l ()
     | & x: t_T = Any.any_l ()
-    | & _38: () = Any.any_l ()
-    | & _39: MutBorrow.t t_Vec_T_Global = Any.any_l ()
+    | & _41: () = Any.any_l ()
+    | & _42: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) -> {[@expl:extend ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_T. completed_I done'
         /\ produces_I iter prod done'.current
@@ -205,10 +210,10 @@ module M_extend
 end
 module M_collect
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_Item_Global
   
@@ -248,8 +253,8 @@ module M_collect
       -> invariant_Vec_Item_Global x
   
   let rec new_Item (return (x: t_Vec_Item_Global)) = any
-    [ return (result: t_Vec_Item_Global) -> {inv_Vec_Item_Global result}
-      {Seq.length (view_Vec_Item_Global result) = 0}
+    [ return (result: t_Vec_Item_Global) -> {([@expl:new result type invariant] inv_Vec_Item_Global result)
+      /\ ([@expl:new ensures] Seq.length (view_Vec_Item_Global result) = 0)}
       (! return {result}) ]
   
   type t_I
@@ -257,7 +262,10 @@ module M_collect
   predicate inv_I (_1: t_I)
   
   let rec into_iter_I (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv_I self_}
-    any [ return (result: t_I) -> {inv_I result} {result = self_} (! return {result}) ]
+    any
+    [ return (result: t_I) -> {([@expl:into_iter result type invariant] inv_I result)
+      /\ ([@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
   
   type t_Option_Item = None | Some t_Item
   
@@ -308,7 +316,9 @@ module M_collect
   
   let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_Item)) =
     {[@expl:next requires] precondition_next () self_}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self_ result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self_ result}
+      (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
@@ -333,10 +343,11 @@ module M_collect
   meta "rewrite_def" predicate inv_refmut_Vec_Item_Global
   
   let rec push_Item (self_: MutBorrow.t t_Vec_Item_Global) (v: t_Item) (return (x: ())) =
-    {[@expl:push 'self_' type invariant] inv_refmut_Vec_Item_Global self_}
-    {[@expl:push 'v' type invariant] inv_Item v}
+    {([@expl:push 'self_' type invariant] inv_refmut_Vec_Item_Global self_)
+    /\ ([@expl:push 'v' type invariant] inv_Item v)}
     any
-    [ return (result: ()) -> {view_Vec_Item_Global self_.final = Seq.snoc (view_Vec_Item_Global self_.current) v}
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_Item_Global self_.final
+      = Seq.snoc (view_Vec_Item_Global self_.current) v}
       (! return {result}) ]
   
   predicate resolve_I (_1: t_I)
@@ -361,25 +372,25 @@ module M_collect
         {[@expl:loop invariant] Seq.(==) (view_Vec_Item_Global res) produced}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
-            (fun (_bor: MutBorrow.t t_I) -> [ &_26 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
+            (fun (_bor: MutBorrow.t t_I) -> [ &_28 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
           [ _ck -> (! {inv_I iter'0} any) ]
-        | s1 = MutBorrow.borrow_final <t_I> {_26.current} {MutBorrow.get_id _26}
+        | s1 = MutBorrow.borrow_final <t_I> {_28.current} {MutBorrow.get_id _28}
             (fun (_bor: MutBorrow.t t_I) ->
-              [ &_25 <- _bor ] -{inv_I _bor.final}-
-              [ &_26 <- { _26 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _26.current} any) ]
-        | s2 = next_I {_25} (fun (_x: t_Option_Item) -> [ &_24 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _26} any) ]
-        | s4 = -{resolve_refmut_I _26}- s5
-        | s5 = any [ br0 -> {_24 = None} (! bb10) | br1 (x0: t_Item) -> {_24 = Some x0} (! bb11) ] ]
+              [ &_27 <- _bor ] -{inv_I _bor.final}-
+              [ &_28 <- { _28 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _28.current} any) ]
+        | s2 = next_I {_27} (fun (_x: t_Option_Item) -> [ &_26 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _28} any) ]
+        | s4 = -{resolve_refmut_I _28}- s5
+        | s5 = any [ br0 -> {_26 = None} (! bb10) | br1 (x0: t_Item) -> {_26 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_24} (fun (r0: t_Item) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_26} (fun (r0: t_Item) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &x <- __creusot_proc_iter_elem ] s3
           | s3 = MutBorrow.borrow_mut <t_Vec_Item_Global> {res}
               (fun (_bor: MutBorrow.t t_Vec_Item_Global) ->
-                [ &_35 <- _bor ] -{inv_Vec_Item_Global _bor.final}-
+                [ &_38 <- _bor ] -{inv_Vec_Item_Global _bor.final}-
                 [ &res <- _bor.final ] s4) [ _ck -> (! {inv_Vec_Item_Global res} any) ]
-          | s4 = push_Item {_35} {x} (fun (_x: ()) -> [ &_34 <- _x ] s5)
+          | s4 = push_Item {_38} {x} (fun (_x: ()) -> [ &_37 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
@@ -392,16 +403,16 @@ module M_collect
     | & iter'0: t_I = Any.any_l ()
     | & iter_old: t_I = Any.any_l ()
     | & produced: Seq.seq t_Item = Any.any_l ()
-    | & _24: t_Option_Item = Any.any_l ()
-    | & _25: MutBorrow.t t_I = Any.any_l ()
-    | & _26: MutBorrow.t t_I = Any.any_l ()
+    | & _26: t_Option_Item = Any.any_l ()
+    | & _27: MutBorrow.t t_I = Any.any_l ()
+    | & _28: MutBorrow.t t_I = Any.any_l ()
     | & __creusot_proc_iter_elem: t_Item = Any.any_l ()
     | & x: t_Item = Any.any_l ()
-    | & _34: () = Any.any_l ()
-    | & _35: MutBorrow.t t_Vec_Item_Global = Any.any_l () ])
-    [ return (result: t_Vec_Item_Global) -> {[@expl:collect result type invariant] inv_Vec_Item_Global result}
-      {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve_I done'.final
-        /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_Item_Global result = prod}
+    | & _37: () = Any.any_l ()
+    | & _38: MutBorrow.t t_Vec_Item_Global = Any.any_l () ])
+    [ return (result: t_Vec_Item_Global) -> {([@expl:collect result type invariant] inv_Vec_Item_Global result)
+      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve_I done'.final
+        /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_Item_Global result = prod)}
       (! return {result}) ]
 end
 module M_extend_index
@@ -409,8 +420,8 @@ module M_extend_index
   use creusot.int.UInt32
   use seq.Seq
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_u32_Global
   
@@ -428,8 +439,9 @@ module M_extend_index
   function view_IntoIter_u32_Global (self: t_IntoIter_u32_Global) : Seq.seq UInt32.t
   
   let rec into_iter_Vec_u32_Global (self_: t_Vec_u32_Global) (return (x: t_IntoIter_u32_Global)) = any
-    [ return (result: t_IntoIter_u32_Global) -> {inv_IntoIter_u32_Global result}
-      {view_Vec_u32_Global self_ = view_IntoIter_u32_Global result}
+    [ return (result: t_IntoIter_u32_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
       (! return {result}) ]
   
   predicate produces_IntoIter_u32_Global (self: t_IntoIter_u32_Global) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter_u32_Global) =
@@ -459,7 +471,7 @@ module M_extend_index
     {[@expl:extend 'iter' type invariant] inv_IntoIter_u32_Global iter}
     any
     [ return (result: ()) ->
-    {exists done': MutBorrow.t t_IntoIter_u32_Global, prod: Seq.seq UInt32.t. completed_IntoIter_u32_Global done'
+    {[@expl:extend ensures] exists done': MutBorrow.t t_IntoIter_u32_Global, prod: Seq.seq UInt32.t. completed_IntoIter_u32_Global done'
         /\ produces_IntoIter_u32_Global iter prod done'.current
         /\ view_Vec_u32_Global vec.final = Seq.(++) (view_Vec_u32_Global vec.current) prod}
       (! return {result}) ]
@@ -503,8 +515,8 @@ module M_collect_example
   use creusot.int.UInt32
   use seq.Seq
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_I
   
@@ -537,7 +549,8 @@ module M_collect_example
   
   let rec collect_I (iter: t_I) (return (x: t_Vec_u32_Global)) = {[@expl:collect 'iter' type invariant] inv_I iter}
     any
-    [ return (result: t_Vec_u32_Global) -> {exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve_I done'.final
+    [ return (result: t_Vec_u32_Global) ->
+    {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve_I done'.final
         /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_u32_Global result = prod}
       (! return {result}) ]
   
@@ -550,9 +563,9 @@ module M_collect_example
   
   meta "select_lsinst" "all"
   
-  let rec collect_example_I (iter: t_I) (return (x: ())) = {[@expl:collect_example 'iter' type invariant] inv_I iter}
-    {[@expl:collect_example requires] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter prod fin
-      -> (forall i: int. 0 <= i /\ i < Seq.length prod -> UInt32.t'int (Seq.get prod i) = i)}
+  let rec collect_example_I (iter: t_I) (return (x: ())) = {([@expl:collect_example 'iter' type invariant] inv_I iter)
+    /\ ([@expl:collect_example requires] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter prod fin
+      -> (forall i: int. 0 <= i /\ i < Seq.length prod -> UInt32.t'int (Seq.get prod i) = i))}
     (! bb0
     [ bb0 = s0
       [ s0 = collect_I {iter} (fun (_x: t_Vec_u32_Global) -> [ &v <- _x ] s1)

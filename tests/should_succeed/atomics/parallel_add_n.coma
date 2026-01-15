@@ -1,0 +1,2047 @@
+module M_fraction_1
+  use real.Real
+  use real.FromInt
+  use int.Int
+  
+  type t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+      = Real.(/) (to_real self) (to_real other)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function fraction (i: int) (n: int) : t_PositiveReal = div_PositiveReal (from_int i) (from_int (n + 1))
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant n : int
+  
+  function fraction_1 (n: int) : ()
+  
+  goal vc_fraction_1: [@expl:fraction_1 ensures] fraction (n + 1) n = from_int 1
+end
+module M_fraction_add
+  use real.Real
+  use real.FromInt
+  use int.Int
+  
+  type t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+      = Real.(/) (to_real self) (to_real other)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function fraction (i: int) (n: int) : t_PositiveReal = div_PositiveReal (from_int i) (from_int (n + 1))
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : int
+  
+  constant b : int
+  
+  constant n : int
+  
+  function fraction_add (a: int) (b: int) (n: int) : ()
+  
+  goal vc_fraction_add: a > 0 /\ b > 0
+    -> ([@expl:fraction_add ensures] add_PositiveReal (fraction a n) (fraction b n) = fraction (a + b) n)
+end
+module M_parallel_add
+  type namespace_other
+  
+  type t_Namespace = Namespace_PARALLEL_ADD int | Other namespace_other
+  
+  use creusot.int.Int32
+  use real.Real
+  use real.FromInt
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use bv.Pow2int
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.int.Int128
+  use creusot.prelude.Any
+  use set.Set
+  use int.Int
+  
+  type t_Tokens
+  
+  predicate resolve_Tokens (_1: t_Tokens)
+  
+  predicate resolve_Ghost_Tokens [@inline:trivial] (_1: t_Tokens) = resolve_Tokens _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Tokens
+  
+  type t_AtomicI32
+  
+  type t_Perm_AtomicI32
+  
+  type tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = { f0: t_AtomicI32; f1: t_Perm_AtomicI32 }
+  
+  predicate inv_AtomicI32 (_1: t_AtomicI32)
+  
+  predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) =
+    inv_AtomicI32 _1.f0
+  
+  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global
+  
+  function val_AtomicI32 (self: t_Perm_AtomicI32) : Int32.t
+  
+  function ward_AtomicI32 (self: t_Perm_AtomicI32) : t_AtomicI32
+  
+  let rec new (val': Int32.t) (return (x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global)) = any
+    [ return (result: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) ->
+    {([@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global result)
+      /\ ([@expl:new ensures #0] val_AtomicI32 result.f1 = val')
+      /\ ([@expl:new ensures #1] ward_AtomicI32 result.f1 = result.f0)}
+      (! return {result}) ]
+  
+  type tup2_fraction_1_fraction_add = { f0'0: (); f1'0: () }
+  
+  type t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+      = Real.(/) (to_real self) (to_real other)
+  
+  function new'0 (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new'0 n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new'0 (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function fraction (i: int) (n: int) : t_PositiveReal = div_PositiveReal (from_int i) (from_int (n + 1))
+  
+  function fraction_1 (n: int) : () = ()
+  
+  axiom fraction_1_spec: forall n: int. fraction (n + 1) n = from_int 1
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function fraction_add (a: int) (b: int) (n: int) : () = ()
+  
+  axiom fraction_add_spec: forall a: int, b: int, n: int. a > 0 /\ b > 0
+      -> add_PositiveReal (fraction a n) (fraction b n) = fraction (a + b) n
+  
+  type t_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate invariant_Authority_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int)
+  
+  predicate inv_Authority_Option_tup2_PositiveReal_Int (_1: t_Authority_Option_tup2_PositiveReal_Int)
+  
+  axiom inv_axiom:
+    forall x: t_Authority_Option_tup2_PositiveReal_Int [inv_Authority_Option_tup2_PositiveReal_Int x]. inv_Authority_Option_tup2_PositiveReal_Int x
+      -> invariant_Authority_Option_tup2_PositiveReal_Int x
+  
+  predicate invariant_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Authority_Option_tup2_PositiveReal_Int) =
+    inv_Authority_Option_tup2_PositiveReal_Int self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate inv_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: t_Authority_Option_tup2_PositiveReal_Int) =
+    invariant_Ghost_Authority_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  type tup2_PositiveReal_Int = { f0'1: t_PositiveReal; f1'1: int }
+  
+  type t_Option_tup2_PositiveReal_Int = None | Some tup2_PositiveReal_Int
+  
+  function view_Authority_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
+  
+  type t_Option_Option_tup2_PositiveReal_Int = None'0 | Some'0 t_Option_tup2_PositiveReal_Int
+  
+  type tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int = {
+    f0'2: t_Option_tup2_PositiveReal_Int;
+    f1'2: t_Option_tup2_PositiveReal_Int }
+  
+  function map_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (f: Map.map tup2_PositiveReal_Int t_Option_tup2_PositiveReal_Int) : t_Option_Option_tup2_PositiveReal_Int
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  type t_Option_PositiveReal = None'1 | Some'1 t_PositiveReal
+  
+  type t_Option_Int = None'2 | Some'2 int
+  
+  type tup2_Option_PositiveReal_Option_Int = { f0'3: t_Option_PositiveReal; f1'3: t_Option_Int }
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some'1 (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+  
+  axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
+      = op_PositiveReal b a
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some'2 (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function op_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
+   = match { f0'3 = op_PositiveReal self.f0'1 other.f0'1; f1'3 = op_Int self.f1'1 other.f1'1 } with
+      | {f0'3 = Some'1 r1; f1'3 = Some'2 r2} -> Some { f0'1 = r1; f1'1 = r2 }
+      | _ -> None
+      end
+  
+  function commutative_tup2_PositiveReal_Int (a: tup2_PositiveReal_Int) (b: tup2_PositiveReal_Int) : ()
+  
+  axiom commutative_tup2_PositiveReal_Int_spec:
+    forall a: tup2_PositiveReal_Int, b: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int a b
+      = op_tup2_PositiveReal_Int b a
+  
+  function op_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) : t_Option_Option_tup2_PositiveReal_Int
+   = match { f0'2 = self; f1'2 = other } with
+      | {f0'2 = None} -> Some'0 other
+      | {f1'2 = None} -> Some'0 self
+      | {f0'2 = Some x; f1'2 = Some y} -> map_Option_tup2_PositiveReal_Int (op_tup2_PositiveReal_Int x y) (fun (z: tup2_PositiveReal_Int) -> Some z)
+      end
+  
+  function commutative_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom commutative_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
+      = op_Option_tup2_PositiveReal_Int b a
+  
+  constant unit_Option_tup2_PositiveReal_Int: t_Option_tup2_PositiveReal_Int = None
+  
+  axiom unit_Option_tup2_PositiveReal_Int_spec:
+    forall x: t_Option_tup2_PositiveReal_Int [op_Option_tup2_PositiveReal_Int x unit_Option_tup2_PositiveReal_Int]. op_Option_tup2_PositiveReal_Int x unit_Option_tup2_PositiveReal_Int
+      = Some'0 x
+  
+  let rec alloc_Option_tup2_PositiveReal_Int (return (x: t_Authority_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: t_Authority_Option_tup2_PositiveReal_Int) ->
+    {([@expl:alloc result type invariant] inv_Ghost_Authority_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:alloc ensures] view_Authority_Option_tup2_PositiveReal_Int result = unit_Option_tup2_PositiveReal_Int)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Authority_Option_tup2_PositiveReal_Int) =
+    inv_Ghost_Authority_Option_tup2_PositiveReal_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate inv_ref_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: t_Authority_Option_tup2_PositiveReal_Int) =
+    invariant_ref_Ghost_Authority_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate invariant_ref_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Authority_Option_tup2_PositiveReal_Int) =
+    inv_Authority_Option_tup2_PositiveReal_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate inv_ref_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: t_Authority_Option_tup2_PositiveReal_Int) =
+    invariant_ref_Authority_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_Option_tup2_PositiveReal_Int
+  
+  let rec deref_Ghost_Authority_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int)
+    (return (x: t_Authority_Option_tup2_PositiveReal_Int)) =
+    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Authority_Option_tup2_PositiveReal_Int self}
+    any
+    [ return (result: t_Authority_Option_tup2_PositiveReal_Int) ->
+    {([@expl:deref result type invariant] inv_ref_Authority_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:deref ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Id
+  
+  function id_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int) : t_Id
+  
+  let rec id_ghost_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int) (return (x: t_Id)) =
+    {[@expl:id_ghost 'self' type invariant] inv_ref_Authority_Option_tup2_PositiveReal_Int self}
+    any
+    [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_Option_tup2_PositiveReal_Int self}
+      (! return {result}) ]
+  
+  type t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int
+  
+  type t_Fragment_Option_tup2_PositiveReal_Int = { f0'4: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int }
+  
+  type t_View_AuthViewRel_Option_tup2_PositiveReal_Int
+  
+  function factor_PositiveReal [@inline:trivial] (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
+   = if Real.(>) (to_real self) (to_real factor) then
+      Some'1 (new'0 (Real.(-) (to_real self) (to_real factor)))
+    else
+      None'1
+  
+  
+  meta "rewrite_def" function factor_PositiveReal
+  
+  axiom factor_PositiveReal_spec:
+    forall self: t_PositiveReal, factor: t_PositiveReal. match factor_PositiveReal self factor with
+        | Some'1 c -> op_PositiveReal factor c = Some'1 self
+        | None'1 -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some'1 self
+        end
+  
+  function factor_Int [@inline:trivial] (self: int) (factor: int) : t_Option_Int = Some'2 (self - factor)
+  
+  meta "rewrite_def" function factor_Int
+  
+  axiom factor_Int_spec: forall self: int, factor: int. match factor_Int self factor with
+        | Some'2 c -> op_Int factor c = Some'2 self
+        | None'2 -> false
+        end
+  
+  function factor_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (factor: tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
+   = match { f0'3 = factor_PositiveReal self.f0'1 factor.f0'1; f1'3 = factor_Int self.f1'1 factor.f1'1 } with
+      | {f0'3 = Some'1 x; f1'3 = Some'2 y} -> Some { f0'1 = x; f1'1 = y }
+      | _ -> None
+      end
+  
+  axiom factor_tup2_PositiveReal_Int_spec:
+    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int. match factor_tup2_PositiveReal_Int self factor with
+        | Some c -> op_tup2_PositiveReal_Int factor c = Some self
+        | None -> forall c: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int factor c <> Some self
+        end
+  
+  function factor_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (factor: t_Option_tup2_PositiveReal_Int) : t_Option_Option_tup2_PositiveReal_Int
+   = match { f0'2 = self; f1'2 = factor } with
+      | {f0'2 = x; f1'2 = None} -> Some'0 x
+      | {f0'2 = None} -> None'0
+      | {f0'2 = Some x; f1'2 = Some y} -> match factor_tup2_PositiveReal_Int x y with
+        | Some z -> Some'0 (Some z)
+        | None -> if x = y then Some'0 (None) else None'0
+        end
+      end
+  
+  axiom factor_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int. match factor_Option_tup2_PositiveReal_Int self factor with
+        | Some'0 c -> op_Option_tup2_PositiveReal_Int factor c = Some'0 self
+        | None'0 -> forall c: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int factor c <> Some'0 self
+        end
+  
+  predicate incl_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
+    factor_Option_tup2_PositiveReal_Int other self <> None'0
+  
+  function incl_transitive_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom incl_transitive_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int. incl_Option_tup2_PositiveReal_Int a b
+      -> incl_Option_tup2_PositiveReal_Int b c -> incl_Option_tup2_PositiveReal_Int a c
+  
+  function associative_some_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (ab: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom associative_some_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, ab: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
+        = Some'0 ab
+      -> op_Option_tup2_PositiveReal_Int b c = Some'0 bc
+      -> op_Option_tup2_PositiveReal_Int a bc = op_Option_tup2_PositiveReal_Int ab c
+  
+  function associative_none_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom associative_none_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
+        = None'0 -> op_Option_tup2_PositiveReal_Int b c = Some'0 bc -> op_Option_tup2_PositiveReal_Int a bc = None'0
+  
+  function incl_op_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) (comb: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom incl_op_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int, comb: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int self other
+        = Some'0 comb -> incl_Option_tup2_PositiveReal_Int self comb
+  
+  predicate rel_AuthViewRel_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) (f: t_Option_tup2_PositiveReal_Int) =
+    match a with
+      | Some'0 a'0 -> incl_Option_tup2_PositiveReal_Int f a'0
+      | None'0 -> true
+      end
+  
+  function rel_unit_AuthViewRel_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom rel_unit_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int a unit_Option_tup2_PositiveReal_Int
+  
+  function rel_none_AuthViewRel_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) (f: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom rel_none_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_Option_tup2_PositiveReal_Int, f: t_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int (None'0) f
+  
+  function rel_mono_AuthViewRel_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) (f1'4: t_Option_tup2_PositiveReal_Int) (f2: t_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom rel_mono_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_Option_tup2_PositiveReal_Int, f1'4: t_Option_tup2_PositiveReal_Int, f2: t_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int a f1'4
+      -> incl_Option_tup2_PositiveReal_Int f2 f1'4 -> rel_AuthViewRel_Option_tup2_PositiveReal_Int a f2
+  
+  function auth_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_Option_Option_tup2_PositiveReal_Int
+  
+  function frag_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
+  
+  axiom frag_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int (auth_AuthViewRel_Option_tup2_PositiveReal_Int self) (frag_AuthViewRel_Option_tup2_PositiveReal_Int self)
+  
+  function val_View_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_View_AuthViewRel_Option_tup2_PositiveReal_Int
+  
+  function view_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_View_AuthViewRel_Option_tup2_PositiveReal_Int
+   = val_View_AuthViewRel_Option_tup2_PositiveReal_Int self
+  
+  meta "rewrite_def" function view_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int
+  
+  function view_Fragment_Option_tup2_PositiveReal_Int (self: t_Fragment_Option_tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
+   =
+    frag_AuthViewRel_Option_tup2_PositiveReal_Int (view_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int self.f0'4)
+  
+  function id_Option_tup2_PositiveReal_Int'0 (self: t_Fragment_Option_tup2_PositiveReal_Int) : t_Id
+  
+  let rec new_unit_Option_tup2_PositiveReal_Int (id: t_Id) (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) ->
+    {[@expl:new_unit ensures] view_Fragment_Option_tup2_PositiveReal_Int result = unit_Option_tup2_PositiveReal_Int
+      /\ id_Option_tup2_PositiveReal_Int'0 result = id}
+      (! return {result}) ]
+  
+  let rec new_Fragment_Option_tup2_PositiveReal_Int (x: t_Fragment_Option_tup2_PositiveReal_Int)
+    (return (x'0: t_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) -> {[@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate invariant_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (self: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) =
+    inv_Ghost_Authority_Option_tup2_PositiveReal_Int self.current
+    /\ inv_Ghost_Authority_Option_tup2_PositiveReal_Int self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate inv_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) =
+    invariant_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate invariant_refmut_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (self: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) =
+    inv_Authority_Option_tup2_PositiveReal_Int self.current /\ inv_Authority_Option_tup2_PositiveReal_Int self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Authority_Option_tup2_PositiveReal_Int
+  
+  predicate inv_refmut_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) =
+    invariant_refmut_Authority_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_refmut_Authority_Option_tup2_PositiveReal_Int
+  
+  let rec deref_mut_Ghost_Authority_Option_tup2_PositiveReal_Int
+    (self: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int)
+    (return (x: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int)) =
+    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Authority_Option_tup2_PositiveReal_Int self}
+    any
+    [ return (result: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:deref_mut ensures] result = self)}
+      (! return {result}) ]
+  
+  let rec deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int
+    (self: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int)
+    (return (x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> {[@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Option_Option_Option_tup2_PositiveReal_Int = None'3 | Some'3 t_Option_Option_tup2_PositiveReal_Int
+  
+  type tup2_Option_Option_tup2_PositiveReal_Int_Option_Option_tup2_PositiveReal_Int = {
+    f0'5: t_Option_Option_tup2_PositiveReal_Int;
+    f1'5: t_Option_Option_tup2_PositiveReal_Int }
+  
+  function map_Option_Option_tup2_PositiveReal_Int (self: t_Option_Option_tup2_PositiveReal_Int) (f: Map.map t_Option_tup2_PositiveReal_Int t_Option_Option_tup2_PositiveReal_Int) : t_Option_Option_Option_tup2_PositiveReal_Int
+   = match self with
+      | None'0 -> None'3
+      | Some'0 x -> Some'3 (Map.get f x)
+      end
+  
+  function op_Option_Option_tup2_PositiveReal_Int (self: t_Option_Option_tup2_PositiveReal_Int) (other: t_Option_Option_tup2_PositiveReal_Int) : t_Option_Option_Option_tup2_PositiveReal_Int
+   = match { f0'5 = self; f1'5 = other } with
+      | {f0'5 = None'0} -> Some'3 other
+      | {f1'5 = None'0} -> Some'3 self
+      | {f0'5 = Some'0 x; f1'5 = Some'0 y} -> map_Option_Option_tup2_PositiveReal_Int (op_Option_tup2_PositiveReal_Int x y) (fun (z: t_Option_tup2_PositiveReal_Int) -> Some'0 z)
+      end
+  
+  function commutative_Option_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) (b: t_Option_Option_tup2_PositiveReal_Int) : ()
+  
+  axiom commutative_Option_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_Option_tup2_PositiveReal_Int, b: t_Option_Option_tup2_PositiveReal_Int. op_Option_Option_tup2_PositiveReal_Int a b
+      = op_Option_Option_tup2_PositiveReal_Int b a
+  
+  predicate premise_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int) (from_auth: t_Option_tup2_PositiveReal_Int) (from_frag: t_Option_tup2_PositiveReal_Int) =
+    forall f: t_Option_Option_tup2_PositiveReal_Int. op_Option_Option_tup2_PositiveReal_Int (Some'0 from_frag) f
+        = Some'3 (Some'0 from_auth)
+      -> op_Option_Option_tup2_PositiveReal_Int (Some'0 (self.f1'2)) f = Some'3 (Some'0 (self.f0'2))
+  
+  meta "rewrite_def" predicate premise_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int
+  
+  function update_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int) (_2: t_Option_tup2_PositiveReal_Int) (_3: t_Option_tup2_PositiveReal_Int) : tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int
+   = self
+  
+  meta "rewrite_def" function update_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int
+  
+  let rec update_Option_tup2_PositiveReal_Int (self: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int)
+    (frag: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int)
+    (upd: tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int) (return (x: ())) =
+    {([@expl:update 'self' type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int self)
+    /\ ([@expl:update requires #0] id_Option_tup2_PositiveReal_Int self.current
+      = id_Option_tup2_PositiveReal_Int'0 frag.current)
+    /\ ([@expl:update requires #1] premise_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int upd (view_Authority_Option_tup2_PositiveReal_Int self.current) (view_Fragment_Option_tup2_PositiveReal_Int frag.current))}
+    any
+    [ return (result: ()) -> {([@expl:update ensures #0] id_Option_tup2_PositiveReal_Int self.current
+        = id_Option_tup2_PositiveReal_Int self.final)
+      /\ ([@expl:update ensures #1] id_Option_tup2_PositiveReal_Int'0 frag.current
+        = id_Option_tup2_PositiveReal_Int'0 frag.final)
+      /\ ([@expl:update ensures #2] incl_Option_tup2_PositiveReal_Int (view_Fragment_Option_tup2_PositiveReal_Int frag.current) (view_Authority_Option_tup2_PositiveReal_Int self.current))
+      /\ ([@expl:update ensures #3] { f0'2 = view_Authority_Option_tup2_PositiveReal_Int self.final;
+                                      f1'2 = view_Fragment_Option_tup2_PositiveReal_Int frag.final }
+      = update_Snapshot_tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int upd (view_Authority_Option_tup2_PositiveReal_Int self.current) (view_Fragment_Option_tup2_PositiveReal_Int frag.current))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate resolve_refmut_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate resolve_refmut_Authority_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_Option_tup2_PositiveReal_Int
+  
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+  
+  let rec into_inner_Box_Perm_AtomicI32_Global (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
+    [ return (result: t_Perm_AtomicI32) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let rec into_inner_Authority_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int)
+    (return (x: t_Authority_Option_tup2_PositiveReal_Int)) =
+    {[@expl:into_inner 'self' type invariant] inv_Ghost_Authority_Option_tup2_PositiveReal_Int self}
+    any
+    [ return (result: t_Authority_Option_tup2_PositiveReal_Int) ->
+    {([@expl:into_inner result type invariant] inv_Authority_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_ParallelAddAtomicInv = { own: t_Perm_AtomicI32; auth: t_Authority_Option_tup2_PositiveReal_Int }
+  
+  predicate inv_ParallelAddAtomicInv (_1: t_ParallelAddAtomicInv)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_ParallelAddAtomicInv [inv_ParallelAddAtomicInv x]. inv_ParallelAddAtomicInv x
+      = inv_Authority_Option_tup2_PositiveReal_Int x.auth
+  
+  predicate invariant_Ghost_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
+    inv_ParallelAddAtomicInv self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ParallelAddAtomicInv
+  
+  predicate inv_Ghost_ParallelAddAtomicInv [@inline:trivial] (_1: t_ParallelAddAtomicInv) =
+    invariant_Ghost_ParallelAddAtomicInv _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ParallelAddAtomicInv
+  
+  let rec new_ParallelAddAtomicInv (x: t_ParallelAddAtomicInv) (return (x'0: t_ParallelAddAtomicInv)) =
+    {[@expl:new 'x' type invariant] inv_ParallelAddAtomicInv x}
+    any
+    [ return (result: t_ParallelAddAtomicInv) ->
+    {([@expl:new result type invariant] inv_Ghost_ParallelAddAtomicInv result) /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  type tup2_AtomicI32_Id = { f0'6: t_AtomicI32; f1'6: t_Id }
+  
+  type t_AtomicInvariant_ParallelAddAtomicInv
+  
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup2_AtomicI32_Id) =
+    data = { f0'6 = ward_AtomicI32 self.own; f1'6 = id_Option_tup2_PositiveReal_Int self.auth }
+    /\ match view_Authority_Option_tup2_PositiveReal_Int self.auth with
+      | None -> false
+      | Some {f0'1 = q; f1'1 = n} -> q = from_int 1
+      /\ (exists k: int. n - Int32.to_int (val_AtomicI32 self.own) = k * Pow2int.pow2 32)
+      end
+  
+  meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
+  
+  function public_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup2_AtomicI32_Id
+  
+  function namespace_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : t_Namespace
+  
+  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (public: tup2_AtomicI32_Id)
+    (namespace: t_Namespace) (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) =
+    {([@expl:new 'value' type invariant] inv_Ghost_ParallelAddAtomicInv value)
+    /\ ([@expl:new requires] protocol_ParallelAddAtomicInv value public)}
+    any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) ->
+    {([@expl:new ensures #0] public_ParallelAddAtomicInv result = public)
+      /\ ([@expl:new ensures #1] namespace_ParallelAddAtomicInv result = namespace)}
+      (! return {result}) ]
+  
+  type closure0 = {
+    c0: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1: t_AtomicI32;
+    c2: Int32.t;
+    c3: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int }
+  
+  let rec borrow_AtomicInvariant_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
+    (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) = any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) -> {[@expl:borrow ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  type t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (_1: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+  
+  predicate invariant_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) =
+    inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate inv_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) =
+    invariant_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate invariant_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (self: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) =
+    forall i: int. 0 <= i /\ i < Seq.length self
+      -> inv_ref_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate inv_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) =
+    invariant_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate inv_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) : Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  axiom view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global_spec:
+    forall self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global. Seq.length (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate invariant_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    inv_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self)
+  
+  predicate inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (_1: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+  
+  axiom inv_axiom'1:
+    forall x: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global x]. inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global x
+      -> invariant_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global x
+  
+  let rec new_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+    (return (x: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)) = any
+    [ return (result: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+    {([@expl:new result type invariant] inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global result)
+      /\ ([@expl:new ensures] Seq.length (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global result)
+      = 0)}
+      (! return {result}) ]
+  
+  type t_Range_i32 = { start: Int32.t; end': Int32.t }
+  
+  let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+  
+  type t_Option_i32 = None'4 | Some'4 Int32.t
+  
+  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+  
+  meta "rewrite_def" function deep_model_i32
+  
+  predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
+    self.end' = o.end'
+    /\ deep_model_i32 self.start <= deep_model_i32 o.start
+    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
+  
+  function produces_trans_Range_i32 (a: t_Range_i32) (ab: Seq.seq Int32.t) (b: t_Range_i32) (bc: Seq.seq Int32.t) (c: t_Range_i32) : ()
+  
+  axiom produces_trans_Range_i32_spec:
+    forall a: t_Range_i32, ab: Seq.seq Int32.t, b: t_Range_i32, bc: Seq.seq Int32.t, c: t_Range_i32. produces_Range_i32 a ab b
+      -> produces_Range_i32 b bc c -> produces_Range_i32 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_i32 (self: t_Range_i32) : ()
+  
+  axiom produces_refl_Range_i32_spec:
+    forall self: t_Range_i32. produces_Range_i32 self (Seq.empty: Seq.seq Int32.t) self
+  
+  predicate resolve_refmut_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range_i32
+  
+  predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
+    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+  
+  let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+        | None'4 -> completed_Range_i32 self_
+        | Some'4 v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
+  predicate valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (self: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (_x: t_Fragment_Option_tup2_PositiveReal_Int)
+  
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_i32
+  
+  predicate invariant_ref_AtomicI32 [@inline:trivial] (self: t_AtomicI32) = inv_AtomicI32 self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicI32
+  
+  predicate inv_ref_AtomicI32 [@inline:trivial] (_1: t_AtomicI32) = invariant_ref_AtomicI32 _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicI32
+  
+  predicate inv_closure0 [@inline:trivial] (_1: closure0) =
+    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv_ref_AtomicI32 x1
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  type t_Scope
+  
+  predicate inv_Scope (_1: t_Scope)
+  
+  predicate invariant_refmut_Scope [@inline:trivial] (self: MutBorrow.t t_Scope) =
+    inv_Scope self.current /\ inv_Scope self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Scope
+  
+  predicate inv_refmut_Scope [@inline:trivial] (_1: MutBorrow.t t_Scope) = invariant_refmut_Scope _1
+  
+  meta "rewrite_def" predicate inv_refmut_Scope
+  
+  let rec elim_Some (_x: t_Option_i32) (return (f0'7: Int32.t)) = any
+    [ _k (f0'7: Int32.t) -> {Some'4 f0'7 = _x} (! return {f0'7})
+    | _chk -> (! {match _x with
+        | Some'4 _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  predicate eq_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) = ext_eq self other
+  
+  meta "rewrite_def" predicate eq_PositiveReal
+  
+  axiom eq_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. eq_PositiveReal self other
+      = (self = other)
+  
+  predicate incl_Int (self: int) (other: int) = factor_Int other self <> None'2
+  
+  function incl_transitive_Int (a: int) (b: int) (c: int) : ()
+  
+  axiom incl_transitive_Int_spec: forall a: int, b: int, c: int. incl_Int a b -> incl_Int b c -> incl_Int a c
+  
+  function associative_some_Int (a: int) (b: int) (c: int) (ab: int) (bc: int) : ()
+  
+  axiom associative_some_Int_spec: forall a: int, b: int, c: int, ab: int, bc: int. op_Int a b = Some'2 ab
+      -> op_Int b c = Some'2 bc -> op_Int a bc = op_Int ab c
+  
+  function associative_none_Int (a: int) (b: int) (c: int) (bc: int) : ()
+  
+  axiom associative_none_Int_spec: forall a: int, b: int, c: int, bc: int. op_Int a b = None'2
+      -> op_Int b c = Some'2 bc -> op_Int a bc = None'2
+  
+  function incl_op_Int (self: int) (other: int) (comb: int) : ()
+  
+  axiom incl_op_Int_spec: forall self: int, other: int, comb: int. op_Int self other = Some'2 comb -> incl_Int self comb
+  
+  predicate eq_Int [@inline:trivial] (self: int) (other: int) = self = other
+  
+  meta "rewrite_def" predicate eq_Int
+  
+  axiom eq_Int_spec: forall self: int, other: int. eq_Int self other = (self = other)
+  
+  predicate eq_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
+    eq_PositiveReal self.f0'1 other.f0'1 /\ eq_Int self.f1'1 other.f1'1
+  
+  meta "rewrite_def" predicate eq_tup2_PositiveReal_Int
+  
+  axiom eq_tup2_PositiveReal_Int_spec:
+    forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int. eq_tup2_PositiveReal_Int self other
+      = (self = other)
+  
+  predicate eq_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
+    match { f0'2 = self; f1'2 = other } with
+      | {f0'2 = Some s; f1'2 = Some o} -> eq_tup2_PositiveReal_Int s o
+      | {f0'2 = None; f1'2 = None} -> true
+      | _ -> false
+      end
+  
+  meta "rewrite_def" predicate eq_Option_tup2_PositiveReal_Int
+  
+  axiom eq_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int. eq_Option_tup2_PositiveReal_Int self other
+      = (self = other)
+  
+  predicate incl_eq_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
+    eq_Option_tup2_PositiveReal_Int self other \/ incl_Option_tup2_PositiveReal_Int self other
+  
+  predicate incl_eq_op_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (x: t_Option_tup2_PositiveReal_Int) =
+    match op_Option_tup2_PositiveReal_Int a b with
+      | None'0 -> false
+      | Some'0 ab -> incl_eq_Option_tup2_PositiveReal_Int ab x
+      end
+  
+  let rec split_off_Option_tup2_PositiveReal_Int (self: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int)
+    (r: t_Option_tup2_PositiveReal_Int) (s: t_Option_tup2_PositiveReal_Int)
+    (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) =
+    {[@expl:split_off requires] incl_eq_op_Option_tup2_PositiveReal_Int r s (view_Fragment_Option_tup2_PositiveReal_Int self.current)}
+    any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) ->
+    {([@expl:split_off ensures #0] id_Option_tup2_PositiveReal_Int'0 self.final
+          = id_Option_tup2_PositiveReal_Int'0 self.current
+        /\ id_Option_tup2_PositiveReal_Int'0 result = id_Option_tup2_PositiveReal_Int'0 self.current)
+      /\ ([@expl:split_off ensures #1] view_Fragment_Option_tup2_PositiveReal_Int self.final = s)
+      /\ ([@expl:split_off ensures #2] view_Fragment_Option_tup2_PositiveReal_Int result = r)}
+      (! return {result}) ]
+  
+  type closure0'0 = {
+    c0'0: t_AtomicI32;
+    c1'0: t_AtomicInvariant_ParallelAddAtomicInv;
+    c2'0: t_Fragment_Option_tup2_PositiveReal_Int }
+  
+  type closure0'1 = {
+    c0'1: t_AtomicInvariant_ParallelAddAtomicInv;
+    c1'1: t_Tokens;
+    c2'1: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int }
+  
+  let rec deref_Ghost_ref_AtomicInvariant_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
+    (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) = any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) -> {[@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  let rec into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
+    [ return (result: t_Tokens) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  type t_Committer
+  
+  type closure0'2 = { c0'2: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int; c1'2: MutBorrow.t t_Committer }
+  
+  let rec new'1 (value: Int128.t) (return (x: int)) = any
+    [ return (result: int) -> {[@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
+  
+  let rec into_inner_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  type tup2_unit_Int = { f0'7: (); f1'7: int }
+  
+  type t_OptionLocalUpdate_tup2_unit_Int = { f0'8: tup2_unit_Int }
+  
+  predicate premise_unit [@inline:trivial] (self: ()) (_2: t_PositiveReal) (_3: t_PositiveReal) = true
+  
+  meta "rewrite_def" predicate premise_unit
+  
+  predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
+  
+  meta "rewrite_def" predicate premise_Int
+  
+  predicate premise_tup2_unit_Int [@inline:trivial] (self: tup2_unit_Int) (from_auth: tup2_PositiveReal_Int) (from_frag: tup2_PositiveReal_Int) =
+    premise_unit self.f0'7 from_auth.f0'1 from_frag.f0'1 /\ premise_Int self.f1'7 from_auth.f1'1 from_frag.f1'1
+  
+  meta "rewrite_def" predicate premise_tup2_unit_Int
+  
+  predicate premise_OptionLocalUpdate_tup2_unit_Int [@inline:trivial] (self: t_OptionLocalUpdate_tup2_unit_Int) (from_auth: t_Option_tup2_PositiveReal_Int) (from_frag: t_Option_tup2_PositiveReal_Int) =
+    match { f0'2 = from_auth; f1'2 = from_frag } with
+      | {f0'2 = Some from_auth'0; f1'2 = Some from_frag'0} -> premise_tup2_unit_Int self.f0'8 from_auth'0 from_frag'0
+      | _ -> false
+      end
+  
+  meta "rewrite_def" predicate premise_OptionLocalUpdate_tup2_unit_Int
+  
+  type tup2_tup2_PositiveReal_Int_tup2_PositiveReal_Int = { f0'9: tup2_PositiveReal_Int; f1'9: tup2_PositiveReal_Int }
+  
+  type tup2_PositiveReal_PositiveReal = { f0'10: t_PositiveReal; f1'10: t_PositiveReal }
+  
+  function update_unit [@inline:trivial] (self: ()) (from_auth: t_PositiveReal) (from_frag: t_PositiveReal) : tup2_PositiveReal_PositiveReal
+   = { f0'10 = from_auth; f1'10 = from_frag }
+  
+  meta "rewrite_def" function update_unit
+  
+  type tup2_Int_Int = { f0'11: int; f1'11: int }
+  
+  function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int =
+    { f0'11 = from_auth + self; f1'11 = from_frag + self }
+  
+  meta "rewrite_def" function update_Int
+  
+  function update_tup2_unit_Int [@inline:trivial] (self: tup2_unit_Int) (from_auth: tup2_PositiveReal_Int) (from_frag: tup2_PositiveReal_Int) : tup2_tup2_PositiveReal_Int_tup2_PositiveReal_Int
+   =
+    let {f0'10 = to_auth0; f1'10 = to_frag0} = update_unit self.f0'7 from_auth.f0'1 from_frag.f0'1 in let {f0'11 = to_auth1; f1'11 = to_frag1} = update_Int self.f1'7 from_auth.f1'1 from_frag.f1'1 in { f0'9 = { f0'1 = to_auth0;
+                                                                                                                                                                                                                  f1'1 = to_auth1 };
+                                                                                                                                                                                                         f1'9 = { f0'1 = to_frag0;
+                                                                                                                                                                                                                  f1'1 = to_frag1 } }
+  
+  meta "rewrite_def" function update_tup2_unit_Int
+  
+  function update_OptionLocalUpdate_tup2_unit_Int [@inline:trivial] (self: t_OptionLocalUpdate_tup2_unit_Int) (from_auth: t_Option_tup2_PositiveReal_Int) (from_frag: t_Option_tup2_PositiveReal_Int) : tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int
+   = match { f0'2 = from_auth; f1'2 = from_frag } with
+      | {f0'2 = Some from_auth'0; f1'2 = Some from_frag'0} -> let {f0'9 = to_auth; f1'9 = to_frag} = update_tup2_unit_Int self.f0'8 from_auth'0 from_frag'0 in { f0'2 = Some to_auth;
+                                                                                                                                                                 f1'2 = Some to_frag }
+      | _ -> { f0'2 = None; f1'2 = None }
+      end
+  
+  meta "rewrite_def" function update_OptionLocalUpdate_tup2_unit_Int
+  
+  let rec update_Option_tup2_PositiveReal_Int'0 (self: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int)
+    (frag: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) (upd: t_OptionLocalUpdate_tup2_unit_Int)
+    (return (x: ())) = {([@expl:update 'self' type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int self)
+    /\ ([@expl:update requires #0] id_Option_tup2_PositiveReal_Int self.current
+      = id_Option_tup2_PositiveReal_Int'0 frag.current)
+    /\ ([@expl:update requires #1] premise_OptionLocalUpdate_tup2_unit_Int upd (view_Authority_Option_tup2_PositiveReal_Int self.current) (view_Fragment_Option_tup2_PositiveReal_Int frag.current))}
+    any
+    [ return (result: ()) -> {([@expl:update ensures #0] id_Option_tup2_PositiveReal_Int self.current
+        = id_Option_tup2_PositiveReal_Int self.final)
+      /\ ([@expl:update ensures #1] id_Option_tup2_PositiveReal_Int'0 frag.current
+        = id_Option_tup2_PositiveReal_Int'0 frag.final)
+      /\ ([@expl:update ensures #2] incl_Option_tup2_PositiveReal_Int (view_Fragment_Option_tup2_PositiveReal_Int frag.current) (view_Authority_Option_tup2_PositiveReal_Int self.current))
+      /\ ([@expl:update ensures #3] { f0'2 = view_Authority_Option_tup2_PositiveReal_Int self.final;
+                                      f1'2 = view_Fragment_Option_tup2_PositiveReal_Int frag.final }
+      = update_OptionLocalUpdate_tup2_unit_Int upd (view_Authority_Option_tup2_PositiveReal_Int self.current) (view_Fragment_Option_tup2_PositiveReal_Int frag.current))}
+      (! return {result}) ]
+  
+  predicate shot (self: t_Committer)
+  
+  function ward (self: t_Committer) : t_AtomicI32
+  
+  function old_value (self: t_Committer) : Int32.t
+  
+  function new_value (self: t_Committer) : Int32.t
+  
+  let rec shoot (self: MutBorrow.t t_Committer) (own'0: MutBorrow.t t_Perm_AtomicI32) (return (x: ())) =
+    {([@expl:shoot requires #0] not shot self.current)
+    /\ ([@expl:shoot requires #1] ward self.current = ward_AtomicI32 own'0.current)}
+    any
+    [ return (result: ()) -> {([@expl:shoot ensures #0] shot self.final)
+      /\ ([@expl:shoot ensures #1] ward_AtomicI32 own'0.final = ward_AtomicI32 own'0.current)
+      /\ ([@expl:shoot ensures #2] val_AtomicI32 own'0.current = old_value self.current)
+      /\ ([@expl:shoot ensures #3] val_AtomicI32 own'0.final = new_value self.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Box_Perm_AtomicI32_Global
+  
+  predicate invariant_refmut_ParallelAddAtomicInv [@inline:trivial] (self: MutBorrow.t t_ParallelAddAtomicInv) =
+    inv_ParallelAddAtomicInv self.current /\ inv_ParallelAddAtomicInv self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_ParallelAddAtomicInv
+  
+  predicate inv_refmut_ParallelAddAtomicInv [@inline:trivial] (_1: MutBorrow.t t_ParallelAddAtomicInv) =
+    invariant_refmut_ParallelAddAtomicInv _1
+  
+  meta "rewrite_def" predicate inv_refmut_ParallelAddAtomicInv
+  
+  predicate resolve_refmut_ParallelAddAtomicInv [@inline:trivial] (_1: MutBorrow.t t_ParallelAddAtomicInv) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_ParallelAddAtomicInv
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'2) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate resolve_refmut_Committer [@inline:trivial] (_1: MutBorrow.t t_Committer) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0'2) =
+    resolve_refmut_Committer _1.c1'2 /\ resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _1.c0'2
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 [@inline:trivial] (self: closure0'2) (result_state: closure0'2) =
+    result_state.c0'2.final = self.c0'2.final /\ result_state.c1'2.final = self.c1'2.final
+  
+  meta "rewrite_def" predicate hist_inv_closure0
+  
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0'2) (inv: MutBorrow.t t_ParallelAddAtomicInv)
+    (return (x: ())) = {[@expl:closure 'inv' type invariant] inv_refmut_ParallelAddAtomicInv inv}
+    bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.current.c0'2.current}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_8 <- _bor ]
+            [ &self <- { self with current = { self.current with c0'2 = { self.current.c0'2 with current = _bor.final } } } ]
+            s1)
+      | s1 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_8}
+          (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_7 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_6 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s3)
+      | s3 = new'1 {(1: Int128.t)} (fun (_x: int) -> [ &_13 <- _x ] s4)
+      | s4 = into_inner_Int {_13} (fun (_x: int) -> [ &_12 <- _x ] s5)
+      | s5 = [ &_10 <- { f0'7 = _11; f1'7 = _12 } ] s6
+      | s6 = [ &_9 <- { f0'8 = _10 } ] s7
+      | s7 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {inv.current.auth}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 2}
+          (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+            [ &_4 <- _bor ] -{inv_Authority_Option_tup2_PositiveReal_Int _bor.final}-
+            [ &inv <- { inv with current = { inv.current with auth = _bor.final } } ] s8)
+        [ _ck -> (! {inv_Authority_Option_tup2_PositiveReal_Int inv.current.auth} any) ]
+      | s8 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_6.current} {MutBorrow.get_id _6}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s9)
+      | s9 = update_Option_tup2_PositiveReal_Int'0 {_4} {_5} {_9} (fun (_x: ()) -> [ &_3 <- _x ] s10)
+      | s10 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _7}- s11
+      | s11 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _6}- s12
+      | s12 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.own}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
+            [ &_17 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s13)
+      | s13 = MutBorrow.borrow_mut <t_Committer> {self.current.c1'2.current}
+          (fun (_bor: MutBorrow.t t_Committer) ->
+            [ &_15 <- _bor ]
+            [ &self <- { self with current = { self.current with c1'2 = { self.current.c1'2 with current = _bor.final } } } ]
+            s14)
+      | s14 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_17.current} {MutBorrow.get_id _17}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
+            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s15)
+      | s15 = shoot {_15} {_16} (fun (_x: ()) -> [ &_14 <- _x ] s16)
+      | s16 = -{resolve_refmut_Box_Perm_AtomicI32_Global _17}- s17
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
+      | s18 = -{resolve_refmut_ParallelAddAtomicInv inv}- s19
+      | s19 = -{resolve_refmut_closure0 self}- s20
+      | s20 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure0'2 = self
+    | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _5: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _6: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _7: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _8: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _9: t_OptionLocalUpdate_tup2_unit_Int = Any.any_l ()
+    | & _10: tup2_unit_Int = Any.any_l ()
+    | & _11: () = Any.any_l ()
+    | & _12: int = Any.any_l ()
+    | & _13: int = Any.any_l ()
+    | & _14: () = Any.any_l ()
+    | & _15: MutBorrow.t t_Committer = Any.any_l ()
+    | & _16: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
+    | & _17: MutBorrow.t t_Perm_AtomicI32 = Any.any_l () ]
+    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final} return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'2) (result: ()) =
+    let inv = args in exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure0 self args res
+      = (exists res_state: closure0'2. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: closure0'2) (b: closure0'2) (c: closure0'2) : ()
+  
+  axiom hist_inv_trans_closure0_spec: forall self: closure0'2, b: closure0'2, c: closure0'2. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: closure0'2) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: closure0'2. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'2) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'2, res: (). postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  type t_FnGhostWrapper_closure0 = { f0'12: closure0'2 }
+  
+  let rec __new_closure0 (f: closure0'2) (return (x: t_FnGhostWrapper_closure0)) = any
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@expl:__new ensures] result.f0'12 = f} (! return {result}) ]
+  
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
+  predicate precondition_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    let inv = args in forall bor_self: MutBorrow.t closure0'2. bor_self.current = self -> closure0'pre bor_self inv
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+    precondition_closure0 self.f0'12 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    postcondition_once_closure0 self.f0'12 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
+  
+  let rec open_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) (tokens: t_Tokens)
+    (f: t_FnGhostWrapper_closure0) (return (x: ())) =
+    {([@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self))
+    /\ ([@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ inv_refmut_ParallelAddAtomicInv t
+      -> precondition_FnGhostWrapper_closure0 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self)))}
+    any
+    [ return (result: ()) ->
+    {[@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. inv_refmut_ParallelAddAtomicInv t
+        /\ protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
+        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+      (! return {result}) ]
+  
+  let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_ref_AtomicInvariant_ParallelAddAtomicInv {self.c0'1}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_4 <- _x ] s1)
+      | s1 = into_inner_Tokens {self.c1'1} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {self.c2'1.current}
+          {MutBorrow.get_id self.c2'1}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_10 <- _bor ] [ &self <- { self with c2'1 = { self.c2'1 with current = _bor.final } } ] s3)
+      | s3 = MutBorrow.borrow_final <t_Committer> {c.current} {MutBorrow.get_id c}
+          (fun (_bor: MutBorrow.t t_Committer) -> [ &_11 <- _bor ] [ &c <- { c with current = _bor.final } ] s4)
+      | s4 = [ &_9 <- { c0'2 = _10; c1'2 = _11 } ] s5
+      | s5 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s6)
+      | s6 = open_ParallelAddAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s7)
+      | s7 = -{resolve_refmut_Committer c}- s8
+      | s8 = -{match self with
+          | {c2'1 = x} -> resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int x
+          | _ -> true
+          end}-
+        s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0'1 = self
+    | & c: MutBorrow.t t_Committer = c
+    | & _4: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _6: t_Tokens = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
+    | & _9: closure0'2 = Any.any_l ()
+    | & _10: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _11: MutBorrow.t t_Committer = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'0'pre
+  
+  meta "rewrite_def" predicate closure0'0'post'return
+  
+  type t_FnGhostWrapper_closure0'0 = { f0'13: closure0'1 }
+  
+  let rec __new_closure0'0 (f: closure0'1) (return (x: t_FnGhostWrapper_closure0'0)) = any
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@expl:__new ensures] result.f0'13 = f} (! return {result}) ]
+  
+  let rec new_FnGhostWrapper_closure0 (x: t_FnGhostWrapper_closure0'0) (return (x'0: t_FnGhostWrapper_closure0'0)) = any
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@expl:new ensures] result = x} (! return {result}) ]
+  
+  type tup2_i32_Ghost_unit = { f0'14: Int32.t; f1'14: () }
+  
+  predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer) =
+    let c = args in closure0'0'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure0'0
+  
+  predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer) =
+    precondition_closure0'0 self.f0'13 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
+  
+  predicate postcondition_once_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer) (result: ()) =
+    let c = args in closure0'0'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer) (result: ()) =
+    postcondition_once_closure0'0 self.f0'13 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
+  
+  let rec fetch_add_unit (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'0)
+    (return (x: tup2_i32_Ghost_unit)) = {([@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
+    /\ ([@expl:fetch_add requires] forall c: MutBorrow.t t_Committer. not shot c.current
+      -> ward c.current = self
+      -> new_value c.current = Int32.add val' (old_value c.current)
+      -> precondition_FnGhostWrapper_closure0'0 f c
+      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot c.final))}
+    any
+    [ return (result: tup2_i32_Ghost_unit) ->
+    {[@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer. not shot c.current
+        /\ ward c.current = self
+        /\ new_value c.current = Int32.add val' (old_value c.current)
+        /\ old_value c.current = result.f0'14 /\ postcondition_once_FnGhostWrapper_closure0'0 f c result.f1'14}
+      (! return {result}) ]
+  
+  predicate inv_closure0'0 [@inline:trivial] (_1: closure0'0) =
+    let {c0'0 = x0; c1'0 = x1; c2'0 = x2} = _1 in inv_ref_AtomicI32 x0
+  
+  meta "rewrite_def" predicate inv_closure0'0
+  
+  let rec closure0'1 [@coma:extspec] (self: closure0'0) (tokens: t_Tokens)
+    (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) = {[@expl:closure 'self' type invariant] inv_closure0'0 self}
+    bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- self.c0'0 ] s1
+      | s1 = [ &_8 <- self.c1'0 ] s2
+      | s2 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c2'0}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_9 <- _bor ] [ &self <- { self with c2'0 = _bor.final } ] s3)
+      | s3 = [ &_7 <- { c0'1 = _8; c1'1 = tokens; c2'1 = _9 } ] s4
+      | s4 = __new_closure0'0 {_7} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_6 <- _x ] s5)
+      | s5 = new_FnGhostWrapper_closure0 {_6} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_5 <- _x ] s6)
+      | s6 = fetch_add_unit {_4} {(1: Int32.t)} {_5} (fun (_x: tup2_i32_Ghost_unit) -> [ &_3 <- _x ] s7)
+      | s7 = [ &_ret <- self.c2'0 ] s8
+      | s8 = return {_ret} ] ]
+    [ & _ret: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & self: closure0'0 = self
+    | & tokens: t_Tokens = tokens
+    | & _3: tup2_i32_Ghost_unit = Any.any_l ()
+    | & _4: t_AtomicI32 = Any.any_l ()
+    | & _5: t_FnGhostWrapper_closure0'0 = Any.any_l ()
+    | & _6: t_FnGhostWrapper_closure0'0 = Any.any_l ()
+    | & _7: closure0'1 = Any.any_l ()
+    | & _8: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _9: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l () ]
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'1'pre
+  
+  meta "rewrite_def" predicate closure0'1'post'return
+  
+  predicate precondition_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) =
+    let tokens = args in closure0'1'pre self tokens
+  
+  meta "rewrite_def" predicate precondition_closure0'1
+  
+  predicate postcondition_once_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) (result: t_Fragment_Option_tup2_PositiveReal_Int) =
+    let tokens = args in closure0'1'post'return self tokens result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'1
+  
+  let rec spawn_closure0 (self: MutBorrow.t t_Scope) (f: closure0'0)
+    (return (x: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) =
+    {([@expl:spawn 'self' type invariant] inv_refmut_Scope self)
+    /\ ([@expl:spawn 'f' type invariant] inv_closure0'0 f)
+    /\ ([@expl:spawn requires] forall t: t_Tokens. (forall ns: t_Namespace. contains t ns)
+      -> precondition_closure0'1 f t)}
+    any
+    [ return (result: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
+    {([@expl:spawn result type invariant] inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:spawn ensures] exists t: t_Tokens. (forall ns: t_Namespace. contains t ns)
+        /\ (forall r: t_Fragment_Option_tup2_PositiveReal_Int. valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int result r
+          -> postcondition_once_closure0'1 f t r))}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (self: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.current
+    /\ inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate inv_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    invariant_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  let rec push_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+    (self_: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+    (v: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (return (x: ())) =
+    {([@expl:push 'self_' type invariant] inv_refmut_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_)
+    /\ ([@expl:push 'v' type invariant] inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int v)}
+    any
+    [ return (result: ()) ->
+    {[@expl:push ensures] view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_.final
+      = Seq.snoc (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_.current) v}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Scope [@inline:trivial] (_1: MutBorrow.t t_Scope) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Scope
+  
+  type t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (_1: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+  
+  function view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) : Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  let rec into_iter_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+    (self_: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+    (return (x: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)) =
+    {[@expl:into_iter 'self_' type invariant] inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_}
+    any
+    [ return (result: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+    {([@expl:into_iter result type invariant] inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global result)
+      /\ ([@expl:into_iter ensures] view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_
+      = view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global result)}
+      (! return {result}) ]
+  
+  type t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int =
+    | None'5
+    | Some'5 t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  predicate invariant_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.current
+    /\ inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate inv_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    invariant_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (_1: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+  
+  axiom inv_axiom'2 [@rewrite]:
+    forall x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x]. inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x
+      = match x with
+        | None'5 -> true
+        | Some'5 f0'15 -> inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'15
+        end
+  
+  predicate produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (visited: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (rhs: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self
+    = Seq.(++) visited (view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global rhs)
+  
+  function produces_trans_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (a: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (ab: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (b: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (bc: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (c: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) : ()
+   = ()
+  
+  axiom produces_trans_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global_spec:
+    forall a: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global, ab: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int, b: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global, bc: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int, c: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global. produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global a ab b
+      -> produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global b bc c
+      -> produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) : ()
+   = ()
+  
+  axiom produces_refl_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global_spec:
+    forall self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global. produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self (Seq.empty: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) self
+  
+  predicate resolve_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate completed_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    resolve_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self
+    /\ view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.current
+    = (Seq.empty: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+  
+  let rec next_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+    (self_: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+    (return (x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) =
+    {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_}
+    any
+    [ return (result: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
+    {([@expl:next result type invariant] inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int result)
+      /\ ([@expl:next ensures] match result with
+        | None'5 -> completed_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_
+        | Some'5 v -> produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  let rec elim_Some'0 (_x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+    (return (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ _k (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {Some'5 f0'15 = _x}
+      (! return {f0'15})
+    | _chk -> (! {match _x with
+        | Some'5 _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  function index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (ix: int) : t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+   = Seq.get (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  let rec join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+    (self: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+    (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) =
+    {[@expl:join_unwrap 'self' type invariant] inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self}
+    any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) ->
+    {[@expl:join_unwrap ensures] valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self result}
+      (! return {result}) ]
+  
+  let rec into_inner_Fragment_Option_tup2_PositiveReal_Int (self: t_Fragment_Option_tup2_PositiveReal_Int)
+    (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) -> {[@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let rec join_in_Option_tup2_PositiveReal_Int (self: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int)
+    (other: t_Fragment_Option_tup2_PositiveReal_Int) (return (x: ())) =
+    {[@expl:join_in requires] id_Option_tup2_PositiveReal_Int'0 self.current = id_Option_tup2_PositiveReal_Int'0 other}
+    any
+    [ return (result: ()) -> {([@expl:join_in ensures #0] id_Option_tup2_PositiveReal_Int'0 self.final
+        = id_Option_tup2_PositiveReal_Int'0 self.current)
+      /\ ([@expl:join_in ensures #1] Some'0 (view_Fragment_Option_tup2_PositiveReal_Int self.final)
+      = op_Option_tup2_PositiveReal_Int (view_Fragment_Option_tup2_PositiveReal_Int self.current) (view_Fragment_Option_tup2_PositiveReal_Int other))}
+      (! return {result}) ]
+  
+  predicate resolve_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (_1: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
+  
+  predicate resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
+    forall i: int. 0 <= i
+        /\ i < Seq.length (view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self)
+      -> resolve_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (Seq.get (view_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self) i)
+  
+  meta "rewrite_def" predicate resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
+  
+  predicate resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global'0 (_1: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global)
+  
+  axiom resolve_axiom:
+    forall x: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global'0 x]. resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global'0 x
+      -> resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global x
+  
+  predicate resolve_closure0'0 [@inline:trivial] (_1: closure0) =
+    resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _1.c3
+  
+  meta "rewrite_def" predicate resolve_closure0'0
+  
+  let rec closure0'2 [@coma:extspec] (self: closure0) (s: MutBorrow.t t_Scope) (return (x: ())) =
+    {([@expl:closure 'self' type invariant] inv_closure0 self)
+    /\ ([@expl:closure 's' type invariant] inv_refmut_Scope s)}
+    bb0
+    [ bb0 = s0
+      [ s0 = borrow_AtomicInvariant_ParallelAddAtomicInv {self.c0}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s1)
+      | s1 = [ &atomic <- self.c1 ] s2
+      | s2 = new_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+          (fun (_x: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) -> [ &handles <- _x ] s3)
+      | s3 = [ &_9 <- { start = (0: Int32.t); end' = self.c2 } ] s4
+      | s4 = into_iter_Range_i32 {_9} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s5)
+      | s5 = [ &iter_old <- iter ] s6
+      | s6 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s7
+      | s7 = [ &_old <- self.c0 ] s8
+      | s8 = [ &_old'0 <- self.c1 ] s9
+      | s9 = [ &_old'1 <- self.c2 ] s10
+      | s10 = [ &_old'2 <- self.c3.final ] s11
+      | s11 = [ &_old'3 <- s.final ] s12
+      | s12 = bb6 ]
+    | bb6 = bb6
+      [ bb6 =
+        {[@expl:inferred invariant: type invariant] inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles}
+        {[@expl:inferred invariant: type invariant] inv_refmut_Scope s}
+        {[@expl:inferred invariant: type invariant] inv_closure0 self}
+        {[@expl:inferred invariant: unchanged value] _old'3 = s.final}
+        {[@expl:inferred invariant: unchanged value] _old'2 = self.c3.final}
+        {[@expl:inferred invariant: unchanged value] _old'1 = self.c2}
+        {[@expl:inferred invariant: unchanged value] _old'0 = self.c1}
+        {[@expl:inferred invariant: unchanged value] _old = self.c0}
+        {[@expl:for invariant] inv_Seq_i32 produced}
+        {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
+        {[@expl:loop invariant #0] id_Option_tup2_PositiveReal_Int'0 self.c3.current
+        = (public_ParallelAddAtomicInv inv).f1'6}
+        {[@expl:loop invariant #1] view_Fragment_Option_tup2_PositiveReal_Int self.c3.current
+        = Some { f0'1 = fraction (Int32.to_int self.c2 + 1 - Seq.length produced) (Int32.to_int self.c2); f1'1 = 0 }}
+        {[@expl:loop invariant #2] Seq.length (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles)
+        = Seq.length produced}
+        {[@expl:loop invariant #3] forall j: int, f'0: t_Fragment_Option_tup2_PositiveReal_Int. 0 <= j
+            /\ j < Seq.length produced
+            /\ valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int (Seq.get (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles) j) f'0
+          -> view_Fragment_Option_tup2_PositiveReal_Int f'0
+            = Some { f0'1 = fraction 1 (Int32.to_int self.c2); f1'1 = 1 }
+          /\ id_Option_tup2_PositiveReal_Int'0 f'0 = (public_ParallelAddAtomicInv inv).f1'6}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_43 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_i32> {_43.current} {MutBorrow.get_id _43}
+            (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_42 <- _bor ] [ &_43 <- { _43 with current = _bor.final } ] s2)
+        | s2 = next_Range_i32 {_42} (fun (_x: t_Option_i32) -> [ &_41 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_i32 _43}- s4
+        | s4 = any [ br0 -> {_41 = None'4} (! bb11) | br1 (x0: Int32.t) -> {_41 = Some'4 x0} (! bb12) ] ]
+        [ bb12 = s0
+          [ s0 = elim_Some {_41} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &f1'4 <- Some { f0'1 = fraction 1 (Int32.to_int self.c2); f1'1 = 0 } ] s3
+          | s3 = [ &f2 <- Some { f0'1 = fraction (Int32.to_int self.c2 + 1
+                                 - Seq.length produced) (Int32.to_int self.c2);
+                                 f1'1 = 0 } ] s4
+          | s4 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
+              (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+                [ &_62 <- _bor ] [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s5)
+          | s5 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_62}
+              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_61 <- _x ] s6)
+          | s6 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_61.current} {MutBorrow.get_id _61}
+              (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+                [ &_60 <- _bor ] [ &_61 <- { _61 with current = _bor.final } ] s7)
+          | s7 = split_off_Option_tup2_PositiveReal_Int {_60} {f1'4} {f2}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_59 <- _x ] s8)
+          | s8 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _61}- s9
+          | s9 = new_Fragment_Option_tup2_PositiveReal_Int {_59}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s10)
+          | s10 = [ &_67 <- { c0'0 = atomic; c1'0 = inv; c2'0 = frag } ] s11
+          | s11 = MutBorrow.borrow_mut <t_Scope> {s.current}
+              (fun (_bor: MutBorrow.t t_Scope) ->
+                [ &_66 <- _bor ] -{inv_Scope _bor.final}-
+                [ &s <- { s with current = _bor.final } ] s12) [ _ck -> (! {inv_Scope s.current} any) ]
+          | s12 = spawn_closure0 {_66} {_67}
+              (fun (_x: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> [ &h <- _x ] s13)
+          | s13 = MutBorrow.borrow_mut <t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global>
+              {handles}
+              (fun (_bor: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+                [ &_68 <- _bor ]
+                -{inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _bor.final}-
+                [ &handles <- _bor.final ] s14)
+            [ _ck -> (! {inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles} any) ]
+          | s14 = push_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {_68} {h}
+              (fun (_x: ()) -> [ &_19 <- _x ] s15)
+          | s15 = bb6 ] ] ]
+    | bb11 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Scope s} any) ]
+      | s1 = -{resolve_refmut_Scope s}- s2
+      | s2 = [ &handles_ <- handles ] s3
+      | s3 = into_iter_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global {handles}
+          (fun (_x: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+            [ &iter'0 <- _x ] s4)
+      | s4 = [ &iter_old'0 <- iter'0 ] s5
+      | s5 = [ &produced'0 <- Seq.empty: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int ] s6
+      | s6 = [ &_old'4 <- self.c0 ] s7
+      | s7 = [ &_old'5 <- self.c1 ] s8
+      | s8 = [ &_old'6 <- self.c2 ] s9
+      | s9 = [ &_old'7 <- self.c3.final ] s10
+      | s10 = bb26 ]
+    | bb26 = bb26
+      [ bb26 =
+        {[@expl:inferred invariant: type invariant] inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global iter'0}
+        {[@expl:inferred invariant: type invariant] inv_closure0 self}
+        {[@expl:inferred invariant: unchanged value] _old'7 = self.c3.final}
+        {[@expl:inferred invariant: unchanged value] _old'6 = self.c2}
+        {[@expl:inferred invariant: unchanged value] _old'5 = self.c1}
+        {[@expl:inferred invariant: unchanged value] _old'4 = self.c0}
+        {[@expl:for invariant] inv_Seq_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int produced'0}
+        {[@expl:for invariant] produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global iter_old'0 produced'0 iter'0}
+        {[@expl:loop invariant #0] id_Option_tup2_PositiveReal_Int'0 self.c3.current
+        = (public_ParallelAddAtomicInv inv).f1'6}
+        {[@expl:loop invariant #1] view_Fragment_Option_tup2_PositiveReal_Int self.c3.current
+        = Some { f0'1 = fraction (Seq.length produced'0 + 1) (Int32.to_int self.c2); f1'1 = Seq.length produced'0 }}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global>
+            {iter'0}
+            (fun (_bor: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+              [ &_99 <- _bor ]
+              -{inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _bor.final}-
+              [ &iter'0 <- _bor.final ] s1)
+          [ _ck -> (! {inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global iter'0} any) ]
+        | s1 = MutBorrow.borrow_final <t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global>
+            {_99.current} {MutBorrow.get_id _99}
+            (fun (_bor: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
+              [ &_98 <- _bor ]
+              -{inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _bor.final}-
+              [ &_99 <- { _99 with current = _bor.final } ] s2)
+          [ _ck -> (! {inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _99.current}
+            any) ]
+        | s2 = next_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global {_98}
+            (fun (_x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> [ &_97 <- _x ] s3)
+        | s3 = s4
+          [ _ck ->
+          (! {[@expl:type invariant] inv_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _99}
+            any) ]
+        | s4 = -{resolve_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _99}- s5
+        | s5 = any
+          [ br0 -> {_97 = None'5} (! bb31)
+          | br1 (x0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {_97 = Some'5 x0} (! bb32) ] ]
+        [ bb32 = s0
+          [ s0 = elim_Some'0 {_97}
+              (fun (r0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
+                [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
+          | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+          | s2 = [ &h'0 <- __creusot_proc_iter_elem'0 ] s3
+          | s3 = {[@expl:assertion] h'0
+            = index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles_ (Seq.length produced'0
+            - 1)}
+            s4
+          | s4 = join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {h'0}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &f <- _x ] s5)
+          | s5 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
+              (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+                [ &_119 <- _bor ] [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s6)
+          | s6 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_119}
+              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_118 <- _x ] s7)
+          | s7 = into_inner_Fragment_Option_tup2_PositiveReal_Int {f}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_120 <- _x ] s8)
+          | s8 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_118.current} {MutBorrow.get_id _118}
+              (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+                [ &_117 <- _bor ] [ &_118 <- { _118 with current = _bor.final } ] s9)
+          | s9 = join_in_Option_tup2_PositiveReal_Int {_117} {_120} (fun (_x: ()) -> [ &_116 <- _x ] s10)
+          | s10 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _118}- s11
+          | s11 = new_unit {_116} (fun (_x: ()) -> [ &_115 <- _x ] s12)
+          | s12 = bb26 ] ] ]
+    | bb31 = s0
+      [ s0 = s1
+        [ _ck ->
+        (! {[@expl:type invariant] inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global iter'0}
+          any) ]
+      | s1 = -{resolve_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global'0 iter'0}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_closure0 self} any) ]
+      | s3 = -{resolve_closure0'0 self}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0 = self
+    | & s: MutBorrow.t t_Scope = s
+    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & atomic: t_AtomicI32 = Any.any_l ()
+    | & handles: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & iter: t_Range_i32 = Any.any_l ()
+    | & _9: t_Range_i32 = Any.any_l ()
+    | & iter_old: t_Range_i32 = Any.any_l ()
+    | & produced: Seq.seq Int32.t = Any.any_l ()
+    | & _19: () = Any.any_l ()
+    | & _41: t_Option_i32 = Any.any_l ()
+    | & _42: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & _43: MutBorrow.t t_Range_i32 = Any.any_l ()
+    | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
+    | & f1'4: t_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & f2: t_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _59: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _60: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _61: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _62: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & h: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _66: MutBorrow.t t_Scope = Any.any_l ()
+    | & _67: closure0'0 = Any.any_l ()
+    | & _68: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & handles_: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & iter'0: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & iter_old'0: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & produced'0: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _97: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _98: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & _99: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
+    | & __creusot_proc_iter_elem'0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & h'0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & f: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _115: () = Any.any_l ()
+    | & _116: () = Any.any_l ()
+    | & _117: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _118: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _119: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _120: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _old: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _old'0: t_AtomicI32 = Any.any_l ()
+    | & _old'1: Int32.t = Any.any_l ()
+    | & _old'2: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _old'3: t_Scope = Any.any_l ()
+    | & _old'4: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _old'5: t_AtomicI32 = Any.any_l ()
+    | & _old'6: Int32.t = Any.any_l ()
+    | & _old'7: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'2'pre
+  
+  meta "rewrite_def" predicate closure0'2'post'return
+  
+  predicate precondition_closure0'2 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) =
+    let s = args in closure0'2'pre self s
+  
+  meta "rewrite_def" predicate precondition_closure0'2
+  
+  predicate postcondition_once_closure0'2 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) (result: ()) =
+    let s = args in closure0'2'post'return self s result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'2
+  
+  let rec scope_closure0 (f: closure0) (return (x: ())) = {([@expl:scope 'f' type invariant] inv_closure0 f)
+    /\ ([@expl:scope requires] forall s: MutBorrow.t t_Scope. inv_refmut_Scope s -> precondition_closure0'2 f s)}
+    any
+    [ return (result: ()) -> {[@expl:scope ensures] exists s: MutBorrow.t t_Scope. inv_refmut_Scope s
+        /\ postcondition_once_closure0'2 f s result}
+      (! return {result}) ]
+  
+  let rec into_inner_AtomicInvariant_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
+    (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) = any
+    [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) -> {[@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let rec into_inner_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
+    (return (x: t_ParallelAddAtomicInv)) = any
+    [ return (result: t_ParallelAddAtomicInv) ->
+    {([@expl:into_inner result type invariant] inv_ParallelAddAtomicInv result)
+      /\ ([@expl:into_inner ensures] protocol_ParallelAddAtomicInv result (public_ParallelAddAtomicInv self))}
+      (! return {result}) ]
+  
+  predicate index_Mapping_tup2_PositiveReal_Int_bool [@inline:trivial] (self: Map.map tup2_PositiveReal_Int bool) (a: tup2_PositiveReal_Int) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_tup2_PositiveReal_Int_bool
+  
+  function such_that_tup2_PositiveReal_Int (p: Map.map tup2_PositiveReal_Int bool) : tup2_PositiveReal_Int
+  
+  axiom such_that_tup2_PositiveReal_Int_spec:
+    forall p: Map.map tup2_PositiveReal_Int bool. (exists x: tup2_PositiveReal_Int. index_Mapping_tup2_PositiveReal_Int_bool p x)
+      -> index_Mapping_tup2_PositiveReal_Int_bool p (such_that_tup2_PositiveReal_Int p)
+  
+  function unwrap_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) : tup2_PositiveReal_Int =
+    match self with
+      | Some x -> x
+      | None -> such_that_tup2_PositiveReal_Int (fun (__0: tup2_PositiveReal_Int) -> true)
+      end
+  
+  predicate resolve_Authority_Option_tup2_PositiveReal_Int (_1: t_Authority_Option_tup2_PositiveReal_Int)
+  
+  predicate resolve_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int (_1: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int)
+  
+  predicate resolve_Fragment_Option_tup2_PositiveReal_Int (_1: t_Fragment_Option_tup2_PositiveReal_Int)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Fragment_Option_tup2_PositiveReal_Int [resolve_Fragment_Option_tup2_PositiveReal_Int x]. resolve_Fragment_Option_tup2_PositiveReal_Int x
+      = resolve_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int x.f0'4
+  
+  predicate resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int [@inline:trivial] (_1: t_Fragment_Option_tup2_PositiveReal_Int) =
+    resolve_Fragment_Option_tup2_PositiveReal_Int _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  
+  let rec deref_Ghost_Fragment_Option_tup2_PositiveReal_Int (self: t_Fragment_Option_tup2_PositiveReal_Int)
+    (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) -> {[@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  let rec frag_lemma_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int)
+    (frag: t_Fragment_Option_tup2_PositiveReal_Int) (return (x: ())) =
+    {([@expl:frag_lemma 'self' type invariant] inv_ref_Authority_Option_tup2_PositiveReal_Int self)
+    /\ ([@expl:frag_lemma requires] id_Option_tup2_PositiveReal_Int self = id_Option_tup2_PositiveReal_Int'0 frag)}
+    any
+    [ return (result: ()) ->
+    {[@expl:frag_lemma ensures] incl_Option_tup2_PositiveReal_Int (view_Fragment_Option_tup2_PositiveReal_Int frag) (view_Authority_Option_tup2_PositiveReal_Int self)}
+      (! return {result}) ]
+  
+  let rec new_Box_Perm_AtomicI32_Global (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
+    [ return (result: t_Perm_AtomicI32) -> {[@expl:new ensures] result = x} (! return {result}) ]
+  
+  let rec into_inner (self: t_AtomicI32) (own'0: t_Perm_AtomicI32) (return (x: Int32.t)) =
+    {([@expl:into_inner 'self' type invariant] inv_AtomicI32 self)
+    /\ ([@expl:into_inner requires] self = ward_AtomicI32 own'0)}
+    any [ return (result: Int32.t) -> {[@expl:into_inner ensures] result = val_AtomicI32 own'0} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec parallel_add (tokens: t_Tokens) (n: Int32.t) (return (x: ())) =
+    {([@expl:parallel_add requires #0] contains tokens (Namespace_PARALLEL_ADD 0))
+    /\ ([@expl:parallel_add requires #1] Int32.to_int n >= 0)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_Ghost_Tokens tokens}- s1
+      | s1 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) -> [ &_9 <- _x ] s2)
+      | s2 = [ &atomic <- _9.f0 ] s3
+      | s3 = [ &own'0 <- _9.f1 ] s4
+      | s4 = [ &_10 <- { f0'0 = (); f1'0 = () } ] s5
+      | s5 = alloc_Option_tup2_PositiveReal_Int
+          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &auth'0 <- _x ] s6)
+      | s6 = deref_Ghost_Authority_Option_tup2_PositiveReal_Int {auth'0}
+          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_17 <- _x ] s7)
+      | s7 = id_ghost_Option_tup2_PositiveReal_Int {_17} (fun (_x: t_Id) -> [ &_15 <- _x ] s8)
+      | s8 = new_unit_Option_tup2_PositiveReal_Int {_15}
+          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_14 <- _x ] s9)
+      | s9 = new_Fragment_Option_tup2_PositiveReal_Int {_14}
+          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s10)
+      | s10 = MutBorrow.borrow_mut <t_Authority_Option_tup2_PositiveReal_Int> {auth'0}
+          (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+            [ &_24 <- _bor ] -{inv_Ghost_Authority_Option_tup2_PositiveReal_Int _bor.final}-
+            [ &auth'0 <- _bor.final ] s11) [ _ck -> (! {inv_Ghost_Authority_Option_tup2_PositiveReal_Int auth'0} any) ]
+      | s11 = deref_mut_Ghost_Authority_Option_tup2_PositiveReal_Int {_24}
+          (fun (_x: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) -> [ &_23 <- _x ] s12)
+      | s12 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_28 <- _bor ] [ &frag <- _bor.final ] s13)
+      | s13 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_28.current} {MutBorrow.get_id _28}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s14)
+      | s14 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_27}
+          (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_26 <- _x ] s15)
+      | s15 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {_23.current} {MutBorrow.get_id _23}
+          (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+            [ &_22 <- _bor ] -{inv_Authority_Option_tup2_PositiveReal_Int _bor.final}-
+            [ &_23 <- { _23 with current = _bor.final } ] s16)
+        [ _ck -> (! {inv_Authority_Option_tup2_PositiveReal_Int _23.current} any) ]
+      | s16 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_26.current} {MutBorrow.get_id _26}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s17)
+      | s17 = update_Option_tup2_PositiveReal_Int {_22} {_25} {{ f0'2 = Some { f0'1 = from_int 1; f1'1 = 0 };
+                                                                 f1'2 = Some { f0'1 = from_int 1; f1'1 = 0 } }}
+          (fun (_x: ()) -> [ &_21 <- _x ] s18)
+      | s18 = -{resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _28}- s19
+      | s19 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _26}- s20
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _23} any) ]
+      | s21 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _23}- s22
+      | s22 = new_unit {_20} (fun (_x: ()) -> [ &_19 <- _x ] s23)
+      | s23 = into_inner_Box_Perm_AtomicI32_Global {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_34 <- _x ] s24)
+      | s24 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
+          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_36 <- _x ] s25)
+      | s25 = [ &_33 <- { own = _34; auth = _36 } ] s26
+      | s26 = new_ParallelAddAtomicInv {_33} (fun (_x: t_ParallelAddAtomicInv) -> [ &_32 <- _x ] s27)
+      | s27 = new_ParallelAddAtomicInv'0 {_32} {{ f0'6 = atomic; f1'6 = id_Option_tup2_PositiveReal_Int'0 frag }}
+          {Namespace_PARALLEL_ADD 0} (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s28)
+      | s28 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+            [ &_49 <- _bor ] [ &frag <- _bor.final ] s29)
+      | s29 = [ &_45 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _49 } ] s30
+      | s30 = scope_closure0 {_45} (fun (_x: ()) -> [ &_44 <- _x ] s31)
+      | s31 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_53 <- _x ] s32)
+      | s32 = into_inner_ParallelAddAtomicInv {_53} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s33)
+      | s33 =
+        {[@expl:assertion] (unwrap_Option_tup2_PositiveReal_Int (view_Authority_Option_tup2_PositiveReal_Int inv'0.auth)).f0'1
+        = from_int 1}
+        s34
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
+      | s35 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s36
+      | s36 = -{resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int frag}- s37
+      | s37 = [ &_63 <- frag ] s38
+      | s38 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_63}
+          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_61 <- _x ] s39)
+      | s39 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_61} (fun (_x: ()) -> [ &_58 <- _x ] s40)
+      | s40 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s41)
+      | s41 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &x <- _x ] s42)
+      | s42 = {[@expl:assertion] n = x} s43
+      | s43 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & tokens: t_Tokens = tokens
+    | & n: Int32.t = n
+    | & atomic: t_AtomicI32 = Any.any_l ()
+    | & own'0: t_Perm_AtomicI32 = Any.any_l ()
+    | & _9: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = Any.any_l ()
+    | & _10: tup2_fraction_1_fraction_add = Any.any_l ()
+    | & auth'0: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _14: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _15: t_Id = Any.any_l ()
+    | & _17: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _19: () = Any.any_l ()
+    | & _20: () = Any.any_l ()
+    | & _21: () = Any.any_l ()
+    | & _22: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _23: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _24: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _25: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _26: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _27: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _28: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _32: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _33: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _34: t_Perm_AtomicI32 = Any.any_l ()
+    | & _36: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _44: () = Any.any_l ()
+    | & _45: closure0 = Any.any_l ()
+    | & _49: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & own'1: t_Perm_AtomicI32 = Any.any_l ()
+    | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _53: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _58: () = Any.any_l ()
+    | & _61: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _63: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & x: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

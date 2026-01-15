@@ -4,7 +4,7 @@ module M_foo
   
   let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -12,12 +12,8 @@ module M_foo
   
   type t_FnGhostWrapper_closure0 = { f0: () }
   
-  function view_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) : () = self.f0
-  
-  meta "rewrite_def" function view_FnGhostWrapper_closure0
-  
   let rec __new_closure0 (f: ()) (return (x: t_FnGhostWrapper_closure0)) = any
-    [ return (result: t_FnGhostWrapper_closure0) -> {view_FnGhostWrapper_closure0 result = f} (! return {result}) ]
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@expl:__new ensures] result.f0 = f} (! return {result}) ]
   
   predicate precondition_closure0 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in closure0'pre self x
   
@@ -153,19 +149,22 @@ module M_foo
   let rec takes_ghost_fn_FnGhostWrapper_closure0 (f: t_FnGhostWrapper_closure0) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fn requires] precondition_FnGhostWrapper_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {postcondition_FnGhostWrapper_closure0 f (1: Int32.t) result} (! return {result}) ]
+    [ return (result: Int32.t) ->
+    {[@expl:takes_ghost_fn ensures] postcondition_FnGhostWrapper_closure0 f (1: Int32.t) result}
+      (! return {result}) ]
   
   let rec takes_ghost_fnmut_FnGhostWrapper_closure0 (f: t_FnGhostWrapper_closure0) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fnmut requires] precondition_FnGhostWrapper_closure0 f (1: Int32.t)}
     any
     [ return (result: Int32.t) ->
-    {exists f2: t_FnGhostWrapper_closure0. postcondition_mut_FnGhostWrapper_closure0 f (1: Int32.t) f2 result}
+    {[@expl:takes_ghost_fnmut ensures] exists f2: t_FnGhostWrapper_closure0. postcondition_mut_FnGhostWrapper_closure0 f (1: Int32.t) f2 result}
       (! return {result}) ]
   
   let rec takes_ghost_fnonce_FnGhostWrapper_closure0 (f: t_FnGhostWrapper_closure0) (return (x: Int32.t)) =
     {[@expl:takes_ghost_fnonce requires] precondition_FnGhostWrapper_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {postcondition_once_FnGhostWrapper_closure0 f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@expl:takes_ghost_fnonce ensures] postcondition_once_FnGhostWrapper_closure0 f (1: Int32.t) result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -265,16 +264,15 @@ module M_takes_ghost_fn
       = (postcondition_F self args res /\ self = res_state)
   
   let rec call_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call 'self_' type invariant] inv_ref_F self_}
-    {[@expl:call requires] precondition_F self_ arg}
-    any [ return (result: Int32.t) -> {postcondition_F self_ arg result} (! return {result}) ]
+    {([@expl:call 'self_' type invariant] inv_ref_F self_) /\ ([@expl:call requires] precondition_F self_ arg)}
+    any [ return (result: Int32.t) -> {[@expl:call ensures] postcondition_F self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fn_F (f: t_F) (return (x: Int32.t)) = {[@expl:takes_ghost_fn 'f' type invariant] inv_F f}
-    {[@expl:takes_ghost_fn requires] precondition_F f (1: Int32.t)}
+  let rec takes_ghost_fn_F (f: t_F) (return (x: Int32.t)) = {([@expl:takes_ghost_fn 'f' type invariant] inv_F f)
+    /\ ([@expl:takes_ghost_fn requires] precondition_F f (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -333,16 +331,18 @@ module M_takes_ghost_fnmut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_mut 'self_' type invariant] inv_refmut_F self_}
-    {[@expl:call_mut requires] precondition_F self_.current arg}
-    any [ return (result: Int32.t) -> {postcondition_mut_F self_.current arg self_.final result} (! return {result}) ]
+    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fnmut_F (f: t_F) (return (x: Int32.t)) = {[@expl:takes_ghost_fnmut 'f' type invariant] inv_F f}
-    {[@expl:takes_ghost_fnmut requires] precondition_F f (1: Int32.t)}
+  let rec takes_ghost_fnmut_F (f: t_F) (return (x: Int32.t)) = {([@expl:takes_ghost_fnmut 'f' type invariant] inv_F f)
+    /\ ([@expl:takes_ghost_fnmut requires] precondition_F f (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
@@ -374,16 +374,17 @@ module M_takes_ghost_fnonce
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
   let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@expl:call_once 'self_' type invariant] inv_F self_}
-    {[@expl:call_once requires] precondition_F self_ arg}
-    any [ return (result: Int32.t) -> {postcondition_once_F self_ arg result} (! return {result}) ]
+    {([@expl:call_once 'self_' type invariant] inv_F self_) /\ ([@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec takes_ghost_fnonce_F (f: t_F) (return (x: Int32.t)) = {[@expl:takes_ghost_fnonce 'f' type invariant] inv_F f}
-    {[@expl:takes_ghost_fnonce requires] precondition_F f (1: Int32.t)}
+  let rec takes_ghost_fnonce_F (f: t_F) (return (x: Int32.t)) = {([@expl:takes_ghost_fnonce 'f' type invariant] inv_F f)
+    /\ ([@expl:takes_ghost_fnonce requires] precondition_F f (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- (1: Int32.t) ] s1

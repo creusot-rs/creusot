@@ -4,8 +4,8 @@ module M_test_array
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
   use creusot.int.UInt64
+  use int.Int
   
   type t_Iter_i32
   
@@ -14,7 +14,9 @@ module M_test_array
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
   let rec iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
-    [ return (result: t_Iter_i32) -> {inv_Iter_i32 result} {view_Iter_i32 result = self_} (! return {result}) ]
+    [ return (result: t_Iter_i32) -> {([@expl:iter result type invariant] inv_Iter_i32 result)
+      /\ ([@expl:iter ensures] view_Iter_i32 result = self_)}
+      (! return {result}) ]
   
   type t_Option_ref_i32 = None | Some Int32.t
   
@@ -65,7 +67,7 @@ module M_test_array
   let rec next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
     {[@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
-    [ return (result: t_Option_ref_i32) -> {match result with
+    [ return (result: t_Option_ref_i32) -> {[@expl:next ensures] match result with
         | None -> completed_Iter_i32 self_
         | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -96,7 +98,8 @@ module M_test_array
   meta "rewrite_def" function deep_model_ref_Option_ref_i32
   
   let rec eq_Option_ref_i32 (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
       (! return {result}) ]
   
   predicate resolve_Iter_i32 (_1: t_Iter_i32)
@@ -121,8 +124,8 @@ module M_test_array
   let rec into_iter_array_i32_1 (self_: Slice64.array Int32.t) (return (x: t_IntoIter_i32)) =
     {[@expl:into_iter 'self_' type invariant] inv_array_i32_1 self_}
     any
-    [ return (result: t_IntoIter_i32) -> {inv_IntoIter_i32 result}
-      {Slice64.view self_ = view_IntoIter_i32 result}
+    [ return (result: t_IntoIter_i32) -> {([@expl:into_iter result type invariant] inv_IntoIter_i32 result)
+      /\ ([@expl:into_iter ensures] Slice64.view self_ = view_IntoIter_i32 result)}
       (! return {result}) ]
   
   type t_Option_i32 = None'1 | Some'1 Int32.t
@@ -162,7 +165,7 @@ module M_test_array
   let rec next_IntoIter_i32 (self_: MutBorrow.t t_IntoIter_i32) (return (x: t_Option_i32)) =
     {[@expl:next 'self_' type invariant] inv_refmut_IntoIter_i32 self_}
     any
-    [ return (result: t_Option_i32) -> {match result with
+    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
         | None'1 -> completed_IntoIter_i32 self_
         | Some'1 v -> produces_IntoIter_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -182,7 +185,8 @@ module M_test_array
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   predicate resolve_IntoIter_i32 (_1: t_IntoIter_i32)

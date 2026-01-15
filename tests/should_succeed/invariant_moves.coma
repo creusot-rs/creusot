@@ -3,8 +3,8 @@ module M_test_invariant_move
   use creusot.int.UInt32
   use seq.Seq
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_u32_Global
   
@@ -18,7 +18,7 @@ module M_test_invariant_move
       <= UInt64.t'int const_MAX
   
   let rec pop_u32 (self_: MutBorrow.t t_Vec_u32_Global) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:pop ensures] match result with
         | Some t -> view_Vec_u32_Global self_.final
           = Seq.([..]) (view_Vec_u32_Global self_.current) 0 (Seq.length (view_Vec_u32_Global self_.current) - 1)
         /\ view_Vec_u32_Global self_.current = Seq.snoc (view_Vec_u32_Global self_.final) t

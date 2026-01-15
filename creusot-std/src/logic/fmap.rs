@@ -30,28 +30,19 @@ use core::marker::PhantomData;
 #[opaque]
 pub struct FMap<K, V>(PhantomData<K>, PhantomData<V>);
 
-impl<K, V> View for FMap<K, V> {
-    type ViewTy = Mapping<K, Option<V>>;
-
-    /// View of the map
-    ///
-    /// This represents the actual content of the map: other methods are specified relative to this.
-    #[logic(opaque)]
-    // Adding this injectivity post-condition makes the SMT timeout on many examples
-    //#[ensures(forall<m: Self> result == m@ ==> self == m)]
-    //TODO: investigate
-    fn view(self) -> Self::ViewTy {
-        dead
-    }
-}
-
 /// Logical definitions
 impl<K, V> FMap<K, V> {
+    /// The actual content of the map: other methods are specified relative to this.
+    #[logic(opaque)]
+    pub fn to_mapping(self) -> Mapping<K, Option<V>> {
+        dead
+    }
+
     /// Returns the empty map.
     #[trusted]
     #[logic(opaque)]
     #[ensures(result.len() == 0)]
-    #[ensures(result@ == Mapping::cst(None))]
+    #[ensures(result.to_mapping() == Mapping::cst(None))]
     pub fn empty() -> Self {
         dead
     }
@@ -67,7 +58,7 @@ impl<K, V> FMap<K, V> {
     /// Returns a new map, where the key-value pair `(k, v)` has been inserted.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(result@ == self@.set(k, Some(v)))]
+    #[ensures(result.to_mapping() == self.to_mapping().set(k, Some(v)))]
     #[ensures(result.len() == if self.contains(k) { self.len() } else { self.len() + 1 })]
     pub fn insert(self, k: K, v: V) -> Self {
         dead
@@ -82,7 +73,7 @@ impl<K, V> FMap<K, V> {
     /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(result@ == self@.set(k, None))]
+    #[ensures(result.to_mapping() == self.to_mapping().set(k, None))]
     #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
         dead
@@ -93,7 +84,7 @@ impl<K, V> FMap<K, V> {
     /// If no value is present, returns [`None`].
     #[logic(open, inline)]
     pub fn get(self, k: K) -> Option<V> {
-        self.view().get(k)
+        self.to_mapping().get(k)
     }
 
     /// Get the value associated with key `k` in the map.
@@ -160,12 +151,12 @@ impl<K, V> FMap<K, V> {
         dead
     }
 
-    /// Injectivity of view. Private axiom used by ext_eq
+    /// Injectivity of [`to_mapping`]. Private axiom used by ext_eq
     #[logic]
     #[trusted]
-    #[requires(self@ == other@)]
+    #[requires(self.to_mapping() == other.to_mapping())]
     #[ensures(self == other)]
-    fn view_inj(self, other: Self) {}
+    fn to_mapping_inj(self, other: Self) {}
 
     /// Extensional equality.
     ///
@@ -176,7 +167,7 @@ impl<K, V> FMap<K, V> {
     #[ensures(result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
-            let _ = Self::view_inj;
+            let _ = Self::to_mapping_inj;
             forall<k: K> self.get(k) == other.get(k)
         }
     }

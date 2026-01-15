@@ -342,10 +342,6 @@ impl Exp {
         Exp::Var(Name::Global(q))
     }
 
-    pub fn lazy_conj(l: Exp, r: Exp) -> Self {
-        l.lazy_and(r)
-    }
-
     pub fn not(self) -> Self {
         Exp::UnaryOp(UnOp::Not, Box::new(self))
     }

@@ -1,9 +1,9 @@
 module M_test
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_usize_Global
   
@@ -15,11 +15,12 @@ module M_test
       <= UInt64.t'int const_MAX
   
   let rec len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {UInt64.t'int result = Seq.length (view_Vec_usize_Global self_)}
+    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_usize_Global self_)}
       (! return {result}) ]
   
   let rec push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
-    [ return (result: ()) -> {view_Vec_usize_Global self_.final = Seq.snoc (view_Vec_usize_Global self_.current) v}
+    [ return (result: ()) -> {[@expl:push ensures] view_Vec_usize_Global self_.final
+      = Seq.snoc (view_Vec_usize_Global self_.current) v}
       (! return {result}) ]
   
   predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
@@ -58,8 +59,8 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use seq.Seq
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Vec_K_Global
   
@@ -89,7 +90,7 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
       -> (let self_ = args in inv_K res)
   
   let rec clone_K (self_: t_K) (return (x: t_K)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_K) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_K) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   predicate invariant_Seq_K [@inline:trivial] (self: Seq.seq t_K) =
     forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_K (Seq.get self i)
@@ -129,16 +130,17 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   meta "rewrite_def" function index_Vec_K_Global
   
   let rec insert_K (self_: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
-    {[@expl:insert 'self_' type invariant] inv_refmut_Vec_K_Global self_}
-    {[@expl:insert 'element' type invariant] inv_K element}
+    {([@expl:insert 'self_' type invariant] inv_refmut_Vec_K_Global self_)
+    /\ ([@expl:insert 'element' type invariant] inv_K element)}
     any
-    [ return (result: ()) -> {Seq.length (view_Vec_K_Global self_.final)
-      = Seq.length (view_Vec_K_Global self_.current) + 1}
-      {forall i: int. 0 <= i /\ i < UInt64.t'int index'0
-        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current i}
-      {index_Vec_K_Global self_.final (UInt64.t'int index'0) = element}
-      {forall i: int. UInt64.t'int index'0 < i /\ i < Seq.length (view_Vec_K_Global self_.final)
-        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current (i - 1)}
+    [ return (result: ()) -> {([@expl:insert ensures #0] Seq.length (view_Vec_K_Global self_.final)
+        = Seq.length (view_Vec_K_Global self_.current) + 1)
+      /\ ([@expl:insert ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int index'0
+          -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current i)
+      /\ ([@expl:insert ensures #2] index_Vec_K_Global self_.final (UInt64.t'int index'0) = element)
+      /\ ([@expl:insert ensures #3] forall i: int. UInt64.t'int index'0 < i
+          /\ i < Seq.length (view_Vec_K_Global self_.final)
+        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current (i - 1))}
       (! return {result}) ]
   
   predicate inv_VacantEntry_K (_1: t_VacantEntry_K)

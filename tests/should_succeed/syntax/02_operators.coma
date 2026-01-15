@@ -1,7 +1,7 @@
 module M_division
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   meta "compute_max_steps" 1000000
   
@@ -24,7 +24,7 @@ end
 module M_modulus
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   meta "compute_max_steps" 1000000
   
@@ -47,7 +47,7 @@ end
 module M_multiply
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -66,7 +66,7 @@ end
 module M_add
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -85,7 +85,7 @@ end
 module M_sub
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   meta "compute_max_steps" 1000000
   
@@ -102,7 +102,8 @@ end
 module M_expression
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.ComputerDivision
+  use int.Int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -111,9 +112,9 @@ module M_expression
   meta "select_lsinst" "all"
   
   let rec expression (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (return (x'0: bool)) =
-    {[@expl:expression requires #0] UInt64.t'int y > 0}
-    {[@expl:expression requires #1] Int.div (UInt64.t'int x) (UInt64.t'int y) * UInt64.t'int z
-    <= UInt64.t'int const_MAX}
+    {([@expl:expression requires #0] UInt64.t'int y > 0)
+    /\ ([@expl:expression requires #1] ComputerDivision.div (UInt64.t'int x) (UInt64.t'int y) * UInt64.t'int z
+    <= UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_14 <- y ] s1

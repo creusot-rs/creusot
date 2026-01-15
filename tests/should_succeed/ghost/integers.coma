@@ -1,29 +1,33 @@
 module M_in_ghost_block
   use creusot.int.Int128
-  use mach.int.Int
+  use int.ComputerDivision
   use creusot.prelude.Any
+  use int.Int
   
   let rec new (value: Int128.t) (return (x: int)) = any
-    [ return (result: int) -> {result = Int128.to_int value} (! return {result}) ]
+    [ return (result: int) -> {[@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
   let rec into_inner_Int (self: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  let rec new_Int (x: int) (return (x'0: int)) = any [ return (result: int) -> {result = x} (! return {result}) ]
+  let rec new_Int (x: int) (return (x'0: int)) = any
+    [ return (result: int) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   let rec deref_Ghost_Int (self: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self} (! return {result}) ]
+    [ return (result: int) -> {[@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec add_Int (self: int) (other: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self + other} (! return {result}) ]
+    [ return (result: int) -> {[@expl:add ensures] result = self + other} (! return {result}) ]
   
   let rec mul_Int (self: int) (other: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self * other} (! return {result}) ]
+    [ return (result: int) -> {[@expl:mul ensures] result = self * other} (! return {result}) ]
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   let rec ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) = any
-    [ return (result: int) -> {result = x + Int.mod y z} (! return {result}) ]
+    [ return (result: int) -> {[@expl:ghost_function ensures] result = x + ComputerDivision.mod y z}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -77,14 +81,15 @@ module M_in_ghost_block
     | & _28: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_function
-  use mach.int.Int
+  use int.ComputerDivision
   use creusot.prelude.Any
+  use int.Int
   
   let rec rem_Int (self: int) (other: int) (return (x: int)) = any
-    [ return (result: int) -> {result = Int.mod self other} (! return {result}) ]
+    [ return (result: int) -> {[@expl:rem ensures] result = ComputerDivision.mod self other} (! return {result}) ]
   
   let rec add_Int (self: int) (other: int) (return (x: int)) = any
-    [ return (result: int) -> {result = self + other} (! return {result}) ]
+    [ return (result: int) -> {[@expl:add ensures] result = self + other} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -96,5 +101,6 @@ module M_ghost_function
       | s1 = add_Int {x} {_9} (fun (_x: int) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: int = Any.any_l () | & x: int = x | & y: int = y | & z: int = z | & _9: int = Any.any_l () ])
-    [ return (result: int) -> {[@expl:ghost_function ensures] result = x + Int.mod y z} (! return {result}) ]
+    [ return (result: int) -> {[@expl:ghost_function ensures] result = x + ComputerDivision.mod y z}
+      (! return {result}) ]
 end

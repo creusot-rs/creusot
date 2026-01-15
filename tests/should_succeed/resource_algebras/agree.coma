@@ -52,7 +52,13 @@ module M_agreement
   axiom incl_op_Ag_i32_spec: forall self: t_Ag_i32, other: t_Ag_i32, comb: t_Ag_i32. op_Ag_i32 self other = Some comb
       -> incl_Ag_i32 self comb
   
-  predicate incl_eq_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) = self = other \/ incl_Ag_i32 self other
+  predicate eq_Ag_i32 [@inline:trivial] (self: t_Ag_i32) (other: t_Ag_i32) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_i32
+  
+  axiom eq_Ag_i32_spec: forall self: t_Ag_i32, other: t_Ag_i32. eq_Ag_i32 self other = (self = other)
+  
+  predicate incl_eq_Ag_i32 (self: t_Ag_i32) (other: t_Ag_i32) = eq_Ag_i32 self other \/ incl_Ag_i32 self other
   
   function val_Ag_i32 (self: t_Resource_Ag_i32) : t_Ag_i32
   
@@ -63,9 +69,9 @@ module M_agreement
   let rec join_shared_Ag_i32 (self: t_Resource_Ag_i32) (other: t_Resource_Ag_i32) (return (x: t_Resource_Ag_i32)) =
     {[@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
     any
-    [ return (result: t_Resource_Ag_i32) -> {id_Ag_i32 result = id_Ag_i32 self}
-      {incl_eq_Ag_i32 (view_Resource_Ag_i32 self) (view_Resource_Ag_i32 result)
-      /\ incl_eq_Ag_i32 (view_Resource_Ag_i32 other) (view_Resource_Ag_i32 result)}
+    [ return (result: t_Resource_Ag_i32) -> {([@expl:join_shared ensures #0] id_Ag_i32 result = id_Ag_i32 self)
+      /\ ([@expl:join_shared ensures #1] incl_eq_Ag_i32 (view_Resource_Ag_i32 self) (view_Resource_Ag_i32 result)
+      /\ incl_eq_Ag_i32 (view_Resource_Ag_i32 other) (view_Resource_Ag_i32 result))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

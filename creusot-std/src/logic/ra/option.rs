@@ -1,7 +1,10 @@
 #[cfg(creusot)]
 use crate::logic::such_that;
 use crate::{
-    logic::ra::{RA, UnitRA, update::Update},
+    logic::ra::{
+        RA, UnitRA,
+        update::{LocalUpdate, Update},
+    },
     prelude::*,
 };
 
@@ -34,6 +37,16 @@ impl<T: RA> RA for Option<T> {
                     }
                 }
             },
+        }
+    }
+
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        match (self, other) {
+            (Some(s), Some(o)) => s.eq(o),
+            (None, None) => true,
+            _ => false,
         }
     }
 
@@ -136,5 +149,48 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
             Some(frame) => self.0.frame_preserving(from.unwrap_logic(), frame),
             None => such_that(|_| true),
         }
+    }
+}
+
+pub struct OptionLocalUpdate<U>(pub U);
+
+impl<R: RA, U: LocalUpdate<R>> LocalUpdate<Option<R>> for OptionLocalUpdate<U> {
+    #[logic(open, inline)]
+    fn premise(self, from_auth: Option<R>, from_frag: Option<R>) -> bool {
+        match (from_auth, from_frag) {
+            (Some(from_auth), Some(from_frag)) => self.0.premise(from_auth, from_frag),
+            _ => false,
+        }
+    }
+
+    #[logic(open, inline)]
+    fn update(self, from_auth: Option<R>, from_frag: Option<R>) -> (Option<R>, Option<R>) {
+        match (from_auth, from_frag) {
+            (Some(from_auth), Some(from_frag)) => {
+                let (to_auth, to_frag) = self.0.update(from_auth, from_frag);
+                (Some(to_auth), Some(to_frag))
+            }
+            _ => (None, None), // Dummy
+        }
+    }
+
+    #[logic]
+    #[requires(self.premise(from_auth, from_frag))]
+    #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
+    #[ensures({
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
+    fn frame_preserving(
+        self,
+        from_auth: Option<R>,
+        from_frag: Option<R>,
+        frame: Option<Option<R>>,
+    ) {
+        let frame = match frame {
+            None => None,
+            Some(f) => f,
+        };
+        self.0.frame_preserving(from_auth.unwrap_logic(), from_frag.unwrap_logic(), frame)
     }
 }

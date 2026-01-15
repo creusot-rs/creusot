@@ -1,6 +1,6 @@
 module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   use creusot.int.UInt32
-  use mach.int.Int
+  use int.Int
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
@@ -18,16 +18,16 @@ module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   function lemma_sum_nonneg (self: t_Tree) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Node tl _ tr -> sum tl >= 0
-      -> (let _ = lemma_sum_nonneg tl in sum tr >= 0
+      | Node tl _ tr -> ([@expl:lemma_sum_nonneg ensures] sum tl >= 0)
+      -> (let _ = lemma_sum_nonneg tl in ([@expl:lemma_sum_nonneg ensures] sum tr >= 0)
       -> (let _ = lemma_sum_nonneg tr in [@expl:lemma_sum_nonneg ensures] sum self >= 0))
       | Leaf -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
 module M_impl_Tree__sum_x (* Tree *)
   use creusot.int.UInt32
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
@@ -83,8 +83,8 @@ end
 module M_impl_Tree__take_some_rest (* Tree *)
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
@@ -213,18 +213,18 @@ module M_impl_Tree__take_some_rest (* Tree *)
     | & _22: bool = Any.any_l ()
     | & _23: MutBorrow.t t_Tree = Any.any_l ()
     | & _24: MutBorrow.t t_Tree = Any.any_l () ])
-    [ return (result: tup2_refmut_u32_refmut_Tree) -> {[@expl:take_some_rest ensures #0] sum self.final
-        - sum self.current
-      = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
-      {[@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current}
-      {[@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current}
+    [ return (result: tup2_refmut_u32_refmut_Tree) -> {([@expl:take_some_rest ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
+      /\ ([@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
+      /\ ([@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
       (! return {result}) ]
 end
 module M_inc_some_2_tree
   use creusot.int.UInt32
-  use mach.int.Int
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
@@ -234,15 +234,16 @@ module M_inc_some_2_tree
       end
   
   let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
-    any [ return (result: UInt32.t) -> {UInt32.t'int result = sum self} (! return {result}) ]
+    any [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
   
   type tup2_refmut_u32_refmut_Tree = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_Tree }
   
   let rec take_some_rest (self: MutBorrow.t t_Tree) (return (x: tup2_refmut_u32_refmut_Tree)) = any
-    [ return (result: tup2_refmut_u32_refmut_Tree) -> {sum self.final - sum self.current
-      = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current}
-      {UInt32.t'int result.f0.current <= sum self.current}
-      {sum result.f1.current <= sum self.current}
+    [ return (result: tup2_refmut_u32_refmut_Tree) -> {([@expl:take_some_rest ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
+      /\ ([@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
+      /\ ([@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_Tree [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current

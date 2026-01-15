@@ -7,7 +7,8 @@ module M_implementation__impl_PartialEq_for_Element__eq (* <implementation::Elem
   type t_Element = { f0: Opaque.ptr }
   
   let rec addr_eq_unit (p: Opaque.ptr) (q: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (Ptr.addr_logic_u64 p = Ptr.addr_logic_u64 q)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:addr_eq ensures] result = (Ptr.addr_logic_u64 p = Ptr.addr_logic_u64 q)}
+      (! return {result}) ]
   
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
@@ -49,8 +50,8 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -80,10 +81,10 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -274,8 +275,8 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -305,10 +306,10 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -508,11 +509,11 @@ module M_implementation__new
   use map.Map
   use creusot.prelude.Ptr
   use creusot.int.UInt64
-  use mach.int.Int
   use creusot.int.Int64
   use map.Const
   use set.Fset
   use creusot.prelude.Any
+  use int.Int
   
   type t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
@@ -522,10 +523,10 @@ module M_implementation__new
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -677,22 +678,23 @@ module M_implementation__new
   
   axiom empty_Element_spec: len_Element empty_Element = 0
   
-  axiom empty_Element_spec'0: view_FMap_Element_Box_Perm_ptr_Node_T_Global empty_Element = Const.const (None)
+  axiom empty_Element_spec'0: to_mapping_Element empty_Element = Const.const (None)
   
   predicate is_empty_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) = ext_eq_Element self empty_Element
   
   let rec new_Element (return (x: t_FMap_Element_Box_Perm_ptr_Node_T_Global)) = any
     [ return (result: t_FMap_Element_Box_Perm_ptr_Node_T_Global) ->
-    {inv_Ghost_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {is_empty_Element result}
+    {([@expl:new result type invariant] inv_Ghost_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:new ensures] is_empty_Element result)}
       (! return {result}) ]
   
   let rec into_inner_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global)
     (return (x: t_FMap_Element_Box_Perm_ptr_Node_T_Global)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
-    [ return (result: t_FMap_Element_Box_Perm_ptr_Node_T_Global) -> {inv_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {result = self}
+    [ return (result: t_FMap_Element_Box_Perm_ptr_Node_T_Global) ->
+    {([@expl:into_inner result type invariant] inv_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   predicate index_Mapping_Mapping_Element_T_bool [@inline:trivial] (self: Map.map (Map.map t_Element t_T) bool) (a: Map.map t_Element t_T) =
@@ -804,7 +806,10 @@ module M_implementation__new
   
   let rec new_UnionFind_T (x: t_UnionFind_T) (return (x'0: t_UnionFind_T)) =
     {[@expl:new 'x' type invariant] inv_UnionFind_T x}
-    any [ return (result: t_UnionFind_T) -> {inv_Ghost_UnionFind_T result} {result = x} (! return {result}) ]
+    any
+    [ return (result: t_UnionFind_T) -> {([@expl:new result type invariant] inv_Ghost_UnionFind_T result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'1.domain
   
@@ -835,25 +840,25 @@ module M_implementation__new
     | & _3: t_UFInner_T = Any.any_l ()
     | & _6: t_FMap_Element_Box_Perm_ptr_Node_T_Global = Any.any_l ()
     | & _7: t_FMap_Element_Box_Perm_ptr_Node_T_Global = Any.any_l () ])
-    [ return (result: t_UnionFind_T) -> {[@expl:new result type invariant] inv_Ghost_UnionFind_T result}
-      {[@expl:new ensures] Fset.is_empty (domain_T result)}
+    [ return (result: t_UnionFind_T) -> {([@expl:new result type invariant] inv_Ghost_UnionFind_T result)
+      /\ ([@expl:new ensures] Fset.is_empty (domain_T result))}
       (! return {result}) ]
 end
 module M_implementation__make
   use creusot.int.UInt64
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
   use creusot.prelude.Any
+  use int.Int
   
   type t_PeanoInt = { f0: UInt64.t }
   
   let rec new (return (x: t_PeanoInt)) = any
-    [ return (result: t_PeanoInt) -> {result.f0 = (0: UInt64.t)} (! return {result}) ]
+    [ return (result: t_PeanoInt) -> {[@expl:new ensures] result.f0 = (0: UInt64.t)} (! return {result}) ]
   
   type t_T
   
@@ -953,15 +958,16 @@ module M_implementation__make
     {[@expl:new 'v' type invariant] inv_Node_T v}
     any
     [ return (result: tup2_ptr_Node_T_Ghost_Box_Perm_ptr_Node_T_Global) ->
-    {inv_tup2_ptr_Node_T_Ghost_Box_Perm_ptr_Node_T_Global result}
-      {ward_ptr_Node_T result.f1'1 = result.f0'1 /\ val_ptr_Node_T result.f1'1 = v}
+    {([@expl:new result type invariant] inv_tup2_ptr_Node_T_Ghost_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:new ensures] ward_ptr_Node_T result.f1'1 = result.f0'1 /\ val_ptr_Node_T result.f1'1 = v)}
       (! return {result}) ]
   
   let rec into_inner_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) (return (x: t_Perm_ptr_Node_T)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_Box_Perm_ptr_Node_T_Global self}
     any
-    [ return (result: t_Perm_ptr_Node_T) -> {inv_Box_Perm_ptr_Node_T_Global result}
-      {result = self}
+    [ return (result: t_Perm_ptr_Node_T) ->
+    {([@expl:into_inner result type invariant] inv_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   type t_FMap_Element_Box_Perm_ptr_Node_T_Global
@@ -986,10 +992,10 @@ module M_implementation__make
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -1111,8 +1117,9 @@ module M_implementation__make
   let rec into_inner_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t t_UnionFind_T) ->
+    {([@expl:into_inner result type invariant] inv_refmut_UnionFind_T result)
+      /\ ([@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   type tup2_Box_Perm_ptr_Node_T_Global_refmut_UnionFind_T = { f0'3: t_Perm_ptr_Node_T; f1'3: MutBorrow.t t_UnionFind_T }
@@ -1135,10 +1142,10 @@ module M_implementation__make
   predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   let rec into_ghost_ptr_unit (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {result = self} (! return {result}) ]
+    [ return (result: Opaque.ptr) -> {[@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let rec into_inner_ptr_unit (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {result = self} (! return {result}) ]
+    [ return (result: Opaque.ptr) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
   
   type t_Option_ref_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 t_Perm_ptr_Node_T
   
@@ -1181,8 +1188,10 @@ module M_implementation__make
     (return (x: t_Option_ref_Box_Perm_ptr_Node_T_Global)) =
     {[@expl:get_ghost 'self' type invariant] inv_ref_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
-    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) -> {inv_Option_ref_Box_Perm_ptr_Node_T_Global result}
-      {result = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v)}
+    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) ->
+    {([@expl:get_ghost result type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:get_ghost ensures] result
+      = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v))}
       (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_ref_Box_Perm_ptr_Node_T_Global) (return (f0'4: t_Perm_ptr_Node_T)) = any
@@ -1218,12 +1227,12 @@ module M_implementation__make
   meta "rewrite_def" predicate is_disjoint_ptr_Node_T
   
   let rec disjoint_lemma_ptr_Node_T (self: MutBorrow.t t_Perm_ptr_Node_T) (other: t_Perm_ptr_Node_T) (return (x: ())) =
-    {[@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_Node_T self}
-    {[@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_Node_T other}
+    {([@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_Node_T self)
+    /\ ([@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_Node_T other)}
     any
     [ return (result: ()) ->
-    {is_disjoint_ptr_Node_T (ward_ptr_Node_T self.current) (val_ptr_Node_T self.current) (ward_ptr_Node_T other) (val_ptr_Node_T other)}
-      {self.current = self.final}
+    {([@expl:disjoint_lemma ensures #0] is_disjoint_ptr_Node_T (ward_ptr_Node_T self.current) (val_ptr_Node_T self.current) (ward_ptr_Node_T other) (val_ptr_Node_T other))
+      /\ ([@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
   predicate invariant_refmut_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_Node_T) =
@@ -1267,8 +1276,8 @@ module M_implementation__make
   function insert_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) (v: t_Perm_ptr_Node_T) : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
   axiom insert_Element_spec:
-    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. view_FMap_Element_Box_Perm_ptr_Node_T_Global (insert_Element self k v)
-      = Map.set (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k (Some v)
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. to_mapping_Element (insert_Element self k v)
+      = Map.set (to_mapping_Element self) k (Some v)
   
   axiom insert_Element_spec'0:
     forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. len_Element (insert_Element self k v)
@@ -1276,12 +1285,13 @@ module M_implementation__make
   
   let rec insert_ghost_Element (self: MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global) (key: t_Element)
     (value: t_Perm_ptr_Node_T) (return (x: t_Option_Box_Perm_ptr_Node_T_Global)) =
-    {[@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self}
-    {[@expl:insert_ghost 'value' type invariant] inv_Box_Perm_ptr_Node_T_Global value}
+    {([@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@expl:insert_ghost 'value' type invariant] inv_Box_Perm_ptr_Node_T_Global value)}
     any
-    [ return (result: t_Option_Box_Perm_ptr_Node_T_Global) -> {inv_Option_Box_Perm_ptr_Node_T_Global result}
-      {self.final = insert_Element self.current key value}
-      {result = get_Element self.current key}
+    [ return (result: t_Option_Box_Perm_ptr_Node_T_Global) ->
+    {([@expl:insert_ghost result type invariant] inv_Option_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:insert_ghost ensures #0] self.final = insert_Element self.current key value)
+      /\ ([@expl:insert_ghost ensures #1] result = get_Element self.current key)}
       (! return {result}) ]
   
   function insert_Element'0 [@inline:trivial] (self: Fset.fset t_Element) (e: t_Element) : Fset.fset t_Element =
@@ -1293,7 +1303,8 @@ module M_implementation__make
   
   meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   function fin_Ghost_refmut_UnionFind_T [@inline:trivial] (self: MutBorrow.t t_UnionFind_T) : t_UnionFind_T = self.final
   
@@ -1314,8 +1325,8 @@ module M_implementation__make
   meta "select_lsinst" "all"
   
   let rec make_T (uf: MutBorrow.t t_UnionFind_T) (payload: t_T) (return (x: t_Element)) =
-    {[@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:make 'payload' type invariant] inv_T payload}
+    {([@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:make 'payload' type invariant] inv_T payload)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &payload_snap <- payload ] s1
@@ -1411,13 +1422,13 @@ module M_implementation__make
     | & _49: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
     | & _51: t_Option_Box_Perm_ptr_Node_T_Global = Any.any_l ()
     | & _52: MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global = Any.any_l () ])
-    [ return (result: t_Element) -> {[@expl:make ensures #0] not in_domain_T uf.current result}
-      {[@expl:make ensures #1] domain_T (fin_Ghost_refmut_UnionFind_T uf)
-      = insert_Element'0 (domain_T uf.current) result}
-      {[@expl:make ensures #2] roots_map_T (fin_Ghost_refmut_UnionFind_T uf)
-      = Map.set (roots_map_T uf.current) result result}
-      {[@expl:make ensures #3] payloads_map_T (fin_Ghost_refmut_UnionFind_T uf)
-      = Map.set (payloads_map_T uf.current) result payload}
+    [ return (result: t_Element) -> {([@expl:make ensures #0] not in_domain_T uf.current result)
+      /\ ([@expl:make ensures #1] domain_T (fin_Ghost_refmut_UnionFind_T uf)
+        = insert_Element'0 (domain_T uf.current) result)
+      /\ ([@expl:make ensures #2] roots_map_T (fin_Ghost_refmut_UnionFind_T uf)
+        = Map.set (roots_map_T uf.current) result result)
+      /\ ([@expl:make ensures #3] payloads_map_T (fin_Ghost_refmut_UnionFind_T uf)
+      = Map.set (payloads_map_T uf.current) result payload)}
       (! return {result}) ]
 end
 module M_implementation__find_inner
@@ -1427,9 +1438,9 @@ module M_implementation__find_inner
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -1459,10 +1470,10 @@ module M_implementation__find_inner
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -1677,8 +1688,8 @@ module M_implementation__find_inner
   let rec deref_Ghost_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
     {[@expl:deref 'self' type invariant] inv_ref_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_ref_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t t_UnionFind_T) ->
+    {([@expl:deref result type invariant] inv_ref_refmut_UnionFind_T result) /\ ([@expl:deref ensures] result = self)}
       (! return {result}) ]
   
   type t_Option_ref_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 t_Perm_ptr_Node_T
@@ -1722,17 +1733,20 @@ module M_implementation__find_inner
     (return (x: t_Option_ref_Box_Perm_ptr_Node_T_Global)) =
     {[@expl:get_ghost 'self' type invariant] inv_ref_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
-    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) -> {inv_Option_ref_Box_Perm_ptr_Node_T_Global result}
-      {result = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v)}
+    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) ->
+    {([@expl:get_ghost result type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:get_ghost ensures] result
+      = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v))}
       (! return {result}) ]
   
   let rec unwrap_ref_Box_Perm_ptr_Node_T_Global (self_: t_Option_ref_Box_Perm_ptr_Node_T_Global)
     (return (x: t_Perm_ptr_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: t_Perm_ptr_Node_T) -> {inv_ref_Box_Perm_ptr_Node_T_Global result}
-      {Some'0 result = self_}
+    [ return (result: t_Perm_ptr_Node_T) ->
+    {([@expl:unwrap result type invariant] inv_ref_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate invariant_ref_Perm_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
@@ -1756,12 +1770,17 @@ module M_implementation__find_inner
   let rec new_ref_Perm_ptr_Node_T (x: t_Perm_ptr_Node_T) (return (x'0: t_Perm_ptr_Node_T)) =
     {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_Node_T x}
     any
-    [ return (result: t_Perm_ptr_Node_T) -> {inv_Ghost_ref_Perm_ptr_Node_T result} {result = x} (! return {result}) ]
+    [ return (result: t_Perm_ptr_Node_T) -> {([@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_Node_T result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   let rec as_ref_Node_T (ptr: Opaque.ptr) (own: t_Perm_ptr_Node_T) (return (x: t_Node_T)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_Node_T own}
-    {[@expl:as_ref requires] ptr = ward_ptr_Node_T own}
-    any [ return (result: t_Node_T) -> {inv_ref_Node_T result} {result = val_ptr_Node_T own} (! return {result}) ]
+    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_Node_T own)
+    /\ ([@expl:as_ref requires] ptr = ward_ptr_Node_T own)}
+    any
+    [ return (result: t_Node_T) -> {([@expl:as_ref result type invariant] inv_ref_Node_T result)
+      /\ ([@expl:as_ref ensures] result = val_ptr_Node_T own)}
+      (! return {result}) ]
   
   let rec elim_Link (_x: t_Node_T) (return (f0'2: t_Element)) = any
     [ _k (f0'2: t_Element) -> {Link f0'2 = _x} (! return {f0'2})
@@ -1795,8 +1814,9 @@ module M_implementation__find_inner
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UnionFind_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
@@ -1811,8 +1831,8 @@ module M_implementation__find_inner
   let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
-      {result = x}
+    [ return (result: MutBorrow.t t_UnionFind_T) ->
+    {([@expl:new result type invariant] inv_Ghost_refmut_UnionFind_T result) /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   predicate invariant_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
@@ -1837,7 +1857,9 @@ module M_implementation__find_inner
   let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_UFInner_T x}
     any
-    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_refmut_UFInner_T result} {result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_UFInner_T) -> {([@expl:new result type invariant] inv_Ghost_refmut_UFInner_T result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
     inv_Ghost_refmut_UFInner_T self.current /\ inv_Ghost_refmut_UFInner_T self.final
@@ -1863,8 +1885,9 @@ module M_implementation__find_inner
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UFInner_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_refmut_refmut_UFInner_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UFInner_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   type t_Option_refmut_Box_Perm_ptr_Node_T_Global = None'1 | Some'1 (MutBorrow.t t_Perm_ptr_Node_T)
@@ -1907,28 +1930,30 @@ module M_implementation__find_inner
     {[@expl:get_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: t_Option_refmut_Box_Perm_ptr_Node_T_Global) ->
-    {inv_Option_refmut_Box_Perm_ptr_Node_T_Global result}
-      {if contains_Element'0 self.current key then
-        match result with
-          | None'1 -> false
-          | Some'1 r -> contains_Element'0 self.final key
-          /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key = r.current
-          /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.final key = r.final
-          end
-      else
-        result = None'1 /\ self.current = self.final
-      }
-      {forall k: t_Element. k <> key -> get_Element self.current k = get_Element self.final k}
-      {len_Element self.current = len_Element self.final}
+    {([@expl:get_mut_ghost result type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:get_mut_ghost ensures #0] if contains_Element'0 self.current key then
+          match result with
+            | None'1 -> false
+            | Some'1 r -> contains_Element'0 self.final key
+            /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key = r.current
+            /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.final key = r.final
+            end
+        else
+          result = None'1 /\ self.current = self.final
+        )
+      /\ ([@expl:get_mut_ghost ensures #1] forall k: t_Element. k <> key
+          -> get_Element self.current k = get_Element self.final k)
+      /\ ([@expl:get_mut_ghost ensures #2] len_Element self.current = len_Element self.final)}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Perm_ptr_Node_T_Global (self_: t_Option_refmut_Box_Perm_ptr_Node_T_Global)
     (return (x: MutBorrow.t t_Perm_ptr_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global self_}
-    {[@expl:unwrap requires] self_ <> None'1}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) -> {inv_refmut_Box_Perm_ptr_Node_T_Global result}
-      {Some'1 result = self_}
+    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
@@ -1968,8 +1993,8 @@ module M_implementation__find_inner
   let rec new_refmut_Perm_ptr_Node_T (x: MutBorrow.t t_Perm_ptr_Node_T) (return (x'0: MutBorrow.t t_Perm_ptr_Node_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_Perm_ptr_Node_T x}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) -> {inv_Ghost_refmut_Perm_ptr_Node_T result}
-      {result = x}
+    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) ->
+    {([@expl:new result type invariant] inv_Ghost_refmut_Perm_ptr_Node_T result) /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
@@ -1987,13 +2012,14 @@ module M_implementation__find_inner
   meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_Node_T
   
   let rec as_mut_Node_T (ptr: Opaque.ptr) (own: MutBorrow.t t_Perm_ptr_Node_T) (return (x: MutBorrow.t t_Node_T)) =
-    {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_Node_T own}
-    {[@expl:as_mut requires] ptr = ward_ptr_Node_T own.current}
+    {([@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_Node_T own)
+    /\ ([@expl:as_mut requires] ptr = ward_ptr_Node_T own.current)}
     any
-    [ return (result: MutBorrow.t t_Node_T) -> {inv_refmut_Node_T result}
-      {result.current = val_ptr_Node_T own.current}
-      {ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = ward_ptr_Node_T own.current}
-      {val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final}
+    [ return (result: MutBorrow.t t_Node_T) -> {([@expl:as_mut result type invariant] inv_refmut_Node_T result)
+      /\ ([@expl:as_mut ensures #0] result.current = val_ptr_Node_T own.current)
+      /\ ([@expl:as_mut ensures #1] ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
+        = ward_ptr_Node_T own.current)
+      /\ ([@expl:as_mut ensures #2] val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -2060,8 +2086,8 @@ module M_implementation__find_inner
   meta "select_lsinst" "all"
   
   let rec find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:find_inner requires] in_domain_T uf.current elem}
+    {([@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:find_inner requires] in_domain_T uf.current elem)}
     (! bb0
     [ bb0 = s0
       [ s0 = deref_Ghost_refmut_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_24 <- _x ] s1)
@@ -2224,11 +2250,11 @@ module M_implementation__find_inner
       - index_Mapping_Element_Int uf.current.f0'0.depth elem)}
       find_inner_T {uf} {elem} (_k) ]
     [ function_variant: int = uf.current.f0'0.max_depth - index_Mapping_Element_Int uf.current.f0'0.depth elem ])
-    [ return (result: t_Element) -> {[@expl:find_inner ensures #0] result = root_T uf.current elem}
-      {[@expl:find_inner ensures #1] unchanged_T uf}
-      {[@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
-      {[@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
-      >= index_Mapping_Element_Int uf.current.f0'0.depth elem}
+    [ return (result: t_Element) -> {([@expl:find_inner ensures #0] result = root_T uf.current elem)
+      /\ ([@expl:find_inner ensures #1] unchanged_T uf)
+      /\ ([@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth)
+      /\ ([@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
+      >= index_Mapping_Element_Int uf.current.f0'0.depth elem)}
       (! return {result}) ]
 end
 module M_implementation__find
@@ -2236,11 +2262,11 @@ module M_implementation__find
   use creusot.prelude.Opaque
   use set.Fset
   use map.Map
-  use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use creusot.int.Int64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -2275,10 +2301,10 @@ module M_implementation__find
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -2494,13 +2520,14 @@ module M_implementation__find
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   let rec find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:find_inner requires] in_domain_T uf.current elem}
+    {([@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:find_inner requires] in_domain_T uf.current elem)}
     any
-    [ return (result: t_Element) -> {result = root_T uf.current elem}
-      {unchanged_T uf}
-      {(fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth}
-      {index_Mapping_Element_Int uf.current.f0'0.depth result >= index_Mapping_Element_Int uf.current.f0'0.depth elem}
+    [ return (result: t_Element) -> {([@expl:find_inner ensures #0] result = root_T uf.current elem)
+      /\ ([@expl:find_inner ensures #1] unchanged_T uf)
+      /\ ([@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth = uf.current.f0'0.depth)
+      /\ ([@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
+      >= index_Mapping_Element_Int uf.current.f0'0.depth elem)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2508,13 +2535,13 @@ module M_implementation__find
   meta "select_lsinst" "all"
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:find requires] in_domain_T uf.current elem}
+    {([@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:find requires] in_domain_T uf.current elem)}
     (! bb0
     [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_x: t_Element) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l () | & uf: MutBorrow.t t_UnionFind_T = uf | & elem: t_Element = elem ])
-    [ return (result: t_Element) -> {[@expl:find ensures #0] result = root_T uf.current elem}
-      {[@expl:find ensures #1] unchanged_T uf}
+    [ return (result: t_Element) -> {([@expl:find ensures #0] result = root_T uf.current elem)
+      /\ ([@expl:find ensures #1] unchanged_T uf)}
       (! return {result}) ]
 end
 module M_implementation__get
@@ -2523,9 +2550,9 @@ module M_implementation__get
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -2555,10 +2582,10 @@ module M_implementation__get
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -2765,7 +2792,10 @@ module M_implementation__get
   
   let rec deref_Ghost_ref_UnionFind_T (self: t_UnionFind_T) (return (x: t_UnionFind_T)) =
     {[@expl:deref 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
-    any [ return (result: t_UnionFind_T) -> {inv_ref_ref_UnionFind_T result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_UnionFind_T) -> {([@expl:deref result type invariant] inv_ref_ref_UnionFind_T result)
+      /\ ([@expl:deref ensures] result = self)}
+      (! return {result}) ]
   
   type t_Option_ref_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 t_Perm_ptr_Node_T
   
@@ -2808,17 +2838,20 @@ module M_implementation__get
     (return (x: t_Option_ref_Box_Perm_ptr_Node_T_Global)) =
     {[@expl:get_ghost 'self' type invariant] inv_ref_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
-    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) -> {inv_Option_ref_Box_Perm_ptr_Node_T_Global result}
-      {result = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v)}
+    [ return (result: t_Option_ref_Box_Perm_ptr_Node_T_Global) ->
+    {([@expl:get_ghost result type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:get_ghost ensures] result
+      = map_Option_Box_Perm_ptr_Node_T_Global (get_Element self key) (fun (v: t_Perm_ptr_Node_T) -> v))}
       (! return {result}) ]
   
   let rec unwrap_ref_Box_Perm_ptr_Node_T_Global (self_: t_Option_ref_Box_Perm_ptr_Node_T_Global)
     (return (x: t_Perm_ptr_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_ref_Box_Perm_ptr_Node_T_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: t_Perm_ptr_Node_T) -> {inv_ref_Box_Perm_ptr_Node_T_Global result}
-      {Some'0 result = self_}
+    [ return (result: t_Perm_ptr_Node_T) ->
+    {([@expl:unwrap result type invariant] inv_ref_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate invariant_ref_Perm_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
@@ -2842,12 +2875,17 @@ module M_implementation__get
   let rec new_ref_Perm_ptr_Node_T (x: t_Perm_ptr_Node_T) (return (x'0: t_Perm_ptr_Node_T)) =
     {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_Node_T x}
     any
-    [ return (result: t_Perm_ptr_Node_T) -> {inv_Ghost_ref_Perm_ptr_Node_T result} {result = x} (! return {result}) ]
+    [ return (result: t_Perm_ptr_Node_T) -> {([@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_Node_T result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   let rec as_ref_Node_T (ptr: Opaque.ptr) (own: t_Perm_ptr_Node_T) (return (x: t_Node_T)) =
-    {[@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_Node_T own}
-    {[@expl:as_ref requires] ptr = ward_ptr_Node_T own}
-    any [ return (result: t_Node_T) -> {inv_ref_Node_T result} {result = val_ptr_Node_T own} (! return {result}) ]
+    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_Node_T own)
+    /\ ([@expl:as_ref requires] ptr = ward_ptr_Node_T own)}
+    any
+    [ return (result: t_Node_T) -> {([@expl:as_ref result type invariant] inv_ref_Node_T result)
+      /\ ([@expl:as_ref ensures] result = val_ptr_Node_T own)}
+      (! return {result}) ]
   
   let rec elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
     [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
@@ -2892,9 +2930,8 @@ module M_implementation__get
   meta "select_lsinst" "all"
   
   let rec get_T (uf: t_UnionFind_T) (elem: t_Element) (return (x: t_T)) =
-    {[@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf}
-    {[@expl:get requires #0] in_domain_T uf elem}
-    {[@expl:get requires #1] root_T uf elem = elem}
+    {([@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf)
+    /\ ([@expl:get requires #0] in_domain_T uf elem) /\ ([@expl:get requires #1] root_T uf elem = elem)}
     (! bb0
     [ bb0 = s0
       [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: t_UnionFind_T) -> [ &_17 <- _x ] s1)
@@ -2924,8 +2961,8 @@ module M_implementation__get
     | & _21: t_Node_T = Any.any_l ()
     | & _23: Opaque.ptr = Any.any_l ()
     | & payload: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:get result type invariant] inv_ref_T result}
-      {[@expl:get ensures] result = payload_T uf elem}
+    [ return (result: t_T) -> {([@expl:get result type invariant] inv_ref_T result)
+      /\ ([@expl:get ensures] result = payload_T uf elem)}
       (! return {result}) ]
 end
 module M_implementation__equiv
@@ -2935,9 +2972,9 @@ module M_implementation__equiv
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -2967,10 +3004,10 @@ module M_implementation__equiv
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -3186,8 +3223,9 @@ module M_implementation__equiv
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UnionFind_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
@@ -3202,8 +3240,8 @@ module M_implementation__equiv
   let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
-      {result = x}
+    [ return (result: MutBorrow.t t_UnionFind_T) ->
+    {([@expl:new result type invariant] inv_Ghost_refmut_UnionFind_T result) /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
@@ -3231,16 +3269,20 @@ module M_implementation__equiv
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:find requires] in_domain_T uf.current elem}
-    any [ return (result: t_Element) -> {result = root_T uf.current elem} {unchanged_T uf} (! return {result}) ]
+    {([@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:find requires] in_domain_T uf.current elem)}
+    any
+    [ return (result: t_Element) -> {([@expl:find ensures #0] result = root_T uf.current elem)
+      /\ ([@expl:find ensures #1] unchanged_T uf)}
+      (! return {result}) ]
   
   function deep_model_ref_Element [@inline:trivial] (self: t_Element) : UInt64.t = deep_model_Element self
   
   meta "rewrite_def" function deep_model_ref_Element
   
   let rec eq_Element (self: t_Element) (other: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Element self = deep_model_ref_Element other)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Element self = deep_model_ref_Element other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -3248,9 +3290,8 @@ module M_implementation__equiv
   meta "select_lsinst" "all"
   
   let rec equiv_T (uf: MutBorrow.t t_UnionFind_T) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
-    {[@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:equiv requires #0] in_domain_T uf.current e1}
-    {[@expl:equiv requires #1] in_domain_T uf.current e2}
+    {([@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:equiv requires #0] in_domain_T uf.current e1) /\ ([@expl:equiv requires #1] in_domain_T uf.current e2)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
@@ -3302,8 +3343,8 @@ module M_implementation__equiv
     | & _22: MutBorrow.t (MutBorrow.t t_UnionFind_T) = Any.any_l ()
     | & _23: MutBorrow.t (MutBorrow.t t_UnionFind_T) = Any.any_l ()
     | & r2: t_Element = Any.any_l () ])
-    [ return (result: bool) -> {[@expl:equiv ensures #0] result = (root_T uf.current e1 = root_T uf.current e2)}
-      {[@expl:equiv ensures #1] unchanged_T uf}
+    [ return (result: bool) -> {([@expl:equiv ensures #0] result = (root_T uf.current e1 = root_T uf.current e2))
+      /\ ([@expl:equiv ensures #1] unchanged_T uf)}
       (! return {result}) ]
 end
 module M_implementation__link
@@ -3313,10 +3354,10 @@ module M_implementation__link
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
-  use mach.int.Int
   use creusot.int.Int64
   use int.MinMax
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -3329,7 +3370,8 @@ module M_implementation__link
   meta "rewrite_def" function deep_model_ref_Element
   
   let rec eq_Element (self: t_Element) (other: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Element self = deep_model_ref_Element other)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Element self = deep_model_ref_Element other)}
       (! return {result}) ]
   
   type t_FMap_Element_Box_Perm_ptr_Node_T_Global
@@ -3354,10 +3396,10 @@ module M_implementation__link
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -3582,8 +3624,9 @@ module M_implementation__link
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UnionFind_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate invariant_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
@@ -3608,7 +3651,9 @@ module M_implementation__link
   let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_UFInner_T x}
     any
-    [ return (result: MutBorrow.t t_UFInner_T) -> {inv_Ghost_refmut_UFInner_T result} {result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_UFInner_T) -> {([@expl:new result type invariant] inv_Ghost_refmut_UFInner_T result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   predicate invariant_refmut_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
     inv_Ghost_refmut_UFInner_T self.current /\ inv_Ghost_refmut_UFInner_T self.final
@@ -3634,8 +3679,9 @@ module M_implementation__link
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UFInner_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {inv_refmut_refmut_UFInner_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UFInner_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   type tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global = {
@@ -3674,8 +3720,8 @@ module M_implementation__link
   function remove_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
   axiom remove_Element_spec:
-    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element. view_FMap_Element_Box_Perm_ptr_Node_T_Global (remove_Element self k)
-      = Map.set (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k (None)
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element. to_mapping_Element (remove_Element self k)
+      = Map.set (to_mapping_Element self) k (None)
   
   axiom remove_Element_spec'0:
     forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element. len_Element (remove_Element self k)
@@ -3684,8 +3730,8 @@ module M_implementation__link
   function insert_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) (v: t_Perm_ptr_Node_T) : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
   axiom insert_Element_spec:
-    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. view_FMap_Element_Box_Perm_ptr_Node_T_Global (insert_Element self k v)
-      = Map.set (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k (Some v)
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. to_mapping_Element (insert_Element self k v)
+      = Map.set (to_mapping_Element self) k (Some v)
   
   axiom insert_Element_spec'0:
     forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, k: t_Element, v: t_Perm_ptr_Node_T. len_Element (insert_Element self k v)
@@ -3693,14 +3739,15 @@ module M_implementation__link
   
   let rec split_mut_ghost_Element (self: MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global) (key: t_Element)
     (return (x: tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global)) =
-    {[@expl:split_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self}
-    {[@expl:split_mut_ghost requires] contains_Element'0 self.current key}
+    {([@expl:split_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@expl:split_mut_ghost requires] contains_Element'0 self.current key)}
     any
     [ return (result: tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global) ->
-    {inv_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {result.f1'2.current = remove_Element self.current key}
-      {index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key = result.f0'2.current
-      /\ self.final = insert_Element result.f1'2.final key result.f0'2.final}
+    {([@expl:split_mut_ghost result type invariant] inv_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:split_mut_ghost ensures #0] result.f1'2.current = remove_Element self.current key)
+      /\ ([@expl:split_mut_ghost ensures #1] index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key
+        = result.f0'2.current
+      /\ self.final = insert_Element result.f1'2.final key result.f0'2.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
@@ -3724,8 +3771,8 @@ module M_implementation__link
     {[@expl:new 'x' type invariant] inv_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global x}
     any
     [ return (result: tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global) ->
-    {inv_Ghost_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {result = x}
+    {([@expl:new result type invariant] inv_Ghost_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   type tup2_Ghost_refmut_Box_Perm_ptr_Node_T_Global_Ghost_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global = {
@@ -3765,9 +3812,8 @@ module M_implementation__link
     any
     [ return
       (result: tup2_Ghost_refmut_Box_Perm_ptr_Node_T_Global_Ghost_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global) ->
-    {inv_tup2_Ghost_refmut_Box_Perm_ptr_Node_T_Global_Ghost_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {self.f0'2 = result.f0'3}
-      {self.f1'2 = result.f1'3}
+    {([@expl:split result type invariant] inv_tup2_Ghost_refmut_Box_Perm_ptr_Node_T_Global_Ghost_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:split ensures #0] self.f0'2 = result.f0'3) /\ ([@expl:split ensures #1] self.f1'2 = result.f1'3)}
       (! return {result}) ]
   
   predicate invariant_refmut_Ghost_refmut_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) =
@@ -3795,8 +3841,8 @@ module M_implementation__link
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) ->
-    {inv_refmut_refmut_Box_Perm_ptr_Node_T_Global result}
-      {result = self}
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_Box_Perm_ptr_Node_T_Global [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_Perm_ptr_Node_T)) =
@@ -3836,8 +3882,8 @@ module M_implementation__link
   let rec new_refmut_Perm_ptr_Node_T (x: MutBorrow.t t_Perm_ptr_Node_T) (return (x'0: MutBorrow.t t_Perm_ptr_Node_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_Perm_ptr_Node_T x}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) -> {inv_Ghost_refmut_Perm_ptr_Node_T result}
-      {result = x}
+    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) ->
+    {([@expl:new result type invariant] inv_Ghost_refmut_Perm_ptr_Node_T result) /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
@@ -3855,13 +3901,14 @@ module M_implementation__link
   meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_Node_T
   
   let rec as_mut_Node_T (ptr: Opaque.ptr) (own: MutBorrow.t t_Perm_ptr_Node_T) (return (x: MutBorrow.t t_Node_T)) =
-    {[@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_Node_T own}
-    {[@expl:as_mut requires] ptr = ward_ptr_Node_T own.current}
+    {([@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_Node_T own)
+    /\ ([@expl:as_mut requires] ptr = ward_ptr_Node_T own.current)}
     any
-    [ return (result: MutBorrow.t t_Node_T) -> {inv_refmut_Node_T result}
-      {result.current = val_ptr_Node_T own.current}
-      {ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = ward_ptr_Node_T own.current}
-      {val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final}
+    [ return (result: MutBorrow.t t_Node_T) -> {([@expl:as_mut result type invariant] inv_refmut_Node_T result)
+      /\ ([@expl:as_mut ensures #0] result.current = val_ptr_Node_T own.current)
+      /\ ([@expl:as_mut ensures #1] ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
+        = ward_ptr_Node_T own.current)
+      /\ ([@expl:as_mut ensures #2] val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
@@ -3896,8 +3943,8 @@ module M_implementation__link
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: MutBorrow.t (MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global)) ->
-    {inv_refmut_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result}
-      {result = self}
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   type t_Option_refmut_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 (MutBorrow.t t_Perm_ptr_Node_T)
@@ -3916,28 +3963,30 @@ module M_implementation__link
     {[@expl:get_mut_ghost 'self' type invariant] inv_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: t_Option_refmut_Box_Perm_ptr_Node_T_Global) ->
-    {inv_Option_refmut_Box_Perm_ptr_Node_T_Global result}
-      {if contains_Element'0 self.current key then
-        match result with
-          | None'0 -> false
-          | Some'0 r -> contains_Element'0 self.final key
-          /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key = r.current
-          /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.final key = r.final
-          end
-      else
-        result = None'0 /\ self.current = self.final
-      }
-      {forall k: t_Element. k <> key -> get_Element self.current k = get_Element self.final k}
-      {len_Element self.current = len_Element self.final}
+    {([@expl:get_mut_ghost result type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:get_mut_ghost ensures #0] if contains_Element'0 self.current key then
+          match result with
+            | None'0 -> false
+            | Some'0 r -> contains_Element'0 self.final key
+            /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.current key = r.current
+            /\ index_FMap_Element_Box_Perm_ptr_Node_T_Global self.final key = r.final
+            end
+        else
+          result = None'0 /\ self.current = self.final
+        )
+      /\ ([@expl:get_mut_ghost ensures #1] forall k: t_Element. k <> key
+          -> get_Element self.current k = get_Element self.final k)
+      /\ ([@expl:get_mut_ghost ensures #2] len_Element self.current = len_Element self.final)}
       (! return {result}) ]
   
   let rec unwrap_refmut_Box_Perm_ptr_Node_T_Global (self_: t_Option_refmut_Box_Perm_ptr_Node_T_Global)
     (return (x: MutBorrow.t t_Perm_ptr_Node_T)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global self_}
-    {[@expl:unwrap requires] self_ <> None'0}
+    {([@expl:unwrap 'self_' type invariant] inv_Option_refmut_Box_Perm_ptr_Node_T_Global self_)
+    /\ ([@expl:unwrap requires] self_ <> None'0)}
     any
-    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) -> {inv_refmut_Box_Perm_ptr_Node_T_Global result}
-      {Some'0 result = self_}
+    [ return (result: MutBorrow.t t_Perm_ptr_Node_T) ->
+    {([@expl:unwrap result type invariant] inv_refmut_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@expl:unwrap ensures] Some'0 result = self_)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global)) =
@@ -4007,7 +4056,8 @@ module M_implementation__link
   meta "rewrite_def" function view_PeanoInt
   
   let rec lt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = any
-    [ return (result: bool) -> {result = UInt64.lt (view_PeanoInt self) (view_PeanoInt other)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:lt ensures] result = UInt64.lt (view_PeanoInt self) (view_PeanoInt other)}
+      (! return {result}) ]
   
   predicate resolve_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global [@inline:trivial] (_1: MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global) =
     _1.final = _1.current
@@ -4047,13 +4097,15 @@ module M_implementation__link
   
   meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any [ return (result: ()) -> {result = x} (! return {result}) ]
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
   
   let rec eq_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self = other)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:eq ensures] result = (self = other)} (! return {result}) ]
   
   let rec incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
-    [ return (result: t_PeanoInt) -> {UInt64.t'int result.f0'1 = UInt64.t'int self.f0'1 + 1} (! return {result}) ]
+    [ return (result: t_PeanoInt) -> {[@expl:incr ensures] UInt64.t'int result.f0'1 = UInt64.t'int self.f0'1 + 1}
+      (! return {result}) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
@@ -4089,9 +4141,9 @@ module M_implementation__link
   meta "select_lsinst" "all"
   
   let rec link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y}
-    {[@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y}
+    {([@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y)
+    /\ ([@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y)}
     (! bb0
     [ bb0 = s0
       [ s0 = eq_Element {x} {y} (fun (_x: bool) -> [ &_25 <- _x ] s1)
@@ -4470,16 +4522,16 @@ module M_implementation__link
     | & _124: Map.map t_Element int = Any.any_l ()
     | & _129: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
     | & _130: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l () ])
-    [ return (result: t_Element) -> {[@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
-      {[@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
-      {[@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UnionFind_T uf) result}
-      {[@expl:link ensures #3] forall z: t_Element. in_domain_T uf.current z
+    [ return (result: t_Element) -> {([@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
+      /\ ([@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
+      /\ ([@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UnionFind_T uf) result)
+      /\ ([@expl:link ensures #3] forall z: t_Element. in_domain_T uf.current z
         -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
           root_T uf.current z
-        )}
+        ))}
       (! return {result}) ]
 end
 module M_implementation__union
@@ -4489,9 +4541,9 @@ module M_implementation__union
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Ptr
-  use mach.int.Int
   use creusot.int.Int64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Element = { f0: Opaque.ptr }
   
@@ -4521,10 +4573,10 @@ module M_implementation__union
   
   type t_Option_Box_Perm_ptr_Node_T_Global = None | Some t_Perm_ptr_Node_T
   
-  function view_FMap_Element_Box_Perm_ptr_Node_T_Global (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
+  function to_mapping_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : Map.map t_Element t_Option_Box_Perm_ptr_Node_T_Global
   
   function get_Element [@inline:trivial] (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_Option_Box_Perm_ptr_Node_T_Global
-   = Map.get (view_FMap_Element_Box_Perm_ptr_Node_T_Global self) k
+   = Map.get (to_mapping_Element self) k
   
   meta "rewrite_def" function get_Element
   
@@ -4740,8 +4792,9 @@ module M_implementation__union
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
     {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> {inv_refmut_refmut_UnionFind_T result}
-      {result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
+    {([@expl:deref_mut result type invariant] inv_refmut_refmut_UnionFind_T result)
+      /\ ([@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UnionFind_T)) =
@@ -4756,8 +4809,8 @@ module M_implementation__union
   let rec new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
     {[@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
-    [ return (result: MutBorrow.t t_UnionFind_T) -> {inv_Ghost_refmut_UnionFind_T result}
-      {result = x}
+    [ return (result: MutBorrow.t t_UnionFind_T) ->
+    {([@expl:new result type invariant] inv_Ghost_refmut_UnionFind_T result) /\ ([@expl:new ensures] result = x)}
       (! return {result}) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
@@ -4785,9 +4838,12 @@ module M_implementation__union
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
   let rec find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:find requires] in_domain_T uf.current elem}
-    any [ return (result: t_Element) -> {result = root_T uf.current elem} {unchanged_T uf} (! return {result}) ]
+    {([@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:find requires] in_domain_T uf.current elem)}
+    any
+    [ return (result: t_Element) -> {([@expl:find ensures #0] result = root_T uf.current elem)
+      /\ ([@expl:find ensures #1] unchanged_T uf)}
+      (! return {result}) ]
   
   predicate domain_unchanged_T (self: MutBorrow.t t_UnionFind_T) = domain_T self.current = domain_T self.final
   
@@ -4799,20 +4855,20 @@ module M_implementation__union
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
   let rec link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y}
-    {[@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y}
+    {([@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y)
+    /\ ([@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y)}
     any
-    [ return (result: t_Element) -> {domain_unchanged_T uf /\ payloads_unchanged_T uf}
-      {result = root_T uf.current x \/ result = root_T uf.current y}
-      {result = root_T (fin_Ghost_refmut_UnionFind_T uf) result}
-      {forall z: t_Element. in_domain_T uf.current z
+    [ return (result: t_Element) -> {([@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
+      /\ ([@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
+      /\ ([@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UnionFind_T uf) result)
+      /\ ([@expl:link ensures #3] forall z: t_Element. in_domain_T uf.current z
         -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
           root_T uf.current z
-        )}
+        ))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -4820,8 +4876,8 @@ module M_implementation__union
   meta "select_lsinst" "all"
   
   let rec union_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf}
-    {[@expl:union requires] in_domain_T uf.current x /\ in_domain_T uf.current y}
+    {([@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
+    /\ ([@expl:union requires] in_domain_T uf.current x /\ in_domain_T uf.current y)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
@@ -4912,15 +4968,15 @@ module M_implementation__union
     | & _32: MutBorrow.t t_UnionFind_T = Any.any_l ()
     | & _33: MutBorrow.t (MutBorrow.t t_UnionFind_T) = Any.any_l ()
     | & _34: MutBorrow.t (MutBorrow.t t_UnionFind_T) = Any.any_l () ])
-    [ return (result: t_Element) -> {[@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf}
-      {[@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y}
-      {[@expl:union ensures #2] forall z: t_Element. in_domain_T uf.current z
+    [ return (result: t_Element) -> {([@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
+      /\ ([@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
+      /\ ([@expl:union ensures #2] forall z: t_Element. in_domain_T uf.current z
         -> root_T (fin_Ghost_refmut_UnionFind_T uf) z
         = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
           root_T uf.current z
-        )}
+        ))}
       (! return {result}) ]
 end
 module M_example
@@ -4962,8 +5018,8 @@ module M_example
           /\ contains_Element (domain_i32 self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
   let rec new_i32 (return (x: t_UnionFind_i32)) = any
-    [ return (result: t_UnionFind_i32) -> {inv_Ghost_UnionFind_i32 result}
-      {Fset.is_empty (domain_i32 result)}
+    [ return (result: t_UnionFind_i32) -> {([@expl:new result type invariant] inv_Ghost_UnionFind_i32 result)
+      /\ ([@expl:new ensures] Fset.is_empty (domain_i32 result))}
       (! return {result}) ]
   
   predicate invariant_refmut_Ghost_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) =
@@ -4999,8 +5055,9 @@ module M_example
   let rec borrow_mut_UnionFind_i32 (self: MutBorrow.t t_UnionFind_i32) (return (x: MutBorrow.t t_UnionFind_i32)) =
     {[@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_UnionFind_i32 self}
     any
-    [ return (result: MutBorrow.t t_UnionFind_i32) -> {inv_Ghost_refmut_UnionFind_i32 result}
-      {result = self}
+    [ return (result: MutBorrow.t t_UnionFind_i32) ->
+    {([@expl:borrow_mut result type invariant] inv_Ghost_refmut_UnionFind_i32 result)
+      /\ ([@expl:borrow_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate inv_Element (_1: t_Element)
@@ -5035,11 +5092,14 @@ module M_example
   let rec make_i32 (uf: MutBorrow.t t_UnionFind_i32) (payload: Int32.t) (return (x: t_Element)) =
     {[@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     any
-    [ return (result: t_Element) -> {inv_Element result}
-      {not in_domain_i32 uf.current result}
-      {domain_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = insert_Element (domain_i32 uf.current) result}
-      {roots_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = Map.set (roots_map_i32 uf.current) result result}
-      {payloads_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf) = Map.set (payloads_map_i32 uf.current) result payload}
+    [ return (result: t_Element) -> {([@expl:make result type invariant] inv_Element result)
+      /\ ([@expl:make ensures #0] not in_domain_i32 uf.current result)
+      /\ ([@expl:make ensures #1] domain_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
+        = insert_Element (domain_i32 uf.current) result)
+      /\ ([@expl:make ensures #2] roots_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
+        = Map.set (roots_map_i32 uf.current) result result)
+      /\ ([@expl:make ensures #3] payloads_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
+      = Map.set (payloads_map_i32 uf.current) result payload)}
       (! return {result}) ]
   
   predicate invariant_ref_Ghost_UnionFind_i32 [@inline:trivial] (self: t_UnionFind_i32) = inv_Ghost_UnionFind_i32 self
@@ -5068,7 +5128,10 @@ module M_example
   
   let rec borrow_UnionFind_i32 (self: t_UnionFind_i32) (return (x: t_UnionFind_i32)) =
     {[@expl:borrow 'self' type invariant] inv_ref_Ghost_UnionFind_i32 self}
-    any [ return (result: t_UnionFind_i32) -> {inv_Ghost_ref_UnionFind_i32 result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_UnionFind_i32) -> {([@expl:borrow result type invariant] inv_Ghost_ref_UnionFind_i32 result)
+      /\ ([@expl:borrow ensures] result = self)}
+      (! return {result}) ]
   
   function root_i32 (self: t_UnionFind_i32) (e: t_Element) : t_Element =
     index_Mapping_Element_Element (roots_map_i32 self) e
@@ -5082,11 +5145,10 @@ module M_example
     index_Mapping_Element_i32 (payloads_map_i32 self) e
   
   let rec get_i32 (uf: t_UnionFind_i32) (elem: t_Element) (return (x: Int32.t)) =
-    {[@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf}
-    {[@expl:get 'elem' type invariant] inv_Element elem}
-    {[@expl:get requires #0] in_domain_i32 uf elem}
-    {[@expl:get requires #1] root_i32 uf elem = elem}
-    any [ return (result: Int32.t) -> {result = payload_i32 uf elem} (! return {result}) ]
+    {([@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf)
+    /\ ([@expl:get 'elem' type invariant] inv_Element elem)
+    /\ ([@expl:get requires #0] in_domain_i32 uf elem) /\ ([@expl:get requires #1] root_i32 uf elem = elem)}
+    any [ return (result: Int32.t) -> {[@expl:get ensures] result = payload_i32 uf elem} (! return {result}) ]
   
   predicate domain_unchanged_i32 (self: MutBorrow.t t_UnionFind_i32) = domain_i32 self.current = domain_i32 self.final
   
@@ -5094,21 +5156,21 @@ module M_example
     payloads_map_i32 self.current = payloads_map_i32 self.final
   
   let rec union_i32 (uf: MutBorrow.t t_UnionFind_i32) (x: t_Element) (y: t_Element) (return (x'0: t_Element)) =
-    {[@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
-    {[@expl:union 'x' type invariant] inv_Element x}
-    {[@expl:union 'y' type invariant] inv_Element y}
-    {[@expl:union requires] in_domain_i32 uf.current x /\ in_domain_i32 uf.current y}
+    {([@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
+    /\ ([@expl:union 'x' type invariant] inv_Element x)
+    /\ ([@expl:union 'y' type invariant] inv_Element y)
+    /\ ([@expl:union requires] in_domain_i32 uf.current x /\ in_domain_i32 uf.current y)}
     any
-    [ return (result: t_Element) -> {inv_Element result}
-      {domain_unchanged_i32 uf /\ payloads_unchanged_i32 uf}
-      {result = root_i32 uf.current x \/ result = root_i32 uf.current y}
-      {forall z: t_Element. in_domain_i32 uf.current z
+    [ return (result: t_Element) -> {([@expl:union result type invariant] inv_Element result)
+      /\ ([@expl:union ensures #0] domain_unchanged_i32 uf /\ payloads_unchanged_i32 uf)
+      /\ ([@expl:union ensures #1] result = root_i32 uf.current x \/ result = root_i32 uf.current y)
+      /\ ([@expl:union ensures #2] forall z: t_Element. in_domain_i32 uf.current z
         -> root_i32 (fin_Ghost_refmut_UnionFind_i32 uf) z
         = (if root_i32 uf.current z = root_i32 uf.current x \/ root_i32 uf.current z = root_i32 uf.current y then
           result
         else
           root_i32 uf.current z
-        )}
+        ))}
       (! return {result}) ]
   
   predicate unchanged_i32 (self: MutBorrow.t t_UnionFind_i32) =
@@ -5117,24 +5179,22 @@ module M_example
     /\ payloads_map_i32 self.current = payloads_map_i32 self.final
   
   let rec equiv_i32 (uf: MutBorrow.t t_UnionFind_i32) (e1: t_Element) (e2: t_Element) (return (x: bool)) =
-    {[@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
-    {[@expl:equiv 'e1' type invariant] inv_Element e1}
-    {[@expl:equiv 'e2' type invariant] inv_Element e2}
-    {[@expl:equiv requires #0] in_domain_i32 uf.current e1}
-    {[@expl:equiv requires #1] in_domain_i32 uf.current e2}
+    {([@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
+    /\ ([@expl:equiv 'e1' type invariant] inv_Element e1)
+    /\ ([@expl:equiv 'e2' type invariant] inv_Element e2)
+    /\ ([@expl:equiv requires #0] in_domain_i32 uf.current e1)
+    /\ ([@expl:equiv requires #1] in_domain_i32 uf.current e2)}
     any
-    [ return (result: bool) -> {result = (root_i32 uf.current e1 = root_i32 uf.current e2)}
-      {unchanged_i32 uf}
+    [ return (result: bool) -> {([@expl:equiv ensures #0] result = (root_i32 uf.current e1 = root_i32 uf.current e2))
+      /\ ([@expl:equiv ensures #1] unchanged_i32 uf)}
       (! return {result}) ]
   
   let rec find_i32 (uf: MutBorrow.t t_UnionFind_i32) (elem: t_Element) (return (x: t_Element)) =
-    {[@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
-    {[@expl:find 'elem' type invariant] inv_Element elem}
-    {[@expl:find requires] in_domain_i32 uf.current elem}
+    {([@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
+    /\ ([@expl:find 'elem' type invariant] inv_Element elem) /\ ([@expl:find requires] in_domain_i32 uf.current elem)}
     any
-    [ return (result: t_Element) -> {inv_Element result}
-      {result = root_i32 uf.current elem}
-      {unchanged_i32 uf}
+    [ return (result: t_Element) -> {([@expl:find result type invariant] inv_Element result)
+      /\ ([@expl:find ensures #0] result = root_i32 uf.current elem) /\ ([@expl:find ensures #1] unchanged_i32 uf)}
       (! return {result}) ]
   
   predicate resolve_UnionFind_i32 (_1: t_UnionFind_i32)
@@ -5309,10 +5369,11 @@ module M_example_addrs_eq
   meta "rewrite_def" function deep_model_ref_Element
   
   let rec eq_Element (self: t_Element) (other: t_Element) (return (x: bool)) =
-    {[@expl:eq 'self' type invariant] inv_ref_Element self}
-    {[@expl:eq 'other' type invariant] inv_ref_Element other}
+    {([@expl:eq 'self' type invariant] inv_ref_Element self)
+    /\ ([@expl:eq 'other' type invariant] inv_ref_Element other)}
     any
-    [ return (result: bool) -> {result = (deep_model_ref_Element self = deep_model_ref_Element other)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Element self = deep_model_ref_Element other)}
       (! return {result}) ]
   
   type t_UnionFind_T
@@ -5348,10 +5409,10 @@ module M_example_addrs_eq
   meta "select_lsinst" "all"
   
   let rec example_addrs_eq_T (uf: t_UnionFind_T) (e1: t_Element) (e2: t_Element) (return (x: ())) =
-    {[@expl:example_addrs_eq 'uf' type invariant] inv_ref_UnionFind_T uf}
-    {[@expl:example_addrs_eq 'e1' type invariant] inv_Element e1}
-    {[@expl:example_addrs_eq 'e2' type invariant] inv_Element e2}
-    {[@expl:example_addrs_eq requires] in_domain_T uf e1 /\ in_domain_T uf e2}
+    {([@expl:example_addrs_eq 'uf' type invariant] inv_ref_UnionFind_T uf)
+    /\ ([@expl:example_addrs_eq 'e1' type invariant] inv_Element e1)
+    /\ ([@expl:example_addrs_eq 'e2' type invariant] inv_Element e2)
+    /\ ([@expl:example_addrs_eq requires] in_domain_T uf e1 /\ in_domain_T uf e2)}
     (! bb0
     [ bb0 = s0
       [ s0 = eq_Element {e1} {e2} (fun (_x: bool) -> [ &_8 <- _x ] s1)

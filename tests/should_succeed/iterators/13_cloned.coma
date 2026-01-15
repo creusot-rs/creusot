@@ -1,6 +1,6 @@
 module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -99,7 +99,7 @@ module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iter
 end
 module M_impl_Iterator_for_Cloned_I__produces_trans (* <Cloned<I> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -209,7 +209,7 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -278,7 +278,9 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_ref_T)) =
     {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_ref_T) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_ref_T) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   predicate inv_Cloned_I (_1: t_Cloned_I)
   
@@ -376,17 +378,17 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
       -> precondition_clone () args
   
   let rec clone_T (self_: t_T) (return (x: t_T)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_T) -> {postcondition_once_clone () self_ result} (! return {result}) ]
+    any [ return (result: t_T) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
   
   let rec cloned_T (self_: t_Option_ref_T) (return (x: t_Option_T)) =
     {[@expl:cloned 'self_' type invariant] inv_Option_ref_T self_}
     any
-    [ return (result: t_Option_T) -> {inv_Option_T result}
-      {match { f0 = self_; f1 = result } with
+    [ return (result: t_Option_T) -> {([@expl:cloned result type invariant] inv_Option_T result)
+      /\ ([@expl:cloned ensures] match { f0 = self_; f1 = result } with
         | {f0 = None; f1 = None'0} -> true
         | {f0 = Some s; f1 = Some'0 r} -> postcondition_clone () s r
         | _ -> false
-        end}
+        end)}
       (! return {result}) ]
   
   predicate completed_Cloned_I (self: MutBorrow.t t_Cloned_I) =
@@ -418,16 +420,16 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
     | & self: MutBorrow.t t_Cloned_I = self
     | & _4: t_Option_ref_T = Any.any_l ()
     | & _5: MutBorrow.t t_I = Any.any_l () ])
-    [ return (result: t_Option_T) -> {[@expl:next result type invariant] inv_Option_T result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_T) -> {([@expl:next result type invariant] inv_Option_T result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_Cloned_I self
         | Some'0 v -> produces_Cloned_I self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Cloned_I__produces_trans__refines (* <Cloned<I> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -527,7 +529,7 @@ module M_impl_Iterator_for_Cloned_I__produces_trans__refines (* <Cloned<I> as co
 end
 module M_impl_Iterator_for_Cloned_I__produces_refl__refines (* <Cloned<I> as common::Iterator> *)
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   
@@ -624,7 +626,7 @@ end
 module M_impl_Iterator_for_Cloned_I__next__refines (* <Cloned<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use mach.int.Int
+  use int.Int
   
   type t_I
   

@@ -1,5 +1,5 @@
 module M_trait_A__is_true
-  use mach.int.Int
+  use int.Int
   
   constant mktrue_Self : int
   
@@ -43,8 +43,8 @@ module M_uses_invariant
   let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
     {[@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
-    [ return (result: t_Option_T) -> {inv_Option_T result}
-      {result = self_.current /\ self_.final = None}
+    [ return (result: t_Option_T) -> {([@expl:take result type invariant] inv_Option_T result)
+      /\ ([@expl:take ensures] result = self_.current /\ self_.final = None)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -81,8 +81,8 @@ module M_uses_invariant
   meta "select_lsinst" "all"
   
   let rec uses_invariant_T (x: MutBorrow.t t_Once_T) (return (x'0: ())) =
-    {[@expl:uses_invariant 'x' type invariant] inv_refmut_Once_T x}
-    {[@expl:uses_invariant requires] invariant_Once_T x.current}
+    {([@expl:uses_invariant 'x' type invariant] inv_refmut_Once_T x)
+    /\ ([@expl:uses_invariant requires] invariant_Once_T x.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Option_T> {x.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id x) 1}

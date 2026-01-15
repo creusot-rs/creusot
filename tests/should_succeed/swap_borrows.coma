@@ -19,8 +19,8 @@ module M_swap
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
-    [ return (result: tup2_T_T) -> {[@expl:swap result type invariant] inv_tup2_T_T result}
-      {[@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 }}
+    [ return (result: tup2_T_T) -> {([@expl:swap result type invariant] inv_tup2_T_T result)
+      /\ ([@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 })}
       (! return {result}) ]
 end
 module M_f
@@ -33,7 +33,8 @@ module M_f
   type tup2_refmut_u32_refmut_u32 = { f0'0: MutBorrow.t UInt32.t; f1'0: MutBorrow.t UInt32.t }
   
   let rec swap_refmut_u32 (x: tup2_refmut_u32_refmut_u32) (return (x'0: tup2_refmut_u32_refmut_u32)) = any
-    [ return (result: tup2_refmut_u32_refmut_u32) -> {result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }} (! return {result}) ]
+    [ return (result: tup2_refmut_u32_refmut_u32) -> {[@expl:swap ensures] result = { f0'0 = x.f1'0; f1'0 = x.f0'0 }}
+      (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
   

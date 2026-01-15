@@ -186,11 +186,11 @@ impl Expr {
     }
 
     pub fn assert(cond: Term, k: Expr) -> Self {
-        Expr::Assert(Box::new(cond), Box::new(k))
+        if cond.is_true() { k } else { Expr::Assert(Box::new(cond), Box::new(k)) }
     }
 
     pub fn assume(cond: Term, k: Expr) -> Self {
-        Expr::Assume(Box::new(cond), Box::new(k))
+        if cond.is_true() { k } else { Expr::Assume(Box::new(cond), Box::new(k)) }
     }
 
     pub fn black_box(self) -> Self {

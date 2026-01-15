@@ -72,17 +72,19 @@ module M_generic_closure
     forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let rec call_F (self_: t_F) (arg: t_A) (return (x: t_B)) = {[@expl:call 'self_' type invariant] inv_ref_F self_}
-    {[@expl:call 'arg' type invariant] inv_tup1_A arg}
-    {[@expl:call requires] precondition_F self_ arg}
-    any [ return (result: t_B) -> {inv_B result} {postcondition_F self_ arg result} (! return {result}) ]
+  let rec call_F (self_: t_F) (arg: t_A) (return (x: t_B)) = {([@expl:call 'self_' type invariant] inv_ref_F self_)
+    /\ ([@expl:call 'arg' type invariant] inv_tup1_A arg) /\ ([@expl:call requires] precondition_F self_ arg)}
+    any
+    [ return (result: t_B) -> {([@expl:call result type invariant] inv_B result)
+      /\ ([@expl:call ensures] postcondition_F self_ arg result)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec generic_closure_A (f: t_F) (a: t_A) (return (x: t_B)) = {[@expl:generic_closure 'f' type invariant] inv_F f}
-    {[@expl:generic_closure 'a' type invariant] inv_A a}
+  let rec generic_closure_A (f: t_F) (a: t_A) (return (x: t_B)) = {([@expl:generic_closure 'f' type invariant] inv_F f)
+    /\ ([@expl:generic_closure 'a' type invariant] inv_A a)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -101,10 +103,12 @@ module M_mapper
   
   predicate resolve_A (_1: t_A)
   
-  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) = bb0
+  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) =
+    {[@expl:closure '_a' type invariant] inv_A _a}
+    bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_A _a} any) ] | s1 = -{resolve_A _a}- s2 | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & _a: t_A = _a ]
+    [ & _ret: () = Any.any_l () | & _a: t_A = _a ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   

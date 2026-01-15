@@ -79,7 +79,9 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
         end)
   
   let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
-    any [ return (result: t_Option_Item) -> {postcondition_once_next () self result} (! return {result}) ]
+    any
+    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+      (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
   
@@ -211,11 +213,11 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
     | & _8: MutBorrow.t t_I = Any.any_l ()
     | & _10: t_Option_I = Any.any_l ()
     | & x: t_Option_Item = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {[@expl:next result type invariant] inv_Option_Item result}
-      {[@expl:next ensures] match result with
+    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_Fuse_I self
         | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
-        end}
+        end)}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Fuse_I__produces_refl (* <Fuse<I> as common::Iterator> *)

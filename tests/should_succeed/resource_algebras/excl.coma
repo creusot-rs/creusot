@@ -10,10 +10,10 @@ module M_exclusivity
   function id_Excl_i32 (self: t_Resource_Excl_i32) : t_Id
   
   let rec id_ghost_Excl_i32 (self: t_Resource_Excl_i32) (return (x: t_Id)) = any
-    [ return (result: t_Id) -> {result = id_Excl_i32 self} (! return {result}) ]
+    [ return (result: t_Id) -> {[@expl:id_ghost ensures] result = id_Excl_i32 self} (! return {result}) ]
   
   let rec eq_Id (self: t_Id) (other: t_Id) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self = other)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:eq ensures] result = (self = other)} (! return {result}) ]
   
   type t_Excl_i32 = { f0: Int32.t }
   
@@ -34,8 +34,9 @@ module M_exclusivity
   let rec valid_op_lemma_Excl_i32 (self: MutBorrow.t t_Resource_Excl_i32) (other: t_Resource_Excl_i32)
     (return (x: ())) = {[@expl:valid_op_lemma requires] id_Excl_i32 self.current = id_Excl_i32 other}
     any
-    [ return (result: ()) -> {self.final = self.current}
-      {op_Excl_i32 (view_Resource_Excl_i32 self.current) (view_Resource_Excl_i32 other) <> None}
+    [ return (result: ()) -> {([@expl:valid_op_lemma ensures #0] self.final = self.current)
+      /\ ([@expl:valid_op_lemma ensures #1] op_Excl_i32 (view_Resource_Excl_i32 self.current) (view_Resource_Excl_i32 other)
+      <> None)}
       (! return {result}) ]
   
   predicate resolve_refmut_Resource_Excl_i32 [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_i32) =
@@ -70,7 +71,7 @@ module M_exclusivity
     | & _13: t_Id = Any.any_l ()
     | & _15: () = Any.any_l ()
     | & _16: MutBorrow.t t_Resource_Excl_i32 = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:exclusivity ensures #0] id_Excl_i32 x.current <> id_Excl_i32 y}
-      {[@expl:exclusivity ensures #1] x.current = x.final}
+    [ return (result: ()) -> {([@expl:exclusivity ensures #0] id_Excl_i32 x.current <> id_Excl_i32 y)
+      /\ ([@expl:exclusivity ensures #1] x.current = x.final)}
       (! return {result}) ]
 end

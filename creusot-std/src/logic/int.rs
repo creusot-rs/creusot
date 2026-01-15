@@ -1,5 +1,6 @@
 use crate::{
     ghost::Plain,
+    invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     prelude::*,
 };
@@ -148,7 +149,7 @@ impl Int {
 impl AddLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(+)")]
+    #[builtin("int.Int.(+)")]
     #[allow(unused_variables)]
     fn add(self, other: Self) -> Self {
         dead
@@ -158,7 +159,7 @@ impl AddLogic for Int {
 impl SubLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(-)")]
+    #[builtin("int.Int.(-)")]
     #[allow(unused_variables)]
     fn sub(self, other: Self) -> Self {
         dead
@@ -168,7 +169,7 @@ impl SubLogic for Int {
 impl MulLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(*)")]
+    #[builtin("int.Int.(*)")]
     #[allow(unused_variables)]
     fn mul(self, other: Self) -> Self {
         dead
@@ -178,7 +179,7 @@ impl MulLogic for Int {
 impl DivLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.div")]
+    #[builtin("int.ComputerDivision.div")]
     #[allow(unused_variables)]
     fn div(self, other: Self) -> Self {
         dead
@@ -188,7 +189,7 @@ impl DivLogic for Int {
 impl RemLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.mod")]
+    #[builtin("int.ComputerDivision.mod")]
     #[allow(unused_variables)]
     fn rem(self, other: Self) -> Self {
         dead
@@ -198,7 +199,7 @@ impl RemLogic for Int {
 impl NegLogic for Int {
     type Output = Self;
     #[logic]
-    #[builtin("mach.int.Int.(-_)")]
+    #[builtin("int.Int.(-_)")]
     fn neg(self) -> Self {
         dead
     }
@@ -356,5 +357,65 @@ impl Neg for Int {
     #[ensures(result == -self)]
     fn neg(self) -> Self {
         panic!()
+    }
+}
+
+struct NatInner(Int);
+
+impl Invariant for NatInner {
+    #[logic]
+    fn invariant(self) -> bool {
+        self.0 >= 0
+    }
+}
+
+impl InhabitedInvariant for NatInner {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self {
+        Self(0)
+    }
+}
+
+/// Natural numbers, i.e., integers that are greater or equal to 0.
+pub struct Nat(Subset<NatInner>);
+
+impl Nat {
+    #[logic]
+    #[ensures(result >= 0)]
+    pub fn to_int(self) -> Int {
+        pearlite! { self.0.inner().0 }
+    }
+
+    #[logic]
+    #[requires(n >= 0)]
+    #[ensures(result.to_int() == n)]
+    pub fn new(n: Int) -> Nat {
+        Nat(Subset::new_logic(NatInner(n)))
+    }
+
+    #[logic(open)]
+    #[ensures(result == (self == other))]
+    pub fn ext_eq(self, other: Self) -> bool {
+        let _ = Subset::<NatInner>::inner_inj;
+        self.to_int() == other.to_int()
+    }
+}
+
+impl AddLogic for Nat {
+    type Output = Self;
+    #[logic]
+    #[ensures(result.to_int() == self.to_int() + other.to_int())]
+    fn add(self, other: Self) -> Self {
+        Self::new(self.to_int() + other.to_int())
+    }
+}
+
+impl MulLogic for Nat {
+    type Output = Self;
+    #[logic]
+    #[ensures(result.to_int() == self.to_int() * other.to_int())]
+    fn mul(self, other: Self) -> Self {
+        Self::new(self.to_int() * other.to_int())
     }
 }

@@ -6,48 +6,51 @@ module M_test_result
   type t_Result_i32_i32 = Ok Int32.t | Err Int32.t
   
   let rec is_ok_i32 (self_: t_Result_i32_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (exists t: Int32.t. self_ = Ok t)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_ok ensures] result = (exists t: Int32.t. self_ = Ok t)} (! return {result}) ]
   
   let rec is_err_i32 (self_: t_Result_i32_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (exists e: Int32.t. self_ = Err e)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_err ensures] result = (exists e: Int32.t. self_ = Err e)}
+      (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
   let rec ok_i32 (self_: t_Result_i32_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {forall t: Int32.t. self_ = Ok t -> result = Some t}
-      {(exists e: Int32.t. self_ = Err e) -> result = None}
+    [ return (result: t_Option_i32) -> {([@expl:ok ensures #0] forall t: Int32.t. self_ = Ok t -> result = Some t)
+      /\ ([@expl:ok ensures #1] (exists e: Int32.t. self_ = Err e) -> result = None)}
       (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec err_i32 (self_: t_Result_i32_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {(exists t: Int32.t. self_ = Ok t) -> result = None}
-      {forall e: Int32.t. self_ = Err e -> result = Some e}
+    [ return (result: t_Option_i32) -> {([@expl:err ensures #0] (exists t: Int32.t. self_ = Ok t) -> result = None)
+      /\ ([@expl:err ensures #1] forall e: Int32.t. self_ = Err e -> result = Some e)}
       (! return {result}) ]
   
   type t_Result_ref_i32_ref_i32 = Ok'0 Int32.t | Err'0 Int32.t
   
   let rec as_ref_i32 (self_: t_Result_i32_i32) (return (x: t_Result_ref_i32_ref_i32)) = any
-    [ return (result: t_Result_ref_i32_ref_i32) -> {forall t: Int32.t. self_ = Ok t -> result = Ok'0 t}
-      {forall e: Int32.t. self_ = Err e -> result = Err'0 e}
+    [ return (result: t_Result_ref_i32_ref_i32) -> {([@expl:as_ref ensures #0] forall t: Int32.t. self_ = Ok t
+          -> result = Ok'0 t)
+      /\ ([@expl:as_ref ensures #1] forall e: Int32.t. self_ = Err e -> result = Err'0 e)}
       (! return {result}) ]
   
   let rec unwrap_ref_i32 (self_: t_Result_ref_i32_ref_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok'0 t}
-    any [ return (result: Int32.t) -> {Ok'0 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Ok'0 result = self_} (! return {result}) ]
   
   let rec unwrap_err_ref_i32 (self_: t_Result_ref_i32_ref_i32) (return (x: Int32.t)) =
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'0 e}
-    any [ return (result: Int32.t) -> {Err'0 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap_err ensures] Err'0 result = self_} (! return {result}) ]
   
   type t_Result_refmut_i32_refmut_i32 = Ok'1 (MutBorrow.t Int32.t) | Err'1 (MutBorrow.t Int32.t)
   
   let rec as_mut_i32 (self_: MutBorrow.t t_Result_i32_i32) (return (x: t_Result_refmut_i32_refmut_i32)) = any
-    [ return (result: t_Result_refmut_i32_refmut_i32) -> {exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
+    [ return (result: t_Result_refmut_i32_refmut_i32) ->
+    {[@expl:as_mut ensures] exists t: MutBorrow.t Int32.t. self_.current = Ok (t.current)
           /\ self_.final = Ok (t.final) /\ result = Ok'1 t
         \/ (exists e: MutBorrow.t Int32.t. self_.current = Err (e.current)
           /\ self_.final = Err (e.final) /\ result = Err'1 e)}
@@ -55,7 +58,7 @@ module M_test_result
   
   let rec unwrap_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap requires] exists t: MutBorrow.t Int32.t. self_ = Ok'1 t}
-    any [ return (result: MutBorrow.t Int32.t) -> {Ok'1 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t Int32.t) -> {[@expl:unwrap ensures] Ok'1 result = self_} (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
@@ -63,19 +66,20 @@ module M_test_result
   
   let rec unwrap_i32'0 (self_: t_Result_i32_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok t}
-    any [ return (result: Int32.t) -> {Ok result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Ok result = self_} (! return {result}) ]
   
   let rec unwrap_err_refmut_i32 (self_: t_Result_refmut_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'1 e}
-    any [ return (result: MutBorrow.t Int32.t) -> {Err'1 result = self_} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:unwrap_err ensures] Err'1 result = self_} (! return {result}) ]
   
   let rec unwrap_err_i32 (self_: t_Result_i32_i32) (return (x: Int32.t)) =
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err e}
-    any [ return (result: Int32.t) -> {Err result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap_err ensures] Err result = self_} (! return {result}) ]
   
   let rec unwrap_or_i32 (self_: t_Result_i32_i32) (default: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {forall t: Int32.t. self_ = Ok t -> result = t}
-      {(exists e: Int32.t. self_ = Err e) -> result = default}
+    [ return (result: Int32.t) -> {([@expl:unwrap_or ensures #0] forall t: Int32.t. self_ = Ok t -> result = t)
+      /\ ([@expl:unwrap_or ensures #1] (exists e: Int32.t. self_ = Err e) -> result = default)}
       (! return {result}) ]
   
   predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
@@ -137,63 +141,67 @@ module M_test_result
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   let rec unwrap_or_default_i32 (self_: t_Result_i32_i32) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {forall t: Int32.t. self_ = Ok t -> result = t}
-      {(exists e: Int32.t. self_ = Err e) -> postcondition_default () () result}
+    [ return (result: Int32.t) -> {([@expl:unwrap_or_default ensures #0] forall t: Int32.t. self_ = Ok t -> result = t)
+      /\ ([@expl:unwrap_or_default ensures #1] (exists e: Int32.t. self_ = Err e)
+      -> postcondition_default () () result)}
       (! return {result}) ]
   
   let rec and_i32 (self_: t_Result_i32_i32) (res: t_Result_i32_i32) (return (x: t_Result_i32_i32)) = any
-    [ return (result: t_Result_i32_i32) -> {(exists t: Int32.t. self_ = Ok t) -> result = res}
-      {forall e: Int32.t. self_ = Err e -> result = Err e}
+    [ return (result: t_Result_i32_i32) -> {([@expl:and ensures #0] (exists t: Int32.t. self_ = Ok t) -> result = res)
+      /\ ([@expl:and ensures #1] forall e: Int32.t. self_ = Err e -> result = Err e)}
       (! return {result}) ]
   
   let rec or_i32 (self_: t_Result_i32_i32) (res: t_Result_i32_i32) (return (x: t_Result_i32_i32)) = any
-    [ return (result: t_Result_i32_i32) -> {forall t: Int32.t. self_ = Ok t -> result = Ok t}
-      {(exists e: Int32.t. self_ = Err e) -> result = res}
+    [ return (result: t_Result_i32_i32) -> {([@expl:or ensures #0] forall t: Int32.t. self_ = Ok t -> result = Ok t)
+      /\ ([@expl:or ensures #1] (exists e: Int32.t. self_ = Err e) -> result = res)}
       (! return {result}) ]
   
   type t_Result_i32_ref_i32 = Ok'2 Int32.t | Err'2 Int32.t
   
   let rec copied_i32 (self_: t_Result_ref_i32_ref_i32) (return (x: t_Result_i32_ref_i32)) = any
-    [ return (result: t_Result_i32_ref_i32) -> {forall t: Int32.t. self_ = Ok'0 t -> result = Ok'2 t}
-      {forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e}
+    [ return (result: t_Result_i32_ref_i32) -> {([@expl:copied ensures #0] forall t: Int32.t. self_ = Ok'0 t
+          -> result = Ok'2 t)
+      /\ ([@expl:copied ensures #1] forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e)}
       (! return {result}) ]
   
   let rec unwrap_i32'1 (self_: t_Result_i32_ref_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok'2 t}
-    any [ return (result: Int32.t) -> {Ok'2 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Ok'2 result = self_} (! return {result}) ]
   
   let rec unwrap_err_i32'0 (self_: t_Result_i32_ref_i32) (return (x: Int32.t)) =
     {[@expl:unwrap_err requires] exists e: Int32.t. self_ = Err'2 e}
-    any [ return (result: Int32.t) -> {Err'2 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap_err ensures] Err'2 result = self_} (! return {result}) ]
   
   type t_Result_i32_refmut_i32 = Ok'3 Int32.t | Err'3 (MutBorrow.t Int32.t)
   
   let rec copied_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
-    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
-      {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
+    [ return (result: t_Result_i32_refmut_i32) -> {([@expl:copied ensures #0] forall t: MutBorrow.t Int32.t. self_
+            = Ok'1 t -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t)
+      /\ ([@expl:copied ensures #1] forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e)}
       (! return {result}) ]
   
   let rec unwrap_i32'2 (self_: t_Result_i32_refmut_i32) (return (x: Int32.t)) =
     {[@expl:unwrap requires] exists t: Int32.t. self_ = Ok'3 t}
-    any [ return (result: Int32.t) -> {Ok'3 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Ok'3 result = self_} (! return {result}) ]
   
   let rec unwrap_err_i32'1 (self_: t_Result_i32_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap_err requires] exists e: MutBorrow.t Int32.t. self_ = Err'3 e}
-    any [ return (result: MutBorrow.t Int32.t) -> {Err'3 result = self_} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:unwrap_err ensures] Err'3 result = self_} (! return {result}) ]
   
   let rec cloned_i32 (self_: t_Result_ref_i32_ref_i32) (return (x: t_Result_i32_ref_i32)) = any
-    [ return (result: t_Result_i32_ref_i32) -> {forall t: Int32.t. self_ = Ok'0 t -> result = Ok'2 t}
-      {forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e}
+    [ return (result: t_Result_i32_ref_i32) -> {([@expl:cloned ensures #0] forall t: Int32.t. self_ = Ok'0 t
+          -> result = Ok'2 t)
+      /\ ([@expl:cloned ensures #1] forall e: Int32.t. self_ = Err'0 e -> result = Err'2 e)}
       (! return {result}) ]
   
   let rec cloned_i32'0 (self_: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
-    [ return (result: t_Result_i32_refmut_i32) -> {forall t: MutBorrow.t Int32.t. self_ = Ok'1 t
-        -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t}
-      {forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e}
+    [ return (result: t_Result_i32_refmut_i32) -> {([@expl:cloned ensures #0] forall t: MutBorrow.t Int32.t. self_
+            = Ok'1 t -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t)
+      /\ ([@expl:cloned ensures #1] forall e: MutBorrow.t Int32.t. self_ = Err'1 e -> result = Err'3 e)}
       (! return {result}) ]
   
   type t_Result_Option_i32_i32 = Ok'4 t_Option_i32 | Err'4 Int32.t
@@ -201,17 +209,17 @@ module M_test_result
   type t_Option_Result_i32_i32 = None'0 | Some'0 t_Result_i32_i32
   
   let rec transpose_i32 (self_: t_Result_Option_i32_i32) (return (x: t_Option_Result_i32_i32)) = any
-    [ return (result: t_Option_Result_i32_i32) -> {self_ = Ok'4 (None) -> result = None'0}
-      {forall t: Int32.t. self_ = Ok'4 (Some t) -> result = Some'0 (Ok t)}
-      {forall e: Int32.t. self_ = Err'4 e -> result = Some'0 (Err e)}
+    [ return (result: t_Option_Result_i32_i32) -> {([@expl:transpose ensures #0] self_ = Ok'4 (None) -> result = None'0)
+      /\ ([@expl:transpose ensures #1] forall t: Int32.t. self_ = Ok'4 (Some t) -> result = Some'0 (Ok t))
+      /\ ([@expl:transpose ensures #2] forall e: Int32.t. self_ = Err'4 e -> result = Some'0 (Err e))}
       (! return {result}) ]
   
   let rec is_none_Result_i32_i32 (self_: t_Option_Result_i32_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None'0)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None'0)} (! return {result}) ]
   
   let rec unwrap_Result_i32_i32 (self_: t_Option_Result_i32_i32) (return (x: t_Result_i32_i32)) =
     {[@expl:unwrap requires] self_ <> None'0}
-    any [ return (result: t_Result_i32_i32) -> {Some'0 result = self_} (! return {result}) ]
+    any [ return (result: t_Result_i32_i32) -> {[@expl:unwrap ensures] Some'0 result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

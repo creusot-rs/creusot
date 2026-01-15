@@ -4,7 +4,10 @@ pub mod agree;
 pub mod auth;
 pub mod excl;
 pub mod fmap;
+mod int;
+mod nat;
 pub mod option;
+mod positive_real;
 pub mod prod;
 pub mod sum;
 pub mod update;
@@ -50,6 +53,12 @@ pub trait RA: Sized {
     })]
     fn factor(self, factor: Self) -> Option<Self>;
 
+    #[logic(open, inline)]
+    #[ensures(result == (self == other))]
+    fn eq(self, other: Self) -> bool {
+        self == other
+    }
+
     /// Inclusion of RA.
     ///
     /// This asserts that `other` is, in a sense, 'bigger' than `self`.
@@ -88,7 +97,7 @@ pub trait RA: Sized {
 
     #[logic(open, sealed)]
     fn incl_eq(self, other: Self) -> bool {
-        self == other || self.incl(other)
+        self.eq(other) || self.incl(other)
     }
 
     #[logic(open, sealed)]

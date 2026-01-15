@@ -5,10 +5,10 @@ module M_is_some_none
   type t_Option_i32 = None | Some Int32.t
   
   let rec is_some_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ <> None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_some ensures] result = (self_ <> None)} (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -47,18 +47,18 @@ module M_unwrap
   type t_Option_i32 = None | Some Int32.t
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec expect_i32 (self_: t_Option_i32) (msg: string) (return (x: Int32.t)) = {[@expl:expect requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:expect ensures] Some result = self_} (! return {result}) ]
   
   predicate resolve_i32 [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate resolve_i32
   
   let rec unwrap_or_i32 (self_: t_Option_i32) (default: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {self_ = None -> result = default}
-      {self_ = None \/ self_ = Some result /\ resolve_i32 default}
+    [ return (result: Int32.t) -> {([@expl:unwrap_or ensures #0] self_ = None -> result = default)
+      /\ ([@expl:unwrap_or ensures #1] self_ = None \/ self_ = Some result /\ resolve_i32 default)}
       (! return {result}) ]
   
   predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
@@ -120,14 +120,16 @@ module M_unwrap
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   let rec unwrap_or_default_i32 (self_: t_Option_i32) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {self_ = None -> postcondition_default () () result}
-      {self_ = None \/ self_ = Some result}
+    [ return (result: Int32.t) -> {([@expl:unwrap_or_default ensures #0] self_ = None
+        -> postcondition_default () () result)
+      /\ ([@expl:unwrap_or_default ensures #1] self_ = None \/ self_ = Some result)}
       (! return {result}) ]
   
-  let rec closure0 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = {false} any ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -145,7 +147,7 @@ module M_unwrap
   let rec unwrap_or_else_i32 (self_: t_Option_i32) (f: ()) (return (x: Int32.t)) =
     {[@expl:unwrap_or_else requires] self_ = None -> precondition_closure0 f ()}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:unwrap_or_else ensures] match self_ with
         | None -> postcondition_once_closure0 f () result
         | Some t -> result = t
         end}
@@ -153,6 +155,7 @@ module M_unwrap
   
   let rec closure1 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (3: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -170,7 +173,7 @@ module M_unwrap
   let rec unwrap_or_else_i32'0 (self_: t_Option_i32) (f: ()) (return (x: Int32.t)) =
     {[@expl:unwrap_or_else requires] self_ = None -> precondition_closure1 f ()}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:unwrap_or_else ensures] match self_ with
         | None -> postcondition_once_closure1 f () result
         | Some t -> result = t
         end}
@@ -178,7 +181,7 @@ module M_unwrap
   
   let rec unwrap_unchecked_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap_unchecked requires] self_
     <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap_unchecked ensures] Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -267,7 +270,8 @@ module M_map
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0
+    [ bb0 = {false} any ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -289,7 +293,7 @@ module M_map
       | Some t -> precondition_closure0 f t
       end}
     any
-    [ return (result: t_Option_unit) -> {match self_ with
+    [ return (result: t_Option_unit) -> {[@expl:map ensures] match self_ with
         | None -> result = None'0
         | Some t -> exists r: (). result = Some'0 r /\ postcondition_once_closure0 f t r
         end}
@@ -312,11 +316,13 @@ module M_map
   meta "rewrite_def" function deep_model_ref_Option_unit
   
   let rec eq_Option_unit (self_: t_Option_unit) (rhs: t_Option_unit) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_unit self_ = deep_model_ref_Option_unit rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_unit self_ = deep_model_ref_Option_unit rhs)}
       (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (3: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -336,7 +342,7 @@ module M_map
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:map ensures] match self_ with
         | None -> result = None
         | Some t -> exists r: Int32.t. result = Some r /\ postcondition_once_closure1 f t r
         end}
@@ -360,12 +366,13 @@ module M_map
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -385,7 +392,7 @@ module M_map
       | Some t -> precondition_closure2 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:map ensures] match self_ with
         | None -> result = None
         | Some t -> exists r: Int32.t. result = Some r /\ postcondition_once_closure2 f t r
         end}
@@ -453,7 +460,8 @@ module M_inspect
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0
+    [ bb0 = {false} any ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -474,11 +482,11 @@ module M_inspect
       | Some t -> precondition_closure0 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {result = self_}
-      {match self_ with
+    [ return (result: t_Option_i32) -> {([@expl:inspect ensures #0] result = self_)
+      /\ ([@expl:inspect ensures #1] match self_ with
         | None -> true
         | Some t -> postcondition_once_closure0 f t ()
-        end}
+        end)}
       (! return {result}) ]
   
   type t_Option_Int = None'0 | Some'0 int
@@ -499,11 +507,12 @@ module M_inspect
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: ())) = bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -524,11 +533,11 @@ module M_inspect
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {result = self_}
-      {match self_ with
+    [ return (result: t_Option_i32) -> {([@expl:inspect ensures #0] result = self_)
+      /\ ([@expl:inspect ensures #1] match self_ with
         | None -> true
         | Some t -> postcondition_once_closure1 f t ()
-        end}
+        end)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -578,7 +587,8 @@ module M_map_or
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
+    [ bb0 = {false} any ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -599,7 +609,7 @@ module M_map_or
       | Some t -> precondition_closure0 f t
       end}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:map_or ensures] match self_ with
         | None -> result = default
         | Some t -> postcondition_once_closure0 f t result
         end}
@@ -607,6 +617,7 @@ module M_map_or
   
   let rec closure1 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (3: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -627,7 +638,7 @@ module M_map_or
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:map_or ensures] match self_ with
         | None -> result = default
         | Some t -> postcondition_once_closure1 f t result
         end}
@@ -635,7 +646,7 @@ module M_map_or
   
   let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -656,7 +667,7 @@ module M_map_or
       | Some t -> precondition_closure2 f t
       end}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:map_or ensures] match self_ with
         | None -> result = default
         | Some t -> postcondition_once_closure2 f t result
         end}
@@ -664,12 +675,14 @@ module M_map_or
   
   let rec closure3 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure3'pre
   
   meta "rewrite_def" predicate closure3'post'return
   
-  let rec closure4 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure4 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: Int32.t)) = bb0
+    [ bb0 = {false} any ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure4'pre
   
@@ -699,13 +712,14 @@ module M_map_or
       | Some t -> precondition_closure4 f t
       end}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:map_or_else ensures] match self_ with
         | None -> postcondition_once_closure3 default () result
         | Some t -> postcondition_once_closure4 f t result
         end}
       (! return {result}) ]
   
-  let rec closure5 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure5 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = {false} any ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure5'pre
   
@@ -713,7 +727,7 @@ module M_map_or
   
   let rec closure6 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {x} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure6'pre
   
@@ -743,7 +757,7 @@ module M_map_or
       | Some t -> precondition_closure6 f t
       end}
     any
-    [ return (result: Int32.t) -> {match self_ with
+    [ return (result: Int32.t) -> {[@expl:map_or_else ensures] match self_ with
         | None -> postcondition_once_closure5 default () result
         | Some t -> postcondition_once_closure6 f t result
         end}
@@ -823,7 +837,7 @@ module M_ok_or
   meta "rewrite_def" predicate resolve_bool
   
   let rec ok_or_i32 (self_: t_Option_i32) (err: bool) (return (x: t_Result_i32_bool)) = any
-    [ return (result: t_Result_i32_bool) -> {match self_ with
+    [ return (result: t_Result_i32_bool) -> {[@expl:ok_or ensures] match self_ with
         | None -> result = Err err
         | Some t -> result = Ok t /\ resolve_bool err
         end}
@@ -831,6 +845,7 @@ module M_ok_or
   
   let rec closure0 [@coma:extspec] (self: ()) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -848,7 +863,7 @@ module M_ok_or
   let rec ok_or_else_i32 (self_: t_Option_i32) (err: ()) (return (x: t_Result_i32_bool)) =
     {[@expl:ok_or_else requires] self_ = None -> precondition_closure0 err ()}
     any
-    [ return (result: t_Result_i32_bool) -> {match self_ with
+    [ return (result: t_Result_i32_bool) -> {[@expl:ok_or_else ensures] match self_ with
         | None -> exists r: bool. result = Err r /\ postcondition_once_closure0 err () r
         | Some t -> result = Ok t
         end}
@@ -856,6 +871,7 @@ module M_ok_or
   
   let rec closure1 [@coma:extspec] (self: ()) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -873,7 +889,7 @@ module M_ok_or
   let rec ok_or_else_i32'0 (self_: t_Option_i32) (err: ()) (return (x: t_Result_i32_bool)) =
     {[@expl:ok_or_else requires] self_ = None -> precondition_closure1 err ()}
     any
-    [ return (result: t_Result_i32_bool) -> {match self_ with
+    [ return (result: t_Result_i32_bool) -> {[@expl:ok_or_else ensures] match self_ with
         | None -> exists r: bool. result = Err r /\ postcondition_once_closure1 err () r
         | Some t -> result = Ok t
         end}
@@ -918,10 +934,11 @@ module M_as_mut
   type t_Option_refmut_i32 = None'0 | Some'0 (MutBorrow.t Int32.t)
   
   let rec as_mut_i32 (self_: MutBorrow.t t_Option_i32) (return (x: t_Option_refmut_i32)) = any
-    [ return (result: t_Option_refmut_i32) -> {self_.current = None -> result = None'0 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_i32) -> {([@expl:as_mut ensures #0] self_.current = None
+        -> result = None'0 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t Int32.t. result = Some'0 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -938,14 +955,14 @@ module M_as_mut
         end
   
   let rec is_none_refmut_i32 (self_: t_Option_refmut_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None'0)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None'0)} (! return {result}) ]
   
   let rec unwrap_refmut_i32 (self_: t_Option_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:unwrap requires] self_ <> None'0}
-    any [ return (result: MutBorrow.t Int32.t) -> {Some'0 result = self_} (! return {result}) ]
+    any [ return (result: MutBorrow.t Int32.t) -> {[@expl:unwrap ensures] Some'0 result = self_} (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1011,15 +1028,15 @@ module M_as_ref
   type t_Option_ref_i32 = None'0 | Some'0 Int32.t
   
   let rec as_ref_i32 (self_: t_Option_i32) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {self_ = None -> result = None'0}
-      {self_ = None \/ (exists r: Int32.t. result = Some'0 r /\ self_ = Some r)}
+    [ return (result: t_Option_ref_i32) -> {([@expl:as_ref ensures #0] self_ = None -> result = None'0)
+      /\ ([@expl:as_ref ensures #1] self_ = None \/ (exists r: Int32.t. result = Some'0 r /\ self_ = Some r))}
       (! return {result}) ]
   
   let rec is_none_ref_i32 (self_: t_Option_ref_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None'0)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None'0)} (! return {result}) ]
   
   let rec unwrap_ref_i32 (self_: t_Option_ref_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None'0}
-    any [ return (result: Int32.t) -> {Some'0 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some'0 result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1057,13 +1074,14 @@ module M_replace
   type t_Option_i32 = None | Some Int32.t
   
   let rec replace_i32 (self_: MutBorrow.t t_Option_i32) (value: Int32.t) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {result = self_.current /\ self_.final = Some value} (! return {result}) ]
+    [ return (result: t_Option_i32) -> {[@expl:replace ensures] result = self_.current /\ self_.final = Some value}
+      (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1143,8 +1161,9 @@ module M_and_or_xor
   meta "rewrite_def" predicate resolve_Option_i32
   
   let rec and_i32 (self_: t_Option_i32) (optb: t_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self_ = None -> result = None /\ resolve_Option_i32 optb}
-      {self_ = None \/ result = optb /\ resolve_Option_i32 self_}
+    [ return (result: t_Option_i32) -> {([@expl:and ensures #0] self_ = None
+        -> result = None /\ resolve_Option_i32 optb)
+      /\ ([@expl:and ensures #1] self_ = None \/ result = optb /\ resolve_Option_i32 self_)}
       (! return {result}) ]
   
   type t_Option_Int = None'0 | Some'0 int
@@ -1165,12 +1184,13 @@ module M_and_or_xor
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec or_i32 (self_: t_Option_i32) (optb: t_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self_ = None -> result = optb}
-      {self_ = None \/ result = self_ /\ resolve_Option_i32 optb}
+    [ return (result: t_Option_i32) -> {([@expl:or ensures #0] self_ = None -> result = optb)
+      /\ ([@expl:or ensures #1] self_ = None \/ result = self_ /\ resolve_Option_i32 optb)}
       (! return {result}) ]
   
   type tup2_Option_i32_Option_i32 = { f0: t_Option_i32; f1: t_Option_i32 }
@@ -1180,7 +1200,7 @@ module M_and_or_xor
   meta "rewrite_def" predicate resolve_i32
   
   let rec xor_i32 (self_: t_Option_i32) (optb: t_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match { f0 = self_; f1 = optb } with
+    [ return (result: t_Option_i32) -> {[@expl:xor ensures] match { f0 = self_; f1 = optb } with
         | {f0 = None; f1 = None} -> result = None
         | {f0 = Some t1; f1 = Some t2} -> result = None /\ resolve_i32 t1 /\ resolve_i32 t2
         | {f0 = Some t; f1 = None} -> result = Some t
@@ -1365,11 +1385,12 @@ end
 module M_and_then
   use creusot.int.Int32
   use creusot.prelude.Any
-  use mach.int.Int
+  use int.Int
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: t_Option_i32)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: t_Option_i32)) = bb0
+    [ bb0 = {false} any ] [ return (result: t_Option_i32) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1390,7 +1411,7 @@ module M_and_then
       | Some t -> precondition_closure0 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:and_then ensures] match self_ with
         | None -> result = None
         | Some t -> postcondition_once_closure0 f t result
         end}
@@ -1414,7 +1435,8 @@ module M_and_then
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure1 (self: ()) (x: Int32.t) (return (x'0: t_Option_i32)) = (! bb0
@@ -1451,7 +1473,7 @@ module M_and_then
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:and_then ensures] match self_ with
         | None -> result = None
         | Some t -> postcondition_once_closure1 f t result
         end}
@@ -1518,7 +1540,8 @@ module M_filter
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: bool)) = bb0 [ bb0 = {false} any ]
+  let rec closure0 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: bool)) = bb0
+    [ bb0 = {false} any ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1543,7 +1566,7 @@ module M_filter
       | Some t -> precondition_closure0 predicate' t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:filter ensures] match self_ with
         | None -> result = None
         | Some t -> match result with
           | None -> postcondition_once_closure0 predicate' t false /\ resolve_i32 t
@@ -1570,12 +1593,13 @@ module M_filter
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x = (1: Int32.t) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -1596,7 +1620,7 @@ module M_filter
       | Some t -> precondition_closure1 predicate' t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:filter ensures] match self_ with
         | None -> result = None
         | Some t -> match result with
           | None -> postcondition_once_closure1 predicate' t false /\ resolve_i32 t
@@ -1607,7 +1631,7 @@ module M_filter
   
   let rec closure2 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x = (2: Int32.t) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -1628,7 +1652,7 @@ module M_filter
       | Some t -> precondition_closure2 predicate' t
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:filter ensures] match self_ with
         | None -> result = None
         | Some t -> match result with
           | None -> postcondition_once_closure2 predicate' t false /\ resolve_i32 t
@@ -1700,7 +1724,7 @@ module M_is_some_and
   
   let rec closure0 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x = (1: Int32.t) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1721,7 +1745,7 @@ module M_is_some_and
       | Some t -> precondition_closure0 f t
       end}
     any
-    [ return (result: bool) -> {match self_ with
+    [ return (result: bool) -> {[@expl:is_some_and ensures] match self_ with
         | None -> result = false
         | Some t -> postcondition_once_closure0 f t result
         end}
@@ -1729,7 +1753,7 @@ module M_is_some_and
   
   let rec closure1 [@coma:extspec] (self: ()) (x: Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x = (1: Int32.t) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ]
+    [ & _ret: bool = Any.any_l () | & x: Int32.t = x ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -1750,7 +1774,7 @@ module M_is_some_and
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: bool) -> {match self_ with
+    [ return (result: bool) -> {[@expl:is_some_and ensures] match self_ with
         | None -> result = false
         | Some t -> postcondition_once_closure1 f t result
         end}
@@ -1758,6 +1782,7 @@ module M_is_some_and
   
   let rec closure2 [@coma:extspec] (self: ()) (_0: Int32.t) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -1778,7 +1803,7 @@ module M_is_some_and
       | Some t -> precondition_closure2 f t
       end}
     any
-    [ return (result: bool) -> {match self_ with
+    [ return (result: bool) -> {[@expl:is_some_and ensures] match self_ with
         | None -> result = false
         | Some t -> postcondition_once_closure2 f t result
         end}
@@ -1827,6 +1852,7 @@ module M_or_else
   
   let rec closure0 [@coma:extspec] (self: ()) (return (x: t_Option_i32)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- Some (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Option_i32 = Any.any_l () ]
+    [ return (result: t_Option_i32) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1844,7 +1870,7 @@ module M_or_else
   let rec or_else_i32 (self_: t_Option_i32) (f: ()) (return (x: t_Option_i32)) = {[@expl:or_else requires] self_ = None
     -> precondition_closure0 f ()}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:or_else ensures] match self_ with
         | None -> postcondition_once_closure0 f () result
         | Some t -> result = Some t
         end}
@@ -1868,11 +1894,13 @@ module M_or_else
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (return (x: t_Option_i32)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Option_i32 = Any.any_l () ]
+    [ return (result: t_Option_i32) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -1890,13 +1918,14 @@ module M_or_else
   let rec or_else_i32'0 (self_: t_Option_i32) (f: ()) (return (x: t_Option_i32)) = {[@expl:or_else requires] self_
       = None -> precondition_closure1 f ()}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:or_else ensures] match self_ with
         | None -> postcondition_once_closure1 f () result
         | Some t -> result = Some t
         end}
       (! return {result}) ]
   
-  let rec closure2 [@coma:extspec] (self: ()) (return (x: t_Option_i32)) = bb0 [ bb0 = {false} any ]
+  let rec closure2 [@coma:extspec] (self: ()) (return (x: t_Option_i32)) = bb0
+    [ bb0 = {false} any ] [ return (result: t_Option_i32) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -1914,7 +1943,7 @@ module M_or_else
   let rec or_else_i32'1 (self_: t_Option_i32) (f: ()) (return (x: t_Option_i32)) = {[@expl:or_else requires] self_
       = None -> precondition_closure2 f ()}
     any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:or_else ensures] match self_ with
         | None -> postcondition_once_closure2 f () result
         | Some t -> result = Some t
         end}
@@ -1988,11 +2017,11 @@ module M_insert
   meta "rewrite_def" predicate resolve_i32
   
   let rec insert_i32 (self_: MutBorrow.t t_Option_i32) (value: Int32.t) (return (x: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
-        | Some t -> resolve_i32 t
-        | None -> true
-        end}
-      {result.current = value /\ self_.final = Some (result.final)}
+    [ return (result: MutBorrow.t Int32.t) -> {([@expl:insert ensures #0] match self_.current with
+          | Some t -> resolve_i32 t
+          | None -> true
+          end)
+      /\ ([@expl:insert ensures #1] result.current = value /\ self_.final = Some (result.final))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -2017,7 +2046,8 @@ module M_insert
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2090,7 +2120,7 @@ module M_get_or_insert
   meta "rewrite_def" predicate resolve_i32
   
   let rec get_or_insert_i32 (self_: MutBorrow.t t_Option_i32) (value: Int32.t) (return (x: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:get_or_insert ensures] match self_.current with
         | None -> result.current = value /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final) /\ resolve_i32 value
         end}
@@ -2118,11 +2148,13 @@ module M_get_or_insert
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure0 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -2140,13 +2172,14 @@ module M_get_or_insert
   let rec get_or_insert_with_i32 (self_: MutBorrow.t t_Option_i32) (f: ()) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] self_.current = None -> precondition_closure0 f ()}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:get_or_insert_with ensures] match self_.current with
         | None -> postcondition_once_closure0 f () result.current /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final)
         end}
       (! return {result}) ]
   
-  let rec closure1 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0 [ bb0 = {false} any ]
+  let rec closure1 [@coma:extspec] (self: ()) (return (x: Int32.t)) = bb0
+    [ bb0 = {false} any ] [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -2164,7 +2197,7 @@ module M_get_or_insert
   let rec get_or_insert_with_i32'0 (self_: MutBorrow.t t_Option_i32) (f: ()) (return (x: MutBorrow.t Int32.t)) =
     {[@expl:get_or_insert_with requires] self_.current = None -> precondition_closure1 f ()}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {match self_.current with
+    [ return (result: MutBorrow.t Int32.t) -> {[@expl:get_or_insert_with ensures] match self_.current with
         | None -> postcondition_once_closure1 f () result.current /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final)
         end}
@@ -2292,13 +2325,14 @@ module M_take
   type t_Option_i32 = None | Some Int32.t
   
   let rec take_i32 (self_: MutBorrow.t t_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {result = self_.current /\ self_.final = None} (! return {result}) ]
+    [ return (result: t_Option_i32) -> {[@expl:take ensures] result = self_.current /\ self_.final = None}
+      (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -2357,6 +2391,7 @@ module M_take_if
   
   let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_i32 _0}- s1 | s1 = {false} any ] ] [ & _0: MutBorrow.t Int32.t = _0 ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -2382,7 +2417,7 @@ module M_take_if
       | Some t -> forall b: MutBorrow.t Int32.t. inv_refmut_i32 b /\ b.current = t -> precondition_closure0 predicate' b
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_.current with
+    [ return (result: t_Option_i32) -> {[@expl:take_if ensures] match self_.current with
         | None -> result = None /\ self_.final = None
         | Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv_refmut_i32 b
           /\ cur = b.current
@@ -2413,13 +2448,14 @@ module M_take_if
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec closure1 [@coma:extspec] (self: ()) (x: MutBorrow.t Int32.t) (return (x'0: bool)) = bb0
     [ bb0 = s0
       [ s0 = -{resolve_refmut_i32 x}- s1 | s1 = [ &_ret <- x.current = (2: Int32.t) ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x ]
+    [ & _ret: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -2441,7 +2477,7 @@ module M_take_if
       | Some t -> forall b: MutBorrow.t Int32.t. inv_refmut_i32 b /\ b.current = t -> precondition_closure1 predicate' b
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_.current with
+    [ return (result: t_Option_i32) -> {[@expl:take_if ensures] match self_.current with
         | None -> result = None /\ self_.final = None
         | Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv_refmut_i32 b
           /\ cur = b.current
@@ -2462,6 +2498,7 @@ module M_take_if
       | s3 = [ &_ret <- res ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & x: MutBorrow.t Int32.t = x | & res: bool = Any.any_l () ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
   
@@ -2483,7 +2520,7 @@ module M_take_if
       | Some t -> forall b: MutBorrow.t Int32.t. inv_refmut_i32 b /\ b.current = t -> precondition_closure2 predicate' b
       end}
     any
-    [ return (result: t_Option_i32) -> {match self_.current with
+    [ return (result: t_Option_i32) -> {[@expl:take_if ensures] match self_.current with
         | None -> result = None /\ self_.final = None
         | Some cur -> exists b: MutBorrow.t Int32.t, res: bool. inv_refmut_i32 b
           /\ cur = b.current
@@ -2591,34 +2628,35 @@ module M_copied_cloned
   type t_Option_ref_i32 = None'0 | Some'0 Int32.t
   
   let rec as_ref_i32 (self_: t_Option_i32) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {self_ = None -> result = None'0}
-      {self_ = None \/ (exists r: Int32.t. result = Some'0 r /\ self_ = Some r)}
+    [ return (result: t_Option_ref_i32) -> {([@expl:as_ref ensures #0] self_ = None -> result = None'0)
+      /\ ([@expl:as_ref ensures #1] self_ = None \/ (exists r: Int32.t. result = Some'0 r /\ self_ = Some r))}
       (! return {result}) ]
   
   let rec copied_i32 (self_: t_Option_ref_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:copied ensures] match self_ with
         | None'0 -> result = None
         | Some'0 s -> result = Some s
         end}
       (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   type t_Option_refmut_i32 = None'1 | Some'1 (MutBorrow.t Int32.t)
   
   let rec as_mut_i32 (self_: MutBorrow.t t_Option_i32) (return (x: t_Option_refmut_i32)) = any
-    [ return (result: t_Option_refmut_i32) -> {self_.current = None -> result = None'1 /\ self_.final = None}
-      {self_.current = None
+    [ return (result: t_Option_refmut_i32) -> {([@expl:as_mut ensures #0] self_.current = None
+        -> result = None'1 /\ self_.final = None)
+      /\ ([@expl:as_mut ensures #1] self_.current = None
       \/ (exists r: MutBorrow.t Int32.t. result = Some'1 r
-        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final))}
+        /\ self_.current = Some (r.current) /\ self_.final = Some (r.final)))}
       (! return {result}) ]
   
   let rec copied_i32'0 (self_: t_Option_refmut_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:copied ensures] match self_ with
         | None'1 -> result = None
         | Some'1 s -> result = Some (s.current) /\ s.final = s.current
         end}
@@ -2685,10 +2723,10 @@ module M_copied_cloned
       = (postcondition_clone self args res /\ self = res_state)
   
   let rec clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = self_} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   let rec cloned_i32 (self_: t_Option_ref_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match { f0 = self_; f1 = result } with
+    [ return (result: t_Option_i32) -> {[@expl:cloned ensures] match { f0 = self_; f1 = result } with
         | {f0 = None'0; f1 = None} -> true
         | {f0 = Some'0 s; f1 = Some r} -> postcondition_clone () s r
         | _ -> false
@@ -2698,7 +2736,7 @@ module M_copied_cloned
   type tup2_Option_refmut_i32_Option_i32 = { f0'0: t_Option_refmut_i32; f1'0: t_Option_i32 }
   
   let rec cloned_i32'0 (self_: t_Option_refmut_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match { f0'0 = self_; f1'0 = result } with
+    [ return (result: t_Option_i32) -> {[@expl:cloned ensures] match { f0'0 = self_; f1'0 = result } with
         | {f0'0 = None'1; f1'0 = None} -> true
         | {f0'0 = Some'1 s; f1'0 = Some r} -> postcondition_clone () s.current r /\ s.final = s.current
         | _ -> false
@@ -2832,7 +2870,7 @@ module M_zip_unzip
   meta "rewrite_def" predicate resolve_Option_i32
   
   let rec zip_i32 (self_: t_Option_i32) (other: t_Option_bool) (return (x: t_Option_tup2_i32_bool)) = any
-    [ return (result: t_Option_tup2_i32_bool) -> {match { f0'0 = self_; f1'0 = other } with
+    [ return (result: t_Option_tup2_i32_bool) -> {[@expl:zip ensures] match { f0'0 = self_; f1'0 = other } with
         | {f0'0 = None} -> result = None'1 /\ resolve_Option_bool other
         | {f1'0 = None'0} -> result = None'1 /\ resolve_Option_i32 self_
         | {f0'0 = Some t; f1'0 = Some'0 u} -> result = Some'1 { f0 = t; f1 = u }
@@ -2870,12 +2908,12 @@ module M_zip_unzip
   meta "rewrite_def" function deep_model_ref_Option_tup2_i32_bool
   
   let rec eq_Option_tup2_i32_bool (self_: t_Option_tup2_i32_bool) (rhs: t_Option_tup2_i32_bool) (return (x: bool)) = any
-    [ return (result: bool) -> {result
+    [ return (result: bool) -> {[@expl:eq ensures] result
       = (deep_model_ref_Option_tup2_i32_bool self_ = deep_model_ref_Option_tup2_i32_bool rhs)}
       (! return {result}) ]
   
   let rec unzip_i32 (self_: t_Option_tup2_i32_bool) (return (x: tup2_Option_i32_Option_bool)) = any
-    [ return (result: tup2_Option_i32_Option_bool) -> {match self_ with
+    [ return (result: tup2_Option_i32_Option_bool) -> {[@expl:unzip ensures] match self_ with
         | None'1 -> result = { f0'0 = None; f1'0 = None'0 }
         | Some'1 {f0 = t; f1 = u} -> result = { f0'0 = Some t; f1'0 = Some'0 u }
         end}
@@ -2895,7 +2933,8 @@ module M_zip_unzip
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   function deep_model_Option_bool [@inline:trivial] (self: t_Option_bool) : t_Option_bool = match self with
@@ -2911,7 +2950,8 @@ module M_zip_unzip
   meta "rewrite_def" function deep_model_ref_Option_bool
   
   let rec eq_Option_bool (self_: t_Option_bool) (rhs: t_Option_bool) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_bool self_ = deep_model_ref_Option_bool rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_bool self_ = deep_model_ref_Option_bool rhs)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -3048,7 +3088,7 @@ module M_transpose
   type t_Result_Option_i32_bool = Ok'0 t_Option_i32 | Err'0 bool
   
   let rec transpose_i32 (self_: t_Option_Result_i32_bool) (return (x: t_Result_Option_i32_bool)) = any
-    [ return (result: t_Result_Option_i32_bool) -> {match self_ with
+    [ return (result: t_Result_Option_i32_bool) -> {[@expl:transpose ensures] match self_ with
         | None -> result = Ok'0 (None'0)
         | Some (Ok ok) -> result = Ok'0 (Some'0 ok)
         | Some (Err err) -> result = Err'0 err
@@ -3057,7 +3097,7 @@ module M_transpose
   
   let rec unwrap_Option_i32 (self_: t_Result_Option_i32_bool) (return (x: t_Option_i32)) =
     {[@expl:unwrap requires] exists t: t_Option_i32. self_ = Ok'0 t}
-    any [ return (result: t_Option_i32) -> {Ok'0 result = self_} (! return {result}) ]
+    any [ return (result: t_Option_i32) -> {[@expl:unwrap ensures] Ok'0 result = self_} (! return {result}) ]
   
   type t_Option_Int = None'1 | Some'1 int
   
@@ -3077,12 +3117,13 @@ module M_transpose
   meta "rewrite_def" function deep_model_ref_Option_i32
   
   let rec eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
   
   let rec unwrap_err_Option_i32 (self_: t_Result_Option_i32_bool) (return (x: bool)) =
     {[@expl:unwrap_err requires] exists e: bool. self_ = Err'0 e}
-    any [ return (result: bool) -> {Err'0 result = self_} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:unwrap_err ensures] Err'0 result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -3149,15 +3190,15 @@ module M_flatten
   type t_Option_Option_i32 = None'0 | Some'0 t_Option_i32
   
   let rec flatten_i32 (self_: t_Option_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self_ = None'0 -> result = None}
-      {self_ = None'0 \/ self_ = Some'0 result}
+    [ return (result: t_Option_i32) -> {([@expl:flatten ensures #0] self_ = None'0 -> result = None)
+      /\ ([@expl:flatten ensures #1] self_ = None'0 \/ self_ = Some'0 result)}
       (! return {result}) ]
   
   let rec is_none_i32 (self_: t_Option_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec unwrap_i32 (self_: t_Option_i32) (return (x: Int32.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int32.t) -> {Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -3213,7 +3254,7 @@ module M_resolve
   
   let rec closure1 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_i32 _0}- s1 | s1 = [ &_ret <- true ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & _0: MutBorrow.t Int32.t = _0 ]
+    [ & _ret: bool = Any.any_l () | & _0: MutBorrow.t Int32.t = _0 ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -3235,7 +3276,7 @@ module M_resolve
       | Some t -> precondition_closure1 f t
       end}
     any
-    [ return (result: bool) -> {match self_ with
+    [ return (result: bool) -> {[@expl:is_some_and ensures] match self_ with
         | None -> result = false
         | Some t -> postcondition_once_closure1 f t result
         end}
@@ -3257,17 +3298,19 @@ module M_resolve
         end
   
   let rec and_refmut_i32 (self_: t_Option_refmut_i32) (optb: t_Option_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {self_ = None -> result = None'0 /\ resolve_Option_i32 optb}
-      {self_ = None \/ result = optb /\ resolve_Option_refmut_i32 self_}
+    [ return (result: t_Option_i32) -> {([@expl:and ensures #0] self_ = None
+        -> result = None'0 /\ resolve_Option_i32 optb)
+      /\ ([@expl:and ensures #1] self_ = None \/ result = optb /\ resolve_Option_refmut_i32 self_)}
       (! return {result}) ]
   
   let rec or_refmut_i32 (self_: t_Option_refmut_i32) (optb: t_Option_refmut_i32) (return (x: t_Option_refmut_i32)) = any
-    [ return (result: t_Option_refmut_i32) -> {self_ = None -> result = optb}
-      {self_ = None \/ result = self_ /\ resolve_Option_refmut_i32 optb}
+    [ return (result: t_Option_refmut_i32) -> {([@expl:or ensures #0] self_ = None -> result = optb)
+      /\ ([@expl:or ensures #1] self_ = None \/ result = self_ /\ resolve_Option_refmut_i32 optb)}
       (! return {result}) ]
   
   let rec closure0 [@coma:extspec] (self: ()) (_0: MutBorrow.t Int32.t) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ]
+    [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -3289,7 +3332,7 @@ module M_resolve
       | Some t -> precondition_closure0 predicate' t
       end}
     any
-    [ return (result: t_Option_refmut_i32) -> {match self_ with
+    [ return (result: t_Option_refmut_i32) -> {[@expl:filter ensures] match self_ with
         | None -> result = None
         | Some t -> match result with
           | None -> postcondition_once_closure0 predicate' t false /\ resolve_refmut_i32 t
@@ -3302,7 +3345,7 @@ module M_resolve
   
   let rec xor_refmut_i32 (self_: t_Option_refmut_i32) (optb: t_Option_refmut_i32) (return (x: t_Option_refmut_i32)) =
     any
-    [ return (result: t_Option_refmut_i32) -> {match { f0 = self_; f1 = optb } with
+    [ return (result: t_Option_refmut_i32) -> {[@expl:xor ensures] match { f0 = self_; f1 = optb } with
         | {f0 = None; f1 = None} -> result = None
         | {f0 = Some t1; f1 = Some t2} -> result = None /\ resolve_refmut_i32 t1 /\ resolve_refmut_i32 t2
         | {f0 = Some t; f1 = None} -> result = Some t
@@ -3312,11 +3355,11 @@ module M_resolve
   
   let rec insert_refmut_i32 (self_: MutBorrow.t t_Option_refmut_i32) (value: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
-    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
-        | Some t -> resolve_refmut_i32 t
-        | None -> true
-        end}
-      {result.current = value /\ self_.final = Some (result.final)}
+    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {([@expl:insert ensures #0] match self_.current with
+          | Some t -> resolve_refmut_i32 t
+          | None -> true
+          end)
+      /\ ([@expl:insert ensures #1] result.current = value /\ self_.final = Some (result.final))}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
@@ -3325,7 +3368,7 @@ module M_resolve
   
   let rec get_or_insert_refmut_i32 (self_: MutBorrow.t t_Option_refmut_i32) (value: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
-    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {match self_.current with
+    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[@expl:get_or_insert ensures] match self_.current with
         | None -> result.current = value /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current)
         /\ self_.final = Some (result.final) /\ resolve_refmut_i32 value
@@ -3340,7 +3383,7 @@ module M_resolve
   
   let rec zip_refmut_i32 (self_: t_Option_refmut_i32) (other: t_Option_i32) (return (x: t_Option_tup2_refmut_i32_i32)) =
     any
-    [ return (result: t_Option_tup2_refmut_i32_i32) -> {match { f0'1 = self_; f1'1 = other } with
+    [ return (result: t_Option_tup2_refmut_i32_i32) -> {[@expl:zip ensures] match { f0'1 = self_; f1'1 = other } with
         | {f0'1 = None} -> result = None'1 /\ resolve_Option_i32 other
         | {f1'1 = None'0} -> result = None'1 /\ resolve_Option_refmut_i32 self_
         | {f0'1 = Some t; f1'1 = Some'0 u} -> result = Some'1 { f0'0 = t; f1'0 = u }
@@ -3361,7 +3404,7 @@ module M_resolve
         end
   
   let rec copied_i32 (self_: t_Option_refmut_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match self_ with
+    [ return (result: t_Option_i32) -> {[@expl:copied ensures] match self_ with
         | None -> result = None'0
         | Some s -> result = Some'0 (s.current) /\ s.final = s.current
         end}
@@ -3426,10 +3469,10 @@ module M_resolve
       = (postcondition_clone self args res /\ self = res_state)
   
   let rec clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {result = self_} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
   
   let rec cloned_i32 (self_: t_Option_refmut_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {match { f0'1 = self_; f1'1 = result } with
+    [ return (result: t_Option_i32) -> {[@expl:cloned ensures] match { f0'1 = self_; f1'1 = result } with
         | {f0'1 = None; f1'1 = None'0} -> true
         | {f0'1 = Some s; f1'1 = Some'0 r} -> postcondition_clone () s.current r /\ s.final = s.current
         | _ -> false

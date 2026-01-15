@@ -42,8 +42,8 @@ module M_reborrow_tuple
       | s3 = -{resolve_refmut_T x}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: tup2_refmut_T_u32 = Any.any_l () | & x: MutBorrow.t t_T = x | & _4: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: tup2_refmut_T_u32) -> {[@expl:reborrow_tuple result type invariant] inv_tup2_refmut_T_u32 result}
-      {[@expl:reborrow_tuple ensures] result.f0.current = x.current}
+    [ return (result: tup2_refmut_T_u32) -> {([@expl:reborrow_tuple result type invariant] inv_tup2_refmut_T_u32 result)
+      /\ ([@expl:reborrow_tuple ensures] result.f0.current = x.current)}
       (! return {result}) ]
 end
 module M_test
@@ -55,7 +55,8 @@ module M_test
   type tup2_refmut_i32_u32 = { f0: MutBorrow.t Int32.t; f1: UInt32.t }
   
   let rec reborrow_tuple_i32 (x: MutBorrow.t Int32.t) (return (x'0: tup2_refmut_i32_u32)) = any
-    [ return (result: tup2_refmut_i32_u32) -> {result.f0.current = x.current} (! return {result}) ]
+    [ return (result: tup2_refmut_i32_u32) -> {[@expl:reborrow_tuple ensures] result.f0.current = x.current}
+      (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   

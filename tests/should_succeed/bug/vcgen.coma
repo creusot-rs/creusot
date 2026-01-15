@@ -1,6 +1,6 @@
 module M_set_max
   use set.Fset
-  use mach.int.Int
+  use int.Int
   
   predicate contains_Int [@inline:trivial] (self: Fset.fset int) (e: int) = Fset.mem e self
   
@@ -25,17 +25,18 @@ module M_set_max
   goal vc_set_max: not Fset.is_empty s
     -> (let x = Fset.pick s in let s'0 = remove_Int s x in if Fset.is_empty s'0 then
       let result = x in ([@expl:set_max ensures #0] contains_Int s result)
-      && ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+      /\ ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
     else
       (([@expl:set_max requires] not Fset.is_empty s'0)
         /\ well_founded_relation_Int (Fset.cardinal s) (Fset.cardinal s'0))
-      /\ (contains_Int s'0 (set_max s'0) && (forall o: int. contains_Int s'0 o -> o <= set_max s'0)
+      /\ (([@expl:set_max ensures #0] contains_Int s'0 (set_max s'0))
+        /\ ([@expl:set_max ensures #1] forall o: int. contains_Int s'0 o -> o <= set_max s'0)
       -> (let rec' = set_max s'0 in if x >= rec' then
         let result = x in ([@expl:set_max ensures #0] contains_Int s result)
-        && ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+        /\ ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
       else
         let result = rec' in ([@expl:set_max ensures #0] contains_Int s result)
-        && ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+        /\ ([@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
       ))
     )
 end

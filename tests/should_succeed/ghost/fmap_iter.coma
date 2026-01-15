@@ -1,10 +1,10 @@
 module M_complicated_identity
   use map.Map
-  use mach.int.Int
   use map.Const
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.Int
   
   type t_FMap_K_V
   
@@ -14,9 +14,9 @@ module M_complicated_identity
   
   type t_Option_V = None | Some t_V
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -79,16 +79,21 @@ module M_complicated_identity
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
   let rec new_K (return (x: t_FMap_K_V)) = any
-    [ return (result: t_FMap_K_V) -> {inv_Ghost_FMap_K_V result} {is_empty_K result} (! return {result}) ]
+    [ return (result: t_FMap_K_V) -> {([@expl:new result type invariant] inv_Ghost_FMap_K_V result)
+      /\ ([@expl:new ensures] is_empty_K result)}
+      (! return {result}) ]
   
   let rec into_inner_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMap_K_V)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_FMap_K_V self}
-    any [ return (result: t_FMap_K_V) -> {inv_FMap_K_V result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_FMap_K_V) -> {([@expl:into_inner result type invariant] inv_FMap_K_V result)
+      /\ ([@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
   
   type t_FMapIter_K_V
   
@@ -99,8 +104,8 @@ module M_complicated_identity
   let rec into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMapIter_K_V)) =
     {[@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
     any
-    [ return (result: t_FMapIter_K_V) -> {inv_FMapIter_K_V result}
-      {view_FMapIter_K_V result = self}
+    [ return (result: t_FMapIter_K_V) -> {([@expl:into_iter result type invariant] inv_FMapIter_K_V result)
+      /\ ([@expl:into_iter ensures] view_FMapIter_K_V result = self)}
       (! return {result}) ]
   
   type tup2_K_V = { f0: t_K; f1: t_V }
@@ -163,8 +168,8 @@ module M_complicated_identity
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -172,12 +177,12 @@ module M_complicated_identity
   let rec next_FMapIter_K_V (self: MutBorrow.t t_FMapIter_K_V) (return (x: t_Option_tup2_K_V)) =
     {[@expl:next 'self' type invariant] inv_refmut_FMapIter_K_V self}
     any
-    [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result}
-      {match result with
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:next result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_FMapIter_K_V self
         | Some'0 {f0 = k; f1 = v} -> produces_FMapIter_K_V self.current (Seq.singleton { f0 = k; f1 = v }) self.final
         /\ view_FMapIter_K_V self.current = insert_K (view_FMapIter_K_V self.final) k v
-        end}
+        end)}
       (! return {result}) ]
   
   predicate resolve_refmut_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = _1.final = _1.current
@@ -227,13 +232,13 @@ module M_complicated_identity
         end
   
   let rec insert_ghost_K (self: MutBorrow.t t_FMap_K_V) (key: t_K) (value: t_V) (return (x: t_Option_V)) =
-    {[@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
-    {[@expl:insert_ghost 'key' type invariant] inv_K key}
-    {[@expl:insert_ghost 'value' type invariant] inv_V value}
+    {([@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_K_V self)
+    /\ ([@expl:insert_ghost 'key' type invariant] inv_K key)
+    /\ ([@expl:insert_ghost 'value' type invariant] inv_V value)}
     any
-    [ return (result: t_Option_V) -> {inv_Option_V result}
-      {self.final = insert_K self.current key value}
-      {result = get_K self.current key}
+    [ return (result: t_Option_V) -> {([@expl:insert_ghost result type invariant] inv_Option_V result)
+      /\ ([@expl:insert_ghost ensures #0] self.final = insert_K self.current key value)
+      /\ ([@expl:insert_ghost ensures #1] result = get_K self.current key)}
       (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
@@ -263,7 +268,10 @@ module M_complicated_identity
       -> resolve_FMapIter_K_V x
   
   let rec new_FMap_K_V (x: t_FMap_K_V) (return (x'0: t_FMap_K_V)) = {[@expl:new 'x' type invariant] inv_FMap_K_V x}
-    any [ return (result: t_FMap_K_V) -> {inv_Ghost_FMap_K_V result} {result = x} (! return {result}) ]
+    any
+    [ return (result: t_FMap_K_V) -> {([@expl:new result type invariant] inv_Ghost_FMap_K_V result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -293,28 +301,28 @@ module M_complicated_identity
         (! [ &variant_old_bb9 <- len - Seq.length produced ] s0)
         [ s0 = MutBorrow.borrow_mut <t_FMapIter_K_V> {iter}
             (fun (_bor: MutBorrow.t t_FMapIter_K_V) ->
-              [ &_39 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
+              [ &_41 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
               [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_FMapIter_K_V iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_FMapIter_K_V> {_39.current} {MutBorrow.get_id _39}
+        | s1 = MutBorrow.borrow_final <t_FMapIter_K_V> {_41.current} {MutBorrow.get_id _41}
             (fun (_bor: MutBorrow.t t_FMapIter_K_V) ->
-              [ &_38 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
-              [ &_39 <- { _39 with current = _bor.final } ] s2) [ _ck -> (! {inv_FMapIter_K_V _39.current} any) ]
-        | s2 = next_FMapIter_K_V {_38} (fun (_x: t_Option_tup2_K_V) -> [ &_37 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_K_V _39} any) ]
-        | s4 = -{resolve_refmut_FMapIter_K_V _39}- s5
-        | s5 = any [ br0 -> {_37 = None'0} (! bb14) | br1 (x0: tup2_K_V) -> {_37 = Some'0 x0} (! bb15) ] ]
+              [ &_40 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
+              [ &_41 <- { _41 with current = _bor.final } ] s2) [ _ck -> (! {inv_FMapIter_K_V _41.current} any) ]
+        | s2 = next_FMapIter_K_V {_40} (fun (_x: t_Option_tup2_K_V) -> [ &_39 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_K_V _41} any) ]
+        | s4 = -{resolve_refmut_FMapIter_K_V _41}- s5
+        | s5 = any [ br0 -> {_39 = None'0} (! bb14) | br1 (x0: tup2_K_V) -> {_39 = Some'0 x0} (! bb15) ] ]
         [ bb15 = s0
-          [ s0 = elim_Some {_37} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_39} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &k <- __creusot_proc_iter_elem.f0 ] s3
           | s3 = [ &v <- __creusot_proc_iter_elem.f1 ] s4
           | s4 = MutBorrow.borrow_mut <t_FMap_K_V> {result}
               (fun (_bor: MutBorrow.t t_FMap_K_V) ->
-                [ &_49 <- _bor ] -{inv_FMap_K_V _bor.final}-
+                [ &_52 <- _bor ] -{inv_FMap_K_V _bor.final}-
                 [ &result <- _bor.final ] s5) [ _ck -> (! {inv_FMap_K_V result} any) ]
-          | s5 = insert_ghost_K {_49} {k} {v} (fun (_x: t_Option_V) -> [ &_48 <- _x ] s6)
-          | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_V _48} any) ]
-          | s7 = -{resolve_Option_V _48}- s8
+          | s5 = insert_ghost_K {_52} {k} {v} (fun (_x: t_Option_V) -> [ &_51 <- _x ] s6)
+          | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_V _51} any) ]
+          | s7 = -{resolve_Option_V _51}- s8
           | s8 = bb9 ] ] ]
     | bb14 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_FMapIter_K_V iter} any) ]
@@ -332,26 +340,26 @@ module M_complicated_identity
     | & _15: t_FMap_K_V = Any.any_l ()
     | & iter_old: t_FMapIter_K_V = Any.any_l ()
     | & produced: Seq.seq tup2_K_V = Any.any_l ()
-    | & _37: t_Option_tup2_K_V = Any.any_l ()
-    | & _38: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
-    | & _39: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
+    | & _39: t_Option_tup2_K_V = Any.any_l ()
+    | & _40: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
+    | & _41: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
     | & __creusot_proc_iter_elem: tup2_K_V = Any.any_l ()
     | & k: t_K = Any.any_l ()
     | & v: t_V = Any.any_l ()
-    | & _48: t_Option_V = Any.any_l ()
-    | & _49: MutBorrow.t t_FMap_K_V = Any.any_l ()
+    | & _51: t_Option_V = Any.any_l ()
+    | & _52: MutBorrow.t t_FMap_K_V = Any.any_l ()
     | & variant_old_bb9: int = Any.any_l () ])
-    [ return (result: t_FMap_K_V) -> {[@expl:complicated_identity result type invariant] inv_Ghost_FMap_K_V result}
-      {[@expl:complicated_identity ensures] result = m}
+    [ return (result: t_FMap_K_V) -> {([@expl:complicated_identity result type invariant] inv_Ghost_FMap_K_V result)
+      /\ ([@expl:complicated_identity ensures] result = m)}
       (! return {result}) ]
 end
 module M_merge_fmaps
   use map.Map
-  use mach.int.Int
   use seq.Seq
   use creusot.prelude.MutBorrow
   use map.Const
   use creusot.prelude.Any
+  use int.Int
   
   type t_FMap_K_V
   
@@ -365,9 +373,9 @@ module M_merge_fmaps
   
   type t_K
   
-  function view_FMap_K_V (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (view_FMap_K_V self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K
   
@@ -435,7 +443,10 @@ module M_merge_fmaps
   
   let rec into_inner_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMap_K_V)) =
     {[@expl:into_inner 'self' type invariant] inv_Ghost_FMap_K_V self}
-    any [ return (result: t_FMap_K_V) -> {inv_FMap_K_V result} {result = self} (! return {result}) ]
+    any
+    [ return (result: t_FMap_K_V) -> {([@expl:into_inner result type invariant] inv_FMap_K_V result)
+      /\ ([@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
   
   function len_K (self: t_FMap_K_V) : int
   
@@ -450,8 +461,8 @@ module M_merge_fmaps
   let rec into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMapIter_K_V)) =
     {[@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
     any
-    [ return (result: t_FMapIter_K_V) -> {inv_FMapIter_K_V result}
-      {view_FMapIter_K_V result = self}
+    [ return (result: t_FMapIter_K_V) -> {([@expl:into_iter result type invariant] inv_FMapIter_K_V result)
+      /\ ([@expl:into_iter ensures] view_FMapIter_K_V result = self)}
       (! return {result}) ]
   
   type tup2_K_V = { f0'1: t_K; f1'1: t_V }
@@ -518,7 +529,7 @@ module M_merge_fmaps
   
   axiom empty_K_spec: len_K empty_K = 0
   
-  axiom empty_K_spec'0: view_FMap_K_V empty_K = Const.const (None)
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
@@ -526,8 +537,8 @@ module M_merge_fmaps
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. view_FMap_K_V (insert_K self k v)
-      = Map.set (view_FMap_K_V self) k (Some v)
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
   
   axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
@@ -535,13 +546,13 @@ module M_merge_fmaps
   let rec next_FMapIter_K_V (self: MutBorrow.t t_FMapIter_K_V) (return (x: t_Option_tup2_K_V)) =
     {[@expl:next 'self' type invariant] inv_refmut_FMapIter_K_V self}
     any
-    [ return (result: t_Option_tup2_K_V) -> {inv_Option_tup2_K_V result}
-      {match result with
+    [ return (result: t_Option_tup2_K_V) -> {([@expl:next result type invariant] inv_Option_tup2_K_V result)
+      /\ ([@expl:next ensures] match result with
         | None'0 -> completed_FMapIter_K_V self
         | Some'0 {f0'1 = k; f1'1 = v} -> produces_FMapIter_K_V self.current (Seq.singleton { f0'1 = k;
                                                                                              f1'1 = v }) self.final
         /\ view_FMapIter_K_V self.current = insert_K (view_FMapIter_K_V self.final) k v
-        end}
+        end)}
       (! return {result}) ]
   
   predicate resolve_refmut_FMapIter_K_V [@inline:trivial] (_1: MutBorrow.t t_FMapIter_K_V) = _1.final = _1.current
@@ -591,13 +602,13 @@ module M_merge_fmaps
         end
   
   let rec insert_ghost_K (self: MutBorrow.t t_FMap_K_V) (key: t_K) (value: t_V) (return (x: t_Option_V)) =
-    {[@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
-    {[@expl:insert_ghost 'key' type invariant] inv_K key}
-    {[@expl:insert_ghost 'value' type invariant] inv_V value}
+    {([@expl:insert_ghost 'self' type invariant] inv_refmut_FMap_K_V self)
+    /\ ([@expl:insert_ghost 'key' type invariant] inv_K key)
+    /\ ([@expl:insert_ghost 'value' type invariant] inv_V value)}
     any
-    [ return (result: t_Option_V) -> {inv_Option_V result}
-      {self.final = insert_K self.current key value}
-      {result = get_K self.current key}
+    [ return (result: t_Option_V) -> {([@expl:insert_ghost result type invariant] inv_Option_V result)
+      /\ ([@expl:insert_ghost ensures #0] self.final = insert_K self.current key value)
+      /\ ([@expl:insert_ghost ensures #1] result = get_K self.current key)}
       (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
@@ -627,15 +638,18 @@ module M_merge_fmaps
       -> resolve_FMapIter_K_V x
   
   let rec new_FMap_K_V (x: t_FMap_K_V) (return (x'0: t_FMap_K_V)) = {[@expl:new 'x' type invariant] inv_FMap_K_V x}
-    any [ return (result: t_FMap_K_V) -> {inv_Ghost_FMap_K_V result} {result = x} (! return {result}) ]
+    any
+    [ return (result: t_FMap_K_V) -> {([@expl:new result type invariant] inv_Ghost_FMap_K_V result)
+      /\ ([@expl:new ensures] result = x)}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec merge_fmaps_K (m1: t_FMap_K_V) (m2: t_FMap_K_V) (return (x: t_FMap_K_V)) =
-    {[@expl:merge_fmaps 'm1' type invariant] inv_Ghost_FMap_K_V m1}
-    {[@expl:merge_fmaps 'm2' type invariant] inv_Ghost_FMap_K_V m2}
+    {([@expl:merge_fmaps 'm1' type invariant] inv_Ghost_FMap_K_V m1)
+    /\ ([@expl:merge_fmaps 'm2' type invariant] inv_Ghost_FMap_K_V m2)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &merge <- merge_K m1 m2 (fun (__0: tup2_V_V) -> let {f0 = v1} = __0 in v1) ] s1
@@ -656,28 +670,28 @@ module M_merge_fmaps
         (! [ &variant_old_bb8 <- len - Seq.length produced ] s0)
         [ s0 = MutBorrow.borrow_mut <t_FMapIter_K_V> {iter}
             (fun (_bor: MutBorrow.t t_FMapIter_K_V) ->
-              [ &_42 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
+              [ &_44 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
               [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_FMapIter_K_V iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_FMapIter_K_V> {_42.current} {MutBorrow.get_id _42}
+        | s1 = MutBorrow.borrow_final <t_FMapIter_K_V> {_44.current} {MutBorrow.get_id _44}
             (fun (_bor: MutBorrow.t t_FMapIter_K_V) ->
-              [ &_41 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
-              [ &_42 <- { _42 with current = _bor.final } ] s2) [ _ck -> (! {inv_FMapIter_K_V _42.current} any) ]
-        | s2 = next_FMapIter_K_V {_41} (fun (_x: t_Option_tup2_K_V) -> [ &_40 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_K_V _42} any) ]
-        | s4 = -{resolve_refmut_FMapIter_K_V _42}- s5
-        | s5 = any [ br0 -> {_40 = None'0} (! bb13) | br1 (x0: tup2_K_V) -> {_40 = Some'0 x0} (! bb14) ] ]
+              [ &_43 <- _bor ] -{inv_FMapIter_K_V _bor.final}-
+              [ &_44 <- { _44 with current = _bor.final } ] s2) [ _ck -> (! {inv_FMapIter_K_V _44.current} any) ]
+        | s2 = next_FMapIter_K_V {_43} (fun (_x: t_Option_tup2_K_V) -> [ &_42 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_K_V _44} any) ]
+        | s4 = -{resolve_refmut_FMapIter_K_V _44}- s5
+        | s5 = any [ br0 -> {_42 = None'0} (! bb13) | br1 (x0: tup2_K_V) -> {_42 = Some'0 x0} (! bb14) ] ]
         [ bb14 = s0
-          [ s0 = elim_Some {_40} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_42} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &k <- __creusot_proc_iter_elem.f0'1 ] s3
           | s3 = [ &v <- __creusot_proc_iter_elem.f1'1 ] s4
           | s4 = MutBorrow.borrow_mut <t_FMap_K_V> {result}
               (fun (_bor: MutBorrow.t t_FMap_K_V) ->
-                [ &_52 <- _bor ] -{inv_FMap_K_V _bor.final}-
+                [ &_55 <- _bor ] -{inv_FMap_K_V _bor.final}-
                 [ &result <- _bor.final ] s5) [ _ck -> (! {inv_FMap_K_V result} any) ]
-          | s5 = insert_ghost_K {_52} {k} {v} (fun (_x: t_Option_V) -> [ &_51 <- _x ] s6)
-          | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_V _51} any) ]
-          | s7 = -{resolve_Option_V _51}- s8
+          | s5 = insert_ghost_K {_55} {k} {v} (fun (_x: t_Option_V) -> [ &_54 <- _x ] s6)
+          | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_V _54} any) ]
+          | s7 = -{resolve_Option_V _54}- s8
           | s8 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_FMapIter_K_V iter} any) ]
@@ -695,16 +709,16 @@ module M_merge_fmaps
     | & _18: t_FMap_K_V = Any.any_l ()
     | & iter_old: t_FMapIter_K_V = Any.any_l ()
     | & produced: Seq.seq tup2_K_V = Any.any_l ()
-    | & _40: t_Option_tup2_K_V = Any.any_l ()
-    | & _41: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
-    | & _42: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
+    | & _42: t_Option_tup2_K_V = Any.any_l ()
+    | & _43: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
+    | & _44: MutBorrow.t t_FMapIter_K_V = Any.any_l ()
     | & __creusot_proc_iter_elem: tup2_K_V = Any.any_l ()
     | & k: t_K = Any.any_l ()
     | & v: t_V = Any.any_l ()
-    | & _51: t_Option_V = Any.any_l ()
-    | & _52: MutBorrow.t t_FMap_K_V = Any.any_l ()
+    | & _54: t_Option_V = Any.any_l ()
+    | & _55: MutBorrow.t t_FMap_K_V = Any.any_l ()
     | & variant_old_bb8: int = Any.any_l () ])
-    [ return (result: t_FMap_K_V) -> {[@expl:merge_fmaps result type invariant] inv_Ghost_FMap_K_V result}
-      {[@expl:merge_fmaps ensures] result = merge_K m1 m2 (fun (__0: tup2_V_V) -> let {f0 = v1} = __0 in v1)}
+    [ return (result: t_FMap_K_V) -> {([@expl:merge_fmaps result type invariant] inv_Ghost_FMap_K_V result)
+      /\ ([@expl:merge_fmaps ensures] result = merge_K m1 m2 (fun (__0: tup2_V_V) -> let {f0 = v1} = __0 in v1))}
       (! return {result}) ]
 end

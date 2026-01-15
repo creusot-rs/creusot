@@ -101,13 +101,13 @@ module M_inc_max_repeat
   use creusot.int.UInt32
   use seq.Seq
   use creusot.prelude.MutBorrow
-  use mach.int.Int
   use creusot.prelude.Any
+  use int.Int
   
   type t_Range_u32 = { start: UInt32.t; end': UInt32.t }
   
   let rec into_iter_Range_u32 (self_: t_Range_u32) (return (x: t_Range_u32)) = any
-    [ return (result: t_Range_u32) -> {result = self_} (! return {result}) ]
+    [ return (result: t_Range_u32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -142,7 +142,7 @@ module M_inc_max_repeat
     resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
   
   let rec next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:next ensures] match result with
         | None -> completed_Range_u32 self_
         | Some v -> produces_Range_u32 self_.current (Seq.singleton v) self_.final
         end}
@@ -206,7 +206,7 @@ module M_inc_max_repeat
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {if UInt32.ge ma.current mb.current then
+    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -240,37 +240,37 @@ module M_inc_max_repeat
         \/ UInt32.t'int b >= UInt32.t'int a + Seq.length produced}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_u32> {iter}
-            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_35 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_u32> {_35.current} {MutBorrow.get_id _35}
-            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s2)
-        | s2 = next_Range_u32 {_34} (fun (_x: t_Option_u32) -> [ &_33 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_u32 _35}- s4
-        | s4 = any [ br0 -> {_33 = None} (! bb9) | br1 (x0: UInt32.t) -> {_33 = Some x0} (! bb10) ] ]
+            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_37 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_u32> {_37.current} {MutBorrow.get_id _37}
+            (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_36 <- _bor ] [ &_37 <- { _37 with current = _bor.final } ] s2)
+        | s2 = next_Range_u32 {_36} (fun (_x: t_Option_u32) -> [ &_35 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_u32 _37}- s4
+        | s4 = any [ br0 -> {_35 = None} (! bb9) | br1 (x0: UInt32.t) -> {_35 = Some x0} (! bb10) ] ]
         [ bb10 = s0
-          [ s0 = elim_Some {_33} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_35} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = MutBorrow.borrow_mut <UInt32.t> {a}
-              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_44 <- _bor ] [ &a <- _bor.final ] s3)
+              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_47 <- _bor ] [ &a <- _bor.final ] s3)
           | s3 = MutBorrow.borrow_mut <UInt32.t> {b}
-              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_46 <- _bor ] [ &b <- _bor.final ] s4)
-          | s4 = MutBorrow.borrow_final <UInt32.t> {_44.current} {MutBorrow.get_id _44}
-              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_43 <- _bor ] [ &_44 <- { _44 with current = _bor.final } ] s5)
-          | s5 = MutBorrow.borrow_final <UInt32.t> {_46.current} {MutBorrow.get_id _46}
-              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_45 <- _bor ] [ &_46 <- { _46 with current = _bor.final } ] s6)
-          | s6 = take_max {_43} {_45} (fun (_x: MutBorrow.t UInt32.t) -> [ &mc <- _x ] s7)
-          | s7 = -{resolve_refmut_u32 _46}- s8
-          | s8 = -{resolve_refmut_u32 _44}- s9
+              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_49 <- _bor ] [ &b <- _bor.final ] s4)
+          | s4 = MutBorrow.borrow_final <UInt32.t> {_47.current} {MutBorrow.get_id _47}
+              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_46 <- _bor ] [ &_47 <- { _47 with current = _bor.final } ] s5)
+          | s5 = MutBorrow.borrow_final <UInt32.t> {_49.current} {MutBorrow.get_id _49}
+              (fun (_bor: MutBorrow.t UInt32.t) -> [ &_48 <- _bor ] [ &_49 <- { _49 with current = _bor.final } ] s6)
+          | s6 = take_max {_46} {_48} (fun (_x: MutBorrow.t UInt32.t) -> [ &mc <- _x ] s7)
+          | s7 = -{resolve_refmut_u32 _49}- s8
+          | s8 = -{resolve_refmut_u32 _47}- s9
           | s9 = UInt32.add {mc.current} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &mc <- { mc with current = _x } ] s10)
           | s10 = -{resolve_refmut_u32 mc}- s11
           | s11 = bb4 ] ] ]
     | bb9 = s0
-      [ s0 = UInt32.add {b} {n} (fun (_x: UInt32.t) -> [ &_51 <- _x ] s1)
-      | s1 = [ &_49 <- UInt32.ge a _51 ] s2
-      | s2 = any [ br0 -> {_49 = false} (! bb14) | br1 -> {_49} (! bb17) ] ]
+      [ s0 = UInt32.add {b} {n} (fun (_x: UInt32.t) -> [ &_54 <- _x ] s1)
+      | s1 = [ &_52 <- UInt32.ge a _54 ] s2
+      | s2 = any [ br0 -> {_52 = false} (! bb14) | br1 -> {_52} (! bb17) ] ]
     | bb14 = s0
-      [ s0 = UInt32.add {a} {n} (fun (_x: UInt32.t) -> [ &_56 <- _x ] s1)
-      | s1 = [ &_54 <- UInt32.ge b _56 ] s2
-      | s2 = any [ br0 -> {_54 = false} (! bb16) | br1 -> {_54} (! bb17) ] ]
+      [ s0 = UInt32.add {a} {n} (fun (_x: UInt32.t) -> [ &_59 <- _x ] s1)
+      | s1 = [ &_57 <- UInt32.ge b _59 ] s2
+      | s2 = any [ br0 -> {_57 = false} (! bb16) | br1 -> {_57} (! bb17) ] ]
     | bb17 = return {_ret}
     | bb16 = {false} any ]
     [ & _ret: () = Any.any_l ()
@@ -281,17 +281,17 @@ module M_inc_max_repeat
     | & _10: t_Range_u32 = Any.any_l ()
     | & iter_old: t_Range_u32 = Any.any_l ()
     | & produced: Seq.seq UInt32.t = Any.any_l ()
-    | & _33: t_Option_u32 = Any.any_l ()
-    | & _34: MutBorrow.t t_Range_u32 = Any.any_l ()
-    | & _35: MutBorrow.t t_Range_u32 = Any.any_l ()
+    | & _35: t_Option_u32 = Any.any_l ()
+    | & _36: MutBorrow.t t_Range_u32 = Any.any_l ()
+    | & _37: MutBorrow.t t_Range_u32 = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt32.t = Any.any_l ()
     | & mc: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _43: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _44: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _45: MutBorrow.t UInt32.t = Any.any_l ()
     | & _46: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _49: bool = Any.any_l ()
-    | & _51: UInt32.t = Any.any_l ()
-    | & _54: bool = Any.any_l ()
-    | & _56: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _47: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _48: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _49: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _52: bool = Any.any_l ()
+    | & _54: UInt32.t = Any.any_l ()
+    | & _57: bool = Any.any_l ()
+    | & _59: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

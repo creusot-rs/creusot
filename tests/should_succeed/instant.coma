@@ -1,7 +1,7 @@
 module M_test_instant
-  use mach.int.Int
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Instant
   
@@ -12,7 +12,9 @@ module M_test_instant
   axiom view_Instant_spec: forall self: t_Instant. view_Instant self >= 0
   
   let rec now (return (x: t_Instant)) = any
-    [ return (result: t_Instant) -> {inv_Instant result} {view_Instant result >= 0} (! return {result}) ]
+    [ return (result: t_Instant) -> {([@expl:now result type invariant] inv_Instant result)
+      /\ ([@expl:now ensures] view_Instant result >= 0)}
+      (! return {result}) ]
   
   type t_Duration
   
@@ -28,8 +30,8 @@ module M_test_instant
       /\ view_Duration self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
   let rec from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
-    [ return (result: t_Duration) -> {inv_Duration result}
-      {view_Duration result = secs_to_nanos (UInt64.t'int secs)}
+    [ return (result: t_Duration) -> {([@expl:from_secs result type invariant] inv_Duration result)
+      /\ ([@expl:from_secs ensures] view_Duration result = secs_to_nanos (UInt64.t'int secs))}
       (! return {result}) ]
   
   predicate invariant_ref_Instant [@inline:trivial] (self: t_Instant) = inv_Instant self
@@ -42,7 +44,10 @@ module M_test_instant
   
   let rec elapsed (self_: t_Instant) (return (x: t_Duration)) =
     {[@expl:elapsed 'self_' type invariant] inv_ref_Instant self_}
-    any [ return (result: t_Duration) -> {inv_Duration result} {view_Duration result >= 0} (! return {result}) ]
+    any
+    [ return (result: t_Duration) -> {([@expl:elapsed result type invariant] inv_Duration result)
+      /\ ([@expl:elapsed ensures] view_Duration result >= 0)}
+      (! return {result}) ]
   
   predicate invariant_ref_Duration [@inline:trivial] (self: t_Duration) = inv_Duration self
   
@@ -61,10 +66,11 @@ module M_test_instant
   meta "rewrite_def" function deep_model_ref_Duration
   
   let rec ge_Duration (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
-    {[@expl:ge 'self_' type invariant] inv_ref_Duration self_}
-    {[@expl:ge 'other' type invariant] inv_ref_Duration other}
+    {([@expl:ge 'self_' type invariant] inv_ref_Duration self_)
+    /\ ([@expl:ge 'other' type invariant] inv_ref_Duration other)}
     any
-    [ return (result: bool) -> {result = (deep_model_ref_Duration self_ >= deep_model_ref_Duration other)}
+    [ return (result: bool) -> {[@expl:ge ensures] result
+      = (deep_model_ref_Duration self_ >= deep_model_ref_Duration other)}
       (! return {result}) ]
   
   type t_Option_Instant = None | Some t_Instant
@@ -197,89 +203,91 @@ module M_test_instant
       = (cmp_log_Option_Int x y <> Greater)
   
   let rec checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
-    {[@expl:checked_add 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:checked_add 'duration' type invariant] inv_Duration duration}
+    {([@expl:checked_add 'self_' type invariant] inv_ref_Instant self_)
+    /\ ([@expl:checked_add 'duration' type invariant] inv_Duration duration)}
     any
-    [ return (result: t_Option_Instant) -> {inv_Option_Instant result}
-      {view_Duration duration = 0 -> deep_model_Option_Instant result = Some'0 (view_Instant self_)}
-      {view_Duration duration > 0 /\ result <> None
-      -> lt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result)}
+    [ return (result: t_Option_Instant) -> {([@expl:checked_add result type invariant] inv_Option_Instant result)
+      /\ ([@expl:checked_add ensures #0] view_Duration duration = 0
+        -> deep_model_Option_Instant result = Some'0 (view_Instant self_))
+      /\ ([@expl:checked_add ensures #1] view_Duration duration > 0 /\ result <> None
+      -> lt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
   let rec unwrap_Instant (self_: t_Option_Instant) (return (x: t_Instant)) =
-    {[@expl:unwrap 'self_' type invariant] inv_Option_Instant self_}
-    {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: t_Instant) -> {inv_Instant result} {Some result = self_} (! return {result}) ]
+    {([@expl:unwrap 'self_' type invariant] inv_Option_Instant self_) /\ ([@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Instant) -> {([@expl:unwrap result type invariant] inv_Instant result)
+      /\ ([@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
   
   function deep_model_ref_Instant [@inline:trivial] (self: t_Instant) : int = deep_model_Instant self
   
   meta "rewrite_def" function deep_model_ref_Instant
   
   let rec eq_Instant (self_: t_Instant) (rhs: t_Instant) (return (x: bool)) =
-    {[@expl:eq 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:eq 'rhs' type invariant] inv_ref_Instant rhs}
+    {([@expl:eq 'self_' type invariant] inv_ref_Instant self_) /\ ([@expl:eq 'rhs' type invariant] inv_ref_Instant rhs)}
     any
-    [ return (result: bool) -> {result = (deep_model_ref_Instant self_ = deep_model_ref_Instant rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result = (deep_model_ref_Instant self_ = deep_model_ref_Instant rhs)}
       (! return {result}) ]
   
   let rec add_Instant (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
-    {[@expl:add 'self_' type invariant] inv_Instant self_}
-    {[@expl:add 'rhs' type invariant] inv_Duration rhs}
+    {([@expl:add 'self_' type invariant] inv_Instant self_) /\ ([@expl:add 'rhs' type invariant] inv_Duration rhs)}
     any
-    [ return (result: t_Instant) -> {inv_Instant result}
-      {view_Duration rhs = 0 -> view_Instant self_ = view_Instant result}
-      {view_Duration rhs > 0 -> view_Instant self_ < view_Instant result}
+    [ return (result: t_Instant) -> {([@expl:add result type invariant] inv_Instant result)
+      /\ ([@expl:add ensures #0] view_Duration rhs = 0 -> view_Instant self_ = view_Instant result)
+      /\ ([@expl:add ensures #1] view_Duration rhs > 0 -> view_Instant self_ < view_Instant result)}
       (! return {result}) ]
   
   let rec checked_sub (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
-    {[@expl:checked_sub 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:checked_sub 'duration' type invariant] inv_Duration duration}
+    {([@expl:checked_sub 'self_' type invariant] inv_ref_Instant self_)
+    /\ ([@expl:checked_sub 'duration' type invariant] inv_Duration duration)}
     any
-    [ return (result: t_Option_Instant) -> {inv_Option_Instant result}
-      {view_Duration duration = 0 -> deep_model_Option_Instant result = Some'0 (view_Instant self_)}
-      {view_Duration duration > 0 /\ result <> None
-      -> gt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result)}
+    [ return (result: t_Option_Instant) -> {([@expl:checked_sub result type invariant] inv_Option_Instant result)
+      /\ ([@expl:checked_sub ensures #0] view_Duration duration = 0
+        -> deep_model_Option_Instant result = Some'0 (view_Instant self_))
+      /\ ([@expl:checked_sub ensures #1] view_Duration duration > 0 /\ result <> None
+      -> gt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
   let rec sub_Instant (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
-    {[@expl:sub 'self_' type invariant] inv_Instant self_}
-    {[@expl:sub 'rhs' type invariant] inv_Duration rhs}
+    {([@expl:sub 'self_' type invariant] inv_Instant self_) /\ ([@expl:sub 'rhs' type invariant] inv_Duration rhs)}
     any
-    [ return (result: t_Instant) -> {inv_Instant result}
-      {view_Duration rhs = 0 -> view_Instant self_ = view_Instant result}
-      {view_Duration rhs > 0 -> view_Instant self_ > view_Instant result}
+    [ return (result: t_Instant) -> {([@expl:sub result type invariant] inv_Instant result)
+      /\ ([@expl:sub ensures #0] view_Duration rhs = 0 -> view_Instant self_ = view_Instant result)
+      /\ ([@expl:sub ensures #1] view_Duration rhs > 0 -> view_Instant self_ > view_Instant result)}
       (! return {result}) ]
   
   let rec sub_Instant'0 (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) =
-    {[@expl:sub 'self_' type invariant] inv_Instant self_}
-    {[@expl:sub 'other' type invariant] inv_Instant other}
+    {([@expl:sub 'self_' type invariant] inv_Instant self_) /\ ([@expl:sub 'other' type invariant] inv_Instant other)}
     any
-    [ return (result: t_Duration) -> {inv_Duration result}
-      {view_Instant self_ > view_Instant other -> view_Duration result > 0}
-      {view_Instant self_ <= view_Instant other -> view_Duration result = 0}
+    [ return (result: t_Duration) -> {([@expl:sub result type invariant] inv_Duration result)
+      /\ ([@expl:sub ensures #0] view_Instant self_ > view_Instant other -> view_Duration result > 0)
+      /\ ([@expl:sub ensures #1] view_Instant self_ <= view_Instant other -> view_Duration result = 0)}
       (! return {result}) ]
   
   let rec eq_Duration (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) =
-    {[@expl:eq 'self_' type invariant] inv_ref_Duration self_}
-    {[@expl:eq 'rhs' type invariant] inv_ref_Duration rhs}
+    {([@expl:eq 'self_' type invariant] inv_ref_Duration self_)
+    /\ ([@expl:eq 'rhs' type invariant] inv_ref_Duration rhs)}
     any
-    [ return (result: bool) -> {result = (deep_model_ref_Duration self_ = deep_model_ref_Duration rhs)}
+    [ return (result: bool) -> {[@expl:eq ensures] result
+      = (deep_model_ref_Duration self_ = deep_model_ref_Duration rhs)}
       (! return {result}) ]
   
   let rec gt_Duration (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
-    {[@expl:gt 'self_' type invariant] inv_ref_Duration self_}
-    {[@expl:gt 'other' type invariant] inv_ref_Duration other}
+    {([@expl:gt 'self_' type invariant] inv_ref_Duration self_)
+    /\ ([@expl:gt 'other' type invariant] inv_ref_Duration other)}
     any
-    [ return (result: bool) -> {result = (deep_model_ref_Duration self_ > deep_model_ref_Duration other)}
+    [ return (result: bool) -> {[@expl:gt ensures] result
+      = (deep_model_ref_Duration self_ > deep_model_ref_Duration other)}
       (! return {result}) ]
   
   let rec duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
-    {[@expl:duration_since 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:duration_since 'earlier' type invariant] inv_Instant earlier}
+    {([@expl:duration_since 'self_' type invariant] inv_ref_Instant self_)
+    /\ ([@expl:duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
-    [ return (result: t_Duration) -> {inv_Duration result}
-      {view_Instant self_ > view_Instant earlier -> view_Duration result > 0}
-      {view_Instant self_ <= view_Instant earlier -> view_Duration result = 0}
+    [ return (result: t_Duration) -> {([@expl:duration_since result type invariant] inv_Duration result)
+      /\ ([@expl:duration_since ensures #0] view_Instant self_ > view_Instant earlier -> view_Duration result > 0)
+      /\ ([@expl:duration_since ensures #1] view_Instant self_ <= view_Instant earlier -> view_Duration result = 0)}
       (! return {result}) ]
   
   type t_Option_Duration = None'1 | Some'1 t_Duration
@@ -293,12 +301,13 @@ module M_test_instant
         end
   
   let rec checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option_Duration)) =
-    {[@expl:checked_duration_since 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:checked_duration_since 'earlier' type invariant] inv_Instant earlier}
+    {([@expl:checked_duration_since 'self_' type invariant] inv_ref_Instant self_)
+    /\ ([@expl:checked_duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
-    [ return (result: t_Option_Duration) -> {inv_Option_Duration result}
-      {view_Instant self_ >= view_Instant earlier -> result <> None'1}
-      {view_Instant self_ < view_Instant earlier -> result = None'1}
+    [ return (result: t_Option_Duration) ->
+    {([@expl:checked_duration_since result type invariant] inv_Option_Duration result)
+      /\ ([@expl:checked_duration_since ensures #0] view_Instant self_ >= view_Instant earlier -> result <> None'1)
+      /\ ([@expl:checked_duration_since ensures #1] view_Instant self_ < view_Instant earlier -> result = None'1)}
       (! return {result}) ]
   
   predicate invariant_ref_Option_Duration [@inline:trivial] (self: t_Option_Duration) = inv_Option_Duration self
@@ -311,19 +320,21 @@ module M_test_instant
   
   let rec is_some_Duration (self_: t_Option_Duration) (return (x: bool)) =
     {[@expl:is_some 'self_' type invariant] inv_ref_Option_Duration self_}
-    any [ return (result: bool) -> {result = (self_ <> None'1)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_some ensures] result = (self_ <> None'1)} (! return {result}) ]
   
   let rec is_none_Duration (self_: t_Option_Duration) (return (x: bool)) =
     {[@expl:is_none 'self_' type invariant] inv_ref_Option_Duration self_}
-    any [ return (result: bool) -> {result = (self_ = None'1)} (! return {result}) ]
+    any [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None'1)} (! return {result}) ]
   
   let rec saturating_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
-    {[@expl:saturating_duration_since 'self_' type invariant] inv_ref_Instant self_}
-    {[@expl:saturating_duration_since 'earlier' type invariant] inv_Instant earlier}
+    {([@expl:saturating_duration_since 'self_' type invariant] inv_ref_Instant self_)
+    /\ ([@expl:saturating_duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
-    [ return (result: t_Duration) -> {inv_Duration result}
-      {view_Instant self_ > view_Instant earlier -> view_Duration result > 0}
-      {view_Instant self_ <= view_Instant earlier -> view_Duration result = 0}
+    [ return (result: t_Duration) -> {([@expl:saturating_duration_since result type invariant] inv_Duration result)
+      /\ ([@expl:saturating_duration_since ensures #0] view_Instant self_ > view_Instant earlier
+        -> view_Duration result > 0)
+      /\ ([@expl:saturating_duration_since ensures #1] view_Instant self_ <= view_Instant earlier
+      -> view_Duration result = 0)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

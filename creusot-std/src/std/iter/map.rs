@@ -90,7 +90,7 @@ pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, fu
     pearlite! {
         forall<e: I::Item, i: I>
             #[trigger(iter.produces(Seq::singleton(e), i))]
-            iter.produces(Seq::singleton(e), i) ==>
+            inv(e) && iter.produces(Seq::singleton(e), i) ==>
             func.precondition((e,))
     }
 }
@@ -101,6 +101,7 @@ pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F
         forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
             #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
             func.hist_inv(*f) ==>
+            inv(s) && inv(e1) && inv(e2) && inv(f) ==>
             iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).postcondition_mut((e1,), ^f, b) ==>
             (^f).precondition((e2, ))

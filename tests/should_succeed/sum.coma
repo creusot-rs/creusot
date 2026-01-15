@@ -1,9 +1,10 @@
 module M_sum_first_n
   use creusot.int.UInt32
-  use mach.int.Int
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use int.ComputerDivision
+  use int.Int
   
   type t_RangeInclusive_u32
   
@@ -24,16 +25,19 @@ module M_sum_first_n
       -> deep_model_u32 (start_log_RangeInclusive_u32 self) <= deep_model_u32 (end_log_RangeInclusive_u32 self)
   
   let rec new_u32 (start: UInt32.t) (end': UInt32.t) (return (x: t_RangeInclusive_u32)) = any
-    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result}
-      {start_log_RangeInclusive_u32 result = start}
-      {end_log_RangeInclusive_u32 result = end'}
-      {deep_model_u32 start <= deep_model_u32 end' -> not is_empty_log_RangeInclusive_u32 result}
+    [ return (result: t_RangeInclusive_u32) -> {([@expl:new result type invariant] inv_RangeInclusive_u32 result)
+      /\ ([@expl:new ensures #0] start_log_RangeInclusive_u32 result = start)
+      /\ ([@expl:new ensures #1] end_log_RangeInclusive_u32 result = end')
+      /\ ([@expl:new ensures #2] deep_model_u32 start <= deep_model_u32 end'
+      -> not is_empty_log_RangeInclusive_u32 result)}
       (! return {result}) ]
   
   let rec into_iter_RangeInclusive_u32 (self_: t_RangeInclusive_u32) (return (x: t_RangeInclusive_u32)) =
     {[@expl:into_iter 'self_' type invariant] inv_RangeInclusive_u32 self_}
     any
-    [ return (result: t_RangeInclusive_u32) -> {inv_RangeInclusive_u32 result} {result = self_} (! return {result}) ]
+    [ return (result: t_RangeInclusive_u32) -> {([@expl:into_iter result type invariant] inv_RangeInclusive_u32 result)
+      /\ ([@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -81,7 +85,7 @@ module M_sum_first_n
   let rec next_RangeInclusive_u32 (self_: MutBorrow.t t_RangeInclusive_u32) (return (x: t_Option_u32)) =
     {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_u32 self_}
     any
-    [ return (result: t_Option_u32) -> {match result with
+    [ return (result: t_Option_u32) -> {[@expl:next ensures] match result with
         | None -> completed_RangeInclusive_u32 self_
         | Some v -> produces_RangeInclusive_u32 self_.current (Seq.singleton v) self_.final
         end}
@@ -127,18 +131,18 @@ module M_sum_first_n
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_RangeInclusive_u32> {iter}
             (fun (_bor: MutBorrow.t t_RangeInclusive_u32) ->
-              [ &_29 <- _bor ] -{inv_RangeInclusive_u32 _bor.final}-
+              [ &_31 <- _bor ] -{inv_RangeInclusive_u32 _bor.final}-
               [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_RangeInclusive_u32 iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_RangeInclusive_u32> {_29.current} {MutBorrow.get_id _29}
+        | s1 = MutBorrow.borrow_final <t_RangeInclusive_u32> {_31.current} {MutBorrow.get_id _31}
             (fun (_bor: MutBorrow.t t_RangeInclusive_u32) ->
-              [ &_28 <- _bor ] -{inv_RangeInclusive_u32 _bor.final}-
-              [ &_29 <- { _29 with current = _bor.final } ] s2) [ _ck -> (! {inv_RangeInclusive_u32 _29.current} any) ]
-        | s2 = next_RangeInclusive_u32 {_28} (fun (_x: t_Option_u32) -> [ &_27 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_u32 _29} any) ]
-        | s4 = -{resolve_refmut_RangeInclusive_u32 _29}- s5
-        | s5 = any [ br0 -> {_27 = None} (! bb10) | br1 (x0: UInt32.t) -> {_27 = Some x0} (! bb11) ] ]
+              [ &_30 <- _bor ] -{inv_RangeInclusive_u32 _bor.final}-
+              [ &_31 <- { _31 with current = _bor.final } ] s2) [ _ck -> (! {inv_RangeInclusive_u32 _31.current} any) ]
+        | s2 = next_RangeInclusive_u32 {_30} (fun (_x: t_Option_u32) -> [ &_29 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_u32 _31} any) ]
+        | s4 = -{resolve_refmut_RangeInclusive_u32 _31}- s5
+        | s5 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: UInt32.t) -> {_29 = Some x0} (! bb11) ] ]
         [ bb11 = s0
-          [ s0 = elim_Some {_27} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          [ s0 = elim_Some {_29} (fun (r0: UInt32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
           | s3 = UInt32.add {sum} {i} (fun (_x: UInt32.t) -> [ &sum <- _x ] s4)
@@ -155,12 +159,12 @@ module M_sum_first_n
     | & _9: t_RangeInclusive_u32 = Any.any_l ()
     | & iter_old: t_RangeInclusive_u32 = Any.any_l ()
     | & produced: Seq.seq UInt32.t = Any.any_l ()
-    | & _27: t_Option_u32 = Any.any_l ()
-    | & _28: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
-    | & _29: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
+    | & _29: t_Option_u32 = Any.any_l ()
+    | & _30: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
+    | & _31: MutBorrow.t t_RangeInclusive_u32 = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt32.t = Any.any_l ()
     | & i: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@expl:sum_first_n ensures] UInt32.t'int result
-      = Int.div (UInt32.t'int n * (UInt32.t'int n + 1)) 2}
+      = ComputerDivision.div (UInt32.t'int n * (UInt32.t'int n + 1)) 2}
       (! return {result}) ]
 end
