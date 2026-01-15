@@ -44,7 +44,7 @@ pub fn private_invariant<B, I: Iterator, F: FnMut(I::Item) -> Option<B>>(
 /// In a future release this restriction may be lifted or weakened
 #[logic(open, prophetic)]
 pub fn no_precondition<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
-    pearlite! { forall<i: A> f.precondition((i,)) }
+    pearlite! { forall<i: A> inv(i) ==> f.precondition((i,)) }
 }
 
 /// Asserts that the captures of `f` are used immutably

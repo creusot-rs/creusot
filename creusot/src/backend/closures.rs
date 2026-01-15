@@ -1,4 +1,5 @@
 use crate::{
+    backend::ty_inv::inv_call,
     contracts_items::Intrinsic,
     ctx::*,
     naming::name,
@@ -12,7 +13,7 @@ use crate::{
 };
 use itertools::Itertools;
 use rustc_abi::FieldIdx;
-use rustc_hir::def_id::LocalDefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Mutability,
@@ -75,10 +76,12 @@ pub(crate) fn closure_hist_inv<'tcx>(
 
 pub(crate) fn closure_pre<'tcx>(
     ctx: &TranslationCtx<'tcx>,
+    scope: DefId,
     def_id: LocalDefId,
     self_: Term<'tcx>,
     args: Term<'tcx>,
 ) -> Term<'tcx> {
+    let typing_env = ctx.typing_env(def_id.into());
     let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
         unreachable!()
     };
@@ -102,8 +105,9 @@ pub(crate) fn closure_pre<'tcx>(
                     Ty::new_ref(ctx.tcx, ctx.lifetimes.re_erased, self_.ty, Mutability::Mut);
                 let bor_self = Term::var(bor_self_ident, bor_self_ty);
                 self_arg = bor_self.clone();
+                let inv = inv_call(ctx, typing_env, scope, bor_self.clone().fin());
                 k = Some(move |t| {
-                    (bor_self.cur().eq(ctx.tcx, self_))
+                    (bor_self.cur().eq(ctx.tcx, self_).conj(inv.unwrap_or(Term::true_(ctx.tcx))))
                         .implies(t)
                         .forall((bor_self_ident.into(), bor_self_ty))
                 });
@@ -130,7 +134,7 @@ pub(crate) fn closure_pre<'tcx>(
         pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
     }
 
-    normalize(ctx, ctx.typing_env(def_id.into()), pre)
+    normalize(ctx, typing_env, pre)
 }
 
 pub(crate) fn closure_post<'tcx>(

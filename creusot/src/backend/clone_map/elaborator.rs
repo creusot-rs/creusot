@@ -984,7 +984,9 @@ fn precondition_term<'tcx>(
     let args = Term::var(args, subst.type_at(0));
 
     match ty_self.kind() {
-        TyKind::Closure(did, _) => Some(closure_pre(ctx, did.expect_local(), self_, args)),
+        TyKind::Closure(did, _) => {
+            Some(closure_pre(ctx, names.source_id(), did.expect_local(), self_, args))
+        }
         &TyKind::Ref(_, cl, m) => {
             let mut subst_pre = subst.to_vec();
             subst_pre[1] = GenericArg::from(cl);

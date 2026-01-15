@@ -318,21 +318,26 @@ module M_test_filter
   
   predicate immutable_ref_ref_bool (_1: ()) = forall f: (), g: (). hist_inv_closure0 f g -> f = g
   
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  predicate inv_ref_ref_bool [@inline:trivial] (_1: bool) = true
+  
+  meta "rewrite_def" predicate inv_ref_ref_bool
+  
   predicate precondition_closure0 [@inline:trivial] (self: ()) (args: bool) = let b = args in true
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate no_precondition_ref_ref_bool (_1: ()) = forall f: (), i: bool. precondition_closure0 f i
+  predicate no_precondition_ref_ref_bool (_1: ()) =
+    forall f: (), i: bool. inv_closure0 f /\ inv_ref_ref_bool i -> precondition_closure0 f i
   
   predicate precise_ref_ref_bool (_1: ()) =
     forall f1: (), f2: (), i: bool. not (postcondition_mut_closure0 f1 i f2 true
       /\ postcondition_mut_closure0 f1 i f2 false)
   
   function iter_Filter_Iter_bool_closure0 (self: t_Filter_Iter_bool_closure0) : t_Iter_bool
-  
-  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate inv_closure0
   
   function func_Filter_Iter_bool_closure0 (self: t_Filter_Iter_bool_closure0) : ()
   
@@ -718,11 +723,15 @@ module M_test_filter_map
   
   predicate immutable_ref_bool (f: ()) = forall g: (). hist_inv_closure0 f g -> f = g
   
+  predicate inv_ref_bool [@inline:trivial] (_1: bool) = true
+  
+  meta "rewrite_def" predicate inv_ref_bool
+  
   predicate precondition_closure0 [@inline:trivial] (self: ()) (args: bool) = let b = args in true
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate no_precondition_ref_bool (f: ()) = forall i: bool. precondition_closure0 f i
+  predicate no_precondition_ref_bool (f: ()) = forall i: bool. inv_ref_bool i -> precondition_closure0 f i
   
   predicate precise_ref_bool (f1: ()) =
     forall f2: (), i: bool. not ((exists b: bool. postcondition_mut_closure0 f1 i f2 (Some b))

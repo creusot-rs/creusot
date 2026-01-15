@@ -5,7 +5,7 @@ module M_uses_closure
   
   let rec closure0 [@coma:extspec] (self: closure0) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.c0 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & self: closure0 = self ]
+    [ & _ret: bool = Any.any_l () | & self: closure0 = self ] [ return (result: bool) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -34,6 +34,7 @@ module M_multi_arg
   let rec closure0 [@coma:extspec] (self: ()) (a: Int32.t) (b: Int32.t) (return (x: Int32.t)) = bb0
     [ bb0 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & a: Int32.t = a | & b: Int32.t = b ]
+    [ return (result: Int32.t) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -85,6 +86,7 @@ module M_move_closure
           (fun (_x: Int32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
       | s1 = -{resolve_refmut_closure0 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ]
+    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final} return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -196,6 +198,7 @@ module M_move_mut
     | & self: MutBorrow.t closure0 = self
     | & _2: MutBorrow.t UInt32.t = Any.any_l ()
     | & _3: MutBorrow.t UInt32.t = Any.any_l () ]
+    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final} return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   

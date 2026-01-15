@@ -919,6 +919,8 @@ module M_counter
     | & self: MutBorrow.t closure0 = self
     | & x: UInt32.t = x
     | & _prod: Seq.seq UInt32.t = _prod ]
+    [ return (result: UInt32.t) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1002,6 +1004,10 @@ module M_counter
   
   type t_MapInv_Iter_u32_closure0 = { iter: t_Iter_u32; func: closure0; produced: Seq.seq UInt32.t }
   
+  predicate inv_ref_u32 [@inline:trivial] (_1: UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u32
+  
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) =
     let {f0 = x; f1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x _prod
@@ -1016,13 +1022,22 @@ module M_counter
     resolve_refmut_Iter_u32 self /\ Slice64.view (view_Iter_u32 self.current) = (Seq.empty: Seq.seq UInt32.t)
   
   predicate next_precondition_Iter_u32 [@inline:trivial] (iter'0: t_Iter_u32) (func'0: closure0) (produced'0: Seq.seq UInt32.t) =
-    forall e: UInt32.t, i: t_Iter_u32. produces_Iter_u32 iter'0 (Seq.singleton e) i
+    forall e: UInt32.t, i: t_Iter_u32. inv_ref_u32 e /\ produces_Iter_u32 iter'0 (Seq.singleton e) i
       -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_Iter_u32
   
+  predicate inv_Seq_ref_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u32
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
   predicate preservation_Iter_u32 [@inline:trivial] (iter'0: t_Iter_u32) (func'0: closure0) =
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_Iter_u32. hist_inv_closure0 func'0 f.current
+      -> inv_Seq_ref_u32 s /\ inv_ref_u32 e1 /\ inv_ref_u32 e2 /\ inv_refmut_closure0 f
       -> produces_Iter_u32 iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -1057,7 +1072,7 @@ module M_counter
   let rec map_inv_Iter_u32 (self: t_Iter_u32) (func'0: closure0) (return (x: t_MapInv_Iter_u32_closure0)) =
     {([@expl:map_inv 'self' type invariant] inv_Iter_u32 self)
     /\ ([@expl:map_inv requires #0] forall e: UInt32.t, i2: t_Iter_u32. produces_Iter_u32 self (Seq.singleton e) i2
-        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t })
+          /\ inv_ref_u32 e -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt32.t })
     /\ ([@expl:map_inv requires #1] reinitialize_Iter_u32)
     /\ ([@expl:map_inv requires #2] preservation_Iter_u32 self func'0)}
     any

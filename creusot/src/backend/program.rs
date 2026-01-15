@@ -243,28 +243,33 @@ pub(crate) fn to_why<'tcx>(
         body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
     }
 
+    let mut ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
+
     // We remove the barrier around the definition of closures without contracts
     // (automatic inferrence of specifications)
-    if !ctx.is_closure_like(def_id) || ctx.sig(def_id).contract.has_user_contract {
-        let ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
-        let postcond = Expr::assert(sig.contract.ensures_conj(), ret.black_box());
-        body = Expr::Defn(
-            body.black_box().boxed(),
-            false,
-            [Defn {
-                prototype: Prototype {
-                    name: name::return_(),
-                    attrs: vec![],
-                    params: [Param::Term(name::result(), sig.return_ty)].into(),
-                },
-                body: postcond,
-            }]
-            .into(),
-        );
-        body = Expr::assert(sig.contract.requires_conj(), body);
-    } else {
+    if ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract {
         sig.prototype.attrs.push(Attribute::Attr("coma:extspec".into()));
+    } else {
+        body = body.black_box();
+        ret = ret.black_box();
     }
+
+    let postcond = Expr::assert(sig.contract.ensures_conj(), ret);
+    body = Expr::Defn(
+        body.boxed(),
+        false,
+        [Defn {
+            prototype: Prototype {
+                name: name::return_(),
+                attrs: vec![],
+                params: [Param::Term(name::result(), sig.return_ty)].into(),
+            },
+            body: postcond,
+        }]
+        .into(),
+    );
+    body = Expr::assert(sig.contract.requires_conj(), body);
+
     Defn { prototype: sig.prototype, body }
 }
 

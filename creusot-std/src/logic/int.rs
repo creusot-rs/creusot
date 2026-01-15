@@ -1,5 +1,6 @@
 use crate::{
     ghost::Plain,
+    invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     prelude::*,
 };
@@ -356,5 +357,65 @@ impl Neg for Int {
     #[ensures(result == -self)]
     fn neg(self) -> Self {
         panic!()
+    }
+}
+
+struct NatInner(Int);
+
+impl Invariant for NatInner {
+    #[logic]
+    fn invariant(self) -> bool {
+        self.0 >= 0
+    }
+}
+
+impl InhabitedInvariant for NatInner {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self {
+        Self(0)
+    }
+}
+
+/// Natural numbers, i.e., integers that are greater or equal to 0.
+pub struct Nat(Subset<NatInner>);
+
+impl Nat {
+    #[logic]
+    #[ensures(result >= 0)]
+    pub fn to_int(self) -> Int {
+        pearlite! { self.0.inner().0 }
+    }
+
+    #[logic]
+    #[requires(n >= 0)]
+    #[ensures(result.to_int() == n)]
+    pub fn new(n: Int) -> Nat {
+        Nat(Subset::new_logic(NatInner(n)))
+    }
+
+    #[logic(open)]
+    #[ensures(result == (self == other))]
+    pub fn ext_eq(self, other: Self) -> bool {
+        let _ = Subset::<NatInner>::inner_inj;
+        self.to_int() == other.to_int()
+    }
+}
+
+impl AddLogic for Nat {
+    type Output = Self;
+    #[logic]
+    #[ensures(result.to_int() == self.to_int() + other.to_int())]
+    fn add(self, other: Self) -> Self {
+        Self::new(self.to_int() + other.to_int())
+    }
+}
+
+impl MulLogic for Nat {
+    type Output = Self;
+    #[logic]
+    #[ensures(result.to_int() == self.to_int() * other.to_int())]
+    fn mul(self, other: Self) -> Self {
+        Self::new(self.to_int() * other.to_int())
     }
 }

@@ -93,7 +93,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
-                iter.produces(Seq::singleton(e), i) ==>
+                inv(e) && iter.produces(Seq::singleton(e), i) ==>
                 func.precondition((e, Snapshot::new(produced)))
         }
     }
@@ -104,6 +104,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
+                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
                 (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
@@ -115,6 +116,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
+                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
                 (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
@@ -132,6 +134,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     }
 
     #[logic]
+    #[requires(inv(e) && inv(f))]
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]

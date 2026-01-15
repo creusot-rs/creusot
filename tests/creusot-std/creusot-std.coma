@@ -6619,6 +6619,231 @@ module M_logic__int__impl_Clone_for_Int__clone (* <logic::int::Int as std::clone
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ] [ & _ret: int = Any.any_l () | & self: int = self ])
     [ return (result: int) -> {[@expl:clone ensures] result = self} (! return {result}) ]
 end
+module M_logic__int__impl_InhabitedInvariant_for_NatInner__inhabits (* <logic::int::NatInner as invariant::InhabitedInvariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_NatInner = { f0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0 >= 0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function inhabits_NatInner : t_NatInner
+  
+  goal vc_inhabits_NatInner: [@expl:inhabits ensures] invariant_NatInner { f0 = 0 }
+end
+module M_logic__int__impl_Nat__to_int (* logic::int::Nat *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  goal vc_to_int: ([@expl:inner ensures] invariant_NatInner (inner_NatInner self.f0))
+    -> ([@expl:to_int ensures] (inner_NatInner self.f0).f0'0 >= 0)
+end
+module M_logic__int__impl_Nat__new (* logic::int::Nat *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function new_NatInner (x: t_NatInner) : t_Subset_NatInner
+  
+  axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant n : int
+  
+  function new (n: int) : t_Nat
+  
+  goal vc_new: n >= 0
+    -> ([@expl:new_logic requires] invariant_NatInner { f0'0 = n })
+    /\ (([@expl:new_logic ensures] inner_NatInner (new_NatInner { f0'0 = n }) = { f0'0 = n })
+    -> ([@expl:new ensures] to_int { f0 = new_NatInner { f0'0 = n } } = n))
+end
+module M_logic__int__impl_Nat__ext_eq (* logic::int::Nat *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function inner_inj_NatInner (self: t_Subset_NatInner) (other: t_Subset_NatInner) : ()
+  
+  axiom inner_inj_NatInner_spec: forall self: t_Subset_NatInner, other: t_Subset_NatInner. inner_NatInner self
+        = inner_NatInner other -> self = other
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant other : t_Nat
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat)
+  
+  goal vc_ext_eq: ([@expl:to_int ensures] to_int self >= 0)
+    -> ([@expl:to_int ensures] to_int other >= 0)
+    -> ([@expl:ext_eq ensures] (to_int self = to_int other) = (self = other))
+end
+module M_logic__int__impl_AddLogic_for_Nat__add (* <logic::int::Nat as logic::ops::arithmetic::AddLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function new_NatInner (x: t_NatInner) : t_Subset_NatInner
+  
+  axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
+  
+  function new (n: int) : t_Nat = { f0 = new_NatInner { f0'0 = n } }
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant other : t_Nat
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  goal vc_add_Nat: ([@expl:to_int ensures] to_int self >= 0)
+    -> ([@expl:to_int ensures] to_int other >= 0)
+    -> ([@expl:new requires] to_int self + to_int other >= 0)
+    /\ (([@expl:new ensures] to_int (new (to_int self + to_int other)) = to_int self + to_int other)
+    -> ([@expl:add ensures] to_int (new (to_int self + to_int other)) = to_int self + to_int other))
+end
+module M_logic__int__impl_MulLogic_for_Nat__mul (* <logic::int::Nat as logic::ops::arithmetic::MulLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function new_NatInner (x: t_NatInner) : t_Subset_NatInner
+  
+  axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
+  
+  function new (n: int) : t_Nat = { f0 = new_NatInner { f0'0 = n } }
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant other : t_Nat
+  
+  function mul_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  goal vc_mul_Nat: ([@expl:to_int ensures] to_int self >= 0)
+    -> ([@expl:to_int ensures] to_int other >= 0)
+    -> ([@expl:new requires] to_int self * to_int other >= 0)
+    /\ (([@expl:new ensures] to_int (new (to_int self * to_int other)) = to_int self * to_int other)
+    -> ([@expl:mul ensures] to_int (new (to_int self * to_int other)) = to_int self * to_int other))
+end
 module M_logic__ord__impl_OrdLogic_for_ref_T__cmp_le_log (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
   
@@ -15045,6 +15270,795 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
       = Some'1 (Some to_auth'0))
       end)
 end
+module M_logic__ra__int__impl_RA_for_Int__factor (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  constant factor : int
+  
+  function factor_Int (self: int) (factor: int) : t_Option_Int
+  
+  goal vc_factor_Int: [@expl:factor ensures] match Some (self - factor) with
+      | Some c -> op_Int factor c = Some self
+      | None -> false
+      end
+end
+module M_logic__ra__int__impl_RA_for_Int__commutative (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : int
+  
+  constant b : int
+  
+  function commutative_Int (a: int) (b: int) : ()
+  
+  goal vc_commutative_Int: [@expl:commutative ensures] op_Int a b = op_Int b a
+end
+module M_logic__ra__int__impl_RA_for_Int__associative (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function and_then_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Int = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : int
+  
+  constant b : int
+  
+  constant c : int
+  
+  function associative_Int (a: int) (b: int) (c: int) : ()
+  
+  goal vc_associative_Int: [@expl:associative ensures] and_then_Option_Int (op_Int a b) (fun (ab: int) -> op_Int ab c)
+    = and_then_Option_Int (op_Int b c) (fun (bc: int) -> op_Int a bc)
+end
+module M_logic__ra__int__impl_RA_for_Int__core_idemp (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function such_that_Int (p: Map.map int bool) : int
+  
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
+  
+  function unwrap_Option_Int (self: t_Option_Int) : int = match self with
+      | Some x -> x
+      | None -> such_that_Int (fun (__0: int) -> true)
+      end
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  function core_idemp_Int (self: int) : ()
+  
+  goal vc_core_idemp_Int: ([@expl:core_idemp ensures #0] let c = unwrap_Option_Int (core_Int self) in op_Int c c
+      = Some c)
+    /\ ([@expl:core_idemp ensures #1] op_Int (unwrap_Option_Int (core_Int self)) self = Some self)
+end
+module M_logic__ra__int__impl_RA_for_Int__core_is_maximal_idemp (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  function factor_Int [@inline:trivial] (self: int) (factor: int) : t_Option_Int = Some (self - factor)
+  
+  meta "rewrite_def" function factor_Int
+  
+  axiom factor_Int_spec: forall self: int, factor: int. match factor_Int self factor with
+        | Some c -> op_Int factor c = Some self
+        | None -> false
+        end
+  
+  predicate incl_Int (self: int) (other: int) = factor_Int other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  constant i : int
+  
+  function core_is_maximal_idemp_Int (self: int) (i: int) : ()
+  
+  goal vc_core_is_maximal_idemp_Int: op_Int i i = Some i
+    -> op_Int i self = Some self
+    -> ([@expl:core_is_maximal_idemp ensures] match core_Int self with
+      | Some c -> incl_Int i c
+      | None -> false
+      end)
+end
+module M_logic__ra__int__impl_UnitRA_for_Int__unit (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function unit_Int : int
+  
+  goal vc_unit_Int: let result = 0 in [@expl:unit ensures] forall x: int [op_Int x result]. op_Int x result = Some x
+end
+module M_logic__ra__int__impl_UnitRA_for_Int__core_total (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  function core_total_Int (self: int) : int
+  
+  goal vc_core_total_Int: [@expl:core_total ensures] core_Int self = Some 0
+end
+module M_logic__ra__int__impl_UnitRA_for_Int__core_total_idemp (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  function core_total_Int [@inline:trivial] (self: int) : int = 0
+  
+  meta "rewrite_def" function core_total_Int
+  
+  axiom core_total_Int_spec: forall self: int. core_Int self = Some (core_total_Int self)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  function core_total_idemp_Int (self: int) : ()
+  
+  goal vc_core_total_idemp_Int: ([@expl:core_total_idemp ensures #0] op_Int (core_total_Int self) (core_total_Int self)
+      = Some (core_total_Int self))
+    /\ ([@expl:core_total_idemp ensures #1] op_Int (core_total_Int self) self = Some self)
+end
+module M_logic__ra__int__impl_LocalUpdate_for_Int__frame_preserving (* <logic::int::Int as logic::ra::update::LocalUpdate<logic::int::Int>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
+  
+  meta "rewrite_def" predicate premise_Int
+  
+  type t_Option_Option_Int = None'0 | Some'0 t_Option_Int
+  
+  type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
+  
+  function map_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Option_Int = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function op_Option_Int (self: t_Option_Int) (other: t_Option_Int) : t_Option_Option_Int = match { f0 = self;
+                                                                                                    f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_Int (op_Int x y) (fun (z: int) -> Some z)
+      end
+  
+  function commutative_Option_Int (a: t_Option_Int) (b: t_Option_Int) : ()
+  
+  axiom commutative_Option_Int_spec: forall a: t_Option_Int, b: t_Option_Int. op_Option_Int a b = op_Option_Int b a
+  
+  type tup2_Int_Int = { f0'0: int; f1'0: int }
+  
+  function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int =
+    { f0'0 = from_auth + self; f1'0 = from_frag + self }
+  
+  meta "rewrite_def" function update_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  constant from_auth : int
+  
+  constant from_frag : int
+  
+  constant frame : t_Option_Int
+  
+  function frame_preserving_Int (self: int) (from_auth: int) (from_frag: int) (frame: t_Option_Int) : ()
+  
+  goal vc_frame_preserving_Int: premise_Int self from_auth from_frag
+    -> op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+    -> ([@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+    = Some'0 (Some to_auth))
+end
+module M_logic__ra__nat__impl_RA_for_Nat__factor (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant factor : t_Nat
+  
+  function factor_Nat (self: t_Nat) (factor: t_Nat) : t_Option_Nat
+  
+  goal vc_factor_Nat: ([@expl:to_int ensures] to_int self >= 0)
+    -> ([@expl:to_int ensures] to_int factor >= 0)
+    -> (if to_int self >= to_int factor then
+      ([@expl:to_int ensures] to_int self >= 0)
+      -> ([@expl:to_int ensures] to_int factor >= 0)
+      -> ([@expl:new requires] to_int self - to_int factor >= 0)
+      /\ (([@expl:new ensures] to_int (new (to_int self - to_int factor)) = to_int self - to_int factor)
+      -> ([@expl:factor ensures] match Some (new (to_int self - to_int factor)) with
+        | Some c -> op_Nat factor c = Some self
+        | None -> forall c: t_Nat. op_Nat factor c <> Some self
+        end))
+    else
+      [@expl:factor ensures] match None with
+        | Some c -> op_Nat factor c = Some self
+        | None -> forall c: t_Nat. op_Nat factor c <> Some self
+        end
+    )
+end
+module M_logic__ra__nat__impl_RA_for_Nat__eq (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant other : t_Nat
+  
+  predicate eq_Nat (self: t_Nat) (other: t_Nat)
+  
+  goal vc_eq_Nat: ([@expl:ext_eq ensures] ext_eq self other = (self = other))
+    -> ([@expl:eq ensures] ext_eq self other = (self = other))
+end
+module M_logic__ra__nat__impl_RA_for_Nat__commutative (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Nat
+  
+  constant b : t_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : ()
+  
+  goal vc_commutative_Nat: [@expl:commutative ensures] op_Nat a b = op_Nat b a
+end
+module M_logic__ra__nat__impl_RA_for_Nat__associative (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function and_then_Option_Nat (self: t_Option_Nat) (f: Map.map t_Nat t_Option_Nat) : t_Option_Nat = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Nat
+  
+  constant b : t_Nat
+  
+  constant c : t_Nat
+  
+  function associative_Nat (a: t_Nat) (b: t_Nat) (c: t_Nat) : ()
+  
+  goal vc_associative_Nat: [@expl:associative ensures] and_then_Option_Nat (op_Nat a b) (fun (ab: t_Nat) -> op_Nat ab c)
+    = and_then_Option_Nat (op_Nat b c) (fun (bc: t_Nat) -> op_Nat a bc)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__core_idemp (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  predicate index_Mapping_Nat_bool [@inline:trivial] (self: Map.map t_Nat bool) (a: t_Nat) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Nat_bool
+  
+  function such_that_Nat (p: Map.map t_Nat bool) : t_Nat
+  
+  axiom such_that_Nat_spec: forall p: Map.map t_Nat bool. (exists x: t_Nat. index_Mapping_Nat_bool p x)
+      -> index_Mapping_Nat_bool p (such_that_Nat p)
+  
+  function unwrap_Option_Nat (self: t_Option_Nat) : t_Nat = match self with
+      | Some x -> x
+      | None -> such_that_Nat (fun (__0: t_Nat) -> true)
+      end
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  function core_idemp_Nat (self: t_Nat) : ()
+  
+  goal vc_core_idemp_Nat: ([@expl:core_idemp ensures #0] let c = unwrap_Option_Nat (core_Nat self) in op_Nat c c
+      = Some c)
+    /\ ([@expl:core_idemp ensures #1] op_Nat (unwrap_Option_Nat (core_Nat self)) self = Some self)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__core_is_maximal_idemp (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  function factor_Nat [@inline:trivial] (self: t_Nat) (factor: t_Nat) : t_Option_Nat = if to_int self
+    >= to_int factor then
+      Some (new (to_int self - to_int factor))
+    else
+      None
+  
+  
+  meta "rewrite_def" function factor_Nat
+  
+  axiom factor_Nat_spec: forall self: t_Nat, factor: t_Nat. match factor_Nat self factor with
+        | Some c -> op_Nat factor c = Some self
+        | None -> forall c: t_Nat. op_Nat factor c <> Some self
+        end
+  
+  predicate incl_Nat (self: t_Nat) (other: t_Nat) = factor_Nat other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  constant i : t_Nat
+  
+  function core_is_maximal_idemp_Nat (self: t_Nat) (i: t_Nat) : ()
+  
+  goal vc_core_is_maximal_idemp_Nat: op_Nat i i = Some i
+    -> op_Nat i self = Some self
+    -> ([@expl:core_is_maximal_idemp ensures] match core_Nat self with
+      | Some c -> incl_Nat i c
+      | None -> false
+      end)
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__unit (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function unit_Nat : t_Nat
+  
+  goal vc_unit_Nat: ([@expl:new requires] 0 >= 0)
+    /\ (([@expl:new ensures] to_int (new 0) = 0)
+    -> (let result = new 0 in [@expl:unit ensures] forall x: t_Nat [op_Nat x result]. op_Nat x result = Some x))
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  function core_total_Nat (self: t_Nat) : t_Nat
+  
+  goal vc_core_total_Nat: ([@expl:new requires] 0 >= 0)
+    /\ (([@expl:new ensures] to_int (new 0) = 0) -> ([@expl:core_total ensures] core_Nat self = Some (new 0)))
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total_idemp (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  function core_total_Nat [@inline:trivial] (self: t_Nat) : t_Nat = new 0
+  
+  meta "rewrite_def" function core_total_Nat
+  
+  axiom core_total_Nat_spec: forall self: t_Nat. core_Nat self = Some (core_total_Nat self)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  function core_total_idemp_Nat (self: t_Nat) : ()
+  
+  goal vc_core_total_idemp_Nat: ([@expl:core_total_idemp ensures #0] op_Nat (core_total_Nat self) (core_total_Nat self)
+      = Some (core_total_Nat self))
+    /\ ([@expl:core_total_idemp ensures #1] op_Nat (core_total_Nat self) self = Some self)
+end
 module M_logic__ra__option__impl_RA_for_Option_T__factor (* <std::option::Option<T> as logic::ra::RA> *)
   type namespace_other
   
@@ -16227,6 +17241,590 @@ module M_logic__ra__option__impl_LocalUpdate_for_OptionLocalUpdate_U__frame_pres
       -> ([@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_OptionLocalUpdate_U self from_auth from_frag in op_Option_Option_R (Some'0 to_frag) frame
       = Some'1 (Some'0 to_auth)))
       end
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__factor (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant factor : t_PositiveReal
+  
+  function factor_PositiveReal (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
+  
+  goal vc_factor_PositiveReal: ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+    -> ([@expl:to_real ensures] Real.(>) (to_real factor) (FromInt.from_int 0))
+    -> (if Real.(>) (to_real self) (to_real factor) then
+      ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+      -> ([@expl:to_real ensures] Real.(>) (to_real factor) (FromInt.from_int 0))
+      -> ([@expl:new requires] Real.(>) (Real.(-) (to_real self) (to_real factor)) (FromInt.from_int 0))
+      /\ (([@expl:new ensures] to_real (new (Real.(-) (to_real self) (to_real factor)))
+        = Real.(-) (to_real self) (to_real factor))
+      -> ([@expl:factor ensures] match Some (new (Real.(-) (to_real self) (to_real factor))) with
+        | Some c -> op_PositiveReal factor c = Some self
+        | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+        end))
+    else
+      [@expl:factor ensures] match None with
+        | Some c -> op_PositiveReal factor c = Some self
+        | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+        end
+    )
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__eq (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant other : t_PositiveReal
+  
+  predicate eq_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal)
+  
+  goal vc_eq_PositiveReal: ([@expl:ext_eq ensures] ext_eq self other = (self = other))
+    -> ([@expl:eq ensures] ext_eq self other = (self = other))
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__commutative (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_PositiveReal
+  
+  constant b : t_PositiveReal
+  
+  function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+  
+  goal vc_commutative_PositiveReal: [@expl:commutative ensures] op_PositiveReal a b = op_PositiveReal b a
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__associative (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  function and_then_Option_PositiveReal (self: t_Option_PositiveReal) (f: Map.map t_PositiveReal t_Option_PositiveReal) : t_Option_PositiveReal
+   = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_PositiveReal
+  
+  constant b : t_PositiveReal
+  
+  constant c : t_PositiveReal
+  
+  function associative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) (c: t_PositiveReal) : ()
+  
+  goal vc_associative_PositiveReal:
+    [@expl:associative ensures] and_then_Option_PositiveReal (op_PositiveReal a b) (fun (ab: t_PositiveReal) -> op_PositiveReal ab c)
+    = and_then_Option_PositiveReal (op_PositiveReal b c) (fun (bc: t_PositiveReal) -> op_PositiveReal a bc)
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__core_idemp (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  function core_PositiveReal [@inline:trivial] (self: t_PositiveReal) : t_Option_PositiveReal = None
+  
+  meta "rewrite_def" function core_PositiveReal
+  
+  predicate index_Mapping_PositiveReal_bool [@inline:trivial] (self: Map.map t_PositiveReal bool) (a: t_PositiveReal) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_PositiveReal_bool
+  
+  function such_that_PositiveReal (p: Map.map t_PositiveReal bool) : t_PositiveReal
+  
+  axiom such_that_PositiveReal_spec:
+    forall p: Map.map t_PositiveReal bool. (exists x: t_PositiveReal. index_Mapping_PositiveReal_bool p x)
+      -> index_Mapping_PositiveReal_bool p (such_that_PositiveReal p)
+  
+  function unwrap_Option_PositiveReal (self: t_Option_PositiveReal) : t_PositiveReal = match self with
+      | Some x -> x
+      | None -> such_that_PositiveReal (fun (__0: t_PositiveReal) -> true)
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  function core_idemp_PositiveReal (self: t_PositiveReal) : ()
+  
+  goal vc_core_idemp_PositiveReal: core_PositiveReal self <> None
+    -> ([@expl:core_idemp ensures #0] let c = unwrap_Option_PositiveReal (core_PositiveReal self) in op_PositiveReal c c
+      = Some c)
+    /\ ([@expl:core_idemp ensures #1] op_PositiveReal (unwrap_Option_PositiveReal (core_PositiveReal self)) self
+    = Some self)
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__core_is_maximal_idemp (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  function core_PositiveReal [@inline:trivial] (self: t_PositiveReal) : t_Option_PositiveReal = None
+  
+  meta "rewrite_def" function core_PositiveReal
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function factor_PositiveReal [@inline:trivial] (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
+   = if Real.(>) (to_real self) (to_real factor) then Some (new (Real.(-) (to_real self) (to_real factor))) else None
+  
+  meta "rewrite_def" function factor_PositiveReal
+  
+  axiom factor_PositiveReal_spec:
+    forall self: t_PositiveReal, factor: t_PositiveReal. match factor_PositiveReal self factor with
+        | Some c -> op_PositiveReal factor c = Some self
+        | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+        end
+  
+  predicate incl_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) = factor_PositiveReal other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant i : t_PositiveReal
+  
+  function core_is_maximal_idemp_PositiveReal (self: t_PositiveReal) (i: t_PositiveReal) : ()
+  
+  goal vc_core_is_maximal_idemp_PositiveReal: op_PositiveReal i i = Some i
+    -> op_PositiveReal i self = Some self
+    -> ([@expl:core_is_maximal_idemp ensures] match core_PositiveReal self with
+      | Some c -> incl_PositiveReal i c
+      | None -> false
+      end)
 end
 module M_logic__ra__prod__impl_RA_for_tup2_T_U__factor (* <(T, U) as logic::ra::RA> *)
   type namespace_other
@@ -23797,6 +25395,617 @@ module M_logic__real__impl_OrdLogic_for_Real__eq_cmp (* <logic::real::Real as lo
   function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
   
   goal vc_eq_cmp_Real: [@expl:eq_cmp ensures] (x = y) = (cmp_log_Real x y = Equal)
+end
+module M_logic__real__impl_InhabitedInvariant_for_PositiveRealInner__inhabits (* <logic::real::PositiveRealInner as invariant::InhabitedInvariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveRealInner = { f0: Real.real }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0 (FromInt.from_int 0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function inhabits_PositiveRealInner : t_PositiveRealInner
+  
+  goal vc_inhabits_PositiveRealInner: [@expl:inhabits ensures] invariant_PositiveRealInner { f0 = FromInt.from_int 1 }
+end
+module M_logic__real__impl_PositiveReal__to_real (* logic::real::PositiveReal *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  goal vc_to_real: ([@expl:inner ensures] invariant_PositiveRealInner (inner_PositiveRealInner self.f0))
+    -> ([@expl:to_real ensures] Real.(>) (inner_PositiveRealInner self.f0).f0'0 (FromInt.from_int 0))
+end
+module M_logic__real__impl_PositiveReal__new (* logic::real::PositiveReal *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new_PositiveRealInner (x: t_PositiveRealInner) : t_Subset_PositiveRealInner
+  
+  axiom new_PositiveRealInner_spec: forall x: t_PositiveRealInner. invariant_PositiveRealInner x
+      -> inner_PositiveRealInner (new_PositiveRealInner x) = x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant n : Real.real
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  goal vc_new: Real.(>) n (FromInt.from_int 0)
+    -> ([@expl:new_logic requires] invariant_PositiveRealInner { f0'0 = n })
+    /\ (([@expl:new_logic ensures] inner_PositiveRealInner (new_PositiveRealInner { f0'0 = n }) = { f0'0 = n })
+    -> ([@expl:new ensures] to_real { f0 = new_PositiveRealInner { f0'0 = n } } = n))
+end
+module M_logic__real__impl_PositiveReal__ext_eq (* logic::real::PositiveReal *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  function inner_inj_PositiveRealInner (self: t_Subset_PositiveRealInner) (other: t_Subset_PositiveRealInner) : ()
+  
+  axiom inner_inj_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner, other: t_Subset_PositiveRealInner. inner_PositiveRealInner self
+        = inner_PositiveRealInner other -> self = other
+  
+  function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant other : t_PositiveReal
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal)
+  
+  goal vc_ext_eq: ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+    -> ([@expl:to_real ensures] Real.(>) (to_real other) (FromInt.from_int 0))
+    -> ([@expl:ext_eq ensures] (to_real self = to_real other) = (self = other))
+end
+module M_logic__real__impl_AddLogic_for_PositiveReal__add (* <logic::real::PositiveReal as logic::ops::arithmetic::AddLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new_PositiveRealInner (x: t_PositiveRealInner) : t_Subset_PositiveRealInner
+  
+  axiom new_PositiveRealInner_spec: forall x: t_PositiveRealInner. invariant_PositiveRealInner x
+      -> inner_PositiveRealInner (new_PositiveRealInner x) = x
+  
+  function new (n: Real.real) : t_PositiveReal = { f0 = new_PositiveRealInner { f0'0 = n } }
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant other : t_PositiveReal
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  goal vc_add_PositiveReal: ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+    -> ([@expl:to_real ensures] Real.(>) (to_real other) (FromInt.from_int 0))
+    -> ([@expl:new requires] Real.(>) (Real.(+) (to_real self) (to_real other)) (FromInt.from_int 0))
+    /\ (([@expl:new ensures] to_real (new (Real.(+) (to_real self) (to_real other)))
+      = Real.(+) (to_real self) (to_real other))
+    -> ([@expl:add ensures] to_real (new (Real.(+) (to_real self) (to_real other)))
+    = Real.(+) (to_real self) (to_real other)))
+end
+module M_logic__real__impl_MulLogic_for_PositiveReal__mul (* <logic::real::PositiveReal as logic::ops::arithmetic::MulLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new_PositiveRealInner (x: t_PositiveRealInner) : t_Subset_PositiveRealInner
+  
+  axiom new_PositiveRealInner_spec: forall x: t_PositiveRealInner. invariant_PositiveRealInner x
+      -> inner_PositiveRealInner (new_PositiveRealInner x) = x
+  
+  function new (n: Real.real) : t_PositiveReal = { f0 = new_PositiveRealInner { f0'0 = n } }
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant other : t_PositiveReal
+  
+  function mul_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  goal vc_mul_PositiveReal: ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+    -> ([@expl:to_real ensures] Real.(>) (to_real other) (FromInt.from_int 0))
+    -> ([@expl:new requires] Real.(>) (Real.(*) (to_real self) (to_real other)) (FromInt.from_int 0))
+    /\ (([@expl:new ensures] to_real (new (Real.(*) (to_real self) (to_real other)))
+      = Real.(*) (to_real self) (to_real other))
+    -> ([@expl:mul ensures] to_real (new (Real.(*) (to_real self) (to_real other)))
+    = Real.(*) (to_real self) (to_real other)))
+end
+module M_logic__real__impl_DivLogic_for_PositiveReal__div (* <logic::real::PositiveReal as logic::ops::arithmetic::DivLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_Subset_PositiveRealInner
+  
+  type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  type t_PositiveRealInner = { f0'0: Real.real }
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0'0 (FromInt.from_int 0)
+  
+  function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+  
+  axiom inner_PositiveRealInner_spec:
+    forall self: t_Subset_PositiveRealInner. invariant_PositiveRealInner (inner_PositiveRealInner self)
+  
+  function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new_PositiveRealInner (x: t_PositiveRealInner) : t_Subset_PositiveRealInner
+  
+  axiom new_PositiveRealInner_spec: forall x: t_PositiveRealInner. invariant_PositiveRealInner x
+      -> inner_PositiveRealInner (new_PositiveRealInner x) = x
+  
+  function new (n: Real.real) : t_PositiveReal = { f0 = new_PositiveRealInner { f0'0 = n } }
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  constant other : t_PositiveReal
+  
+  function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  goal vc_div_PositiveReal: ([@expl:to_real ensures] Real.(>) (to_real self) (FromInt.from_int 0))
+    -> ([@expl:to_real ensures] Real.(>) (to_real other) (FromInt.from_int 0))
+    -> ([@expl:new requires] Real.(>) (Real.(/) (to_real self) (to_real other)) (FromInt.from_int 0))
+    /\ (([@expl:new ensures] to_real (new (Real.(/) (to_real self) (to_real other)))
+      = Real.(/) (to_real self) (to_real other))
+    -> ([@expl:div ensures] to_real (new (Real.(/) (to_real self) (to_real other)))
+    = Real.(/) (to_real self) (to_real other)))
 end
 module M_logic__seq__impl_Seq_T__map (* logic::seq::Seq<T> *)
   type namespace_other
@@ -37821,9 +40030,20 @@ module M_std__iter__filter__impl_Invariant_for_Filter_I_F__invariant (* <std::it
   
   type t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
@@ -37896,9 +40116,22 @@ module M_std__iter__filter__impl_IteratorSpec_for_Filter_I_F__produces_refl (* <
   
   type t_F
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   function func_Filter_I_F (self: t_Filter_I_F) : t_F
   
@@ -37991,9 +40224,22 @@ module M_std__iter__filter__impl_IteratorSpec_for_Filter_I_F__produces_trans (* 
   
   type t_F
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   function func_Filter_I_F (self: t_Filter_I_F) : t_F
   
@@ -38096,9 +40342,11 @@ module M_std__iter__filter_map__impl_IteratorSpec_for_FilterMap_I_F__produces_re
   
   type t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_Item (f: t_F) = forall i: t_Item. precondition_F f i
+  predicate no_precondition_Item (f: t_F) = forall i: t_Item. inv_Item i -> precondition_F f i
   
   function func_FilterMap_I_F (self: t_FilterMap_I_F) : t_F
   
@@ -38197,9 +40445,11 @@ module M_std__iter__filter_map__impl_IteratorSpec_for_FilterMap_I_F__produces_tr
   
   type t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_Item (f: t_F) = forall i: t_Item. precondition_F f i
+  predicate no_precondition_Item (f: t_F) = forall i: t_Item. inv_Item i -> precondition_F f i
   
   function func_FilterMap_I_F (self: t_FilterMap_I_F) : t_F
   
@@ -38470,6 +40720,7 @@ module M_std__iter__map__impl_Invariant_for_Map_I_F__invariant (* <std::iter::Ma
   
   use seq.Seq
   use creusot.prelude.MutBorrow
+  use mach.int.Int
   
   type t_Map_I_F
   
@@ -38500,10 +40751,12 @@ module M_std__iter__map__impl_Invariant_for_Map_I_F__invariant (* <std::iter::Ma
   
   predicate completed_I (self: MutBorrow.t t_I)
   
+  predicate inv_Item (_1: t_Item)
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
   predicate next_precondition_I [@inline:trivial] (iter: t_I) (func: t_F) =
-    forall e: t_Item, i: t_I [produces_I iter (Seq.singleton e) i]. produces_I iter (Seq.singleton e) i
+    forall e: t_Item, i: t_I [produces_I iter (Seq.singleton e) i]. inv_Item e /\ produces_I iter (Seq.singleton e) i
       -> precondition_F func e
   
   meta "rewrite_def" predicate next_precondition_I
@@ -38538,8 +40791,34 @@ module M_std__iter__map__impl_Invariant_for_Map_I_F__invariant (* <std::iter::Ma
     forall self: t_F, args: t_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
   predicate preservation_I [@inline:trivial] (iter: t_I) (func: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current e1 f.final b]. hist_inv_F func f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current e1 f.final b -> precondition_F f.final e2
   
@@ -39102,12 +41381,31 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
       (! return {result}) ]
   
   predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+    forall e: t_Item, i: t_I. inv_Item e /\ produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_I
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
   predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -39122,6 +41420,7 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
@@ -39137,14 +41436,16 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next (* <std::iter::m
     ()
   
   axiom produces_one_invariant_I_spec:
-    forall self: t_MapInv_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. invariant_MapInv_I_F self
+    forall self: t_MapInv_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. inv_Item e /\ inv_refmut_F f
+      -> invariant_MapInv_I_F self
       -> produces_I self.iter (Seq.singleton e) iter'0
       -> f.current = self.func
       -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
       -> preservation_inv_I iter'0 f.final (Seq.snoc self.produced e)
   
   axiom produces_one_invariant_I_spec'0:
-    forall self: t_MapInv_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. invariant_MapInv_I_F self
+    forall self: t_MapInv_I_F, e: t_Item, r: t_B, f: MutBorrow.t t_F, iter'0: t_I. inv_Item e /\ inv_refmut_F f
+      -> invariant_MapInv_I_F self
       -> produces_I self.iter (Seq.singleton e) iter'0
       -> f.current = self.func
       -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
@@ -39289,6 +41590,7 @@ module M_std__iter__map_inv__impl_MapInv_I_F__preservation_inv (* std::iter::map
   
   use seq.Seq
   use creusot.prelude.MutBorrow
+  use mach.int.Int
   
   type t_I
   
@@ -39329,6 +41631,35 @@ module M_std__iter__map_inv__impl_MapInv_I_F__preservation_inv (* std::iter::map
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
   predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
   function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
@@ -39344,6 +41675,7 @@ module M_std__iter__map_inv__impl_MapInv_I_F__preservation_inv (* std::iter::map
   
   predicate preservation_I [@inline:trivial] (iter: t_I) (func: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -39364,6 +41696,7 @@ module M_std__iter__map_inv__impl_MapInv_I_F__preservation_inv (* std::iter::map
   
   goal vc_preservation_inv_I: [@expl:preservation_inv ensures] produced = (Seq.empty: Seq.seq t_Item)
     -> (forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func f.current
+        -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
         -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
         -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced s } f.final b
         -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced s) e1 })
@@ -39376,6 +41709,7 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   
   use seq.Seq
   use creusot.prelude.MutBorrow
+  use mach.int.Int
   
   type t_I
   
@@ -39386,6 +41720,18 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   type t_MapInv_I_F = { iter: t_I; func: t_F; produced: Seq.seq t_Item }
   
   type t_B
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
   
   predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
@@ -39405,7 +41751,8 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
   predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+    forall e: t_Item, i: t_I. inv_Item e /\ produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_I
   
@@ -39438,8 +41785,26 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
   predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -39454,6 +41819,7 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
@@ -39485,7 +41851,8 @@ module M_std__iter__map_inv__impl_MapInv_I_F__produces_one_invariant (* std::ite
   
   function produces_one_invariant_I (self: t_MapInv_I_F) (e: t_Item) (r: t_B) (f: MutBorrow.t t_F) (iter'0: t_I) : ()
   
-  goal vc_produces_one_invariant_I: invariant_MapInv_I_F self
+  goal vc_produces_one_invariant_I: inv_Item e /\ inv_refmut_F f
+    -> invariant_MapInv_I_F self
     -> produces_I self.iter (Seq.singleton e) iter'0
     -> f.current = self.func
     -> postcondition_mut_F f.current { f0 = e; f1 = self.produced } f.final r
@@ -40715,6 +43082,7 @@ module M_std__iter__trait_IteratorSpec__map_inv
   use seq.Seq
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
+  use mach.int.Int
   
   type t_Item
   
@@ -40730,6 +43098,8 @@ module M_std__iter__trait_IteratorSpec__map_inv
   
   predicate produces_Self (self: t_Self) (visited: Seq.seq t_Item) (o: t_Self)
   
+  predicate inv_Item (_1: t_Item)
+  
   type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
@@ -40737,7 +43107,7 @@ module M_std__iter__trait_IteratorSpec__map_inv
   predicate completed_Self (self: MutBorrow.t t_Self)
   
   predicate next_precondition_Self [@inline:trivial] (iter'0: t_Self) (func'0: t_F) (produced'0: Seq.seq t_Item) =
-    forall e: t_Item, i: t_Self. produces_Self iter'0 (Seq.singleton e) i
+    forall e: t_Item, i: t_Self. inv_Item e /\ produces_Self iter'0 (Seq.singleton e) i
       -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_Self
@@ -40773,8 +43143,34 @@ module M_std__iter__trait_IteratorSpec__map_inv
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
   predicate preservation_Self [@inline:trivial] (iter'0: t_Self) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_Self. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_Self iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -40810,7 +43206,7 @@ module M_std__iter__trait_IteratorSpec__map_inv
   axiom precondition_fndef:
     forall args: tup2_Self_F [precondition_map_inv () args]. (let {f0'0 = self; f1'0 = func'0} = args in inv_Self self
         /\ inv_F func'0
-        /\ (forall e: t_Item, i2: t_Self. produces_Self self (Seq.singleton e) i2
+        /\ (forall e: t_Item, i2: t_Self. produces_Self self (Seq.singleton e) i2 /\ inv_Item e
             -> precondition_F func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item })
         /\ reinitialize_Self /\ preservation_Self self func'0) -> precondition_map_inv () args
   
@@ -40828,7 +43224,7 @@ module M_std__iter__trait_IteratorSpec__map_inv
   let rec map_inv_Self (self: t_Self) (func'0: t_F) (return (x: t_MapInv_Self_F)) =
     {([@expl:map_inv 'self' type invariant] inv_Self self)
     /\ ([@expl:map_inv 'func' type invariant] inv_F func'0)
-    /\ ([@expl:map_inv requires #0] forall e: t_Item, i2: t_Self. produces_Self self (Seq.singleton e) i2
+    /\ ([@expl:map_inv requires #0] forall e: t_Item, i2: t_Self. produces_Self self (Seq.singleton e) i2 /\ inv_Item e
         -> precondition_F func'0 { f0 = e; f1 = Seq.empty: Seq.seq t_Item })
     /\ ([@expl:map_inv requires #1] reinitialize_Self) /\ ([@expl:map_inv requires #2] preservation_Self self func'0)}
     (! bb0
@@ -52260,12 +54656,15 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
   
   predicate completed_I (self: MutBorrow.t t_I)
   
+  predicate inv_Item (_1: t_Item)
+  
   type tup2_Item_Snapshot_Seq_Item = { f0: t_Item; f1: Seq.seq t_Item }
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
   
   predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
-    forall e: t_Item, i: t_I. produces_I iter'0 (Seq.singleton e) i -> precondition_F func'0 { f0 = e; f1 = produced'0 }
+    forall e: t_Item, i: t_I. inv_Item e /\ produces_I iter'0 (Seq.singleton e) i
+      -> precondition_F func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_I
   
@@ -52300,8 +54699,36 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
     forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
   predicate preservation_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -52316,6 +54743,7 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
   
   predicate preservation_inv_I (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
     forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I. hist_inv_F func'0 f.current
+      -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
       -> produces_I iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_F f.current { f0 = e1; f1 = Seq.(++) produced'0 s } f.final b
       -> precondition_F f.final { f0 = e2; f1 = Seq.snoc (Seq.(++) produced'0 s) e1 }
@@ -52328,8 +54756,6 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
     /\ preservation_inv_I self.iter self.func self.produced /\ next_precondition_I self.iter self.func self.produced
   
   predicate inv_I (_1: t_I)
-  
-  predicate inv_F (_1: t_F)
   
   predicate inv_MapInv_I_F (_1: t_MapInv_I_F)
   
@@ -53321,9 +55747,22 @@ module M_std__iter__filter__impl_IteratorSpec_for_Filter_I_F__produces_trans__re
   
   type t_F
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   function func_Filter_I_F (self: t_Filter_I_F) : t_F
   
@@ -53417,9 +55856,22 @@ module M_std__iter__filter__impl_IteratorSpec_for_Filter_I_F__produces_refl__ref
   
   type t_F
   
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. precondition_F f i
+  predicate no_precondition_ref_Item (_1: t_F) =
+    forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
   
   function func_Filter_I_F (self: t_Filter_I_F) : t_F
   
@@ -53510,9 +55962,11 @@ module M_std__iter__filter_map__impl_IteratorSpec_for_FilterMap_I_F__produces_re
   
   type t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_Item (f: t_F) = forall i: t_Item. precondition_F f i
+  predicate no_precondition_Item (f: t_F) = forall i: t_Item. inv_Item i -> precondition_F f i
   
   function func_FilterMap_I_F (self: t_FilterMap_I_F) : t_F
   
@@ -53608,9 +56062,11 @@ module M_std__iter__filter_map__impl_IteratorSpec_for_FilterMap_I_F__produces_tr
   
   type t_Item
   
+  predicate inv_Item (_1: t_Item)
+  
   predicate precondition_F (self: t_F) (args: t_Item)
   
-  predicate no_precondition_Item (f: t_F) = forall i: t_Item. precondition_F f i
+  predicate no_precondition_Item (f: t_F) = forall i: t_Item. inv_Item i -> precondition_F f i
   
   function func_FilterMap_I_F (self: t_FilterMap_I_F) : t_F
   
@@ -56919,6 +59375,177 @@ module M_peano__impl_PartialOrd_for_PeanoInt__partial_cmp__refines (* <peano::Pe
   goal refines: forall self_: t_PeanoInt. forall rhs: t_PeanoInt. forall result: t_Option_Ordering. result
             = Some (cmp_log_PeanoInt self_ rhs)
           -> result = Some (cmp_log_u64 (deep_model_PeanoInt self_) (deep_model_PeanoInt rhs))
+end
+module M_logic__int__impl_InhabitedInvariant_for_NatInner__inhabits__refines (* <logic::int::NatInner as invariant::InhabitedInvariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_NatInner = { f0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0 >= 0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: t_NatInner. invariant_NatInner result -> invariant_NatInner result
+end
+module M_logic__ra__view__impl_InhabitedInvariant_for_ViewInner_R__inhabits__refines (* <logic::ra::view::ViewInner<R> as invariant::InhabitedInvariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Auth
+  
+  type t_Option_Auth = None | Some t_Auth
+  
+  type t_Frag
+  
+  predicate rel_R (a: t_Option_Auth) (f: t_Frag)
+  
+  type t_Option_Frag = None'0 | Some'0 t_Frag
+  
+  function op_Frag (self: t_Frag) (other: t_Frag) : t_Option_Frag
+  
+  function factor_Frag (self: t_Frag) (factor: t_Frag) : t_Option_Frag
+  
+  axiom factor_Frag_spec: forall self: t_Frag, factor: t_Frag. match factor_Frag self factor with
+        | Some'0 c -> op_Frag factor c = Some'0 self
+        | None'0 -> forall c: t_Frag. op_Frag factor c <> Some'0 self
+        end
+  
+  predicate incl_Frag (self: t_Frag) (other: t_Frag) = factor_Frag other self <> None'0
+  
+  function incl_transitive_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) : ()
+  
+  axiom incl_transitive_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag. incl_Frag a b
+      -> incl_Frag b c -> incl_Frag a c
+  
+  function associative_some_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (ab: t_Frag) (bc: t_Frag) : ()
+  
+  axiom associative_some_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, ab: t_Frag, bc: t_Frag. op_Frag a b
+        = Some'0 ab -> op_Frag b c = Some'0 bc -> op_Frag a bc = op_Frag ab c
+  
+  function associative_none_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (bc: t_Frag) : ()
+  
+  axiom associative_none_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, bc: t_Frag. op_Frag a b = None'0
+      -> op_Frag b c = Some'0 bc -> op_Frag a bc = None'0
+  
+  function commutative_Frag (a: t_Frag) (b: t_Frag) : ()
+  
+  axiom commutative_Frag_spec: forall a: t_Frag, b: t_Frag. op_Frag a b = op_Frag b a
+  
+  function incl_op_Frag (self: t_Frag) (other: t_Frag) (comb: t_Frag) : ()
+  
+  axiom incl_op_Frag_spec: forall self: t_Frag, other: t_Frag, comb: t_Frag. op_Frag self other = Some'0 comb
+      -> incl_Frag self comb
+  
+  function core_Frag (self: t_Frag) : t_Option_Frag
+  
+  function core_total_Frag (self: t_Frag) : t_Frag
+  
+  axiom core_total_Frag_spec: forall self: t_Frag. core_Frag self = Some'0 (core_total_Frag self)
+  
+  constant unit_Frag : t_Frag
+  
+  axiom unit_Frag_spec: forall x: t_Frag [op_Frag x unit_Frag]. op_Frag x unit_Frag = Some'0 x
+  
+  constant unit_core_Frag : ()
+  
+  axiom unit_core_Frag_spec: core_total_Frag unit_Frag = unit_Frag
+  
+  constant incl_refl_Frag : ()
+  
+  axiom incl_refl_Frag_spec: forall x: t_Frag. incl_Frag x x
+  
+  function rel_unit_R (a: t_Option_Auth) : ()
+  
+  axiom rel_unit_R_spec: forall a: t_Option_Auth. rel_R a unit_Frag
+  
+  function rel_none_R (a: t_Option_Auth) (f: t_Frag) : ()
+  
+  axiom rel_none_R_spec: forall a: t_Option_Auth, f: t_Frag. rel_R a f -> rel_R (None) f
+  
+  function rel_mono_R (a: t_Option_Auth) (f1: t_Frag) (f2: t_Frag) : ()
+  
+  axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
+  
+  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
+  
+  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: t_ViewInner_R. invariant_ViewInner_R result -> invariant_ViewInner_R result
+end
+module M_logic__real__impl_InhabitedInvariant_for_PositiveRealInner__inhabits__refines (* <logic::real::PositiveRealInner as invariant::InhabitedInvariant> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveRealInner = { f0: Real.real }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : () = ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : () = ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : () = ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = Real.(>) self.f0 (FromInt.from_int 0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: t_PositiveRealInner. invariant_PositiveRealInner result
+      -> invariant_PositiveRealInner result
 end
 module M_logic__ord__impl_OrdLogic_for_ref_T__refl__refines (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
@@ -64831,6 +67458,403 @@ module M_logic__ra__fmap__impl_RA_for_FMap_K_V__eq__refines (* <logic::fmap::FMa
   goal refines: forall self: t_FMap_K_V. forall other: t_FMap_K_V. forall result: bool. result = (self = other)
           -> result = (self = other)
 end
+module M_logic__ra__int__impl_RA_for_Int__core_idemp__refines (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function such_that_Int (p: Map.map int bool) : int
+  
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
+  
+  function unwrap_Option_Int (self: t_Option_Int) : int = match self with
+      | Some x -> x
+      | None -> such_that_Int (fun (__0: int) -> true)
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. core_Int self <> None
+      -> (forall result: (). (let c = unwrap_Option_Int (core_Int self) in op_Int c c = Some c)
+          /\ op_Int (unwrap_Option_Int (core_Int self)) self = Some self
+        -> (let c = unwrap_Option_Int (core_Int self) in op_Int c c = Some c)
+        /\ op_Int (unwrap_Option_Int (core_Int self)) self = Some self)
+end
+module M_logic__ra__int__impl_RA_for_Int__core_is_maximal_idemp__refines (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  function factor_Int [@inline:trivial] (self: int) (factor: int) : t_Option_Int = Some (self - factor)
+  
+  meta "rewrite_def" function factor_Int
+  
+  axiom factor_Int_spec: forall self: int, factor: int. match factor_Int self factor with
+        | Some c -> op_Int factor c = Some self
+        | None -> false
+        end
+  
+  predicate incl_Int (self: int) (other: int) = factor_Int other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. forall i: int. op_Int i i = Some i /\ op_Int i self = Some self
+        -> op_Int i i = Some i
+        /\ op_Int i self = Some self
+        /\ (forall result: (). match core_Int self with
+              | Some c -> incl_Int i c
+              | None -> false
+              end
+          -> match core_Int self with
+            | Some c -> incl_Int i c
+            | None -> false
+            end)
+end
+module M_logic__ra__int__impl_RA_for_Int__commutative__refines (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall a: int. forall b: int. forall result: (). op_Int a b = op_Int b a -> op_Int a b = op_Int b a
+end
+module M_logic__ra__int__impl_RA_for_Int__associative__refines (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function and_then_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Int = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: int. forall b: int. forall c: int. forall result: (). and_then_Option_Int (op_Int a b) (fun (ab: int) -> op_Int ab c)
+              = and_then_Option_Int (op_Int b c) (fun (bc: int) -> op_Int a bc)
+            -> and_then_Option_Int (op_Int a b) (fun (ab: int) -> op_Int ab c)
+            = and_then_Option_Int (op_Int b c) (fun (bc: int) -> op_Int a bc)
+end
+module M_logic__ra__int__impl_RA_for_Int__factor__refines (* <logic::int::Int as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. forall factor: int. forall result: t_Option_Int. match result with
+              | Some c -> op_Int factor c = Some self
+              | None -> false
+              end
+          -> match result with
+            | Some c -> op_Int factor c = Some self
+            | None -> forall c: int. op_Int factor c <> Some self
+            end
+end
+module M_logic__ra__nat__impl_RA_for_Nat__factor__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall factor: t_Nat. forall result: t_Option_Nat. match result with
+              | Some c -> op_Nat factor c = Some self
+              | None -> forall c: t_Nat. op_Nat factor c <> Some self
+              end
+          -> match result with
+            | Some c -> op_Nat factor c = Some self
+            | None -> forall c: t_Nat. op_Nat factor c <> Some self
+            end
+end
+module M_logic__ra__nat__impl_RA_for_Nat__core_is_maximal_idemp__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  function factor_Nat [@inline:trivial] (self: t_Nat) (factor: t_Nat) : t_Option_Nat = if to_int self
+    >= to_int factor then
+      Some (new (to_int self - to_int factor))
+    else
+      None
+  
+  
+  meta "rewrite_def" function factor_Nat
+  
+  axiom factor_Nat_spec: forall self: t_Nat, factor: t_Nat. match factor_Nat self factor with
+        | Some c -> op_Nat factor c = Some self
+        | None -> forall c: t_Nat. op_Nat factor c <> Some self
+        end
+  
+  predicate incl_Nat (self: t_Nat) (other: t_Nat) = factor_Nat other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall i: t_Nat. op_Nat i i = Some i /\ op_Nat i self = Some self
+        -> op_Nat i i = Some i
+        /\ op_Nat i self = Some self
+        /\ (forall result: (). match core_Nat self with
+              | Some c -> incl_Nat i c
+              | None -> false
+              end
+          -> match core_Nat self with
+            | Some c -> incl_Nat i c
+            | None -> false
+            end)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__associative__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function and_then_Option_Nat (self: t_Option_Nat) (f: Map.map t_Nat t_Option_Nat) : t_Option_Nat = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: t_Nat. forall b: t_Nat. forall c: t_Nat. forall result: (). and_then_Option_Nat (op_Nat a b) (fun (ab: t_Nat) -> op_Nat ab c)
+              = and_then_Option_Nat (op_Nat b c) (fun (bc: t_Nat) -> op_Nat a bc)
+            -> and_then_Option_Nat (op_Nat a b) (fun (ab: t_Nat) -> op_Nat ab c)
+            = and_then_Option_Nat (op_Nat b c) (fun (bc: t_Nat) -> op_Nat a bc)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__eq__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall other: t_Nat. forall result: bool. result = (self = other)
+          -> result = (self = other)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__core_idemp__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  use map.Map
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  predicate index_Mapping_Nat_bool [@inline:trivial] (self: Map.map t_Nat bool) (a: t_Nat) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Nat_bool
+  
+  function such_that_Nat (p: Map.map t_Nat bool) : t_Nat
+  
+  axiom such_that_Nat_spec: forall p: Map.map t_Nat bool. (exists x: t_Nat. index_Mapping_Nat_bool p x)
+      -> index_Mapping_Nat_bool p (such_that_Nat p)
+  
+  function unwrap_Option_Nat (self: t_Option_Nat) : t_Nat = match self with
+      | Some x -> x
+      | None -> such_that_Nat (fun (__0: t_Nat) -> true)
+      end
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. core_Nat self <> None
+      -> (forall result: (). (let c = unwrap_Option_Nat (core_Nat self) in op_Nat c c = Some c)
+          /\ op_Nat (unwrap_Option_Nat (core_Nat self)) self = Some self
+        -> (let c = unwrap_Option_Nat (core_Nat self) in op_Nat c c = Some c)
+        /\ op_Nat (unwrap_Option_Nat (core_Nat self)) self = Some self)
+end
+module M_logic__ra__nat__impl_RA_for_Nat__commutative__refines (* <logic::int::Nat as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall a: t_Nat. forall b: t_Nat. forall result: (). op_Nat a b = op_Nat b a -> op_Nat a b = op_Nat b a
+end
 module M_logic__ra__option__impl_RA_for_Option_T__core_idemp__refines (* <std::option::Option<T> as logic::ra::RA> *)
   type namespace_other
   
@@ -65252,6 +68276,484 @@ module M_logic__ra__option__impl_RA_for_Option_T__commutative__refines (* <std::
   
   goal refines: forall a: t_Option_T. forall b: t_Option_T. forall result: (). op_Option_T a b = op_Option_T b a
           -> op_Option_T a b = op_Option_T b a
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__commutative__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall a: t_PositiveReal. forall b: t_PositiveReal. forall result: (). op_PositiveReal a b
+            = op_PositiveReal b a -> op_PositiveReal a b = op_PositiveReal b a
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__factor__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_PositiveReal. forall factor: t_PositiveReal. forall result: t_Option_PositiveReal. match result with
+              | Some c -> op_PositiveReal factor c = Some self
+              | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+              end
+          -> match result with
+            | Some c -> op_PositiveReal factor c = Some self
+            | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+            end
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__associative__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  function and_then_Option_PositiveReal (self: t_Option_PositiveReal) (f: Map.map t_PositiveReal t_Option_PositiveReal) : t_Option_PositiveReal
+   = match self with
+      | None -> None
+      | Some x -> Map.get f x
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: t_PositiveReal. forall b: t_PositiveReal. forall c: t_PositiveReal. forall result: (). and_then_Option_PositiveReal (op_PositiveReal a b) (fun (ab: t_PositiveReal) -> op_PositiveReal ab c)
+              = and_then_Option_PositiveReal (op_PositiveReal b c) (fun (bc: t_PositiveReal) -> op_PositiveReal a bc)
+            -> and_then_Option_PositiveReal (op_PositiveReal a b) (fun (ab: t_PositiveReal) -> op_PositiveReal ab c)
+            = and_then_Option_PositiveReal (op_PositiveReal b c) (fun (bc: t_PositiveReal) -> op_PositiveReal a bc)
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__core_idemp__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  function core_PositiveReal [@inline:trivial] (self: t_PositiveReal) : t_Option_PositiveReal = None
+  
+  meta "rewrite_def" function core_PositiveReal
+  
+  predicate index_Mapping_PositiveReal_bool [@inline:trivial] (self: Map.map t_PositiveReal bool) (a: t_PositiveReal) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_PositiveReal_bool
+  
+  function such_that_PositiveReal (p: Map.map t_PositiveReal bool) : t_PositiveReal
+  
+  axiom such_that_PositiveReal_spec:
+    forall p: Map.map t_PositiveReal bool. (exists x: t_PositiveReal. index_Mapping_PositiveReal_bool p x)
+      -> index_Mapping_PositiveReal_bool p (such_that_PositiveReal p)
+  
+  function unwrap_Option_PositiveReal (self: t_Option_PositiveReal) : t_PositiveReal = match self with
+      | Some x -> x
+      | None -> such_that_PositiveReal (fun (__0: t_PositiveReal) -> true)
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_PositiveReal. core_PositiveReal self <> None
+      -> core_PositiveReal self <> None
+      /\ (forall result: (). (let c = unwrap_Option_PositiveReal (core_PositiveReal self) in op_PositiveReal c c
+            = Some c)
+          /\ op_PositiveReal (unwrap_Option_PositiveReal (core_PositiveReal self)) self = Some self
+        -> (let c = unwrap_Option_PositiveReal (core_PositiveReal self) in op_PositiveReal c c = Some c)
+        /\ op_PositiveReal (unwrap_Option_PositiveReal (core_PositiveReal self)) self = Some self)
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__core_is_maximal_idemp__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  function core_PositiveReal [@inline:trivial] (self: t_PositiveReal) : t_Option_PositiveReal = None
+  
+  meta "rewrite_def" function core_PositiveReal
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function factor_PositiveReal [@inline:trivial] (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
+   = if Real.(>) (to_real self) (to_real factor) then Some (new (Real.(-) (to_real self) (to_real factor))) else None
+  
+  meta "rewrite_def" function factor_PositiveReal
+  
+  axiom factor_PositiveReal_spec:
+    forall self: t_PositiveReal, factor: t_PositiveReal. match factor_PositiveReal self factor with
+        | Some c -> op_PositiveReal factor c = Some self
+        | None -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some self
+        end
+  
+  predicate incl_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) = factor_PositiveReal other self <> None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_PositiveReal. forall i: t_PositiveReal. op_PositiveReal i i = Some i
+          /\ op_PositiveReal i self = Some self
+        -> op_PositiveReal i i = Some i
+        /\ op_PositiveReal i self = Some self
+        /\ (forall result: (). match core_PositiveReal self with
+              | Some c -> incl_PositiveReal i c
+              | None -> false
+              end
+          -> match core_PositiveReal self with
+            | Some c -> incl_PositiveReal i c
+            | None -> false
+            end)
+end
+module M_logic__ra__positive_real__impl_RA_for_PositiveReal__eq__refines (* <logic::real::PositiveReal as logic::ra::RA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_PositiveReal
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_PositiveReal. forall other: t_PositiveReal. forall result: bool. result = (self = other)
+          -> result = (self = other)
 end
 module M_logic__ra__prod__impl_RA_for_tup2_T_U__factor__refines (* <(T, U) as logic::ra::RA> *)
   type namespace_other
@@ -70075,6 +73577,220 @@ module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__core_total_idemp__refines (*
         -> op_FMap_K_V (core_total_FMap_K_V self) (core_total_FMap_K_V self) = Some (core_total_FMap_K_V self)
         /\ op_FMap_K_V (core_total_FMap_K_V self) self = Some self
 end
+module M_logic__ra__int__impl_UnitRA_for_Int__core_total_idemp__refines (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  function core_total_Int [@inline:trivial] (self: int) : int = 0
+  
+  meta "rewrite_def" function core_total_Int
+  
+  axiom core_total_Int_spec: forall self: int. core_Int self = Some (core_total_Int self)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. forall result: (). op_Int (core_total_Int self) (core_total_Int self)
+            = Some (core_total_Int self)
+          /\ op_Int (core_total_Int self) self = Some self
+        -> op_Int (core_total_Int self) (core_total_Int self) = Some (core_total_Int self)
+        /\ op_Int (core_total_Int self) self = Some self
+end
+module M_logic__ra__int__impl_UnitRA_for_Int__unit__refines (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: int. (forall x: int [op_Int x result]. op_Int x result = Some x)
+      -> (forall x: int [op_Int x result]. op_Int x result = Some x)
+end
+module M_logic__ra__int__impl_UnitRA_for_Int__core_total__refines (* <logic::int::Int as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+  
+  meta "rewrite_def" function core_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. forall result: int. core_Int self = Some result -> core_Int self = Some result
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total_idemp__refines (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  function core_total_Nat [@inline:trivial] (self: t_Nat) : t_Nat = new 0
+  
+  meta "rewrite_def" function core_total_Nat
+  
+  axiom core_total_Nat_spec: forall self: t_Nat. core_Nat self = Some (core_total_Nat self)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall result: (). op_Nat (core_total_Nat self) (core_total_Nat self)
+            = Some (core_total_Nat self)
+          /\ op_Nat (core_total_Nat self) self = Some self
+        -> op_Nat (core_total_Nat self) (core_total_Nat self) = Some (core_total_Nat self)
+        /\ op_Nat (core_total_Nat self) self = Some self
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__unit__refines (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: t_Nat. (forall x: t_Nat [op_Nat x result]. op_Nat x result = Some x)
+      -> (forall x: t_Nat [op_Nat x result]. op_Nat x result = Some x)
+end
+module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total__refines (* <logic::int::Nat as logic::ra::UnitRA> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use mach.int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int. n >= 0 -> to_int (new n) = n
+  
+  function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+  
+  meta "rewrite_def" function core_Nat
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall result: t_Nat. core_Nat self = Some result -> core_Nat self = Some result
+end
 module M_logic__ra__option__impl_UnitRA_for_Option_T__core_total__refines (* <std::option::Option<T> as logic::ra::UnitRA> *)
   type namespace_other
   
@@ -71304,6 +75020,69 @@ module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_
               -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some'0 to_frag) frame
               = Some'1 (Some'0 to_auth)))
 end
+module M_logic__ra__int__impl_LocalUpdate_for_Int__frame_preserving__refines (* <logic::int::Int as logic::ra::update::LocalUpdate<logic::int::Int>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use mach.int.Int
+  
+  predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
+  
+  meta "rewrite_def" predicate premise_Int
+  
+  type t_Option_Int = None | Some int
+  
+  type t_Option_Option_Int = None'0 | Some'0 t_Option_Int
+  
+  type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
+  
+  function map_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Option_Int = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function op_Option_Int (self: t_Option_Int) (other: t_Option_Int) : t_Option_Option_Int = match { f0 = self;
+                                                                                                    f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_Int (op_Int x y) (fun (z: int) -> Some z)
+      end
+  
+  function commutative_Option_Int (a: t_Option_Int) (b: t_Option_Int) : ()
+  
+  axiom commutative_Option_Int_spec: forall a: t_Option_Int, b: t_Option_Int. op_Option_Int a b = op_Option_Int b a
+  
+  type tup2_Int_Int = { f0'0: int; f1'0: int }
+  
+  function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int =
+    { f0'0 = from_auth + self; f1'0 = from_frag + self }
+  
+  meta "rewrite_def" function update_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: int. forall from_auth: int. forall from_frag: int. forall frame: t_Option_Int. premise_Int self from_auth from_frag
+              /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_Int self from_auth from_frag
+            /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
 module M_logic__ra__option__impl_LocalUpdate_for_OptionLocalUpdate_U__frame_preserving__refines (* <logic::ra::option::OptionLocalUpdate<U> as logic::ra::update::LocalUpdate<std::option::Option<R>>> *)
   type namespace_other
   
@@ -72139,96 +75918,6 @@ module M_logic__ra__update__impl_LocalUpdate_for_unit__frame_preserving__refines
             /\ (forall result: (). op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
               -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_unit self from_auth from_frag in op_Option_R (Some to_frag) frame
               = Some'0 (Some to_auth)))
-end
-module M_logic__ra__view__impl_InhabitedInvariant_for_ViewInner_R__inhabits__refines (* <logic::ra::view::ViewInner<R> as invariant::InhabitedInvariant> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_Auth
-  
-  type t_Option_Auth = None | Some t_Auth
-  
-  type t_Frag
-  
-  predicate rel_R (a: t_Option_Auth) (f: t_Frag)
-  
-  type t_Option_Frag = None'0 | Some'0 t_Frag
-  
-  function op_Frag (self: t_Frag) (other: t_Frag) : t_Option_Frag
-  
-  function factor_Frag (self: t_Frag) (factor: t_Frag) : t_Option_Frag
-  
-  axiom factor_Frag_spec: forall self: t_Frag, factor: t_Frag. match factor_Frag self factor with
-        | Some'0 c -> op_Frag factor c = Some'0 self
-        | None'0 -> forall c: t_Frag. op_Frag factor c <> Some'0 self
-        end
-  
-  predicate incl_Frag (self: t_Frag) (other: t_Frag) = factor_Frag other self <> None'0
-  
-  function incl_transitive_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) : ()
-  
-  axiom incl_transitive_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag. incl_Frag a b
-      -> incl_Frag b c -> incl_Frag a c
-  
-  function associative_some_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (ab: t_Frag) (bc: t_Frag) : ()
-  
-  axiom associative_some_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, ab: t_Frag, bc: t_Frag. op_Frag a b
-        = Some'0 ab -> op_Frag b c = Some'0 bc -> op_Frag a bc = op_Frag ab c
-  
-  function associative_none_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (bc: t_Frag) : ()
-  
-  axiom associative_none_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, bc: t_Frag. op_Frag a b = None'0
-      -> op_Frag b c = Some'0 bc -> op_Frag a bc = None'0
-  
-  function commutative_Frag (a: t_Frag) (b: t_Frag) : ()
-  
-  axiom commutative_Frag_spec: forall a: t_Frag, b: t_Frag. op_Frag a b = op_Frag b a
-  
-  function incl_op_Frag (self: t_Frag) (other: t_Frag) (comb: t_Frag) : ()
-  
-  axiom incl_op_Frag_spec: forall self: t_Frag, other: t_Frag, comb: t_Frag. op_Frag self other = Some'0 comb
-      -> incl_Frag self comb
-  
-  function core_Frag (self: t_Frag) : t_Option_Frag
-  
-  function core_total_Frag (self: t_Frag) : t_Frag
-  
-  axiom core_total_Frag_spec: forall self: t_Frag. core_Frag self = Some'0 (core_total_Frag self)
-  
-  constant unit_Frag : t_Frag
-  
-  axiom unit_Frag_spec: forall x: t_Frag [op_Frag x unit_Frag]. op_Frag x unit_Frag = Some'0 x
-  
-  constant unit_core_Frag : ()
-  
-  axiom unit_core_Frag_spec: core_total_Frag unit_Frag = unit_Frag
-  
-  constant incl_refl_Frag : ()
-  
-  axiom incl_refl_Frag_spec: forall x: t_Frag. incl_Frag x x
-  
-  function rel_unit_R (a: t_Option_Auth) : ()
-  
-  axiom rel_unit_R_spec: forall a: t_Option_Auth. rel_R a unit_Frag
-  
-  function rel_none_R (a: t_Option_Auth) (f: t_Frag) : ()
-  
-  axiom rel_none_R_spec: forall a: t_Option_Auth, f: t_Frag. rel_R a f -> rel_R (None) f
-  
-  function rel_mono_R (a: t_Option_Auth) (f1: t_Frag) (f2: t_Frag) : ()
-  
-  axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
-  
-  type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
-  
-  predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall result: t_ViewInner_R. invariant_ViewInner_R result -> invariant_ViewInner_R result
 end
 module M_logic__well_founded__impl_WellFounded_for_Int__no_infinite_decreasing_sequence__refines (* <logic::int::Int as logic::well_founded::WellFounded> *)
   type namespace_other

@@ -20,7 +20,14 @@ mod well_founded;
 
 // TODO: do not alias these names. decide either to re-export them, or use a submodule.
 pub use self::{
-    fmap::FMap, fset::FSet, id::Id, int::Int, mapping::Mapping, ord::OrdLogic, seq::Seq, set::Set,
+    fmap::FMap,
+    fset::FSet,
+    id::Id,
+    int::{Int, Nat},
+    mapping::Mapping,
+    ord::OrdLogic,
+    seq::Seq,
+    set::Set,
     well_founded::WellFounded,
 };
 

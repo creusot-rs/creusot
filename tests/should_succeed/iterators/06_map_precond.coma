@@ -1060,9 +1060,14 @@ module M_identity
   
   meta "rewrite_def" predicate hist_inv_closure0
   
-  let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: t_Item) (_1: Seq.seq t_Item) (return (x'0: t_Item)) = bb0
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: t_Item) (_1: Seq.seq t_Item) (return (x'0: t_Item)) =
+    {[@expl:closure 'x' type invariant] inv_Item x}
+    bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_closure0 self}- s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_Item = Any.any_l () | & self: MutBorrow.t () = self | & x: t_Item = x ]
+    [ return (result: t_Item) -> {([@expl:closure result type invariant] inv_Item result)
+      /\ ([@expl:closure hist_inv post] hist_inv_closure0 self.current self.final)}
+      return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1233,6 +1238,8 @@ module M_increment
       [ s0 = -{resolve_refmut_closure0 self}- s1
       | s1 = UInt32.add {x} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: UInt32.t = Any.any_l () | & self: MutBorrow.t () = self | & x: UInt32.t = x ]
+    [ return (result: UInt32.t) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1507,6 +1514,8 @@ module M_counter
     | & self: MutBorrow.t closure0 = self
     | & x: UInt32.t = x
     | & _prod: Seq.seq UInt32.t = _prod ]
+    [ return (result: UInt32.t) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   

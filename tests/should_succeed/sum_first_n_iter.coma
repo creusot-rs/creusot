@@ -68,6 +68,7 @@ module M_sum_first_n_iter
     | & self: MutBorrow.t closure0 = self
     | & x: UInt64.t = x
     | & produced: Seq.seq UInt64.t = produced ]
+    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final} return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -154,6 +155,10 @@ module M_sum_first_n_iter
     func: closure0;
     produced: Seq.seq UInt64.t }
   
+  predicate inv_usize [@inline:trivial] (_1: UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_usize
+  
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) =
     let {f0 = x; f1 = produced'0} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x produced'0
@@ -164,13 +169,23 @@ module M_sum_first_n_iter
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
   predicate next_precondition_RangeInclusive_usize [@inline:trivial] (iter'0: t_RangeInclusive_usize) (func'0: closure0) (produced'0: Seq.seq UInt64.t) =
-    forall e: UInt64.t, i: t_RangeInclusive_usize. produces_RangeInclusive_usize iter'0 (Seq.singleton e) i
+    forall e: UInt64.t, i: t_RangeInclusive_usize. inv_usize e
+        /\ produces_RangeInclusive_usize iter'0 (Seq.singleton e) i
       -> precondition_closure0 func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_RangeInclusive_usize
   
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
   predicate preservation_RangeInclusive_usize [@inline:trivial] (iter'0: t_RangeInclusive_usize) (func'0: closure0) =
     forall s: Seq.seq UInt64.t, e1: UInt64.t, e2: UInt64.t, f: MutBorrow.t closure0, b: (), i: t_RangeInclusive_usize. hist_inv_closure0 func'0 f.current
+      -> inv_Seq_usize s /\ inv_usize e1 /\ inv_usize e2 /\ inv_refmut_closure0 f
       -> produces_RangeInclusive_usize iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_closure0 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure0 f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -207,7 +222,7 @@ module M_sum_first_n_iter
     (return (x: t_MapInv_RangeInclusive_usize_closure0)) =
     {([@expl:map_inv 'self' type invariant] inv_RangeInclusive_usize self)
     /\ ([@expl:map_inv requires #0] forall e: UInt64.t, i2: t_RangeInclusive_usize. produces_RangeInclusive_usize self (Seq.singleton e) i2
-        -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
+          /\ inv_usize e -> precondition_closure0 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
     /\ ([@expl:map_inv requires #1] reinitialize_RangeInclusive_usize)
     /\ ([@expl:map_inv requires #2] preservation_RangeInclusive_usize self func'0)}
     any

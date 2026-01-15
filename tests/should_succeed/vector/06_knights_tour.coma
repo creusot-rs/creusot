@@ -251,6 +251,10 @@ module M_impl_Board__new (* Board *)
   
   type t_MapInv_Range_usize_closure3 = { iter: t_Range_usize; func: closure3; produced: Seq.seq UInt64.t }
   
+  predicate inv_usize [@inline:trivial] (_1: UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_usize
+  
   predicate precondition_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) =
     let {f0 = _0; f1 = _1} = args in true
   
@@ -264,13 +268,22 @@ module M_impl_Board__new (* Board *)
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   predicate next_precondition_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
-    forall e: UInt64.t, i: t_Range_usize. produces_Range_usize iter'0 (Seq.singleton e) i
+    forall e: UInt64.t, i: t_Range_usize. inv_usize e /\ produces_Range_usize iter'0 (Seq.singleton e) i
       -> precondition_closure3 func'0 { f0 = e; f1 = produced'0 }
   
   meta "rewrite_def" predicate next_precondition_Range_usize
   
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
+  
+  predicate inv_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure3
+  
   predicate preservation_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) =
     forall s: Seq.seq UInt64.t, e1: UInt64.t, e2: UInt64.t, f: MutBorrow.t closure3, b: t_Vec_usize_Global, i: t_Range_usize. hist_inv_closure3 func'0 f.current
+      -> inv_Seq_usize s /\ inv_usize e1 /\ inv_usize e2 /\ inv_refmut_closure3 f
       -> produces_Range_usize iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
       -> postcondition_mut_closure3 f.current { f0 = e1; f1 = s } f.final b
       -> precondition_closure3 f.final { f0 = e2; f1 = Seq.snoc s e1 }
@@ -304,7 +317,7 @@ module M_impl_Board__new (* Board *)
   
   let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3) (return (x: t_MapInv_Range_usize_closure3)) =
     {([@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
-        -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
+          /\ inv_usize e -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
     /\ ([@expl:map_inv requires #1] reinitialize_Range_usize)
     /\ ([@expl:map_inv requires #2] preservation_Range_usize self func'0)}
     any

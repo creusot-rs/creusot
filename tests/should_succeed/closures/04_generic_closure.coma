@@ -103,10 +103,12 @@ module M_mapper
   
   predicate resolve_A (_1: t_A)
   
-  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) = bb0
+  let rec closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) =
+    {[@expl:closure '_a' type invariant] inv_A _a}
+    bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_A _a} any) ] | s1 = -{resolve_A _a}- s2 | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & _a: t_A = _a ]
+    [ & _ret: () = Any.any_l () | & _a: t_A = _a ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
