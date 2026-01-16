@@ -119,10 +119,5 @@ where
 #[ensures(forall< i> 0 <= i && i < result@.len() ==> result[i] < n)]
 #[ensures(forall< i> 0 <= i && i < result@.len() ==> v@.contains(result[i]))]
 pub fn less_than(v: Vec<u32>, n: u32) -> Vec<u32> {
-    v.into_iter()
-        .filter(
-            #[ensures(result == (*i < n))]
-            |i| *i < n,
-        )
-        .collect()
+    v.into_iter().filter(|i| *i < n).collect()
 }

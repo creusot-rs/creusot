@@ -604,11 +604,192 @@ module M_less_than
       /\ ([@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
       (! return {result}) ]
   
-  type closure2 = { c0: UInt32.t }
+  type closure0 = { c0: UInt32.t }
   
-  predicate resolve_refmut_closure2 [@inline:trivial] (_1: MutBorrow.t closure2) = _1.final = _1.current
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_closure2
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 [@inline:trivial] (self: closure0) (result_state: closure0) = result_state.c0 = self.c0
+  
+  meta "rewrite_def" predicate hist_inv_closure0
+  
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (i: UInt32.t) (return (x: bool)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- UInt32.lt i self.current.c0 ] s2
+      | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & self: MutBorrow.t closure0 = self | & i: UInt32.t = i ]
+    [ return (result: bool) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: UInt32.t) (result: bool) =
+    let i = args in exists e: closure0. exists bor_self: MutBorrow.t closure0. bor_self.current = self
+        /\ bor_self.final = e /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0) (args: UInt32.t) (result_state: closure0) (result: bool) =
+    let i = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: closure0) (args: UInt32.t) (res: bool) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0, args: UInt32.t, res: bool. postcondition_once_closure0 self args res
+      = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
+  
+  axiom hist_inv_trans_closure0_spec: forall self: closure0, b: closure0, c: closure0. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: closure0) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: closure0. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: closure0) (args: UInt32.t) (res_state: closure0) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0, args: UInt32.t, res_state: closure0, res: bool. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  type t_Filter_IntoIter_u32_Global_closure0
+  
+  predicate immutable_ref_u32 (_1: closure0) = forall f: closure0, g: closure0. hist_inv_closure0 f g -> f = g
+  
+  predicate inv_closure0 [@inline:trivial] (_1: closure0) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  predicate inv_ref_u32 [@inline:trivial] (_1: UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u32
+  
+  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: UInt32.t) =
+    let i = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate no_precondition_ref_u32 (_1: closure0) =
+    forall f: closure0, i: UInt32.t. inv_closure0 f /\ inv_ref_u32 i -> precondition_closure0 f i
+  
+  predicate precise_ref_u32 (_1: closure0) =
+    forall f1: closure0, f2: closure0, i: UInt32.t. not (postcondition_mut_closure0 f1 i f2 true
+      /\ postcondition_mut_closure0 f1 i f2 false)
+  
+  function iter_Filter_IntoIter_u32_Global_closure0 (self: t_Filter_IntoIter_u32_Global_closure0) : t_IntoIter_u32_Global
+  
+  function func_Filter_IntoIter_u32_Global_closure0 (self: t_Filter_IntoIter_u32_Global_closure0) : closure0
+  
+  predicate private_invariant_IntoIter_u32_Global (f: t_Filter_IntoIter_u32_Global_closure0)
+  
+  predicate invariant_Filter_IntoIter_u32_Global_closure0 [@inline:trivial] (self: t_Filter_IntoIter_u32_Global_closure0) =
+    inv_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure0 self)
+    /\ inv_closure0 (func_Filter_IntoIter_u32_Global_closure0 self) /\ private_invariant_IntoIter_u32_Global self
+  
+  meta "rewrite_def" predicate invariant_Filter_IntoIter_u32_Global_closure0
+  
+  axiom invariant_Filter_IntoIter_u32_Global_closure0_spec:
+    forall self: t_Filter_IntoIter_u32_Global_closure0. invariant_Filter_IntoIter_u32_Global_closure0 self
+      -> inv_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure0 self)
+      /\ inv_closure0 (func_Filter_IntoIter_u32_Global_closure0 self)
+  
+  predicate inv_Filter_IntoIter_u32_Global_closure0 (_1: t_Filter_IntoIter_u32_Global_closure0)
+  
+  axiom inv_axiom:
+    forall x: t_Filter_IntoIter_u32_Global_closure0 [inv_Filter_IntoIter_u32_Global_closure0 x]. inv_Filter_IntoIter_u32_Global_closure0 x
+      -> invariant_Filter_IntoIter_u32_Global_closure0 x
+  
+  let rec filter_IntoIter_u32_Global (self_: t_IntoIter_u32_Global) (f: closure0)
+    (return (x: t_Filter_IntoIter_u32_Global_closure0)) =
+    {([@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_)
+    /\ ([@expl:filter requires #0] immutable_ref_u32 f)
+    /\ ([@expl:filter requires #1] no_precondition_ref_u32 f) /\ ([@expl:filter requires #2] precise_ref_u32 f)}
+    any
+    [ return (result: t_Filter_IntoIter_u32_Global_closure0) ->
+    {([@expl:filter result type invariant] inv_Filter_IntoIter_u32_Global_closure0 result)
+      /\ ([@expl:filter ensures] iter_Filter_IntoIter_u32_Global_closure0 result = self_
+      /\ func_Filter_IntoIter_u32_Global_closure0 result = f)}
+      (! return {result}) ]
+  
+  predicate resolve_Filter_IntoIter_u32_Global_closure0 (_1: t_Filter_IntoIter_u32_Global_closure0)
+  
+  predicate produces_IntoIter_u32_Global (self: t_IntoIter_u32_Global) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter_u32_Global) =
+    view_IntoIter_u32_Global self = Seq.(++) visited (view_IntoIter_u32_Global rhs)
+  
+  function produces_trans_IntoIter_u32_Global (a: t_IntoIter_u32_Global) (ab: Seq.seq UInt32.t) (b: t_IntoIter_u32_Global) (bc: Seq.seq UInt32.t) (c: t_IntoIter_u32_Global) : ()
+   = ()
+  
+  axiom produces_trans_IntoIter_u32_Global_spec:
+    forall a: t_IntoIter_u32_Global, ab: Seq.seq UInt32.t, b: t_IntoIter_u32_Global, bc: Seq.seq UInt32.t, c: t_IntoIter_u32_Global. produces_IntoIter_u32_Global a ab b
+      -> produces_IntoIter_u32_Global b bc c -> produces_IntoIter_u32_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_IntoIter_u32_Global (self: t_IntoIter_u32_Global) : () = ()
+  
+  axiom produces_refl_IntoIter_u32_Global_spec:
+    forall self: t_IntoIter_u32_Global. produces_IntoIter_u32_Global self (Seq.empty: Seq.seq UInt32.t) self
+  
+  predicate produces_Filter_IntoIter_u32_Global_closure0 (self: t_Filter_IntoIter_u32_Global_closure0) (visited: Seq.seq UInt32.t) (succ: t_Filter_IntoIter_u32_Global_closure0) =
+    private_invariant_IntoIter_u32_Global self
+    -> hist_inv_closure0 (func_Filter_IntoIter_u32_Global_closure0 self) (func_Filter_IntoIter_u32_Global_closure0 succ)
+    /\ (exists s: Seq.seq UInt32.t, f: Map.map int int. produces_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure0 self) s (iter_Filter_IntoIter_u32_Global_closure0 succ)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
+        = postcondition_mut_closure0 (func_Filter_IntoIter_u32_Global_closure0 self) (Seq.get s i) (func_Filter_IntoIter_u32_Global_closure0 self) true))
+  
+  function produces_trans_Filter_IntoIter_u32_Global_closure0 (a: t_Filter_IntoIter_u32_Global_closure0) (ab: Seq.seq UInt32.t) (b: t_Filter_IntoIter_u32_Global_closure0) (bc: Seq.seq UInt32.t) (c: t_Filter_IntoIter_u32_Global_closure0) : ()
+  
+  axiom produces_trans_Filter_IntoIter_u32_Global_closure0_spec:
+    forall a: t_Filter_IntoIter_u32_Global_closure0, ab: Seq.seq UInt32.t, b: t_Filter_IntoIter_u32_Global_closure0, bc: Seq.seq UInt32.t, c: t_Filter_IntoIter_u32_Global_closure0. produces_Filter_IntoIter_u32_Global_closure0 a ab b
+      -> produces_Filter_IntoIter_u32_Global_closure0 b bc c
+      -> produces_Filter_IntoIter_u32_Global_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Filter_IntoIter_u32_Global_closure0 (self: t_Filter_IntoIter_u32_Global_closure0) : ()
+  
+  axiom produces_refl_Filter_IntoIter_u32_Global_closure0_spec:
+    forall self: t_Filter_IntoIter_u32_Global_closure0. produces_Filter_IntoIter_u32_Global_closure0 self (Seq.empty: Seq.seq UInt32.t) self
+  
+  predicate resolve_refmut_IntoIter_u32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_u32_Global
+  
+  predicate completed_IntoIter_u32_Global (self: MutBorrow.t t_IntoIter_u32_Global) =
+    resolve_refmut_IntoIter_u32_Global self /\ view_IntoIter_u32_Global self.current = (Seq.empty: Seq.seq UInt32.t)
+  
+  predicate completed_Filter_IntoIter_u32_Global_closure0 (self: MutBorrow.t t_Filter_IntoIter_u32_Global_closure0) =
+    (exists s: Seq.seq UInt32.t, e: MutBorrow.t t_IntoIter_u32_Global. produces_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure0 self.current) s e.current
+        /\ completed_IntoIter_u32_Global e
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
+          -> postcondition_mut_closure0 (func_Filter_IntoIter_u32_Global_closure0 self.current) (Seq.get s i) (func_Filter_IntoIter_u32_Global_closure0 self.final) false))
+    /\ func_Filter_IntoIter_u32_Global_closure0 self.current = func_Filter_IntoIter_u32_Global_closure0 self.final
+  
+  predicate from_iter_post_Vec_u32_Global (prod: Seq.seq UInt32.t) (res: t_Vec_u32_Global) =
+    prod = view_Vec_u32_Global res
+  
+  let rec collect_Filter_IntoIter_u32_Global_closure0 (self_: t_Filter_IntoIter_u32_Global_closure0)
+    (return (x: t_Vec_u32_Global)) =
+    {[@expl:collect 'self_' type invariant] inv_Filter_IntoIter_u32_Global_closure0 self_}
+    any
+    [ return (result: t_Vec_u32_Global) ->
+    {[@expl:collect ensures] exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure0, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure0 done'.final
+        /\ completed_Filter_IntoIter_u32_Global_closure0 done'
+        /\ produces_Filter_IntoIter_u32_Global_closure0 self_ prod done'.current
+        /\ from_iter_post_Vec_u32_Global prod result}
+      (! return {result}) ]
   
   type t_Ordering = Less | Equal | Greater
   
@@ -655,186 +836,6 @@ module M_less_than
   
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
-  predicate postcondition_once_closure2 [@inline:trivial] (self: closure2) (args: UInt32.t) (result: bool) =
-    let i = args in result = UInt32.lt i self.c0
-  
-  meta "rewrite_def" predicate postcondition_once_closure2
-  
-  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = true
-  
-  meta "rewrite_def" predicate resolve_closure2
-  
-  predicate hist_inv_closure2 [@inline:trivial] (self: closure2) (result_state: closure2) = result_state.c0 = self.c0
-  
-  meta "rewrite_def" predicate hist_inv_closure2
-  
-  predicate postcondition_mut_closure2 [@inline:trivial] (self: closure2) (args: UInt32.t) (result_state: closure2) (result: bool) =
-    let i = args in result = UInt32.lt i result_state.c0 /\ hist_inv_closure2 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure2
-  
-  function fn_mut_once_closure2 (self: closure2) (args: UInt32.t) (res: bool) : ()
-  
-  axiom fn_mut_once_closure2_spec:
-    forall self: closure2, args: UInt32.t, res: bool. postcondition_once_closure2 self args res
-      = (exists res_state: closure2. postcondition_mut_closure2 self args res_state res /\ resolve_closure2 res_state)
-  
-  function hist_inv_trans_closure2 (self: closure2) (b: closure2) (c: closure2) : ()
-  
-  axiom hist_inv_trans_closure2_spec: forall self: closure2, b: closure2, c: closure2. hist_inv_closure2 self b
-      -> hist_inv_closure2 b c -> hist_inv_closure2 self c
-  
-  function hist_inv_refl_closure2 (self: closure2) : ()
-  
-  axiom hist_inv_refl_closure2_spec: forall self: closure2. hist_inv_closure2 self self
-  
-  function postcondition_mut_hist_inv_closure2 (self: closure2) (args: UInt32.t) (res_state: closure2) (res: bool) : ()
-  
-  axiom postcondition_mut_hist_inv_closure2_spec:
-    forall self: closure2, args: UInt32.t, res_state: closure2, res: bool. postcondition_mut_closure2 self args res_state res
-      -> hist_inv_closure2 self res_state
-  
-  let rec closure2 (self: MutBorrow.t closure2) (i: UInt32.t) (return (x: bool)) = (! bb0
-    [ bb0 = s0
-      [ s0 = -{resolve_refmut_closure2 self}- s1
-      | s1 = [ &res <- UInt32.lt i self.current.c0 ] s2
-      | s2 = [ &_ret <- res ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l ()
-    | & self: MutBorrow.t closure2 = self
-    | & i: UInt32.t = i
-    | & res: bool = Any.any_l () ])
-    [ return (result: bool) -> {([@expl:closure ensures] result = UInt32.lt i self.final.c0)
-      /\ ([@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
-      (! return {result}) ]
-  
-  type t_Filter_IntoIter_u32_Global_closure2
-  
-  predicate immutable_ref_u32 (_1: closure2) = forall f: closure2, g: closure2. hist_inv_closure2 f g -> f = g
-  
-  predicate inv_closure2 [@inline:trivial] (_1: closure2) = true
-  
-  meta "rewrite_def" predicate inv_closure2
-  
-  predicate inv_ref_u32 [@inline:trivial] (_1: UInt32.t) = true
-  
-  meta "rewrite_def" predicate inv_ref_u32
-  
-  predicate precondition_closure2 [@inline:trivial] (self: closure2) (args: UInt32.t) = let i = args in true
-  
-  meta "rewrite_def" predicate precondition_closure2
-  
-  predicate no_precondition_ref_u32 (_1: closure2) =
-    forall f: closure2, i: UInt32.t. inv_closure2 f /\ inv_ref_u32 i -> precondition_closure2 f i
-  
-  predicate precise_ref_u32 (_1: closure2) =
-    forall f1: closure2, f2: closure2, i: UInt32.t. not (postcondition_mut_closure2 f1 i f2 true
-      /\ postcondition_mut_closure2 f1 i f2 false)
-  
-  function iter_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) : t_IntoIter_u32_Global
-  
-  function func_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) : closure2
-  
-  predicate private_invariant_IntoIter_u32_Global (f: t_Filter_IntoIter_u32_Global_closure2)
-  
-  predicate invariant_Filter_IntoIter_u32_Global_closure2 [@inline:trivial] (self: t_Filter_IntoIter_u32_Global_closure2) =
-    inv_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure2 self)
-    /\ inv_closure2 (func_Filter_IntoIter_u32_Global_closure2 self) /\ private_invariant_IntoIter_u32_Global self
-  
-  meta "rewrite_def" predicate invariant_Filter_IntoIter_u32_Global_closure2
-  
-  axiom invariant_Filter_IntoIter_u32_Global_closure2_spec:
-    forall self: t_Filter_IntoIter_u32_Global_closure2. invariant_Filter_IntoIter_u32_Global_closure2 self
-      -> inv_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure2 self)
-      /\ inv_closure2 (func_Filter_IntoIter_u32_Global_closure2 self)
-  
-  predicate inv_Filter_IntoIter_u32_Global_closure2 (_1: t_Filter_IntoIter_u32_Global_closure2)
-  
-  axiom inv_axiom:
-    forall x: t_Filter_IntoIter_u32_Global_closure2 [inv_Filter_IntoIter_u32_Global_closure2 x]. inv_Filter_IntoIter_u32_Global_closure2 x
-      -> invariant_Filter_IntoIter_u32_Global_closure2 x
-  
-  let rec filter_IntoIter_u32_Global (self_: t_IntoIter_u32_Global) (f: closure2)
-    (return (x: t_Filter_IntoIter_u32_Global_closure2)) =
-    {([@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_)
-    /\ ([@expl:filter requires #0] immutable_ref_u32 f)
-    /\ ([@expl:filter requires #1] no_precondition_ref_u32 f) /\ ([@expl:filter requires #2] precise_ref_u32 f)}
-    any
-    [ return (result: t_Filter_IntoIter_u32_Global_closure2) ->
-    {([@expl:filter result type invariant] inv_Filter_IntoIter_u32_Global_closure2 result)
-      /\ ([@expl:filter ensures] iter_Filter_IntoIter_u32_Global_closure2 result = self_
-      /\ func_Filter_IntoIter_u32_Global_closure2 result = f)}
-      (! return {result}) ]
-  
-  predicate resolve_Filter_IntoIter_u32_Global_closure2 (_1: t_Filter_IntoIter_u32_Global_closure2)
-  
-  predicate produces_IntoIter_u32_Global (self: t_IntoIter_u32_Global) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter_u32_Global) =
-    view_IntoIter_u32_Global self = Seq.(++) visited (view_IntoIter_u32_Global rhs)
-  
-  function produces_trans_IntoIter_u32_Global (a: t_IntoIter_u32_Global) (ab: Seq.seq UInt32.t) (b: t_IntoIter_u32_Global) (bc: Seq.seq UInt32.t) (c: t_IntoIter_u32_Global) : ()
-   = ()
-  
-  axiom produces_trans_IntoIter_u32_Global_spec:
-    forall a: t_IntoIter_u32_Global, ab: Seq.seq UInt32.t, b: t_IntoIter_u32_Global, bc: Seq.seq UInt32.t, c: t_IntoIter_u32_Global. produces_IntoIter_u32_Global a ab b
-      -> produces_IntoIter_u32_Global b bc c -> produces_IntoIter_u32_Global a (Seq.(++) ab bc) c
-  
-  function produces_refl_IntoIter_u32_Global (self: t_IntoIter_u32_Global) : () = ()
-  
-  axiom produces_refl_IntoIter_u32_Global_spec:
-    forall self: t_IntoIter_u32_Global. produces_IntoIter_u32_Global self (Seq.empty: Seq.seq UInt32.t) self
-  
-  predicate produces_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) (visited: Seq.seq UInt32.t) (succ: t_Filter_IntoIter_u32_Global_closure2) =
-    private_invariant_IntoIter_u32_Global self
-    -> hist_inv_closure2 (func_Filter_IntoIter_u32_Global_closure2 self) (func_Filter_IntoIter_u32_Global_closure2 succ)
-    /\ (exists s: Seq.seq UInt32.t, f: Map.map int int. produces_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure2 self) s (iter_Filter_IntoIter_u32_Global_closure2 succ)
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
-        = postcondition_mut_closure2 (func_Filter_IntoIter_u32_Global_closure2 self) (Seq.get s i) (func_Filter_IntoIter_u32_Global_closure2 self) true))
-  
-  function produces_trans_Filter_IntoIter_u32_Global_closure2 (a: t_Filter_IntoIter_u32_Global_closure2) (ab: Seq.seq UInt32.t) (b: t_Filter_IntoIter_u32_Global_closure2) (bc: Seq.seq UInt32.t) (c: t_Filter_IntoIter_u32_Global_closure2) : ()
-  
-  axiom produces_trans_Filter_IntoIter_u32_Global_closure2_spec:
-    forall a: t_Filter_IntoIter_u32_Global_closure2, ab: Seq.seq UInt32.t, b: t_Filter_IntoIter_u32_Global_closure2, bc: Seq.seq UInt32.t, c: t_Filter_IntoIter_u32_Global_closure2. produces_Filter_IntoIter_u32_Global_closure2 a ab b
-      -> produces_Filter_IntoIter_u32_Global_closure2 b bc c
-      -> produces_Filter_IntoIter_u32_Global_closure2 a (Seq.(++) ab bc) c
-  
-  function produces_refl_Filter_IntoIter_u32_Global_closure2 (self: t_Filter_IntoIter_u32_Global_closure2) : ()
-  
-  axiom produces_refl_Filter_IntoIter_u32_Global_closure2_spec:
-    forall self: t_Filter_IntoIter_u32_Global_closure2. produces_Filter_IntoIter_u32_Global_closure2 self (Seq.empty: Seq.seq UInt32.t) self
-  
-  predicate resolve_refmut_IntoIter_u32_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_u32_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_IntoIter_u32_Global
-  
-  predicate completed_IntoIter_u32_Global (self: MutBorrow.t t_IntoIter_u32_Global) =
-    resolve_refmut_IntoIter_u32_Global self /\ view_IntoIter_u32_Global self.current = (Seq.empty: Seq.seq UInt32.t)
-  
-  predicate completed_Filter_IntoIter_u32_Global_closure2 (self: MutBorrow.t t_Filter_IntoIter_u32_Global_closure2) =
-    (exists s: Seq.seq UInt32.t, e: MutBorrow.t t_IntoIter_u32_Global. produces_IntoIter_u32_Global (iter_Filter_IntoIter_u32_Global_closure2 self.current) s e.current
-        /\ completed_IntoIter_u32_Global e
-        /\ (forall i: int. 0 <= i /\ i < Seq.length s
-          -> postcondition_mut_closure2 (func_Filter_IntoIter_u32_Global_closure2 self.current) (Seq.get s i) (func_Filter_IntoIter_u32_Global_closure2 self.final) false))
-    /\ func_Filter_IntoIter_u32_Global_closure2 self.current = func_Filter_IntoIter_u32_Global_closure2 self.final
-  
-  predicate from_iter_post_Vec_u32_Global (prod: Seq.seq UInt32.t) (res: t_Vec_u32_Global) =
-    prod = view_Vec_u32_Global res
-  
-  let rec collect_Filter_IntoIter_u32_Global_closure2 (self_: t_Filter_IntoIter_u32_Global_closure2)
-    (return (x: t_Vec_u32_Global)) =
-    {[@expl:collect 'self_' type invariant] inv_Filter_IntoIter_u32_Global_closure2 self_}
-    any
-    [ return (result: t_Vec_u32_Global) ->
-    {[@expl:collect ensures] exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure2, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure2 done'.final
-        /\ completed_Filter_IntoIter_u32_Global_closure2 done'
-        /\ produces_Filter_IntoIter_u32_Global_closure2 self_ prod done'.current
-        /\ from_iter_post_Vec_u32_Global prod result}
-      (! return {result}) ]
-  
   function index_Vec_u32_Global [@inline:trivial] (self: t_Vec_u32_Global) (ix: int) : UInt32.t =
     Seq.get (view_Vec_u32_Global self) ix
   
@@ -851,15 +852,15 @@ module M_less_than
     [ bb0 = s0
       [ s0 = into_iter_Vec_u32_Global {v} (fun (_x: t_IntoIter_u32_Global) -> [ &_8 <- _x ] s1)
       | s1 = [ &_10 <- { c0 = n } ] s2
-      | s2 = filter_IntoIter_u32_Global {_8} {_10} (fun (_x: t_Filter_IntoIter_u32_Global_closure2) -> [ &_7 <- _x ] s3)
-      | s3 = collect_Filter_IntoIter_u32_Global_closure2 {_7} (fun (_x: t_Vec_u32_Global) -> [ &_ret <- _x ] s4)
+      | s2 = filter_IntoIter_u32_Global {_8} {_10} (fun (_x: t_Filter_IntoIter_u32_Global_closure0) -> [ &_7 <- _x ] s3)
+      | s3 = collect_Filter_IntoIter_u32_Global_closure0 {_7} (fun (_x: t_Vec_u32_Global) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: t_Vec_u32_Global = Any.any_l ()
     | & v: t_Vec_u32_Global = v
     | & n: UInt32.t = n
-    | & _7: t_Filter_IntoIter_u32_Global_closure2 = Any.any_l ()
+    | & _7: t_Filter_IntoIter_u32_Global_closure0 = Any.any_l ()
     | & _8: t_IntoIter_u32_Global = Any.any_l ()
-    | & _10: closure2 = Any.any_l () ])
+    | & _10: closure0 = Any.any_l () ])
     [ return (result: t_Vec_u32_Global) -> {([@expl:less_than ensures #0] forall i: int. 0 <= i
             /\ i < Seq.length (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n)
       /\ ([@expl:less_than ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u32_Global result)
