@@ -8,6 +8,7 @@ use std::{
     io::{BufRead, BufReader, IsTerminal, Write},
     path::PathBuf,
     process::{Command, exit},
+    str::FromStr,
 };
 use termcolor::*;
 
@@ -34,6 +35,9 @@ struct Args {
     /// Ignore why3find cache
     #[clap(long)]
     no_cache: bool,
+    /// Multiplier for timeout of why3find
+    #[clap(long = "time-multiplier")]
+    time_multiplier: Option<f64>,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -250,9 +254,14 @@ fn main() {
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }
-            if let Some(time) = time_re.captures_iter(&header_line).next() {
-                why3find.args(["--time", time.get(1).unwrap().as_str()]);
+            let mut time = 1.;
+            if let Some(t) = time_re.captures_iter(&header_line).next() {
+                time = f64::from_str(t.get(1).unwrap().as_str()).unwrap()
             }
+            if let Some(mult) = args.time_multiplier {
+                time *= mult
+            }
+            why3find.args(["--time", &time.to_string()]);
             if args.no_cache {
                 why3find.arg("--no-cache");
             }
