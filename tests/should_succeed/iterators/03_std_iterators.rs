@@ -1,4 +1,3 @@
-// TACTIC +inline_goal
 extern crate creusot_std;
 use creusot_std::{logic::Int, prelude::*};
 

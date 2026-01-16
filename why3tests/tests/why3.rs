@@ -53,7 +53,7 @@ fn main() {
 
     let orange = Color::Ansi256(214);
     let tactic_re = Regex::new(r"TACTIC (\S*)").unwrap();
-    let time_re = Regex::new(r"TIME (\d+)").unwrap();
+    let time_re = Regex::new(r"TIME ((\d|\.)+)").unwrap();
 
     std::env::set_current_dir("..").unwrap();
 
