@@ -148,9 +148,8 @@ impl<R: UnitRA> Fragment<R> {
 
     /// Duplicate the duplicable core of a fragment
     #[check(ghost)]
-    #[requires(self@.core() != None)]
     #[ensures(result.id() == self.id())]
-    #[ensures(Some(result@) == self@.core())]
+    #[ensures(result@ == self@.core_total())]
     pub fn core(&self) -> Self {
         Fragment(self.0.core())
     }
