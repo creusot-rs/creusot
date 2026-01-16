@@ -46712,6 +46712,406 @@ module M_std__option__extern_spec_core_option_T_Option_T_ok_or_else_body
         end)}
       (! return {result}) ]
 end
+module M_std__option__extern_spec_core_option_T_Option_T_as_deref_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  type t_Target
+  
+  predicate precondition_deref (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
+      -> precondition_deref () args
+  
+  predicate inv_Target (_1: t_Target)
+  
+  predicate invariant_ref_Target [@inline:trivial] (self: t_Target) = inv_Target self
+  
+  meta "rewrite_def" predicate invariant_ref_Target
+  
+  predicate inv_ref_Target [@inline:trivial] (_1: t_Target) = invariant_ref_Target _1
+  
+  meta "rewrite_def" predicate inv_ref_Target
+  
+  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_Target [postcondition_once_deref () args res]. postcondition_once_deref () args res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  let rec deref_T (self_: t_T) (return (x: t_Target)) =
+    {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+    any
+    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+      (! return {result}) ]
+  
+  type t_Option_ref_Target = None'0 | Some'0 t_Target
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Option_T
+  
+  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Option_T
+  
+  predicate inv_Option_ref_Target (_1: t_Option_ref_Target)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_Target [inv_Option_ref_Target x]. inv_Option_ref_Target x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_ref_Target f0
+        end
+  
+  type tup2_ref_Option_T_Option_ref_Target = { f0: t_Option_T; f1: t_Option_ref_Target }
+  
+  predicate resolve_deref [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_deref
+  
+  predicate postcondition_mut_deref (self: ()) (args: t_T) (result_state: ()) (result: t_Target)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_T, res: t_Target [postcondition_mut_deref () args () res]. postcondition_mut_deref () args () res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  function fn_mut_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
+  
+  axiom fn_mut_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
+      = (exists res_state: (). postcondition_mut_deref self args res_state res /\ resolve_deref res_state)
+  
+  predicate hist_inv_deref [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_deref
+  
+  function hist_inv_trans_deref (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_deref_spec: forall self: (), b: (), c: (). hist_inv_deref self b
+      -> hist_inv_deref b c -> hist_inv_deref self c
+  
+  function hist_inv_refl_deref (self: ()) : ()
+  
+  axiom hist_inv_refl_deref_spec: forall self: (). hist_inv_deref self self
+  
+  function postcondition_mut_hist_inv_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
+  
+  axiom postcondition_mut_hist_inv_deref_spec:
+    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
+      -> hist_inv_deref self res_state
+  
+  function fn_hist_inv_deref (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_deref_spec: forall self: (), res_state: (). hist_inv_deref self res_state = (self = res_state)
+  
+  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  function fn_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
+  
+  axiom fn_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
+      = (postcondition_deref self args res /\ resolve_deref self)
+  
+  function fn_mut_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
+  
+  axiom fn_mut_deref_spec:
+    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
+      = (postcondition_deref self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_core_option_T_Option_T_as_deref_body_T (self_: t_Option_T) (return (x: t_Option_ref_Target)) =
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body_T requires] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body 'self_' type invariant] inv_ref_Option_T self_)
+    /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body requires] match self_ with
+      | None -> true
+      | Some x -> precondition_deref () x
+      end)}
+    (! bb0
+    [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
+    | bb4 = s0
+      [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+      | s1 = [ &_11 <- x ] s2
+      | s2 = deref_T {_11} (fun (_x: t_Target) -> [ &_9 <- _x ] s3)
+      | s3 = [ &_ret <- Some'0 _9 ] s4
+      | s4 = return {_ret} ]
+    | bb3 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_ref_Target = Any.any_l ()
+    | & self_: t_Option_T = self_
+    | & x: t_T = Any.any_l ()
+    | & _9: t_Target = Any.any_l ()
+    | & _11: t_T = Any.any_l () ])
+    [ return (result: t_Option_ref_Target) ->
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body result type invariant] inv_Option_ref_Target result)
+      /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_body ensures] match { f0 = self_;
+                                                                                                 f1 = result } with
+        | {f0 = None; f1 = None'0} -> true
+        | {f0 = Some x; f1 = Some'0 r} -> postcondition_deref () x r
+        | _ -> false
+        end)}
+      (! return {result}) ]
+end
+module M_std__option__extern_spec_core_option_T_Option_T_as_deref_mut_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  type t_Target
+  
+  predicate precondition_deref_mut (self: ()) (args: MutBorrow.t t_T)
+  
+  axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self_ = args in false)
+      -> precondition_deref_mut () args
+  
+  predicate inv_Target (_1: t_Target)
+  
+  predicate invariant_refmut_Target [@inline:trivial] (self: MutBorrow.t t_Target) =
+    inv_Target self.current /\ inv_Target self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Target
+  
+  predicate inv_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invariant_refmut_Target _1
+  
+  meta "rewrite_def" predicate inv_refmut_Target
+  
+  predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
+  
+  axiom postcondition_fndef:
+    forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_once_deref_mut () args res]. postcondition_once_deref_mut () args res
+      -> (let self_ = args in inv_refmut_Target res)
+  
+  let rec deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
+    {[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self_}
+    any
+    [ return (result: MutBorrow.t t_Target) ->
+    {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+      (! return {result}) ]
+  
+  type t_Option_refmut_Target = None'0 | Some'0 (MutBorrow.t t_Target)
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate resolve_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Target
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+    inv_Option_T self.current /\ inv_Option_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Option_T
+  
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Option_T
+  
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Option_T
+  
+  predicate inv_Option_refmut_Target (_1: t_Option_refmut_Target)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Option_refmut_Target [inv_Option_refmut_Target x]. inv_Option_refmut_Target x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_refmut_Target f0
+        end
+  
+  type tup3_Option_T_Option_T_Option_refmut_Target = { f0: t_Option_T; f1: t_Option_T; f2: t_Option_refmut_Target }
+  
+  predicate resolve_deref_mut [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_deref_mut
+  
+  predicate postcondition_mut_deref_mut (self: ()) (args: MutBorrow.t t_T) (result_state: ()) (result: MutBorrow.t t_Target)
+  
+  axiom postcondition_fndef'0:
+    forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_mut_deref_mut () args () res]. postcondition_mut_deref_mut () args () res
+      -> (let self_ = args in inv_refmut_Target res)
+  
+  function fn_mut_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
+  
+  axiom fn_mut_once_deref_mut_spec:
+    forall self: (), args: MutBorrow.t t_T, res: MutBorrow.t t_Target. postcondition_once_deref_mut self args res
+      = (exists res_state: (). postcondition_mut_deref_mut self args res_state res /\ resolve_deref_mut res_state)
+  
+  predicate hist_inv_deref_mut [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_deref_mut
+  
+  function hist_inv_trans_deref_mut (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_deref_mut_spec: forall self: (), b: (), c: (). hist_inv_deref_mut self b
+      -> hist_inv_deref_mut b c -> hist_inv_deref_mut self c
+  
+  function hist_inv_refl_deref_mut (self: ()) : ()
+  
+  axiom hist_inv_refl_deref_mut_spec: forall self: (). hist_inv_deref_mut self self
+  
+  function postcondition_mut_hist_inv_deref_mut (self: ()) (args: MutBorrow.t t_T) (res_state: ()) (res: MutBorrow.t t_Target) : ()
+  
+  axiom postcondition_mut_hist_inv_deref_mut_spec:
+    forall self: (), args: MutBorrow.t t_T, res_state: (), res: MutBorrow.t t_Target. postcondition_mut_deref_mut self args res_state res
+      -> hist_inv_deref_mut self res_state
+  
+  function fn_hist_inv_deref_mut (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_deref_mut_spec: forall self: (), res_state: (). hist_inv_deref_mut self res_state
+      = (self = res_state)
+  
+  predicate postcondition_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
+  
+  axiom postcondition_fndef'1:
+    forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
+      -> (let self_ = args in inv_refmut_Target res)
+  
+  function fn_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (res: MutBorrow.t t_Target) : ()
+  
+  axiom fn_once_deref_mut_spec:
+    forall self: (), args: MutBorrow.t t_T, res: MutBorrow.t t_Target. postcondition_once_deref_mut self args res
+      = (postcondition_deref_mut self args res /\ resolve_deref_mut self)
+  
+  function fn_mut_deref_mut (self: ()) (args: MutBorrow.t t_T) (res_state: ()) (res: MutBorrow.t t_Target) : ()
+  
+  axiom fn_mut_deref_mut_spec:
+    forall self: (), args: MutBorrow.t t_T, res_state: (), res: MutBorrow.t t_Target. postcondition_mut_deref_mut self args res_state res
+      = (postcondition_deref_mut self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_core_option_T_Option_T_as_deref_mut_body_T (self_: MutBorrow.t t_Option_T)
+    (return (x: t_Option_refmut_Target)) =
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body_T requires] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body 'self_' type invariant] inv_refmut_Option_T self_)
+    /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body requires] match self_.current with
+      | None -> true
+      | Some cur -> forall bor: MutBorrow.t t_T. bor.current = cur -> precondition_deref_mut () bor
+      end)}
+    (! bb0
+    [ bb0 = any [ br0 -> {self_.current = None} (! bb3) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb4) ]
+    | bb4 = s0
+      [ s0 = elim_Some {self_.current}
+          (fun (r0: t_T) ->
+            MutBorrow.borrow_final <t_T> {r0} {MutBorrow.inherit_id (MutBorrow.get_id self_) 0}
+              (fun (_bor: MutBorrow.t t_T) ->
+                [ &x <- _bor ] -{inv_T _bor.final}-
+                [ &self_ <- { self_ with current = Some _bor.final } ] s1)
+            [ _ck -> (! {[@expl:type invariant] inv_T r0} any) ])
+      | s1 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_11 <- _bor ] -{inv_T _bor.final}-
+            [ &x <- { x with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T x.current} any) ]
+      | s2 = MutBorrow.borrow_final <t_T> {_11.current} {MutBorrow.get_id _11}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_10 <- _bor ] -{inv_T _bor.final}-
+            [ &_11 <- { _11 with current = _bor.final } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_T _11.current} any) ]
+      | s3 = deref_mut_T {_10} (fun (_x: MutBorrow.t t_Target) -> [ &_9 <- _x ] s4)
+      | s4 = MutBorrow.borrow_final <t_Target> {_9.current} {MutBorrow.get_id _9}
+          (fun (_bor: MutBorrow.t t_Target) ->
+            [ &_8 <- _bor ] -{inv_Target _bor.final}-
+            [ &_9 <- { _9 with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Target _9.current} any) ]
+      | s5 = [ &_ret <- Some'0 _8 ] s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _11} any) ]
+      | s7 = -{resolve_refmut_T _11}- s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Target _9} any) ]
+      | s9 = -{resolve_refmut_Target _9}- s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_T x} any) ]
+      | s11 = -{resolve_refmut_T x}- s12
+      | s12 = bb6 ]
+    | bb3 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
+      | s2 = [ &_ret <- None'0 ] s3
+      | s3 = bb6 ]
+    | bb6 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s1 = -{resolve_refmut_Option_T self_}- s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_refmut_Target = Any.any_l ()
+    | & self_: MutBorrow.t t_Option_T = self_
+    | & x: MutBorrow.t t_T = Any.any_l ()
+    | & _8: MutBorrow.t t_Target = Any.any_l ()
+    | & _9: MutBorrow.t t_Target = Any.any_l ()
+    | & _10: MutBorrow.t t_T = Any.any_l ()
+    | & _11: MutBorrow.t t_T = Any.any_l () ])
+    [ return (result: t_Option_refmut_Target) ->
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body_T ensures] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body result type invariant] inv_Option_refmut_Target result)
+      /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_as_deref_mut_body ensures] match { f0 = self_.current;
+                                                                                                     f1 = self_.final;
+                                                                                                     f2 = result } with
+        | {f0 = None; f1 = None; f2 = None'0} -> true
+        | {f0 = Some cur; f1 = Some fin; f2 = Some'0 r} -> exists bor: MutBorrow.t t_T. bor.current = cur
+          /\ bor.final = fin /\ postcondition_deref_mut () bor r
+        | _ -> false
+        end)}
+      (! return {result}) ]
+end
 module M_std__option__extern_spec_core_option_T_Option_T_and_body
   type namespace_other
   
@@ -47520,6 +47920,187 @@ module M_std__option__extern_spec_core_option_T_Option_T_get_or_insert_body
       /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_body ensures] match self_.current with
         | None -> result.current = value /\ self_.final = Some (result.final)
         | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final) /\ resolve_T value
+        end)}
+      (! return {result}) ]
+end
+module M_std__option__extern_spec_core_option_T_Option_T_get_or_insert_default_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate precondition_default (self: ()) (args: ())
+  
+  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
+      -> precondition_default () args
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: (), res: t_T [postcondition_once_default () args res]. postcondition_once_default () args res
+      -> (let () = args in inv_T res)
+  
+  let rec default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+    any
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+      (! return {result}) ]
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  predicate invariant_refmut_Option_T [@inline:trivial] (self: MutBorrow.t t_Option_T) =
+    inv_Option_T self.current /\ inv_Option_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Option_T
+  
+  predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = invariant_refmut_Option_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Option_T
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate resolve_T (_1: t_T)
+  
+  let rec get_or_insert_T (self_: MutBorrow.t t_Option_T) (value: t_T) (return (x: MutBorrow.t t_T)) =
+    {[@stop_split] [@expl:get_or_insert_T requires] ([@stop_split] [@expl:get_or_insert 'self_' type invariant] inv_refmut_Option_T self_)
+    /\ ([@stop_split] [@expl:get_or_insert 'value' type invariant] inv_T value)}
+    any
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:get_or_insert_T ensures] ([@stop_split] [@expl:get_or_insert result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:get_or_insert ensures] match self_.current with
+        | None -> result.current = value /\ self_.final = Some (result.final)
+        | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final) /\ resolve_T value
+        end)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Option_T
+  
+  predicate resolve_default [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_default
+  
+  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0:
+    forall args: (), res: t_T [postcondition_mut_default () args () res]. postcondition_mut_default () args () res
+      -> (let () = args in inv_T res)
+  
+  function fn_mut_once_default (self: ()) (args: ()) (res: t_T) : ()
+  
+  axiom fn_mut_once_default_spec: forall self: (), args: (), res: t_T. postcondition_once_default self args res
+      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
+  
+  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_default
+  
+  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+      -> hist_inv_default b c -> hist_inv_default self c
+  
+  function hist_inv_refl_default (self: ()) : ()
+  
+  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  
+  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_default_spec:
+    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default self args res_state res
+      -> hist_inv_default self res_state
+  
+  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  
+  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+  
+  axiom postcondition_fndef'1:
+    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+      -> (let () = args in inv_T res)
+  
+  function fn_once_default (self: ()) (args: ()) (res: t_T) : ()
+  
+  axiom fn_once_default_spec: forall self: (), args: (), res: t_T. postcondition_once_default self args res
+      = (postcondition_default self args res /\ resolve_default self)
+  
+  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_default_spec:
+    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default self args res_state res
+      = (postcondition_default self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_core_option_T_Option_T_get_or_insert_default_body_T (self_: MutBorrow.t t_Option_T)
+    (return (x: MutBorrow.t t_T)) =
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body_T requires] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body 'self_' type invariant] inv_refmut_Option_T self_)
+    /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body requires] match self_ with
+      | {current = None} -> precondition_default () ()
+      | {current = Some _} -> true
+      end)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = default_T (fun (_x: t_T) -> [ &_9 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <t_Option_T> {self_.current} {MutBorrow.get_id self_}
+          (fun (_bor: MutBorrow.t t_Option_T) ->
+            [ &_8 <- _bor ] -{inv_Option_T _bor.final}-
+            [ &self_ <- { self_ with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_T self_.current} any) ]
+      | s2 = get_or_insert_T {_8} {_9} (fun (_x: MutBorrow.t t_T) -> [ &_7 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_2 <- _bor ] -{inv_T _bor.final}-
+            [ &_7 <- { _7 with current = _bor.final } ] s4) [ _ck -> (! {[@expl:type invariant] inv_T _7.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
+      | s5 = -{resolve_refmut_T _7}- s6
+      | s6 = MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_ret <- _bor ] -{inv_T _bor.final}-
+            [ &_2 <- { _2 with current = _bor.final } ] s7) [ _ck -> (! {[@expl:type invariant] inv_T _2.current} any) ]
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _2} any) ]
+      | s8 = -{resolve_refmut_T _2}- s9
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
+      | s10 = -{resolve_refmut_Option_T self_}- s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: MutBorrow.t t_T = Any.any_l ()
+    | & self_: MutBorrow.t t_Option_T = self_
+    | & _2: MutBorrow.t t_T = Any.any_l ()
+    | & _7: MutBorrow.t t_T = Any.any_l ()
+    | & _8: MutBorrow.t t_Option_T = Any.any_l ()
+    | & _9: t_T = Any.any_l () ])
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body_T ensures] ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:extern_spec_core_option_T_Option_T_get_or_insert_default_body ensures] match self_.current with
+        | None -> postcondition_default () () result.current /\ self_.final = Some (result.final)
+        | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final)
         end)}
       (! return {result}) ]
 end

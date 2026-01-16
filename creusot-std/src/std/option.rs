@@ -104,6 +104,10 @@ extern_spec! {
                     }
                 }
 
+                // FIXME: specify those once we have a specification for `Pin`
+                // const fn as_pin_ref(self: Pin<&Option<T>>) -> Option<Pin<&T>>;
+                // const fn as_pin_mut(self: Pin<&mut Option<T>>) -> Option<Pin<&mut T>>;
+
                 #[check(ghost)]
                 #[ensures(match *self {
                     None => result@.len() == 0,
@@ -276,6 +280,60 @@ extern_spec! {
                     }
                 }
 
+                #[requires(match self {
+                    None => true,
+                    Some(x) => T::deref.precondition((x,)),
+                })]
+                #[ensures(match (self, result) {
+                    (None, None) => true,
+                    (Some(x), Some(r)) => T::deref.postcondition((x,), r),
+                    _ => false,
+                })]
+                fn as_deref(&self) -> Option<&<T as ::core::ops::Deref>::Target>
+                    where T: ::core::ops::Deref,
+                {
+                    match self {
+                        Some(x) => Some(&*x),
+                        None => None,
+                    }
+                }
+
+                #[requires(match *self {
+                    None => true,
+                    Some(cur) => forall<bor: &mut T> *bor == cur ==> T::deref_mut.precondition((bor,)),
+                })]
+                #[ensures(match (*self, ^self, result) {
+                    (None, None, None) => true,
+                    (Some(cur), Some(fin), Some(r)) => exists<bor: &mut T> *bor == cur && ^bor == fin && T::deref_mut.postcondition((bor,), r),
+                    _ => false,
+                })]
+                fn as_deref_mut(&mut self) -> Option<&mut<T as ::core::ops::Deref>::Target>
+                    where T: ::core::ops::DerefMut,
+                {
+                    match self {
+                        Some(x) => Some(&mut *x),
+                        None => None,
+                    }
+                }
+
+                #[ensures(match *self {
+                    None => exists<it: &mut Iter<'_, T>> it.completed() && *it == result,
+                    Some(x) => exists<s: Seq<&T>, it: &mut Iter<'_, T>> {
+                        it.completed() && s.len() == 1 && *s[0] == x && result.produces(s, *it)
+                    }
+                })]
+                fn iter(&self) -> Iter<'_, T>;
+
+                #[ensures(match (*self, ^self) {
+                    (None, None) => exists<it: &mut IterMut<'_, T>> it.completed() && *it == result,
+                    (Some(cur), Some(fin)) => exists<s: Seq<&mut T>, it: &mut IterMut<'_, T>> {
+                        it.completed() && s.len() == 1 && *s[0] == cur && ^s[0] == fin && result.produces(s, *it)
+                    },
+                    _ => false,
+                })]
+                fn iter_mut(&mut self) -> IterMut<'_, T>;
+
+
                 #[check(ghost)]
                 #[ensures(self == None ==> result == None && resolve(optb))]
                 #[ensures(self == None || (result == optb && resolve(self)))]
@@ -374,6 +432,20 @@ extern_spec! {
                         None => unreachable!(),
                         Some(v) => v,
                     }
+                }
+
+                #[requires(match self {
+                    None => T::default.precondition(()),
+                    Some(_) => true,
+                })]
+                #[ensures(match *self {
+                    None => T::default.postcondition((), *result) && ^self == Some(^result),
+                    Some(_) => *self == Some(*result) && ^self == Some(^result),
+                })]
+                fn get_or_insert_default(&mut self) -> &mut T
+                    where T: Default,
+                {
+                    self.get_or_insert(T::default())
                 }
 
                 #[requires(*self == None ==> f.precondition(()))]
