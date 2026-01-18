@@ -96,12 +96,13 @@ fn main() {
 
     let (mut failed, mut total) =
         (if contracts_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
-    let (fail1, total1) = should_fail("tests/should_fail/**/*.rs", &args, |p| {
+    let (fail1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
         run_creusot(p, &paths, args.with_spans)
     });
-    let (fail2, total2) = should_succeed("tests/should_succeed/**/*.rs", &args, |p| {
-        run_creusot(p, &paths, args.with_spans)
-    });
+    let (fail2, total2) =
+        should_succeed(&["examples/**/*.rs", "tests/should_succeed/**/*.rs"], &args, |p| {
+            run_creusot(p, &paths, args.with_spans)
+        });
 
     total += total1 + total2;
     failed += fail1 + fail2;
@@ -311,14 +312,14 @@ fn run_creusot(
     Some(cmd)
 }
 
-fn should_succeed<B>(s: &str, args: &Args, b: B) -> (usize, usize)
+fn should_succeed<B>(s: &[&str], args: &Args, b: B) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     glob_runner(s, args, b, true)
 }
 
-fn should_fail<B>(s: &str, args: &Args, b: B) -> (usize, usize)
+fn should_fail<B>(s: &[&str], args: &Args, b: B) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
@@ -339,7 +340,12 @@ fn erase_global_paths(s: &mut Vec<u8>) {
 }
 
 /// Returns `(tests failed, total tests)`
-fn glob_runner<B>(s: &str, args: &Args, command_builder: B, should_succeed: bool) -> (usize, usize)
+fn glob_runner<B>(
+    pats: &[&str],
+    args: &Args,
+    command_builder: B,
+    should_succeed: bool,
+) -> (usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
@@ -347,7 +353,7 @@ where
     let test_count = AtomicUsize::new(0);
     let test_failures = AtomicUsize::new(0);
 
-    let entries = Mutex::new(glob::glob(s).expect("Failed to read glob pattern"));
+    let entries = Mutex::new(pats.into_iter().flat_map(|s| glob::glob(s).unwrap()));
     let nb_threads = thread::available_parallelism().map(|n| n.into()).unwrap_or(1usize);
     let out = Mutex::new((Vec::new(), out));
 

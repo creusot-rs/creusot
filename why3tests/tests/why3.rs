@@ -71,7 +71,9 @@ fn main() {
 
     let mut success = true;
     let mut obsolete = false;
-    for file in glob::glob("tests/**/*.coma").unwrap() {
+    let coma_files =
+        ["examples/**/*.coma", "tests/**/*.coma"].into_iter().flat_map(|s| glob::glob(s).unwrap());
+    for file in coma_files {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;
@@ -300,11 +302,12 @@ fn main() {
     }
 
     // Fail if there are proofs or sessions without a coma file.
-    for file in glob::glob("tests/**/proof.json")
-        .unwrap()
-        .chain(glob::glob("tests/**/why3session.xml").unwrap())
-        .chain(glob::glob("tests/**/why3shapes.gz").unwrap())
-    {
+    let proof_files = ["examples", "tests"].into_iter().flat_map(|dir| {
+        ["proof.json", "why3session.xml", "why3shapes.gz"]
+            .into_iter()
+            .flat_map(|base| glob::glob(&(dir.to_owned() + "/**/" + base)).unwrap())
+    });
+    for file in proof_files {
         let file = file.unwrap();
         let coma = file.parent().unwrap().with_extension("coma");
         if !coma.is_file() {
