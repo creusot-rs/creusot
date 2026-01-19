@@ -186,8 +186,6 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
         let mut file_index_to_stable_id =
             FxHashMap::with_capacity_and_hasher(files.len(), Default::default());
         use rustc_span::def_id::LOCAL_CRATE;
-        let source_map = tcx.sess.source_map();
-        let working_directory = &tcx.sess.opts.working_dir;
         let local_crate_stable_id = tcx.stable_crate_id(LOCAL_CRATE);
 
         // This portion of the code is adapted from the rustc metadata encoder, while the rest of
@@ -204,12 +202,8 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
                 use rustc_span::FileName;
                 match file.name {
                     FileName::Real(ref original_file_name) => {
-                        let adapted_file_name =
-                            source_map.path_mapping().to_embeddable_absolute_path(
-                                original_file_name.clone(),
-                                working_directory,
-                            );
-
+                        let mut adapted_file_name = original_file_name.clone();
+                        adapted_file_name.update_for_crate_metadata();
                         adapted_source_file.name = FileName::Real(adapted_file_name);
                     }
                     _ => {

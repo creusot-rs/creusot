@@ -651,15 +651,17 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 }
             }
             PatKind::Deref { subpattern }
-            | PatKind::DerefPattern { subpattern, borrow: ByRef::No } => Ok(Pattern {
-                ty: pat.ty,
-                span: pat.span,
-                kind: PatternKind::Deref(Box::new(self.pattern_term(
-                    ctx,
-                    subpattern,
-                    mut_allowed,
-                )?)),
-            }),
+            | PatKind::DerefPattern { subpattern, borrow: thir::DerefPatBorrowMode::Box } => {
+                Ok(Pattern {
+                    ty: pat.ty,
+                    span: pat.span,
+                    kind: PatternKind::Deref(Box::new(self.pattern_term(
+                        ctx,
+                        subpattern,
+                        mut_allowed,
+                    )?)),
+                })
+            }
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
                     return Err(self
@@ -672,10 +674,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     span: pat.span,
                     kind: PatternKind::Bool(value.try_to_bool().unwrap()),
                 })
-            }
-            // TODO: this simply ignores type annotations, maybe we should actually support them
-            PatKind::AscribeUserType { ascription: _, subpattern } => {
-                self.pattern_term(ctx, subpattern, mut_allowed)
             }
             PatKind::Or { pats } => {
                 let pats = pats
