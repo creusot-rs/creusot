@@ -2,9 +2,7 @@ use core::panic;
 use std::cell::RefCell;
 
 use crate::{
-    backend::{
-        Why3Generator, clone_map::elaborator::Expander, dependency::Dependency, ty::ty_to_prelude,
-    },
+    backend::{Why3Generator, clone_map::elaborator::Expander, dependency::Dependency},
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
     naming::name,
@@ -232,14 +230,6 @@ pub(crate) trait Namer<'tcx> {
     fn span(&self, span: Span) -> Option<Ident>;
 
     fn bitwise_mode(&self) -> bool;
-
-    fn to_int(&self, ty: &TyKind) -> why3::QName {
-        self.in_pre(ty_to_prelude(self.tcx(), ty), "t'int")
-    }
-
-    fn to_int_app(&self, ty: &TyKind, arg: why3::Exp) -> why3::Exp {
-        why3::Exp::qvar(self.to_int(ty)).app([arg])
-    }
 }
 
 impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {

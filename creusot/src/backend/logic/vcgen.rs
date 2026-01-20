@@ -7,7 +7,7 @@ use crate::{
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
-            binop_function, binop_right_int, binop_to_binop, lower_literal, lower_pat, lower_pure,
+            binop_function, binop_to_binop, lower_literal, lower_pat, lower_pure, recast_int,
             tyconst_to_term_final, unsupported_cast,
         },
         ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
@@ -395,13 +395,14 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 Or => self.build_wp(lhs, &|lhs| Exp::if_(lhs, k(Exp::mk_true()), self.build_wp(rhs, k))),
                 _ if let Some(fun) = binop_function(self.names, *op, t.ty.kind()) => {
                     let rhs_ty = rhs.ty.kind();
+                    let lhs_ty = lhs.ty.kind();
                     self.build_wp(lhs, &|lhs| {
                         self.build_wp(rhs, &|rhs| {
-                            let rhs = if binop_right_int(*op) {
-                                self.names.to_int_app(rhs_ty, rhs)
-                            } else {
-                                rhs
-                            };
+                        let rhs = if  matches!(*op, Shl | Shr) {
+                            recast_int(self.names, rhs_ty, lhs_ty, rhs)
+                        } else {
+                            rhs
+                        };
                             k(Exp::qvar(fun.clone()).app([lhs.clone(), rhs]))
                         })
                     })

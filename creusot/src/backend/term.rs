@@ -103,6 +103,22 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     weakdep: bool,
 }
 
+pub fn recast_int<'tcx, N>(namer: &N, ty1: &TyKind, ty2: &TyKind, arg: why3::Exp) -> why3::Exp
+where
+    N: Namer<'tcx>,
+{
+    let e1 = namer.in_pre(
+        ty_to_prelude(namer.tcx(), ty1),
+        if namer.bitwise_mode() { "to_BV256" } else { "t'int" },
+    );
+    let e2 = why3::Exp::qvar(e1).app([arg]);
+    let e3 = namer.in_pre(
+        ty_to_prelude(namer.tcx(), ty2),
+        if namer.bitwise_mode() { "of_BV256" } else { "of_int" },
+    );
+    why3::Exp::qvar(e3).app([e2])
+}
+
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
@@ -199,14 +215,18 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             )),
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
+                let lhs_ty = lhs.ty.kind();
                 let rhs_ty = rhs.ty.kind();
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
                 use BinOp::*;
                 if let Some(fun) = binop_function(self.names, *op, term.ty.kind()) {
-                    let rhs =
-                        if binop_right_int(*op) { self.names.to_int_app(rhs_ty, rhs) } else { rhs };
+                    let rhs = if matches!(*op, Shl | Shr) {
+                        recast_int(self.names, rhs_ty, lhs_ty, rhs)
+                    } else {
+                        rhs
+                    };
                     Exp::qvar(fun).app([lhs, rhs])
                 } else {
                     if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
@@ -220,8 +240,9 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.names.import_prelude_module(PreMod::Int);
                 }
                 if matches!(op, UnOp::Not) && arg.ty.is_integral() {
-                    let bw_not = self.names.in_pre(ty_to_prelude(self.names.tcx(), arg.ty.kind()), "bw_not");
-                    return Exp::qvar(bw_not).app([self.lower_term(arg)])
+                    let bw_not =
+                        self.names.in_pre(ty_to_prelude(self.names.tcx(), arg.ty.kind()), "bw_not");
+                    return Exp::qvar(bw_not).app([self.lower_term(arg)]);
                 }
                 let op = match op {
                     UnOp::Not => WUnOp::Not,
@@ -568,21 +589,11 @@ pub(crate) fn binop_function<'tcx>(
         BitAnd => "bw_and",
         BitOr => "bw_or",
         BitXor => "bw_xor",
-        Shl => "lsl",
+        Shl => "shl",
         Shr => "shr",
         _ => return None,
     };
     Some(namer.in_pre(ty_to_prelude(namer.tcx(), ty), name))
-}
-
-/// `true` if the binop expects the right operand to be cast to type `int`.
-/// This is for `Shl`/`Shr` which allow left and right operands to have different types.
-pub(crate) fn binop_right_int(op: BinOp) -> bool {
-    use BinOp::*;
-    match op {
-        Shl | Shr => true,
-        _ => false,
-    }
 }
 
 /// Use this when we are about to output Why3 (`lower_term` here and `build_wp` in `vcgen.rs`).
