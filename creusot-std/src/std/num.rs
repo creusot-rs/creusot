@@ -214,18 +214,30 @@ macro_rules! spec_unsized {
 
             #[logic(opaque)]
             #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(self << $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == ((self >> $type::BITS) & $one == $one))]
+            #[ensures((result == $type::BITS) == (self == $zero))]
             fn trailing_zeros_logic(self) -> u32 {
                 dead
             }
 
             #[logic(opaque)]
             #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(!self >> $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $zero))]
+            #[ensures((result == $type::BITS) == (self == $type::MAX))]
             fn leading_ones_logic(self) -> u32 {
                 dead
             }
 
             #[logic(opaque)]
             #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(!self << $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == ((!self >> $type::BITS) & $one == $one))]
+            #[ensures((result == $type::BITS) == (self == $type::MAX))]
             fn trailing_ones_logic(self) -> u32 {
                 dead
             }
@@ -246,24 +258,15 @@ macro_rules! spec_unsized {
                     fn leading_zeros(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result <= $type::BITS)]
-                    #[ensures(self << $type::BITS - result == $zero)]
-                    #[ensures((result != $type::BITS) == ((self >> $type::BITS) & $one == $one))]
-                    #[ensures((result == $type::BITS) == (self == $zero))]
+                    #[ensures(result == self.trailing_zeros_logic())]
                     fn trailing_zeros(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result <= $type::BITS)]
-                    #[ensures(!self >> $type::BITS - result == $zero)]
-                    #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $zero))]
-                    #[ensures((result == $type::BITS) == (self == $type::MAX))]
+                    #[ensures(result == self.leading_ones_logic())]
                     fn leading_ones(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result <= $type::BITS)]
-                    #[ensures(!self << $type::BITS - result == $zero)]
-                    #[ensures((result != $type::BITS) == ((!self >> $type::BITS) & $one == $one))]
-                    #[ensures((result == $type::BITS) == (self == $type::MAX))]
+                    #[ensures(result == self.trailing_ones_logic())]
                     fn trailing_ones(self) -> u32;
             }
         }
