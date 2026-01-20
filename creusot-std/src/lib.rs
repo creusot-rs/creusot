@@ -30,6 +30,7 @@
 //!     - [`invariant`][mod@invariant]: Type invariants
 //!     - [`macros`]: `#[requires]`, `#[ensures]`, etc.
 //!     - [`resolve`][mod@resolve]: Resolve mutable borrows
+//!     - [`model`]: `View` and `DeepModel`
 //!     - [`snapshot`][mod@snapshot]: Snapshots
 //!
 //! 2. [`logic`][mod@logic]: Logical structures used in specifications
@@ -40,7 +41,9 @@
 //!
 //! 5. [`cell`][mod@cell]: Interior mutability
 //!
-//! 6. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
+//! 6. [`peano`]: Peano integers
+//!
+//! 7. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
 #![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
 #![cfg_attr(
     feature = "nightly",
