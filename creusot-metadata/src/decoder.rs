@@ -13,8 +13,8 @@ use rustc_serialize::{
     opaque::{IntEncodedWithFixedSize, MemDecoder},
 };
 use rustc_span::{
-    BytePos, ByteSymbol, DUMMY_SP, ExpnData, ExpnHash, ExpnId, SourceFile, Span, Symbol,
-    SyntaxContext,
+    BlobDecoder, BytePos, ByteSymbol, DUMMY_SP, ExpnData, ExpnHash, ExpnId, SourceFile, Span,
+    Symbol, SyntaxContext,
     hygiene::{HygieneDecodeContext, SyntaxContextKey},
 };
 use std::sync::Arc;
@@ -77,6 +77,27 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
 implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
 
 use rustc_span::{AttrId, SpanDecoder};
+
+impl BlobDecoder for MetadataDecoder<'_, '_> {
+    fn decode_symbol(&mut self) -> Symbol {
+        self.decode_symbol_or_byte_symbol(
+            Symbol::new,
+            |this| Symbol::intern(this.read_str()),
+            |opaque| Symbol::intern(opaque.read_str()),
+        )
+    }
+    fn decode_byte_symbol(&mut self) -> rustc_span::ByteSymbol {
+        self.decode_symbol_or_byte_symbol(
+            ByteSymbol::new,
+            |this| ByteSymbol::intern(this.read_byte_str()),
+            |opaque| ByteSymbol::intern(opaque.read_byte_str()),
+        )
+    }
+    fn decode_def_index(&mut self) -> DefIndex {
+        panic!("trying to decode `DefIndex` outside the context of a `DefId`")
+    }
+}
+
 impl SpanDecoder for MetadataDecoder<'_, '_> {
     fn decode_span(&mut self) -> Span {
         let ctxt = SyntaxContext::decode(self);
@@ -98,21 +119,6 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
         let hi = lo + len;
 
         Span::new(lo, hi, ctxt, None)
-    }
-
-    fn decode_symbol(&mut self) -> Symbol {
-        self.decode_symbol_or_byte_symbol(
-            Symbol::new,
-            |this| Symbol::intern(this.read_str()),
-            |opaque| Symbol::intern(opaque.read_str()),
-        )
-    }
-    fn decode_byte_symbol(&mut self) -> rustc_span::ByteSymbol {
-        self.decode_symbol_or_byte_symbol(
-            ByteSymbol::new,
-            |this| ByteSymbol::intern(this.read_byte_str()),
-            |opaque| ByteSymbol::intern(opaque.read_byte_str()),
-        )
     }
     fn decode_expn_id(&mut self) -> ExpnId {
         let stable_id = StableCrateId::decode(self);
@@ -141,9 +147,6 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     fn decode_crate_num(&mut self) -> CrateNum {
         let stable_id = StableCrateId::decode(self);
         self.tcx.stable_crate_id_to_crate_num(stable_id)
-    }
-    fn decode_def_index(&mut self) -> DefIndex {
-        panic!("trying to decode `DefIndex` outside the context of a `DefId`")
     }
 
     // Both the `CrateNum` and the `DefIndex` of a `DefId` can change in between two

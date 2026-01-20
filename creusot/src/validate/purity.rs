@@ -308,11 +308,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                 let thir = &thir.borrow();
                 PurityVisitor { thir, ..*self }.visit_expr(&thir[expr]);
             }
-            ExprKind::Scope {
-                region_scope: _,
-                lint_level: thir::LintLevel::Explicit(hir_id),
-                value: _,
-            } => {
+            ExprKind::Scope { region_scope: _, hir_id, value: _ } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {
                     let old_context = std::mem::replace(&mut self.context, Purity::Ghost);
                     thir::visit::walk_expr(self, expr);

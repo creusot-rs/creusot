@@ -422,13 +422,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ///
     /// Will error when trying to dereference a raw pointer.
     fn translate_operand(&self, operand: &Operand<'tcx>, span: Span) -> fmir::Operand<'tcx> {
+        use Operand::*;
         match operand {
-            &Operand::Copy(pl) | &Operand::Move(pl) => {
+            &Copy(pl) | &Move(pl) => {
                 fmir::Operand::Place(self.translate_place(pl, span))
             }
-            Operand::Constant(c) => {
-                mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
-            }
+            Constant(c) => mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id),
+            RuntimeChecks(runtime_checks) => todo!(),
         }
     }
 
