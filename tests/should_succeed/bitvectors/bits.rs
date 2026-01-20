@@ -3,22 +3,27 @@ use creusot_std::prelude::*;
 
 const USIZE_BITS: usize = std::mem::size_of::<usize>() * 8; 
 
-#[bitwise_proof]
-#[ensures((val >> result) == 0usize)]
-#[ensures(result != 0u32 ==> val >> (result - 1u32) == 1usize)]
+#[ensures(result == ffs_logic(val))]
 pub fn ffs(val: usize) -> u32 {
     USIZE_BITS as u32 - val.leading_zeros()
 }
 
+#[logic]
+pub fn ffs_logic(val: usize) -> u32 {
+    pearlite! {
+        USIZE_BITS as u32 - val.leading_zeros_logic()
+    }
+}
+
 #[bitwise_proof]
 #[ensures(val == 0usize ==> result == val)]
-#[ensures(forall<rq: u32> val >> rq == 1usize ==> result >> rq == val & !(1usize << rq))]
+#[ensures(val != 0usize ==> result == val & !(1usize << (ffs_logic(val) - 1u32)))]
 pub fn empty(val: usize) -> usize {
     let rq_ffs = ffs(val);
-    let rq = (rq_ffs - 1) as u8;
-    if !rq_ffs == 0 {
-        val & !(1 << rq)
-    } else {
+    if rq_ffs == 0 {
         0
+    } else { 
+        let rq = (rq_ffs - 1) as u8;
+        val & !(1 << rq)
     }
 }

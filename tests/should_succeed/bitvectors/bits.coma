@@ -1,0 +1,199 @@
+module M_ffs
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  constant const_USIZE_BITS: UInt64.t = (64: UInt64.t)
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom eq_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log_u32 x y = Equal)
+  
+  function antisym2_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom antisym2_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
+  
+  function antisym1_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom antisym1_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
+  
+  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
+  
+  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log_u32 x y = o
+      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
+  
+  function refl_u32 (x: UInt32.t) : ()
+  
+  axiom refl_u32_spec: forall x: UInt32.t. cmp_log_u32 x x = Equal
+  
+  function cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log_u32 x y = Greater)
+  
+  function cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log_u32 x y <> Less)
+  
+  function cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log_u32 x y = Less)
+  
+  function cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
+  
+  constant const_BITS: UInt32.t = (64: UInt32.t)
+  
+  function leading_zeros_usize (self: UInt64.t) : UInt32.t
+  
+  axiom leading_zeros_usize_spec: forall self: UInt64.t. UInt32.le (leading_zeros_usize self) const_BITS
+  
+  axiom leading_zeros_usize_spec'0:
+    forall self: UInt64.t. UInt64.shr self (UInt64.of_int (UInt32.t'int (UInt32.sub const_BITS (leading_zeros_usize self))))
+      = (0: UInt64.t)
+  
+  axiom leading_zeros_usize_spec'1: forall self: UInt64.t. (leading_zeros_usize self <> const_BITS)
+      = (UInt64.shr self (UInt64.of_int (UInt32.t'int (UInt32.sub (UInt32.sub const_BITS (leading_zeros_usize self)) (1: UInt32.t))))
+      = (1: UInt64.t))
+  
+  axiom leading_zeros_usize_spec'2: forall self: UInt64.t. (leading_zeros_usize self = const_BITS)
+      = (self = (0: UInt64.t))
+  
+  let rec leading_zeros (self_: UInt64.t) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@expl:leading_zeros ensures] result = leading_zeros_usize self_}
+      (! return {result}) ]
+  
+  function ffs (val': UInt64.t) : UInt32.t =
+    UInt32.sub (UInt32.of_int (UInt64.t'int const_USIZE_BITS)) (leading_zeros_usize val')
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ffs'0 (val': UInt64.t) (return (x: UInt32.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = UInt32.of_int {UInt64.t'int const_USIZE_BITS} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1)
+      | s1 = leading_zeros {val'} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+      | s2 = UInt32.sub {_4} {_5} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l ()
+    | & val': UInt64.t = val'
+    | & _4: UInt32.t = Any.any_l ()
+    | & _5: UInt32.t = Any.any_l () ])
+    [ return (result: UInt32.t) -> {[@expl:ffs ensures] result = ffs val'} (! return {result}) ]
+end
+module M_empty
+  use creusot.int.UInt64BW
+  use creusot.int.UInt32BW
+  use creusot.int.UInt8BW
+  use creusot.prelude.Any
+  
+  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u32 (self: UInt32BW.t) (o: UInt32BW.t) : t_Ordering = if UInt32BW.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom eq_cmp_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. (x = y) = (cmp_log_u32 x y = Equal)
+  
+  function antisym2_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom antisym2_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
+  
+  function antisym1_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom antisym1_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
+  
+  function trans_u32 (x: UInt32BW.t) (y: UInt32BW.t) (z: UInt32BW.t) (o: t_Ordering) : ()
+  
+  axiom trans_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t, z: UInt32BW.t, o: t_Ordering. cmp_log_u32 x y = o
+      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
+  
+  function refl_u32 (x: UInt32BW.t) : ()
+  
+  axiom refl_u32_spec: forall x: UInt32BW.t. cmp_log_u32 x x = Equal
+  
+  function cmp_gt_log_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom cmp_gt_log_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. UInt32BW.gt x y = (cmp_log_u32 x y = Greater)
+  
+  function cmp_ge_log_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom cmp_ge_log_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. UInt32BW.ge x y = (cmp_log_u32 x y <> Less)
+  
+  function cmp_lt_log_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom cmp_lt_log_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. UInt32BW.lt x y = (cmp_log_u32 x y = Less)
+  
+  function cmp_le_log_u32 (x: UInt32BW.t) (y: UInt32BW.t) : ()
+  
+  axiom cmp_le_log_u32_spec: forall x: UInt32BW.t, y: UInt32BW.t. UInt32BW.le x y = (cmp_log_u32 x y <> Greater)
+  
+  constant const_BITS: UInt32BW.t = (64: UInt32BW.t)
+  
+  function leading_zeros_usize (self: UInt64BW.t) : UInt32BW.t
+  
+  axiom leading_zeros_usize_spec: forall self: UInt64BW.t. UInt32BW.le (leading_zeros_usize self) const_BITS
+  
+  axiom leading_zeros_usize_spec'0:
+    forall self: UInt64BW.t. UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub const_BITS (leading_zeros_usize self))))
+      = (0: UInt64BW.t)
+  
+  axiom leading_zeros_usize_spec'1: forall self: UInt64BW.t. (leading_zeros_usize self <> const_BITS)
+      = (UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_usize self)) (1: UInt32BW.t))))
+      = (1: UInt64BW.t))
+  
+  axiom leading_zeros_usize_spec'2: forall self: UInt64BW.t. (leading_zeros_usize self = const_BITS)
+      = (self = (0: UInt64BW.t))
+  
+  function ffs (val': UInt64BW.t) : UInt32BW.t =
+    UInt32BW.sub (UInt32BW.of_BV256 (UInt64BW.to_BV256 const_USIZE_BITS)) (leading_zeros_usize val')
+  
+  let rec ffs'0 (val': UInt64BW.t) (return (x: UInt32BW.t)) = any
+    [ return (result: UInt32BW.t) -> {[@expl:ffs ensures] result = ffs val'} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec empty (val': UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = ffs'0 {val'} (fun (_x: UInt32BW.t) -> [ &rq_ffs <- _x ] s1)
+      | s1 = [ &_8 <- rq_ffs = (0: UInt32BW.t) ] s2
+      | s2 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb2) ] ]
+    | bb2 = s0 [ s0 = [ &_ret <- (0: UInt64BW.t) ] s1 | s1 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = UInt32BW.sub {rq_ffs} {(1: UInt32BW.t)} (fun (_x: UInt32BW.t) -> [ &_11 <- _x ] s1)
+      | s1 = UInt8BW.of_BV256 {UInt32BW.to_BV256 _11} (fun (_x: UInt8BW.t) -> [ &rq <- _x ] s2)
+      | s2 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.t'int rq} (fun (_x: UInt64BW.t) -> [ &_15 <- _x ] s3)
+      | s3 = [ &_14 <- UInt64BW.bw_not _15 ] s4
+      | s4 = [ &_ret <- UInt64BW.bw_and val' _14 ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l ()
+    | & val': UInt64BW.t = val'
+    | & rq_ffs: UInt32BW.t = Any.any_l ()
+    | & _8: bool = Any.any_l ()
+    | & rq: UInt8BW.t = Any.any_l ()
+    | & _11: UInt32BW.t = Any.any_l ()
+    | & _14: UInt64BW.t = Any.any_l ()
+    | & _15: UInt64BW.t = Any.any_l () ])
+    [ return (result: UInt64BW.t) -> {([@expl:empty ensures #0] val' = (0: UInt64BW.t) -> result = val')
+      /\ ([@expl:empty ensures #1] val' <> (0: UInt64BW.t)
+      -> result
+      = UInt64BW.bw_and val' (UInt64BW.bw_not (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (ffs val') (1: UInt32BW.t)))))))}
+      (! return {result}) ]
+end
