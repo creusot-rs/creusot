@@ -197,3 +197,85 @@ module M_empty
       = UInt64BW.bw_and val' (UInt64BW.bw_not (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (ffs val') (1: UInt32BW.t)))))))}
       (! return {result}) ]
 end
+module M_set_bit
+  use creusot.int.UInt8BW
+  use creusot.int.UInt64BW
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  
+  predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
+    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec set_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
+    {[@expl:set_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.t'int bit} (fun (_x: UInt64BW.t) -> [ &_10 <- _x ] s1)
+      | s1 = [ &_ret <- UInt64BW.bw_or bitvec _10 ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l ()
+    | & bitvec: UInt64BW.t = bitvec
+    | & bit: UInt8BW.t = bit
+    | & _10: UInt64BW.t = Any.any_l () ])
+    [ return (result: UInt64BW.t) -> {([@expl:set_bit ensures #0] has_bit result bit)
+      /\ ([@expl:set_bit ensures #1] forall b: UInt8BW.t. has_bit bitvec b -> has_bit result b)}
+      (! return {result}) ]
+end
+module M_unset_bit
+  use creusot.int.UInt8BW
+  use creusot.int.UInt64BW
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  
+  predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
+    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unset_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
+    {[@expl:unset_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.t'int bit} (fun (_x: UInt64BW.t) -> [ &_12 <- _x ] s1)
+      | s1 = [ &_11 <- UInt64BW.bw_not _12 ] s2
+      | s2 = [ &_ret <- UInt64BW.bw_and bitvec _11 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l ()
+    | & bitvec: UInt64BW.t = bitvec
+    | & bit: UInt8BW.t = bit
+    | & _11: UInt64BW.t = Any.any_l ()
+    | & _12: UInt64BW.t = Any.any_l () ])
+    [ return (result: UInt64BW.t) -> {([@expl:unset_bit ensures #0] not has_bit result bit)
+      /\ ([@expl:unset_bit ensures #1] forall b: UInt8BW.t. b <> bit /\ has_bit bitvec b -> has_bit result b)}
+      (! return {result}) ]
+end
+module M_merge_bvs
+  use creusot.int.UInt64BW
+  use creusot.prelude.Any
+  use creusot.int.UInt8BW
+  
+  predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
+    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec merge_bvs (lhs: UInt64BW.t) (rhs: UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- UInt64BW.bw_or lhs rhs ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l () | & lhs: UInt64BW.t = lhs | & rhs: UInt64BW.t = rhs ])
+    [ return (result: UInt64BW.t) -> {([@expl:merge_bvs ensures #0] forall b: UInt8BW.t. has_bit lhs b
+          -> has_bit result b)
+      /\ ([@expl:merge_bvs ensures #1] forall b: UInt8BW.t. has_bit rhs b -> has_bit result b)}
+      (! return {result}) ]
+end
