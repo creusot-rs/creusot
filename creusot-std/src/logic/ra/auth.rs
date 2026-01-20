@@ -16,8 +16,8 @@ use crate::{
 /// - the relation between the two is specified by [`AuthViewRel`]: it asserts that
 ///   `Frag` must always be included in `Auth`
 ///
-/// If this type is directly used as a ghost resource, on should rather use
-/// [`crate::ghost::resource::auth`], which provides convenient wrappers which the provers prefer.
+/// If this type is directly used as a ghost resource, one should rather use
+/// [`crate::ghost::resource::Authority`] or [`crate::ghost::resource::Fragment`], which provides convenient wrappers which the provers prefer.
 pub type Auth<T> = View<AuthViewRel<T>>;
 
 /// The relation that specifies [`Auth`].

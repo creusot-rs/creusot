@@ -22,7 +22,7 @@ pub trait Container {
 /// Permissions are made unsized to guarantee that they cannot be replaced in a mutable reference.
 /// This would allow the permission to outlive the reference it has been placed in. This makes it
 /// easier to specify splitting a mutable reference of a permission to a slice, and makes it
-/// possible to specify functions such as `Perm::from_mut`
+/// possible to specify functions such as [`Perm::from_mut`].
 ///
 /// # Pointer permissions
 ///
