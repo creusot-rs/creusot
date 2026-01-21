@@ -103,10 +103,19 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     weakdep: bool,
 }
 
-pub fn recast_int<'tcx, N>(namer: &N, ty1: &TyKind, ty2: &TyKind, arg: why3::Exp) -> why3::Exp
+pub fn recast_int<'tcx, N>(
+    namer: &N,
+    ty1: &TyKind<'tcx>,
+    ty2: &TyKind<'tcx>,
+    arg: why3::Exp,
+) -> why3::Exp
 where
     N: Namer<'tcx>,
 {
+    if ty1 == ty2 {
+        return arg;
+    }
+
     let e1 = namer.in_pre(
         ty_to_prelude(namer.tcx(), ty1),
         if namer.bitwise_mode() { "to_BV256" } else { "t'int" },
