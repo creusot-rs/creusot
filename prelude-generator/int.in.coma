@@ -49,8 +49,8 @@ module UInt$bits_count$
   function bw_or (a:t) (b:t) : t
   function bw_xor (a:t) (b:t) : t
   function bw_not (a:t) : t
-  function lsl (a:t) (b:int) : t
-  function shr (a:t) (b:int) : t
+  function shl (a:t) (b:t) : t
+  function shr (a:t) (b:t) : t
   function nth (x: t) (i: int) : bool
 
   function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
@@ -82,11 +82,11 @@ module UInt$bits_count$
     = any
   let shl (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$  }
-    (ret (result :t) { result = lsl a b })
+    (ret (result :t) { result = shl a (of_int b) })
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$ }
-    (ret (result :t) { result = shr a b })
+    (ret (result :t) { result = shr a (of_int b) })
     = any
 end
 
@@ -108,7 +108,9 @@ module UInt$bits_count$BW
   predicate ge (a:t) (b:t) = uge a b
   predicate gt (a:t) (b:t) = ugt a b
 
-  function shr (a:t) (b:int) : t = lsr a b
+  function shr (a:t) (b:t) : t = lsr_bv a b
+  function shl (a:t) (b:t) : t = lsl_bv a b
+
 
   function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
@@ -141,11 +143,11 @@ module UInt$bits_count$BW
     = any
   let shl (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size  }
-    (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+    (ret (result :t) { result = shl a (of_int b) })
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= size }
-    (ret (result :t) { result = lsr_bv a (of_int b) } { result = shr a b })
+    (ret (result :t) { result = shr a (of_int b) })
     = any
 end
 
@@ -203,8 +205,8 @@ module Int$bits_count$
   function bw_or (a:t) (b:t) : t
   function bw_xor (a:t) (b:t) : t
   function bw_not (a:t) : t
-  function lsl (a:t) (b:int) : t
-  function shr (a:t) (b:int) : t
+  function shl (a:t) (b:t) : t
+  function shr (a:t) (b:t) : t
 
   function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
@@ -240,11 +242,11 @@ module Int$bits_count$
     = any
   let shl (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$  }
-    (ret (result :t) { result = lsl a b })
+    (ret (result :t) { result = shl a (of_int b) })
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b <= $bits_count$ }
-    (ret (result :t) { result = shr a b })
+    (ret (result :t) { result = shr a (of_int b) })
     = any
 end
 
@@ -270,7 +272,8 @@ module Int$bits_count$BW
   predicate ge (a:t) (b:t) = sge a b
   predicate gt (a:t) (b:t) = sgt a b
 
-  function shr (a:t) (b:int) : t = asr a b
+  function shr (a:t) (b:t) : t = asr_bv a b
+  function shl (a:t) (b:t) : t = lsl_bv a b
 
   function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
@@ -307,10 +310,10 @@ module Int$bits_count$BW
     = any
   let shl (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b < size  }
-    (ret (result :t) { result = lsl_bv a (of_int b) } { result = lsl a b })
+    (ret (result :t) { result = shl a (of_int b) })
     = any
   let shr (a:t) (b:int)
     { [@expl:out-of-bounds shifting] b >= 0 /\ b < size }
-    (ret (result :t) { result = asr_bv a (of_int b) } { result = shr a b })
+    (ret (result :t) { result = shr a (of_int b) })
     = any
 end

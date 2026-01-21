@@ -183,9 +183,65 @@ macro_rules! spec_type {
     };
 }
 
+pub trait NumExt {
+    #[logic]
+    fn leading_zeros_logic(self) -> u32;
+
+    #[logic]
+    fn trailing_zeros_logic(self) -> u32;
+
+    #[logic]
+    fn leading_ones_logic(self) -> u32;
+
+    #[logic]
+    fn trailing_ones_logic(self) -> u32;
+}
+
 macro_rules! spec_unsized {
     ($type:ty, $zero:expr, $one:expr) => {
         spec_type!($type);
+
+        impl NumExt for $type {
+            #[logic(opaque)]
+            #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(self >> $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == (self >> ($type::BITS - result - 1u32) == $one))]
+            #[ensures((result == $type::BITS) == (self == $zero))]
+            fn leading_zeros_logic(self) -> u32 {
+                dead
+            }
+
+            #[logic(opaque)]
+            #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(self << $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == ((self >> $type::BITS) & $one == $one))]
+            #[ensures((result == $type::BITS) == (self == $zero))]
+            fn trailing_zeros_logic(self) -> u32 {
+                dead
+            }
+
+            #[logic(opaque)]
+            #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(!self >> $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $zero))]
+            #[ensures((result == $type::BITS) == (self == $type::MAX))]
+            fn leading_ones_logic(self) -> u32 {
+                dead
+            }
+
+            #[logic(opaque)]
+            #[trusted]
+            #[ensures(result <= $type::BITS)]
+            #[ensures(!self << $type::BITS - result == $zero)]
+            #[ensures((result != $type::BITS) == ((!self >> $type::BITS) & $one == $one))]
+            #[ensures((result == $type::BITS) == (self == $type::MAX))]
+            fn trailing_ones_logic(self) -> u32 {
+                dead
+            }
+        }
 
         extern_spec! {
             impl $type {
@@ -196,6 +252,22 @@ macro_rules! spec_unsized {
                     #[check(ghost)]
                     #[ensures(result == (self != $zero && self & (self - $one) == $zero))]
                     fn is_power_of_two(self) -> bool;
+
+                    #[check(ghost)]
+                    #[ensures(result == self.leading_zeros_logic())]
+                    fn leading_zeros(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(result == self.trailing_zeros_logic())]
+                    fn trailing_zeros(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(result == self.leading_ones_logic())]
+                    fn leading_ones(self) -> u32;
+
+                    #[check(ghost)]
+                    #[ensures(result == self.trailing_ones_logic())]
+                    fn trailing_ones(self) -> u32;
             }
         }
     };
