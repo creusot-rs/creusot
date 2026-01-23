@@ -56,19 +56,15 @@ module M_ffs
   
   axiom leading_zeros_usize_spec: forall self: UInt64.t. UInt32.le (leading_zeros_usize self) const_BITS
   
-  axiom leading_zeros_usize_spec'0:
-    forall self: UInt64.t. UInt64.shr self (UInt64.of_int (UInt32.t'int (UInt32.sub const_BITS (leading_zeros_usize self))))
-      = (0: UInt64.t)
-  
-  axiom leading_zeros_usize_spec'1: forall self: UInt64.t. (leading_zeros_usize self <> const_BITS)
+  axiom leading_zeros_usize_spec'0: forall self: UInt64.t. (leading_zeros_usize self <> const_BITS)
       = (UInt64.shr self (UInt64.of_int (UInt32.t'int (UInt32.sub (UInt32.sub const_BITS (leading_zeros_usize self)) (1: UInt32.t))))
       = (1: UInt64.t))
   
-  axiom leading_zeros_usize_spec'2: forall self: UInt64.t. (leading_zeros_usize self = const_BITS)
+  axiom leading_zeros_usize_spec'1: forall self: UInt64.t. (leading_zeros_usize self = const_BITS)
       = (self = (0: UInt64.t))
   
   let rec leading_zeros (self_: UInt64.t) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:leading_zeros ensures] result = leading_zeros_usize self_}
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:leading_zeros ensures] result = leading_zeros_usize self_}
       (! return {result}) ]
   
   function ffs (val': UInt64.t) : UInt32.t =
@@ -88,7 +84,7 @@ module M_ffs
     | & val': UInt64.t = val'
     | & _4: UInt32.t = Any.any_l ()
     | & _5: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:ffs ensures] result = ffs val'} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:ffs ensures] result = ffs val'} (! return {result}) ]
 end
 module M_empty
   use creusot.int.UInt64BW
@@ -149,22 +145,18 @@ module M_empty
   
   axiom leading_zeros_usize_spec: forall self: UInt64BW.t. UInt32BW.le (leading_zeros_usize self) const_BITS
   
-  axiom leading_zeros_usize_spec'0:
-    forall self: UInt64BW.t. UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub const_BITS (leading_zeros_usize self))))
-      = (0: UInt64BW.t)
-  
-  axiom leading_zeros_usize_spec'1: forall self: UInt64BW.t. (leading_zeros_usize self <> const_BITS)
+  axiom leading_zeros_usize_spec'0: forall self: UInt64BW.t. (leading_zeros_usize self <> const_BITS)
       = (UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_usize self)) (1: UInt32BW.t))))
       = (1: UInt64BW.t))
   
-  axiom leading_zeros_usize_spec'2: forall self: UInt64BW.t. (leading_zeros_usize self = const_BITS)
+  axiom leading_zeros_usize_spec'1: forall self: UInt64BW.t. (leading_zeros_usize self = const_BITS)
       = (self = (0: UInt64BW.t))
   
   function ffs (val': UInt64BW.t) : UInt32BW.t =
     UInt32BW.sub (UInt32BW.of_BV256 (UInt64BW.to_BV256 const_USIZE_BITS)) (leading_zeros_usize val')
   
   let rec ffs'0 (val': UInt64BW.t) (return (x: UInt32BW.t)) = any
-    [ return (result: UInt32BW.t) -> {[@expl:ffs ensures] result = ffs val'} (! return {result}) ]
+    [ return (result: UInt32BW.t) -> {[@stop_split] [@expl:ffs ensures] result = ffs val'} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -191,8 +183,9 @@ module M_empty
     | & _11: UInt32BW.t = Any.any_l ()
     | & _14: UInt64BW.t = Any.any_l ()
     | & _15: UInt64BW.t = Any.any_l () ])
-    [ return (result: UInt64BW.t) -> {([@expl:empty ensures #0] val' = (0: UInt64BW.t) -> result = val')
-      /\ ([@expl:empty ensures #1] val' <> (0: UInt64BW.t)
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] val'
+          = (0: UInt64BW.t) -> result = val')
+      /\ ([@stop_split] [@expl:empty ensures #1] val' <> (0: UInt64BW.t)
       -> result
       = UInt64BW.bw_and val' (UInt64BW.bw_not (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (ffs val') (1: UInt32BW.t)))))))}
       (! return {result}) ]
@@ -213,7 +206,7 @@ module M_set_bit
   meta "select_lsinst" "all"
   
   let rec set_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
-    {[@expl:set_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
+    {[@stop_split] [@expl:set_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.t'int bit} (fun (_x: UInt64BW.t) -> [ &_10 <- _x ] s1)
@@ -223,8 +216,9 @@ module M_set_bit
     | & bitvec: UInt64BW.t = bitvec
     | & bit: UInt8BW.t = bit
     | & _10: UInt64BW.t = Any.any_l () ])
-    [ return (result: UInt64BW.t) -> {([@expl:set_bit ensures #0] has_bit result bit)
-      /\ ([@expl:set_bit ensures #1] forall b: UInt8BW.t. has_bit bitvec b -> has_bit result b)}
+    [ return (result: UInt64BW.t) ->
+    {[@stop_split] [@expl:set_bit ensures] ([@stop_split] [@expl:set_bit ensures #0] has_bit result bit)
+      /\ ([@stop_split] [@expl:set_bit ensures #1] forall b: UInt8BW.t. has_bit bitvec b -> has_bit result b)}
       (! return {result}) ]
 end
 module M_unset_bit
@@ -243,7 +237,7 @@ module M_unset_bit
   meta "select_lsinst" "all"
   
   let rec unset_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
-    {[@expl:unset_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
+    {[@stop_split] [@expl:unset_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.t'int bit} (fun (_x: UInt64BW.t) -> [ &_12 <- _x ] s1)
@@ -255,8 +249,10 @@ module M_unset_bit
     | & bit: UInt8BW.t = bit
     | & _11: UInt64BW.t = Any.any_l ()
     | & _12: UInt64BW.t = Any.any_l () ])
-    [ return (result: UInt64BW.t) -> {([@expl:unset_bit ensures #0] not has_bit result bit)
-      /\ ([@expl:unset_bit ensures #1] forall b: UInt8BW.t. b <> bit /\ has_bit bitvec b -> has_bit result b)}
+    [ return (result: UInt64BW.t) ->
+    {[@stop_split] [@expl:unset_bit ensures] ([@stop_split] [@expl:unset_bit ensures #0] not has_bit result bit)
+      /\ ([@stop_split] [@expl:unset_bit ensures #1] forall b: UInt8BW.t. b <> bit /\ has_bit bitvec b
+        -> has_bit result b)}
       (! return {result}) ]
 end
 module M_merge_bvs
@@ -274,8 +270,9 @@ module M_merge_bvs
   let rec merge_bvs (lhs: UInt64BW.t) (rhs: UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- UInt64BW.bw_or lhs rhs ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64BW.t = Any.any_l () | & lhs: UInt64BW.t = lhs | & rhs: UInt64BW.t = rhs ])
-    [ return (result: UInt64BW.t) -> {([@expl:merge_bvs ensures #0] forall b: UInt8BW.t. has_bit lhs b
+    [ return (result: UInt64BW.t) ->
+    {[@stop_split] [@expl:merge_bvs ensures] ([@stop_split] [@expl:merge_bvs ensures #0] forall b: UInt8BW.t. has_bit lhs b
           -> has_bit result b)
-      /\ ([@expl:merge_bvs ensures #1] forall b: UInt8BW.t. has_bit rhs b -> has_bit result b)}
+      /\ ([@stop_split] [@expl:merge_bvs ensures #1] forall b: UInt8BW.t. has_bit rhs b -> has_bit result b)}
       (! return {result}) ]
 end
