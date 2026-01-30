@@ -83,8 +83,8 @@ module M_foo
   
   let rec new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
     [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
-    {([@expl:new result type invariant] inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result)
-      /\ ([@expl:new ensures] ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v)}
+    {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global result)
+      /\ ([@stop_split] [@expl:new ensures] ward_ptr_i32 result.f1 = result.f0 /\ val_ptr_i32 result.f1 = v)}
       (! return {result}) ]
   
   predicate invariant_refmut_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_i32) =
@@ -109,11 +109,11 @@ module M_foo
   
   let rec deref_mut_Ghost_Box_Perm_ptr_i32_Global (self: MutBorrow.t t_Perm_ptr_i32)
     (return (x: MutBorrow.t t_Perm_ptr_i32)) =
-    {[@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Box_Perm_ptr_i32_Global self}
+    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Box_Perm_ptr_i32_Global self}
     any
     [ return (result: MutBorrow.t t_Perm_ptr_i32) ->
-    {([@expl:deref_mut result type invariant] inv_refmut_Box_Perm_ptr_i32_Global result)
-      /\ ([@expl:deref_mut ensures] result = self)}
+    {[@stop_split] [@expl:deref_mut_Ghost_Box_Perm_ptr_i32_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Box_Perm_ptr_i32_Global result)
+      /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
   predicate invariant_ref_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (self: t_Perm_ptr_i32) =
@@ -137,10 +137,11 @@ module M_foo
   meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_i32_Global
   
   let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
     any
-    [ return (result: t_Perm_ptr_i32) -> {([@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
-      /\ ([@expl:deref ensures] result = self)}
+    [ return (result: t_Perm_ptr_i32) ->
+    {[@stop_split] [@expl:deref_Ghost_Box_Perm_ptr_i32_Global ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
   predicate invariant_refmut_Perm_ptr_i32 [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_i32) =
@@ -168,12 +169,12 @@ module M_foo
   meta "rewrite_def" predicate is_disjoint_ptr_i32
   
   let rec disjoint_lemma_ptr_i32 (self: MutBorrow.t t_Perm_ptr_i32) (other: t_Perm_ptr_i32) (return (x: ())) =
-    {([@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_i32 self)
-    /\ ([@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_i32 other)}
+    {[@stop_split] [@expl:disjoint_lemma_ptr_i32 requires] ([@stop_split] [@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_i32 self)
+    /\ ([@stop_split] [@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_i32 other)}
     any
     [ return (result: ()) ->
-    {([@expl:disjoint_lemma ensures #0] is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_ptr_i32 self.current) (ward_ptr_i32 other) (val_ptr_i32 other))
-      /\ ([@expl:disjoint_lemma ensures #1] self.current = self.final)}
+    {[@stop_split] [@expl:disjoint_lemma_ptr_i32 ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_ptr_i32 self.current) (ward_ptr_i32 other) (val_ptr_i32 other))
+      /\ ([@stop_split] [@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_Box_Perm_ptr_i32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_i32) =
@@ -187,7 +188,7 @@ module M_foo
   meta "rewrite_def" predicate resolve_refmut_Box_Perm_ptr_i32_Global
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -204,12 +205,13 @@ module M_foo
       | s6 = MutBorrow.borrow_mut <t_Perm_ptr_i32> {own1}
           (fun (_bor: MutBorrow.t t_Perm_ptr_i32) ->
             [ &_13 <- _bor ] -{inv_Ghost_Box_Perm_ptr_i32_Global _bor.final}-
-            [ &own1 <- _bor.final ] s7) [ _ck -> (! {inv_Ghost_Box_Perm_ptr_i32_Global own1} any) ]
+            [ &own1 <- _bor.final ] s7)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global own1} any) ]
       | s7 = MutBorrow.borrow_final <t_Perm_ptr_i32> {_13.current} {MutBorrow.get_id _13}
           (fun (_bor: MutBorrow.t t_Perm_ptr_i32) ->
             [ &_12 <- _bor ] -{inv_Ghost_Box_Perm_ptr_i32_Global _bor.final}-
             [ &_13 <- { _13 with current = _bor.final } ] s8)
-        [ _ck -> (! {inv_Ghost_Box_Perm_ptr_i32_Global _13.current} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global _13.current} any) ]
       | s8 = deref_mut_Ghost_Box_Perm_ptr_i32_Global {_12} (fun (_x: MutBorrow.t t_Perm_ptr_i32) -> [ &_11 <- _x ] s9)
       | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global own2} any) ]
       | s10 = [ &_17 <- own2 ] s11
@@ -217,7 +219,8 @@ module M_foo
       | s12 = MutBorrow.borrow_final <t_Perm_ptr_i32> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_Perm_ptr_i32) ->
             [ &_10 <- _bor ] -{inv_Perm_ptr_i32 _bor.final}-
-            [ &_11 <- { _11 with current = _bor.final } ] s13) [ _ck -> (! {inv_Perm_ptr_i32 _11.current} any) ]
+            [ &_11 <- { _11 with current = _bor.final } ] s13)
+        [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_i32 _11.current} any) ]
       | s13 = disjoint_lemma_ptr_i32 {_10} {_15} (fun (_x: ()) -> [ &_9 <- _x ] s14)
       | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_Ghost_Box_Perm_ptr_i32_Global _13} any) ]
       | s15 = -{resolve_refmut_Ghost_Box_Perm_ptr_i32_Global _13}- s16

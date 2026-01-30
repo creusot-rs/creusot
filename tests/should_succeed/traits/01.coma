@@ -17,15 +17,17 @@ module M_uses_generic
     forall args: t_T, res: UInt32.t [postcondition_once_from_b () args res]. postcondition_once_from_b () args res
       -> (let x = args in true)
   
-  let rec from_b_T (x: t_T) (return (x'0: UInt32.t)) = {[@expl:from_b requires] precondition_from_b () x}
+  let rec from_b_T (x: t_T) (return (x'0: UInt32.t)) = {[@stop_split] [@expl:from_b requires] precondition_from_b () x}
     any
-    [ return (result: UInt32.t) -> {[@expl:from_b ensures] postcondition_once_from_b () x result} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:from_b ensures] postcondition_once_from_b () x result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec uses_generic_T (b: t_T) (return (x: UInt32.t)) = {[@expl:uses_generic 'b' type invariant] inv_T b}
+  let rec uses_generic_T (b: t_T) (return (x: UInt32.t)) =
+    {[@stop_split] [@expl:uses_generic 'b' type invariant] inv_T b}
     (! bb0
     [ bb0 = s0 [ s0 = from_b_T {b} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & b: t_T = b ]) [ return (result: UInt32.t) -> (! return {result}) ]

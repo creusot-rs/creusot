@@ -9,10 +9,12 @@ module M_extend
   
   predicate inv_I (_1: t_I)
   
-  let rec into_iter_I (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv_I self_}
+  let rec into_iter_I (self_: t_I) (return (x: t_I)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_I self_}
     any
-    [ return (result: t_I) -> {([@expl:into_iter result type invariant] inv_I result)
-      /\ ([@expl:into_iter ensures] result = self_)}
+    [ return (result: t_I) ->
+    {[@stop_split] [@expl:into_iter_I ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_I result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
   type t_T
@@ -66,9 +68,10 @@ module M_extend
         | Some v -> produces_I self_.current (Seq.singleton v) self_.final
         end)
   
-  let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_T)) = {[@expl:next requires] precondition_next () self_}
+  let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:next requires] precondition_next () self_}
     any
-    [ return (result: t_Option_T) -> {[@expl:next ensures] postcondition_once_next () self_ result}
+    [ return (result: t_Option_T) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self_ result}
       (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
@@ -119,16 +122,17 @@ module M_extend
   
   let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
       any) ]
   
   let rec push_T (self_: MutBorrow.t t_Vec_T_Global) (v: t_T) (return (x: ())) =
-    {([@expl:push 'self_' type invariant] inv_refmut_Vec_T_Global self_) /\ ([@expl:push 'v' type invariant] inv_T v)}
+    {[@stop_split] [@expl:push_T requires] ([@stop_split] [@expl:push 'self_' type invariant] inv_refmut_Vec_T_Global self_)
+    /\ ([@stop_split] [@expl:push 'v' type invariant] inv_T v)}
     any
-    [ return (result: ()) -> {[@expl:push ensures] view_Vec_T_Global self_.final
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_T_Global self_.final
       = Seq.snoc (view_Vec_T_Global self_.current) v}
       (! return {result}) ]
   
@@ -143,8 +147,8 @@ module M_extend
   meta "select_lsinst" "all"
   
   let rec extend_T (vec: MutBorrow.t t_Vec_T_Global) (iter: t_I) (return (x: ())) =
-    {([@expl:extend 'vec' type invariant] inv_refmut_Vec_T_Global vec)
-    /\ ([@expl:extend 'iter' type invariant] inv_I iter)}
+    {[@stop_split] [@expl:extend_T requires] ([@stop_split] [@expl:extend 'vec' type invariant] inv_refmut_Vec_T_Global vec)
+    /\ ([@stop_split] [@expl:extend 'iter' type invariant] inv_I iter)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_vec <- vec ] s1
@@ -163,11 +167,12 @@ module M_extend
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
             (fun (_bor: MutBorrow.t t_I) -> [ &_32 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
-          [ _ck -> (! {inv_I iter'0} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
         | s1 = MutBorrow.borrow_final <t_I> {_32.current} {MutBorrow.get_id _32}
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_31 <- _bor ] -{inv_I _bor.final}-
-              [ &_32 <- { _32 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _32.current} any) ]
+              [ &_32 <- { _32 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_I _32.current} any) ]
         | s2 = next_I {_31} (fun (_x: t_Option_T) -> [ &_30 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _32} any) ]
         | s4 = -{resolve_refmut_I _32}- s5
@@ -179,7 +184,8 @@ module M_extend
           | s3 = MutBorrow.borrow_mut <t_Vec_T_Global> {vec.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_42 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-                [ &vec <- { vec with current = _bor.final } ] s4) [ _ck -> (! {inv_Vec_T_Global vec.current} any) ]
+                [ &vec <- { vec with current = _bor.final } ] s4)
+            [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global vec.current} any) ]
           | s4 = push_T {_42} {x} (fun (_x: ()) -> [ &_41 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
@@ -203,7 +209,8 @@ module M_extend
     | & _41: () = Any.any_l ()
     | & _42: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:extend ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_T. completed_I done'
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:extend ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_T. completed_I done'
         /\ produces_I iter prod done'.current
         /\ view_Vec_T_Global vec.final = Seq.(++) (view_Vec_T_Global vec.current) prod}
       (! return {result}) ]
@@ -253,18 +260,21 @@ module M_collect
       -> invariant_Vec_Item_Global x
   
   let rec new_Item (return (x: t_Vec_Item_Global)) = any
-    [ return (result: t_Vec_Item_Global) -> {([@expl:new result type invariant] inv_Vec_Item_Global result)
-      /\ ([@expl:new ensures] Seq.length (view_Vec_Item_Global result) = 0)}
+    [ return (result: t_Vec_Item_Global) ->
+    {[@stop_split] [@expl:new_Item ensures] ([@stop_split] [@expl:new result type invariant] inv_Vec_Item_Global result)
+      /\ ([@stop_split] [@expl:new ensures] Seq.length (view_Vec_Item_Global result) = 0)}
       (! return {result}) ]
   
   type t_I
   
   predicate inv_I (_1: t_I)
   
-  let rec into_iter_I (self_: t_I) (return (x: t_I)) = {[@expl:into_iter 'self_' type invariant] inv_I self_}
+  let rec into_iter_I (self_: t_I) (return (x: t_I)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_I self_}
     any
-    [ return (result: t_I) -> {([@expl:into_iter result type invariant] inv_I result)
-      /\ ([@expl:into_iter ensures] result = self_)}
+    [ return (result: t_I) ->
+    {[@stop_split] [@expl:into_iter_I ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_I result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
   type t_Option_Item = None | Some t_Item
@@ -315,9 +325,9 @@ module M_collect
         end)
   
   let rec next_I (self_: MutBorrow.t t_I) (return (x: t_Option_Item)) =
-    {[@expl:next requires] precondition_next () self_}
+    {[@stop_split] [@expl:next requires] precondition_next () self_}
     any
-    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self_ result}
+    [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self_ result}
       (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
@@ -326,7 +336,7 @@ module M_collect
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -343,10 +353,10 @@ module M_collect
   meta "rewrite_def" predicate inv_refmut_Vec_Item_Global
   
   let rec push_Item (self_: MutBorrow.t t_Vec_Item_Global) (v: t_Item) (return (x: ())) =
-    {([@expl:push 'self_' type invariant] inv_refmut_Vec_Item_Global self_)
-    /\ ([@expl:push 'v' type invariant] inv_Item v)}
+    {[@stop_split] [@expl:push_Item requires] ([@stop_split] [@expl:push 'self_' type invariant] inv_refmut_Vec_Item_Global self_)
+    /\ ([@stop_split] [@expl:push 'v' type invariant] inv_Item v)}
     any
-    [ return (result: ()) -> {[@expl:push ensures] view_Vec_Item_Global self_.final
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_Item_Global self_.final
       = Seq.snoc (view_Vec_Item_Global self_.current) v}
       (! return {result}) ]
   
@@ -356,7 +366,8 @@ module M_collect
   
   meta "select_lsinst" "all"
   
-  let rec collect_I (iter: t_I) (return (x: t_Vec_Item_Global)) = {[@expl:collect 'iter' type invariant] inv_I iter}
+  let rec collect_I (iter: t_I) (return (x: t_Vec_Item_Global)) =
+    {[@stop_split] [@expl:collect 'iter' type invariant] inv_I iter}
     (! bb0
     [ bb0 = s0
       [ s0 = new_Item (fun (_x: t_Vec_Item_Global) -> [ &res <- _x ] s1)
@@ -373,11 +384,12 @@ module M_collect
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_I> {iter'0}
             (fun (_bor: MutBorrow.t t_I) -> [ &_28 <- _bor ] -{inv_I _bor.final}- [ &iter'0 <- _bor.final ] s1)
-          [ _ck -> (! {inv_I iter'0} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
         | s1 = MutBorrow.borrow_final <t_I> {_28.current} {MutBorrow.get_id _28}
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_27 <- _bor ] -{inv_I _bor.final}-
-              [ &_28 <- { _28 with current = _bor.final } ] s2) [ _ck -> (! {inv_I _28.current} any) ]
+              [ &_28 <- { _28 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_I _28.current} any) ]
         | s2 = next_I {_27} (fun (_x: t_Option_Item) -> [ &_26 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I _28} any) ]
         | s4 = -{resolve_refmut_I _28}- s5
@@ -389,7 +401,7 @@ module M_collect
           | s3 = MutBorrow.borrow_mut <t_Vec_Item_Global> {res}
               (fun (_bor: MutBorrow.t t_Vec_Item_Global) ->
                 [ &_38 <- _bor ] -{inv_Vec_Item_Global _bor.final}-
-                [ &res <- _bor.final ] s4) [ _ck -> (! {inv_Vec_Item_Global res} any) ]
+                [ &res <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Vec_Item_Global res} any) ]
           | s4 = push_Item {_38} {x} (fun (_x: ()) -> [ &_37 <- _x ] s5)
           | s5 = bb5 ] ] ]
     | bb10 = s0
@@ -410,8 +422,9 @@ module M_collect
     | & x: t_Item = Any.any_l ()
     | & _37: () = Any.any_l ()
     | & _38: MutBorrow.t t_Vec_Item_Global = Any.any_l () ])
-    [ return (result: t_Vec_Item_Global) -> {([@expl:collect result type invariant] inv_Vec_Item_Global result)
-      /\ ([@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve_I done'.final
+    [ return (result: t_Vec_Item_Global) ->
+    {[@stop_split] [@expl:collect_I ensures] ([@stop_split] [@expl:collect result type invariant] inv_Vec_Item_Global result)
+      /\ ([@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq t_Item. resolve_I done'.final
         /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_Item_Global result = prod)}
       (! return {result}) ]
 end
@@ -440,8 +453,8 @@ module M_extend_index
   
   let rec into_iter_Vec_u32_Global (self_: t_Vec_u32_Global) (return (x: t_IntoIter_u32_Global)) = any
     [ return (result: t_IntoIter_u32_Global) ->
-    {([@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
-      /\ ([@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
+    {[@stop_split] [@expl:into_iter_Vec_u32_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
       (! return {result}) ]
   
   predicate produces_IntoIter_u32_Global (self: t_IntoIter_u32_Global) (visited: Seq.seq UInt32.t) (rhs: t_IntoIter_u32_Global) =
@@ -468,10 +481,10 @@ module M_extend_index
     resolve_refmut_IntoIter_u32_Global self /\ view_IntoIter_u32_Global self.current = (Seq.empty: Seq.seq UInt32.t)
   
   let rec extend_u32 (vec: MutBorrow.t t_Vec_u32_Global) (iter: t_IntoIter_u32_Global) (return (x: ())) =
-    {[@expl:extend 'iter' type invariant] inv_IntoIter_u32_Global iter}
+    {[@stop_split] [@expl:extend 'iter' type invariant] inv_IntoIter_u32_Global iter}
     any
     [ return (result: ()) ->
-    {[@expl:extend ensures] exists done': MutBorrow.t t_IntoIter_u32_Global, prod: Seq.seq UInt32.t. completed_IntoIter_u32_Global done'
+    {[@stop_split] [@expl:extend ensures] exists done': MutBorrow.t t_IntoIter_u32_Global, prod: Seq.seq UInt32.t. completed_IntoIter_u32_Global done'
         /\ produces_IntoIter_u32_Global iter prod done'.current
         /\ view_Vec_u32_Global vec.final = Seq.(++) (view_Vec_u32_Global vec.current) prod}
       (! return {result}) ]
@@ -547,10 +560,11 @@ module M_collect_example
   axiom view_Vec_u32_Global_spec: forall self: t_Vec_u32_Global. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let rec collect_I (iter: t_I) (return (x: t_Vec_u32_Global)) = {[@expl:collect 'iter' type invariant] inv_I iter}
+  let rec collect_I (iter: t_I) (return (x: t_Vec_u32_Global)) =
+    {[@stop_split] [@expl:collect 'iter' type invariant] inv_I iter}
     any
     [ return (result: t_Vec_u32_Global) ->
-    {[@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve_I done'.final
+    {[@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_I, prod: Seq.seq UInt32.t. resolve_I done'.final
         /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_u32_Global result = prod}
       (! return {result}) ]
   
@@ -563,8 +577,9 @@ module M_collect_example
   
   meta "select_lsinst" "all"
   
-  let rec collect_example_I (iter: t_I) (return (x: ())) = {([@expl:collect_example 'iter' type invariant] inv_I iter)
-    /\ ([@expl:collect_example requires] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter prod fin
+  let rec collect_example_I (iter: t_I) (return (x: ())) =
+    {[@stop_split] [@expl:collect_example_I requires] ([@stop_split] [@expl:collect_example 'iter' type invariant] inv_I iter)
+    /\ ([@stop_split] [@expl:collect_example requires] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter prod fin
       -> (forall i: int. 0 <= i /\ i < Seq.length prod -> UInt32.t'int (Seq.get prod i) = i))}
     (! bb0
     [ bb0 = s0

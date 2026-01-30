@@ -42,9 +42,11 @@ module M_test_string_len
   
   function view_String (self: t_String) : Seq.seq Char.t
   
-  let rec len (self_: t_String) (return (x: UInt64.t)) = {[@expl:len 'self_' type invariant] inv_ref_String self_}
+  let rec len (self_: t_String) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_String self_}
     any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (to_bytes (view_String self_))}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (to_bytes (view_String self_))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -52,9 +54,9 @@ module M_test_string_len
   meta "select_lsinst" "all"
   
   let rec test_string_len (s: t_String) (return (x: UInt64.t)) =
-    {([@expl:test_string_len 's' type invariant] inv_String s)
-    /\ ([@expl:test_string_len requires #0] view_String s = Seq.create 1 [|Char.of_int 195|])
-    /\ ([@expl:test_string_len requires #1] to_utf8_char (Char.of_int 195)
+    {[@stop_split] [@expl:test_string_len requires] ([@stop_split] [@expl:test_string_len 's' type invariant] inv_String s)
+    /\ ([@stop_split] [@expl:test_string_len requires #0] view_String s = Seq.create 1 [|Char.of_int 195|])
+    /\ ([@stop_split] [@expl:test_string_len requires #1] to_utf8_char (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0
@@ -62,7 +64,8 @@ module M_test_string_len
       | s1 = -{resolve_String s}- s2
       | s2 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & s: t_String = s ])
-    [ return (result: UInt64.t) -> {[@expl:test_string_len ensures] UInt64.t'int result = 2} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:test_string_len ensures] UInt64.t'int result = 2}
+      (! return {result}) ]
 end
 module M_test_str_len
   use creusot.int.UInt64
@@ -95,21 +98,24 @@ module M_test_str_len
   function view_str (self: string) : Seq.seq Char.t
   
   let rec len (self_: string) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (to_bytes (view_str self_))}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (to_bytes (view_str self_))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_str_len (s: string) (return (x: UInt64.t)) = {([@expl:test_str_len requires #0] view_str s
+  let rec test_str_len (s: string) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:test_str_len requires] ([@stop_split] [@expl:test_str_len requires #0] view_str s
       = Seq.create 1 [|Char.of_int 195|])
-    /\ ([@expl:test_str_len requires #1] to_utf8_char (Char.of_int 195)
+    /\ ([@stop_split] [@expl:test_str_len requires #1] to_utf8_char (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0 [ s0 = len {s} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & s: string = s ])
-    [ return (result: UInt64.t) -> {[@expl:test_str_len ensures] UInt64.t'int result = 2} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:test_str_len ensures] UInt64.t'int result = 2}
+      (! return {result}) ]
 end
 module M_test_split_at
   use creusot.prelude.Char
@@ -149,22 +155,24 @@ module M_test_split_at
   function to_bytes (self: Seq.seq Char.t) : Seq.seq UInt8.t = flat_map_char self (fun (c: Char.t) -> to_utf8_char c)
   
   let rec split_at (self_: string) (ix: UInt64.t) (return (x: tup2_ref_str_ref_str)) =
-    {[@expl:split_at requires] exists i0: int. 0 <= i0
+    {[@stop_split] [@expl:split_at requires] exists i0: int. 0 <= i0
       /\ i0 <= Seq.length (view_str self_)
       /\ Seq.length (to_bytes (Seq.([..]) (view_str self_) 0 i0)) = UInt64.t'int ix}
     any
     [ return (result: tup2_ref_str_ref_str) ->
-    {([@expl:split_at ensures #0] Seq.(++) (view_str result.f0) (view_str result.f1) = view_str self_)
-      /\ ([@expl:split_at ensures #1] Seq.length (to_bytes (view_str result.f0)) = UInt64.t'int ix)}
+    {[@stop_split] [@expl:split_at ensures] ([@stop_split] [@expl:split_at ensures #0] Seq.(++) (view_str result.f0) (view_str result.f1)
+        = view_str self_)
+      /\ ([@stop_split] [@expl:split_at ensures #1] Seq.length (to_bytes (view_str result.f0)) = UInt64.t'int ix)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_split_at (s: string) (return (x: tup2_ref_str_ref_str)) = {([@expl:test_split_at requires #0] view_str s
+  let rec test_split_at (s: string) (return (x: tup2_ref_str_ref_str)) =
+    {[@stop_split] [@expl:test_split_at requires] ([@stop_split] [@expl:test_split_at requires #0] view_str s
       = Seq.create 1 [|Char.of_int 195|])
-    /\ ([@expl:test_split_at requires #1] to_utf8_char (Char.of_int 195)
+    /\ ([@stop_split] [@expl:test_split_at requires #1] to_utf8_char (Char.of_int 195)
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0
@@ -173,7 +181,8 @@ module M_test_split_at
       | s2 = split_at {s} {(2: UInt64.t)} (fun (_x: tup2_ref_str_ref_str) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: tup2_ref_str_ref_str = Any.any_l () | & s: string = s | & _7: () = Any.any_l () ])
-    [ return (result: tup2_ref_str_ref_str) -> {[@expl:test_split_at ensures] view_str result.f0 = view_str s
+    [ return (result: tup2_ref_str_ref_str) -> {[@stop_split] [@expl:test_split_at ensures] view_str result.f0
+        = view_str s
       /\ view_str result.f1 = (Seq.empty: Seq.seq Char.t)}
       (! return {result}) ]
 end

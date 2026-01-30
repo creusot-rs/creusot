@@ -13,14 +13,15 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   let rec into_inner_refmut_PermCellNAInv_T (self: MutBorrow.t t_PermCellNAInv_T)
     (return (x: MutBorrow.t t_PermCellNAInv_T)) = any
-    [ return (result: MutBorrow.t t_PermCellNAInv_T) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_PermCellNAInv_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
   
   predicate resolve_refmut_PermCellNAInv_T [@inline:trivial] (_1: MutBorrow.t t_PermCellNAInv_T) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_PermCellNAInv_T
   
   let rec new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
-    [ return (result: t_Perm_PermCell_T) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type t_PermCell_T
   
@@ -50,11 +51,12 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   meta "rewrite_def" function view_Perm_PermCell_T
   
-  let rec borrow_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) = {[@expl:borrow requires] self
-    = ward_PermCell_T perm}
+  let rec borrow_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_T perm}
     any
-    [ return (result: t_T) -> {([@expl:borrow result type invariant] inv_ref_T result)
-      /\ ([@expl:borrow ensures] result = view_Perm_PermCell_T perm)}
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:borrow_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:borrow ensures] result = view_Perm_PermCell_T perm)}
       (! return {result}) ]
   
   function namespace_PermCellNAInv_T (self: t_NonAtomicInvariant_PermCellNAInv_T) : t_Namespace
@@ -82,7 +84,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   meta "rewrite_def" predicate inv_closure0
   
   let rec closure0 [@coma:extspec] (self: closure0) (perm: MutBorrow.t t_PermCellNAInv_T) (return (x: t_T)) =
-    {[@expl:closure 'self' type invariant] inv_closure0 self}
+    {[@stop_split] [@expl:closure 'self' type invariant] inv_closure0 self}
     bb0
     [ bb0 = s0
       [ s0 = into_inner_refmut_PermCellNAInv_T {perm} (fun (_x: MutBorrow.t t_PermCellNAInv_T) -> [ &_7 <- _x ] s1)
@@ -97,7 +99,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
     | & _4: t_Perm_PermCell_T = Any.any_l ()
     | & _6: t_Perm_PermCell_T = Any.any_l ()
     | & _7: MutBorrow.t t_PermCellNAInv_T = Any.any_l () ]
-    [ return (result: t_T) -> {[@expl:closure result type invariant] inv_ref_T result} return {result} ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:closure result type invariant] inv_ref_T result} return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -151,16 +153,18 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   meta "rewrite_def" predicate precondition_open
   
   let rec open_Ghost_ref_NonAtomicInvariant_PermCellNAInv_T (self: t_NonAtomicInvariant_PermCellNAInv_T)
-    (tokens: t_Tokens) (f: closure0) (return (x: t_T)) = {([@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@expl:open requires #0] contains tokens (namespace_PermCellNAInv_T self))
-    /\ ([@expl:open requires #1] forall t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
+    (tokens: t_Tokens) (f: closure0) (return (x: t_T)) =
+    {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PermCellNAInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_PermCellNAInv_T self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
         /\ inv_Ghost_refmut_PermCellNAInv_T t
       -> precondition_closure0 f t
       /\ (forall res: t_T. postcondition_once_closure0 f t res
         -> protocol_PermCellNAInv_T (fin_Ghost_refmut_PermCellNAInv_T t) (public_PermCellNAInv_T self)))}
     any
-    [ return (result: t_T) -> {([@expl:open result type invariant] inv_ref_T result)
-      /\ ([@expl:open ensures] exists t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PermCellNAInv_T ensures] ([@stop_split] [@expl:open result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
         /\ postcondition_once_closure0 f t result)}
       (! return {result}) ]
   
@@ -236,15 +240,17 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
       = (postcondition_open self args res /\ self = res_state)
   
   let rec open_ref_Ghost_NonAtomicInvariant_PermCellNAInv_T (self: t_NonAtomicInvariant_PermCellNAInv_T)
-    (tokens: t_Tokens) (f: closure0) (return (x: t_T)) = {([@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@expl:open requires] precondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
-                                                     f1'0 = tokens;
-                                                     f2'0 = f })}
+    (tokens: t_Tokens) (f: closure0) (return (x: t_T)) =
+    {[@stop_split] [@expl:open_ref_Ghost_NonAtomicInvariant_PermCellNAInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:open requires] precondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
+                                                                   f1'0 = tokens;
+                                                                   f2'0 = f })}
     any
-    [ return (result: t_T) -> {([@expl:open result type invariant] inv_ref_T result)
-      /\ ([@expl:open ensures] postcondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
-                                                       f1'0 = tokens;
-                                                       f2'0 = f } result)}
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:open_ref_Ghost_NonAtomicInvariant_PermCellNAInv_T ensures] ([@stop_split] [@expl:open result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:open ensures] postcondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
+                                                                     f1'0 = tokens;
+                                                                     f2'0 = f } result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -252,8 +258,8 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   meta "select_lsinst" "all"
   
   let rec read_T (self: t_CellInv_T) (tokens: t_Tokens) (return (x: t_T)) =
-    {([@expl:read 'self' type invariant] inv_ref_CellInv_T self)
-    /\ ([@expl:read requires] contains tokens (Namespace_PERMCELL 0))}
+    {[@stop_split] [@expl:read_T requires] ([@stop_split] [@expl:read 'self' type invariant] inv_ref_CellInv_T self)
+    /\ ([@stop_split] [@expl:read requires] contains tokens (Namespace_PERMCELL 0))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- { c0 = self } ] s1
@@ -266,7 +272,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
     | & tokens: t_Tokens = tokens
     | & _5: t_T = Any.any_l ()
     | & _8: closure0 = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:read result type invariant] inv_ref_T result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:read result type invariant] inv_ref_T result} (! return {result}) ]
 end
 module M_impl_CellInv_T__write (* CellInv<T> *)
   type namespace_other
@@ -283,7 +289,8 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   let rec into_inner_refmut_PermCellNAInv_T (self: MutBorrow.t t_PermCellNAInv_T)
     (return (x: MutBorrow.t t_PermCellNAInv_T)) = any
-    [ return (result: MutBorrow.t t_PermCellNAInv_T) -> {[@expl:into_inner ensures] result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_PermCellNAInv_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
   
   predicate resolve_refmut_PermCellNAInv_T [@inline:trivial] (_1: MutBorrow.t t_PermCellNAInv_T) = _1.final = _1.current
   
@@ -299,7 +306,9 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_T
   
   let rec new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) =
-    any [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    any
+    [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
   
   type t_PermCell_T
   
@@ -335,12 +344,14 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   meta "rewrite_def" function view_Perm_PermCell_T
   
   let rec borrow_mut_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (return (x: MutBorrow.t t_T)) =
-    {[@expl:borrow_mut requires] self = ward_PermCell_T perm.current}
+    {[@stop_split] [@expl:borrow_mut requires] self = ward_PermCell_T perm.current}
     any
-    [ return (result: MutBorrow.t t_T) -> {([@expl:borrow_mut result type invariant] inv_refmut_T result)
-      /\ ([@expl:borrow_mut ensures #0] self = ward_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))
-      /\ ([@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_T perm.current)
-      /\ ([@expl:borrow_mut ensures #2] result.final = view_Perm_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))}
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:borrow_mut_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #0] self = ward_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = view_Perm_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -375,7 +386,7 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   meta "rewrite_def" predicate inv_closure0
   
   let rec closure0 [@coma:extspec] (self: closure0) (perm: MutBorrow.t t_PermCellNAInv_T) (return (x: ())) =
-    {[@expl:closure 'self' type invariant] inv_closure0 self}
+    {[@stop_split] [@expl:closure 'self' type invariant] inv_closure0 self}
     bb0
     [ bb0 = s0
       [ s0 = into_inner_refmut_PermCellNAInv_T {perm} (fun (_x: MutBorrow.t t_PermCellNAInv_T) -> [ &_11 <- _x ] s1)
@@ -464,16 +475,17 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   meta "rewrite_def" predicate precondition_open
   
   let rec open_Ghost_ref_NonAtomicInvariant_PermCellNAInv_T (self: t_NonAtomicInvariant_PermCellNAInv_T)
-    (tokens: t_Tokens) (f: closure0) (return (x: ())) = {([@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@expl:open requires #0] contains tokens (namespace_PermCellNAInv_T self))
-    /\ ([@expl:open requires #1] forall t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
+    (tokens: t_Tokens) (f: closure0) (return (x: ())) =
+    {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PermCellNAInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_PermCellNAInv_T self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
         /\ inv_Ghost_refmut_PermCellNAInv_T t
       -> precondition_closure0 f t
       /\ (forall res: (). postcondition_once_closure0 f t res
         -> protocol_PermCellNAInv_T (fin_Ghost_refmut_PermCellNAInv_T t) (public_PermCellNAInv_T self)))}
     any
     [ return (result: ()) ->
-    {[@expl:open ensures] exists t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PermCellNAInv_T. protocol_PermCellNAInv_T t.current (public_PermCellNAInv_T self)
         /\ postcondition_once_closure0 f t result}
       (! return {result}) ]
   
@@ -546,15 +558,16 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
       = (postcondition_open self args res /\ self = res_state)
   
   let rec open_ref_Ghost_NonAtomicInvariant_PermCellNAInv_T (self: t_NonAtomicInvariant_PermCellNAInv_T)
-    (tokens: t_Tokens) (f: closure0) (return (x: ())) = {([@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@expl:open requires] precondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
-                                                     f1'0 = tokens;
-                                                     f2'0 = f })}
+    (tokens: t_Tokens) (f: closure0) (return (x: ())) =
+    {[@stop_split] [@expl:open_ref_Ghost_NonAtomicInvariant_PermCellNAInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:open requires] precondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
+                                                                   f1'0 = tokens;
+                                                                   f2'0 = f })}
     any
     [ return (result: ()) ->
-    {[@expl:open ensures] postcondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
-                                                  f1'0 = tokens;
-                                                  f2'0 = f } result}
+    {[@stop_split] [@expl:open ensures] postcondition_open () { f0'0 = new_ref_NonAtomicInvariant_PermCellNAInv_T self;
+                                                                f1'0 = tokens;
+                                                                f2'0 = f } result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -562,8 +575,9 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   meta "select_lsinst" "all"
   
   let rec write_T (self: t_CellInv_T) (x: t_T) (tokens: t_Tokens) (return (x'0: ())) =
-    {([@expl:write 'self' type invariant] inv_ref_CellInv_T self)
-    /\ ([@expl:write 'x' type invariant] inv_T x) /\ ([@expl:write requires] contains tokens (Namespace_PERMCELL 0))}
+    {[@stop_split] [@expl:write_T requires] ([@stop_split] [@expl:write 'self' type invariant] inv_ref_CellInv_T self)
+    /\ ([@stop_split] [@expl:write 'x' type invariant] inv_T x)
+    /\ ([@stop_split] [@expl:write requires] contains tokens (Namespace_PERMCELL 0))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- { c0 = self; c1 = x } ] s1

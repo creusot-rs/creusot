@@ -60,9 +60,12 @@ module M_inversed_if
     forall self: t_C, args: (), res_state: t_C, res: bool. postcondition_mut_C self args res_state res
       = (postcondition_C self args res /\ self = res_state)
   
-  let rec call_C (self_: t_C) (arg: ()) (return (x: bool)) = {([@expl:call 'self_' type invariant] inv_ref_C self_)
-    /\ ([@expl:call requires] precondition_C self_ arg)}
-    any [ return (result: bool) -> {[@expl:call ensures] postcondition_C self_ arg result} (! return {result}) ]
+  let rec call_C (self_: t_C) (arg: ()) (return (x: bool)) =
+    {[@stop_split] [@expl:call_C requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_C self_)
+    /\ ([@stop_split] [@expl:call requires] precondition_C self_ arg)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_C self_ arg result}
+      (! return {result}) ]
   
   type t_B
   
@@ -73,17 +76,20 @@ module M_inversed_if
   predicate postcondition_once_B (self: t_B) (args: bool) (result: ())
   
   let rec call_once_B (self_: t_B) (arg: bool) (return (x: ())) =
-    {([@expl:call_once 'self_' type invariant] inv_B self_) /\ ([@expl:call_once requires] precondition_B self_ arg)}
-    any [ return (result: ()) -> {[@expl:call_once ensures] postcondition_once_B self_ arg result} (! return {result}) ]
+    {[@stop_split] [@expl:call_once_B requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_B self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_B self_ arg)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_B self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec inversed_if_C (cond: t_C) (branch: t_B) (return (x: ())) =
-    {([@expl:inversed_if 'cond' type invariant] inv_C cond)
-    /\ ([@expl:inversed_if 'branch' type invariant] inv_B branch)
-    /\ ([@expl:inversed_if requires] precondition_C cond () /\ (forall b: bool. precondition_B branch b))}
+    {[@stop_split] [@expl:inversed_if_C requires] ([@stop_split] [@expl:inversed_if 'cond' type invariant] inv_C cond)
+    /\ ([@stop_split] [@expl:inversed_if 'branch' type invariant] inv_B branch)
+    /\ ([@stop_split] [@expl:inversed_if requires] precondition_C cond () /\ (forall b: bool. precondition_B branch b))}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_C cond} any) ]
@@ -105,7 +111,7 @@ module M_inversed_if
     | & _11: () = Any.any_l ()
     | & _13: bool = Any.any_l ()
     | & _15: bool = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:inversed_if ensures] exists b: bool. postcondition_C cond () b
+    [ return (result: ()) -> {[@stop_split] [@expl:inversed_if ensures] exists b: bool. postcondition_C cond () b
         /\ postcondition_once_B branch (not b) ()}
       (! return {result}) ]
 end
@@ -164,7 +170,8 @@ module M_valid
   let rec closure1 (self: closure1) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &res <- UInt32.gt self.c0 (7: UInt32.t) ] s1 | s1 = [ &_ret <- res ] s2 | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: closure1 = self | & res: bool = Any.any_l () ])
-    [ return (result: bool) -> {[@expl:closure ensures] result = UInt32.gt self.c0 (7: UInt32.t)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:closure ensures] result = UInt32.gt self.c0 (7: UInt32.t)}
+      (! return {result}) ]
   
   type closure2 = { c0'0: MutBorrow.t UInt32.t }
   
@@ -226,9 +233,10 @@ module M_valid
       | s1 = -{resolve_refmut_closure2 self}- s2
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self | & b: bool = b | & _4: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> {([@expl:closure ensures] b /\ self.final.c0'0.current = (2: UInt32.t)
+    [ return (result: ()) -> {[@stop_split] [@expl:closure2 ensures] ([@stop_split] [@expl:closure ensures] b
+          /\ self.final.c0'0.current = (2: UInt32.t)
         \/ not b /\ self.final.c0'0.current = (1: UInt32.t))
-      /\ ([@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure1 [@inline:trivial] (self: closure1) (args: ()) = true
@@ -299,9 +307,10 @@ module M_valid
       = (postcondition_closure1 self args res /\ self = res_state)
   
   let rec inversed_if_closure1 (cond: closure1) (branch: closure2) (return (x: ())) =
-    {[@expl:inversed_if requires] precondition_closure1 cond () /\ (forall b: bool. precondition_closure2 branch b)}
+    {[@stop_split] [@expl:inversed_if requires] precondition_closure1 cond ()
+    /\ (forall b: bool. precondition_closure2 branch b)}
     any
-    [ return (result: ()) -> {[@expl:inversed_if ensures] exists b: bool. postcondition_closure1 cond () b
+    [ return (result: ()) -> {[@stop_split] [@expl:inversed_if ensures] exists b: bool. postcondition_closure1 cond () b
         /\ postcondition_once_closure2 branch (not b) ()}
       (! return {result}) ]
   
@@ -327,7 +336,8 @@ module M_valid
     | & branch: closure2 = Any.any_l ()
     | & _8: MutBorrow.t UInt32.t = Any.any_l ()
     | & _9: () = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:valid ensures] UInt32.gt n (7: UInt32.t) /\ result = (2: UInt32.t)
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:valid ensures] UInt32.gt n (7: UInt32.t)
+        /\ result = (2: UInt32.t)
       \/ UInt32.le n (7: UInt32.t) /\ result = (1: UInt32.t)}
       (! return {result}) ]
 end

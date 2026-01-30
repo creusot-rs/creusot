@@ -32,19 +32,20 @@ module M_test
     forall args: tup2_ref_T_usize, res: t_Tgt [postcondition_once_ix () args res]. postcondition_once_ix () args res
       -> (let {f0 = self; f1 = ix} = args in inv_Tgt res)
   
-  let rec ix_T (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) = {[@expl:ix requires] precondition_ix () { f0 = self;
-                                                                                                          f1 = ix }}
+  let rec ix_T (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) =
+    {[@stop_split] [@expl:ix requires] precondition_ix () { f0 = self; f1 = ix }}
     any
-    [ return (result: t_Tgt) -> {[@expl:ix ensures] postcondition_once_ix () { f0 = self; f1 = ix } result}
+    [ return (result: t_Tgt) -> {[@stop_split] [@expl:ix ensures] postcondition_once_ix () { f0 = self;
+                                                                                             f1 = ix } result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec test_T (a: t_T) (return (x: t_Tgt)) = {[@expl:test 'a' type invariant] inv_ref_T a}
+  let rec test_T (a: t_T) (return (x: t_Tgt)) = {[@stop_split] [@expl:test 'a' type invariant] inv_ref_T a}
     (! bb0
     [ bb0 = s0 [ s0 = ix_T {a} {(0: UInt64.t)} (fun (_x: t_Tgt) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Tgt = Any.any_l () | & a: t_T = a ])
-    [ return (result: t_Tgt) -> {[@expl:test result type invariant] inv_Tgt result} (! return {result}) ]
+    [ return (result: t_Tgt) -> {[@stop_split] [@expl:test result type invariant] inv_Tgt result} (! return {result}) ]
 end

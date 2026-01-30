@@ -25,7 +25,7 @@ module M_impl_Tree__height (* Tree *)
   
   let rec elim_Some (_x: t_Option_Box_Node_Global) (return (f0'0: t_Node)) = any
     [ _k (f0'0: t_Node) -> {Some f0'0 = _x} (! return {f0'0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -36,11 +36,13 @@ module M_impl_Tree__height (* Tree *)
   meta "rewrite_def" function deep_model_u64
   
   let rec max_u64 (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {([@expl:max ensures #0] deep_model_u64 result >= deep_model_u64 self_)
-      /\ ([@expl:max ensures #1] deep_model_u64 result >= deep_model_u64 o)
-      /\ ([@expl:max ensures #2] result = self_ \/ result = o)
-      /\ ([@expl:max ensures #3] deep_model_u64 self_ <= deep_model_u64 o -> result = o)
-      /\ ([@expl:max ensures #4] deep_model_u64 o < deep_model_u64 self_ -> result = self_)}
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:max_u64 ensures] ([@stop_split] [@expl:max ensures #0] deep_model_u64 result
+        >= deep_model_u64 self_)
+      /\ ([@stop_split] [@expl:max ensures #1] deep_model_u64 result >= deep_model_u64 o)
+      /\ ([@stop_split] [@expl:max ensures #2] result = self_ \/ result = o)
+      /\ ([@stop_split] [@expl:max ensures #3] deep_model_u64 self_ <= deep_model_u64 o -> result = o)
+      /\ ([@stop_split] [@expl:max ensures #4] deep_model_u64 o < deep_model_u64 self_ -> result = self_)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

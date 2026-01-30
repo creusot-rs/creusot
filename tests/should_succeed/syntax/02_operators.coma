@@ -7,7 +7,8 @@ module M_division
   
   meta "select_lsinst" "all"
   
-  let rec division (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:division requires] UInt64.t'int y > 0}
+  let rec division (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:division requires] UInt64.t'int y > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- y ] s1
@@ -30,7 +31,8 @@ module M_modulus
   
   meta "select_lsinst" "all"
   
-  let rec modulus (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:modulus requires] UInt64.t'int y > 0}
+  let rec modulus (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:modulus requires] UInt64.t'int y > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- y ] s1
@@ -55,9 +57,8 @@ module M_multiply
   
   meta "select_lsinst" "all"
   
-  let rec multiply (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:multiply requires] UInt64.t'int x
-      * UInt64.t'int y
-    <= UInt64.t'int const_MAX}
+  let rec multiply (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:multiply requires] UInt64.t'int x * UInt64.t'int y <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0 [ s0 = UInt64.mul {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
@@ -74,7 +75,7 @@ module M_add
   
   meta "select_lsinst" "all"
   
-  let rec add (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:add requires] UInt64.t'int x
+  let rec add (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:add requires] UInt64.t'int x
       + UInt64.t'int y
     <= UInt64.t'int const_MAX}
     (! bb0
@@ -91,7 +92,7 @@ module M_sub
   
   meta "select_lsinst" "all"
   
-  let rec sub (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@expl:sub requires] UInt64.t'int x
+  let rec sub (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:sub requires] UInt64.t'int x
       - UInt64.t'int y
     >= 0}
     (! bb0
@@ -112,8 +113,9 @@ module M_expression
   meta "select_lsinst" "all"
   
   let rec expression (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (return (x'0: bool)) =
-    {([@expl:expression requires #0] UInt64.t'int y > 0)
-    /\ ([@expl:expression requires #1] ComputerDivision.div (UInt64.t'int x) (UInt64.t'int y) * UInt64.t'int z
+    {[@stop_split] [@expl:expression requires] ([@stop_split] [@expl:expression requires #0] UInt64.t'int y > 0)
+    /\ ([@stop_split] [@expl:expression requires #1] ComputerDivision.div (UInt64.t'int x) (UInt64.t'int y)
+      * UInt64.t'int z
     <= UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0
@@ -140,7 +142,8 @@ module M_expression
     | & _17: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _20: UInt64.t = Any.any_l ()
-    | & _21: bool = Any.any_l () ]) [ return (result: bool) -> {[@expl:expression ensures] result} (! return {result}) ]
+    | & _21: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:expression ensures] result} (! return {result}) ]
 end
 module M_primitive_comparison
   use creusot.prelude.Any
@@ -199,7 +202,8 @@ module M_primitive_comparison
   
   let rec primitive_comparison (x: t_X) (return (x'0: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:primitive_comparison ensures] UInt64.le x.a x.a} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:primitive_comparison ensures] UInt64.le x.a x.a}
+      (! return {result}) ]
 end
 module M_bool_eq
   use creusot.prelude.Any
@@ -211,5 +215,5 @@ module M_bool_eq
   let rec bool_eq (a: bool) (b: bool) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- a = b ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & a: bool = a | & b: bool = b ])
-    [ return (result: bool) -> {[@expl:bool_eq ensures] result = (a = b)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:bool_eq ensures] result = (a = b)} (! return {result}) ]
 end

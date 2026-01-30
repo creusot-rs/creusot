@@ -71,14 +71,16 @@ module M_g
     forall args: t_Vec_T_Global, res: () [postcondition_once_x () args res]. postcondition_once_x () args res
       -> (let self = args in true)
   
-  let rec x_Vec_T_Global (self: t_Vec_T_Global) (return (x: ())) = {[@expl:x requires] precondition_x () self}
-    any [ return (result: ()) -> {[@expl:x ensures] postcondition_once_x () self result} (! return {result}) ]
+  let rec x_Vec_T_Global (self: t_Vec_T_Global) (return (x: ())) =
+    {[@stop_split] [@expl:x requires] precondition_x () self}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:x ensures] postcondition_once_x () self result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec g_T (v: t_Vec_T_Global) (return (x: ())) = {[@expl:g 'v' type invariant] inv_Vec_T_Global v}
+  let rec g_T (v: t_Vec_T_Global) (return (x: ())) = {[@stop_split] [@expl:g 'v' type invariant] inv_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = x_Vec_T_Global {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
@@ -92,7 +94,7 @@ module M_h
   type t_Vec_i32_Global
   
   let rec x_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:x ensures] false} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:x ensures] false} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

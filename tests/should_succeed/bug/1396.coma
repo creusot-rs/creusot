@@ -9,20 +9,25 @@ module M_apply_once
   
   predicate postcondition_once_F (self: t_F) (args: ()) (result: ())
   
-  let rec call_once_F (self_: t_F) (arg: ()) (return (x: ())) = {([@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@expl:call_once requires] precondition_F self_ arg)}
-    any [ return (result: ()) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result} (! return {result}) ]
+  let rec call_once_F (self_: t_F) (arg: ()) (return (x: ())) =
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec apply_once_F (f: t_F) (return (x: ())) = {([@expl:apply_once 'f' type invariant] inv_F f)
-    /\ ([@expl:apply_once requires] precondition_F f ())}
+  let rec apply_once_F (f: t_F) (return (x: ())) =
+    {[@stop_split] [@expl:apply_once_F requires] ([@stop_split] [@expl:apply_once 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:apply_once requires] precondition_F f ())}
     (! bb0
     [ bb0 = s0 [ s0 = call_once_F {f} {_7} (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & f: t_F = f | & _7: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:apply_once ensures] postcondition_once_F f () ()} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:apply_once ensures] postcondition_once_F f () ()}
+      (! return {result}) ]
 end
 module M_apply_mut
   use creusot.prelude.MutBorrow
@@ -71,29 +76,32 @@ module M_apply_mut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
-    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
     any
-    [ return (result: ()) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec apply_mut_F (f: t_F) (return (x: ())) = {([@expl:apply_mut 'f' type invariant] inv_F f)
-    /\ ([@expl:apply_mut requires] precondition_F f ())}
+  let rec apply_mut_F (f: t_F) (return (x: ())) =
+    {[@stop_split] [@expl:apply_mut_F requires] ([@stop_split] [@expl:apply_mut 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:apply_mut requires] precondition_F f ())}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_6 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
-        [ _ck -> (! {inv_F f} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = call_mut_F {_6} {_7} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s3 = -{resolve_F f}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & f: t_F = f | & _6: MutBorrow.t t_F = Any.any_l () | & _7: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:apply_mut ensures] exists g: t_F. postcondition_mut_F f () g () /\ resolve_F g}
+    [ return (result: ()) -> {[@stop_split] [@expl:apply_mut ensures] exists g: t_F. postcondition_mut_F f () g ()
+        /\ resolve_F g}
       (! return {result}) ]
 end
 module M_foo1
@@ -106,7 +114,7 @@ module M_foo1
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -141,7 +149,7 @@ module M_foo1
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -153,7 +161,7 @@ module M_foo1
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -209,25 +217,29 @@ module M_foo1
       -> hist_inv_closure9 self res_state
   
   let rec closure9 (self: MutBorrow.t closure9) (return (x: ())) =
-    {[@expl:closure requires] Int32.to_int self.current.c0.current < 42}
+    {[@stop_split] [@expl:closure requires] Int32.to_int self.current.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.current.c0.current} {(1: Int32.t)}
           (fun (_x: Int32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
       | s1 = -{resolve_refmut_closure9 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure9 = self ])
-    [ return (result: ()) -> {([@expl:closure ensures] Int32.to_int self.current.c0.current + 1
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:closure9 ensures] ([@stop_split] [@expl:closure ensures] Int32.to_int self.current.c0.current
+          + 1
         = Int32.to_int self.final.c0.current)
-      /\ ([@expl:closure hist_inv post] hist_inv_closure9 self.current self.final)}
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure9 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
   
   meta "rewrite_def" predicate precondition_closure9
   
-  let rec apply_mut_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure9 f ()}
+  let rec apply_mut_closure9 (f: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:apply_mut requires] precondition_closure9 f ()}
     any
-    [ return (result: ()) -> {[@expl:apply_mut ensures] exists g: closure9. postcondition_mut_closure9 f () g ()
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:apply_mut ensures] exists g: closure9. postcondition_mut_closure9 f () g ()
         /\ resolve_closure9 g}
       (! return {result}) ]
   
@@ -300,7 +312,7 @@ module M_foo2
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -335,7 +347,7 @@ module M_foo2
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -347,7 +359,7 @@ module M_foo2
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -405,7 +417,7 @@ module M_foo2
       -> hist_inv_closure9 self res_state
   
   let rec closure9 (self: MutBorrow.t closure9) (return (x: ())) =
-    {[@expl:closure requires] Int32.to_int self.current.c0.current.current < 42}
+    {[@stop_split] [@expl:closure requires] Int32.to_int self.current.c0.current.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.current.c0.current.current} {(1: Int32.t)}
@@ -414,10 +426,12 @@ module M_foo2
             s1)
       | s1 = -{resolve_refmut_closure9 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure9 = self ])
-    [ return (result: ()) -> {([@expl:closure ensures #0] Int32.to_int self.current.c0.current.current + 1
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:closure9 ensures] ([@stop_split] [@expl:closure ensures #0] Int32.to_int self.current.c0.current.current
+          + 1
         = Int32.to_int self.final.c0.current.current)
-      /\ ([@expl:closure ensures #1] self.current.c0.current.final = self.final.c0.current.final)
-      /\ ([@expl:closure hist_inv post] hist_inv_closure9 self.current self.final)}
+      /\ ([@stop_split] [@expl:closure ensures #1] self.current.c0.current.final = self.final.c0.current.final)
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure9 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) =
@@ -425,9 +439,11 @@ module M_foo2
   
   meta "rewrite_def" predicate precondition_closure9
   
-  let rec apply_mut_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure9 f ()}
+  let rec apply_mut_closure9 (f: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:apply_mut requires] precondition_closure9 f ()}
     any
-    [ return (result: ()) -> {[@expl:apply_mut ensures] exists g: closure9. postcondition_mut_closure9 f () g ()
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:apply_mut ensures] exists g: closure9. postcondition_mut_closure9 f () g ()
         /\ resolve_closure9 g}
       (! return {result}) ]
   
@@ -501,7 +517,7 @@ module M_foo3
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -536,7 +552,7 @@ module M_foo3
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -548,7 +564,7 @@ module M_foo3
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -579,7 +595,8 @@ module M_foo3
           (fun (_x: Int32.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s1)
       | s1 = -{resolve_refmut_closure1 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure1 = self ]
-    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure1 self.current self.final} return {result} ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure1 self.current self.final}
+      return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -623,9 +640,11 @@ module M_foo3
   
   meta "rewrite_def" predicate precondition_closure1
   
-  let rec apply_mut_closure1 (f: closure1) (return (x: ())) = {[@expl:apply_mut requires] precondition_closure1 f ()}
+  let rec apply_mut_closure1 (f: closure1) (return (x: ())) =
+    {[@stop_split] [@expl:apply_mut requires] precondition_closure1 f ()}
     any
-    [ return (result: ()) -> {[@expl:apply_mut ensures] exists g: closure1. postcondition_mut_closure1 f () g ()
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:apply_mut ensures] exists g: closure1. postcondition_mut_closure1 f () g ()
         /\ resolve_closure1 g}
       (! return {result}) ]
   
@@ -698,7 +717,7 @@ module M_foo4
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -733,7 +752,7 @@ module M_foo4
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -745,7 +764,7 @@ module M_foo4
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -757,7 +776,8 @@ module M_foo4
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec closure9 (self: closure9) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
+  let rec closure9 (self: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:closure requires] Int32.to_int self.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.c0.current} {(1: Int32.t)}
@@ -768,7 +788,8 @@ module M_foo4
           end}-
         s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure9 = self ])
-    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final}
+    [ return (result: ()) -> {[@stop_split] [@expl:closure ensures] Int32.to_int self.c0.current + 1
+      = Int32.to_int self.c0.final}
       (! return {result}) ]
   
   predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
@@ -780,8 +801,11 @@ module M_foo4
   
   meta "rewrite_def" predicate postcondition_once_closure9
   
-  let rec apply_once_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_once requires] precondition_closure9 f ()}
-    any [ return (result: ()) -> {[@expl:apply_once ensures] postcondition_once_closure9 f () ()} (! return {result}) ]
+  let rec apply_once_closure9 (f: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:apply_once requires] precondition_closure9 f ()}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:apply_once ensures] postcondition_once_closure9 f () ()}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -852,7 +876,7 @@ module M_foo5
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -887,7 +911,7 @@ module M_foo5
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -899,7 +923,7 @@ module M_foo5
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -911,7 +935,8 @@ module M_foo5
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let rec closure9 (self: closure9) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c0.current < 42}
+  let rec closure9 (self: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:closure requires] Int32.to_int self.c0.current < 42}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.add {self.c0.current} {(1: Int32.t)}
@@ -922,7 +947,8 @@ module M_foo5
           end}-
         s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: closure9 = self ])
-    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final}
+    [ return (result: ()) -> {[@stop_split] [@expl:closure ensures] Int32.to_int self.c0.current + 1
+      = Int32.to_int self.c0.final}
       (! return {result}) ]
   
   predicate precondition_closure9 [@inline:trivial] (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
@@ -934,8 +960,11 @@ module M_foo5
   
   meta "rewrite_def" predicate postcondition_once_closure9
   
-  let rec apply_once_closure9 (f: closure9) (return (x: ())) = {[@expl:apply_once requires] precondition_closure9 f ()}
-    any [ return (result: ()) -> {[@expl:apply_once ensures] postcondition_once_closure9 f () ()} (! return {result}) ]
+  let rec apply_once_closure9 (f: closure9) (return (x: ())) =
+    {[@stop_split] [@expl:apply_once requires] precondition_closure9 f ()}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:apply_once ensures] postcondition_once_closure9 f () ()}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

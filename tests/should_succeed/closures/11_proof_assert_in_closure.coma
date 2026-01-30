@@ -4,7 +4,7 @@ module M_immutable_capture
   
   type closure0 = { c0: Int32.t }
   
-  let rec closure0 (self: closure0) (return (x: ())) = {[@expl:closure requires] self.c0 = (1: Int32.t)}
+  let rec closure0 (self: closure0) (return (x: ())) = {[@stop_split] [@expl:closure requires] self.c0 = (1: Int32.t)}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:assertion] self.c0 = (1: Int32.t)} s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & self: closure0 = self ]) [ return (result: ()) -> (! return {result}) ]
@@ -78,8 +78,8 @@ module M_mutable_capture
     forall self: closure0, args: (), res_state: closure0, res: (). postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
-  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) = {[@expl:closure requires] self.current.c0.current
-    = (1: Int32.t)}
+  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) =
+    {[@stop_split] [@expl:closure requires] self.current.c0.current = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
@@ -87,7 +87,7 @@ module M_mutable_capture
       | s2 = -{resolve_refmut_closure0 self}- s3
       | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
       | s4 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
-    [ return (result: ()) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -167,8 +167,8 @@ module M_captures_and_call
     forall self: closure0, args: (), res_state: closure0, res: (). postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
-  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) = {[@expl:closure requires] self.current.c0.current
-    = (1: Int32.t)}
+  let rec closure0 (self: MutBorrow.t closure0) (return (x: ())) =
+    {[@stop_split] [@expl:closure requires] self.current.c0.current = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] self.current.c0.current = (1: Int32.t)} s1
@@ -176,8 +176,9 @@ module M_captures_and_call
       | s2 = -{resolve_refmut_closure0 self}- s3
       | s3 = {[@expl:assertion] self.current.c0.current = (2: Int32.t)} s4
       | s4 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure0 = self ])
-    [ return (result: ()) -> {([@expl:closure ensures] self.final.c0.current = (2: Int32.t))
-      /\ ([@expl:closure hist_inv post] hist_inv_closure0 self.current self.final)}
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:closure0 ensures] ([@stop_split] [@expl:closure ensures] self.final.c0.current = (2: Int32.t))
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final)}
       (! return {result}) ]
   
   predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: ()) = self.c0.current = (1: Int32.t)
@@ -185,9 +186,10 @@ module M_captures_and_call
   meta "rewrite_def" predicate precondition_closure0
   
   let rec calls_closure_closure0 (f: closure0) (return (x: ())) =
-    {[@expl:calls_closure requires] precondition_closure0 f ()}
+    {[@stop_split] [@expl:calls_closure requires] precondition_closure0 f ()}
     any
-    [ return (result: ()) -> {[@expl:calls_closure ensures] postcondition_once_closure0 f () ()} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:calls_closure ensures] postcondition_once_closure0 f () ()}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

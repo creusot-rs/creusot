@@ -16,7 +16,8 @@ module M_search
       <= UInt64.t'int const_MAX
   
   let rec len_u8 (self_: t_Vec_u8_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_u8_Global self_)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_u8_Global self_)}
       (! return {result}) ]
   
   type t_RangeInclusive_usize
@@ -38,19 +39,20 @@ module M_search
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
   let rec new_usize (start: UInt64.t) (end': UInt64.t) (return (x: t_RangeInclusive_usize)) = any
-    [ return (result: t_RangeInclusive_usize) -> {([@expl:new result type invariant] inv_RangeInclusive_usize result)
-      /\ ([@expl:new ensures #0] start_log_RangeInclusive_usize result = start)
-      /\ ([@expl:new ensures #1] end_log_RangeInclusive_usize result = end')
-      /\ ([@expl:new ensures #2] deep_model_usize start <= deep_model_usize end'
+    [ return (result: t_RangeInclusive_usize) ->
+    {[@stop_split] [@expl:new_usize ensures] ([@stop_split] [@expl:new result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@stop_split] [@expl:new ensures #0] start_log_RangeInclusive_usize result = start)
+      /\ ([@stop_split] [@expl:new ensures #1] end_log_RangeInclusive_usize result = end')
+      /\ ([@stop_split] [@expl:new ensures #2] deep_model_usize start <= deep_model_usize end'
       -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
   let rec into_iter_RangeInclusive_usize (self_: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
-    {[@expl:into_iter 'self_' type invariant] inv_RangeInclusive_usize self_}
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_RangeInclusive_usize self_}
     any
     [ return (result: t_RangeInclusive_usize) ->
-    {([@expl:into_iter result type invariant] inv_RangeInclusive_usize result)
-      /\ ([@expl:into_iter ensures] result = self_)}
+    {[@stop_split] [@expl:into_iter_RangeInclusive_usize ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_RangeInclusive_usize result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -97,9 +99,9 @@ module M_search
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
   let rec next_RangeInclusive_usize (self_: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
-    {[@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_usize self_}
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_usize self_}
     any
-    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_RangeInclusive_usize self_
         | Some v -> produces_RangeInclusive_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -126,7 +128,7 @@ module M_search
   
   let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
     [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -135,7 +137,7 @@ module M_search
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
@@ -164,7 +166,7 @@ module M_search
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}
@@ -181,9 +183,10 @@ module M_search
   meta "rewrite_def" predicate has_value_usize
   
   let rec index_Vec_u8_Global'0 (self_: t_Vec_u8_Global) (ix: UInt64.t) (return (x: UInt8.t)) =
-    {[@expl:index requires] in_bounds_usize ix (view_Vec_u8_Global self_)}
+    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_u8_Global self_)}
     any
-    [ return (result: UInt8.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_u8_Global self_) result}
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_u8_Global self_) result}
       (! return {result}) ]
   
   predicate resolve_RangeInclusive_usize (_1: t_RangeInclusive_usize)
@@ -193,7 +196,7 @@ module M_search
   meta "select_lsinst" "all"
   
   let rec search (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (return (x: UInt64.t)) =
-    {[@expl:search requires] Seq.length (view_Vec_u8_Global needle) >= 1
+    {[@stop_split] [@expl:search requires] Seq.length (view_Vec_u8_Global needle) >= 1
     /\ Seq.length (view_Vec_u8_Global needle) <= Seq.length (view_Vec_u8_Global haystack)}
     (! bb0
     [ bb0 = s0
@@ -215,12 +218,12 @@ module M_search
         [ s0 = MutBorrow.borrow_mut <t_RangeInclusive_usize> {iter}
             (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
               [ &_45 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
-              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_RangeInclusive_usize iter} any) ]
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_RangeInclusive_usize iter} any) ]
         | s1 = MutBorrow.borrow_final <t_RangeInclusive_usize> {_45.current} {MutBorrow.get_id _45}
             (fun (_bor: MutBorrow.t t_RangeInclusive_usize) ->
               [ &_44 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
               [ &_45 <- { _45 with current = _bor.final } ] s2)
-          [ _ck -> (! {inv_RangeInclusive_usize _45.current} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_RangeInclusive_usize _45.current} any) ]
         | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_usize _45} any) ]
         | s4 = -{resolve_refmut_RangeInclusive_usize _45}- s5
@@ -296,14 +299,15 @@ module M_search
     | & _92: UInt8.t = Any.any_l ()
     | & _96: UInt8.t = Any.any_l ()
     | & _98: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {([@expl:search ensures #0] UInt64.t'int result
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:search ensures] ([@stop_split] [@expl:search ensures #0] UInt64.t'int result
           = Seq.length (view_Vec_u8_Global haystack)
         \/ UInt64.t'int result < Seq.length (view_Vec_u8_Global haystack) - Seq.length (view_Vec_u8_Global needle) + 1)
-      /\ ([@expl:search ensures #1] UInt64.t'int result < Seq.length (view_Vec_u8_Global haystack)
+      /\ ([@stop_split] [@expl:search ensures #1] UInt64.t'int result < Seq.length (view_Vec_u8_Global haystack)
         -> match_at needle haystack (UInt64.t'int result) (Seq.length (view_Vec_u8_Global needle))
         /\ (forall i: int. 0 <= i /\ i < UInt64.t'int result
           -> not match_at needle haystack i (Seq.length (view_Vec_u8_Global needle))))
-      /\ ([@expl:search ensures #2] UInt64.t'int result = Seq.length (view_Vec_u8_Global haystack)
+      /\ ([@stop_split] [@expl:search ensures #2] UInt64.t'int result = Seq.length (view_Vec_u8_Global haystack)
       -> (forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u8_Global haystack)
         -> not match_at needle haystack i (Seq.length (view_Vec_u8_Global needle))))}
       (! return {result}) ]

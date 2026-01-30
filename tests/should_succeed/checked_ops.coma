@@ -10,43 +10,49 @@ module M_test_u8_add_example
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_add ensures] result = UInt8.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_add ensures #0] UInt8.t'int self_ + UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] UInt8.t'int self_
+              + UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs)
-      /\ ([@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_add ensures #0] UInt8.t'int self_ + UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
+              + UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -134,40 +140,46 @@ module M_test_u8_add_overflow
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_add ensures] result = UInt8.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_add ensures #0] UInt8.t'int self_ + UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] UInt8.t'int self_
+              + UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs)
-      /\ ([@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_add ensures #0] UInt8.t'int self_ + UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
+              + UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -176,8 +188,8 @@ module M_test_u8_add_overflow
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_add_overflow (a: UInt8.t) (return (x: ())) = {[@expl:test_u8_add_overflow requires] UInt8.t'int a
-    <> 0}
+  let rec test_u8_add_overflow (a: UInt8.t) (return (x: ())) =
+    {[@stop_split] [@expl:test_u8_add_overflow requires] UInt8.t'int a <> 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_add {(255: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
@@ -223,7 +235,8 @@ module M_test_u8_wrapping_add
   use int.Int
   
   let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_add ensures] result = UInt8.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -232,7 +245,7 @@ module M_test_u8_wrapping_add
   let rec test_u8_wrapping_add (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
     [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
-    [ return (result: UInt8.t) -> {[@expl:test_u8_wrapping_add ensures] UInt8.t'int result
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:test_u8_wrapping_add ensures] UInt8.t'int result
         = UInt8.t'int a + UInt8.t'int b
       \/ UInt8.t'int result = UInt8.t'int a + UInt8.t'int b - 256}
       (! return {result}) ]
@@ -249,32 +262,36 @@ module M_test_u8_overflowing_add
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_add ensures #0] UInt8.t'int self_ + UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
+              + UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_add ensures] result = UInt8.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
+      (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
   let rec checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -318,43 +335,49 @@ module M_test_u8_sub_example
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_sub ensures #0] UInt8.t'int self_ - UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] UInt8.t'int self_
+              - UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs)
-      /\ ([@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_sub ensures #0] UInt8.t'int self_ - UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
+              - UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -442,40 +465,46 @@ module M_test_u8_sub_overflow
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_sub ensures #0] UInt8.t'int self_ - UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] UInt8.t'int self_
+              - UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs)
-      /\ ([@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_sub ensures #0] UInt8.t'int self_ - UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
+              - UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -484,8 +513,8 @@ module M_test_u8_sub_overflow
   
   meta "select_lsinst" "all"
   
-  let rec test_u8_sub_overflow (a: UInt8.t) (return (x: ())) = {[@expl:test_u8_sub_overflow requires] UInt8.t'int a
-    <> 0}
+  let rec test_u8_sub_overflow (a: UInt8.t) (return (x: ())) =
+    {[@stop_split] [@expl:test_u8_sub_overflow requires] UInt8.t'int a <> 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_sub {(0: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
@@ -535,7 +564,8 @@ module M_test_u8_wrapping_sub
   use int.Int
   
   let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -544,7 +574,7 @@ module M_test_u8_wrapping_sub
   let rec test_u8_wrapping_sub (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
     [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
-    [ return (result: UInt8.t) -> {[@expl:test_u8_wrapping_sub ensures] UInt8.t'int result
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:test_u8_wrapping_sub ensures] UInt8.t'int result
         = UInt8.t'int a - UInt8.t'int b
       \/ UInt8.t'int result = UInt8.t'int a - UInt8.t'int b + 256}
       (! return {result}) ]
@@ -561,32 +591,36 @@ module M_test_u8_overflowing_sub
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_sub ensures #0] UInt8.t'int self_ - UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
+              - UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
+      (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
   let rec checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -630,43 +664,49 @@ module M_test_u8_mul_example
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_mul ensures #0] UInt8.t'int self_ * UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] UInt8.t'int self_
+              * UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs)
-      /\ ([@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_mul ensures #0] UInt8.t'int self_ * UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
+              * UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -754,40 +794,46 @@ module M_test_u8_mul_zero
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {([@expl:saturating_mul ensures #0] UInt8.t'int self_ * UInt8.t'int rhs
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] UInt8.t'int self_
+              * UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs)
-      /\ ([@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
+      /\ ([@stop_split] [@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
       -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_mul ensures #0] UInt8.t'int self_ * UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
+              * UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
@@ -846,32 +892,36 @@ module M_test_u8_overflowing_mul
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let rec overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_mul ensures #0] UInt8.t'int self_ * UInt8.t'int rhs
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
+              * UInt8.t'int rhs
             >= UInt8.t'int const_MIN
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
       \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
-    [ return (result: UInt8.t) -> {[@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs} (! return {result}) ]
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
+      (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
   let rec checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -914,46 +964,56 @@ module M_test_u8_div_example
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
-    {[@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: UInt8.t) -> {([@expl:wrapping_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:wrapping_div ensures] ([@stop_split] [@expl:wrapping_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result = UInt8.t'int self_)
-      /\ ([@expl:wrapping_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:wrapping_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+        /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
-    {[@expl:saturating_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: UInt8.t) -> {([@expl:saturating_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_div ensures] ([@stop_split] [@expl:saturating_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:saturating_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+        /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
-    {[@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_div ensures] ([@stop_split] [@expl:overflowing_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result.f0 = UInt8.t'int self_)
-      /\ ([@expl:overflowing_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+          /\ UInt8.t'int rhs = - 1
         \/ UInt8.t'int result.f0 = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))
-      /\ ([@expl:overflowing_div ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #2] result.f1
       = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))}
       (! return {result}) ]
   
@@ -1016,43 +1076,53 @@ module M_test_u8_div_no_overflow
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: UInt8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
-    {[@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: UInt8.t) -> {([@expl:wrapping_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:wrapping_div ensures] ([@stop_split] [@expl:wrapping_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result = UInt8.t'int self_)
-      /\ ([@expl:wrapping_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:wrapping_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+        /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   let rec saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
-    {[@expl:saturating_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: UInt8.t) -> {([@expl:saturating_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: UInt8.t) ->
+    {[@stop_split] [@expl:saturating_div ensures] ([@stop_split] [@expl:saturating_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@expl:saturating_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:saturating_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+        /\ UInt8.t'int rhs = - 1
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let rec overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
-    {[@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
+    {[@stop_split] [@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
-    [ return (result: tup2_u8_bool) -> {([@expl:overflowing_div ensures #0] UInt8.t'int self_ = UInt8.t'int const_MIN
+    [ return (result: tup2_u8_bool) ->
+    {[@stop_split] [@expl:overflowing_div ensures] ([@stop_split] [@expl:overflowing_div ensures #0] UInt8.t'int self_
+            = UInt8.t'int const_MIN
           /\ UInt8.t'int rhs = - 1 -> UInt8.t'int result.f0 = UInt8.t'int self_)
-      /\ ([@expl:overflowing_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #1] UInt8.t'int self_ = UInt8.t'int const_MIN
+          /\ UInt8.t'int rhs = - 1
         \/ UInt8.t'int result.f0 = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))
-      /\ ([@expl:overflowing_div ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #2] result.f1
       = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))}
       (! return {result}) ]
   
@@ -1061,7 +1131,7 @@ module M_test_u8_div_no_overflow
   meta "select_lsinst" "all"
   
   let rec test_u8_div_no_overflow (a: UInt8.t) (b: UInt8.t) (return (x: ())) =
-    {[@expl:test_u8_div_no_overflow requires] UInt8.t'int b <> 0}
+    {[@stop_split] [@expl:test_u8_div_no_overflow requires] UInt8.t'int b <> 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_div {a} {b} (fun (_x: t_Option_u8) -> [ &_8 <- _x ] s1)
@@ -1140,14 +1210,15 @@ module M_test_u8_div_zero
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   let rec checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
-    [ return (result: t_Option_u8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_u8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
   let rec is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1175,43 +1246,49 @@ module M_test_i8_add_example
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_add ensures] result = Int8.add self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1329,40 +1406,46 @@ module M_test_i8_add_overflow_pos
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_add ensures] result = Int8.add self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1372,7 +1455,7 @@ module M_test_i8_add_overflow_pos
   meta "select_lsinst" "all"
   
   let rec test_i8_add_overflow_pos (a: Int8.t) (return (x: ())) =
-    {[@expl:test_i8_add_overflow_pos requires] Int8.to_int a > 0}
+    {[@stop_split] [@expl:test_i8_add_overflow_pos requires] Int8.to_int a > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_add {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -1428,40 +1511,46 @@ module M_test_i8_add_overflow_neg
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_add ensures] result = Int8.add self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1471,7 +1560,7 @@ module M_test_i8_add_overflow_neg
   meta "select_lsinst" "all"
   
   let rec test_i8_add_overflow_neg (a: Int8.t) (return (x: ())) =
-    {[@expl:test_i8_add_overflow_neg requires] Int8.to_int a < 0}
+    {[@stop_split] [@expl:test_i8_add_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_add {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -1521,7 +1610,8 @@ module M_test_i8_wrapping_add
   use int.Int
   
   let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_add ensures] result = Int8.add self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1530,7 +1620,7 @@ module M_test_i8_wrapping_add
   let rec test_i8_wrapping_add (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
     [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
-    [ return (result: Int8.t) -> {[@expl:test_i8_wrapping_add ensures] Int8.to_int result
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:test_i8_wrapping_add ensures] Int8.to_int result
         = Int8.to_int a + Int8.to_int b
       \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256
       \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256}
@@ -1548,32 +1638,36 @@ module M_test_i8_overflowing_add
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_add ensures #0] Int8.to_int self_ + Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
+              + Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
-      /\ ([@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_add ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_add ensures] result = Int8.add self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
+      (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
   let rec checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_add ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1617,43 +1711,49 @@ module M_test_i8_sub_example
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_sub ensures] result = Int8.sub self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1774,40 +1874,46 @@ module M_test_i8_sub_overflow_pos
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_sub ensures] result = Int8.sub self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1817,7 +1923,7 @@ module M_test_i8_sub_overflow_pos
   meta "select_lsinst" "all"
   
   let rec test_i8_sub_overflow_pos (a: Int8.t) (return (x: ())) =
-    {[@expl:test_i8_sub_overflow_pos requires] Int8.to_int a > 0}
+    {[@stop_split] [@expl:test_i8_sub_overflow_pos requires] Int8.to_int a > 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_sub {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -1873,40 +1979,46 @@ module M_test_i8_sub_overflow_neg
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_sub ensures] result = Int8.sub self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -1916,7 +2028,7 @@ module M_test_i8_sub_overflow_neg
   meta "select_lsinst" "all"
   
   let rec test_i8_sub_overflow_neg (a: Int8.t) (return (x: ())) =
-    {[@expl:test_i8_sub_overflow_neg requires] Int8.to_int a < 0}
+    {[@stop_split] [@expl:test_i8_sub_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_sub {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -1970,7 +2082,8 @@ module M_test_i8_wrapping_sub
   use int.Int
   
   let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_sub ensures] result = Int8.sub self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -1979,7 +2092,7 @@ module M_test_i8_wrapping_sub
   let rec test_i8_wrapping_sub (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
     [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
-    [ return (result: Int8.t) -> {[@expl:test_i8_wrapping_sub ensures] Int8.to_int result
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:test_i8_wrapping_sub ensures] Int8.to_int result
         = Int8.to_int a - Int8.to_int b
       \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256
       \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256}
@@ -1997,32 +2110,36 @@ module M_test_i8_overflowing_sub
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_sub ensures #0] Int8.to_int self_ - Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
+              - Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
-      /\ ([@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_sub ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_sub ensures] result = Int8.sub self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
+      (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
   let rec checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_sub ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -2066,43 +2183,49 @@ module M_test_i8_mul_example
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_mul ensures] result = Int8.mul self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_mul ensures #0] Int8.to_int self_ * Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] Int8.to_int self_
+              * Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs)
-      /\ ([@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_mul ensures #0] Int8.to_int self_ * Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
+              * Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -2220,40 +2343,46 @@ module M_test_i8_mul_zero
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_mul ensures] result = Int8.mul self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
+      (! return {result}) ]
   
   let rec saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {([@expl:saturating_mul ensures #0] Int8.to_int self_ * Int8.to_int rhs
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] Int8.to_int self_
+              * Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs)
-      /\ ([@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
+      /\ ([@stop_split] [@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
       -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_mul ensures #0] Int8.to_int self_ * Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
+              * Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
@@ -2312,32 +2441,36 @@ module M_test_i8_overflowing_mul
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let rec overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_mul ensures #0] Int8.to_int self_ * Int8.to_int rhs
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
+              * Int8.to_int rhs
             >= Int8.to_int const_MIN
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
-      /\ ([@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
-      /\ ([@expl:overflowing_mul ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
       \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
       (! return {result}) ]
   
   let rec wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
-    [ return (result: Int8.t) -> {[@expl:wrapping_mul ensures] result = Int8.mul self_ rhs} (! return {result}) ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
+      (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
   let rec checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_mul ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
-      /\ ([@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -2380,46 +2513,56 @@ module M_test_i8_div_example
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
-    {[@expl:wrapping_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: Int8.t) -> {([@expl:wrapping_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:wrapping_div ensures] ([@stop_split] [@expl:wrapping_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self_)
-      /\ ([@expl:wrapping_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:wrapping_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+        /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
-    {[@expl:saturating_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: Int8.t) -> {([@expl:saturating_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_div ensures] ([@stop_split] [@expl:saturating_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:saturating_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+        /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
-    {[@expl:overflowing_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_div ensures] ([@stop_split] [@expl:overflowing_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result.f0 = Int8.to_int self_)
-      /\ ([@expl:overflowing_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+          /\ Int8.to_int rhs = - 1
         \/ Int8.to_int result.f0 = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))
-      /\ ([@expl:overflowing_div ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #2] result.f1
       = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))}
       (! return {result}) ]
   
@@ -2546,43 +2689,53 @@ module M_test_i8_div_no_overflow
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@expl:unwrap requires] self_ <> None}
-    any [ return (result: Int8.t) -> {[@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+  let rec unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
   let rec wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
-    {[@expl:wrapping_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: Int8.t) -> {([@expl:wrapping_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:wrapping_div ensures] ([@stop_split] [@expl:wrapping_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self_)
-      /\ ([@expl:wrapping_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:wrapping_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+        /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   let rec saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
-    {[@expl:saturating_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: Int8.t) -> {([@expl:saturating_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: Int8.t) ->
+    {[@stop_split] [@expl:saturating_div ensures] ([@stop_split] [@expl:saturating_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@expl:saturating_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:saturating_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+        /\ Int8.to_int rhs = - 1
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let rec overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
-    {[@expl:overflowing_div requires] Int8.to_int rhs <> 0}
+    {[@stop_split] [@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
-    [ return (result: tup2_i8_bool) -> {([@expl:overflowing_div ensures #0] Int8.to_int self_ = Int8.to_int const_MIN
+    [ return (result: tup2_i8_bool) ->
+    {[@stop_split] [@expl:overflowing_div ensures] ([@stop_split] [@expl:overflowing_div ensures #0] Int8.to_int self_
+            = Int8.to_int const_MIN
           /\ Int8.to_int rhs = - 1 -> Int8.to_int result.f0 = Int8.to_int self_)
-      /\ ([@expl:overflowing_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #1] Int8.to_int self_ = Int8.to_int const_MIN
+          /\ Int8.to_int rhs = - 1
         \/ Int8.to_int result.f0 = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))
-      /\ ([@expl:overflowing_div ensures #2] result.f1
+      /\ ([@stop_split] [@expl:overflowing_div ensures #2] result.f1
       = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))}
       (! return {result}) ]
   
@@ -2591,7 +2744,8 @@ module M_test_i8_div_no_overflow
   meta "select_lsinst" "all"
   
   let rec test_i8_div_no_overflow (a: Int8.t) (b: Int8.t) (return (x: ())) =
-    {[@expl:test_i8_div_no_overflow requires] Int8.to_int b <> 0 /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
+    {[@stop_split] [@expl:test_i8_div_no_overflow requires] Int8.to_int b <> 0
+    /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_div {a} {b} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
@@ -2706,14 +2860,15 @@ module M_test_i8_div_zero
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   let rec checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
-    [ return (result: t_Option_i8) -> {([@expl:checked_div ensures #0] (result = None)
+    [ return (result: t_Option_i8) ->
+    {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
-      /\ ([@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
+      /\ ([@stop_split] [@expl:checked_div ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
   let rec is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

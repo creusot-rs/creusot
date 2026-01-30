@@ -205,7 +205,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as cre
   function rel_mono_MapRelation_K_V (a: t_Option_FMap_K_V) (f1: t_FMap_K_Ag_V) (f2: t_FMap_K_Ag_V) : ()
   
   goal vc_rel_mono_MapRelation_K_V: rel_MapRelation_K_V a f1
-    -> incl_FMap_K_Ag_V f2 f1 -> ([@expl:rel_mono ensures] rel_MapRelation_K_V a f2)
+    -> incl_FMap_K_Ag_V f2 f1 -> ([@stop_split] [@expl:rel_mono ensures] rel_MapRelation_K_V a f2)
 end
 module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
@@ -257,7 +257,8 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as cre
   
   function rel_none_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) : ()
   
-  goal vc_rel_none_MapRelation_K_V: rel_MapRelation_K_V a f -> ([@expl:rel_none ensures] rel_MapRelation_K_V (None) f)
+  goal vc_rel_none_MapRelation_K_V: rel_MapRelation_K_V a f
+    -> ([@stop_split] [@expl:rel_none ensures] rel_MapRelation_K_V (None) f)
 end
 module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)
   use map.Map
@@ -371,7 +372,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as cre
   
   function rel_unit_MapRelation_K_V (a: t_Option_FMap_K_V) : ()
   
-  goal vc_rel_unit_MapRelation_K_V: [@expl:rel_unit ensures] rel_MapRelation_K_V a unit_FMap_K_Ag_V
+  goal vc_rel_unit_MapRelation_K_V: [@stop_split] [@expl:rel_unit ensures] rel_MapRelation_K_V a unit_FMap_K_Ag_V
 end
 module M_impl_Authority_K_V__new (* Authority<K, V> *)
   use map.Map
@@ -643,12 +644,12 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   let rec alloc_View_MapRelation_K_V (r: t_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) = any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
-    {[@expl:alloc ensures] view_Resource_View_MapRelation_K_V result = r}
+    {[@stop_split] [@expl:alloc ensures] view_Resource_View_MapRelation_K_V result = r}
       (! return {result}) ]
   
   let rec into_inner_Resource_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V)
     (return (x: t_Resource_View_MapRelation_K_V)) = any
-    [ return (result: t_Resource_View_MapRelation_K_V) -> {[@expl:into_inner ensures] result = self}
+    [ return (result: t_Resource_View_MapRelation_K_V) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
   type t_Authority_K_V = { f0'2: t_Resource_View_MapRelation_K_V }
@@ -670,10 +671,11 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   meta "rewrite_def" predicate inv_Ghost_Authority_K_V
   
   let rec new_Authority_K_V (x: t_Authority_K_V) (return (x'0: t_Authority_K_V)) =
-    {[@expl:new 'x' type invariant] inv_Authority_K_V x}
+    {[@stop_split] [@expl:new 'x' type invariant] inv_Authority_K_V x}
     any
-    [ return (result: t_Authority_K_V) -> {([@expl:new result type invariant] inv_Ghost_Authority_K_V result)
-      /\ ([@expl:new ensures] result = x)}
+    [ return (result: t_Authority_K_V) ->
+    {[@stop_split] [@expl:new_Authority_K_V ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Authority_K_V result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
   predicate index_Mapping_FMap_K_V_bool [@inline:trivial] (self: Map.map t_FMap_K_V bool) (a: t_FMap_K_V) =
@@ -712,8 +714,9 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
     | & resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
     | & _5: t_Authority_K_V = Any.any_l ()
     | & _6: t_Resource_View_MapRelation_K_V = Any.any_l () ])
-    [ return (result: t_Authority_K_V) -> {([@expl:new result type invariant] inv_Ghost_Authority_K_V result)
-      /\ ([@expl:new ensures] view_Authority_K_V result = empty_K'0)}
+    [ return (result: t_Authority_K_V) ->
+    {[@stop_split] [@expl:new_K ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Authority_K_V result)
+      /\ ([@stop_split] [@expl:new ensures] view_Authority_K_V result = empty_K'0)}
       (! return {result}) ]
 end
 module M_impl_Authority_K_V__insert (* Authority<K, V> *)
@@ -1052,11 +1055,12 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   let rec update_View_MapRelation_K_V (self: MutBorrow.t t_Resource_View_MapRelation_K_V)
     (upd: t_ViewUpdateInsert_MapRelation_K_V) (return (x: ())) =
-    {[@expl:update requires] premise_ViewUpdateInsert_MapRelation_K_V upd (view_Resource_View_MapRelation_K_V self.current)}
+    {[@stop_split] [@expl:update requires] premise_ViewUpdateInsert_MapRelation_K_V upd (view_Resource_View_MapRelation_K_V self.current)}
     any
-    [ return (result: ()) -> {([@expl:update ensures #0] id_View_MapRelation_K_V self.final
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:update_View_MapRelation_K_V ensures] ([@stop_split] [@expl:update ensures #0] id_View_MapRelation_K_V self.final
         = id_View_MapRelation_K_V self.current)
-      /\ ([@expl:update ensures #1] view_Resource_View_MapRelation_K_V self.final
+      /\ ([@stop_split] [@expl:update ensures #1] view_Resource_View_MapRelation_K_V self.final
       = update_ViewUpdateInsert_MapRelation_K_V upd (view_Resource_View_MapRelation_K_V self.current) result)}
       (! return {result}) ]
   
@@ -1153,13 +1157,14 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   let rec split_off_View_MapRelation_K_V (self: MutBorrow.t t_Resource_View_MapRelation_K_V) (r: t_View_MapRelation_K_V)
     (s: t_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) =
-    {[@expl:split_off requires] incl_eq_op_View_MapRelation_K_V r s (view_Resource_View_MapRelation_K_V self.current)}
+    {[@stop_split] [@expl:split_off requires] incl_eq_op_View_MapRelation_K_V r s (view_Resource_View_MapRelation_K_V self.current)}
     any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
-    {([@expl:split_off ensures #0] id_View_MapRelation_K_V self.final = id_View_MapRelation_K_V self.current
+    {[@stop_split] [@expl:split_off_View_MapRelation_K_V ensures] ([@stop_split] [@expl:split_off ensures #0] id_View_MapRelation_K_V self.final
+          = id_View_MapRelation_K_V self.current
         /\ id_View_MapRelation_K_V result = id_View_MapRelation_K_V self.current)
-      /\ ([@expl:split_off ensures #1] view_Resource_View_MapRelation_K_V self.final = s)
-      /\ ([@expl:split_off ensures #2] view_Resource_View_MapRelation_K_V result = r)}
+      /\ ([@stop_split] [@expl:split_off ensures #1] view_Resource_View_MapRelation_K_V self.final = s)
+      /\ ([@stop_split] [@expl:split_off ensures #2] view_Resource_View_MapRelation_K_V result = r)}
       (! return {result}) ]
   
   predicate invariant_Authority_K_V (self: t_Authority_K_V) =
@@ -1207,8 +1212,8 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   meta "select_lsinst" "all"
   
   let rec insert_K'1 (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
-    {([@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self)
-    /\ ([@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
+    {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self)
+    /\ ([@stop_split] [@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &auth <- insert_K (view_Authority_K_V self.current) k v ] s1
@@ -1239,11 +1244,13 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
     | & _29: t_ViewUpdateInsert_MapRelation_K_V = Any.any_l ()
     | & _32: t_Resource_View_MapRelation_K_V = Any.any_l ()
     | & _33: MutBorrow.t t_Resource_View_MapRelation_K_V = Any.any_l () ])
-    [ return (result: t_Fragment_K_V) -> {([@expl:insert result type invariant] inv_Fragment_K_V result)
-      /\ ([@expl:insert ensures #0] view_Authority_K_V self.final = insert_K (view_Authority_K_V self.current) k v)
-      /\ ([@expl:insert ensures #1] id_K self.final = id_K self.current)
-      /\ ([@expl:insert ensures #2] view_Fragment_K_V result = { f0'6 = k; f1'6 = v })
-      /\ ([@expl:insert ensures #3] id_K'0 result = id_K self.current)}
+    [ return (result: t_Fragment_K_V) ->
+    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Fragment_K_V result)
+      /\ ([@stop_split] [@expl:insert ensures #0] view_Authority_K_V self.final
+        = insert_K (view_Authority_K_V self.current) k v)
+      /\ ([@stop_split] [@expl:insert ensures #1] id_K self.final = id_K self.current)
+      /\ ([@stop_split] [@expl:insert ensures #2] view_Fragment_K_V result = { f0'6 = k; f1'6 = v })
+      /\ ([@stop_split] [@expl:insert ensures #3] id_K'0 result = id_K self.current)}
       (! return {result}) ]
 end
 module M_impl_Authority_K_V__contains (* Authority<K, V> *)
@@ -1593,11 +1600,12 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   let rec join_shared_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V)
     (other: t_Resource_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) =
-    {[@expl:join_shared requires] id_View_MapRelation_K_V self = id_View_MapRelation_K_V other}
+    {[@stop_split] [@expl:join_shared requires] id_View_MapRelation_K_V self = id_View_MapRelation_K_V other}
     any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
-    {([@expl:join_shared ensures #0] id_View_MapRelation_K_V result = id_View_MapRelation_K_V self)
-      /\ ([@expl:join_shared ensures #1] incl_eq_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self) (view_Resource_View_MapRelation_K_V result)
+    {[@stop_split] [@expl:join_shared_View_MapRelation_K_V ensures] ([@stop_split] [@expl:join_shared ensures #0] id_View_MapRelation_K_V result
+        = id_View_MapRelation_K_V self)
+      /\ ([@stop_split] [@expl:join_shared ensures #1] incl_eq_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self) (view_Resource_View_MapRelation_K_V result)
       /\ incl_eq_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V other) (view_Resource_View_MapRelation_K_V result))}
       (! return {result}) ]
   
@@ -1679,9 +1687,9 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   meta "select_lsinst" "all"
   
   let rec contains_K'0 (self: t_Authority_K_V) (frag: t_Fragment_K_V) (return (x: ())) =
-    {([@expl:contains 'self' type invariant] inv_ref_Authority_K_V self)
-    /\ ([@expl:contains 'frag' type invariant] inv_ref_Fragment_K_V frag)
-    /\ ([@expl:contains requires] id_K self = id_K'0 frag)}
+    {[@stop_split] [@expl:contains_K requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_Authority_K_V self)
+    /\ ([@stop_split] [@expl:contains 'frag' type invariant] inv_ref_Fragment_K_V frag)
+    /\ ([@stop_split] [@expl:contains requires] id_K self = id_K'0 frag)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_12 <- frag.f0 ] s1
@@ -1697,7 +1705,8 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
     | & frag: t_Fragment_K_V = frag
     | & new_resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
     | & _12: t_Resource_View_MapRelation_K_V = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:contains ensures] get_K'0 (view_Authority_K_V self) (view_Fragment_K_V frag).f0'5
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:contains ensures] get_K'0 (view_Authority_K_V self) (view_Fragment_K_V frag).f0'5
       = Some'4 ((view_Fragment_K_V frag).f1'5)}
       (! return {result}) ]
 end
@@ -2005,11 +2014,12 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   
   let rec core_View_MapRelation_K_V'0 (self: t_Resource_View_MapRelation_K_V)
     (return (x: t_Resource_View_MapRelation_K_V)) =
-    {[@expl:core requires] core_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self) <> None}
+    {[@stop_split] [@expl:core requires] core_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self) <> None}
     any
-    [ return (result: t_Resource_View_MapRelation_K_V) -> {([@expl:core ensures #0] id_View_MapRelation_K_V result
+    [ return (result: t_Resource_View_MapRelation_K_V) ->
+    {[@stop_split] [@expl:core_View_MapRelation_K_V ensures] ([@stop_split] [@expl:core ensures #0] id_View_MapRelation_K_V result
         = id_View_MapRelation_K_V self)
-      /\ ([@expl:core ensures #1] Some (view_Resource_View_MapRelation_K_V result)
+      /\ ([@stop_split] [@expl:core ensures #1] Some (view_Resource_View_MapRelation_K_V result)
       = core_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self))}
       (! return {result}) ]
   
@@ -2095,7 +2105,7 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   meta "select_lsinst" "all"
   
   let rec clone_Fragment_K_V (self: t_Fragment_K_V) (return (x: t_Fragment_K_V)) =
-    {[@expl:clone 'self' type invariant] inv_ref_Fragment_K_V self}
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Fragment_K_V self}
     (! bb0
     [ bb0 = s0
       [ s0 = core_View_MapRelation_K_V'0 {self.f0} (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_4 <- _x ] s1)
@@ -2104,8 +2114,9 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
     [ & _ret: t_Fragment_K_V = Any.any_l ()
     | & self: t_Fragment_K_V = self
     | & _4: t_Resource_View_MapRelation_K_V = Any.any_l () ])
-    [ return (result: t_Fragment_K_V) -> {([@expl:clone result type invariant] inv_Fragment_K_V result)
-      /\ ([@expl:clone ensures] view_Fragment_K_V result = view_Fragment_K_V self)}
+    [ return (result: t_Fragment_K_V) ->
+    {[@stop_split] [@expl:clone_Fragment_K_V ensures] ([@stop_split] [@expl:clone result type invariant] inv_Fragment_K_V result)
+      /\ ([@stop_split] [@expl:clone ensures] view_Fragment_K_V result = view_Fragment_K_V self)}
       (! return {result}) ]
 end
 module M_impl_ViewRel_for_MapRelation_K_V__rel_unit__refines (* <MapRelation<K, V> as creusot_std::logic::ra::view::ViewRel> *)

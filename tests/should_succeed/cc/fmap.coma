@@ -38,12 +38,13 @@ module M_resolves
   predicate is_empty_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) = ext_eq_refmut_usize self empty_refmut_usize
   
   let rec new_refmut_usize (return (x: t_FMap_refmut_usize_refmut_usize)) = any
-    [ return (result: t_FMap_refmut_usize_refmut_usize) -> {[@expl:new ensures] is_empty_refmut_usize result}
+    [ return (result: t_FMap_refmut_usize_refmut_usize) ->
+    {[@stop_split] [@expl:new ensures] is_empty_refmut_usize result}
       (! return {result}) ]
   
   let rec into_inner_FMap_refmut_usize_refmut_usize (self: t_FMap_refmut_usize_refmut_usize)
     (return (x: t_FMap_refmut_usize_refmut_usize)) = any
-    [ return (result: t_FMap_refmut_usize_refmut_usize) -> {[@expl:into_inner ensures] result = self}
+    [ return (result: t_FMap_refmut_usize_refmut_usize) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
   predicate contains_refmut_usize [@inline:trivial] (self: t_FMap_refmut_usize_refmut_usize) (k: MutBorrow.t UInt64.t) =
@@ -63,9 +64,10 @@ module M_resolves
   
   let rec insert_ghost_refmut_usize (self: MutBorrow.t t_FMap_refmut_usize_refmut_usize) (key: MutBorrow.t UInt64.t)
     (value: MutBorrow.t UInt64.t) (return (x: t_Option_refmut_usize)) = any
-    [ return (result: t_Option_refmut_usize) -> {([@expl:insert_ghost ensures #0] self.final
+    [ return (result: t_Option_refmut_usize) ->
+    {[@stop_split] [@expl:insert_ghost_refmut_usize ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
         = insert_refmut_usize self.current key value)
-      /\ ([@expl:insert_ghost ensures #1] result = get_refmut_usize self.current key)}
+      /\ ([@stop_split] [@expl:insert_ghost ensures #1] result = get_refmut_usize self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
@@ -90,8 +92,8 @@ module M_resolves
   let rec into_iter_FMap_refmut_usize_refmut_usize (self: t_FMap_refmut_usize_refmut_usize)
     (return (x: t_FMapIter_refmut_usize_refmut_usize)) = any
     [ return (result: t_FMapIter_refmut_usize_refmut_usize) ->
-    {([@expl:into_iter result type invariant] inv_FMapIter_refmut_usize_refmut_usize result)
-      /\ ([@expl:into_iter ensures] view_FMapIter_refmut_usize_refmut_usize result = self)}
+    {[@stop_split] [@expl:into_iter_FMap_refmut_usize_refmut_usize ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_FMapIter_refmut_usize_refmut_usize result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_FMapIter_refmut_usize_refmut_usize result = self)}
       (! return {result}) ]
   
   type tup2_refmut_usize_refmut_usize = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
@@ -145,9 +147,9 @@ module M_resolves
   
   let rec next_FMapIter_refmut_usize_refmut_usize (self: MutBorrow.t t_FMapIter_refmut_usize_refmut_usize)
     (return (x: t_Option_tup2_refmut_usize_refmut_usize)) =
-    {[@expl:next 'self' type invariant] inv_refmut_FMapIter_refmut_usize_refmut_usize self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_FMapIter_refmut_usize_refmut_usize self}
     any
-    [ return (result: t_Option_tup2_refmut_usize_refmut_usize) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_tup2_refmut_usize_refmut_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None'0 -> completed_FMapIter_refmut_usize_refmut_usize self
         | Some'0 {f0 = k; f1 = v} -> produces_FMapIter_refmut_usize_refmut_usize self.current (Seq.singleton { f0 = k;
                                                                                                                f1 = v }) self.final
@@ -171,7 +173,7 @@ module M_resolves
   
   let rec elim_Some (_x: t_Option_tup2_refmut_usize_refmut_usize) (return (f0'0: tup2_refmut_usize_refmut_usize)) = any
     [ _k (f0'0: tup2_refmut_usize_refmut_usize) -> {Some'0 f0'0 = _x} (! return {f0'0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some'0 _ -> true
         | _ -> false
         end}
@@ -197,7 +199,7 @@ module M_resolves
       -> resolve_FMapIter_refmut_usize_refmut_usize x
   
   let rec new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -237,12 +239,13 @@ module M_resolves
         [ s0 = MutBorrow.borrow_mut <t_FMapIter_refmut_usize_refmut_usize> {iter}
             (fun (_bor: MutBorrow.t t_FMapIter_refmut_usize_refmut_usize) ->
               [ &_47 <- _bor ] -{inv_FMapIter_refmut_usize_refmut_usize _bor.final}-
-              [ &iter <- _bor.final ] s1) [ _ck -> (! {inv_FMapIter_refmut_usize_refmut_usize iter} any) ]
+              [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_FMapIter_refmut_usize_refmut_usize iter} any) ]
         | s1 = MutBorrow.borrow_final <t_FMapIter_refmut_usize_refmut_usize> {_47.current} {MutBorrow.get_id _47}
             (fun (_bor: MutBorrow.t t_FMapIter_refmut_usize_refmut_usize) ->
               [ &_46 <- _bor ] -{inv_FMapIter_refmut_usize_refmut_usize _bor.final}-
               [ &_47 <- { _47 with current = _bor.final } ] s2)
-          [ _ck -> (! {inv_FMapIter_refmut_usize_refmut_usize _47.current} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_FMapIter_refmut_usize_refmut_usize _47.current} any) ]
         | s2 = next_FMapIter_refmut_usize_refmut_usize {_46}
             (fun (_x: t_Option_tup2_refmut_usize_refmut_usize) -> [ &_45 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMapIter_refmut_usize_refmut_usize _47} any) ]
@@ -287,5 +290,5 @@ module M_resolves
     | & k2: MutBorrow.t UInt64.t = Any.any_l ()
     | & v2: MutBorrow.t UInt64.t = Any.any_l ()
     | & variant_old_bb9: int = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@expl:resolves ensures] result = (2: UInt64.t)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:resolves ensures] result = (2: UInt64.t)} (! return {result}) ]
 end

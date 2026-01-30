@@ -62,15 +62,19 @@ module M_call_with_one
       = (postcondition_F self args res /\ self = res_state)
   
   let rec call_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {([@expl:call 'self_' type invariant] inv_ref_F self_) /\ ([@expl:call requires] precondition_F self_ arg)}
-    any [ return (result: Int32.t) -> {[@expl:call ensures] postcondition_F self_ arg result} (! return {result}) ]
+    {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
+    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_with_one_F (f: t_F) (return (x: Int32.t)) = {([@expl:call_with_one 'f' type invariant] inv_F f)
-    /\ ([@expl:call_with_one requires] precondition_F f (1: Int32.t))}
+  let rec call_with_one_F (f: t_F) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:call_with_one_F requires] ([@stop_split] [@expl:call_with_one 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:call_with_one requires] precondition_F f (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
@@ -78,7 +82,7 @@ module M_call_with_one
       | s2 = [ &_7 <- (1: Int32.t) ] s3
       | s3 = call_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:call_with_one ensures] postcondition_F f (1: Int32.t) result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_with_one ensures] postcondition_F f (1: Int32.t) result}
       (! return {result}) ]
 end
 module M_call_with_one_mut
@@ -129,10 +133,11 @@ module M_call_with_one_mut
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
       (! return {result}) ]
   
   predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
@@ -144,14 +149,14 @@ module M_call_with_one_mut
   meta "select_lsinst" "all"
   
   let rec call_with_one_mut_F (f: MutBorrow.t t_F) (return (x: Int32.t)) =
-    {([@expl:call_with_one_mut 'f' type invariant] inv_refmut_F f)
-    /\ ([@expl:call_with_one_mut requires] precondition_F f.current (1: Int32.t))}
+    {[@stop_split] [@expl:call_with_one_mut_F requires] ([@stop_split] [@expl:call_with_one_mut 'f' type invariant] inv_refmut_F f)
+    /\ ([@stop_split] [@expl:call_with_one_mut requires] precondition_F f.current (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_F> {f.current} {MutBorrow.get_id f}
           (fun (_bor: MutBorrow.t t_F) ->
             [ &_6 <- _bor ] -{inv_F _bor.final}-
-            [ &f <- { f with current = _bor.final } ] s1) [ _ck -> (! {inv_F f.current} any) ]
+            [ &f <- { f with current = _bor.final } ] s1) [ _ck -> (! {[@expl:type invariant] inv_F f.current} any) ]
       | s1 = [ &_7 <- (1: Int32.t) ] s2
       | s2 = call_mut_F {_6} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_F f} any) ]
@@ -162,7 +167,7 @@ module M_call_with_one_mut
     | & _6: MutBorrow.t t_F = Any.any_l ()
     | & _7: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) ->
-    {[@expl:call_with_one_mut ensures] postcondition_mut_F f.current (1: Int32.t) f.final result}
+    {[@stop_split] [@expl:call_with_one_mut ensures] postcondition_mut_F f.current (1: Int32.t) f.final result}
       (! return {result}) ]
 end
 module M_call_with_one_once
@@ -178,23 +183,26 @@ module M_call_with_one_once
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
   let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {([@expl:call_once 'self_' type invariant] inv_F self_) /\ ([@expl:call_once requires] precondition_F self_ arg)}
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_with_one_once_F (f: t_F) (return (x: Int32.t)) = {([@expl:call_with_one_once 'f' type invariant] inv_F f)
-    /\ ([@expl:call_with_one_once requires] precondition_F f (1: Int32.t))}
+  let rec call_with_one_once_F (f: t_F) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:call_with_one_once_F requires] ([@stop_split] [@expl:call_with_one_once 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:call_with_one_once requires] precondition_F f (1: Int32.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- (1: Int32.t) ] s1
       | s1 = call_once_F {f} {_7} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _7: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:call_with_one_once ensures] postcondition_once_F f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_with_one_once ensures] postcondition_once_F f (1: Int32.t) result}
       (! return {result}) ]
 end
 module M_closure_fn
@@ -274,16 +282,17 @@ module M_closure_fn
       = (postcondition_closure0 self args res /\ self = res_state)
   
   let rec call_with_one_closure0 (f: ()) (return (x: Int32.t)) =
-    {[@expl:call_with_one requires] precondition_closure0 f (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one requires] precondition_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_with_one ensures] postcondition_closure0 f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_with_one ensures] postcondition_closure0 f (1: Int32.t) result}
       (! return {result}) ]
   
   let rec call_with_one_mut_closure0 (f: MutBorrow.t ()) (return (x: Int32.t)) =
-    {[@expl:call_with_one_mut requires] precondition_closure0 f.current (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one_mut requires] precondition_closure0 f.current (1: Int32.t)}
     any
     [ return (result: Int32.t) ->
-    {[@expl:call_with_one_mut ensures] postcondition_mut_closure0 f.current (1: Int32.t) f.final result}
+    {[@stop_split] [@expl:call_with_one_mut ensures] postcondition_mut_closure0 f.current (1: Int32.t) f.final result}
       (! return {result}) ]
   
   predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -291,9 +300,10 @@ module M_closure_fn
   meta "rewrite_def" predicate resolve_refmut_closure0
   
   let rec call_with_one_once_closure0 (f: ()) (return (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -365,7 +375,8 @@ module M_closure_fn_mut
       | s2 = [ &_ret <- self.current.c0.current ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & self: MutBorrow.t closure0 = self | & x: Int32.t = x ]
-    [ return (result: Int32.t) -> {[@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
@@ -412,16 +423,17 @@ module M_closure_fn_mut
   meta "rewrite_def" predicate precondition_closure0
   
   let rec call_with_one_mut_closure0 (f: MutBorrow.t closure0) (return (x: Int32.t)) =
-    {[@expl:call_with_one_mut requires] precondition_closure0 f.current (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one_mut requires] precondition_closure0 f.current (1: Int32.t)}
     any
     [ return (result: Int32.t) ->
-    {[@expl:call_with_one_mut ensures] postcondition_mut_closure0 f.current (1: Int32.t) f.final result}
+    {[@stop_split] [@expl:call_with_one_mut ensures] postcondition_mut_closure0 f.current (1: Int32.t) f.final result}
       (! return {result}) ]
   
   let rec call_with_one_once_closure0 (f: closure0) (return (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -498,9 +510,10 @@ module M_closure_fn_once
   meta "rewrite_def" predicate postcondition_once_closure0
   
   let rec call_with_one_once_closure0 (f: closure0) (return (x: Int32.t)) =
-    {[@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
+    {[@stop_split] [@expl:call_with_one_once requires] precondition_closure0 f (1: Int32.t)}
     any
-    [ return (result: Int32.t) -> {[@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_with_one_once ensures] postcondition_once_closure0 f (1: Int32.t) result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

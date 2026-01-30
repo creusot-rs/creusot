@@ -13,18 +13,19 @@ module M_adds_two
   function view_PredCell_u32 (self: t_PredCell_u32) : Map.map UInt32.t bool
   
   let rec get_u32 (self: t_PredCell_u32) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:get ensures] index_Mapping_u32_bool (view_PredCell_u32 self) result}
+    [ return (result: UInt32.t) ->
+    {[@stop_split] [@expl:get ensures] index_Mapping_u32_bool (view_PredCell_u32 self) result}
       (! return {result}) ]
   
   let rec set_u32 (self: t_PredCell_u32) (v: UInt32.t) (return (x: ())) =
-    {[@expl:set requires] index_Mapping_u32_bool (view_PredCell_u32 self) v}
+    {[@stop_split] [@expl:set requires] index_Mapping_u32_bool (view_PredCell_u32 self) v}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec adds_two (c: t_PredCell_u32) (return (x: ())) = {[@expl:adds_two requires] view_PredCell_u32 c
+  let rec adds_two (c: t_PredCell_u32) (return (x: ())) = {[@stop_split] [@expl:adds_two requires] view_PredCell_u32 c
     = fun (z: UInt32.t) -> ComputerDivision.mod (UInt32.t'int z) 2 = 0}
     (! bb0
     [ bb0 = s0

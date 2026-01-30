@@ -15,15 +15,16 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
   type t_MutexGuard_u32_Even = { f0'0: t_GuardInner_u32; f1'0: () }
   
   let rec lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
-    [ return (result: t_MutexGuard_u32_Even) -> {[@expl:lock ensures] self.f1 = result.f1'0} (! return {result}) ]
+    [ return (result: t_MutexGuard_u32_Even) -> {[@stop_split] [@expl:lock ensures] self.f1 = result.f1'0}
+      (! return {result}) ]
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
   let rec deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
   
   let rec set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
-    {[@expl:set requires] inv_Even self.current.f1'0 v}
+    {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
     any [ return (result: ()) -> (! return {result}) ]
   
   predicate resolve_GuardInner_u32 (_1: t_GuardInner_u32)
@@ -82,11 +83,13 @@ module M_concurrent
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
-  let rec new_u32 (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) = {[@expl:new requires] inv_Even i val'}
+  let rec new_u32 (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) =
+    {[@stop_split] [@expl:new requires] inv_Even i val'}
     any [ return (result: t_Mutex_u32_Even) -> (! return {result}) ]
   
   let rec leak_Mutex_u32_Even (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
-    [ return (result: MutBorrow.t t_Mutex_u32_Even) -> {[@expl:leak ensures] result.current = b} (! return {result}) ]
+    [ return (result: MutBorrow.t t_Mutex_u32_Even) -> {[@stop_split] [@expl:leak ensures] result.current = b}
+      (! return {result}) ]
   
   predicate resolve_refmut_Mutex_u32_Even [@inline:trivial] (_1: MutBorrow.t t_Mutex_u32_Even) = _1.final = _1.current
   
@@ -103,7 +106,7 @@ module M_concurrent
   predicate precondition_AddsTwo (self: t_AddsTwo) = true
   
   let rec spawn_unit (f'0: t_AddsTwo) (return (x: t_JoinHandle_unit_SpawnPostCond_AddsTwo)) =
-    {[@expl:spawn requires] precondition_AddsTwo f'0}
+    {[@stop_split] [@expl:spawn requires] precondition_AddsTwo f'0}
     any [ return (result: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> (! return {result}) ]
   
   type t_Result_unit_unit = Ok () | Err ()
@@ -113,7 +116,7 @@ module M_concurrent
   predicate inv_SpawnPostCond_AddsTwo (self: t_SpawnPostCond_AddsTwo) (v: ()) = postcondition_AddsTwo self.f v
   
   let rec join_unit (self: t_JoinHandle_unit_SpawnPostCond_AddsTwo) (return (x: t_Result_unit_unit)) = any
-    [ return (result: t_Result_unit_unit) -> {[@expl:join ensures] match result with
+    [ return (result: t_Result_unit_unit) -> {[@stop_split] [@expl:join ensures] match result with
         | Ok v -> inv_SpawnPostCond_AddsTwo self.f1'0 v
         | _ -> true
         end}

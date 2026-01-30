@@ -113,10 +113,11 @@ module M_impl_S__minimize (* S *)
   meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_i32_Global
   
   let rec deref_Ghost_Box_Perm_ptr_i32_Global (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
-    {[@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Box_Perm_ptr_i32_Global self}
     any
-    [ return (result: t_Perm_ptr_i32) -> {([@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
-      /\ ([@expl:deref ensures] result = self)}
+    [ return (result: t_Perm_ptr_i32) ->
+    {[@stop_split] [@expl:deref_Ghost_Box_Perm_ptr_i32_Global ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_Box_Perm_ptr_i32_Global result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
   predicate invariant_ref_Perm_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) = inv_Perm_ptr_i32 self
@@ -136,25 +137,27 @@ module M_impl_S__minimize (* S *)
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
   let rec new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
-    {[@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
+    {[@stop_split] [@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
     any
-    [ return (result: t_Perm_ptr_i32) -> {([@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_i32 result)
-      /\ ([@expl:new ensures] result = x)}
+    [ return (result: t_Perm_ptr_i32) ->
+    {[@stop_split] [@expl:new_ref_Perm_ptr_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_i32 result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
   let rec as_ref_i32 (ptr'0: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
-    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
-    /\ ([@expl:as_ref requires] ptr'0 = ward_ptr_i32 own)}
-    any [ return (result: Int32.t) -> {[@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
+    {[@stop_split] [@expl:as_ref_i32 requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
+    /\ ([@stop_split] [@expl:as_ref requires] ptr'0 = ward_ptr_i32 own)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec minimize (self: MutBorrow.t t_S) (return (x: ())) =
-    {([@expl:minimize 'self' type invariant] inv_refmut_S self)
-    /\ ([@expl:minimize requires #0] Int32.to_int (val_ptr_i32 self.current.perm) = 1)
-    /\ ([@expl:minimize requires #1] ward_ptr_i32 self.current.perm = self.current.ptr)}
+    {[@stop_split] [@expl:minimize requires] ([@stop_split] [@expl:minimize 'self' type invariant] inv_refmut_S self)
+    /\ ([@stop_split] [@expl:minimize requires #0] Int32.to_int (val_ptr_i32 self.current.perm) = 1)
+    /\ ([@stop_split] [@expl:minimize requires #1] ward_ptr_i32 self.current.perm = self.current.ptr)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_S self} any) ]

@@ -59,8 +59,10 @@ module M_disjoint_captures
       [ s0 = [ &self <- { self with current = { c0 = { self.current.c0 with current = (1: Int32.t) } } } ] s1
       | s1 = -{resolve_refmut_closure2 self}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t closure2 = self ])
-    [ return (result: ()) -> {([@expl:closure ensures] Int32.to_int self.final.c0.current = 1)
-      /\ ([@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:closure2 ensures] ([@stop_split] [@expl:closure ensures] Int32.to_int self.final.c0.current
+        = 1)
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -68,7 +70,7 @@ module M_disjoint_captures
   meta "select_lsinst" "all"
   
   let rec disjoint_captures (p: tup2_i32_i32) (return (x: Int32.t)) =
-    {[@expl:disjoint_captures requires] Int32.to_int p.f0 = 1}
+    {[@stop_split] [@expl:disjoint_captures requires] Int32.to_int p.f0 = 1}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &p0 <- p.f0 ] s1
@@ -89,5 +91,6 @@ module M_disjoint_captures
     | & _8: () = Any.any_l ()
     | & _9: MutBorrow.t closure2 = Any.any_l ()
     | & _10: () = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:disjoint_captures ensures] Int32.to_int result = 2} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:disjoint_captures ensures] Int32.to_int result = 2}
+      (! return {result}) ]
 end

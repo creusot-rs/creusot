@@ -95,7 +95,7 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common:
   function produces_refl_Filter_I_F (self: t_Filter_I_F) : ()
   
   goal vc_produces_refl_Filter_I_F:
-    [@expl:produces_refl ensures] produces_Filter_I_F self (Seq.empty: Seq.seq t_Item) self
+    [@stop_split] [@expl:produces_refl ensures] produces_Filter_I_F self (Seq.empty: Seq.seq t_Item) self
 end
 module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
@@ -202,7 +202,8 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common
   function produces_trans_Filter_I_F (a: t_Filter_I_F) (ab: Seq.seq t_Item) (b: t_Filter_I_F) (bc: Seq.seq t_Item) (c: t_Filter_I_F) : ()
   
   goal vc_produces_trans_Filter_I_F: produces_Filter_I_F a ab b
-    -> produces_Filter_I_F b bc c -> ([@expl:produces_trans ensures] produces_Filter_I_F a (Seq.(++) ab bc) c)
+    -> produces_Filter_I_F b bc c
+    -> ([@stop_split] [@expl:produces_trans ensures] produces_Filter_I_F a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator> *)
   use seq.Seq
@@ -270,9 +271,10 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         | Some v -> produces_I self.current (Seq.singleton v) self.final
         end)
   
-  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) =
+    {[@stop_split] [@expl:next requires] precondition_next () self}
     any
-    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+    [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
       (! return {result}) ]
   
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
@@ -307,7 +309,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -336,11 +338,12 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   predicate precondition_F (self: t_F) (args: t_Item)
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: t_Item) (return (x: bool)) =
-    {([@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@expl:call_mut 'arg' type invariant] inv_tup1_ref_Item arg)
-    /\ ([@expl:call_mut requires] precondition_F self_.current arg)}
+    {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@stop_split] [@expl:call_mut 'arg' type invariant] inv_tup1_ref_Item arg)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
     any
-    [ return (result: bool) -> {[@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    [ return (result: bool) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
       (! return {result}) ]
   
   predicate resolve_Item (_1: t_Item)
@@ -397,7 +400,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   meta "select_lsinst" "all"
   
   let rec next_Filter_I_F (self: MutBorrow.t t_Filter_I_F) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Filter_I_F self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Filter_I_F self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -417,7 +420,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_23 <- _bor ] -{inv_I _bor.final}-
               [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
-          [ _ck -> (! {inv_I self.current.iter} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
         | s1 = next_I {_23} (fun (_x: t_Option_Item) -> [ &_22 <- _x ] s2)
         | s2 = any [ br0 -> {_22 = None} (! bb13) | br1 (x0: t_Item) -> {_22 = Some x0} (! bb7) ] ]
         [ bb7 = s0
@@ -428,7 +431,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
               (fun (_bor: MutBorrow.t t_F) ->
                 [ &_36 <- _bor ] -{inv_F _bor.final}-
                 [ &self <- { self with current = { self.current with func = _bor.final } } ] s4)
-            [ _ck -> (! {inv_F self.current.func} any) ]
+            [ _ck -> (! {[@expl:type invariant] inv_F self.current.func} any) ]
           | s4 = [ &_39 <- n ] s5
           | s5 = [ &_37 <- _39 ] s6
           | s6 = call_mut_F {_36} {_37} (fun (_x: bool) -> [ &_35 <- _x ] s7)
@@ -468,8 +471,9 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
     | & _37: t_Item = Any.any_l ()
     | & _39: t_Item = Any.any_l ()
     | & _old: t_Filter_I_F = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_Item) ->
+    {[@stop_split] [@expl:next_Filter_I_F ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Filter_I_F self
         | Some v -> produces_Filter_I_F self.current (Seq.singleton v) self.final
         end)}
@@ -563,15 +567,17 @@ module M_filter
   meta "select_lsinst" "all"
   
   let rec filter_I (iter'0: t_I) (f: t_P) (return (x: t_Filter_I_P)) =
-    {([@expl:filter 'iter' type invariant] inv_I iter'0)
-    /\ ([@expl:filter 'f' type invariant] inv_P f)
-    /\ ([@expl:filter requires #0] immutable_ref_Item f)
-    /\ ([@expl:filter requires #1] no_precondition_ref_Item f) /\ ([@expl:filter requires #2] precise_ref_Item f)}
+    {[@stop_split] [@expl:filter_I requires] ([@stop_split] [@expl:filter 'iter' type invariant] inv_I iter'0)
+    /\ ([@stop_split] [@expl:filter 'f' type invariant] inv_P f)
+    /\ ([@stop_split] [@expl:filter requires #0] immutable_ref_Item f)
+    /\ ([@stop_split] [@expl:filter requires #1] no_precondition_ref_Item f)
+    /\ ([@stop_split] [@expl:filter requires #2] precise_ref_Item f)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; func = f } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Filter_I_P = Any.any_l () | & iter'0: t_I = iter'0 | & f: t_P = f ])
-    [ return (result: t_Filter_I_P) -> {([@expl:filter result type invariant] inv_Filter_I_P result)
-      /\ ([@expl:filter ensures] result.iter = iter'0 /\ result.func = f)}
+    [ return (result: t_Filter_I_P) ->
+    {[@stop_split] [@expl:filter_I ensures] ([@stop_split] [@expl:filter result type invariant] inv_Filter_I_P result)
+      /\ ([@stop_split] [@expl:filter ensures] result.iter = iter'0 /\ result.func = f)}
       (! return {result}) ]
 end
 module M_less_than
@@ -600,8 +606,8 @@ module M_less_than
   
   let rec into_iter_Vec_u32_Global (self_: t_Vec_u32_Global) (return (x: t_IntoIter_u32_Global)) = any
     [ return (result: t_IntoIter_u32_Global) ->
-    {([@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
-      /\ ([@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
+    {[@stop_split] [@expl:into_iter_Vec_u32_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_u32_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_u32_Global self_ = view_IntoIter_u32_Global result)}
       (! return {result}) ]
   
   type closure2 = { c0: UInt32.t }
@@ -704,8 +710,9 @@ module M_less_than
     | & self: MutBorrow.t closure2 = self
     | & i: UInt32.t = i
     | & res: bool = Any.any_l () ])
-    [ return (result: bool) -> {([@expl:closure ensures] result = UInt32.lt i self.final.c0)
-      /\ ([@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
+    [ return (result: bool) -> {[@stop_split] [@expl:closure2 ensures] ([@stop_split] [@expl:closure ensures] result
+        = UInt32.lt i self.final.c0)
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
       (! return {result}) ]
   
   type t_Filter_IntoIter_u32_Global_closure2
@@ -756,13 +763,14 @@ module M_less_than
   
   let rec filter_IntoIter_u32_Global (self_: t_IntoIter_u32_Global) (f: closure2)
     (return (x: t_Filter_IntoIter_u32_Global_closure2)) =
-    {([@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_)
-    /\ ([@expl:filter requires #0] immutable_ref_u32 f)
-    /\ ([@expl:filter requires #1] no_precondition_ref_u32 f) /\ ([@expl:filter requires #2] precise_ref_u32 f)}
+    {[@stop_split] [@expl:filter_IntoIter_u32_Global requires] ([@stop_split] [@expl:filter 'self_' type invariant] inv_IntoIter_u32_Global self_)
+    /\ ([@stop_split] [@expl:filter requires #0] immutable_ref_u32 f)
+    /\ ([@stop_split] [@expl:filter requires #1] no_precondition_ref_u32 f)
+    /\ ([@stop_split] [@expl:filter requires #2] precise_ref_u32 f)}
     any
     [ return (result: t_Filter_IntoIter_u32_Global_closure2) ->
-    {([@expl:filter result type invariant] inv_Filter_IntoIter_u32_Global_closure2 result)
-      /\ ([@expl:filter ensures] iter_Filter_IntoIter_u32_Global_closure2 result = self_
+    {[@stop_split] [@expl:filter_IntoIter_u32_Global ensures] ([@stop_split] [@expl:filter result type invariant] inv_Filter_IntoIter_u32_Global_closure2 result)
+      /\ ([@stop_split] [@expl:filter ensures] iter_Filter_IntoIter_u32_Global_closure2 result = self_
       /\ func_Filter_IntoIter_u32_Global_closure2 result = f)}
       (! return {result}) ]
   
@@ -826,10 +834,10 @@ module M_less_than
   
   let rec collect_Filter_IntoIter_u32_Global_closure2 (self_: t_Filter_IntoIter_u32_Global_closure2)
     (return (x: t_Vec_u32_Global)) =
-    {[@expl:collect 'self_' type invariant] inv_Filter_IntoIter_u32_Global_closure2 self_}
+    {[@stop_split] [@expl:collect 'self_' type invariant] inv_Filter_IntoIter_u32_Global_closure2 self_}
     any
     [ return (result: t_Vec_u32_Global) ->
-    {[@expl:collect ensures] exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure2, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure2 done'.final
+    {[@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_Filter_IntoIter_u32_Global_closure2, prod: Seq.seq UInt32.t. resolve_Filter_IntoIter_u32_Global_closure2 done'.final
         /\ completed_Filter_IntoIter_u32_Global_closure2 done'
         /\ produces_Filter_IntoIter_u32_Global_closure2 self_ prod done'.current
         /\ from_iter_post_Vec_u32_Global prod result}
@@ -860,9 +868,11 @@ module M_less_than
     | & _7: t_Filter_IntoIter_u32_Global_closure2 = Any.any_l ()
     | & _8: t_IntoIter_u32_Global = Any.any_l ()
     | & _10: closure2 = Any.any_l () ])
-    [ return (result: t_Vec_u32_Global) -> {([@expl:less_than ensures #0] forall i: int. 0 <= i
+    [ return (result: t_Vec_u32_Global) ->
+    {[@stop_split] [@expl:less_than ensures] ([@stop_split] [@expl:less_than ensures #0] forall i: int. 0 <= i
             /\ i < Seq.length (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n)
-      /\ ([@expl:less_than ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u32_Global result)
+      /\ ([@stop_split] [@expl:less_than ensures #1] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_u32_Global result)
         -> contains_u32 (view_Vec_u32_Global v) (index_Vec_u32_Global result i))}
       (! return {result}) ]
 end

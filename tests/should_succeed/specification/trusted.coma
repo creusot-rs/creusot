@@ -3,7 +3,7 @@ module M_victim_of_lie
   use creusot.prelude.Any
   
   let rec lie (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:lie ensures] result = (10: UInt32.t)} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:lie ensures] result = (10: UInt32.t)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -12,17 +12,18 @@ module M_victim_of_lie
   let rec victim_of_lie (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0 [ s0 = lie (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:victim_of_lie ensures] result = (10: UInt32.t)} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:victim_of_lie ensures] result = (10: UInt32.t)}
+      (! return {result}) ]
 end
 module M_innocent_victim
   use creusot.int.UInt32
   use creusot.prelude.Any
   
   let rec my_unverified_code (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:my_unverified_code ensures] false} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:my_unverified_code ensures] false} (! return {result}) ]
   
   let rec im_out_of_control (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@expl:im_out_of_control ensures] false} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:im_out_of_control ensures] false} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -33,5 +34,6 @@ module M_innocent_victim
       [ s0 = my_unverified_code (fun (_x: UInt32.t) -> [ &_2 <- _x ] s1)
       | s1 = im_out_of_control (fun (_x: UInt32.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: UInt32.t = Any.any_l () | & _2: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:innocent_victim ensures] result = (10: UInt32.t)} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:innocent_victim ensures] result = (10: UInt32.t)}
+      (! return {result}) ]
 end

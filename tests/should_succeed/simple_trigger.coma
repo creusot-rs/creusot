@@ -15,10 +15,12 @@ module M_id
   
   goal vc_id: i >= 0
     -> (if i = 0 then
-      [@expl:id ensures] i = 0 -> 0 = 0
+      [@stop_split] [@expl:id ensures] i = 0 -> 0 = 0
     else
-      (([@expl:id requires] i - 1 >= 0) /\ well_founded_relation_Int i (i - 1))
-      /\ (([@expl:id ensures] i - 1 = 0 -> id (i - 1) = 0) -> ([@expl:id ensures] i = 0 -> id (i - 1) + 1 = 0))
+      (([@stop_split] [@expl:id requires] i - 1 >= 0)
+        /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+      /\ (([@stop_split] [@expl:id ensures] i - 1 = 0 -> id (i - 1) = 0)
+      -> ([@stop_split] [@expl:id ensures] i = 0 -> id (i - 1) + 1 = 0))
     )
 end
 module M_test
@@ -41,5 +43,5 @@ module M_test
   
   let rec test (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:test ensures] id 1 = 1} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] id 1 = 1} (! return {result}) ]
 end

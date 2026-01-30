@@ -36,8 +36,9 @@ module M_trait_Trait__goo
     forall args: MutBorrow.t t_Self, res: () [postcondition_once_f () args res]. postcondition_once_f () args res
       -> (let self = args in deep_model_refmut_Self self = deep_model_refmut_Self self)
   
-  let rec f_Self (self: MutBorrow.t t_Self) (return (x: ())) = {[@expl:f requires] precondition_f () self}
-    any [ return (result: ()) -> {[@expl:f ensures] postcondition_once_f () self result} (! return {result}) ]
+  let rec f_Self (self: MutBorrow.t t_Self) (return (x: ())) = {[@stop_split] [@expl:f requires] precondition_f () self}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:f ensures] postcondition_once_f () self result} (! return {result}) ]
   
   predicate resolve_refmut_Self [@inline:trivial] (_1: MutBorrow.t t_Self) = _1.final = _1.current
   
@@ -60,13 +61,14 @@ module M_trait_Trait__goo
   meta "select_lsinst" "all"
   
   let rec goo_Self (self: MutBorrow.t t_Self) (return (x: ())) =
-    {[@expl:goo 'self' type invariant] inv_refmut_Self self}
+    {[@stop_split] [@expl:goo 'self' type invariant] inv_refmut_Self self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Self> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Self) ->
             [ &_2 <- _bor ] -{inv_Self _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Self self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Self self.current} any) ]
       | s1 = f_Self {_2} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Self self} any) ]
       | s3 = -{resolve_refmut_Self self}- s4

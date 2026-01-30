@@ -22,7 +22,7 @@ module M_can_extend
   meta "rewrite_def" function view_Box_slice_i32_Global
   
   let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {[@expl:into_vec ensures] view_Vec_i32_Global result
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
@@ -38,8 +38,8 @@ module M_can_extend
   
   let rec into_iter_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: t_IntoIter_i32_Global)) = any
     [ return (result: t_IntoIter_i32_Global) ->
-    {([@expl:into_iter result type invariant] inv_IntoIter_i32_Global result)
-      /\ ([@expl:into_iter ensures] view_Vec_i32_Global self_ = view_IntoIter_i32_Global result)}
+    {[@stop_split] [@expl:into_iter_Vec_i32_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_i32_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_i32_Global self_ = view_IntoIter_i32_Global result)}
       (! return {result}) ]
   
   predicate invariant_refmut_IntoIter_i32_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_i32_Global) =
@@ -141,10 +141,10 @@ module M_can_extend
     resolve_refmut_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
   
   let rec extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
-    {[@expl:extend requires] precondition_into_iter () iter}
+    {[@stop_split] [@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
-    {[@expl:extend ensures] exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
+    {[@stop_split] [@expl:extend ensures] exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
         /\ inv_refmut_IntoIter_i32_Global done'
         /\ inv_Seq_i32 prod
         /\ postcondition_into_iter () iter start_

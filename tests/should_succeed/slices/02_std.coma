@@ -86,35 +86,37 @@ module M_binary_search
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec binary_search_u32 (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
-    {[@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
+    {[@stop_split] [@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
     any
-    [ return (result: t_Result_usize_usize) -> {([@expl:binary_search ensures #0] forall i: UInt64.t. result = Ok i
+    [ return (result: t_Result_usize_usize) ->
+    {[@stop_split] [@expl:binary_search_u32 ensures] ([@stop_split] [@expl:binary_search ensures #0] forall i: UInt64.t. result
+            = Ok i
           -> UInt64.t'int i < Seq.length (Slice64.view self_)
           /\ Seq.get (deep_model_slice_u32 self_) (UInt64.t'int i) = deep_model_ref_u32 x)
-      /\ ([@expl:binary_search ensures #1] forall i: UInt64.t. result = Err i
+      /\ ([@stop_split] [@expl:binary_search ensures #1] forall i: UInt64.t. result = Err i
           -> UInt64.t'int i <= Seq.length (Slice64.view self_)
           /\ (forall j: int. 0 <= j /\ j < Seq.length (Slice64.view self_)
             -> Seq.get (deep_model_ref_slice_u32 self_) j <> deep_model_ref_u32 x))
-      /\ ([@expl:binary_search ensures #2] forall i: UInt64.t. result = Err i
+      /\ ([@stop_split] [@expl:binary_search ensures #2] forall i: UInt64.t. result = Err i
           -> (forall j: UInt64.t. UInt64.lt j i
             -> Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j) < deep_model_ref_u32 x))
-      /\ ([@expl:binary_search ensures #3] forall i: UInt64.t. result = Err i
+      /\ ([@stop_split] [@expl:binary_search ensures #3] forall i: UInt64.t. result = Err i
         -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self_)
           -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j)))}
       (! return {result}) ]
   
   let rec unwrap_usize (self_: t_Result_usize_usize) (return (x: UInt64.t)) =
-    {[@expl:unwrap requires] exists t: UInt64.t. self_ = Ok t}
-    any [ return (result: UInt64.t) -> {[@expl:unwrap ensures] Ok result = self_} (! return {result}) ]
+    {[@stop_split] [@expl:unwrap requires] exists t: UInt64.t. self_ = Ok t}
+    any [ return (result: UInt64.t) -> {[@stop_split] [@expl:unwrap ensures] Ok result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec binary_search (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
-    {([@expl:binary_search requires #0] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
-        -> UInt32.t'int (index_slice_u32 s i) = i)
-    /\ ([@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5)}
+    {[@stop_split] [@expl:binary_search requires] ([@stop_split] [@expl:binary_search requires #0] forall i: int. 0 <= i
+          /\ i < Seq.length (Slice64.view s) -> UInt32.t'int (index_slice_u32 s i) = i)
+    /\ ([@stop_split] [@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5)}
     (! bb0
     [ bb0 = s0
       [ s0 = bb0'0

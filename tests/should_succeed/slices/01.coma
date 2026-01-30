@@ -10,8 +10,8 @@ module M_index_slice
   
   meta "select_lsinst" "all"
   
-  let rec index_slice (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) = {[@expl:index_slice requires] 10
-    < Seq.length (Slice64.view a)}
+  let rec index_slice (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) =
+    {[@stop_split] [@expl:index_slice requires] 10 < Seq.length (Slice64.view a)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- (10: UInt64.t) ] s1
@@ -50,7 +50,7 @@ module M_index_mut_slice
   meta "select_lsinst" "all"
   
   let rec index_mut_slice (a: MutBorrow.t (Slice64.slice UInt32.t)) (return (x: ())) =
-    {[@expl:index_mut_slice requires] Seq.length (Slice64.view a.current) = 5}
+    {[@stop_split] [@expl:index_mut_slice requires] Seq.length (Slice64.view a.current) = 5}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- (2: UInt64.t) ] s1
@@ -69,7 +69,8 @@ module M_index_mut_slice
     | & _7: Opaque.ptr = Any.any_l ()
     | & _8: UInt64.t = Any.any_l ()
     | & _9: bool = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:index_mut_slice ensures] UInt32.t'int (index_slice_u32 a.final 2) = 3}
+    [ return (result: ()) -> {[@stop_split] [@expl:index_mut_slice ensures] UInt32.t'int (index_slice_u32 a.final 2)
+      = 3}
       (! return {result}) ]
 end
 module M_slice_first
@@ -115,9 +116,10 @@ module M_slice_first
   meta "rewrite_def" predicate inv_ref_slice_T
   
   let rec len_T (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
-    {[@expl:len 'self_' type invariant] inv_ref_slice_T self_}
+    {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_slice_T self_}
     any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   type t_Option_ref_T = None | Some t_T
@@ -139,7 +141,7 @@ module M_slice_first
   meta "select_lsinst" "all"
   
   let rec slice_first_T (a: Slice64.slice t_T) (return (x: t_Option_ref_T)) =
-    {[@expl:slice_first 'a' type invariant] inv_ref_slice_T a}
+    {[@stop_split] [@expl:slice_first 'a' type invariant] inv_ref_slice_T a}
     (! bb0
     [ bb0 = s0
       [ s0 = len_T {a} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1)
@@ -162,8 +164,9 @@ module M_slice_first
     | & _9: UInt64.t = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
     | & _11: bool = Any.any_l () ])
-    [ return (result: t_Option_ref_T) -> {([@expl:slice_first result type invariant] inv_Option_ref_T result)
-      /\ ([@expl:slice_first ensures] match result with
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:slice_first_T ensures] ([@stop_split] [@expl:slice_first result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:slice_first ensures] match result with
         | Some v -> v = index_slice_T a 0
         | None -> Seq.length (Slice64.view a) = 0
         end)}

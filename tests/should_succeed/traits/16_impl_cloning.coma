@@ -66,11 +66,13 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let rec test_T (x: MutBorrow.t t_Vec_T) (return (x'0: ())) = {[@expl:test 'x' type invariant] inv_refmut_Vec_T x}
+  let rec test_T (x: MutBorrow.t t_Vec_T) (return (x'0: ())) =
+    {[@stop_split] [@expl:test 'x' type invariant] inv_refmut_Vec_T x}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T x} any) ]
       | s1 = -{resolve_refmut_Vec_T x}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Vec_T = x ])
-    [ return (result: ()) -> {[@expl:test ensures] view_Vec_T x.current = view_Vec_T x.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] view_Vec_T x.current = view_Vec_T x.current}
+      (! return {result}) ]
 end

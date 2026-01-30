@@ -15,10 +15,10 @@ module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   let rec default_i64 (return (x: Int64.t)) = any
-    [ return (result: Int64.t) -> {[@expl:default ensures] result = (0: Int64.t)} (! return {result}) ]
+    [ return (result: Int64.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int64.t)} (! return {result}) ]
   
   type t_Tuple = { f0: Int32.t; f1: Int64.t }
   
@@ -150,7 +150,7 @@ module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
       | s2 = [ &_ret <- { f0 = _2; f1 = _3 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Tuple = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: Int64.t = Any.any_l () ])
-    [ return (result: t_Tuple) -> {[@expl:default ensures] true
+    [ return (result: t_Tuple) -> {[@stop_split] [@expl:default ensures] true
       /\ postcondition_default () () result.f0 /\ postcondition_default'0 () () result.f1}
       (! return {result}) ]
 end
@@ -159,7 +159,7 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_T
   
@@ -176,9 +176,10 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
     forall args: (), res: t_T [postcondition_once_default () args res]. postcondition_once_default () args res
       -> (let () = args in inv_T res)
   
-  let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
+  let rec default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any
-    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+      (! return {result}) ]
   
   type t_Named_T = { x: Int32.t; y: t_T }
   
@@ -311,8 +312,9 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
       | s2 = [ &_ret <- { x = _2; y = _3 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Named_T = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: t_T = Any.any_l () ])
-    [ return (result: t_Named_T) -> {([@expl:default result type invariant] inv_Named_T result)
-      /\ ([@expl:default ensures] true
+    [ return (result: t_Named_T) ->
+    {[@stop_split] [@expl:default_Named_T ensures] ([@stop_split] [@expl:default result type invariant] inv_Named_T result)
+      /\ ([@stop_split] [@expl:default ensures] true
       /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y)}
       (! return {result}) ]
 end
@@ -327,7 +329,7 @@ module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
   
   let rec default_EUnit (return (x: t_EUnit)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- Y ] s1 | s1 = return {_ret} ] ] [ & _ret: t_EUnit = Any.any_l () ])
-    [ return (result: t_EUnit) -> {[@expl:default ensures] match result with
+    [ return (result: t_EUnit) -> {[@stop_split] [@expl:default ensures] match result with
         | Y -> true
         | _ -> false
         end}
@@ -338,7 +340,7 @@ module M_impl_Default_for_ETuple__default (* <ETuple as std::default::Default> *
   use creusot.prelude.Any
   
   let rec default_i32 (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_Vec_i32_Global
   
@@ -413,7 +415,7 @@ module M_impl_Default_for_ETuple__default (* <ETuple as std::default::Default> *
       | s2 = [ &_ret <- A _2 _3 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_ETuple = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: Int32.t = Any.any_l () ])
-    [ return (result: t_ETuple) -> {[@expl:default ensures] match result with
+    [ return (result: t_ETuple) -> {[@stop_split] [@expl:default ensures] match result with
         | A x0 x1 -> true /\ postcondition_default () () x0 /\ postcondition_default () () x1
         | _ -> false
         end}
@@ -437,9 +439,10 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
     forall args: (), res: t_T [postcondition_once_default () args res]. postcondition_once_default () args res
       -> (let () = args in inv_T res)
   
-  let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
+  let rec default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any
-    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+      (! return {result}) ]
   
   type t_U
   
@@ -456,9 +459,10 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
     forall args: (), res: t_U [postcondition_once_default'0 () args res]. postcondition_once_default'0 () args res
       -> (let () = args in inv_U res)
   
-  let rec default_U (return (x: t_U)) = {[@expl:default requires] precondition_default'0 () ()}
+  let rec default_U (return (x: t_U)) = {[@stop_split] [@expl:default requires] precondition_default'0 () ()}
     any
-    [ return (result: t_U) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
+    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+      (! return {result}) ]
   
   type t_ENamed_T_U = A t_T t_U | B
   
@@ -592,8 +596,9 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
       | s2 = [ &_ret <- A _2 _3 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_ENamed_T_U = Any.any_l () | & _2: t_T = Any.any_l () | & _3: t_U = Any.any_l () ])
-    [ return (result: t_ENamed_T_U) -> {([@expl:default result type invariant] inv_ENamed_T_U result)
-      /\ ([@expl:default ensures] match result with
+    [ return (result: t_ENamed_T_U) ->
+    {[@stop_split] [@expl:default_ENamed_T_U ensures] ([@stop_split] [@expl:default result type invariant] inv_ENamed_T_U result)
+      /\ ([@stop_split] [@expl:default ensures] match result with
         | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
         | _ -> false
         end)}
@@ -671,7 +676,7 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_i32 (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_T)
   
@@ -740,9 +745,10 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
   axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
       -> precondition_default () args
   
-  let rec default_T (return (x'0: t_T)) = {[@expl:default requires] precondition_default () ()}
+  let rec default_T (return (x'0: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any
-    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -836,9 +842,10 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
   axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
       -> precondition_default () args
   
-  let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
+  let rec default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any
-    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+      (! return {result}) ]
   
   predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_U)
   
@@ -907,9 +914,10 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
   axiom precondition_fndef'0: forall args: () [precondition_default'0 () args]. (let () = args in true)
       -> precondition_default'0 () args
   
-  let rec default_U (return (x: t_U)) = {[@expl:default requires] precondition_default'0 () ()}
+  let rec default_U (return (x: t_U)) = {[@stop_split] [@expl:default requires] precondition_default'0 () ()}
     any
-    [ return (result: t_U) -> {[@expl:default ensures] postcondition_once_default'0 () () result} (! return {result}) ]
+    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

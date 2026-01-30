@@ -18,8 +18,9 @@ module M_impl_List__lemma_sum_nonneg (* List *)
   function lemma_sum_nonneg (self: t_List) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Cons _ l -> ([@expl:lemma_sum_nonneg ensures] sum l >= 0) -> ([@expl:lemma_sum_nonneg ensures] sum self >= 0)
-      | Nil -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Cons _ l -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum l >= 0)
+      -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0)
+      | Nil -> [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
 module M_impl_List__sum_x (* List *)
@@ -31,7 +32,7 @@ module M_impl_List__sum_x (* List *)
   
   let rec elim_Cons (_x: t_List) (return (f0: UInt32.t) (f1: t_List)) = any
     [ _k (f0: UInt32.t) (f1: t_List) -> {Cons f0 f1 = _x} (! return {f0} {f1})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Cons] match _x with
         | Cons _ _ -> true
         | _ -> false
         end}
@@ -46,7 +47,7 @@ module M_impl_List__sum_x (* List *)
   
   meta "select_lsinst" "all"
   
-  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
+  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
     (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) (x1: t_List) -> {self = Cons x0 x1} (! bb4) | br1 -> {self = Nil} (! bb3) ]
     | bb3 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ]
@@ -61,7 +62,8 @@ module M_impl_List__sum_x (* List *)
     | & a: UInt32.t = Any.any_l ()
     | & l: t_List = Any.any_l ()
     | & _10: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
 end
 module M_impl_List__take_some (* List *)
   use creusot.int.UInt32
@@ -77,7 +79,7 @@ module M_impl_List__take_some (* List *)
   
   let rec elim_Cons (_x: t_List) (return (f0: UInt32.t) (f1: t_List)) = any
     [ _k (f0: UInt32.t) (f1: t_List) -> {Cons f0 f1 = _x} (! return {f0} {f1})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Cons] match _x with
         | Cons _ _ -> true
         | _ -> false
         end}
@@ -175,9 +177,11 @@ module M_impl_List__take_some (* List *)
     | & _17: MutBorrow.t UInt32.t = Any.any_l ()
     | & _18: MutBorrow.t UInt32.t = Any.any_l ()
     | & _19: MutBorrow.t t_List = Any.any_l () ])
-    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
+          - sum self.current
         = UInt32.t'int result.final - UInt32.t'int result.current)
-      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
+      /\ ([@stop_split] [@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
 end
 module M_inc_some_list
@@ -193,13 +197,17 @@ module M_inc_some_list
       | Nil -> 0
       end
   
-  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
-    any [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
+  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
   
   let rec take_some (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
+          - sum self.current
         = UInt32.t'int result.final - UInt32.t'int result.current)
-      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
+      /\ ([@stop_split] [@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
@@ -210,7 +218,7 @@ module M_inc_some_list
   
   meta "select_lsinst" "all"
   
-  let rec inc_some_list (l: t_List) (k: UInt32.t) (return (x: ())) = {[@expl:inc_some_list requires] sum l
+  let rec inc_some_list (l: t_List) (k: UInt32.t) (return (x: ())) = {[@stop_split] [@expl:inc_some_list requires] sum l
       + UInt32.t'int k
     <= 1000000}
     (! bb0

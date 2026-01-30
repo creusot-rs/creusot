@@ -31,7 +31,8 @@ module M_impl_Iterator_for_Take_I__produces_refl (* <Take<I> as common::Iterator
   
   function produces_refl_Take_I (self: t_Take_I) : ()
   
-  goal vc_produces_refl_Take_I: [@expl:produces_refl ensures] produces_Take_I self (Seq.empty: Seq.seq t_Item) self
+  goal vc_produces_refl_Take_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Take_I self (Seq.empty: Seq.seq t_Item) self
 end
 module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -75,7 +76,7 @@ module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterato
   function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
   
   goal vc_produces_trans_Take_I: produces_Take_I a ab b
-    -> produces_Take_I b bc c -> ([@expl:produces_trans ensures] produces_Take_I a (Seq.(++) ab bc) c)
+    -> produces_Take_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Take_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -141,9 +142,10 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
         | Some v -> produces_I self.current (Seq.singleton v) self.final
         end)
   
-  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) =
+    {[@stop_split] [@expl:next requires] precondition_next () self}
     any
-    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+    [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
       (! return {result}) ]
   
   predicate inv_Take_I (_1: t_Take_I)
@@ -177,7 +179,7 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Take_I (self: MutBorrow.t t_Take_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Take_I self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Take_I self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- self.current.n <> (0: UInt64.t) ] s1
@@ -189,7 +191,7 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_6 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
-        [ _ck -> (! {inv_I self.current.iter} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
       | s2 = next_I {_6} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Take_I self} any) ]
       | s4 = -{resolve_refmut_Take_I self}- s5
@@ -203,8 +205,9 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
     | & self: MutBorrow.t t_Take_I = self
     | & _4: bool = Any.any_l ()
     | & _6: MutBorrow.t t_I = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_Item) ->
+    {[@stop_split] [@expl:next_Take_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Take_I self
         | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
         end)}

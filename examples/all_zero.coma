@@ -75,7 +75,7 @@ module M_all_zero
   
   let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
     [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -98,13 +98,13 @@ module M_all_zero
   
   let rec index_mut_Vec_u32_Global (self_: MutBorrow.t t_Vec_u32_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t UInt32.t)) =
-    {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_u32_Global self_.current)}
+    {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_u32_Global self_.current)}
     any
     [ return (result: MutBorrow.t UInt32.t) ->
-    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_u32_Global self_.current) result.current)
-      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_u32_Global self_.final) result.final)
-      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_u32_Global self_.current) (view_Vec_u32_Global self_.final))
-      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_u32_Global self_.final)
+    {[@stop_split] [@expl:index_mut_Vec_u32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_u32_Global self_.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_u32_Global self_.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_u32_Global self_.current) (view_Vec_u32_Global self_.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_u32_Global self_.final)
       = Seq.length (view_Vec_u32_Global self_.current))}
       (! return {result}) ]
   
@@ -174,9 +174,10 @@ module M_all_zero
     | & _45: MutBorrow.t UInt32.t = Any.any_l ()
     | & _46: MutBorrow.t t_Vec_u32_Global = Any.any_l ()
     | & _old: t_Vec_u32_Global = Any.any_l () ])
-    [ return (result: ()) -> {([@expl:all_zero ensures #0] forall i: int. 0 <= i
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:all_zero ensures] ([@stop_split] [@expl:all_zero ensures #0] forall i: int. 0 <= i
             /\ i < Seq.length (view_Vec_u32_Global v.final) -> index_Vec_u32_Global v.final i = (0: UInt32.t))
-      /\ ([@expl:all_zero ensures #1] Seq.length (view_Vec_u32_Global v.current)
+      /\ ([@stop_split] [@expl:all_zero ensures #1] Seq.length (view_Vec_u32_Global v.current)
       = Seq.length (view_Vec_u32_Global v.final))}
       (! return {result}) ]
 end

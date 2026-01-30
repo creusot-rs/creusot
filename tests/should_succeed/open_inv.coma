@@ -5,7 +5,7 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
   type t_IsZero = { f0: Int32.t }
   
   let rec clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
   
   predicate invariant_IsZero (self: t_IsZero) = self.f0 = (0: Int32.t)
   
@@ -84,7 +84,7 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
   meta "select_lsinst" "all"
   
   let rec clone_IsZero (self: t_IsZero) (return (x: t_IsZero)) =
-    {[@expl:clone 'self' type invariant] inv_ref_IsZero self}
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_IsZero self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- self.f0 ] s1
@@ -95,8 +95,9 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
     | & self: t_IsZero = self
     | & _4: Int32.t = Any.any_l ()
     | & _6: Int32.t = Any.any_l () ])
-    [ return (result: t_IsZero) -> {([@expl:clone result type invariant] inv_IsZero result)
-      /\ ([@expl:clone ensures] postcondition_clone () self.f0 result.f0)}
+    [ return (result: t_IsZero) ->
+    {[@stop_split] [@expl:clone_IsZero ensures] ([@stop_split] [@expl:clone result type invariant] inv_IsZero result)
+      /\ ([@stop_split] [@expl:clone ensures] postcondition_clone () self.f0 result.f0)}
       (! return {result}) ]
 end
 module M_test_open_inv_param
@@ -228,7 +229,7 @@ module M_impl_Clone_for_IsZero__clone__refines (* <IsZero as std::clone::Clone> 
       = (postcondition_clone self args res /\ self = res_state)
   
   let rec clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
