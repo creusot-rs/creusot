@@ -33,8 +33,8 @@ module M_impl_List_T__foo (* List<T> *)
   meta "rewrite_def" predicate inv_ref_Option_Node_T
   
   let rec is_none_Node_T (self_: t_Option_Node_T) (return (x: bool)) =
-    {[@expl:is_none 'self_' type invariant] inv_ref_Option_Node_T self_}
-    any [ return (result: bool) -> {[@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+    {[@stop_split] [@expl:is_none 'self_' type invariant] inv_ref_Option_Node_T self_}
+    any [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate inv_List_T (_1: t_List_T)
   
@@ -60,10 +60,11 @@ module M_impl_List_T__foo (* List<T> *)
   meta "rewrite_def" predicate inv_refmut_Option_Node_T
   
   let rec take_Node_T (self_: MutBorrow.t t_Option_Node_T) (return (x: t_Option_Node_T)) =
-    {[@expl:take 'self_' type invariant] inv_refmut_Option_Node_T self_}
+    {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_Node_T self_}
     any
-    [ return (result: t_Option_Node_T) -> {([@expl:take result type invariant] inv_Option_Node_T result)
-      /\ ([@expl:take ensures] result = self_.current /\ self_.final = None)}
+    [ return (result: t_Option_Node_T) ->
+    {[@stop_split] [@expl:take_Node_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_Node_T result)
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
       (! return {result}) ]
   
   predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
@@ -71,10 +72,12 @@ module M_impl_List_T__foo (* List<T> *)
   meta "rewrite_def" predicate resolve_refmut_List_T
   
   let rec unwrap_Node_T (self_: t_Option_Node_T) (return (x: t_Node_T)) =
-    {([@expl:unwrap 'self_' type invariant] inv_Option_Node_T self_) /\ ([@expl:unwrap requires] self_ <> None)}
+    {[@stop_split] [@expl:unwrap_Node_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Node_T self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
     any
-    [ return (result: t_Node_T) -> {([@expl:unwrap result type invariant] inv_Node_T result)
-      /\ ([@expl:unwrap ensures] Some result = self_)}
+    [ return (result: t_Node_T) ->
+    {[@stop_split] [@expl:unwrap_Node_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Node_T result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
       (! return {result}) ]
   
   predicate resolve_Rc_PermCell_List_T_Global (_1: t_Rc_PermCell_List_T_Global)
@@ -96,11 +99,11 @@ module M_impl_List_T__foo (* List<T> *)
   
   let rec clone_Rc_PermCell_List_T_Global (self_: t_Rc_PermCell_List_T_Global)
     (return (x: t_Rc_PermCell_List_T_Global)) =
-    {[@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_List_T_Global self_}
+    {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_List_T_Global self_}
     any
     [ return (result: t_Rc_PermCell_List_T_Global) ->
-    {([@expl:clone result type invariant] inv_Rc_PermCell_List_T_Global result)
-      /\ ([@expl:clone ensures] result = self_)}
+    {[@stop_split] [@expl:clone_Rc_PermCell_List_T_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Rc_PermCell_List_T_Global result)
+      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
       (! return {result}) ]
   
   type t_PermCell_List_T
@@ -108,16 +111,17 @@ module M_impl_List_T__foo (* List<T> *)
   function view_Rc_PermCell_List_T_Global (self: t_Rc_PermCell_List_T_Global) : t_PermCell_List_T
   
   let rec as_ref_Rc_PermCell_List_T_Global (self_: t_Rc_PermCell_List_T_Global) (return (x: t_PermCell_List_T)) =
-    {[@expl:as_ref 'self_' type invariant] inv_ref_Rc_PermCell_List_T_Global self_}
+    {[@stop_split] [@expl:as_ref 'self_' type invariant] inv_ref_Rc_PermCell_List_T_Global self_}
     any
-    [ return (result: t_PermCell_List_T) -> {[@expl:as_ref ensures] result = view_Rc_PermCell_List_T_Global self_}
+    [ return (result: t_PermCell_List_T) -> {[@stop_split] [@expl:as_ref ensures] result
+      = view_Rc_PermCell_List_T_Global self_}
       (! return {result}) ]
   
   type t_Perm_PermCell_List_T
   
   let rec deref_mut_Ghost_Box_Perm_PermCell_List_T_Global (self: MutBorrow.t t_Perm_PermCell_List_T)
     (return (x: MutBorrow.t t_Perm_PermCell_List_T)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@expl:deref_mut ensures] result = self}
+    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Perm_PermCell_List_T_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_List_T) =
@@ -132,7 +136,8 @@ module M_impl_List_T__foo (* List<T> *)
   
   let rec new_refmut_Perm_PermCell_List_T (x: MutBorrow.t t_Perm_PermCell_List_T)
     (return (x'0: MutBorrow.t t_Perm_PermCell_List_T)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
   
   function ward_PermCell_List_T (self: t_Perm_PermCell_List_T) : t_PermCell_List_T
   
@@ -149,12 +154,15 @@ module M_impl_List_T__foo (* List<T> *)
   meta "rewrite_def" function view_Perm_PermCell_List_T
   
   let rec borrow_mut_List_T (self: t_PermCell_List_T) (perm: MutBorrow.t t_Perm_PermCell_List_T)
-    (return (x: MutBorrow.t t_List_T)) = {[@expl:borrow_mut requires] self = ward_PermCell_List_T perm.current}
+    (return (x: MutBorrow.t t_List_T)) = {[@stop_split] [@expl:borrow_mut requires] self
+    = ward_PermCell_List_T perm.current}
     any
-    [ return (result: MutBorrow.t t_List_T) -> {([@expl:borrow_mut result type invariant] inv_refmut_List_T result)
-      /\ ([@expl:borrow_mut ensures #0] self = ward_PermCell_List_T (fin_Ghost_refmut_Perm_PermCell_List_T perm))
-      /\ ([@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_List_T perm.current)
-      /\ ([@expl:borrow_mut ensures #2] result.final
+    [ return (result: MutBorrow.t t_List_T) ->
+    {[@stop_split] [@expl:borrow_mut_List_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_List_T result)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #0] self
+        = ward_PermCell_List_T (fin_Ghost_refmut_Perm_PermCell_List_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_List_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
       = view_Perm_PermCell_List_T (fin_Ghost_refmut_Perm_PermCell_List_T perm))}
       (! return {result}) ]
   
@@ -188,7 +196,8 @@ module M_impl_List_T__foo (* List<T> *)
   meta "select_lsinst" "all"
   
   let rec foo_T (self: MutBorrow.t t_List_T) (perm: t_Perm_PermCell_List_T) (return (x: ())) =
-    {([@expl:foo 'self' type invariant] inv_refmut_List_T self) /\ ([@expl:foo requires] false)}
+    {[@stop_split] [@expl:foo_T requires] ([@stop_split] [@expl:foo 'self' type invariant] inv_refmut_List_T self)
+    /\ ([@stop_split] [@expl:foo requires] false)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &p <- self ] s1 | s1 = bb1 ]
     | bb1 = bb1
@@ -201,7 +210,7 @@ module M_impl_List_T__foo (* List<T> *)
               (fun (_bor: MutBorrow.t t_Option_Node_T) ->
                 [ &_11 <- _bor ] -{inv_Option_Node_T _bor.final}-
                 [ &p <- { p with current = { head = _bor.final } } ] s1)
-            [ _ck -> (! {inv_Option_Node_T p.current.head} any) ]
+            [ _ck -> (! {[@expl:type invariant] inv_Option_Node_T p.current.head} any) ]
           | s1 = take_Node_T {_11} (fun (_x: t_Option_Node_T) -> [ &_10 <- _x ] s2)
           | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T p} any) ]
           | s3 = -{resolve_refmut_List_T p}- s4
@@ -240,7 +249,8 @@ module M_impl_List_T__foo (* List<T> *)
           | s24 = MutBorrow.borrow_final <t_List_T> {_15.current} {MutBorrow.get_id _15}
               (fun (_bor: MutBorrow.t t_List_T) ->
                 [ &_14 <- _bor ] -{inv_List_T _bor.final}-
-                [ &_15 <- { _15 with current = _bor.final } ] s25) [ _ck -> (! {inv_List_T _15.current} any) ]
+                [ &_15 <- { _15 with current = _bor.final } ] s25)
+            [ _ck -> (! {[@expl:type invariant] inv_List_T _15.current} any) ]
           | s25 = [ &p <- _14 ] s26
           | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T _15} any) ]
           | s27 = -{resolve_refmut_List_T _15}- s28

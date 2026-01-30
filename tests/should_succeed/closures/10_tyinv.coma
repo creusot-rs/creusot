@@ -45,7 +45,7 @@ module M_f
   meta "rewrite_def" predicate inv_ref_closure1
   
   let rec closure1 (self: closure1) (return (x: UInt32.t)) =
-    {[@expl:closure 'self' type invariant] inv_ref_closure1 self}
+    {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure1 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] UInt32.t'int self.c0'0.f0 = 0} s1
@@ -57,7 +57,7 @@ module M_f
     | & self: closure1 = self
     | & res: UInt32.t = Any.any_l ()
     | & _6: t_Zero_T = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0) =
     let {c0 = x0; c1 = x1} = _1 in inv_ref_Zero_T x0 /\ inv_ref_Zero_T x1
@@ -73,7 +73,7 @@ module M_f
   meta "rewrite_def" predicate inv_ref_closure0
   
   let rec closure0 (self: closure0) (return (x: UInt32.t)) =
-    {[@expl:closure 'self' type invariant] inv_ref_closure0 self}
+    {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure0 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] UInt32.t'int self.c0.f0 = 0} s1
@@ -90,14 +90,15 @@ module M_f
     | & _8: UInt32.t = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & _11: t_Zero_T = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec f_T (x: t_Zero_T) (y: t_Zero_T) (return (x'0: ())) = {([@expl:f 'x' type invariant] inv_Zero_T x)
-    /\ ([@expl:f 'y' type invariant] inv_Zero_T y)}
+  let rec f_T (x: t_Zero_T) (y: t_Zero_T) (return (x'0: ())) =
+    {[@stop_split] [@expl:f_T requires] ([@stop_split] [@expl:f 'x' type invariant] inv_Zero_T x)
+    /\ ([@stop_split] [@expl:f 'y' type invariant] inv_Zero_T y)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Zero_T x} any) ]

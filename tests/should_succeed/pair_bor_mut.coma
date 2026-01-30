@@ -35,18 +35,20 @@ module M_pair_bor_mut
   meta "select_lsinst" "all"
   
   let rec pair_bor_mut_T (p: tup2_refmut_T_refmut_T) (take_first: bool) (return (x: MutBorrow.t t_T)) =
-    {[@expl:pair_bor_mut 'p' type invariant] inv_tup2_refmut_T_refmut_T p}
+    {[@stop_split] [@expl:pair_bor_mut 'p' type invariant] inv_tup2_refmut_T_refmut_T p}
     (! bb0
     [ bb0 = any [ br0 -> {take_first = false} (! bb2) | br1 -> {take_first} (! bb1) ]
     | bb1 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {p.f0.current} {MutBorrow.get_id p.f0}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_10 <- _bor ] -{inv_T _bor.final}-
-            [ &p <- { p with f0 = { p.f0 with current = _bor.final } } ] s1) [ _ck -> (! {inv_T p.f0.current} any) ]
+            [ &p <- { p with f0 = { p.f0 with current = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_T p.f0.current} any) ]
       | s1 = MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_8 <- _bor ] -{inv_T _bor.final}-
-            [ &_10 <- { _10 with current = _bor.final } ] s2) [ _ck -> (! {inv_T _10.current} any) ]
+            [ &_10 <- { _10 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_T _10.current} any) ]
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _10} any) ]
       | s3 = -{resolve_refmut_T _10}- s4
       | s4 = bb3 ]
@@ -54,19 +56,20 @@ module M_pair_bor_mut
       [ s0 = MutBorrow.borrow_final <t_T> {p.f1.current} {MutBorrow.get_id p.f1}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_8 <- _bor ] -{inv_T _bor.final}-
-            [ &p <- { p with f1 = { p.f1 with current = _bor.final } } ] s1) [ _ck -> (! {inv_T p.f1.current} any) ]
+            [ &p <- { p with f1 = { p.f1 with current = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_T p.f1.current} any) ]
       | s1 = bb3 ]
     | bb3 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
-            [ &_8 <- { _8 with current = _bor.final } ] s1) [ _ck -> (! {inv_T _8.current} any) ]
+            [ &_8 <- { _8 with current = _bor.final } ] s1) [ _ck -> (! {[@expl:type invariant] inv_T _8.current} any) ]
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
       | s2 = -{resolve_refmut_T _8}- s3
       | s3 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
-            [ &_3 <- { _3 with current = _bor.final } ] s4) [ _ck -> (! {inv_T _3.current} any) ]
+            [ &_3 <- { _3 with current = _bor.final } ] s4) [ _ck -> (! {[@expl:type invariant] inv_T _3.current} any) ]
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
       | s5 = -{resolve_refmut_T _3}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_tup2_refmut_T_refmut_T p} any) ]
@@ -78,8 +81,9 @@ module M_pair_bor_mut
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l ()
     | & _10: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {([@expl:pair_bor_mut result type invariant] inv_refmut_T result)
-      /\ ([@expl:pair_bor_mut ensures] if take_first then
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:pair_bor_mut_T ensures] ([@stop_split] [@expl:pair_bor_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:pair_bor_mut ensures] if take_first then
         result = p.f0 /\ p.f1.final = p.f1.current
       else
         result = p.f1 /\ p.f0.final = p.f0.current

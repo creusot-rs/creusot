@@ -21,7 +21,7 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   
   let rec elim_Some (_x: t_Option_I) (return (f0: t_I)) = any
     [ _k (f0: t_I) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -78,9 +78,10 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
         | Some'0 v -> produces_I self.current (Seq.singleton v) self.final
         end)
   
-  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) =
+    {[@stop_split] [@expl:next requires] precondition_next () self}
     any
-    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+    [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
       (! return {result}) ]
   
   predicate resolve_refmut_I [@inline:trivial] (_1: MutBorrow.t t_I) = _1.final = _1.current
@@ -155,14 +156,14 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Fuse_I (self: MutBorrow.t t_Fuse_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Fuse_I self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Fuse_I self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_I> {self.current.iter}
           (fun (_bor: MutBorrow.t t_Option_I) ->
             [ &_4 <- _bor ] -{inv_Option_I _bor.final}-
             [ &self <- { self with current = { iter = _bor.final } } ] s1)
-        [ _ck -> (! {inv_Option_I self.current.iter} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_Option_I self.current.iter} any) ]
       | s1 = any [ br0 -> {_4.current = None} (! bb2) | br1 (x0: t_I) -> {_4.current = Some x0} (! bb3) ] ]
     | bb3 = s0
       [ s0 = elim_Some {_4.current}
@@ -170,11 +171,13 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
             MutBorrow.borrow_final <t_I> {r0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 1}
               (fun (_bor: MutBorrow.t t_I) ->
                 [ &iter'0 <- _bor ] -{inv_I _bor.final}-
-                [ &_4 <- { _4 with current = Some _bor.final } ] s1) [ _ck -> (! {inv_I r0} any) ])
+                [ &_4 <- { _4 with current = Some _bor.final } ] s1)
+            [ _ck -> (! {[@expl:type invariant] inv_I r0} any) ])
       | s1 = MutBorrow.borrow_final <t_I> {iter'0.current} {MutBorrow.get_id iter'0}
           (fun (_bor: MutBorrow.t t_I) ->
             [ &_8 <- _bor ] -{inv_I _bor.final}-
-            [ &iter'0 <- { iter'0 with current = _bor.final } ] s2) [ _ck -> (! {inv_I iter'0.current} any) ]
+            [ &iter'0 <- { iter'0 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_I iter'0.current} any) ]
       | s2 = next_I {_8} (fun (_x: t_Option_Item) -> [ &_7 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_I iter'0} any) ]
       | s4 = -{resolve_refmut_I iter'0}- s5
@@ -213,8 +216,9 @@ module M_impl_Iterator_for_Fuse_I__next (* <Fuse<I> as common::Iterator> *)
     | & _8: MutBorrow.t t_I = Any.any_l ()
     | & _10: t_Option_I = Any.any_l ()
     | & x: t_Option_Item = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_Item) ->
+    {[@stop_split] [@expl:next_Fuse_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None'0 -> completed_Fuse_I self
         | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
         end)}
@@ -259,7 +263,8 @@ module M_impl_Iterator_for_Fuse_I__produces_refl (* <Fuse<I> as common::Iterator
   
   function produces_refl_Fuse_I (self: t_Fuse_I) : ()
   
-  goal vc_produces_refl_Fuse_I: [@expl:produces_refl ensures] produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
+  goal vc_produces_refl_Fuse_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
 end
 module M_impl_Iterator_for_Fuse_I__produces_trans (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
@@ -309,7 +314,7 @@ module M_impl_Iterator_for_Fuse_I__produces_trans (* <Fuse<I> as common::Iterato
   function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
   
   goal vc_produces_trans_Fuse_I: produces_Fuse_I a ab b
-    -> produces_Fuse_I b bc c -> ([@expl:produces_trans ensures] produces_Fuse_I a (Seq.(++) ab bc) c)
+    -> produces_Fuse_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Fuse_I a (Seq.(++) ab bc) c)
 end
 module M_impl_FusedIterator_for_Fuse_I__is_fused (* <Fuse<I> as FusedIterator> *)
   use creusot.prelude.MutBorrow
@@ -373,7 +378,8 @@ module M_impl_FusedIterator_for_Fuse_I__is_fused (* <Fuse<I> as FusedIterator> *
   function is_fused_Fuse_I (self: MutBorrow.t t_Fuse_I) (steps: Seq.seq t_Item) (next: t_Fuse_I) : ()
   
   goal vc_is_fused_Fuse_I: completed_Fuse_I self
-    -> produces_Fuse_I self.final steps next -> ([@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
+    -> produces_Fuse_I self.final steps next
+    -> ([@stop_split] [@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
 end
 module M_impl_Iterator_for_Fuse_I__produces_trans__refines (* <Fuse<I> as common::Iterator> *)
   use seq.Seq

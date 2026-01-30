@@ -23,25 +23,27 @@ module M_foo
   meta "rewrite_def" function view_Box_Perm_PermCell_i32_Global
   
   let rec new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global)) = any
-    [ return (result: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> {([@expl:new ensures #0] result.f0
+    [ return (result: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) ->
+    {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new ensures #0] result.f0
         = ward_PermCell_i32 result.f1)
-      /\ ([@expl:new ensures #1] view_Box_Perm_PermCell_i32_Global result.f1 = value)}
+      /\ ([@stop_split] [@expl:new ensures #1] view_Box_Perm_PermCell_i32_Global result.f1 = value)}
       (! return {result}) ]
   
   let rec deref_Ghost_Box_Perm_PermCell_i32_Global (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
-    [ return (result: t_Perm_PermCell_i32) -> {[@expl:deref ensures] result = self} (! return {result}) ]
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
-    [ return (result: t_Perm_PermCell_i32) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
-    {[@expl:borrow requires] self = ward_PermCell_i32 perm}
+    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_i32 perm}
     any
-    [ return (result: Int32.t) -> {[@expl:borrow ensures] result = view_Perm_PermCell_i32 perm} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = view_Perm_PermCell_i32 perm}
+      (! return {result}) ]
   
   let rec deref_mut_Ghost_Box_Perm_PermCell_i32_Global (self: MutBorrow.t t_Perm_PermCell_i32)
     (return (x: MutBorrow.t t_Perm_PermCell_i32)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_i32) -> {[@expl:deref_mut ensures] result = self}
+    [ return (result: MutBorrow.t t_Perm_PermCell_i32) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_i32) =
@@ -56,7 +58,8 @@ module M_foo
   
   let rec new_refmut_Perm_PermCell_i32 (x: MutBorrow.t t_Perm_PermCell_i32)
     (return (x'0: MutBorrow.t t_Perm_PermCell_i32)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_i32) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t t_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
   
   function fin_Ghost_refmut_Perm_PermCell_i32 [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_i32) : t_Perm_PermCell_i32
    = self.final
@@ -64,12 +67,14 @@ module M_foo
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_i32
   
   let rec borrow_mut_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32)
-    (return (x: MutBorrow.t Int32.t)) = {[@expl:borrow_mut requires] self = ward_PermCell_i32 perm.current}
+    (return (x: MutBorrow.t Int32.t)) = {[@stop_split] [@expl:borrow_mut requires] self
+    = ward_PermCell_i32 perm.current}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {([@expl:borrow_mut ensures #0] self
+    [ return (result: MutBorrow.t Int32.t) ->
+    {[@stop_split] [@expl:borrow_mut_i32 ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
         = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))
-      /\ ([@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_i32 perm.current)
-      /\ ([@expl:borrow_mut ensures #2] result.final
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = view_Perm_PermCell_i32 perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
       = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
       (! return {result}) ]
   
@@ -78,18 +83,20 @@ module M_foo
   meta "rewrite_def" predicate resolve_refmut_i32
   
   let rec replace_i32 (self: t_PermCell_i32) (perm: MutBorrow.t t_Perm_PermCell_i32) (val': Int32.t)
-    (return (x: Int32.t)) = {[@expl:replace requires] self = ward_PermCell_i32 perm.current}
+    (return (x: Int32.t)) = {[@stop_split] [@expl:replace requires] self = ward_PermCell_i32 perm.current}
     any
-    [ return (result: Int32.t) -> {([@expl:replace ensures #0] val'
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:replace_i32 ensures] ([@stop_split] [@expl:replace ensures #0] val'
         = view_Perm_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))
-      /\ ([@expl:replace ensures #1] result = view_Perm_PermCell_i32 perm.current)
-      /\ ([@expl:replace ensures #2] self = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
+      /\ ([@stop_split] [@expl:replace ensures #1] result = view_Perm_PermCell_i32 perm.current)
+      /\ ([@stop_split] [@expl:replace ensures #2] self = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
       (! return {result}) ]
   
   let rec into_inner_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
-    {[@expl:into_inner requires] self = ward_PermCell_i32 perm}
+    {[@stop_split] [@expl:into_inner requires] self = ward_PermCell_i32 perm}
     any
-    [ return (result: Int32.t) -> {[@expl:into_inner ensures] result = view_Box_Perm_PermCell_i32_Global perm}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:into_inner ensures] result
+      = view_Box_Perm_PermCell_i32_Global perm}
       (! return {result}) ]
   
   predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true
@@ -233,5 +240,5 @@ module M_foo
     | & _45: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
     | & _46: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
     | & _47: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@expl:foo ensures] Int32.to_int result = 3} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:foo ensures] Int32.to_int result = 3} (! return {result}) ]
 end

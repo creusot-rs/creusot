@@ -3,7 +3,7 @@ module M_ghost_only
   use creusot.prelude.Any
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -23,7 +23,7 @@ module M_ghost_capture
   use creusot.prelude.Any
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -50,17 +50,18 @@ module M_ghost_mutate
   type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
   
   let rec new_tup2_i32_i32 (x: tup2_i32_i32) (return (x'0: tup2_i32_i32)) = any
-    [ return (result: tup2_i32_i32) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: tup2_i32_i32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec deref_mut_Ghost_tup2_i32_i32 (self: MutBorrow.t tup2_i32_i32) (return (x: MutBorrow.t tup2_i32_i32)) = any
-    [ return (result: MutBorrow.t tup2_i32_i32) -> {[@expl:deref_mut ensures] result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t tup2_i32_i32) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
   
   predicate resolve_refmut_tup2_i32_i32 [@inline:trivial] (_1: MutBorrow.t tup2_i32_i32) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_tup2_i32_i32
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

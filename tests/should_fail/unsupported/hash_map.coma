@@ -17,7 +17,7 @@ module M_impl_Foo__new (* Foo *)
   
   let rec new (return (x: t_Foo)) = (! bb0
     [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState = Any.any_l () ])
-    [ return (result: t_Foo) -> {[@expl:new result type invariant] inv_Foo result} (! return {result}) ]
+    [ return (result: t_Foo) -> {[@stop_split] [@expl:new result type invariant] inv_Foo result} (! return {result}) ]
 end
 module M_impl_Foo__add (* Foo *)
   use creusot.prelude.MutBorrow
@@ -66,7 +66,7 @@ module M_impl_Foo__add (* Foo *)
   meta "select_lsinst" "all"
   
   let rec add (self: MutBorrow.t t_Foo) (num: UInt64.t) (bar: UInt8.t) (return (x: ())) =
-    {[@expl:add 'self' type invariant] inv_refmut_Foo self}
+    {[@stop_split] [@expl:add 'self' type invariant] inv_refmut_Foo self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- bar ] s1
@@ -75,7 +75,7 @@ module M_impl_Foo__add (* Foo *)
           (fun (_bor: MutBorrow.t t_HashMap_u64_u8_RandomState) ->
             [ &_11 <- _bor ] -{inv_HashMap_u64_u8_RandomState _bor.final}-
             [ &self <- { self with current = { f0 = _bor.final } } ] s2)
-        [ _ck -> (! {inv_HashMap_u64_u8_RandomState self.current.f0} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_HashMap_u64_u8_RandomState self.current.f0} any) ]
       | s2 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Foo = self
@@ -84,6 +84,7 @@ module M_impl_Foo__add (* Foo *)
     | & _8: UInt8.t = Any.any_l ()
     | & _9: MutBorrow.t UInt8.t = Any.any_l ()
     | & _11: MutBorrow.t t_HashMap_u64_u8_RandomState = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num) = Some bar}
+    [ return (result: ()) -> {[@stop_split] [@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num)
+      = Some bar}
       (! return {result}) ]
 end

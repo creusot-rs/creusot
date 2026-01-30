@@ -54,7 +54,7 @@ module M_main
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -93,7 +93,7 @@ module M_main
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
   let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
-    [ return (result: t_Option_i32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
@@ -101,7 +101,7 @@ module M_main
   
   let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}

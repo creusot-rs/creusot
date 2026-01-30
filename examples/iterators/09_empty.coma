@@ -16,7 +16,8 @@ module M_impl_Iterator_for_Empty_T__produces_refl (* <Empty<T> as common::Iterat
   
   function produces_refl_Empty_T (self: t_Empty_T) : ()
   
-  goal vc_produces_refl_Empty_T: [@expl:produces_refl ensures] produces_Empty_T self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Empty_T:
+    [@stop_split] [@expl:produces_refl ensures] produces_Empty_T self (Seq.empty: Seq.seq t_T) self
 end
 module M_impl_Iterator_for_Empty_T__produces_trans (* <Empty<T> as common::Iterator> *)
   use seq.Seq
@@ -45,7 +46,7 @@ module M_impl_Iterator_for_Empty_T__produces_trans (* <Empty<T> as common::Itera
   function produces_trans_Empty_T (a: t_Empty_T) (ab: Seq.seq t_T) (b: t_Empty_T) (bc: Seq.seq t_T) (c: t_Empty_T) : ()
   
   goal vc_produces_trans_Empty_T: produces_Empty_T a ab b
-    -> produces_Empty_T b bc c -> ([@expl:produces_trans ensures] produces_Empty_T a (Seq.(++) ab bc) c)
+    -> produces_Empty_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Empty_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
@@ -84,8 +85,9 @@ module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
   let rec next_Empty_T (self: MutBorrow.t t_Empty_T) (return (x: t_Option_T)) = (! bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_Empty_T self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l () | & self: MutBorrow.t t_Empty_T = self ])
-    [ return (result: t_Option_T) -> {([@expl:next result type invariant] inv_Option_T result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:next_Empty_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Empty_T self
         | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
         end)}

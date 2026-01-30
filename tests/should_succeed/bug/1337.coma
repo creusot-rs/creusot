@@ -9,7 +9,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   let rec elim_B (_x: t_T) (return (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t)) = any
     [ _k (f0: Int8.t) (f1: Int8.t) (f2: Int8.t) (f3: Int8.t) (f4: Int8.t) (f5: Int8.t) -> {B f0 f1 f2 f3 f4 f5 = _x}
       (! return {f0} {f1} {f2} {f3} {f4} {f5})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim B] match _x with
         | B _ _ _ _ _ _ -> true
         | _ -> false
         end}
@@ -38,7 +38,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   let rec debug_tuple_fields_finish (self_: MutBorrow.t t_Formatter) (name: string) (values: Slice64.slice dyn_Debug)
     (return (x: t_Result_unit_Error)) =
-    {[@expl:debug_tuple_fields_finish 'self_' type invariant] inv_refmut_Formatter self_}
+    {[@stop_split] [@expl:debug_tuple_fields_finish 'self_' type invariant] inv_refmut_Formatter self_}
     any [ return (result: t_Result_unit_Error) -> (! return {result}) ]
   
   predicate resolve_refmut_Formatter [@inline:trivial] (_1: MutBorrow.t t_Formatter) = _1.final = _1.current
@@ -47,7 +47,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   let rec elim_A (_x: t_T) (return (x: Int8.t) (y: Int8.t)) = any
     [ _k (x: Int8.t) (y: Int8.t) -> {A x y = _x} (! return {x} {y})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim A] match _x with
         | A _ _ -> true
         | _ -> false
         end}
@@ -55,7 +55,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   let rec debug_struct_field2_finish (self_: MutBorrow.t t_Formatter) (name: string) (name1: string) (value1: dyn_Debug)
     (name2: string) (value2: dyn_Debug) (return (x: t_Result_unit_Error)) =
-    {[@expl:debug_struct_field2_finish 'self_' type invariant] inv_refmut_Formatter self_}
+    {[@stop_split] [@expl:debug_struct_field2_finish 'self_' type invariant] inv_refmut_Formatter self_}
     any [ return (result: t_Result_unit_Error) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -63,7 +63,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   meta "select_lsinst" "all"
   
   let rec fmt_T (self: t_T) (f: MutBorrow.t t_Formatter) (return (x: t_Result_unit_Error)) =
-    {[@expl:fmt 'f' type invariant] inv_refmut_Formatter f}
+    {[@stop_split] [@expl:fmt 'f' type invariant] inv_refmut_Formatter f}
     (! bb0
     [ bb0 = any
       [ br0 (x0: Int8.t) (x1: Int8.t) -> {self = A x0 x1} (! bb4)
@@ -106,7 +106,8 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
       | s17 = MutBorrow.borrow_final <t_Formatter> {f.current} {MutBorrow.get_id f}
           (fun (_bor: MutBorrow.t t_Formatter) ->
             [ &_41 <- _bor ] -{inv_Formatter _bor.final}-
-            [ &f <- { f with current = _bor.final } ] s18) [ _ck -> (! {inv_Formatter f.current} any) ]
+            [ &f <- { f with current = _bor.final } ] s18)
+        [ _ck -> (! {[@expl:type invariant] inv_Formatter f.current} any) ]
       | s18 = debug_tuple_fields_finish {_41} {_43} {values} (fun (_x: t_Result_unit_Error) -> [ &_ret <- _x ] s19)
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_Formatter f} any) ]
       | s20 = -{resolve_refmut_Formatter f}- s21
@@ -123,7 +124,8 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
       | s8 = MutBorrow.borrow_final <t_Formatter> {f.current} {MutBorrow.get_id f}
           (fun (_bor: MutBorrow.t t_Formatter) ->
             [ &_6 <- _bor ] -{inv_Formatter _bor.final}-
-            [ &f <- { f with current = _bor.final } ] s9) [ _ck -> (! {inv_Formatter f.current} any) ]
+            [ &f <- { f with current = _bor.final } ] s9)
+        [ _ck -> (! {[@expl:type invariant] inv_Formatter f.current} any) ]
       | s9 = debug_struct_field2_finish {_6} {_8} {_10} {_11} {_14} {_15}
           (fun (_x: t_Result_unit_Error) -> [ &_ret <- _x ] s10)
       | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Formatter f} any) ]

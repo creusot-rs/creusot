@@ -28,15 +28,16 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let rec f_A (x: t_S_A_B) (return (x'0: t_A)) = {[@expl:f 'x' type invariant] inv_S_A_B x}
+  let rec f_A (x: t_S_A_B) (return (x'0: t_A)) = {[@stop_split] [@expl:f 'x' type invariant] inv_S_A_B x}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv__private x.t_S__private} any) ]
       | s1 = -{resolve__private x.t_S__private}- s2
       | s2 = [ &_ret <- x.a ] s3
       | s3 = return {_ret} ] ] [ & _ret: t_A = Any.any_l () | & x: t_S_A_B = x ])
-    [ return (result: t_A) -> {([@expl:f result type invariant] inv_A result)
-      /\ ([@expl:f ensures] resolve_A x.a -> resolve_S_A_B x)}
+    [ return (result: t_A) ->
+    {[@stop_split] [@expl:f_A ensures] ([@stop_split] [@expl:f result type invariant] inv_A result)
+      /\ ([@stop_split] [@expl:f ensures] resolve_A x.a -> resolve_S_A_B x)}
       (! return {result}) ]
 end
 module M_g
@@ -75,7 +76,8 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let rec g_B (x: MutBorrow.t t_S_i32_B) (return (x'0: ())) = {[@expl:g 'x' type invariant] inv_refmut_S_i32_B x}
+  let rec g_B (x: MutBorrow.t t_S_i32_B) (return (x'0: ())) =
+    {[@stop_split] [@expl:g 'x' type invariant] inv_refmut_S_i32_B x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- { x with current = { x.current with a = (34: Int32.t) } } ] s1

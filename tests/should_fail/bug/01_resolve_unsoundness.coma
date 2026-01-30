@@ -15,7 +15,8 @@ module M_make_vec_of_size
       <= UInt64.t'int const_MAX
   
   let rec new_bool (return (x: t_Vec_bool_Global)) = any
-    [ return (result: t_Vec_bool_Global) -> {[@expl:new ensures] Seq.length (view_Vec_bool_Global result) = 0}
+    [ return (result: t_Vec_bool_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_bool_Global result)
+      = 0}
       (! return {result}) ]
   
   type t_Ordering = Less | Equal | Greater
@@ -64,7 +65,7 @@ module M_make_vec_of_size
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
   let rec push_bool (self_: MutBorrow.t t_Vec_bool_Global) (v: bool) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:push ensures] view_Vec_bool_Global self_.final
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_bool_Global self_.final
       = Seq.snoc (view_Vec_bool_Global self_.current) v}
       (! return {result}) ]
   
@@ -93,7 +94,7 @@ module M_make_vec_of_size
     | & _13: bool = Any.any_l ()
     | & _16: () = Any.any_l ()
     | & _17: MutBorrow.t t_Vec_bool_Global = Any.any_l () ])
-    [ return (result: t_Vec_bool_Global) -> {[@expl:make_vec_of_size ensures] Seq.length (view_Vec_bool_Global result)
-      = UInt64.t'int n}
+    [ return (result: t_Vec_bool_Global) ->
+    {[@stop_split] [@expl:make_vec_of_size ensures] Seq.length (view_Vec_bool_Global result) = UInt64.t'int n}
       (! return {result}) ]
 end

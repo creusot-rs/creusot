@@ -97,12 +97,13 @@ pub(crate) fn translate_function<'tcx>(
 }
 
 pub(crate) fn val(sig: Prototype, contract: Contract, return_ty: why3::ty::Type) -> Decl {
+    let name = sig.name.name().to_string();
     let mut body = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
-    body = Expr::assert(contract.ensures_conj(), body.black_box());
+    body = Expr::assert(contract.ensures_conj(&name), body.black_box());
 
     let params = [Param::Term(name::result(), return_ty)].into();
     let body = Expr::Defn(
-        Expr::assert(contract.requires_conj(), Expr::Any).boxed(),
+        Expr::assert(contract.requires_conj(&name), Expr::Any).boxed(),
         false,
         [Defn { prototype: Prototype { name: name::return_(), attrs: vec![], params }, body }]
             .into(),
@@ -254,7 +255,8 @@ pub(crate) fn to_why<'tcx>(
         ret = ret.black_box();
     }
 
-    let postcond = Expr::assert(sig.contract.ensures_conj(), ret);
+    let name = name.name().to_string();
+    let postcond = Expr::assert(sig.contract.ensures_conj(&name), ret);
     body = Expr::Defn(
         body.boxed(),
         false,
@@ -268,7 +270,7 @@ pub(crate) fn to_why<'tcx>(
         }]
         .into(),
     );
-    body = Expr::assert(sig.contract.requires_conj(), body);
+    body = Expr::assert(sig.contract.requires_conj(&name), body);
 
     Defn { prototype: sig.prototype, body }
 }
@@ -1281,7 +1283,11 @@ impl<'tcx> Statement<'tcx> {
                     let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
-                    istmts.push(IntermediateStmt::Check(inv.clone().app([rhs_rplace.clone()])));
+                    istmts.push(IntermediateStmt::Check(
+                        inv.clone()
+                            .app([rhs_rplace.clone()])
+                            .with_attr(Attribute::Attr(format!("expl:type invariant"))),
+                    ));
                     inv_assume = Some(IntermediateStmt::Assume(inv.app([reassign.clone()])))
                 } else {
                     inv_assume = None

@@ -23,9 +23,9 @@ module M_num_of_pos
       true
     else
       if Int32.to_int (Seq.get t (j - 1)) > 0 then
-        well_founded_relation_Int (j - i) (j - 1 - i)
+        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
       else
-        well_founded_relation_Int (j - i) (j - 1 - i)
+        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
     
 
 end
@@ -63,11 +63,12 @@ module M_lemma_num_of_pos_increasing
   
   goal vc_lemma_num_of_pos_increasing: j <= k
     -> (if j < k then
-      (([@expl:lemma_num_of_pos_increasing requires] j + 1 <= k) /\ well_founded_relation_Int (k - j) (k - (j + 1)))
-      /\ (([@expl:lemma_num_of_pos_increasing ensures] num_of_pos i (j + 1) t <= num_of_pos i k t)
-      -> ([@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t))
+      (([@stop_split] [@expl:lemma_num_of_pos_increasing requires] j + 1 <= k)
+        /\ ([@expl:variant decreases] well_founded_relation_Int (k - j) (k - (j + 1))))
+      /\ (([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i (j + 1) t <= num_of_pos i k t)
+      -> ([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t))
     else
-      [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t
+      [@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t
     )
 end
 module M_lemma_num_of_pos_strictly_increasing
@@ -96,7 +97,7 @@ module M_lemma_num_of_pos_strictly_increasing
   
   goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
     -> Int32.to_int (Seq.get t i) > 0
-    -> ([@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
+    -> ([@stop_split] [@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
 end
 module M_m
   use creusot.int.UInt64
@@ -116,7 +117,8 @@ module M_m
       <= UInt64.t'int const_MAX
   
   let rec len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
   
   function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
@@ -139,9 +141,10 @@ module M_m
   meta "rewrite_def" predicate has_value_usize
   
   let rec index_Vec_i32_Global (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
-    {[@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
+    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
-    [ return (result: Int32.t) -> {[@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
   function index_Vec_i32_Global'0 [@inline:trivial] (self: t_Vec_i32_Global) (ix: int) : Int32.t =
@@ -150,9 +153,10 @@ module M_m
   meta "rewrite_def" function index_Vec_i32_Global'0
   
   let rec from_elem_i32 (elem: Int32.t) (n: UInt64.t) (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {([@expl:from_elem ensures #0] Seq.length (view_Vec_i32_Global result)
+    [ return (result: t_Vec_i32_Global) ->
+    {[@stop_split] [@expl:from_elem_i32 ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_i32_Global result)
         = UInt64.t'int n)
-      /\ ([@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+      /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
         -> index_Vec_i32_Global'0 result i = elem)}
       (! return {result}) ]
   
@@ -176,13 +180,13 @@ module M_m
   
   let rec index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t Int32.t)) =
-    {[@expl:index_mut requires] in_bounds_usize ix (view_Vec_i32_Global self_.current)}
+    {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t Int32.t) ->
-    {([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_i32_Global self_.current) result.current)
-      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_i32_Global self_.final) result.final)
-      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
-      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
+    {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_i32_Global self_.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_i32_Global self_.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
       = Seq.length (view_Vec_i32_Global self_.current))}
       (! return {result}) ]
   

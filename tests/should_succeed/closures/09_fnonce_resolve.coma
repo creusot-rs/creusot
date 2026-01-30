@@ -19,8 +19,8 @@ module M_f
   
   meta "rewrite_def" predicate resolve_Box_Box_refmut_i32_Global_Global
   
-  let rec closure0 (self: closure0) (return (x: ())) = {[@expl:closure requires] Int32.to_int self.c2.current = 1
-    /\ Int32.to_int self.c1.current = 1}
+  let rec closure0 (self: closure0) (return (x: ())) =
+    {[@stop_split] [@expl:closure requires] Int32.to_int self.c2.current = 1 /\ Int32.to_int self.c1.current = 1}
     (! bb0
     [ bb0 = any [ br0 -> {self.c0 = false} (! bb3) | br1 -> {self.c0} (! bb1) ]
     | bb1 = s0
@@ -51,7 +51,9 @@ module M_f
     | & self: closure0 = self
     | & bx2: MutBorrow.t Int32.t = Any.any_l ()
     | & by2: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:closure ensures] Int32.to_int self.c2.final + Int32.to_int self.c1.final = 3}
+    [ return (result: ()) -> {[@stop_split] [@expl:closure ensures] Int32.to_int self.c2.final
+        + Int32.to_int self.c1.final
+      = 3}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

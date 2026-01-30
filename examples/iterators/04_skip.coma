@@ -38,7 +38,8 @@ module M_impl_Iterator_for_Skip_I__produces_refl (* <Skip<I> as common::Iterator
   
   function produces_refl_Skip_I (self: t_Skip_I) : ()
   
-  goal vc_produces_refl_Skip_I: [@expl:produces_refl ensures] produces_Skip_I self (Seq.empty: Seq.seq t_Item) self
+  goal vc_produces_refl_Skip_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Skip_I self (Seq.empty: Seq.seq t_Item) self
 end
 module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -89,7 +90,7 @@ module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterato
   function produces_trans_Skip_I (a: t_Skip_I) (ab: Seq.seq t_Item) (b: t_Skip_I) (bc: Seq.seq t_Item) (c: t_Skip_I) : ()
   
   goal vc_produces_trans_Skip_I: produces_Skip_I a ab b
-    -> produces_Skip_I b bc c -> ([@expl:produces_trans ensures] produces_Skip_I a (Seq.(++) ab bc) c)
+    -> produces_Skip_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Skip_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -161,11 +162,12 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_usize (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:default ensures] result = (0: UInt64.t)} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:default ensures] result = (0: UInt64.t)} (! return {result}) ]
   
   let rec take_usize (dest: MutBorrow.t UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {([@expl:take ensures #0] result = dest.current)
-      /\ ([@expl:take ensures #1] postcondition_default () () dest.final)}
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:take_usize ensures] ([@stop_split] [@expl:take ensures #0] result = dest.current)
+      /\ ([@stop_split] [@expl:take ensures #1] postcondition_default () () dest.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
@@ -225,9 +227,10 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
         | Some v -> produces_I self.current (Seq.singleton v) self.final
         end)
   
-  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) = {[@expl:next requires] precondition_next () self}
+  let rec next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) =
+    {[@stop_split] [@expl:next requires] precondition_next () self}
     any
-    [ return (result: t_Option_Item) -> {[@expl:next ensures] postcondition_once_next () self result}
+    [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
       (! return {result}) ]
   
   predicate resolve_Item (_1: t_Item)
@@ -247,7 +250,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   let rec elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -277,7 +280,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Skip_I (self: MutBorrow.t t_Skip_I) (return (x: t_Option_Item)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Skip_I self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Skip_I self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
@@ -304,7 +307,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
             (fun (_bor: MutBorrow.t t_I) ->
               [ &_26 <- _bor ] -{inv_I _bor.final}-
               [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
-          [ _ck -> (! {inv_I self.current.iter} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
         | s1 = next_I {_26} (fun (_x: t_Option_Item) -> [ &r <- _x ] s2)
         | s2 = [ &_28 <- n'0 = (0: UInt64.t) ] s3
         | s3 = any [ br0 -> {_28 = false} (! bb8) | br1 -> {_28} (! bb7) ] ]
@@ -339,8 +342,9 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
     | & x: t_Item = Any.any_l ()
     | & _old: t_Skip_I = Any.any_l ()
     | & _old'0: UInt64.t = Any.any_l () ])
-    [ return (result: t_Option_Item) -> {([@expl:next result type invariant] inv_Option_Item result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_Item) ->
+    {[@stop_split] [@expl:next_Skip_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Skip_I self
         | Some v -> produces_Skip_I self.current (Seq.singleton v) self.final
         end)}

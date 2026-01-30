@@ -19,8 +19,8 @@ module M_test_arc
   meta "select_lsinst" "all"
   
   let rec test_arc (a: t_Arc_usize_Global) (return (x: ())) =
-    {([@expl:test_arc 'a' type invariant] inv_Arc_usize_Global a)
-    /\ ([@expl:test_arc requires] view_Box_usize_Global (view_Arc_usize_Global a) = 0)}
+    {[@stop_split] [@expl:test_arc requires] ([@stop_split] [@expl:test_arc 'a' type invariant] inv_Arc_usize_Global a)
+    /\ ([@stop_split] [@expl:test_arc requires] view_Box_usize_Global (view_Arc_usize_Global a) = 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Arc_usize_Global a} any) ]
@@ -48,8 +48,9 @@ module M_test_rc
   
   meta "select_lsinst" "all"
   
-  let rec test_rc (v: t_Rc_usize_Global) (return (x: ())) = {([@expl:test_rc 'v' type invariant] inv_Rc_usize_Global v)
-    /\ ([@expl:test_rc requires] view_Box_usize_Global (view_Rc_usize_Global v) = 0)}
+  let rec test_rc (v: t_Rc_usize_Global) (return (x: ())) =
+    {[@stop_split] [@expl:test_rc requires] ([@stop_split] [@expl:test_rc 'v' type invariant] inv_Rc_usize_Global v)
+    /\ ([@stop_split] [@expl:test_rc requires] view_Box_usize_Global (view_Rc_usize_Global v) = 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Rc_usize_Global v} any) ]

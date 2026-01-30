@@ -5,7 +5,7 @@ module M_inc_max_3
   
   let rec swap (mma: MutBorrow.t (MutBorrow.t UInt32.t)) (mmb: MutBorrow.t (MutBorrow.t UInt32.t)) (return (x: ())) =
     any
-    [ return (result: ()) -> {[@expl:swap ensures] mma.final = mmb.current /\ mmb.final = mma.current}
+    [ return (result: ()) -> {[@stop_split] [@expl:swap ensures] mma.final = mmb.current /\ mmb.final = mma.current}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_u32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t UInt32.t)) = _1.final = _1.current
@@ -66,7 +66,7 @@ module M_inc_max_3
   meta "select_lsinst" "all"
   
   let rec inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return (x: ())) =
-    {[@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
+    {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
@@ -153,7 +153,7 @@ module M_inc_max_3
     | & _36: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l ()
     | & _37: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l ()
     | & _38: MutBorrow.t (MutBorrow.t UInt32.t) = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:inc_max_3 ensures] ma.final <> mb.final
+    [ return (result: ()) -> {[@stop_split] [@expl:inc_max_3 ensures] ma.final <> mb.final
       /\ mb.final <> mc.final /\ mc.final <> ma.final}
       (! return {result}) ]
 end
@@ -208,10 +208,10 @@ module M_test_inc_max_3
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   let rec inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return (x: ())) =
-    {[@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
+    {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     any
-    [ return (result: ()) -> {[@expl:inc_max_3 ensures] ma.final <> mb.final
+    [ return (result: ()) -> {[@stop_split] [@expl:inc_max_3 ensures] ma.final <> mb.final
       /\ mb.final <> mc.final /\ mc.final <> ma.final}
       (! return {result}) ]
   
@@ -224,7 +224,7 @@ module M_test_inc_max_3
   meta "select_lsinst" "all"
   
   let rec test_inc_max_3 (a: UInt32.t) (b: UInt32.t) (c: UInt32.t) (return (x: ())) =
-    {[@expl:test_inc_max_3 requires] UInt32.le a (1000000: UInt32.t)
+    {[@stop_split] [@expl:test_inc_max_3 requires] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le c (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0

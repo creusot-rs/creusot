@@ -43,11 +43,14 @@ module M_weaken_std
     forall self: t_F, args: t_A, res_state: t_F, res: t_Output. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  let rec weaken_2_std_A (f: t_F) (a: t_A) (return (x: t_Output)) = {([@expl:weaken_2_std 'f' type invariant] inv_F f)
-    /\ ([@expl:weaken_2_std 'a' type invariant] inv_A a) /\ ([@expl:weaken_2_std requires] precondition_F f a)}
+  let rec weaken_2_std_A (f: t_F) (a: t_A) (return (x: t_Output)) =
+    {[@stop_split] [@expl:weaken_2_std_A requires] ([@stop_split] [@expl:weaken_2_std 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:weaken_2_std 'a' type invariant] inv_A a)
+    /\ ([@stop_split] [@expl:weaken_2_std requires] precondition_F f a)}
     any
-    [ return (result: t_Output) -> {([@expl:weaken_2_std result type invariant] inv_Output result)
-      /\ ([@expl:weaken_2_std ensures] exists f2: t_F. postcondition_mut_F f a f2 result /\ resolve_F f2)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:weaken_2_std_A ensures] ([@stop_split] [@expl:weaken_2_std result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:weaken_2_std ensures] exists f2: t_F. postcondition_mut_F f a f2 result /\ resolve_F f2)}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -71,13 +74,16 @@ module M_weaken_std
   
   meta "select_lsinst" "all"
   
-  let rec weaken_std_A (f: t_F) (a: t_A) (return (x: t_Output)) = {([@expl:weaken_std 'f' type invariant] inv_F f)
-    /\ ([@expl:weaken_std 'a' type invariant] inv_A a) /\ ([@expl:weaken_std requires] precondition_F f a)}
+  let rec weaken_std_A (f: t_F) (a: t_A) (return (x: t_Output)) =
+    {[@stop_split] [@expl:weaken_std_A requires] ([@stop_split] [@expl:weaken_std 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:weaken_std 'a' type invariant] inv_A a)
+    /\ ([@stop_split] [@expl:weaken_std requires] precondition_F f a)}
     (! bb0
     [ bb0 = s0 [ s0 = weaken_2_std_A {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
-    [ return (result: t_Output) -> {([@expl:weaken_std result type invariant] inv_Output result)
-      /\ ([@expl:weaken_std ensures] postcondition_F f a result)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:weaken_std_A ensures] ([@stop_split] [@expl:weaken_std result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:weaken_std ensures] postcondition_F f a result)}
       (! return {result}) ]
 end
 module M_weaken_2_std
@@ -99,11 +105,14 @@ module M_weaken_2_std
   
   predicate postcondition_once_F (self: t_F) (args: t_A) (result: t_Output)
   
-  let rec weaken_3_std_A (f: t_F) (a: t_A) (return (x: t_Output)) = {([@expl:weaken_3_std 'f' type invariant] inv_F f)
-    /\ ([@expl:weaken_3_std 'a' type invariant] inv_A a) /\ ([@expl:weaken_3_std requires] precondition_F f a)}
+  let rec weaken_3_std_A (f: t_F) (a: t_A) (return (x: t_Output)) =
+    {[@stop_split] [@expl:weaken_3_std_A requires] ([@stop_split] [@expl:weaken_3_std 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:weaken_3_std 'a' type invariant] inv_A a)
+    /\ ([@stop_split] [@expl:weaken_3_std requires] precondition_F f a)}
     any
-    [ return (result: t_Output) -> {([@expl:weaken_3_std result type invariant] inv_Output result)
-      /\ ([@expl:weaken_3_std ensures] postcondition_once_F f a result)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:weaken_3_std_A ensures] ([@stop_split] [@expl:weaken_3_std result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:weaken_3_std ensures] postcondition_once_F f a result)}
       (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
@@ -136,13 +145,16 @@ module M_weaken_2_std
   
   meta "select_lsinst" "all"
   
-  let rec weaken_2_std_A (f: t_F) (a: t_A) (return (x: t_Output)) = {([@expl:weaken_2_std 'f' type invariant] inv_F f)
-    /\ ([@expl:weaken_2_std 'a' type invariant] inv_A a) /\ ([@expl:weaken_2_std requires] precondition_F f a)}
+  let rec weaken_2_std_A (f: t_F) (a: t_A) (return (x: t_Output)) =
+    {[@stop_split] [@expl:weaken_2_std_A requires] ([@stop_split] [@expl:weaken_2_std 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:weaken_2_std 'a' type invariant] inv_A a)
+    /\ ([@stop_split] [@expl:weaken_2_std requires] precondition_F f a)}
     (! bb0
     [ bb0 = s0 [ s0 = weaken_3_std_A {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
-    [ return (result: t_Output) -> {([@expl:weaken_2_std result type invariant] inv_Output result)
-      /\ ([@expl:weaken_2_std ensures] exists f2: t_F. postcondition_mut_F f a f2 result /\ resolve_F f2)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:weaken_2_std_A ensures] ([@stop_split] [@expl:weaken_2_std result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:weaken_2_std ensures] exists f2: t_F. postcondition_mut_F f a f2 result /\ resolve_F f2)}
       (! return {result}) ]
 end
 module M_weaken_3_std
@@ -165,24 +177,29 @@ module M_weaken_3_std
   predicate postcondition_once_F (self: t_F) (args: t_A) (result: t_Output)
   
   let rec call_once_F (self_: t_F) (arg: t_A) (return (x: t_Output)) =
-    {([@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@expl:call_once 'arg' type invariant] inv_A arg) /\ ([@expl:call_once requires] precondition_F self_ arg)}
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_A arg)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
     any
-    [ return (result: t_Output) -> {([@expl:call_once result type invariant] inv_Output result)
-      /\ ([@expl:call_once ensures] postcondition_once_F self_ arg result)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:call_once_F ensures] ([@stop_split] [@expl:call_once result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec weaken_3_std_A (f: t_F) (a: t_A) (return (x: t_Output)) = {([@expl:weaken_3_std 'f' type invariant] inv_F f)
-    /\ ([@expl:weaken_3_std 'a' type invariant] inv_A a) /\ ([@expl:weaken_3_std requires] precondition_F f a)}
+  let rec weaken_3_std_A (f: t_F) (a: t_A) (return (x: t_Output)) =
+    {[@stop_split] [@expl:weaken_3_std_A requires] ([@stop_split] [@expl:weaken_3_std 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:weaken_3_std 'a' type invariant] inv_A a)
+    /\ ([@stop_split] [@expl:weaken_3_std requires] precondition_F f a)}
     (! bb0
     [ bb0 = s0 [ s0 = call_once_F {f} {a} (fun (_x: t_Output) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Output = Any.any_l () | & f: t_F = f | & a: t_A = a ])
-    [ return (result: t_Output) -> {([@expl:weaken_3_std result type invariant] inv_Output result)
-      /\ ([@expl:weaken_3_std ensures] postcondition_once_F f a result)}
+    [ return (result: t_Output) ->
+    {[@stop_split] [@expl:weaken_3_std_A ensures] ([@stop_split] [@expl:weaken_3_std result type invariant] inv_Output result)
+      /\ ([@stop_split] [@expl:weaken_3_std ensures] postcondition_once_F f a result)}
       (! return {result}) ]
 end
 module M_fn_once_user
@@ -198,15 +215,19 @@ module M_fn_once_user
   predicate postcondition_once_F (self: t_F) (args: UInt64.t) (result: ())
   
   let rec call_once_F (self_: t_F) (arg: UInt64.t) (return (x: ())) =
-    {([@expl:call_once 'self_' type invariant] inv_F self_) /\ ([@expl:call_once requires] precondition_F self_ arg)}
-    any [ return (result: ()) -> {[@expl:call_once ensures] postcondition_once_F self_ arg result} (! return {result}) ]
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec fn_once_user_F (f: t_F) (return (x: ())) = {([@expl:fn_once_user 'f' type invariant] inv_F f)
-    /\ ([@expl:fn_once_user requires] precondition_F f (0: UInt64.t))}
+  let rec fn_once_user_F (f: t_F) (return (x: ())) =
+    {[@stop_split] [@expl:fn_once_user_F requires] ([@stop_split] [@expl:fn_once_user 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:fn_once_user requires] precondition_F f (0: UInt64.t))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- (0: UInt64.t) ] s1
@@ -230,7 +251,7 @@ module M_caller
   meta "rewrite_def" predicate precondition_closure0
   
   let rec fn_once_user_closure0 (f: ()) (return (x: ())) =
-    {[@expl:fn_once_user requires] precondition_closure0 f (0: UInt64.t)}
+    {[@stop_split] [@expl:fn_once_user requires] precondition_closure0 f (0: UInt64.t)}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000

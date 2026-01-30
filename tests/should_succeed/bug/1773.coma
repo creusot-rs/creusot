@@ -15,7 +15,8 @@ module M_impl_Tr_for_S__g (* <S as Tr<45>> *)
   use creusot.prelude.Any
   
   let rec len_usize (self_: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] Seq.length (Slice64.view self_) = UInt64.t'int result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
@@ -33,7 +34,8 @@ module M_impl_Tr_for_S__g (* <S as Tr<45>> *)
   
   meta "select_lsinst" "all"
   
-  let rec g_S (x: Slice64.array UInt64.t) (return (x'0: UInt64.t)) = {[@expl:g 'x' type invariant] inv_array_usize_45 x}
+  let rec g_S (x: Slice64.array UInt64.t) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:g 'x' type invariant] inv_array_usize_45 x}
     (! bb0
     [ bb0 = s0 [ s0 = len_usize {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & x: Slice64.array UInt64.t = x ])

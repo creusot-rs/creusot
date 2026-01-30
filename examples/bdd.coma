@@ -41,9 +41,10 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
     forall args: t_U, res: UInt64.t [postcondition_once_hash () args res]. postcondition_once_hash () args res
       -> (let self = args in UInt64.t'int res = hash_log_U (deep_model_ref_U self))
   
-  let rec hash_U (self: t_U) (return (x: UInt64.t)) = {[@expl:hash requires] precondition_hash () self}
+  let rec hash_U (self: t_U) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash () self}
     any
-    [ return (result: UInt64.t) -> {[@expl:hash ensures] postcondition_once_hash () self result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () self result}
+      (! return {result}) ]
   
   predicate inv_V (_1: t_V)
   
@@ -76,15 +77,18 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
     forall args: t_V, res: UInt64.t [postcondition_once_hash'0 () args res]. postcondition_once_hash'0 () args res
       -> (let self = args in UInt64.t'int res = hash_log_V (deep_model_ref_V self))
   
-  let rec hash_V (self: t_V) (return (x: UInt64.t)) = {[@expl:hash requires] precondition_hash'0 () self}
+  let rec hash_V (self: t_V) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash'0 () self}
     any
-    [ return (result: UInt64.t) -> {[@expl:hash ensures] postcondition_once_hash'0 () self result} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash'0 () self result}
+      (! return {result}) ]
   
   let rec wrapping_mul (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs}
+      (! return {result}) ]
   
   let rec wrapping_add (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:wrapping_add ensures] result = UInt64.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self_ rhs}
+      (! return {result}) ]
   
   predicate inv_tup2_U_V [@inline:trivial] (_1: tup2_U_V) = inv_U _1.f0 /\ inv_V _1.f1
   
@@ -120,7 +124,7 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   meta "select_lsinst" "all"
   
   let rec hash_tup2_U_V (self: tup2_U_V) (return (x: UInt64.t)) =
-    {[@expl:hash 'self' type invariant] inv_ref_tup2_U_V self}
+    {[@stop_split] [@expl:hash 'self' type invariant] inv_ref_tup2_U_V self}
     (! bb0
     [ bb0 = s0
       [ s0 = hash_U {self.f0} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s1)
@@ -133,7 +137,7 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
     | & _4: UInt64.t = Any.any_l ()
     | & _6: UInt64.t = Any.any_l ()
     | & _7: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@expl:hash ensures] UInt64.t'int result
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
       = hash_log_tup2_U_V (deep_model_ref_tup2_U_V self)}
       (! return {result}) ]
 end
@@ -162,7 +166,7 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
   
   let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim If] match _x with
         | If _ _ _ -> true
         | _ -> false
         end}
@@ -177,7 +181,8 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
   meta "rewrite_def" function view_Bdd
   
   let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:eq ensures] result = (view_Bdd self = view_Bdd o)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
+      (! return {result}) ]
   
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
@@ -245,7 +250,8 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
     | & _19: bool = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _25: bool = Any.any_l () ])
-    [ return (result: bool) -> {[@expl:eq ensures] result = (deep_model_ref_Node self = deep_model_ref_Node rhs)}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Node self = deep_model_ref_Node rhs)}
       (! return {result}) ]
 end
 module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
@@ -257,17 +263,17 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
   
   let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim If] match _x with
         | If _ _ _ -> true
         | _ -> false
         end}
       any) ]
   
   let rec clone_u64 (self_: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:clone ensures] result = self_} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
   
   let rec clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = any
-    [ return (result: t_Bdd) -> {[@expl:clone ensures] result = self} (! return {result}) ]
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
   type tup2_Node_Node = { f0'0: t_Node; f1'0: t_Node }
   
@@ -421,7 +427,7 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
     | & _13: t_Bdd = Any.any_l ()
     | & _14: t_Bdd = Any.any_l ()
     | & _16: t_Bdd = Any.any_l () ])
-    [ return (result: t_Node) -> {[@expl:clone ensures] match { f0'0 = self; f1'0 = result } with
+    [ return (result: t_Node) -> {[@stop_split] [@expl:clone ensures] match { f0'0 = self; f1'0 = result } with
         | {f0'0 = False'; f1'0 = False'} -> true
         | {f0'0 = True'; f1'0 = True'} -> true
         | {f0'0 = If v_1 childt_1 childf_1; f1'0 = If v_r childt_r childf_r} -> postcondition_clone () v_1 v_r
@@ -458,7 +464,7 @@ module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
   let rec clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Bdd = Any.any_l () | & self: t_Bdd = self ])
-    [ return (result: t_Bdd) -> {[@expl:clone ensures] result = self} (! return {result}) ]
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
 end
 module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
   use creusot.int.UInt64
@@ -471,17 +477,19 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
   
   let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim If] match _x with
         | If _ _ _ -> true
         | _ -> false
         end}
       any) ]
   
   let rec wrapping_mul (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs}
+      (! return {result}) ]
   
   let rec wrapping_add (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:wrapping_add ensures] result = UInt64.add self_ rhs} (! return {result}) ]
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self_ rhs}
+      (! return {result}) ]
   
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
@@ -532,7 +540,8 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
     | & _8: UInt64.t = Any.any_l ()
     | & _10: UInt64.t = Any.any_l ()
     | & _12: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@expl:hash ensures] UInt64.t'int result = hash_log_Node (view_Node self)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
+      = hash_log_Node (view_Node self)}
       (! return {result}) ]
 end
 module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
@@ -561,7 +570,8 @@ module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
   let rec hash_Bdd (self: t_Bdd) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.f1 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & self: t_Bdd = self ])
-    [ return (result: UInt64.t) -> {[@expl:hash ensures] UInt64.t'int result = hash_log_Bdd (view_Bdd self)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
+      = hash_log_Bdd (view_Bdd self)}
       (! return {result}) ]
 end
 module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
@@ -586,7 +596,8 @@ module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
   let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.f1 = o.f1 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: t_Bdd = self | & o: t_Bdd = o ])
-    [ return (result: bool) -> {[@expl:eq ensures] result = (view_Bdd self = view_Bdd o)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
+      (! return {result}) ]
 end
 module M_impl_Bdd__size (* Bdd<'arena> *)
   use creusot.int.UInt64
@@ -604,11 +615,11 @@ module M_impl_Bdd__size (* Bdd<'arena> *)
   function size (self: t_Bdd) : int
   
   goal vc_size: match self with
-      | {f0 = True'; f1 = _} -> [@expl:size ensures] 0 >= 0
-      | {f0 = False'; f1 = _} -> [@expl:size ensures] 0 >= 0
-      | {f0 = If _ childt childf; f1 = _} -> ([@expl:size ensures] size childt >= 0)
-      -> (let ht = size childt in ([@expl:size ensures] size childf >= 0)
-      -> (let hf = size childf in [@expl:size ensures] 1 + ht + hf >= 0))
+      | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
+      | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
+      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] size childt >= 0)
+      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] size childf >= 0)
+      -> (let hf = size childf in [@stop_split] [@expl:size ensures] 1 + ht + hf >= 0))
       end
 end
 module M_impl_Context__grows_is_valid_bdd (* Context<'arena> *)
@@ -723,7 +734,7 @@ module M_impl_Context__grows_is_valid_bdd (* Context<'arena> *)
   function grows_is_valid_bdd (self: MutBorrow.t t_Context) (b: t_Bdd) : ()
   
   goal vc_grows_is_valid_bdd: grows self
-    -> is_valid_bdd self.current b -> ([@expl:grows_is_valid_bdd ensures] is_valid_bdd self.final b)
+    -> is_valid_bdd self.current b -> ([@stop_split] [@expl:grows_is_valid_bdd ensures] is_valid_bdd self.final b)
 end
 module M_impl_Context__grows_trans (* Context<'arena> *)
   use creusot.prelude.MutBorrow
@@ -828,7 +839,7 @@ module M_impl_Context__grows_trans (* Context<'arena> *)
   goal vc_grows_trans: grows self
     -> grows o
     -> self.final = o.current
-    -> self.current = oo.current /\ self.final = oo.final -> ([@expl:grows_trans ensures] grows oo)
+    -> self.current = oo.current /\ self.final = oo.final -> ([@stop_split] [@expl:grows_trans ensures] grows oo)
 end
 module M_impl_Context__set_irrelevent_var (* Context<'arena> *)
   use creusot.int.UInt64
@@ -1004,17 +1015,17 @@ module M_impl_Context__set_irrelevent_var (* Context<'arena> *)
     -> is_valid_bdd self a
     -> UInt64.t'int x < leastvar a
     -> match a with
-      | {f0 = If _ childt childf; f1 = _} -> (([@expl:set_irrelevent_var requires #0] inv_Context self)
-        /\ ([@expl:set_irrelevent_var requires #1] is_valid_bdd self childt)
-        /\ ([@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childt))
-      /\ (([@expl:set_irrelevent_var ensures] interp childt v = interp childt (Map.set v x b))
-      -> (let _ = set_irrelevent_var self childt x v b in (([@expl:set_irrelevent_var requires #0] inv_Context self)
-        /\ ([@expl:set_irrelevent_var requires #1] is_valid_bdd self childf)
-        /\ ([@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childf))
-      /\ (([@expl:set_irrelevent_var ensures] interp childf v = interp childf (Map.set v x b))
-      -> (let _ = set_irrelevent_var self childf x v b in [@expl:set_irrelevent_var ensures] interp a v
+      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:set_irrelevent_var requires] ([@stop_split] [@expl:set_irrelevent_var requires #0] inv_Context self)
+        /\ ([@stop_split] [@expl:set_irrelevent_var requires #1] is_valid_bdd self childt)
+        /\ ([@stop_split] [@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childt))
+      /\ (([@stop_split] [@expl:set_irrelevent_var ensures] interp childt v = interp childt (Map.set v x b))
+      -> (let _ = set_irrelevent_var self childt x v b in ([@stop_split] [@expl:set_irrelevent_var requires] ([@stop_split] [@expl:set_irrelevent_var requires #0] inv_Context self)
+        /\ ([@stop_split] [@expl:set_irrelevent_var requires #1] is_valid_bdd self childf)
+        /\ ([@stop_split] [@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childf))
+      /\ (([@stop_split] [@expl:set_irrelevent_var ensures] interp childf v = interp childf (Map.set v x b))
+      -> (let _ = set_irrelevent_var self childf x v b in [@stop_split] [@expl:set_irrelevent_var ensures] interp a v
       = interp a (Map.set v x b)))))
-      | _ -> [@expl:set_irrelevent_var ensures] interp a v = interp a (Map.set v x b)
+      | _ -> [@stop_split] [@expl:set_irrelevent_var ensures] interp a v = interp a (Map.set v x b)
       end
 end
 module M_impl_Context__discr_valuation (* Context<'arena> *)
@@ -1213,81 +1224,87 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
     -> (if leastvar a < leastvar b then
       match a with
         | {f0 = If v childt childf; f1 = _} -> if childf <> b then
-          ((([@expl:discr_valuation requires #0] inv_Context self)
-              /\ ([@expl:discr_valuation requires #1] is_valid_bdd self childf)
-              /\ ([@expl:discr_valuation requires #2] is_valid_bdd self b)
-              /\ ([@expl:discr_valuation requires #3] childf <> b))
-            /\ well_founded_relation_Int (size a + size b) (size childf + size b))
-          /\ (([@expl:discr_valuation ensures] interp childf (discr_valuation self childf b)
+          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childf)
+              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+              /\ ([@stop_split] [@expl:discr_valuation requires #3] childf <> b))
+            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childf + size b)))
+          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childf (discr_valuation self childf b)
             <> interp b (discr_valuation self childf b))
-          -> (let result = Map.set (discr_valuation self childf b) v false in [@expl:discr_valuation ensures] interp a result
+          -> (let result = Map.set (discr_valuation self childf b) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
           <> interp b result))
         else
-          ((([@expl:discr_valuation requires #0] inv_Context self)
-              /\ ([@expl:discr_valuation requires #1] is_valid_bdd self childt)
-              /\ ([@expl:discr_valuation requires #2] is_valid_bdd self b)
-              /\ ([@expl:discr_valuation requires #3] childt <> b))
-            /\ well_founded_relation_Int (size a + size b) (size childt + size b))
-          /\ (([@expl:discr_valuation ensures] interp childt (discr_valuation self childt b)
+          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childt)
+              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+              /\ ([@stop_split] [@expl:discr_valuation requires #3] childt <> b))
+            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childt + size b)))
+          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childt (discr_valuation self childt b)
             <> interp b (discr_valuation self childt b))
-          -> (let result = Map.set (discr_valuation self childt b) v true in [@expl:discr_valuation ensures] interp a result
+          -> (let result = Map.set (discr_valuation self childt b) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
           <> interp b result))
         
-        | _ -> let result = Const.const true in [@expl:discr_valuation ensures] interp a result <> interp b result
+        | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+        <> interp b result
         end
     else
       if leastvar a > leastvar b then
         match b with
           | {f0 = If v childt childf; f1 = _} -> if childf <> a then
-            ((([@expl:discr_valuation requires #0] inv_Context self)
-                /\ ([@expl:discr_valuation requires #1] is_valid_bdd self a)
-                /\ ([@expl:discr_valuation requires #2] is_valid_bdd self childf)
-                /\ ([@expl:discr_valuation requires #3] a <> childf))
-              /\ well_founded_relation_Int (size a + size b) (size a + size childf))
-            /\ (([@expl:discr_valuation ensures] interp a (discr_valuation self a childf)
+            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childf)
+                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childf))
+              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childf)))
+            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childf)
               <> interp childf (discr_valuation self a childf))
-            -> (let result = Map.set (discr_valuation self a childf) v false in [@expl:discr_valuation ensures] interp a result
+            -> (let result = Map.set (discr_valuation self a childf) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
             <> interp b result))
           else
-            ((([@expl:discr_valuation requires #0] inv_Context self)
-                /\ ([@expl:discr_valuation requires #1] is_valid_bdd self a)
-                /\ ([@expl:discr_valuation requires #2] is_valid_bdd self childt)
-                /\ ([@expl:discr_valuation requires #3] a <> childt))
-              /\ well_founded_relation_Int (size a + size b) (size a + size childt))
-            /\ (([@expl:discr_valuation ensures] interp a (discr_valuation self a childt)
+            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childt)
+                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childt))
+              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childt)))
+            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childt)
               <> interp childt (discr_valuation self a childt))
-            -> (let result = Map.set (discr_valuation self a childt) v true in [@expl:discr_valuation ensures] interp a result
+            -> (let result = Map.set (discr_valuation self a childt) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
             <> interp b result))
           
-          | _ -> let result = Const.const true in [@expl:discr_valuation ensures] interp a result <> interp b result
+          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result
           end
       else
         match a with
           | {f0 = If v childta childfa; f1 = _} -> match b with
             | {f0 = If _ childtb childfb; f1 = _} -> if childfa <> childfb then
-              ((([@expl:discr_valuation requires #0] inv_Context self)
-                  /\ ([@expl:discr_valuation requires #1] is_valid_bdd self childfa)
-                  /\ ([@expl:discr_valuation requires #2] is_valid_bdd self childfb)
-                  /\ ([@expl:discr_valuation requires #3] childfa <> childfb))
-                /\ well_founded_relation_Int (size a + size b) (size childfa + size childfb))
-              /\ (([@expl:discr_valuation ensures] interp childfa (discr_valuation self childfa childfb)
+              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childfa)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childfb)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childfa <> childfb))
+                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childfa
+                + size childfb)))
+              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childfa (discr_valuation self childfa childfb)
                 <> interp childfb (discr_valuation self childfa childfb))
-              -> (let result = Map.set (discr_valuation self childfa childfb) v false in [@expl:discr_valuation ensures] interp a result
+              -> (let result = Map.set (discr_valuation self childfa childfb) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
               <> interp b result))
             else
-              ((([@expl:discr_valuation requires #0] inv_Context self)
-                  /\ ([@expl:discr_valuation requires #1] is_valid_bdd self childta)
-                  /\ ([@expl:discr_valuation requires #2] is_valid_bdd self childtb)
-                  /\ ([@expl:discr_valuation requires #3] childta <> childtb))
-                /\ well_founded_relation_Int (size a + size b) (size childta + size childtb))
-              /\ (([@expl:discr_valuation ensures] interp childta (discr_valuation self childta childtb)
+              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childta)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childtb)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childta <> childtb))
+                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childta
+                + size childtb)))
+              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childta (discr_valuation self childta childtb)
                 <> interp childtb (discr_valuation self childta childtb))
-              -> (let result = Map.set (discr_valuation self childta childtb) v true in [@expl:discr_valuation ensures] interp a result
+              -> (let result = Map.set (discr_valuation self childta childtb) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
               <> interp b result))
             
-            | _ -> let result = Const.const true in [@expl:discr_valuation ensures] interp a result <> interp b result
+            | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+            <> interp b result
             end
-          | _ -> let result = Const.const true in [@expl:discr_valuation ensures] interp a result <> interp b result
+          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result
           end
     
     )
@@ -1515,7 +1532,7 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
   goal vc_bdd_canonical: inv_Context self
     -> is_valid_bdd self a
     -> is_valid_bdd self b
-    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v) -> ([@expl:bdd_canonical ensures] a = b)
+    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v) -> ([@stop_split] [@expl:bdd_canonical ensures] a = b)
 end
 module M_impl_Context_0__new (* Context<'arena> *)
   use creusot.int.UInt64
@@ -1536,7 +1553,8 @@ module M_impl_Context_0__new (* Context<'arena> *)
   function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
   
   let rec new_Node (return (x: t_MyHashMap_Node_Bdd)) = any
-    [ return (result: t_MyHashMap_Node_Bdd) -> {[@expl:new ensures] view_MyHashMap_Node_Bdd result = Const.const (None)}
+    [ return (result: t_MyHashMap_Node_Bdd) -> {[@stop_split] [@expl:new ensures] view_MyHashMap_Node_Bdd result
+      = Const.const (None)}
       (! return {result}) ]
   
   type t_MyHashMap_Bdd_Bdd
@@ -1544,7 +1562,8 @@ module M_impl_Context_0__new (* Context<'arena> *)
   function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
   
   let rec new_Bdd (return (x: t_MyHashMap_Bdd_Bdd)) = any
-    [ return (result: t_MyHashMap_Bdd_Bdd) -> {[@expl:new ensures] view_MyHashMap_Bdd_Bdd result = Const.const (None)}
+    [ return (result: t_MyHashMap_Bdd_Bdd) -> {[@stop_split] [@expl:new ensures] view_MyHashMap_Bdd_Bdd result
+      = Const.const (None)}
       (! return {result}) ]
   
   type t_MyHashMap_tup2_Bdd_Bdd_Bdd
@@ -1554,14 +1573,15 @@ module M_impl_Context_0__new (* Context<'arena> *)
   function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
   
   let rec new_tup2_Bdd_Bdd (return (x: t_MyHashMap_tup2_Bdd_Bdd_Bdd)) = any
-    [ return (result: t_MyHashMap_tup2_Bdd_Bdd_Bdd) -> {[@expl:new ensures] view_MyHashMap_tup2_Bdd_Bdd_Bdd result
-      = Const.const (None)}
+    [ return (result: t_MyHashMap_tup2_Bdd_Bdd_Bdd) ->
+    {[@stop_split] [@expl:new ensures] view_MyHashMap_tup2_Bdd_Bdd_Bdd result = Const.const (None)}
       (! return {result}) ]
   
   type t_PeanoInt = { f0'1: UInt64.t }
   
   let rec new (return (x: t_PeanoInt)) = any
-    [ return (result: t_PeanoInt) -> {[@expl:new ensures] result.f0'1 = (0: UInt64.t)} (! return {result}) ]
+    [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:new ensures] result.f0'1 = (0: UInt64.t)}
+      (! return {result}) ]
   
   type t_Bump
   
@@ -1712,7 +1732,8 @@ module M_impl_Context_0__new (* Context<'arena> *)
     | & _6: t_MyHashMap_Bdd_Bdd = Any.any_l ()
     | & _7: t_MyHashMap_tup2_Bdd_Bdd_Bdd = Any.any_l ()
     | & _8: t_PeanoInt = Any.any_l () ])
-    [ return (result: t_Context) -> {[@expl:new result type invariant] inv_Context result} (! return {result}) ]
+    [ return (result: t_Context) -> {[@stop_split] [@expl:new result type invariant] inv_Context result}
+      (! return {result}) ]
 end
 module M_impl_Context_0__hashcons (* Context<'arena> *)
   use creusot.int.UInt64
@@ -1761,26 +1782,29 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   meta "rewrite_def" function deep_model_ref_Node
   
   let rec get_Node (self: t_MyHashMap_Node_Bdd) (key: t_Node) (return (x: t_Option_ref_Bdd)) = any
-    [ return (result: t_Option_ref_Bdd) -> {[@expl:get ensures] match result with
+    [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = Some'0 v
         | None -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = None'0
         end}
       (! return {result}) ]
   
   let rec alloc_Node (self: t_Bump) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
-    [ return (result: MutBorrow.t t_Node) -> {[@expl:alloc ensures] result.current = val'} (! return {result}) ]
+    [ return (result: MutBorrow.t t_Node) -> {[@stop_split] [@expl:alloc ensures] result.current = val'}
+      (! return {result}) ]
   
   predicate resolve_refmut_Node [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Node
   
   let rec add_Node (self: MutBorrow.t t_MyHashMap_Node_Bdd) (key: t_Node) (val': t_Bdd) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:add ensures] forall i: t_NodeLog. Map.get (view_MyHashMap_Node_Bdd self.final) i
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:add ensures] forall i: t_NodeLog. Map.get (view_MyHashMap_Node_Bdd self.final) i
         = (if i = deep_model_Node key then Some'0 val' else Map.get (view_MyHashMap_Node_Bdd self.current) i)}
       (! return {result}) ]
   
   let rec incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
-    [ return (result: t_PeanoInt) -> {[@expl:incr ensures] UInt64.t'int result.f0'0 = UInt64.t'int self.f0'0 + 1}
+    [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:incr ensures] UInt64.t'int result.f0'0
+      = UInt64.t'int self.f0'0 + 1}
       (! return {result}) ]
   
   function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
@@ -1914,7 +1938,7 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   
   let rec elim_Some (_x: t_Option_ref_Bdd) (return (f0'2: t_Bdd)) = any
     [ _k (f0'2: t_Bdd) -> {Some f0'2 = _x} (! return {f0'2})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -1932,8 +1956,8 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {([@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:hashcons requires] is_valid_node self.current n)}
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_16 <- n ] s1
@@ -1975,8 +1999,10 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
     | & _30: () = Any.any_l ()
     | & _31: MutBorrow.t t_MyHashMap_Node_Bdd = Any.any_l ()
     | & _39: t_PeanoInt = Any.any_l () ])
-    [ return (result: t_Bdd) -> {([@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@expl:hashcons ensures #1] grows self) /\ ([@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__node (* Context<'arena> *)
@@ -1998,7 +2024,8 @@ module M_impl_Context_0__node (* Context<'arena> *)
   meta "rewrite_def" function view_Bdd
   
   let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
-    [ return (result: bool) -> {[@expl:eq ensures] result = (view_Bdd self = view_Bdd o)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
+      (! return {result}) ]
   
   type t_Bump
   
@@ -2167,11 +2194,13 @@ module M_impl_Context_0__node (* Context<'arena> *)
         end)
   
   let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {([@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:hashcons requires] is_valid_node self.current n)}
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
-    [ return (result: t_Bdd) -> {([@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@expl:hashcons ensures #1] grows self) /\ ([@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2179,10 +2208,10 @@ module M_impl_Context_0__node (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
-    {([@expl:node 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:node requires #0] is_valid_bdd self.current childt)
-    /\ ([@expl:node requires #1] is_valid_bdd self.current childf)
-    /\ ([@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
+    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
+    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
+    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
     (! bb0
     [ bb0 = s0
       [ s0 = eq_Bdd {childt} {childf} (fun (_x: bool) -> [ &_26 <- _x ] s1)
@@ -2197,7 +2226,8 @@ module M_impl_Context_0__node (* Context<'arena> *)
       | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_30 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = hashcons'0 {_30} {_31} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
@@ -2210,11 +2240,11 @@ module M_impl_Context_0__node (* Context<'arena> *)
     | & _26: bool = Any.any_l ()
     | & _30: MutBorrow.t t_Context = Any.any_l ()
     | & _31: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) -> {([@expl:node ensures #0] grows self)
-      /\ ([@expl:node ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
+      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
           = (if Map.get v x then interp childt v else interp childf v))
-      /\ ([@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
+      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__true (* Context<'arena> *)
@@ -2390,11 +2420,13 @@ module M_impl_Context_0__true (* Context<'arena> *)
         end)
   
   let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {([@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:hashcons requires] is_valid_node self.current n)}
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
-    [ return (result: t_Bdd) -> {([@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@expl:hashcons ensures #1] grows self) /\ ([@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
       (! return {result}) ]
   
   predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
@@ -2406,14 +2438,15 @@ module M_impl_Context_0__true (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:true_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_9 <- True' ] s1
       | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_8 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
@@ -2422,10 +2455,10 @@ module M_impl_Context_0__true (* Context<'arena> *)
     | & self: MutBorrow.t t_Context = self
     | & _8: MutBorrow.t t_Context = Any.any_l ()
     | & _9: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) -> {([@expl:true_ ensures #0] grows self)
-      /\ ([@expl:true_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
-      /\ ([@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:true_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
+      /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__false (* Context<'arena> *)
@@ -2601,11 +2634,13 @@ module M_impl_Context_0__false (* Context<'arena> *)
         end)
   
   let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {([@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:hashcons requires] is_valid_node self.current n)}
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
-    [ return (result: t_Bdd) -> {([@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@expl:hashcons ensures #1] grows self) /\ ([@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
       (! return {result}) ]
   
   predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
@@ -2617,14 +2652,15 @@ module M_impl_Context_0__false (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:false_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_9 <- False' ] s1
       | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_8 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
@@ -2633,10 +2669,11 @@ module M_impl_Context_0__false (* Context<'arena> *)
     | & self: MutBorrow.t t_Context = self
     | & _8: MutBorrow.t t_Context = Any.any_l ()
     | & _9: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) -> {([@expl:false_ ensures #0] grows self)
-      /\ ([@expl:false_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
-      /\ ([@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
+      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__v (* Context<'arena> *)
@@ -2812,34 +2849,35 @@ module M_impl_Context_0__v (* Context<'arena> *)
         end)
   
   let rec true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:true_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     any
-    [ return (result: t_Bdd) -> {([@expl:true_ ensures #0] grows self)
-      /\ ([@expl:true_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
-      /\ ([@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:true_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
+      /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
   let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:false_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
-    [ return (result: t_Bdd) -> {([@expl:false_ ensures #0] grows self)
-      /\ ([@expl:false_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
-      /\ ([@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
+      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
   let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
-    {([@expl:node 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:node requires #0] is_valid_bdd self.current childt)
-    /\ ([@expl:node requires #1] is_valid_bdd self.current childf)
-    /\ ([@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
+    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
+    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
+    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
     any
-    [ return (result: t_Bdd) -> {([@expl:node ensures #0] grows self)
-      /\ ([@expl:node ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
+      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
           = (if Map.get v x then interp childt v else interp childf v))
-      /\ ([@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
+      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
   
   predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
@@ -2851,23 +2889,26 @@ module M_impl_Context_0__v (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec v (self: MutBorrow.t t_Context) (x: UInt64.t) (return (x'0: t_Bdd)) =
-    {[@expl:v 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:v 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_10 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s1 = true_ {_10} (fun (_x: t_Bdd) -> [ &t <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_12 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s3) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s3 = false_ {_12} (fun (_x: t_Bdd) -> [ &f <- _x ] s4)
       | s4 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_13 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s5) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s5 = node {_13} {x} {t} {f} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s6)
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s7 = -{resolve_refmut_Context self}- s8
@@ -2880,9 +2921,9 @@ module M_impl_Context_0__v (* Context<'arena> *)
     | & f: t_Bdd = Any.any_l ()
     | & _12: MutBorrow.t t_Context = Any.any_l ()
     | & _13: MutBorrow.t t_Context = Any.any_l () ])
-    [ return (result: t_Bdd) -> {([@expl:v ensures #0] grows self)
-      /\ ([@expl:v ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:v ensures #2] forall v'0: Map.map UInt64.t bool. interp result v'0 = Map.get v'0 x)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:v ensures] ([@stop_split] [@expl:v ensures #0] grows self)
+      /\ ([@stop_split] [@expl:v ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:v ensures #2] forall v'0: Map.map UInt64.t bool. interp result v'0 = Map.get v'0 x)}
       (! return {result}) ]
 end
 module M_impl_Context_0__not (* Context<'arena> *)
@@ -2928,7 +2969,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
   meta "rewrite_def" function deep_model_ref_Bdd
   
   let rec get_Bdd (self: t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (return (x: t_Option_ref_Bdd)) = any
-    [ return (result: t_Option_ref_Bdd) -> {[@expl:get ensures] match result with
+    [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_Bdd_Bdd self) (deep_model_ref_Bdd key) = Some'0 v
         | None -> Map.get (view_MyHashMap_Bdd_Bdd self) (deep_model_ref_Bdd key) = None'0
         end}
@@ -2936,7 +2977,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
   
   let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim If] match _x with
         | If _ _ _ -> true
         | _ -> false
         end}
@@ -3083,38 +3124,40 @@ module M_impl_Context_0__not (* Context<'arena> *)
         end)
   
   let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
-    {([@expl:node 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:node requires #0] is_valid_bdd self.current childt)
-    /\ ([@expl:node requires #1] is_valid_bdd self.current childf)
-    /\ ([@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
+    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
+    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
+    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
     any
-    [ return (result: t_Bdd) -> {([@expl:node ensures #0] grows self)
-      /\ ([@expl:node ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
+      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
           = (if Map.get v x then interp childt v else interp childf v))
-      /\ ([@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
+      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
   
   let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:false_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
-    [ return (result: t_Bdd) -> {([@expl:false_ ensures #0] grows self)
-      /\ ([@expl:false_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
-      /\ ([@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
+      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
   let rec true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:true_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     any
-    [ return (result: t_Bdd) -> {([@expl:true_ ensures #0] grows self)
-      /\ ([@expl:true_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
-      /\ ([@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:true_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
+      /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
   let rec add_Bdd (self: MutBorrow.t t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (val': t_Bdd) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:add ensures] forall i: UInt64.t. Map.get (view_MyHashMap_Bdd_Bdd self.final) i
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:add ensures] forall i: UInt64.t. Map.get (view_MyHashMap_Bdd_Bdd self.final) i
         = (if i = deep_model_Bdd key then Some'0 val' else Map.get (view_MyHashMap_Bdd_Bdd self.current) i)}
       (! return {result}) ]
   
@@ -3124,7 +3167,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
   
   let rec elim_Some (_x: t_Option_ref_Bdd) (return (f0'2: t_Bdd)) = any
     [ _k (f0'2: t_Bdd) -> {Some f0'2 = _x} (! return {f0'2})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -3147,7 +3190,8 @@ module M_impl_Context_0__not (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec not' (self: MutBorrow.t t_Context) (x: t_Bdd) (return (x'0: t_Bdd)) =
-    {([@expl:not 'self' type invariant] inv_refmut_Context self) /\ ([@expl:not requires] is_valid_bdd self.current x)}
+    {[@stop_split] [@expl:not requires] ([@stop_split] [@expl:not 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:not requires] is_valid_bdd self.current x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_20 <- x ] s1
@@ -3164,31 +3208,36 @@ module M_impl_Context_0__not (* Context<'arena> *)
       | s3 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_32 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s4) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s4 = not' {_32} {childt} (fun (_x: t_Bdd) -> [ &childt'0 <- _x ] s5)
       | s5 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_35 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s6) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s6 = not' {_35} {childf} (fun (_x: t_Bdd) -> [ &childf'0 <- _x ] s7)
       | s7 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_37 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s8) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s8)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s8 = node {_37} {v} {childt'0} {childf'0} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s9)
       | s9 = bb16 ]
     | bb10 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_26 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s1 = false_ {_26} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb16 ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_27 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s1 = true_ {_27} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb16 ]
     | bb16 = s0
@@ -3229,10 +3278,10 @@ module M_impl_Context_0__not (* Context<'arena> *)
     [ not' (self: MutBorrow.t t_Context) (x: t_Bdd) (_k (_ret: t_Bdd)) ->
     {[@expl:function variant] well_founded_relation_Int function_variant (size x)}
       not' {self} {x} (_k) ] [ function_variant: int = size x ])
-    [ return (result: t_Bdd) -> {([@expl:not ensures #0] grows self)
-      /\ ([@expl:not ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:not ensures #2] forall v: Map.map UInt64.t bool. interp result v = (not interp x v))
-      /\ ([@expl:not ensures #3] leastvar x <= leastvar result)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:not ensures] ([@stop_split] [@expl:not ensures #0] grows self)
+      /\ ([@stop_split] [@expl:not ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:not ensures #2] forall v: Map.map UInt64.t bool. interp result v = (not interp x v))
+      /\ ([@stop_split] [@expl:not ensures #3] leastvar x <= leastvar result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__and (* Context<'arena> *)
@@ -3288,7 +3337,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   meta "rewrite_def" function deep_model_ref_tup2_Bdd_Bdd
   
   let rec get_tup2_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (return (x: t_Option_ref_Bdd)) = any
-    [ return (result: t_Option_ref_Bdd) -> {[@expl:get ensures] match result with
+    [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self) (deep_model_ref_tup2_Bdd_Bdd key) = Some'0 v
         | None -> Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self) (deep_model_ref_tup2_Bdd_Bdd key) = None'0
         end}
@@ -3433,7 +3482,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   
   let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
     [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim If] match _x with
         | If _ _ _ -> true
         | _ -> false
         end}
@@ -3487,7 +3536,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   meta "rewrite_def" function deep_model_u64
   
   let rec cmp_u64 (self_: UInt64.t) (rhs: UInt64.t) (return (x: t_Ordering)) = any
-    [ return (result: t_Ordering) -> {[@expl:cmp ensures] result
+    [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result
       = cmp_log_Int (deep_model_u64 self_) (deep_model_u64 rhs)}
       (! return {result}) ]
   
@@ -3499,31 +3548,32 @@ module M_impl_Context_0__and (* Context<'arena> *)
         end)
   
   let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
-    {([@expl:node 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:node requires #0] is_valid_bdd self.current childt)
-    /\ ([@expl:node requires #1] is_valid_bdd self.current childf)
-    /\ ([@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
+    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
+    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
+    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
     any
-    [ return (result: t_Bdd) -> {([@expl:node ensures #0] grows self)
-      /\ ([@expl:node ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
+      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
           = (if Map.get v x then interp childt v else interp childf v))
-      /\ ([@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
+      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
   
   let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@expl:false_ 'self' type invariant] inv_refmut_Context self}
+    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
-    [ return (result: t_Bdd) -> {([@expl:false_ ensures #0] grows self)
-      /\ ([@expl:false_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
-      /\ ([@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
+      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
   let rec add_tup2_Bdd_Bdd (self: MutBorrow.t t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (val': t_Bdd)
     (return (x: ())) = any
     [ return (result: ()) ->
-    {[@expl:add ensures] forall i: tup2_u64_u64. Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.final) i
+    {[@stop_split] [@expl:add ensures] forall i: tup2_u64_u64. Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.final) i
         = (if i = deep_model_tup2_Bdd_Bdd key then
           Some'0 val'
         else
@@ -3533,7 +3583,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   
   let rec elim_Some (_x: t_Option_ref_Bdd) (return (f0'4: t_Bdd)) = any
     [ _k (f0'4: t_Bdd) -> {Some f0'4 = _x} (! return {f0'4})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -3556,8 +3606,9 @@ module M_impl_Context_0__and (* Context<'arena> *)
   meta "select_lsinst" "all"
   
   let rec and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (return (x: t_Bdd)) =
-    {([@expl:and 'self' type invariant] inv_refmut_Context self)
-    /\ ([@expl:and requires #0] is_valid_bdd self.current a) /\ ([@expl:and requires #1] is_valid_bdd self.current b)}
+    {[@stop_split] [@expl:and requires] ([@stop_split] [@expl:and 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:and requires #0] is_valid_bdd self.current a)
+    /\ ([@stop_split] [@expl:and requires #1] is_valid_bdd self.current b)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_28 <- { f0'0 = a; f1'0 = b } ] s1
@@ -3605,13 +3656,15 @@ module M_impl_Context_0__and (* Context<'arena> *)
       | s1 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_61 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = and {_61} {a} {childtb} (fun (_x: t_Bdd) -> [ &_60 <- _x ] s3)
       | s3 = [ &childt <- _60 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_65 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s5) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s5 = and {_65} {a} {childfb} (fun (_x: t_Bdd) -> [ &_64 <- _x ] s6)
       | s6 = [ &childf <- _64 ] s7
       | s7 = bb31 ]
@@ -3620,13 +3673,15 @@ module M_impl_Context_0__and (* Context<'arena> *)
       | s1 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_79 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = and {_79} {childta} {childtb} (fun (_x: t_Bdd) -> [ &_78 <- _x ] s3)
       | s3 = [ &childt <- _78 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_83 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s5) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s5 = and {_83} {childfa} {childfb} (fun (_x: t_Bdd) -> [ &_82 <- _x ] s6)
       | s6 = [ &childf <- _82 ] s7
       | s7 = bb31 ]
@@ -3635,13 +3690,15 @@ module M_impl_Context_0__and (* Context<'arena> *)
       | s1 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_70 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s2 = and {_70} {childta} {b} (fun (_x: t_Bdd) -> [ &_69 <- _x ] s3)
       | s3 = [ &childt <- _69 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_74 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s5) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s5 = and {_74} {childfa} {b} (fun (_x: t_Bdd) -> [ &_73 <- _x ] s6)
       | s6 = [ &childf <- _73 ] s7
       | s7 = bb31 ]
@@ -3649,14 +3706,16 @@ module M_impl_Context_0__and (* Context<'arena> *)
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_86 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s1 = node {_86} {v} {childt} {childf} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb33 ]
     | bb14 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_43 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1) [ _ck -> (! {inv_Context self.current} any) ]
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
       | s1 = false_ {_43} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb33 ]
     | bb15 = s0 [ s0 = [ &r'0 <- a ] s1 | s1 = bb33 ]
@@ -3719,10 +3778,11 @@ module M_impl_Context_0__and (* Context<'arena> *)
     [ and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (_k (_ret: t_Bdd)) ->
     {[@expl:function variant] well_founded_relation_Int function_variant (size a + size b)}
       and {self} {a} {b} (_k) ] [ function_variant: int = size a + size b ])
-    [ return (result: t_Bdd) -> {([@expl:and ensures #0] grows self)
-      /\ ([@expl:and ensures #1] is_valid_bdd self.final result)
-      /\ ([@expl:and ensures #2] forall v: Map.map UInt64.t bool. interp result v = (interp a v /\ interp b v))
-      /\ ([@expl:and ensures #3] leastvar a <= leastvar result \/ leastvar b <= leastvar result)}
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:and ensures] ([@stop_split] [@expl:and ensures #0] grows self)
+      /\ ([@stop_split] [@expl:and ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:and ensures #2] forall v: Map.map UInt64.t bool. interp result v
+          = (interp a v /\ interp b v))
+      /\ ([@stop_split] [@expl:and ensures #3] leastvar a <= leastvar result \/ leastvar b <= leastvar result)}
       (! return {result}) ]
 end
 module M_hashmap__impl_Hash_for_tup2_U_V__hash__refines (* <(U, V) as hashmap::Hash> *)

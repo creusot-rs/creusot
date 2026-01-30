@@ -218,7 +218,7 @@ module M_foog
   use creusot.prelude.Any
   
   let rec new_i32 (x: Int32.t) (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type tup2_i32_Ghost_i32 = { f0: Int32.t; f1: Int32.t }
   
@@ -352,11 +352,12 @@ module M_test_ptr2
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_T
   
   let rec as_ref_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
-    {([@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_T own)
-    /\ ([@expl:as_ref requires] ptr = ward_ptr_T own)}
+    {[@stop_split] [@expl:as_ref_T requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_T own)
+    /\ ([@stop_split] [@expl:as_ref requires] ptr = ward_ptr_T own)}
     any
-    [ return (result: t_T) -> {([@expl:as_ref result type invariant] inv_ref_T result)
-      /\ ([@expl:as_ref ensures] result = val_ptr_T own)}
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:as_ref_T ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:as_ref ensures] result = val_ptr_T own)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -364,12 +365,14 @@ module M_test_ptr2
   meta "select_lsinst" "all"
   
   let rec test_ptr2_T (x: Opaque.ptr) (own: t_Perm_ptr_T) (return (x'0: t_T)) =
-    {([@expl:test_ptr2 'own' type invariant] inv_Ghost_ref_Perm_ptr_T own) /\ ([@expl:test_ptr2 requires] false)}
+    {[@stop_split] [@expl:test_ptr2_T requires] ([@stop_split] [@expl:test_ptr2 'own' type invariant] inv_Ghost_ref_Perm_ptr_T own)
+    /\ ([@stop_split] [@expl:test_ptr2 requires] false)}
     (! bb0
     [ bb0 = s0
       [ s0 = as_ref_T {x} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1) | s1 = [ &_ret <- _6 ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_Perm_ptr_T = own | & _6: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:test_ptr2 result type invariant] inv_ref_T result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:test_ptr2 result type invariant] inv_ref_T result}
+      (! return {result}) ]
 end
 module M_test_ptr_mut2
   use creusot.prelude.Opaque
@@ -466,13 +469,14 @@ module M_test_ptr_mut2
   meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_T
   
   let rec as_mut_T (ptr: Opaque.ptr) (own: MutBorrow.t t_Perm_ptr_T) (return (x: MutBorrow.t t_T)) =
-    {([@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_T own)
-    /\ ([@expl:as_mut requires] ptr = ward_ptr_T own.current)}
+    {[@stop_split] [@expl:as_mut_T requires] ([@stop_split] [@expl:as_mut 'own' type invariant] inv_Ghost_refmut_Perm_ptr_T own)
+    /\ ([@stop_split] [@expl:as_mut requires] ptr = ward_ptr_T own.current)}
     any
-    [ return (result: MutBorrow.t t_T) -> {([@expl:as_mut result type invariant] inv_refmut_T result)
-      /\ ([@expl:as_mut ensures #0] result.current = val_ptr_T own.current)
-      /\ ([@expl:as_mut ensures #1] ward_ptr_T (fin_Ghost_refmut_Perm_ptr_T own) = ward_ptr_T own.current)
-      /\ ([@expl:as_mut ensures #2] val_ptr_T (fin_Ghost_refmut_Perm_ptr_T own) = result.final)}
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:as_mut_T ensures] ([@stop_split] [@expl:as_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_ptr_T own.current)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] ward_ptr_T (fin_Ghost_refmut_Perm_ptr_T own) = ward_ptr_T own.current)
+      /\ ([@stop_split] [@expl:as_mut ensures #2] val_ptr_T (fin_Ghost_refmut_Perm_ptr_T own) = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
@@ -484,27 +488,27 @@ module M_test_ptr_mut2
   meta "select_lsinst" "all"
   
   let rec test_ptr_mut2_T (x: Opaque.ptr) (own: MutBorrow.t t_Perm_ptr_T) (return (x'0: MutBorrow.t t_T)) =
-    {([@expl:test_ptr_mut2 'own' type invariant] inv_Ghost_refmut_Perm_ptr_T own)
-    /\ ([@expl:test_ptr_mut2 requires] false)}
+    {[@stop_split] [@expl:test_ptr_mut2_T requires] ([@stop_split] [@expl:test_ptr_mut2 'own' type invariant] inv_Ghost_refmut_Perm_ptr_T own)
+    /\ ([@stop_split] [@expl:test_ptr_mut2 requires] false)}
     (! bb0
     [ bb0 = s0
       [ s0 = as_mut_T {x} {own} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s1)
       | s1 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_7 <- _bor ] -{inv_T _bor.final}-
-            [ &_8 <- { _8 with current = _bor.final } ] s2) [ _ck -> (! {inv_T _8.current} any) ]
+            [ &_8 <- { _8 with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T _8.current} any) ]
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
       | s3 = -{resolve_refmut_T _8}- s4
       | s4 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
-            [ &_7 <- { _7 with current = _bor.final } ] s5) [ _ck -> (! {inv_T _7.current} any) ]
+            [ &_7 <- { _7 with current = _bor.final } ] s5) [ _ck -> (! {[@expl:type invariant] inv_T _7.current} any) ]
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
       | s6 = -{resolve_refmut_T _7}- s7
       | s7 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
-            [ &_3 <- { _3 with current = _bor.final } ] s8) [ _ck -> (! {inv_T _3.current} any) ]
+            [ &_3 <- { _3 with current = _bor.final } ] s8) [ _ck -> (! {[@expl:type invariant] inv_T _3.current} any) ]
       | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
       | s9 = -{resolve_refmut_T _3}- s10
       | s10 = return {_ret} ] ]
@@ -514,7 +518,8 @@ module M_test_ptr_mut2
     | & _3: MutBorrow.t t_T = Any.any_l ()
     | & _7: MutBorrow.t t_T = Any.any_l ()
     | & _8: MutBorrow.t t_T = Any.any_l () ])
-    [ return (result: MutBorrow.t t_T) -> {[@expl:test_ptr_mut2 result type invariant] inv_refmut_T result}
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:test_ptr_mut2 result type invariant] inv_refmut_T result}
       (! return {result}) ]
 end
 module M_no_specs
@@ -543,7 +548,7 @@ module M_specs
   
   meta "select_lsinst" "all"
   
-  let rec specs (x: int) (return (x'0: ())) = {[@expl:specs requires] false}
+  let rec specs (x: int) (return (x'0: ())) = {[@stop_split] [@expl:specs requires] false}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] false} s1
@@ -556,7 +561,7 @@ module M_specs
         [ s0 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb3) ] ] ]
     | bb6 = return {_ret} ]
     [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:specs ensures] false} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:specs ensures] false} (! return {result}) ]
 end
 module M_nested
   use creusot.prelude.Any
@@ -643,13 +648,14 @@ module M_ghost_split2
   type tup2_unit_unit = { f0: (); f1: () }
   
   let rec new_tup2_unit_unit (x: tup2_unit_unit) (return (x'0: tup2_unit_unit)) = any
-    [ return (result: tup2_unit_unit) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: tup2_unit_unit) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type tup2_Ghost_unit_Ghost_unit = { f0'0: (); f1'0: () }
   
   let rec split_unit (self: tup2_unit_unit) (return (x: tup2_Ghost_unit_Ghost_unit)) = any
-    [ return (result: tup2_Ghost_unit_Ghost_unit) -> {([@expl:split ensures #0] self.f0 = result.f0'0)
-      /\ ([@expl:split ensures #1] self.f1 = result.f1'0)}
+    [ return (result: tup2_Ghost_unit_Ghost_unit) ->
+    {[@stop_split] [@expl:split_unit ensures] ([@stop_split] [@expl:split ensures #0] self.f0 = result.f0'0)
+      /\ ([@stop_split] [@expl:split ensures #1] self.f1 = result.f1'0)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -712,7 +718,7 @@ module M_slice_as_ptr
   meta "rewrite_def" predicate inv_ref_slice_T
   
   let rec as_ptr_T (self_: Slice64.slice t_T) (return (x: Opaque.ptr)) =
-    {[@expl:as_ptr 'self_' type invariant] inv_ref_slice_T self_}
+    {[@stop_split] [@expl:as_ptr 'self_' type invariant] inv_ref_slice_T self_}
     any [ return (result: Opaque.ptr) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -720,7 +726,7 @@ module M_slice_as_ptr
   meta "select_lsinst" "all"
   
   let rec slice_as_ptr_T (s: Slice64.slice t_T) (return (x: Opaque.ptr)) =
-    {[@expl:slice_as_ptr 's' type invariant] inv_ref_slice_T s}
+    {[@stop_split] [@expl:slice_as_ptr 's' type invariant] inv_ref_slice_T s}
     (! bb0
     [ bb0 = s0 [ s0 = as_ptr_T {s} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Opaque.ptr = Any.any_l () | & s: Slice64.slice t_T = s ])
@@ -843,12 +849,12 @@ module M_slice_as_ptr_perm
   meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
   
   let rec as_ptr_perm_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
-    {[@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
+    {[@stop_split] [@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
-    {([@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
-      /\ ([@expl:as_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1))
-      /\ ([@expl:as_ptr_perm ensures #1] self = val_ptr_slice_T result.f1)}
+    {[@stop_split] [@expl:as_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
+      /\ ([@stop_split] [@expl:as_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1))
+      /\ ([@stop_split] [@expl:as_ptr_perm ensures #1] self = val_ptr_slice_T result.f1)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -856,14 +862,14 @@ module M_slice_as_ptr_perm
   meta "select_lsinst" "all"
   
   let rec slice_as_ptr_perm_T (s: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
-    {[@expl:slice_as_ptr_perm 's' type invariant] inv_ref_slice_T s}
+    {[@stop_split] [@expl:slice_as_ptr_perm 's' type invariant] inv_ref_slice_T s}
     (! bb0
     [ bb0 = s0
       [ s0 = as_ptr_perm_slice_T {s} (fun (_x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_ret <- _x ] s1)
       | s1 = return {_ret} ] ]
     [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l () | & s: Slice64.slice t_T = s ])
     [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
-    {[@expl:slice_as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result}
+    {[@stop_split] [@expl:slice_as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result}
       (! return {result}) ]
 end
 module M_slice_as_mut_ptr
@@ -911,7 +917,7 @@ module M_slice_as_mut_ptr
   meta "rewrite_def" predicate inv_refmut_slice_T
   
   let rec as_mut_ptr_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
+    {[@stop_split] [@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
     any [ return (result: Opaque.ptr) -> (! return {result}) ]
   
   predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
@@ -923,13 +929,14 @@ module M_slice_as_mut_ptr
   meta "select_lsinst" "all"
   
   let rec slice_as_mut_ptr_T (s: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@expl:slice_as_mut_ptr 's' type invariant] inv_refmut_slice_T s}
+    {[@stop_split] [@expl:slice_as_mut_ptr 's' type invariant] inv_refmut_slice_T s}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_2 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &s <- { s with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T s.current} any) ]
+            [ &s <- { s with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
       | s1 = as_mut_ptr_T {_2} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
       | s3 = -{resolve_refmut_slice_T s}- s4
@@ -1073,13 +1080,13 @@ module M_slice_as_mut_ptr_perm
   
   let rec as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T))
     (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
-    {[@expl:as_mut_ptr_perm 'self' type invariant] inv_refmut_slice_T self}
+    {[@stop_split] [@expl:as_mut_ptr_perm 'self' type invariant] inv_refmut_slice_T self}
     any
     [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
-    {([@expl:as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
-      /\ ([@expl:as_mut_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1.current))
-      /\ ([@expl:as_mut_ptr_perm ensures #1] self.current = val_ptr_slice_T result.f1.current)
-      /\ ([@expl:as_mut_ptr_perm ensures #2] self.final
+    {[@stop_split] [@expl:as_mut_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1.current))
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #1] self.current = val_ptr_slice_T result.f1.current)
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #2] self.final
       = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1))}
       (! return {result}) ]
   
@@ -1093,13 +1100,14 @@ module M_slice_as_mut_ptr_perm
   
   let rec slice_as_mut_ptr_perm_T (s: MutBorrow.t (Slice64.slice t_T))
     (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
-    {[@expl:slice_as_mut_ptr_perm 's' type invariant] inv_refmut_slice_T s}
+    {[@stop_split] [@expl:slice_as_mut_ptr_perm 's' type invariant] inv_refmut_slice_T s}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_4 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &s <- { s with current = _bor.final } ] s1) [ _ck -> (! {inv_slice_T s.current} any) ]
+            [ &s <- { s with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
       | s1 = as_mut_ptr_perm_slice_T {_4} (fun (_x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
       | s3 = -{resolve_refmut_slice_T s}- s4
@@ -1108,6 +1116,6 @@ module M_slice_as_mut_ptr_perm
     | & s: MutBorrow.t (Slice64.slice t_T) = s
     | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
-    {[@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
+    {[@stop_split] [@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
       (! return {result}) ]
 end

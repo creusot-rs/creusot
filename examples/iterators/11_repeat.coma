@@ -81,7 +81,8 @@ module M_impl_Iterator_for_Repeat_A__produces_refl (* <Repeat<A> as common::Iter
   
   function produces_refl_Repeat_A (self: t_Repeat_A) : ()
   
-  goal vc_produces_refl_Repeat_A: [@expl:produces_refl ensures] produces_Repeat_A self (Seq.empty: Seq.seq t_A) self
+  goal vc_produces_refl_Repeat_A:
+    [@stop_split] [@expl:produces_refl ensures] produces_Repeat_A self (Seq.empty: Seq.seq t_A) self
 end
 module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Iterator> *)
   use seq.Seq
@@ -175,7 +176,7 @@ module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Ite
   function produces_trans_Repeat_A (a: t_Repeat_A) (ab: Seq.seq t_A) (b: t_Repeat_A) (bc: Seq.seq t_A) (c: t_Repeat_A) : ()
   
   goal vc_produces_trans_Repeat_A: produces_Repeat_A a ab b
-    -> produces_Repeat_A b bc c -> ([@expl:produces_trans ensures] produces_Repeat_A a (Seq.(++) ab bc) c)
+    -> produces_Repeat_A b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Repeat_A a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   use creusot.prelude.MutBorrow
@@ -225,8 +226,10 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
     forall args: t_A, res: t_A [postcondition_once_clone () args res]. postcondition_once_clone () args res
       -> (let self_ = args in inv_A res)
   
-  let rec clone_A (self_: t_A) (return (x: t_A)) = {[@expl:clone requires] precondition_clone () self_}
-    any [ return (result: t_A) -> {[@expl:clone ensures] postcondition_once_clone () self_ result} (! return {result}) ]
+  let rec clone_A (self_: t_A) (return (x: t_A)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+    any
+    [ return (result: t_A) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+      (! return {result}) ]
   
   type t_Option_A = None | Some t_A
   
@@ -304,7 +307,7 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Repeat_A (self: MutBorrow.t t_Repeat_A) (return (x: t_Option_A)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Repeat_A self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Repeat_A self}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Repeat_A self} any) ]
@@ -313,8 +316,9 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
       | s3 = [ &_ret <- Some _4 ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
-    [ return (result: t_Option_A) -> {([@expl:next result type invariant] inv_Option_A result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_A) ->
+    {[@stop_split] [@expl:next_Repeat_A ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_A result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Repeat_A self
         | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
         end)}

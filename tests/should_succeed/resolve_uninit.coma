@@ -16,9 +16,10 @@ module M_maybe_uninit
     forall args: (), res: t_T [postcondition_once_default () args res]. postcondition_once_default () args res
       -> (let () = args in inv_T res)
   
-  let rec default_T (return (x: t_T)) = {[@expl:default requires] precondition_default () ()}
+  let rec default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any
-    [ return (result: t_T) -> {[@expl:default ensures] postcondition_once_default () () result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+      (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
   
@@ -26,7 +27,8 @@ module M_maybe_uninit
   
   meta "select_lsinst" "all"
   
-  let rec maybe_uninit_T (b: bool) (y: t_T) (return (x: t_T)) = {[@expl:maybe_uninit 'y' type invariant] inv_T y}
+  let rec maybe_uninit_T (b: bool) (y: t_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:maybe_uninit 'y' type invariant] inv_T y}
     (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb8) | br1 -> {b} (! bb1) ]
     | bb1 = s0
@@ -37,7 +39,8 @@ module M_maybe_uninit
       | s4 = bb8 ]
     | bb8 = s0 [ s0 = [ &x <- y ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l () | & b: bool = b | & y: t_T = y | & x: t_T = Any.any_l () | & _6: t_T = Any.any_l () ])
-    [ return (result: t_T) -> {[@expl:maybe_uninit result type invariant] inv_T result} (! return {result}) ]
+    [ return (result: t_T) -> {[@stop_split] [@expl:maybe_uninit result type invariant] inv_T result}
+      (! return {result}) ]
 end
 module M_init_join
   use creusot.prelude.MutBorrow

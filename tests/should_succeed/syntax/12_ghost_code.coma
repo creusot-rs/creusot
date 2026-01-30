@@ -28,7 +28,8 @@ module M_ghost_vec
       <= UInt64.t'int const_MAX
   
   let rec new_u32 (return (x: t_Vec_u32_Global)) = any
-    [ return (result: t_Vec_u32_Global) -> {[@expl:new ensures] Seq.length (view_Vec_u32_Global result) = 0}
+    [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
+      = 0}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -108,18 +109,20 @@ module M_ghost_check
       <= UInt64.t'int const_MAX
   
   let rec new_i32 (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {[@expl:new ensures] Seq.length (view_Vec_i32_Global result) = 0}
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
+      = 0}
       (! return {result}) ]
   
   function logi_drop_Vec_i32_Global (_1: t_Vec_i32_Global) : () = ()
   
   let rec push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:push ensures] view_Vec_i32_Global self_.final
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_i32_Global self_.final
       = Seq.snoc (view_Vec_i32_Global self_.current) v}
       (! return {result}) ]
   
   let rec len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_i32_Global self_)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -156,7 +159,8 @@ module M_takes_struct
   
   meta "select_lsinst" "all"
   
-  let rec takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) = {[@expl:takes_struct requires] UInt32.t'int x.g = 0}
+  let rec takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) =
+    {[@stop_split] [@expl:takes_struct requires] UInt32.t'int x.g = 0}
     (! bb0
     [ bb0 = s0 [ s0 = [ &x <- { x with g = x.f } ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_MyStruct = Any.any_l () | & x: t_MyStruct = x ]) [ return (result: t_MyStruct) -> (! return {result}) ]

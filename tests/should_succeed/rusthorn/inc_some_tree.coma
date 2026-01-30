@@ -18,10 +18,10 @@ module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   function lemma_sum_nonneg (self: t_Tree) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Node tl _ tr -> ([@expl:lemma_sum_nonneg ensures] sum tl >= 0)
-      -> (let _ = lemma_sum_nonneg tl in ([@expl:lemma_sum_nonneg ensures] sum tr >= 0)
-      -> (let _ = lemma_sum_nonneg tr in [@expl:lemma_sum_nonneg ensures] sum self >= 0))
-      | Leaf -> [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Node tl _ tr -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum tl >= 0)
+      -> (let _ = lemma_sum_nonneg tl in ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum tr >= 0)
+      -> (let _ = lemma_sum_nonneg tr in [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0))
+      | Leaf -> [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0
       end
 end
 module M_impl_Tree__sum_x (* Tree *)
@@ -33,7 +33,7 @@ module M_impl_Tree__sum_x (* Tree *)
   
   let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
     [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Node] match _x with
         | Node _ _ _ -> true
         | _ -> false
         end}
@@ -55,7 +55,7 @@ module M_impl_Tree__sum_x (* Tree *)
   
   meta "select_lsinst" "all"
   
-  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
+  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
     (! bb0
     [ bb0 = any
       [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self = Node x0 x1 x2} (! bb4) | br1 -> {self = Leaf} (! bb3) ]
@@ -78,7 +78,8 @@ module M_impl_Tree__sum_x (* Tree *)
     | & _14: UInt32.t = Any.any_l ()
     | & _15: UInt32.t = Any.any_l ()
     | & _18: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
 end
 module M_impl_Tree__take_some (* Tree *)
   use creusot.int.UInt32
@@ -94,7 +95,7 @@ module M_impl_Tree__take_some (* Tree *)
   
   let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
     [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Node] match _x with
         | Node _ _ _ -> true
         | _ -> false
         end}
@@ -220,9 +221,11 @@ module M_impl_Tree__take_some (* Tree *)
     | & _23: MutBorrow.t t_Tree = Any.any_l ()
     | & _24: MutBorrow.t UInt32.t = Any.any_l ()
     | & _25: MutBorrow.t t_Tree = Any.any_l () ])
-    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
+          - sum self.current
         = UInt32.t'int result.final - UInt32.t'int result.current)
-      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
+      /\ ([@stop_split] [@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
 end
 module M_inc_some_tree
@@ -238,13 +241,17 @@ module M_inc_some_tree
       | Leaf -> 0
       end
   
-  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@expl:sum_x requires] sum self <= 1000000}
-    any [ return (result: UInt32.t) -> {[@expl:sum_x ensures] UInt32.t'int result = sum self} (! return {result}) ]
+  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
   
   let rec take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {([@expl:take_some ensures #0] sum self.final - sum self.current
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
+          - sum self.current
         = UInt32.t'int result.final - UInt32.t'int result.current)
-      /\ ([@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
+      /\ ([@stop_split] [@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
@@ -255,7 +262,7 @@ module M_inc_some_tree
   
   meta "select_lsinst" "all"
   
-  let rec inc_some_tree (t: t_Tree) (k: UInt32.t) (return (x: ())) = {[@expl:inc_some_tree requires] sum t
+  let rec inc_some_tree (t: t_Tree) (k: UInt32.t) (return (x: ())) = {[@stop_split] [@expl:inc_some_tree requires] sum t
       + UInt32.t'int k
     <= 1000000}
     (! bb0

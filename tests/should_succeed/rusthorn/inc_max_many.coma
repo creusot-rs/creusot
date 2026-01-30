@@ -90,7 +90,8 @@ module M_take_max
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
     | & _8: bool = Any.any_l ()
     | & _11: MutBorrow.t UInt32.t = Any.any_l () ])
-    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -148,7 +149,8 @@ module M_inc_max_many
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
   let rec take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = any
-    [ return (result: MutBorrow.t UInt32.t) -> {[@expl:take_max ensures] if UInt32.ge ma.current mb.current then
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_max ensures] if UInt32.ge ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -164,7 +166,7 @@ module M_inc_max_many
   meta "select_lsinst" "all"
   
   let rec inc_max_many (a: UInt32.t) (b: UInt32.t) (k: UInt32.t) (return (x: ())) =
-    {[@expl:inc_max_many requires] UInt32.le a (1000000: UInt32.t)
+    {[@stop_split] [@expl:inc_max_many requires] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le k (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0

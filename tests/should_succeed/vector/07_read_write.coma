@@ -74,14 +74,15 @@ module M_read_write
   meta "rewrite_def" predicate resolve_elswhere_usize
   
   let rec index_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (ix: UInt64.t) (return (x: MutBorrow.t t_T)) =
-    {([@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_)
-    /\ ([@expl:index_mut requires] in_bounds_usize ix (view_Vec_T_Global self_.current))}
+    {[@stop_split] [@expl:index_mut_Vec_T_Global requires] ([@stop_split] [@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_)
+    /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_T_Global self_.current))}
     any
-    [ return (result: MutBorrow.t t_T) -> {([@expl:index_mut result type invariant] inv_refmut_T result)
-      /\ ([@expl:index_mut ensures #0] has_value_usize ix (view_Vec_T_Global self_.current) result.current)
-      /\ ([@expl:index_mut ensures #1] has_value_usize ix (view_Vec_T_Global self_.final) result.final)
-      /\ ([@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final))
-      /\ ([@expl:index_mut ensures #3] Seq.length (view_Vec_T_Global self_.final)
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:index_mut_Vec_T_Global ensures] ([@stop_split] [@expl:index_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_T_Global self_.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_T_Global self_.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_T_Global self_.final)
       = Seq.length (view_Vec_T_Global self_.current))}
       (! return {result}) ]
   
@@ -102,11 +103,12 @@ module M_read_write
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
   let rec index_Vec_T_Global (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
-    {([@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
-    /\ ([@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
+    {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
     any
-    [ return (result: t_T) -> {([@expl:index result type invariant] inv_ref_T result)
-      /\ ([@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:index_Vec_T_Global ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
       (! return {result}) ]
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
@@ -131,10 +133,11 @@ module M_read_write
     forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_eq () args res]. postcondition_once_eq () args res
       -> (let {f0 = self_; f1 = rhs} = args in res = (deep_model_ref_T self_ = deep_model_ref_T rhs))
   
-  let rec eq_T (self_: t_T) (rhs: t_T) (return (x: bool)) = {[@expl:eq requires] precondition_eq () { f0 = self_;
-                                                                                                      f1 = rhs }}
+  let rec eq_T (self_: t_T) (rhs: t_T) (return (x: bool)) =
+    {[@stop_split] [@expl:eq requires] precondition_eq () { f0 = self_; f1 = rhs }}
     any
-    [ return (result: bool) -> {[@expl:eq ensures] postcondition_once_eq () { f0 = self_; f1 = rhs } result}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0 = self_;
+                                                                                            f1 = rhs } result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -142,15 +145,16 @@ module M_read_write
   meta "select_lsinst" "all"
   
   let rec read_write_T (a: MutBorrow.t t_Vec_T_Global) (i: UInt64.t) (x: t_T) (return (x'0: ())) =
-    {([@expl:read_write 'a' type invariant] inv_refmut_Vec_T_Global a)
-    /\ ([@expl:read_write 'x' type invariant] inv_T x)
-    /\ ([@expl:read_write requires] UInt64.t'int i < Seq.length (view_Vec_T_Global a.current))}
+    {[@stop_split] [@expl:read_write_T requires] ([@stop_split] [@expl:read_write 'a' type invariant] inv_refmut_Vec_T_Global a)
+    /\ ([@stop_split] [@expl:read_write 'x' type invariant] inv_T x)
+    /\ ([@stop_split] [@expl:read_write requires] UInt64.t'int i < Seq.length (view_Vec_T_Global a.current))}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_T_Global> {a.current} {MutBorrow.get_id a}
           (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
             [ &_9 <- _bor ] -{inv_Vec_T_Global _bor.final}-
-            [ &a <- { a with current = _bor.final } ] s1) [ _ck -> (! {inv_Vec_T_Global a.current} any) ]
+            [ &a <- { a with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global a.current} any) ]
       | s1 = index_mut_Vec_T_Global {_9} {i} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s2)
       | s2 = [ &_8 <- { _8 with current = x } ] s3
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]

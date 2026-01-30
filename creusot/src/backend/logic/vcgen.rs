@@ -36,6 +36,7 @@ use std::{
 };
 use why3::{
     Exp, Ident, Name,
+    declaration::Attribute,
     exp::{Pattern as WPattern, UnOp as WUnOp},
     ty::Type,
 };
@@ -378,10 +379,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
                 contract.subst(&call_subst);
 
+                let name = self.ctx.item_name(*id);
+                let name = name.as_str();
                 contract
-                    .requires_conj()
+                    .requires_conj(name)
                     .log_and(variant)
-                    .log_and(contract.ensures_conj().implies(k(call)))
+                    .log_and(contract.ensures_conj(name).implies(k(call)))
             }),
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
@@ -659,7 +662,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
             self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();
         let mut variant_after = self.lower_pure(&variant_after.spanned());
         variant_after.subst(&subst);
-        wf_relation.app([self.variant.clone().unwrap(), variant_after])
+        wf_relation
+            .app([self.variant.clone().unwrap(), variant_after])
+            .with_attr(Attribute::Attr("expl:variant decreases".into()))
     }
 }
 

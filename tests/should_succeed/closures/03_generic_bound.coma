@@ -61,15 +61,17 @@ module M_closure_param
     forall self: t_F, args: UInt32.t, res_state: t_F, res: (). postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let rec call_F (self_: t_F) (arg: UInt32.t) (return (x: ())) = {([@expl:call 'self_' type invariant] inv_ref_F self_)
-    /\ ([@expl:call requires] precondition_F self_ arg)}
-    any [ return (result: ()) -> {[@expl:call ensures] postcondition_F self_ arg result} (! return {result}) ]
+  let rec call_F (self_: t_F) (arg: UInt32.t) (return (x: ())) =
+    {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
+    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_F self_ arg result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec closure_param_F (f: t_F) (return (x: ())) = {[@expl:closure_param 'f' type invariant] inv_F f}
+  let rec closure_param_F (f: t_F) (return (x: ())) = {[@stop_split] [@expl:closure_param 'f' type invariant] inv_F f}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]

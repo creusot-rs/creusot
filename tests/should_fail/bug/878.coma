@@ -22,7 +22,7 @@ module M_test
   meta "rewrite_def" function view_Box_slice_i32_Global
   
   let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {[@expl:into_vec ensures] view_Vec_i32_Global result
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
@@ -112,10 +112,11 @@ module M_test2
   meta "rewrite_def" function view_Box_slice_S_Global
   
   let rec into_vec_S (self_: Slice64.slice t_S) (return (x: t_Vec_S_Global)) =
-    {[@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
+    {[@stop_split] [@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
     any
-    [ return (result: t_Vec_S_Global) -> {([@expl:into_vec result type invariant] inv_Vec_S_Global result)
-      /\ ([@expl:into_vec ensures] view_Vec_S_Global result = view_Box_slice_S_Global self_)}
+    [ return (result: t_Vec_S_Global) ->
+    {[@stop_split] [@expl:into_vec_S ensures] ([@stop_split] [@expl:into_vec result type invariant] inv_Vec_S_Global result)
+      /\ ([@stop_split] [@expl:into_vec ensures] view_Vec_S_Global result = view_Box_slice_S_Global self_)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -204,10 +205,11 @@ module M_test3
   meta "rewrite_def" function view_Box_slice_S_Global
   
   let rec into_vec_S (self_: Slice64.slice t_S) (return (x: t_Vec_S_Global)) =
-    {[@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
+    {[@stop_split] [@expl:into_vec 'self_' type invariant] inv_Box_slice_S_Global self_}
     any
-    [ return (result: t_Vec_S_Global) -> {([@expl:into_vec result type invariant] inv_Vec_S_Global result)
-      /\ ([@expl:into_vec ensures] view_Vec_S_Global result = view_Box_slice_S_Global self_)}
+    [ return (result: t_Vec_S_Global) ->
+    {[@stop_split] [@expl:into_vec_S ensures] ([@stop_split] [@expl:into_vec result type invariant] inv_Vec_S_Global result)
+      /\ ([@stop_split] [@expl:into_vec ensures] view_Vec_S_Global result = view_Box_slice_S_Global self_)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

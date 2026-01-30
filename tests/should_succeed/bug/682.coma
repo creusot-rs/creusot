@@ -60,14 +60,14 @@ module M_add_some
   
   meta "select_lsinst" "all"
   
-  let rec add_some (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@expl:add_some requires] UInt64.t'int a.current
-    <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
+  let rec add_some (a: MutBorrow.t UInt64.t) (return (x: ())) =
+    {[@stop_split] [@expl:add_some requires] UInt64.t'int a.current <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {a.current} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &a <- { a with current = _x } ] s1)
       | s1 = -{resolve_refmut_u64 a}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & a: MutBorrow.t UInt64.t = a ])
-    [ return (result: ()) -> {[@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
 end
 module M_foo
   use creusot.prelude.MutBorrow
@@ -123,9 +123,10 @@ module M_foo
   
   axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
-  let rec add_some (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@expl:add_some requires] UInt64.t'int a.current
-    <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
-    any [ return (result: ()) -> {[@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
+  let rec add_some (a: MutBorrow.t UInt64.t) (return (x: ())) =
+    {[@stop_split] [@expl:add_some requires] UInt64.t'int a.current <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
   
   predicate resolve_refmut_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
@@ -135,7 +136,8 @@ module M_foo
   
   meta "select_lsinst" "all"
   
-  let rec foo (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@expl:foo requires] a.current = (3: UInt64.t)}
+  let rec foo (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@stop_split] [@expl:foo requires] a.current
+    = (3: UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &a_p <- a.current ] s1
@@ -150,5 +152,5 @@ module M_foo
     | & a_p: UInt64.t = Any.any_l ()
     | & _9: () = Any.any_l ()
     | & _10: MutBorrow.t UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:foo ensures] UInt64.gt a.final a.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:foo ensures] UInt64.gt a.final a.current} (! return {result}) ]
 end

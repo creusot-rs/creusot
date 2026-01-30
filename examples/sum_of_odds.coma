@@ -13,7 +13,7 @@ module M_sum_of_odd
   
   function sum_of_odd (x: int) : int
   
-  goal vc_sum_of_odd: if x <= 0 then true else well_founded_relation_Int x (x - 1)
+  goal vc_sum_of_odd: if x <= 0 then true else [@expl:variant decreases] well_founded_relation_Int x (x - 1)
 end
 module M_sum_of_odd_is_sqr
   use int.Int
@@ -38,11 +38,12 @@ module M_sum_of_odd_is_sqr
   
   goal vc_sum_of_odd_is_sqr: x >= 0
     -> (if x > 0 then
-      (([@expl:sum_of_odd_is_sqr requires] x - 1 >= 0) /\ well_founded_relation_Int x (x - 1))
-      /\ (([@expl:sum_of_odd_is_sqr ensures] sum_of_odd (x - 1) = sqr (x - 1))
-      -> ([@expl:sum_of_odd_is_sqr ensures] sum_of_odd x = sqr x))
+      (([@stop_split] [@expl:sum_of_odd_is_sqr requires] x - 1 >= 0)
+        /\ ([@expl:variant decreases] well_founded_relation_Int x (x - 1)))
+      /\ (([@stop_split] [@expl:sum_of_odd_is_sqr ensures] sum_of_odd (x - 1) = sqr (x - 1))
+      -> ([@stop_split] [@expl:sum_of_odd_is_sqr ensures] sum_of_odd x = sqr x))
     else
-      [@expl:sum_of_odd_is_sqr ensures] sum_of_odd x = sqr x
+      [@stop_split] [@expl:sum_of_odd_is_sqr ensures] sum_of_odd x = sqr x
     )
 end
 module M_compute_sum_of_odd
@@ -55,7 +56,7 @@ module M_compute_sum_of_odd
   type t_Range_u32 = { start: UInt32.t; end': UInt32.t }
   
   let rec into_iter_Range_u32 (self_: t_Range_u32) (return (x: t_Range_u32)) = any
-    [ return (result: t_Range_u32) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_u32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -90,7 +91,7 @@ module M_compute_sum_of_odd
     resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
   
   let rec next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
-    [ return (result: t_Option_u32) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_u32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_u32 self_
         | Some v -> produces_Range_u32 self_.current (Seq.singleton v) self_.final
         end}
@@ -106,7 +107,7 @@ module M_compute_sum_of_odd
   
   let rec elim_Some (_x: t_Option_u32) (return (f0: UInt32.t)) = any
     [ _k (f0: UInt32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -126,7 +127,7 @@ module M_compute_sum_of_odd
   meta "select_lsinst" "all"
   
   let rec compute_sum_of_odd (x: UInt32.t) (return (x'0: UInt32.t)) =
-    {[@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
+    {[@stop_split] [@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &s <- (0: UInt32.t) ] s1
@@ -171,7 +172,7 @@ module M_compute_sum_of_odd
     | & i: UInt32.t = Any.any_l ()
     | & _44: UInt32.t = Any.any_l ()
     | & _45: UInt32.t = Any.any_l () ])
-    [ return (result: UInt32.t) -> {[@expl:compute_sum_of_odd ensures] UInt32.t'int result
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:compute_sum_of_odd ensures] UInt32.t'int result
       = sum_of_odd (UInt32.t'int x)}
       (! return {result}) ]
 end
@@ -185,9 +186,9 @@ module M_test
   axiom sum_of_odd_def: forall x: int. sum_of_odd x = (if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
   let rec compute_sum_of_odd (x: UInt32.t) (return (x'0: UInt32.t)) =
-    {[@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
+    {[@stop_split] [@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
     any
-    [ return (result: UInt32.t) -> {[@expl:compute_sum_of_odd ensures] UInt32.t'int result
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:compute_sum_of_odd ensures] UInt32.t'int result
       = sum_of_odd (UInt32.t'int x)}
       (! return {result}) ]
   
@@ -206,7 +207,7 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let rec test (x: UInt32.t) (return (x'0: ())) = {[@expl:test requires] UInt32.t'int x < 65536}
+  let rec test (x: UInt32.t) (return (x'0: ())) = {[@stop_split] [@expl:test requires] UInt32.t'int x < 65536}
     (! bb0
     [ bb0 = s0
       [ s0 = compute_sum_of_odd {x} (fun (_x: UInt32.t) -> [ &y <- _x ] s1)

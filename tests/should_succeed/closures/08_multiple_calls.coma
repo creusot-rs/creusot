@@ -37,7 +37,8 @@ module M_multi_use
   meta "rewrite_def" predicate inv_ref_closure0
   
   let rec closure0 (self: closure0) (return (x: UInt32.t)) =
-    {([@expl:closure 'self' type invariant] inv_ref_closure0 self) /\ ([@expl:closure requires] self.c0 = self.c0)}
+    {[@stop_split] [@expl:closure0 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure0 self)
+    /\ ([@stop_split] [@expl:closure requires] self.c0 = self.c0)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &res <- (0: UInt32.t) ] s1 | s1 = [ &_ret <- res ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
@@ -167,10 +168,11 @@ module M_multi_use
     forall self: closure0, args: (), res_state: closure0, res: UInt32.t. postcondition_mut_ref_closure0 self args res_state res
       = (postcondition_ref_closure0 self args res /\ self = res_state)
   
-  let rec uses_fn_closure0 (f: closure0) (return (x: ())) = {([@expl:uses_fn 'f' type invariant] inv_closure0 f)
-    /\ ([@expl:uses_fn requires] precondition_closure0 f ())}
+  let rec uses_fn_closure0 (f: closure0) (return (x: ())) =
+    {[@stop_split] [@expl:uses_fn_closure0 requires] ([@stop_split] [@expl:uses_fn 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:uses_fn requires] precondition_closure0 f ())}
     any
-    [ return (result: ()) -> {[@expl:uses_fn ensures] exists f2: closure0, r: UInt32.t. f2 = f
+    [ return (result: ()) -> {[@stop_split] [@expl:uses_fn ensures] exists f2: closure0, r: UInt32.t. f2 = f
         /\ postcondition_ref_closure0 f2 () r}
       (! return {result}) ]
   
@@ -178,7 +180,7 @@ module M_multi_use
   
   meta "select_lsinst" "all"
   
-  let rec multi_use_T (x: t_T) (return (x'0: ())) = {[@expl:multi_use 'x' type invariant] inv_ref_T x}
+  let rec multi_use_T (x: t_T) (return (x'0: ())) = {[@stop_split] [@expl:multi_use 'x' type invariant] inv_ref_T x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &c <- { c0 = x } ] s1

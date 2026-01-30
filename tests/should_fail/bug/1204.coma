@@ -13,7 +13,8 @@ module M_evil
   
   function evil (x: int) : int
   
-  goal vc_evil: false -> ([@expl:evil requires] false) /\ well_founded_relation_Int x (- x)
+  goal vc_evil: false
+    -> ([@stop_split] [@expl:evil requires] false) /\ ([@expl:variant decreases] well_founded_relation_Int x (- x))
 end
 module M_wrong
   use int.Int
@@ -28,9 +29,10 @@ module M_wrong
   
   function wrong : ()
   
-  goal vc_wrong: ([@expl:evil requires] false)
-    /\ ([@expl:evil requires] false)
+  goal vc_wrong: ([@stop_split] [@expl:evil requires] false)
+    /\ ([@stop_split] [@expl:evil requires] false)
     /\ evil 1 = evil (- 1) + 1
-    && ([@expl:evil requires] false)
-    /\ ([@expl:evil requires] false) /\ evil (- 1) = evil 1 + 1 && ([@expl:wrong ensures] false)
+    && ([@stop_split] [@expl:evil requires] false)
+    /\ ([@stop_split] [@expl:evil requires] false)
+    /\ evil (- 1) = evil 1 + 1 && ([@stop_split] [@expl:wrong ensures] false)
 end

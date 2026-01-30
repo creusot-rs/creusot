@@ -67,10 +67,12 @@ module M_agreement
   meta "rewrite_def" function view_Resource_Ag_i32
   
   let rec join_shared_Ag_i32 (self: t_Resource_Ag_i32) (other: t_Resource_Ag_i32) (return (x: t_Resource_Ag_i32)) =
-    {[@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
+    {[@stop_split] [@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
     any
-    [ return (result: t_Resource_Ag_i32) -> {([@expl:join_shared ensures #0] id_Ag_i32 result = id_Ag_i32 self)
-      /\ ([@expl:join_shared ensures #1] incl_eq_Ag_i32 (view_Resource_Ag_i32 self) (view_Resource_Ag_i32 result)
+    [ return (result: t_Resource_Ag_i32) ->
+    {[@stop_split] [@expl:join_shared_Ag_i32 ensures] ([@stop_split] [@expl:join_shared ensures #0] id_Ag_i32 result
+        = id_Ag_i32 self)
+      /\ ([@stop_split] [@expl:join_shared ensures #1] incl_eq_Ag_i32 (view_Resource_Ag_i32 self) (view_Resource_Ag_i32 result)
       /\ incl_eq_Ag_i32 (view_Resource_Ag_i32 other) (view_Resource_Ag_i32 result))}
       (! return {result}) ]
   
@@ -79,7 +81,7 @@ module M_agreement
   meta "select_lsinst" "all"
   
   let rec agreement (x: t_Resource_Ag_i32) (y: t_Resource_Ag_i32) (return (x'0: ())) =
-    {[@expl:agreement requires] id_Ag_i32 x = id_Ag_i32 y}
+    {[@stop_split] [@expl:agreement requires] id_Ag_i32 x = id_Ag_i32 y}
     (! bb0
     [ bb0 = s0
       [ s0 = join_shared_Ag_i32 {x} {y} (fun (_x: t_Resource_Ag_i32) -> [ &_9 <- _x ] s1) | s1 = return {_ret} ] ]
@@ -87,6 +89,6 @@ module M_agreement
     | & x: t_Resource_Ag_i32 = x
     | & y: t_Resource_Ag_i32 = y
     | & _9: t_Resource_Ag_i32 = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:agreement ensures] view_Resource_Ag_i32 x = view_Resource_Ag_i32 y}
+    [ return (result: ()) -> {[@stop_split] [@expl:agreement ensures] view_Resource_Ag_i32 x = view_Resource_Ag_i32 y}
       (! return {result}) ]
 end

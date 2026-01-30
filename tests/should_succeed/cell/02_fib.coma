@@ -16,7 +16,12 @@ module M_fib
   goal vc_fib: if i <= 0 then
       true
     else
-      if i = 1 then true else well_founded_relation_Int i (i - 1) /\ well_founded_relation_Int i (i - 2)
+      if i = 1 then
+        true
+      else
+        ([@expl:variant decreases] well_founded_relation_Int i (i - 1))
+        /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 2))
+    
 
 end
 module M_lemma_fib_bound
@@ -41,17 +46,18 @@ module M_lemma_fib_bound
   
   goal vc_lemma_fib_bound: 0 <= i
     -> (if i = 0 then
-      [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
+      [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
     else
       if i = 1 then
-        [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
+        [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
       else
-        (([@expl:lemma_fib_bound requires] 0 <= i - 2) /\ well_founded_relation_Int i (i - 2))
-        /\ (([@expl:lemma_fib_bound ensures] fib (i - 2) <= Pow2int.pow2 (i - 2))
-        -> (let _ = lemma_fib_bound (i - 2) in (([@expl:lemma_fib_bound requires] 0 <= i - 1)
-          /\ well_founded_relation_Int i (i - 1))
-        /\ (([@expl:lemma_fib_bound ensures] fib (i - 1) <= Pow2int.pow2 (i - 1))
-        -> ([@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
+        (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 2)
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 2)))
+        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 2) <= Pow2int.pow2 (i - 2))
+        -> (let _ = lemma_fib_bound (i - 2) in (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 1)
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 1) <= Pow2int.pow2 (i - 1))
+        -> ([@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
     
     )
 end
@@ -89,10 +95,10 @@ module M_fib_memo
   
   let rec index_Vec_PredCell_Option_usize_Global (self_: t_Vec_PredCell_Option_usize_Global) (ix: UInt64.t)
     (return (x: t_PredCell_Option_usize)) =
-    {[@expl:index requires] in_bounds_usize ix (view_Vec_PredCell_Option_usize_Global self_)}
+    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_PredCell_Option_usize_Global self_)}
     any
     [ return (result: t_PredCell_Option_usize) ->
-    {[@expl:index ensures] has_value_usize ix (view_Vec_PredCell_Option_usize_Global self_) result}
+    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_PredCell_Option_usize_Global self_) result}
       (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -106,12 +112,12 @@ module M_fib_memo
   
   let rec get_Option_usize (self: t_PredCell_Option_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) ->
-    {[@expl:get ensures] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) result}
+    {[@stop_split] [@expl:get ensures] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) result}
       (! return {result}) ]
   
   let rec elim_Some (_x: t_Option_usize) (return (f0'0: UInt64.t)) = any
     [ _k (f0'0: UInt64.t) -> {Some f0'0 = _x} (! return {f0'0})
-    | _chk -> (! {match _x with
+    | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
@@ -130,7 +136,7 @@ module M_fib_memo
   axiom lemma_fib_bound_spec: forall i: int. 0 <= i -> fib i <= Pow2int.pow2 i
   
   let rec set_Option_usize (self: t_PredCell_Option_usize) (v: t_Option_usize) (return (x: ())) =
-    {[@expl:set requires] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) v}
+    {[@stop_split] [@expl:set requires] index_Mapping_Option_usize_bool (view_PredCell_Option_usize self) v}
     any [ return (result: ()) -> (! return {result}) ]
   
   predicate invariant_FibCache (self: t_FibCache) =
@@ -158,9 +164,10 @@ module M_fib_memo
   meta "select_lsinst" "all"
   
   let rec fib_memo (mem: t_FibCache) (i: UInt64.t) (return (x: UInt64.t)) =
-    {([@expl:fib_memo 'mem' type invariant] inv_ref_FibCache mem)
-    /\ ([@expl:fib_memo requires #0] UInt64.t'int i < Seq.length (view_Vec_PredCell_Option_usize_Global mem.f0))
-    /\ ([@expl:fib_memo requires #1] UInt64.t'int i <= 63)}
+    {[@stop_split] [@expl:fib_memo requires] ([@stop_split] [@expl:fib_memo 'mem' type invariant] inv_ref_FibCache mem)
+    /\ ([@stop_split] [@expl:fib_memo requires #0] UInt64.t'int i
+      < Seq.length (view_Vec_PredCell_Option_usize_Global mem.f0))
+    /\ ([@stop_split] [@expl:fib_memo requires #1] UInt64.t'int i <= 63)}
     (! bb0
     [ bb0 = s0
       [ s0 = index_Vec_PredCell_Option_usize_Global {mem.f0} {i}
@@ -208,6 +215,6 @@ module M_fib_memo
     | & _36: () = Any.any_l ()
     | & _38: t_PredCell_Option_usize = Any.any_l ()
     | & _41: t_Option_usize = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
       (! return {result}) ]
 end

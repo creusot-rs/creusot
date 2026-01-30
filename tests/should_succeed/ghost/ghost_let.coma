@@ -29,17 +29,18 @@ module M_foo
   meta "rewrite_def" predicate inv_Ghost_refmut_WithInv
   
   let rec into_inner_refmut_WithInv (self: MutBorrow.t t_WithInv) (return (x: MutBorrow.t t_WithInv)) =
-    {[@expl:into_inner 'self' type invariant] inv_Ghost_refmut_WithInv self}
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_refmut_WithInv self}
     any
-    [ return (result: MutBorrow.t t_WithInv) -> {([@expl:into_inner result type invariant] inv_refmut_WithInv result)
-      /\ ([@expl:into_inner ensures] result = self)}
+    [ return (result: MutBorrow.t t_WithInv) ->
+    {[@stop_split] [@expl:into_inner_refmut_WithInv ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_refmut_WithInv result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   let rec new_refmut_i32 (x: MutBorrow.t Int32.t) (return (x'0: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec bar (g2: MutBorrow.t Int32.t) (return (x: ())) = any
-    [ return (result: ()) -> {[@expl:bar ensures] g2.final = (1: Int32.t)} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:bar ensures] g2.final = (1: Int32.t)} (! return {result}) ]
   
   predicate resolve_refmut_WithInv [@inline:trivial] (_1: MutBorrow.t t_WithInv) = _1.final = _1.current
   
@@ -49,7 +50,8 @@ module M_foo
   
   meta "select_lsinst" "all"
   
-  let rec foo (g: MutBorrow.t t_WithInv) (return (x: ())) = {[@expl:foo 'g' type invariant] inv_Ghost_refmut_WithInv g}
+  let rec foo (g: MutBorrow.t t_WithInv) (return (x: ())) =
+    {[@stop_split] [@expl:foo 'g' type invariant] inv_Ghost_refmut_WithInv g}
     (! bb0
     [ bb0 = s0
       [ s0 = into_inner_refmut_WithInv {g} (fun (_x: MutBorrow.t t_WithInv) -> [ &_4 <- _x ] s1)
@@ -75,7 +77,7 @@ module M_bar
   
   let rec deref_mut_Ghost_refmut_i32 (self: MutBorrow.t (MutBorrow.t Int32.t))
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
-    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[@expl:deref_mut ensures] result = self}
+    [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
@@ -91,7 +93,7 @@ module M_bar
   meta "rewrite_def" predicate resolve_Ghost_refmut_i32
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -113,5 +115,5 @@ module M_bar
     | & _5: () = Any.any_l ()
     | & _6: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l ()
     | & _7: MutBorrow.t (MutBorrow.t Int32.t) = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:bar ensures] g2.final = (1: Int32.t)} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:bar ensures] g2.final = (1: Int32.t)} (! return {result}) ]
 end

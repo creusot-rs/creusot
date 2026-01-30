@@ -19,7 +19,8 @@ module M_impl_Iterator_for_Once_T__produces_refl (* <Once<T> as common::Iterator
   
   function produces_refl_Once_T (self: t_Once_T) : ()
   
-  goal vc_produces_refl_Once_T: [@expl:produces_refl ensures] produces_Once_T self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Once_T:
+    [@stop_split] [@expl:produces_refl ensures] produces_Once_T self (Seq.empty: Seq.seq t_T) self
 end
 module M_impl_Iterator_for_Once_T__produces_trans (* <Once<T> as common::Iterator> *)
   use seq.Seq
@@ -51,7 +52,7 @@ module M_impl_Iterator_for_Once_T__produces_trans (* <Once<T> as common::Iterato
   function produces_trans_Once_T (a: t_Once_T) (ab: Seq.seq t_T) (b: t_Once_T) (bc: Seq.seq t_T) (c: t_Once_T) : ()
   
   goal vc_produces_trans_Once_T: produces_Once_T a ab b
-    -> produces_Once_T b bc c -> ([@expl:produces_trans ensures] produces_Once_T a (Seq.(++) ab bc) c)
+    -> produces_Once_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Once_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
@@ -84,10 +85,11 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   meta "rewrite_def" predicate inv_refmut_Option_T
   
   let rec take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-    {[@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
+    {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
-    [ return (result: t_Option_T) -> {([@expl:take result type invariant] inv_Option_T result)
-      /\ ([@expl:take ensures] result = self_.current /\ self_.final = None)}
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:take_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
       (! return {result}) ]
   
   predicate inv_Once_T (_1: t_Once_T)
@@ -118,14 +120,14 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   meta "select_lsinst" "all"
   
   let rec next_Once_T (self: MutBorrow.t t_Once_T) (return (x: t_Option_T)) =
-    {[@expl:next 'self' type invariant] inv_refmut_Once_T self}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Once_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Option_T> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_Option_T) ->
             [ &_4 <- _bor ] -{inv_Option_T _bor.final}-
             [ &self <- { self with current = { f0 = _bor.final } } ] s1)
-        [ _ck -> (! {inv_Option_T self.current.f0} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_Option_T self.current.f0} any) ]
       | s1 = take_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Once_T self} any) ]
       | s3 = -{resolve_refmut_Once_T self}- s4
@@ -133,8 +135,9 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: MutBorrow.t t_Once_T = self
     | & _4: MutBorrow.t t_Option_T = Any.any_l () ])
-    [ return (result: t_Option_T) -> {([@expl:next result type invariant] inv_Option_T result)
-      /\ ([@expl:next ensures] match result with
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:next_Once_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
         | None -> completed_Once_T self
         | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
         end)}

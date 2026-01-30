@@ -6,20 +6,21 @@ module M_ghost_enter_ghost
   type t_NonCopy = { f0: Int32.t }
   
   let rec new_NonCopy (x: t_NonCopy) (return (x'0: t_NonCopy)) = any
-    [ return (result: t_NonCopy) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: t_NonCopy) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec deref_Ghost_NonCopy (self: t_NonCopy) (return (x: t_NonCopy)) = any
-    [ return (result: t_NonCopy) -> {[@expl:deref ensures] result = self} (! return {result}) ]
+    [ return (result: t_NonCopy) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   let rec deref_mut_Ghost_NonCopy (self: MutBorrow.t t_NonCopy) (return (x: MutBorrow.t t_NonCopy)) = any
-    [ return (result: MutBorrow.t t_NonCopy) -> {[@expl:deref_mut ensures] result = self} (! return {result}) ]
+    [ return (result: MutBorrow.t t_NonCopy) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
   
   predicate resolve_refmut_NonCopy [@inline:trivial] (_1: MutBorrow.t t_NonCopy) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_NonCopy
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function view_NonCopy (self: t_NonCopy) : int = Int32.to_int self.f0
   
@@ -69,7 +70,7 @@ module M_snapshot_enter_ghost
   function view_NonCopy (self: t_NonCopy) : int = Int32.to_int self.f0
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -98,7 +99,7 @@ module M_copy_enter_ghost
   type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@expl:new ensures] result = x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

@@ -29,7 +29,8 @@ module M_trait_T__default
   
   meta "select_lsinst" "all"
   
-  let rec default_Self (self: t_Self) (return (x: UInt32.t)) = {[@expl:default 'self' type invariant] inv_ref_Self self}
+  let rec default_Self (self: t_Self) (return (x: UInt32.t)) =
+    {[@stop_split] [@expl:default 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
@@ -49,5 +50,5 @@ module M_should_use_impl
   let rec should_use_impl (x: UInt32.t) (return (x'0: ())) = (! bb0
     [ bb0 = s0 [ s0 = default_u32 {x} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & _4: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
 end
