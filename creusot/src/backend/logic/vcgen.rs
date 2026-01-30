@@ -378,10 +378,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
                 contract.subst(&call_subst);
 
+                let name = self.ctx.item_name(*id);
+                let name = name.as_str();
                 contract
-                    .requires_conj()
+                    .requires_conj(name)
                     .log_and(variant)
-                    .log_and(contract.ensures_conj().implies(k(call)))
+                    .log_and(contract.ensures_conj(name).implies(k(call)))
             }),
 
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))

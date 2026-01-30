@@ -16,13 +16,14 @@ module M_all_zero
       <= UInt64.t'int const_MAX
   
   let rec len_u32 (self_: t_Vec_u32_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@expl:len ensures] UInt64.t'int result = Seq.length (view_Vec_u32_Global self_)}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_u32_Global self_)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {[@expl:into_iter ensures] result = self_} (! return {result}) ]
+    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -57,7 +58,7 @@ module M_all_zero
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
   let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
-    [ return (result: t_Option_usize) -> {[@expl:next ensures] match result with
+    [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
         end}

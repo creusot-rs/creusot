@@ -88,7 +88,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     };
     body_decls.push(Decl::LogicDecl(val_decl));
 
-    let postcondition = sig.why_sig.contract.ensures_conj();
+    let postcondition = sig.why_sig.contract.ensures_conj(&name.name().to_string());
 
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
