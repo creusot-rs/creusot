@@ -13,7 +13,7 @@ use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, Param, Prototype},
-    declaration::{AdtDecl, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl, Use},
+    declaration::{AdtDecl, Attribute, ConstructorDecl, Decl, FieldDecl, SumRecord, TyDecl, Use},
     exp::{Exp, Pattern},
     ty::Type as MlT,
 };
@@ -342,7 +342,8 @@ pub(crate) fn eliminator<'tcx>(
         let assertion = Exp::match_(
             Exp::var(input_ident),
             [(pat, Exp::mk_true()), (Pattern::Wildcard, Exp::mk_false())],
-        );
+        )
+        .with_attr(Attribute::Attr(format!("expl:elim {}", variant.name.to_string())));
         Some(Defn::simple(
             Ident::fresh_local("_chk"),
             Expr::assert(assertion, Expr::Any).black_box(),
