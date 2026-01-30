@@ -113,29 +113,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             );
                         }
 
-                        if self.ctx.sig(fun_def_id).contract.is_requires_false()
-                            && !matches!(
-                                self.ctx.intrinsic(fun_def_id),
-                                Intrinsic::GhostDerefMut | Intrinsic::GhostDeref,
-                            )
-                            && !matches!(tr_res, TraitResolved::UnknownFound)
-                        {
-                            target = None
-                        } else {
-                            let subst =
-                                self.ctx.normalize_erasing_regions(self.typing_env(), subst);
+                        let subst = self.ctx.normalize_erasing_regions(self.typing_env(), subst);
 
-                            self.emit_statement(Statement {
-                                kind: fmir::StatementKind::Call(
-                                    self.translate_place(destination, span),
-                                    fun_def_id,
-                                    subst,
-                                    func_args,
-                                    span,
-                                ),
-                                span: span.source_callsite(),
-                            });
-                        }
+                        self.emit_statement(Statement {
+                            kind: fmir::StatementKind::Call(
+                                self.translate_place(destination, span),
+                                fun_def_id,
+                                subst,
+                                func_args,
+                                span,
+                            ),
+                            span: span.source_callsite(),
+                        });
                     }
                 }
 
