@@ -114,7 +114,7 @@ fn install(args: Args) -> anyhow::Result<()> {
 
 fn create_dirs(paths: &CreusotPaths) -> anyhow::Result<()> {
     fs::create_dir_all(&paths.config_dir())?;
-    fs::create_dir_all(&paths.prelude().join("packages/creusot/creusot"))?;
+    fs::create_dir_all(&paths.why3find_libs().join("packages/creusot/creusot"))?;
     fs::create_dir_all(&paths.bin())?;
     Ok(())
 }
@@ -205,7 +205,7 @@ fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()>
 
 fn install_prelude(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
     println!("Installing prelude...");
-    let out_dir = &paths.prelude().join("packages/creusot/creusot");
+    let out_dir = &paths.why3find_libs().join("packages/creusot/creusot");
     for entry in fs::read_dir(&PathBuf::from("target/creusot/packages/creusot/creusot"))? {
         let entry = entry?;
         assert!(entry.file_type()?.is_file());
