@@ -28,9 +28,6 @@ pub(crate) fn run_why3(
     paths: &CreusotPaths,
 ) -> Result<()> {
     check_why3_conf_exists(paths)?;
-    let prelude = std::ffi::OsString::from(String::from_utf8(
-        Command::new(paths.why3find()).arg("where").output()?.stdout,
-    )?);
     let mut why3 = Command::new(paths.why3());
     why3.args([
         "--warn-off=unused_variable",
@@ -39,7 +36,7 @@ pub(crate) fn run_why3(
         "--debug=coma_no_trivial",
         "-L",
     ])
-    .arg(&prelude)
+    .arg(paths.why3find_libs().join("packages/creusot"))
     .arg(mode.to_string())
     .arg(coma_file)
     .arg("-C")

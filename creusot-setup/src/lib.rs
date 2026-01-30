@@ -68,7 +68,7 @@ impl CreusotPaths {
         self.binary("why3find")
     }
 
-    pub fn prelude(&self) -> PathBuf {
+    pub fn why3find_libs(&self) -> PathBuf {
         self.data_dir().join("share/why3find")
     }
 }
