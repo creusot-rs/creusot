@@ -4,7 +4,17 @@
   sha256,
 }:
 with pkgs; let
-  cvc5-cadical = cadical.override {version = "2.1.3";};
+  cvc5-cadical = (pkgsStatic.cadical.override {
+     version = "2.1.3";
+  }).overrideAttrs {
+    prePatch = ''
+      sed -i -e '104d' test/api/run.sh
+    '';
+  };
+
+  cvc5-cln = pkgsStatic.cln.overrideAttrs {
+    NIX_CFLAGS_COMPILE = "-DHZ=100";
+  };
 
   cvc5-cocoalib = stdenv.mkDerivation {
     name = "CoCoALib";
@@ -15,7 +25,7 @@ with pkgs; let
     };
 
     nativeBuildInputs = [which];
-    buildInputs = [gmp];
+    buildInputs = [pkgsStatic.gmp];
 
     patches = [
       (fetchpatch {
@@ -29,15 +39,15 @@ with pkgs; let
       find . -type f -exec sed -i -e 's|/usr/bin/||g' {} \;
       find . -type f -exec sed -i -e 's|/bin/||g' {} \;
       find . -name "*.sh" -exec sed -i -e 's|bash|${bash}/bin/bash|g' {} \;
-      sed -i -e '14s|.*|GMP_LIB="${gmp.dev}/lib/libgmp.so"|g' configuration/gmp-find-hdr.sh
-      sed -i -e '106iexport LD_LIBRARY_PATH=${gmp}/lib' configuration/gmp-check-cxxflags.sh
+      sed -i -e '14s|.*|GMP_LIB="${pkgsStatic.gmp.dev}/lib/libgmp.a"|g' configuration/gmp-find-hdr.sh
+      sed -i -e '106iexport LD_LIBRARY_PATH=${pkgsStatic.gmp}/lib' configuration/gmp-check-cxxflags.sh
       sed -i -e '1s|.*|exit 0|g' src/tests/RunTests.sh
       touch doc/CoCoALib.pdf examples/index.html
       mkdir $out $out/include $out/lib
     '';
 
     configureFlags = [
-      "--with-libgmp=${gmp}/lib/libgmp.so"
+      "--with-libgmp=${pkgsStatic.gmp}/lib/libgmp.a"
     ];
   };
 
@@ -61,9 +71,25 @@ with pkgs; let
     ];
 
     nativeBuildInputs = [autoreconfHook];
+
+    configureFlags = [
+      "--enable-static"
+      "--disable-shared"
+    ];
+  };
+
+  cvc5-libpoly = pkgsStatic.libpoly.overrideAttrs {
+    patchPhase = ''
+      sed -i -e '77,106d' src/CMakeLists.txt
+    '';
+
+    cmakeFlags = [
+      "-DLIBPOLY_BUILD_PYTHON_API=0"
+    ];
   };
 in
   stdenv.mkDerivation {
+    passthru = {inherit cvc5-glpk;};
     inherit (cvc5) meta pname;
     inherit version;
 
@@ -76,28 +102,30 @@ in
 
     nativeBuildInputs = [pkg-config cmake];
 
-    buildInputs = [
-      cln
+    buildInputs = with pkgsStatic; [
       cvc5-cadical
+      cvc5-cln
       cvc5-cocoalib
       cvc5-glpk
+      cvc5-libpoly
       gmp
-      libedit
-      libpoly
+      pkgs.glibc.static
       python313Packages.pexpect
       python313Packages.pyparsing
       symfpu
     ];
 
+    outputs = ["out" "dev"];
+
     cmakeFlags = [
       "-DCMAKE_BUILD_TYPE=Production"
       "-DENABLE_GPL=1"
 
-      "-DBUILD_SHARED_LIBS=1"
+      "-DBUILD_SHARED_LIBS=0"
       "-DENABLE_ASAN=0"
       "-DENABLE_UBSAN=0"
       "-DENABLE_TSAN=0"
-      "-DENABLE_ASSERTION=0"
+      "-DENABLE_ASSERTIONS=0"
       "-DENABLE_DEBUG_SYMBOLS=0"
       "-DENABLE_MUZZLE=0"
       "-DENABLE_SAFE_MODE=0"
@@ -118,7 +146,7 @@ in
       "-DUSE_CLN=1"
       "-DUSE_COCOA=1"
       "-DUSE_CRYPTOMINISAT=0"
-      "-DUSE_EDITLINE=1"
+      "-DUSE_EDITLINE=0"
       "-DUSE_GLPK=1"
       "-DUSE_KISSAT=0"
       "-DUSE_POLY=1"
@@ -136,4 +164,8 @@ in
       "-DSKIP_SET_RPATH=0"
       "-DUSE_DEFAULT_LINKER=1"
     ];
+
+    patchPhase = ''
+      sed -i -e '78d' cmake/FindCaDiCaL.cmake
+    '';
   }
