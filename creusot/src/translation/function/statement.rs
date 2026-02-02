@@ -16,7 +16,7 @@ use rustc_middle::{
         BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
-    ty::{ConstKind, Ty, TyKind, UintTy, adjustment::PointerCoercion},
+    ty::{self, ConstKind, Ty, TyKind, UintTy, adjustment::PointerCoercion},
 };
 use rustc_span::Span;
 
@@ -70,6 +70,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     };
                     RValue::Operand(self.translate_operand(op, span))
                 }
+                RuntimeChecks(_) => self.ctx.crash_and_error(
+                    si.span,
+                    format!("MIR code used an unsupported Rvalue {rvalue:?}"),
+                ),
             },
             &Rvalue::Ref(_, ss, pl) => match ss {
                 Fake(..) => return,
@@ -206,7 +210,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
             Rvalue::CopyForDeref(_)
             | Rvalue::ShallowInitBox(_, _)
-            | Rvalue::NullaryOp(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::WrapUnsafeBinder(_, _) => self.ctx.crash_and_error(
                 si.span,
@@ -251,7 +254,7 @@ fn is_mut_ref_empty<'tcx>(ty: &Ty<'tcx>) -> bool {
     let ConstKind::Value(value) = len.kind() else {
         return false;
     };
-    let Some(scalar) = value.valtree.try_to_scalar_int() else {
+    let ty::ValTreeKind::Leaf(scalar) = *value.valtree else {
         return false;
     };
     scalar.is_null()

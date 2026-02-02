@@ -1,83 +1,13 @@
 module M_f
-  use creusot.slice.Slice64
   use creusot.prelude.Any
-  use seq.Seq
-  use creusot.int.UInt64
   use int.Int
   
   type t_Arguments
   
-  predicate inv_Seq_ref_str [@inline:trivial] (_1: Seq.seq string) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_str
-  
-  predicate invariant_array_ref_str_1 (self: Slice64.array string) =
-    inv_Seq_ref_str (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
-  
-  predicate inv_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_array_ref_str_1
-  
-  predicate invariant_ref_array_ref_str_1 [@inline:trivial] (self: Slice64.array string) = inv_array_ref_str_1 self
-  
-  meta "rewrite_def" predicate invariant_ref_array_ref_str_1
-  
-  predicate inv_ref_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_ref_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_ref_array_ref_str_1
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
-  
   predicate inv_Arguments (_1: t_Arguments)
   
-  let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
-    {[@stop_split] [@expl:new_const requires] ([@stop_split] [@expl:new_const 'pieces' type invariant] inv_ref_array_ref_str_1 pieces)
-    /\ ([@stop_split] [@expl:new_const requires] UInt64.le (1: UInt64.t) (1: UInt64.t))}
-    any
-    [ return (result: t_Arguments) -> {[@stop_split] [@expl:new_const result type invariant] inv_Arguments result}
+  let rec from_str (s: string) (return (x: t_Arguments)) = any
+    [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
       (! return {result}) ]
   
   let rec _print (args: t_Arguments) (return (x: ())) =
@@ -94,75 +24,23 @@ module M_f
   
   let rec f (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "Hello "
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_30 <- _const ] s1 ]
-      | s1 = [ &_5 <- _30 ] s2
-      | s2 = new_const {_5} (fun (_x: t_Arguments) -> [ &_3 <- _x ] s3)
-      | s3 = _print {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
-      | s4 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "world!\n"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_29 <- _const ] s5 ]
-      | s5 = [ &_11 <- _29 ] s6
-      | s6 = new_const {_11} (fun (_x: t_Arguments) -> [ &_9 <- _x ] s7)
-      | s7 = _print {_9} (fun (_x: ()) -> [ &_8 <- _x ] s8)
-      | s8 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "Hello "
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_28 <- _const ] s9 ]
-      | s9 = [ &_17 <- _28 ] s10
-      | s10 = new_const {_17} (fun (_x: t_Arguments) -> [ &_15 <- _x ] s11)
-      | s11 = _eprint {_15} (fun (_x: ()) -> [ &_14 <- _x ] s12)
-      | s12 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = "stderr!\n"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_27 <- _const ] s13 ]
-      | s13 = [ &_23 <- _27 ] s14
-      | s14 = new_const {_23} (fun (_x: t_Arguments) -> [ &_21 <- _x ] s15)
-      | s15 = _eprint {_21} (fun (_x: ()) -> [ &_20 <- _x ] s16)
-      | s16 = {[@expl:assertion] 1 + 1 = 2} s17
-      | s17 = return {_ret} ] ]
+      [ s0 = from_str {"Hello "} (fun (_x: t_Arguments) -> [ &_3 <- _x ] s1)
+      | s1 = _print {_3} (fun (_x: ()) -> [ &_2 <- _x ] s2)
+      | s2 = from_str {"world!\n"} (fun (_x: t_Arguments) -> [ &_6 <- _x ] s3)
+      | s3 = _print {_6} (fun (_x: ()) -> [ &_5 <- _x ] s4)
+      | s4 = from_str {"Hello "} (fun (_x: t_Arguments) -> [ &_9 <- _x ] s5)
+      | s5 = _eprint {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
+      | s6 = from_str {"stderr!\n"} (fun (_x: t_Arguments) -> [ &_12 <- _x ] s7)
+      | s7 = _eprint {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
+      | s8 = {[@expl:assertion] 1 + 1 = 2} s9
+      | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _3: t_Arguments = Any.any_l ()
-    | & _5: Slice64.array string = Any.any_l ()
+    | & _5: () = Any.any_l ()
+    | & _6: t_Arguments = Any.any_l ()
     | & _8: () = Any.any_l ()
     | & _9: t_Arguments = Any.any_l ()
-    | & _11: Slice64.array string = Any.any_l ()
-    | & _14: () = Any.any_l ()
-    | & _15: t_Arguments = Any.any_l ()
-    | & _17: Slice64.array string = Any.any_l ()
-    | & _20: () = Any.any_l ()
-    | & _21: t_Arguments = Any.any_l ()
-    | & _23: Slice64.array string = Any.any_l ()
-    | & _27: Slice64.array string = Any.any_l ()
-    | & _28: Slice64.array string = Any.any_l ()
-    | & _29: Slice64.array string = Any.any_l ()
-    | & _30: Slice64.array string = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _11: () = Any.any_l ()
+    | & _12: t_Arguments = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

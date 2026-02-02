@@ -635,7 +635,7 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
                         .emit();
                 }
             }
-            thir::ExprKind::Scope { lint_level: thir::LintLevel::Explicit(hir_id), .. } => {
+            thir::ExprKind::Scope { hir_id, .. } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {
                     let old_is_ghost = std::mem::replace(&mut self.is_in_ghost, true);
                     thir::visit::walk_expr(self, expr);

@@ -23,7 +23,7 @@ use rustc_middle::{
     ty::{Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::{DUMMY_SP, Span};
-use std::{assert_matches::assert_matches, collections::HashMap, ops::FnOnce};
+use std::{assert_matches, collections::HashMap, ops::FnOnce};
 
 pub(crate) use self::terminator::discriminator_for_switch;
 
@@ -422,13 +422,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ///
     /// Will error when trying to dereference a raw pointer.
     fn translate_operand(&self, operand: &Operand<'tcx>, span: Span) -> fmir::Operand<'tcx> {
+        use Operand::*;
         match operand {
-            &Operand::Copy(pl) | &Operand::Move(pl) => {
-                fmir::Operand::Place(self.translate_place(pl, span))
-            }
-            Operand::Constant(c) => {
-                mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id)
-            }
+            &Copy(pl) | &Move(pl) => fmir::Operand::Place(self.translate_place(pl, span)),
+            Constant(c) => mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id),
+            RuntimeChecks(_) => self.crash_and_error(span, "unimplemented operand"),
         }
     }
 

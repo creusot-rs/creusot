@@ -411,7 +411,7 @@ pub fn inputs_and_output_from_thir<'tcx>(
                 .skip(if ctx.tcx.is_closure_like(def_id) { 1 } else { 0 })
                 .enumerate()
                 .map(|(ix, param)| match &param.pat {
-                    Some(box Pat { kind, span, ty }) => {
+                    Some(box Pat { kind, span, ty, extra: _ }) => {
                         let ident = match kind {
                             PatKind::Binding { var, .. } => ctx.rename(var.0),
                             _ => Ident::fresh_local(format!("_{ix}")),

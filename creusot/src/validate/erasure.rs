@@ -1210,7 +1210,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     pat.span,
                 ))
             }
-            Deref { subpattern } => {
+            Deref { subpattern, pin: ty::Pinnedness::Not } => {
                 let subpattern = self.a_normal_form_pat(&**subpattern)?;
                 Ok(AnfPattern::Deref(subpattern.into()))
             }

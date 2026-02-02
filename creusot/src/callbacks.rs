@@ -75,33 +75,35 @@ impl Callbacks for ToWhy {
             // Remove MIR of Pearlite code (logic functions, contracts, assertions, snapshots)
             // One might wonder why not override `mir_promoted` instead: that would be too late because
             // drops are inserted then, and that results in errors because many types are not Drop.
-            providers.mir_built = |tcx, def_id| {
-                let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
+            providers.queries.mir_built = |tcx, def_id| {
+                let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.queries.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
                 cleanup_spec_closures(tcx, def_id, &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
 
             // Store borrow-checked bodies for translation
-            providers.mir_borrowck = |tcx, local_id| {
+            providers.queries.mir_borrowck = |tcx, local_id| {
                 copy_mir_bodies(tcx, local_id);
-                (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_borrowck)(tcx, local_id)
+                (rustc_interface::DEFAULT_QUERY_PROVIDERS.queries.mir_borrowck)(tcx, local_id)
             };
 
             // The `check_liveness` query is where unused variable warnings are emitted.
             // We reintroduce the MIR of Pearlite code for this analysis.
             // Then we remove it again for good.
-            providers.check_liveness = |tcx, local_id| {
+            providers.queries.check_liveness = |tcx, local_id| {
                 restore_mir_for_liveness_check(tcx, local_id);
-                let value =
-                    (rustc_interface::DEFAULT_QUERY_PROVIDERS.check_liveness)(tcx, local_id);
+                let value = (rustc_interface::DEFAULT_QUERY_PROVIDERS.queries.check_liveness)(
+                    tcx, local_id,
+                );
                 cleanup_spec_closures_final(tcx, local_id);
                 value
             };
 
             // Remove ghost code for codegen
-            providers.mir_drops_elaborated_and_const_checked = |tcx, def_id| {
+            providers.queries.mir_drops_elaborated_and_const_checked = |tcx, def_id| {
                 let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS
+                    .queries
                     .mir_drops_elaborated_and_const_checked)(tcx, def_id);
                 let mut mir = mir.steal();
                 remove_ghost_closures(tcx, &mut mir);

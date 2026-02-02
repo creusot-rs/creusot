@@ -16,8 +16,9 @@ use rustc_infer::{
     },
 };
 use rustc_middle::ty::{
-    Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd, ParamTy,
-    Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
+    self, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd,
+    ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
+    TypingMode,
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
@@ -27,6 +28,7 @@ use rustc_trait_selection::{
 use rustc_type_ir::{
     TypeSuperFoldable,
     fast_reject::{TreatParams, simplify_type},
+    inherent::Ty as _,
 };
 use std::{collections::HashMap, iter};
 
@@ -189,7 +191,7 @@ pub(crate) enum ImplSource_<'tcx> {
 
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
 /// type parameters, we might find an actual implementation of the item.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub(crate) enum TraitResolved<'tcx> {
     NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
@@ -200,13 +202,12 @@ pub(crate) enum TraitResolved<'tcx> {
     },
     /// A known instance exists, but we don't know which one.
     UnknownFound,
-    /// We don't know if an instance exists.
-    UnknownNotFound,
-    /// We know that no instance exists.
+    /// No instance exists, we return extra data to query whether an instance might exist
+    /// (via specialization or potentially defined in another crate).
     ///
     /// For example, in `fn<T> f(x: T) { let _ = x.clone() }`, we  don't have an
     /// instance for `T::clone` until we know more about `T`.
-    NoInstance,
+    NoInstance(NoInstance<'tcx>),
 }
 
 impl<'tcx> TraitResolved<'tcx> {
@@ -242,35 +243,7 @@ impl<'tcx> TraitResolved<'tcx> {
                 // In the meantime, pretend that we have an instance that we do not know
                 return TraitResolved::UnknownFound;
             }
-
-            // We have not found an instance. Does there exist a specializing instance?
-
-            let Ok(gt) = GraphTraversal::new(tcx, typing_env.param_env, trait_ref) else {
-                // Error => return dummy value
-                return TraitResolved::UnknownNotFound;
-            };
-
-            if gt.remote_crates_allow_impls() {
-                // A downstream or cousin crate is allowed to implement some
-                // generic parameters of this trait-ref.
-                return TraitResolved::UnknownNotFound;
-            }
-
-            // Check whether one of the descendents of start_node applies too
-            let r = gt.traverse_descendants(trait_ref.def_id, |node| {
-                if tcx.defaultness(node).is_default() {
-                    GraphTraversalAction::Traverse
-                } else {
-                    // This final instance may match our trait_ref
-                    GraphTraversalAction::Interrupt
-                }
-            });
-            if r {
-                // We have not found an instance in the graph
-                return TraitResolved::NoInstance;
-            } else {
-                return TraitResolved::UnknownNotFound;
-            };
+            return TraitResolved::NoInstance(NoInstance { tcx, typing_env, trait_ref });
         };
         trace!("TraitResolved::resolve {source:?}",);
 
@@ -437,6 +410,46 @@ fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
     value.fold_with(&mut Folder { ctx, tys: Default::default(), consts: Default::default() })
 }
 
+/// Data for further examination when resolution returns `TraitResolved::NoInstance`
+/// This is used by `crate::backend::resolve` and `crate::backend::ty_inv`.
+#[derive(Clone)]
+pub struct NoInstance<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    trait_ref: TraitRef<'tcx>,
+}
+
+impl std::fmt::Debug for NoInstance<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("NoInstance").field("trait_ref", &self.trait_ref).finish_non_exhaustive()
+    }
+}
+
+impl NoInstance<'_> {
+    pub fn trait_ref_is_specializable(&self) -> bool {
+        let Ok(gt) = GraphTraversal::new(self.tcx, self.typing_env.param_env, self.trait_ref)
+        else {
+            return false;
+        };
+
+        if gt.remote_crates_allow_impls() {
+            // A downstream or cousin crate is allowed to implement some
+            // generic parameters of this trait-ref.
+            return false;
+        }
+
+        // Check whether one of the descendents of start_node applies too
+        !gt.traverse_descendants(self.trait_ref.def_id, |node| {
+            if self.tcx.defaultness(node).is_default() {
+                GraphTraversalAction::Traverse
+            } else {
+                // This final instance may match our trait_ref
+                GraphTraversalAction::Interrupt
+            }
+        })
+    }
+}
+
 // Type used for traversing the specialization graph in order to find ambiguous instances
 struct GraphTraversal<'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -512,8 +525,37 @@ impl<'tcx> GraphTraversal<'tcx> {
     // We take inspiration from rustc_next_solver::cohenrence::trait_ref_is_knowable,
     // but ignore future-compatibility.
     fn remote_crates_allow_impls(&self) -> bool {
-        orphan_check_trait_ref(&self.infcx, self.trait_ref, InCrate::Remote, |ty| Ok::<_, !>(ty))
+        let trait_ref = remove_unnameable_for_orphan_check(self.tcx, self.trait_ref);
+        orphan_check_trait_ref(&self.infcx, trait_ref, InCrate::Remote, |ty| Ok::<_, !>(ty))
             .unwrap()
             .is_ok()
     }
+}
+
+// The orphan check crashes if it encounters unnameable types,
+// so we replace them with equivalent ones. This is fine because this is a syntactic check.
+fn remove_unnameable_for_orphan_check<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    trait_ref: ty::TraitRef<'tcx>,
+) -> ty::TraitRef<'tcx> {
+    struct Folder<'tcx>(TyCtxt<'tcx>);
+
+    impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Folder<'tcx> {
+        fn cx(&self) -> TyCtxt<'tcx> {
+            self.0
+        }
+
+        fn fold_ty(&mut self, t: Ty<'tcx>) -> Ty<'tcx> {
+            match t.kind() {
+                ty::FnDef(..) | ty::Closure(..) | ty::CoroutineClosure(..) | ty::Coroutine(..) => {
+                    // Unnameable types are considered extern types by `orphan_check_trait_ref` in `InCrate::Remote` mode,
+                    // so we replace them with unit as a dummy extern type.
+                    Ty::new_unit(self.cx())
+                }
+                _ => t.super_fold_with(self),
+            }
+        }
+    }
+
+    trait_ref.fold_with(&mut Folder(tcx))
 }

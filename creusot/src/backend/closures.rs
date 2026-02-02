@@ -19,7 +19,7 @@ use rustc_middle::{
     mir::Mutability,
     ty::{BorrowKind, CapturedPlace, ClosureKind, GenericArg, Ty, TyCtxt, TyKind, UpvarCapture},
 };
-use std::{assert_matches::assert_matches, iter::once};
+use std::{assert_matches, iter::once};
 
 fn closure_captures<'tcx>(
     tcx: TyCtxt<'tcx>,

@@ -14,7 +14,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
-    assert_matches::assert_matches,
+    assert_matches,
     collections::{HashMap, HashSet},
 };
 

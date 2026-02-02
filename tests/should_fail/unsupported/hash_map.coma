@@ -1,22 +1,22 @@
 module M_impl_Foo__new (* Foo *)
   use creusot.prelude.Any
   
-  type t_HashMap_u64_u8_RandomState
+  type t_HashMap_u64_u8_RandomState_Global
   
-  type t_Foo = { f0: t_HashMap_u64_u8_RandomState }
+  type t_Foo = { f0: t_HashMap_u64_u8_RandomState_Global }
   
-  predicate inv_HashMap_u64_u8_RandomState (_1: t_HashMap_u64_u8_RandomState)
+  predicate inv_HashMap_u64_u8_RandomState_Global (_1: t_HashMap_u64_u8_RandomState_Global)
   
   predicate inv_Foo (_1: t_Foo)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState_Global x.f0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec new (return (x: t_Foo)) = (! bb0
-    [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState = Any.any_l () ])
+    [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState_Global = Any.any_l () ])
     [ return (result: t_Foo) -> {[@stop_split] [@expl:new result type invariant] inv_Foo result} (! return {result}) ]
 end
 module M_impl_Foo__add (* Foo *)
@@ -26,15 +26,15 @@ module M_impl_Foo__add (* Foo *)
   use creusot.int.UInt8
   use map.Map
   
-  type t_HashMap_u64_u8_RandomState
+  type t_HashMap_u64_u8_RandomState_Global
   
-  type t_Foo = { f0: t_HashMap_u64_u8_RandomState }
+  type t_Foo = { f0: t_HashMap_u64_u8_RandomState_Global }
   
-  predicate inv_HashMap_u64_u8_RandomState (_1: t_HashMap_u64_u8_RandomState)
+  predicate inv_HashMap_u64_u8_RandomState_Global (_1: t_HashMap_u64_u8_RandomState_Global)
   
   predicate inv_Foo (_1: t_Foo)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState x.f0
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState_Global x.f0
   
   predicate invariant_refmut_Foo [@inline:trivial] (self: MutBorrow.t t_Foo) =
     inv_Foo self.current /\ inv_Foo self.final
@@ -55,9 +55,9 @@ module M_impl_Foo__add (* Foo *)
   
   meta "rewrite_def" function get_Int
   
-  function view_HashMap_u64_u8_RandomState (self: t_HashMap_u64_u8_RandomState) : t_FMap_Int_u8
+  function view_HashMap_u64_u8_RandomState_Global (self: t_HashMap_u64_u8_RandomState_Global) : t_FMap_Int_u8
   
-  function view_Foo [@inline:trivial] (self: t_Foo) : t_FMap_Int_u8 = view_HashMap_u64_u8_RandomState self.f0
+  function view_Foo [@inline:trivial] (self: t_Foo) : t_FMap_Int_u8 = view_HashMap_u64_u8_RandomState_Global self.f0
   
   meta "rewrite_def" function view_Foo
   
@@ -70,12 +70,12 @@ module M_impl_Foo__add (* Foo *)
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- bar ] s1
-      | s1 = MutBorrow.borrow_final <t_HashMap_u64_u8_RandomState> {self.current.f0}
+      | s1 = MutBorrow.borrow_final <t_HashMap_u64_u8_RandomState_Global> {self.current.f0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t t_HashMap_u64_u8_RandomState) ->
-            [ &_11 <- _bor ] -{inv_HashMap_u64_u8_RandomState _bor.final}-
+          (fun (_bor: MutBorrow.t t_HashMap_u64_u8_RandomState_Global) ->
+            [ &_11 <- _bor ] -{inv_HashMap_u64_u8_RandomState_Global _bor.final}-
             [ &self <- { self with current = { f0 = _bor.final } } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_HashMap_u64_u8_RandomState self.current.f0} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_HashMap_u64_u8_RandomState_Global self.current.f0} any) ]
       | s2 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Foo = self
@@ -83,7 +83,7 @@ module M_impl_Foo__add (* Foo *)
     | & bar: UInt8.t = bar
     | & _8: UInt8.t = Any.any_l ()
     | & _9: MutBorrow.t UInt8.t = Any.any_l ()
-    | & _11: MutBorrow.t t_HashMap_u64_u8_RandomState = Any.any_l () ])
+    | & _11: MutBorrow.t t_HashMap_u64_u8_RandomState_Global = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num)
       = Some bar}
       (! return {result}) ]

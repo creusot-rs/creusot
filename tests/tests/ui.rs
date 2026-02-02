@@ -284,6 +284,7 @@ fn run_creusot(
         })
         .collect();
 
+    cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_std={}", paths.rlib.display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));

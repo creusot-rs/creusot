@@ -3,9 +3,12 @@ use crate::{
     prelude::*,
     std::iter::{FromIteratorSpec, IteratorSpec},
 };
+#[cfg(feature = "nightly")]
+use std::alloc::Allocator;
 use std::{borrow::Borrow, collections::hash_set::*, hash::*};
 
-impl<T: DeepModel, S> View for HashSet<T, S> {
+#[cfg(feature = "nightly")]
+impl<T: DeepModel, S, A: Allocator> View for HashSet<T, S, A> {
     type ViewTy = FSet<T::DeepModelTy>;
 
     #[logic(opaque)]
@@ -18,20 +21,20 @@ extern_spec! {
     mod std {
         mod collections {
             mod hash_set {
-                impl<T: DeepModel, S> HashSet<T, S> {
+                impl<T: DeepModel, S, A: Allocator> HashSet<T, S, A> {
                     #[ensures(self@ == result@)]
                     fn iter(&self) -> Iter<'_, T>;
                 }
-                impl<T, S> HashSet<T, S>
+                impl<T, S, A: Allocator> HashSet<T, S, A>
                 where
                     T: Eq + Hash + DeepModel,
                     S: BuildHasher,
                 {
                     #[ensures(result@ == self@.intersection(other@))]
-                    fn intersection<'a>(&'a self, other: &'a HashSet<T,S>) -> Intersection<'a, T, S>;
+                    fn intersection<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Intersection<'a, T, S, A>;
 
                     #[ensures(result@ == self@.difference(other@))]
-                    fn difference<'a>(&'a self, other: &'a HashSet<T,S>) -> Difference<'a, T, S>;
+                    fn difference<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Difference<'a, T, S, A>;
 
                     #[ensures(result == self@.contains(value.deep_model()))]
                     fn contains<Q: ?Sized>(&self, value: &Q) -> bool
@@ -43,18 +46,19 @@ extern_spec! {
         }
     }
 
-    impl<T: DeepModel, S> IntoIterator for HashSet<T, S> {
+    impl<T: DeepModel, S, A: Allocator> IntoIterator for HashSet<T, S, A> {
         #[ensures(self@ == result@)]
-        fn into_iter(self) -> IntoIter<T>;
+        fn into_iter(self) -> IntoIter<T, A>;
     }
 
-    impl<'a, T: DeepModel, S> IntoIterator for &'a HashSet<T, S> {
+    impl<'a, T: DeepModel, S, A: Allocator> IntoIterator for &'a HashSet<T, S, A> {
         #[ensures(self@ == result@)]
         fn into_iter(self) -> Iter<'a, T>;
     }
 }
 
-impl<T: DeepModel> View for IntoIter<T> {
+#[cfg(feature = "nightly")]
+impl<T: DeepModel, A: Allocator> View for IntoIter<T, A> {
     type ViewTy = FSet<T::DeepModelTy>;
 
     #[logic(opaque)]
@@ -160,7 +164,8 @@ impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIteratorSpec<T> for
     }
 }
 
-impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
+#[cfg(feature = "nightly")]
+impl<'a, T: DeepModel, S, A: Allocator> View for Intersection<'a, T, S, A> {
     type ViewTy = FSet<T::DeepModelTy>;
 
     #[logic(opaque)]
@@ -169,7 +174,8 @@ impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
     }
 }
 
-impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
+#[cfg(feature = "nightly")]
+impl<'a, T: DeepModel, S, A: Allocator> View for Difference<'a, T, S, A> {
     type ViewTy = FSet<T::DeepModelTy>;
 
     #[logic(opaque)]
@@ -223,5 +229,24 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
+    }
+}
+
+#[cfg(not(feature = "nightly"))]
+mod impls {
+    use crate::{logic::FSet, prelude::*};
+    use std::collections::hash_set::{Difference, HashSet, Intersection, IntoIter};
+
+    impl<K: DeepModel, S> View for HashSet<K, S> {
+        type ViewTy = FSet<K::DeepModelTy>;
+    }
+    impl<K: DeepModel> View for IntoIter<K> {
+        type ViewTy = FSet<K::DeepModelTy>;
+    }
+    impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
+        type ViewTy = FSet<T::DeepModelTy>;
+    }
+    impl<'a, T: DeepModel, S> View for Difference<'a, T, S> {
+        type ViewTy = FSet<T::DeepModelTy>;
     }
 }

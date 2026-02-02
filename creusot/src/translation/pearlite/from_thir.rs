@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
-use rustc_ast::{ByRef, LitIntType, LitKind, Mutability};
+use rustc_ast::{ByRef, LitIntType, LitKind, Mutability, Pinnedness};
 use rustc_hir::{HirId, OwnerId, def::DefKind, def_id::LocalDefId};
 use rustc_hir_typeck::expr_use_visitor::PlaceBase;
 use rustc_middle::{
@@ -21,7 +21,7 @@ use rustc_middle::{
 };
 use rustc_span::{ErrorGuaranteed, sym};
 use std::{
-    assert_matches::assert_matches,
+    assert_matches,
     fmt::{Display, Formatter},
 };
 
@@ -650,16 +650,18 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Ok(Pattern::constructor(VariantIdx::ZERO, fields, pat.ty).span(pat.span))
                 }
             }
-            PatKind::Deref { subpattern }
-            | PatKind::DerefPattern { subpattern, borrow: ByRef::No } => Ok(Pattern {
-                ty: pat.ty,
-                span: pat.span,
-                kind: PatternKind::Deref(Box::new(self.pattern_term(
-                    ctx,
-                    subpattern,
-                    mut_allowed,
-                )?)),
-            }),
+            PatKind::Deref { subpattern, pin: Pinnedness::Not }
+            | PatKind::DerefPattern { subpattern, borrow: thir::DerefPatBorrowMode::Box } => {
+                Ok(Pattern {
+                    ty: pat.ty,
+                    span: pat.span,
+                    kind: PatternKind::Deref(Box::new(self.pattern_term(
+                        ctx,
+                        subpattern,
+                        mut_allowed,
+                    )?)),
+                })
+            }
             PatKind::Constant { value } => {
                 if !pat.ty.is_bool() {
                     return Err(self
@@ -672,10 +674,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     span: pat.span,
                     kind: PatternKind::Bool(value.try_to_bool().unwrap()),
                 })
-            }
-            // TODO: this simply ignores type annotations, maybe we should actually support them
-            PatKind::AscribeUserType { ascription: _, subpattern } => {
-                self.pattern_term(ctx, subpattern, mut_allowed)
             }
             PatKind::Or { pats } => {
                 let pats = pats

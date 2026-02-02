@@ -154,11 +154,12 @@ pub(crate) fn valtree_to_term<'tcx>(
     env: TypingEnv<'tcx>,
     span: Span,
 ) -> Option<Term<'tcx>> {
-    let kind = match valtree.try_to_scalar_int() {
-        Some(scalar) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
-        None if matches!(ty.kind(), ty::TyKind::Adt(_, _) | ty::TyKind::Tuple(_)) => {
-            let ty::DestructuredConst { variant, fields } =
-                ctx.destructure_const(ty::Const::new_value(ctx.tcx, valtree, ty));
+    let kind = match (*valtree, ty.kind()) {
+        (ty::ValTreeKind::Leaf(_), ty::Ref(..)) => return None,
+        (ty::ValTreeKind::Leaf(scalar), _) => {
+            TermKind::Lit(scalar_to_literal(*scalar, ty, ctx, env, span))
+        }
+        (ty::ValTreeKind::Branch(fields), ty::Tuple(..)) => {
             let fields = fields
                 .into_iter()
                 .map(|field| {
@@ -168,15 +169,23 @@ pub(crate) fn valtree_to_term<'tcx>(
                     valtree_to_term(valtree, ctx, ty, env, span)
                 })
                 .collect::<Option<Box<[_]>>>()?;
-            match ty.kind() {
-                ty::TyKind::Tuple(_) => TermKind::Tuple { fields },
-                ty::TyKind::Adt(__, _) => {
-                    TermKind::Constructor { variant: variant.unwrap(), fields }
-                }
-                _ => return None,
-            }
+            TermKind::Tuple { fields }
         }
-        None => return None,
+        (ty::ValTreeKind::Branch(_), ty::Adt(..)) => {
+            let ty::DestructuredAdtConst { variant, fields } =
+                ty::Value { ty, valtree }.destructure_adt_const();
+            let fields = fields
+                .into_iter()
+                .map(|field| {
+                    let ty::ConstKind::Value(ty::Value { ty, valtree }) = field.kind() else {
+                        unreachable!()
+                    };
+                    valtree_to_term(valtree, ctx, ty, env, span)
+                })
+                .collect::<Option<Box<[_]>>>()?;
+            TermKind::Constructor { variant, fields }
+        }
+        _ => return None,
     };
     Some(Term { kind, ty, span })
 }
