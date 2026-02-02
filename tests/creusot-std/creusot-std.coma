@@ -50047,9 +50047,7 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
   use creusot.int.UInt64BW
   use creusot.prelude.Opaque
   use creusot.prelude.PtrBW
-  use creusot.slice.Slice64
   use creusot.prelude.Any
-  use seq.Seq
   
   let rec is_power_of_two (self_: UInt64BW.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_power_of_two ensures] result
@@ -50062,79 +50060,10 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
   
   type t_Arguments
   
-  predicate inv_Seq_ref_str [@inline:trivial] (_1: Seq.seq string) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_str
-  
-  predicate invariant_array_ref_str_1 (self: Slice64.array string) =
-    inv_Seq_ref_str (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64BW.t'int (1: UInt64BW.t)
-  
-  predicate inv_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_array_ref_str_1
-  
-  predicate invariant_ref_array_ref_str_1 [@inline:trivial] (self: Slice64.array string) = inv_array_ref_str_1 self
-  
-  meta "rewrite_def" predicate invariant_ref_array_ref_str_1
-  
-  predicate inv_ref_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_ref_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_ref_array_ref_str_1
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64BW.t) (o: UInt64BW.t) : t_Ordering = if UInt64BW.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Greater
-      -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Less
-      -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64BW.t) (y: UInt64BW.t) (z: UInt64BW.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t, z: UInt64BW.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64BW.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64BW.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log_usize x y <> Greater)
-  
   predicate inv_Arguments (_1: t_Arguments)
   
-  let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
-    {[@stop_split] [@expl:new_const requires] ([@stop_split] [@expl:new_const 'pieces' type invariant] inv_ref_array_ref_str_1 pieces)
-    /\ ([@stop_split] [@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t))}
-    any
-    [ return (result: t_Arguments) -> {[@stop_split] [@expl:new_const result type invariant] inv_Arguments result}
+  let rec from_str (s: string) (return (x: t_Arguments)) = any
+    [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
       (! return {result}) ]
   
   predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64BW.t) =
@@ -50152,36 +50081,22 @@ module M_std__ptr__extern_spec_T_ptrconst_T_is_aligned_to_body
       [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1)
       | s1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1)
-      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s2)
-      | s2 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s3
-      | s3 = [ &_ret <- _21 = (0: UInt64BW.t) ] s4
+      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_19 <- _x ] s1)
+      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_21 <- _x ] s2)
+      | s2 = [ &_18 <- UInt64BW.bw_and _19 _21 ] s3
+      | s3 = [ &_ret <- _18 = (0: UInt64BW.t) ] s4
       | s4 = return {_ret} ]
     | bb3 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = "is_aligned_to: align is not a power-of-two"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
-      | s1 = [ &_19 <- _26 ] s2
-      | s2 = new_const {_19} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s3)
-      | s3 = {false} any ] ]
+      [ s0 = from_str {"is_aligned_to: align is not a power-of-two"} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
     | & _12: bool = Any.any_l ()
     | & _17: t_Arguments = Any.any_l ()
-    | & _19: Slice64.array string = Any.any_l ()
-    | & _21: UInt64BW.t = Any.any_l ()
-    | & _22: UInt64BW.t = Any.any_l ()
-    | & _24: UInt64BW.t = Any.any_l ()
-    | & _26: Slice64.array string = Any.any_l () ])
+    | & _18: UInt64BW.t = Any.any_l ()
+    | & _19: UInt64BW.t = Any.any_l ()
+    | & _21: UInt64BW.t = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T__ptrconst_T_is_aligned_to_body ensures] result
       = is_aligned_to_ptr_T self_ align}
       (! return {result}) ]
@@ -50274,9 +50189,7 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
   use creusot.int.UInt64BW
   use creusot.prelude.Opaque
   use creusot.prelude.PtrBW
-  use creusot.slice.Slice64
   use creusot.prelude.Any
-  use seq.Seq
   
   let rec is_power_of_two (self_: UInt64BW.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_power_of_two ensures] result
@@ -50289,79 +50202,10 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
   
   type t_Arguments
   
-  predicate inv_Seq_ref_str [@inline:trivial] (_1: Seq.seq string) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_str
-  
-  predicate invariant_array_ref_str_1 (self: Slice64.array string) =
-    inv_Seq_ref_str (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64BW.t'int (1: UInt64BW.t)
-  
-  predicate inv_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_array_ref_str_1
-  
-  predicate invariant_ref_array_ref_str_1 [@inline:trivial] (self: Slice64.array string) = inv_array_ref_str_1 self
-  
-  meta "rewrite_def" predicate invariant_ref_array_ref_str_1
-  
-  predicate inv_ref_array_ref_str_1 [@inline:trivial] (_1: Slice64.array string) = invariant_ref_array_ref_str_1 _1
-  
-  meta "rewrite_def" predicate inv_ref_array_ref_str_1
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64BW.t) (o: UInt64BW.t) : t_Ordering = if UInt64BW.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Greater
-      -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. cmp_log_usize x y = Less
-      -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64BW.t) (y: UInt64BW.t) (z: UInt64BW.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t, z: UInt64BW.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64BW.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64BW.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64BW.t) (y: UInt64BW.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64BW.t, y: UInt64BW.t. UInt64BW.le x y = (cmp_log_usize x y <> Greater)
-  
   predicate inv_Arguments (_1: t_Arguments)
   
-  let rec new_const (pieces: Slice64.array string) (return (x: t_Arguments)) =
-    {[@stop_split] [@expl:new_const requires] ([@stop_split] [@expl:new_const 'pieces' type invariant] inv_ref_array_ref_str_1 pieces)
-    /\ ([@stop_split] [@expl:new_const requires] UInt64BW.le (1: UInt64BW.t) (1: UInt64BW.t))}
-    any
-    [ return (result: t_Arguments) -> {[@stop_split] [@expl:new_const result type invariant] inv_Arguments result}
+  let rec from_str (s: string) (return (x: t_Arguments)) = any
+    [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
       (! return {result}) ]
   
   predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64BW.t) =
@@ -50379,36 +50223,22 @@ module M_std__ptr__extern_spec_T_ptrmut_T_is_aligned_to_body
       [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1)
       | s1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_22 <- _x ] s1)
-      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s2)
-      | s2 = [ &_21 <- UInt64BW.bw_and _22 _24 ] s3
-      | s3 = [ &_ret <- _21 = (0: UInt64BW.t) ] s4
+      [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_19 <- _x ] s1)
+      | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_21 <- _x ] s2)
+      | s2 = [ &_18 <- UInt64BW.bw_and _19 _21 ] s3
+      | s3 = [ &_ret <- _18 = (0: UInt64BW.t) ] s4
       | s4 = return {_ret} ]
     | bb3 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array string) -> (! -{Seq.get __arr_temp.Slice64.elts 0
-                = "is_aligned_to: align is not a power-of-two"
-              /\ Seq.length __arr_temp.Slice64.elts = 1}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array string = Any.any_l () | & _1: Slice64.array string = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array string) -> [ &_26 <- _const ] s1 ]
-      | s1 = [ &_19 <- _26 ] s2
-      | s2 = new_const {_19} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s3)
-      | s3 = {false} any ] ]
+      [ s0 = from_str {"is_aligned_to: align is not a power-of-two"} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: bool = Any.any_l ()
     | & self_: Opaque.ptr = self_
     | & align: UInt64BW.t = align
     | & _12: bool = Any.any_l ()
     | & _17: t_Arguments = Any.any_l ()
-    | & _19: Slice64.array string = Any.any_l ()
-    | & _21: UInt64BW.t = Any.any_l ()
-    | & _22: UInt64BW.t = Any.any_l ()
-    | & _24: UInt64BW.t = Any.any_l ()
-    | & _26: Slice64.array string = Any.any_l () ])
+    | & _18: UInt64BW.t = Any.any_l ()
+    | & _19: UInt64BW.t = Any.any_l ()
+    | & _21: UInt64BW.t = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T__ptrmut_T_is_aligned_to_body ensures] result
       = is_aligned_to_ptr_T self_ align}
       (! return {result}) ]
@@ -51687,7 +51517,7 @@ module M_std__vec__impl_IteratorSpec_for_IntoIter_T_A__produces_trans (* <std::v
     -> produces_IntoIter_T_A b bc c
     -> ([@stop_split] [@expl:produces_trans ensures] produces_IntoIter_T_A a (Seq.(++) ab bc) c)
 end
-module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produces_refl (* <std::collections::hash_map::IntoIter<K, V> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V_A__produces_refl (* <std::collections::hash_map::IntoIter<K, V, A> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -51696,7 +51526,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   use map.Map
   use int.Int
   
-  type t_IntoIter_K_V
+  type t_IntoIter_K_V_A
   
   type t_K
   
@@ -51710,7 +51540,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
   
-  function view_IntoIter_K_V (self: t_IntoIter_K_V) : t_FMap_DeepModelTy_V
+  function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : t_FMap_DeepModelTy_V
   
   predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
@@ -51728,37 +51558,37 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
-  predicate produces_IntoIter_K_V [@inline:trivial] (self: t_IntoIter_K_V) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V) =
-    len_DeepModelTy (view_IntoIter_K_V self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V o)
+  predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
+    len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
     /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_IntoIter_K_V self) (deep_model_K k) = Some v
-        /\ get_DeepModelTy (view_IntoIter_K_V o) (deep_model_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V o) k = Some v
-        -> get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
+        /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy (view_IntoIter_K_V o) k = Some v)
+        \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
         /\ i2 < Seq.length visited /\ deep_model_K (Seq.get visited i1).f0 = deep_model_K (Seq.get visited i2).f0
       -> i1 = i2)
   
-  meta "rewrite_def" predicate produces_IntoIter_K_V
+  meta "rewrite_def" predicate produces_IntoIter_K_V_A
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_IntoIter_K_V
+  constant self : t_IntoIter_K_V_A
   
-  function produces_refl_IntoIter_K_V (self: t_IntoIter_K_V) : ()
+  function produces_refl_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : ()
   
-  goal vc_produces_refl_IntoIter_K_V:
-    [@stop_split] [@expl:produces_refl ensures] produces_IntoIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+  goal vc_produces_refl_IntoIter_K_V_A:
+    [@stop_split] [@expl:produces_refl ensures] produces_IntoIter_K_V_A self (Seq.empty: Seq.seq tup2_K_V) self
 end
-module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produces_trans (* <std::collections::hash_map::IntoIter<K, V> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V_A__produces_trans (* <std::collections::hash_map::IntoIter<K, V, A> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -51767,7 +51597,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   use map.Map
   use int.Int
   
-  type t_IntoIter_K_V
+  type t_IntoIter_K_V_A
   
   type t_K
   
@@ -51781,7 +51611,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
   
-  function view_IntoIter_K_V (self: t_IntoIter_K_V) : t_FMap_DeepModelTy_V
+  function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : t_FMap_DeepModelTy_V
   
   predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
@@ -51799,45 +51629,45 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
-  predicate produces_IntoIter_K_V [@inline:trivial] (self: t_IntoIter_K_V) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V) =
-    len_DeepModelTy (view_IntoIter_K_V self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V o)
+  predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
+    len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
     /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_IntoIter_K_V self) (deep_model_K k) = Some v
-        /\ get_DeepModelTy (view_IntoIter_K_V o) (deep_model_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V o) k = Some v
-        -> get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
+        /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy (view_IntoIter_K_V o) k = Some v)
+        \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
         /\ i2 < Seq.length visited /\ deep_model_K (Seq.get visited i1).f0 = deep_model_K (Seq.get visited i2).f0
       -> i1 = i2)
   
-  meta "rewrite_def" predicate produces_IntoIter_K_V
+  meta "rewrite_def" predicate produces_IntoIter_K_V_A
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_IntoIter_K_V
+  constant a : t_IntoIter_K_V_A
   
   constant ab : Seq.seq tup2_K_V
   
-  constant b : t_IntoIter_K_V
+  constant b : t_IntoIter_K_V_A
   
   constant bc : Seq.seq tup2_K_V
   
-  constant c : t_IntoIter_K_V
+  constant c : t_IntoIter_K_V_A
   
-  function produces_trans_IntoIter_K_V (a: t_IntoIter_K_V) (ab: Seq.seq tup2_K_V) (b: t_IntoIter_K_V) (bc: Seq.seq tup2_K_V) (c: t_IntoIter_K_V) : ()
+  function produces_trans_IntoIter_K_V_A (a: t_IntoIter_K_V_A) (ab: Seq.seq tup2_K_V) (b: t_IntoIter_K_V_A) (bc: Seq.seq tup2_K_V) (c: t_IntoIter_K_V_A) : ()
   
-  goal vc_produces_trans_IntoIter_K_V: produces_IntoIter_K_V a ab b
-    -> produces_IntoIter_K_V b bc c
+  goal vc_produces_trans_IntoIter_K_V_A: produces_IntoIter_K_V_A a ab b
+    -> produces_IntoIter_K_V_A b bc c
     -> (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
-    && ([@stop_split] [@expl:produces_trans ensures] produces_IntoIter_K_V a (Seq.(++) ab bc) c)
+    && ([@stop_split] [@expl:produces_trans ensures] produces_IntoIter_K_V_A a (Seq.(++) ab bc) c)
 end
 module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_refl (* <std::collections::hash_map::Iter<'a, K, V> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -52244,7 +52074,7 @@ module M_std__collections__hash_set__set_produces_trans
     && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
     && ([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c))
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_refl (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T_Global__produces_refl (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52253,13 +52083,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   use set.Fset
   use int.Int
   
-  type t_IntoIter_T
+  type t_IntoIter_T_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_IntoIter_T (self: t_IntoIter_T) : Fset.fset t_DeepModelTy
+  function view_IntoIter_T_Global (self: t_IntoIter_T_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52269,37 +52099,37 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   
   predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_T (start: t_IntoIter_T) (visited: Seq.seq t_T) (end': t_IntoIter_T) =
-    Fset.cardinal (view_IntoIter_T start) = Seq.length visited + Fset.cardinal (view_IntoIter_T end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T start) x
+  predicate set_produces_T (start: t_IntoIter_T_Global) (visited: Seq.seq t_T) (end': t_IntoIter_T_Global) =
+    Fset.cardinal (view_IntoIter_T_Global start) = Seq.length visited + Fset.cardinal (view_IntoIter_T_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global start) x
         -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
-        \/ contains_DeepModelTy (view_IntoIter_T end') x)
+        \/ contains_DeepModelTy (view_IntoIter_T_Global end') x)
     /\ (forall x: t_T. contains_T visited x
-        -> contains_DeepModelTy (view_IntoIter_T start) (deep_model_T x)
-        /\ not contains_DeepModelTy (view_IntoIter_T end') (deep_model_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T end') x
-        -> contains_DeepModelTy (view_IntoIter_T start) x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) (deep_model_T x)
+        /\ not contains_DeepModelTy (view_IntoIter_T_Global end') (deep_model_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global end') x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) x
         /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
         /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+  predicate produces_IntoIter_T_Global (self: t_IntoIter_T_Global) (visited: Seq.seq t_T) (o: t_IntoIter_T_Global) =
     set_produces_T self visited o
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_IntoIter_T
+  constant self : t_IntoIter_T_Global
   
-  function produces_refl_IntoIter_T (self: t_IntoIter_T) : ()
+  function produces_refl_IntoIter_T_Global (self: t_IntoIter_T_Global) : ()
   
-  goal vc_produces_refl_IntoIter_T:
-    [@stop_split] [@expl:produces_refl ensures] produces_IntoIter_T self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_IntoIter_T_Global:
+    [@stop_split] [@expl:produces_refl ensures] produces_IntoIter_T_Global self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_trans (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T_Global__produces_trans (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52308,13 +52138,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   use set.Fset
   use int.Int
   
-  type t_IntoIter_T
+  type t_IntoIter_T_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_IntoIter_T (self: t_IntoIter_T) : Fset.fset t_DeepModelTy
+  function view_IntoIter_T_Global (self: t_IntoIter_T_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52324,23 +52154,23 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   
   predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_T (start: t_IntoIter_T) (visited: Seq.seq t_T) (end': t_IntoIter_T) =
-    Fset.cardinal (view_IntoIter_T start) = Seq.length visited + Fset.cardinal (view_IntoIter_T end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T start) x
+  predicate set_produces_T (start: t_IntoIter_T_Global) (visited: Seq.seq t_T) (end': t_IntoIter_T_Global) =
+    Fset.cardinal (view_IntoIter_T_Global start) = Seq.length visited + Fset.cardinal (view_IntoIter_T_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global start) x
         -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
-        \/ contains_DeepModelTy (view_IntoIter_T end') x)
+        \/ contains_DeepModelTy (view_IntoIter_T_Global end') x)
     /\ (forall x: t_T. contains_T visited x
-        -> contains_DeepModelTy (view_IntoIter_T start) (deep_model_T x)
-        /\ not contains_DeepModelTy (view_IntoIter_T end') (deep_model_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T end') x
-        -> contains_DeepModelTy (view_IntoIter_T start) x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) (deep_model_T x)
+        /\ not contains_DeepModelTy (view_IntoIter_T_Global end') (deep_model_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global end') x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) x
         /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
         /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+  predicate produces_IntoIter_T_Global (self: t_IntoIter_T_Global) (visited: Seq.seq t_T) (o: t_IntoIter_T_Global) =
     set_produces_T self visited o
   
   constant concat_contains_T: () = ()
@@ -52349,35 +52179,35 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
         = contains_T a x
       \/ contains_T b x
   
-  function set_produces_trans_T (a: t_IntoIter_T) (ab: Seq.seq t_T) (b: t_IntoIter_T) (bc: Seq.seq t_T) (c: t_IntoIter_T) : ()
+  function set_produces_trans_T (a: t_IntoIter_T_Global) (ab: Seq.seq t_T) (b: t_IntoIter_T_Global) (bc: Seq.seq t_T) (c: t_IntoIter_T_Global) : ()
    = let _ = concat_contains_T in ()
   
   axiom set_produces_trans_T_spec:
-    forall a: t_IntoIter_T, ab: Seq.seq t_T, b: t_IntoIter_T, bc: Seq.seq t_T, c: t_IntoIter_T. set_produces_T a ab b
+    forall a: t_IntoIter_T_Global, ab: Seq.seq t_T, b: t_IntoIter_T_Global, bc: Seq.seq t_T, c: t_IntoIter_T_Global. set_produces_T a ab b
       -> set_produces_T b bc c -> set_produces_T a (Seq.(++) ab bc) c
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_IntoIter_T
+  constant a : t_IntoIter_T_Global
   
   constant ab : Seq.seq t_T
   
-  constant b : t_IntoIter_T
+  constant b : t_IntoIter_T_Global
   
   constant bc : Seq.seq t_T
   
-  constant c : t_IntoIter_T
+  constant c : t_IntoIter_T_Global
   
-  function produces_trans_IntoIter_T (a: t_IntoIter_T) (ab: Seq.seq t_T) (b: t_IntoIter_T) (bc: Seq.seq t_T) (c: t_IntoIter_T) : ()
+  function produces_trans_IntoIter_T_Global (a: t_IntoIter_T_Global) (ab: Seq.seq t_T) (b: t_IntoIter_T_Global) (bc: Seq.seq t_T) (c: t_IntoIter_T_Global) : ()
   
-  goal vc_produces_trans_IntoIter_T: produces_IntoIter_T a ab b
-    -> produces_IntoIter_T b bc c
+  goal vc_produces_trans_IntoIter_T_Global: produces_IntoIter_T_Global a ab b
+    -> produces_IntoIter_T_Global b bc c
     -> ([@stop_split] [@expl:set_produces_trans requires] ([@stop_split] [@expl:set_produces_trans requires #0] set_produces_T a ab b)
       /\ ([@stop_split] [@expl:set_produces_trans requires #1] set_produces_T b bc c))
     /\ (([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c)
-    -> (let _ = set_produces_trans_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_IntoIter_T a (Seq.(++) ab bc) c))
+    -> (let _ = set_produces_trans_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_IntoIter_T_Global a (Seq.(++) ab bc) c))
 end
 module M_std__collections__hash_set__impl_IteratorSpec_for_Iter_T__produces_refl (* <std::collections::hash_set::Iter<'a, T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -52524,7 +52354,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Iter_T__produces_tran
     /\ (([@stop_split] [@expl:set_produces_trans ensures] set_produces_ref_T a (Seq.(++) ab bc) c)
     -> (let _ = set_produces_trans_ref_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_Iter_T a (Seq.(++) ab bc) c))
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__produces_refl (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S_Global__produces_refl (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52533,13 +52363,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   use set.Fset
   use int.Int
   
-  type t_Intersection_T_S
+  type t_Intersection_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Intersection_T_S (self: t_Intersection_T_S) : Fset.fset t_DeepModelTy
+  function view_Intersection_T_S_Global (self: t_Intersection_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52554,16 +52384,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Intersection_T_S) (visited: Seq.seq t_T) (end': t_Intersection_T_S) =
-    Fset.cardinal (view_Intersection_T_S start) = Seq.length visited + Fset.cardinal (view_Intersection_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S start) x
+  predicate set_produces_ref_T (start: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_S_Global) =
+    Fset.cardinal (view_Intersection_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Intersection_T_S end') x)
+        \/ contains_DeepModelTy (view_Intersection_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Intersection_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Intersection_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S end') x
-        -> contains_DeepModelTy (view_Intersection_T_S start) x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global end') x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -52571,21 +52402,21 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Intersection_T_S (self: t_Intersection_T_S) (visited: Seq.seq t_T) (o: t_Intersection_T_S) =
+  predicate produces_Intersection_T_S_Global (self: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Intersection_T_S
+  constant self : t_Intersection_T_S_Global
   
-  function produces_refl_Intersection_T_S (self: t_Intersection_T_S) : ()
+  function produces_refl_Intersection_T_S_Global (self: t_Intersection_T_S_Global) : ()
   
-  goal vc_produces_refl_Intersection_T_S:
-    [@stop_split] [@expl:produces_refl ensures] produces_Intersection_T_S self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Intersection_T_S_Global:
+    [@stop_split] [@expl:produces_refl ensures] produces_Intersection_T_S_Global self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__produces_trans (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S_Global__produces_trans (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52594,13 +52425,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   use set.Fset
   use int.Int
   
-  type t_Intersection_T_S
+  type t_Intersection_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Intersection_T_S (self: t_Intersection_T_S) : Fset.fset t_DeepModelTy
+  function view_Intersection_T_S_Global (self: t_Intersection_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52615,16 +52446,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Intersection_T_S) (visited: Seq.seq t_T) (end': t_Intersection_T_S) =
-    Fset.cardinal (view_Intersection_T_S start) = Seq.length visited + Fset.cardinal (view_Intersection_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S start) x
+  predicate set_produces_ref_T (start: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_S_Global) =
+    Fset.cardinal (view_Intersection_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Intersection_T_S end') x)
+        \/ contains_DeepModelTy (view_Intersection_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Intersection_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Intersection_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S end') x
-        -> contains_DeepModelTy (view_Intersection_T_S start) x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global end') x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -52632,7 +52464,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Intersection_T_S (self: t_Intersection_T_S) (visited: Seq.seq t_T) (o: t_Intersection_T_S) =
+  predicate produces_Intersection_T_S_Global (self: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_S_Global) =
     set_produces_ref_T self visited o
   
   constant concat_contains_ref_T: () = ()
@@ -52641,37 +52473,37 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
         = contains_ref_T a x
       \/ contains_ref_T b x
   
-  function set_produces_trans_ref_T (a: t_Intersection_T_S) (ab: Seq.seq t_T) (b: t_Intersection_T_S) (bc: Seq.seq t_T) (c: t_Intersection_T_S) : ()
+  function set_produces_trans_ref_T (a: t_Intersection_T_S_Global) (ab: Seq.seq t_T) (b: t_Intersection_T_S_Global) (bc: Seq.seq t_T) (c: t_Intersection_T_S_Global) : ()
    = let _ = concat_contains_ref_T in ()
   
   axiom set_produces_trans_ref_T_spec:
-    forall a: t_Intersection_T_S, ab: Seq.seq t_T, b: t_Intersection_T_S, bc: Seq.seq t_T, c: t_Intersection_T_S. set_produces_ref_T a ab b
+    forall a: t_Intersection_T_S_Global, ab: Seq.seq t_T, b: t_Intersection_T_S_Global, bc: Seq.seq t_T, c: t_Intersection_T_S_Global. set_produces_ref_T a ab b
       -> set_produces_ref_T b bc c -> set_produces_ref_T a (Seq.(++) ab bc) c
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_Intersection_T_S
+  constant a : t_Intersection_T_S_Global
   
   constant ab : Seq.seq t_T
   
-  constant b : t_Intersection_T_S
+  constant b : t_Intersection_T_S_Global
   
   constant bc : Seq.seq t_T
   
-  constant c : t_Intersection_T_S
+  constant c : t_Intersection_T_S_Global
   
-  function produces_trans_Intersection_T_S (a: t_Intersection_T_S) (ab: Seq.seq t_T) (b: t_Intersection_T_S) (bc: Seq.seq t_T) (c: t_Intersection_T_S) : ()
+  function produces_trans_Intersection_T_S_Global (a: t_Intersection_T_S_Global) (ab: Seq.seq t_T) (b: t_Intersection_T_S_Global) (bc: Seq.seq t_T) (c: t_Intersection_T_S_Global) : ()
   
-  goal vc_produces_trans_Intersection_T_S: produces_Intersection_T_S a ab b
-    -> produces_Intersection_T_S b bc c
+  goal vc_produces_trans_Intersection_T_S_Global: produces_Intersection_T_S_Global a ab b
+    -> produces_Intersection_T_S_Global b bc c
     -> ([@stop_split] [@expl:set_produces_trans requires] ([@stop_split] [@expl:set_produces_trans requires #0] set_produces_ref_T a ab b)
       /\ ([@stop_split] [@expl:set_produces_trans requires #1] set_produces_ref_T b bc c))
     /\ (([@stop_split] [@expl:set_produces_trans ensures] set_produces_ref_T a (Seq.(++) ab bc) c)
-    -> (let _ = set_produces_trans_ref_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_Intersection_T_S a (Seq.(++) ab bc) c))
+    -> (let _ = set_produces_trans_ref_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_Intersection_T_S_Global a (Seq.(++) ab bc) c))
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produces_refl (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S_Global__produces_refl (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52680,13 +52512,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   use set.Fset
   use int.Int
   
-  type t_Difference_T_S
+  type t_Difference_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Difference_T_S (self: t_Difference_T_S) : Fset.fset t_DeepModelTy
+  function view_Difference_T_S_Global (self: t_Difference_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52701,16 +52533,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Difference_T_S) (visited: Seq.seq t_T) (end': t_Difference_T_S) =
-    Fset.cardinal (view_Difference_T_S start) = Seq.length visited + Fset.cardinal (view_Difference_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S start) x
+  predicate set_produces_ref_T (start: t_Difference_T_S_Global) (visited: Seq.seq t_T) (end': t_Difference_T_S_Global) =
+    Fset.cardinal (view_Difference_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Difference_T_S end') x)
+        \/ contains_DeepModelTy (view_Difference_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Difference_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Difference_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S end') x
-        -> contains_DeepModelTy (view_Difference_T_S start) x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global end') x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -52718,21 +52551,21 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Difference_T_S (self: t_Difference_T_S) (visited: Seq.seq t_T) (o: t_Difference_T_S) =
+  predicate produces_Difference_T_S_Global (self: t_Difference_T_S_Global) (visited: Seq.seq t_T) (o: t_Difference_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_Difference_T_S
+  constant self : t_Difference_T_S_Global
   
-  function produces_refl_Difference_T_S (self: t_Difference_T_S) : ()
+  function produces_refl_Difference_T_S_Global (self: t_Difference_T_S_Global) : ()
   
-  goal vc_produces_refl_Difference_T_S:
-    [@stop_split] [@expl:produces_refl ensures] produces_Difference_T_S self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Difference_T_S_Global:
+    [@stop_split] [@expl:produces_refl ensures] produces_Difference_T_S_Global self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produces_trans (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S_Global__produces_trans (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -52741,13 +52574,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   use set.Fset
   use int.Int
   
-  type t_Difference_T_S
+  type t_Difference_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Difference_T_S (self: t_Difference_T_S) : Fset.fset t_DeepModelTy
+  function view_Difference_T_S_Global (self: t_Difference_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -52762,16 +52595,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Difference_T_S) (visited: Seq.seq t_T) (end': t_Difference_T_S) =
-    Fset.cardinal (view_Difference_T_S start) = Seq.length visited + Fset.cardinal (view_Difference_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S start) x
+  predicate set_produces_ref_T (start: t_Difference_T_S_Global) (visited: Seq.seq t_T) (end': t_Difference_T_S_Global) =
+    Fset.cardinal (view_Difference_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Difference_T_S end') x)
+        \/ contains_DeepModelTy (view_Difference_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Difference_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Difference_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S end') x
-        -> contains_DeepModelTy (view_Difference_T_S start) x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global end') x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -52779,7 +52613,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Difference_T_S (self: t_Difference_T_S) (visited: Seq.seq t_T) (o: t_Difference_T_S) =
+  predicate produces_Difference_T_S_Global (self: t_Difference_T_S_Global) (visited: Seq.seq t_T) (o: t_Difference_T_S_Global) =
     set_produces_ref_T self visited o
   
   constant concat_contains_ref_T: () = ()
@@ -52788,35 +52622,35 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
         = contains_ref_T a x
       \/ contains_ref_T b x
   
-  function set_produces_trans_ref_T (a: t_Difference_T_S) (ab: Seq.seq t_T) (b: t_Difference_T_S) (bc: Seq.seq t_T) (c: t_Difference_T_S) : ()
+  function set_produces_trans_ref_T (a: t_Difference_T_S_Global) (ab: Seq.seq t_T) (b: t_Difference_T_S_Global) (bc: Seq.seq t_T) (c: t_Difference_T_S_Global) : ()
    = let _ = concat_contains_ref_T in ()
   
   axiom set_produces_trans_ref_T_spec:
-    forall a: t_Difference_T_S, ab: Seq.seq t_T, b: t_Difference_T_S, bc: Seq.seq t_T, c: t_Difference_T_S. set_produces_ref_T a ab b
+    forall a: t_Difference_T_S_Global, ab: Seq.seq t_T, b: t_Difference_T_S_Global, bc: Seq.seq t_T, c: t_Difference_T_S_Global. set_produces_ref_T a ab b
       -> set_produces_ref_T b bc c -> set_produces_ref_T a (Seq.(++) ab bc) c
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_Difference_T_S
+  constant a : t_Difference_T_S_Global
   
   constant ab : Seq.seq t_T
   
-  constant b : t_Difference_T_S
+  constant b : t_Difference_T_S_Global
   
   constant bc : Seq.seq t_T
   
-  constant c : t_Difference_T_S
+  constant c : t_Difference_T_S_Global
   
-  function produces_trans_Difference_T_S (a: t_Difference_T_S) (ab: Seq.seq t_T) (b: t_Difference_T_S) (bc: Seq.seq t_T) (c: t_Difference_T_S) : ()
+  function produces_trans_Difference_T_S_Global (a: t_Difference_T_S_Global) (ab: Seq.seq t_T) (b: t_Difference_T_S_Global) (bc: Seq.seq t_T) (c: t_Difference_T_S_Global) : ()
   
-  goal vc_produces_trans_Difference_T_S: produces_Difference_T_S a ab b
-    -> produces_Difference_T_S b bc c
+  goal vc_produces_trans_Difference_T_S_Global: produces_Difference_T_S_Global a ab b
+    -> produces_Difference_T_S_Global b bc c
     -> ([@stop_split] [@expl:set_produces_trans requires] ([@stop_split] [@expl:set_produces_trans requires #0] set_produces_ref_T a ab b)
       /\ ([@stop_split] [@expl:set_produces_trans requires #1] set_produces_ref_T b bc c))
     /\ (([@stop_split] [@expl:set_produces_trans ensures] set_produces_ref_T a (Seq.(++) ab bc) c)
-    -> (let _ = set_produces_trans_ref_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_Difference_T_S a (Seq.(++) ab bc) c))
+    -> (let _ = set_produces_trans_ref_T a ab b bc c in [@stop_split] [@expl:produces_trans ensures] produces_Difference_T_S_Global a (Seq.(++) ab bc) c))
 end
 module M_std__deque__impl_IteratorSpec_for_Iter_T__produces_refl (* <std::collections::vec_deque::Iter<'a, T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -58318,7 +58152,7 @@ module M_std__vec__impl_IteratorSpec_for_IntoIter_T_A__produces_refl__refines (*
   goal refines: forall self: t_IntoIter_T_A. forall result: (). produces_IntoIter_T_A self (Seq.empty: Seq.seq t_T) self
         -> produces_IntoIter_T_A self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produces_refl__refines (* <std::collections::hash_map::IntoIter<K, V> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V_A__produces_refl__refines (* <std::collections::hash_map::IntoIter<K, V, A> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -58327,7 +58161,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   use map.Map
   use int.Int
   
-  type t_IntoIter_K_V
+  type t_IntoIter_K_V_A
   
   type t_K
   
@@ -58341,7 +58175,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
   
-  function view_IntoIter_K_V (self: t_IntoIter_K_V) : t_FMap_DeepModelTy_V
+  function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : t_FMap_DeepModelTy_V
   
   predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
@@ -58359,34 +58193,34 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
-  predicate produces_IntoIter_K_V [@inline:trivial] (self: t_IntoIter_K_V) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V) =
-    len_DeepModelTy (view_IntoIter_K_V self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V o)
+  predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
+    len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
     /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_IntoIter_K_V self) (deep_model_K k) = Some v
-        /\ get_DeepModelTy (view_IntoIter_K_V o) (deep_model_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V o) k = Some v
-        -> get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
+        /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy (view_IntoIter_K_V o) k = Some v)
+        \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
         /\ i2 < Seq.length visited /\ deep_model_K (Seq.get visited i1).f0 = deep_model_K (Seq.get visited i2).f0
       -> i1 = i2)
   
-  meta "rewrite_def" predicate produces_IntoIter_K_V
+  meta "rewrite_def" predicate produces_IntoIter_K_V_A
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: t_IntoIter_K_V. forall result: (). produces_IntoIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
-        -> produces_IntoIter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+    forall self: t_IntoIter_K_V_A. forall result: (). produces_IntoIter_K_V_A self (Seq.empty: Seq.seq tup2_K_V) self
+        -> produces_IntoIter_K_V_A self (Seq.empty: Seq.seq tup2_K_V) self
 end
-module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produces_trans__refines (* <std::collections::hash_map::IntoIter<K, V> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V_A__produces_trans__refines (* <std::collections::hash_map::IntoIter<K, V, A> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -58395,7 +58229,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   use map.Map
   use int.Int
   
-  type t_IntoIter_K_V
+  type t_IntoIter_K_V_A
   
   type t_K
   
@@ -58409,7 +58243,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   axiom len_DeepModelTy_spec: forall self: t_FMap_DeepModelTy_V. len_DeepModelTy self >= 0
   
-  function view_IntoIter_K_V (self: t_IntoIter_K_V) : t_FMap_DeepModelTy_V
+  function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : t_FMap_DeepModelTy_V
   
   predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
@@ -58427,36 +58261,36 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IntoIter_K_V__produce
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
-  predicate produces_IntoIter_K_V [@inline:trivial] (self: t_IntoIter_K_V) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V) =
-    len_DeepModelTy (view_IntoIter_K_V self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V o)
+  predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
+    len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
     /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_IntoIter_K_V self) (deep_model_K k) = Some v
-        /\ get_DeepModelTy (view_IntoIter_K_V o) (deep_model_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V o) k = Some v
-        -> get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
+        /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
         -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy (view_IntoIter_K_V o) k = Some v)
+        \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
         /\ i2 < Seq.length visited /\ deep_model_K (Seq.get visited i1).f0 = deep_model_K (Seq.get visited i2).f0
       -> i1 = i2)
   
-  meta "rewrite_def" predicate produces_IntoIter_K_V
+  meta "rewrite_def" predicate produces_IntoIter_K_V_A
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_IntoIter_K_V. forall ab: Seq.seq tup2_K_V. forall b: t_IntoIter_K_V. forall bc: Seq.seq tup2_K_V. forall c: t_IntoIter_K_V. produces_IntoIter_K_V a ab b
-                /\ produces_IntoIter_K_V b bc c
-              -> produces_IntoIter_K_V a ab b
-              /\ produces_IntoIter_K_V b bc c
-              /\ (forall result: (). produces_IntoIter_K_V a (Seq.(++) ab bc) c
-                -> produces_IntoIter_K_V a (Seq.(++) ab bc) c)
+    forall a: t_IntoIter_K_V_A. forall ab: Seq.seq tup2_K_V. forall b: t_IntoIter_K_V_A. forall bc: Seq.seq tup2_K_V. forall c: t_IntoIter_K_V_A. produces_IntoIter_K_V_A a ab b
+                /\ produces_IntoIter_K_V_A b bc c
+              -> produces_IntoIter_K_V_A a ab b
+              /\ produces_IntoIter_K_V_A b bc c
+              /\ (forall result: (). produces_IntoIter_K_V_A a (Seq.(++) ab bc) c
+                -> produces_IntoIter_K_V_A a (Seq.(++) ab bc) c)
 end
 module M_std__collections__hash_map__impl_IteratorSpec_for_Iter_K_V__produces_refl__refines (* <std::collections::hash_map::Iter<'a, K, V> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -58759,7 +58593,7 @@ module M_std__collections__hash_map__impl_IteratorSpec_for_IterMut_K_V__produces
     forall self: t_IterMut_K_V. forall result: (). produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self
         -> produces_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_refl__refines (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T_Global__produces_refl__refines (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -58768,13 +58602,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   use set.Fset
   use int.Int
   
-  type t_IntoIter_T
+  type t_IntoIter_T_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_IntoIter_T (self: t_IntoIter_T) : Fset.fset t_DeepModelTy
+  function view_IntoIter_T_Global (self: t_IntoIter_T_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -58784,74 +58618,23 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   
   predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_T (start: t_IntoIter_T) (visited: Seq.seq t_T) (end': t_IntoIter_T) =
-    Fset.cardinal (view_IntoIter_T start) = Seq.length visited + Fset.cardinal (view_IntoIter_T end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T start) x
+  predicate set_produces_T (start: t_IntoIter_T_Global) (visited: Seq.seq t_T) (end': t_IntoIter_T_Global) =
+    Fset.cardinal (view_IntoIter_T_Global start) = Seq.length visited + Fset.cardinal (view_IntoIter_T_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global start) x
         -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
-        \/ contains_DeepModelTy (view_IntoIter_T end') x)
+        \/ contains_DeepModelTy (view_IntoIter_T_Global end') x)
     /\ (forall x: t_T. contains_T visited x
-        -> contains_DeepModelTy (view_IntoIter_T start) (deep_model_T x)
-        /\ not contains_DeepModelTy (view_IntoIter_T end') (deep_model_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T end') x
-        -> contains_DeepModelTy (view_IntoIter_T start) x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) (deep_model_T x)
+        /\ not contains_DeepModelTy (view_IntoIter_T_Global end') (deep_model_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global end') x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) x
         /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
         /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
-    set_produces_T self visited o
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_IntoIter_T. forall result: (). produces_IntoIter_T self (Seq.empty: Seq.seq t_T) self
-        -> produces_IntoIter_T self (Seq.empty: Seq.seq t_T) self
-end
-module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_trans__refines (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use set.Fset
-  use int.Int
-  
-  type t_IntoIter_T
-  
-  type t_T
-  
-  type t_DeepModelTy
-  
-  function view_IntoIter_T (self: t_IntoIter_T) : Fset.fset t_DeepModelTy
-  
-  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_DeepModelTy
-  
-  function deep_model_T (self: t_T) : t_DeepModelTy
-  
-  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  predicate set_produces_T (start: t_IntoIter_T) (visited: Seq.seq t_T) (end': t_IntoIter_T) =
-    Fset.cardinal (view_IntoIter_T start) = Seq.length visited + Fset.cardinal (view_IntoIter_T end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T start) x
-        -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
-        \/ contains_DeepModelTy (view_IntoIter_T end') x)
-    /\ (forall x: t_T. contains_T visited x
-        -> contains_DeepModelTy (view_IntoIter_T start) (deep_model_T x)
-        /\ not contains_DeepModelTy (view_IntoIter_T end') (deep_model_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T end') x
-        -> contains_DeepModelTy (view_IntoIter_T start) x
-        /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
-    /\ (forall i: int, j: int. 0 <= i
-        /\ i < Seq.length visited
-        /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
-      -> i = j)
-  
-  predicate produces_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+  predicate produces_IntoIter_T_Global (self: t_IntoIter_T_Global) (visited: Seq.seq t_T) (o: t_IntoIter_T_Global) =
     set_produces_T self visited o
   
   meta "compute_max_steps" 1000000
@@ -58859,12 +58642,64 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T__produces_
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_IntoIter_T. forall ab: Seq.seq t_T. forall b: t_IntoIter_T. forall bc: Seq.seq t_T. forall c: t_IntoIter_T. produces_IntoIter_T a ab b
-                /\ produces_IntoIter_T b bc c
-              -> produces_IntoIter_T a ab b
-              /\ produces_IntoIter_T b bc c
-              /\ (forall result: (). produces_IntoIter_T a (Seq.(++) ab bc) c
-                -> produces_IntoIter_T a (Seq.(++) ab bc) c)
+    forall self: t_IntoIter_T_Global. forall result: (). produces_IntoIter_T_Global self (Seq.empty: Seq.seq t_T) self
+        -> produces_IntoIter_T_Global self (Seq.empty: Seq.seq t_T) self
+end
+module M_std__collections__hash_set__impl_IteratorSpec_for_IntoIter_T_Global__produces_trans__refines (* <std::collections::hash_set::IntoIter<T> as std::iter::IteratorSpec> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use set.Fset
+  use int.Int
+  
+  type t_IntoIter_T_Global
+  
+  type t_T
+  
+  type t_DeepModelTy
+  
+  function view_IntoIter_T_Global (self: t_IntoIter_T_Global) : Fset.fset t_DeepModelTy
+  
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_DeepModelTy
+  
+  function deep_model_T (self: t_T) : t_DeepModelTy
+  
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  predicate set_produces_T (start: t_IntoIter_T_Global) (visited: Seq.seq t_T) (end': t_IntoIter_T_Global) =
+    Fset.cardinal (view_IntoIter_T_Global start) = Seq.length visited + Fset.cardinal (view_IntoIter_T_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global start) x
+        -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1)
+        \/ contains_DeepModelTy (view_IntoIter_T_Global end') x)
+    /\ (forall x: t_T. contains_T visited x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) (deep_model_T x)
+        /\ not contains_DeepModelTy (view_IntoIter_T_Global end') (deep_model_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_IntoIter_T_Global end') x
+        -> contains_DeepModelTy (view_IntoIter_T_Global start) x
+        /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
+    /\ (forall i: int, j: int. 0 <= i
+        /\ i < Seq.length visited
+        /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
+      -> i = j)
+  
+  predicate produces_IntoIter_T_Global (self: t_IntoIter_T_Global) (visited: Seq.seq t_T) (o: t_IntoIter_T_Global) =
+    set_produces_T self visited o
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall a: t_IntoIter_T_Global. forall ab: Seq.seq t_T. forall b: t_IntoIter_T_Global. forall bc: Seq.seq t_T. forall c: t_IntoIter_T_Global. produces_IntoIter_T_Global a ab b
+                /\ produces_IntoIter_T_Global b bc c
+              -> produces_IntoIter_T_Global a ab b
+              /\ produces_IntoIter_T_Global b bc c
+              /\ (forall result: (). produces_IntoIter_T_Global a (Seq.(++) ab bc) c
+                -> produces_IntoIter_T_Global a (Seq.(++) ab bc) c)
 end
 module M_std__collections__hash_set__impl_IteratorSpec_for_Iter_T__produces_refl__refines (* <std::collections::hash_set::Iter<'a, T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -58982,7 +58817,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Iter_T__produces_tran
               /\ produces_Iter_T b bc c
               /\ (forall result: (). produces_Iter_T a (Seq.(++) ab bc) c -> produces_Iter_T a (Seq.(++) ab bc) c)
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__produces_refl__refines (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S_Global__produces_refl__refines (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -58991,13 +58826,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   use set.Fset
   use int.Int
   
-  type t_Intersection_T_S
+  type t_Intersection_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Intersection_T_S (self: t_Intersection_T_S) : Fset.fset t_DeepModelTy
+  function view_Intersection_T_S_Global (self: t_Intersection_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -59012,16 +58847,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Intersection_T_S) (visited: Seq.seq t_T) (end': t_Intersection_T_S) =
-    Fset.cardinal (view_Intersection_T_S start) = Seq.length visited + Fset.cardinal (view_Intersection_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S start) x
+  predicate set_produces_ref_T (start: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_S_Global) =
+    Fset.cardinal (view_Intersection_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Intersection_T_S end') x)
+        \/ contains_DeepModelTy (view_Intersection_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Intersection_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Intersection_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S end') x
-        -> contains_DeepModelTy (view_Intersection_T_S start) x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global end') x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -59029,7 +58865,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Intersection_T_S (self: t_Intersection_T_S) (visited: Seq.seq t_T) (o: t_Intersection_T_S) =
+  predicate produces_Intersection_T_S_Global (self: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
@@ -59037,10 +58873,10 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: t_Intersection_T_S. forall result: (). produces_Intersection_T_S self (Seq.empty: Seq.seq t_T) self
-        -> produces_Intersection_T_S self (Seq.empty: Seq.seq t_T) self
+    forall self: t_Intersection_T_S_Global. forall result: (). produces_Intersection_T_S_Global self (Seq.empty: Seq.seq t_T) self
+        -> produces_Intersection_T_S_Global self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__produces_trans__refines (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S_Global__produces_trans__refines (* <std::collections::hash_set::Intersection<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -59049,13 +58885,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   use set.Fset
   use int.Int
   
-  type t_Intersection_T_S
+  type t_Intersection_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Intersection_T_S (self: t_Intersection_T_S) : Fset.fset t_DeepModelTy
+  function view_Intersection_T_S_Global (self: t_Intersection_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -59070,16 +58906,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Intersection_T_S) (visited: Seq.seq t_T) (end': t_Intersection_T_S) =
-    Fset.cardinal (view_Intersection_T_S start) = Seq.length visited + Fset.cardinal (view_Intersection_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S start) x
+  predicate set_produces_ref_T (start: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_S_Global) =
+    Fset.cardinal (view_Intersection_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Intersection_T_S end') x)
+        \/ contains_DeepModelTy (view_Intersection_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Intersection_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Intersection_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S end') x
-        -> contains_DeepModelTy (view_Intersection_T_S start) x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_S_Global end') x
+        -> contains_DeepModelTy (view_Intersection_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -59087,7 +58924,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Intersection_T_S (self: t_Intersection_T_S) (visited: Seq.seq t_T) (o: t_Intersection_T_S) =
+  predicate produces_Intersection_T_S_Global (self: t_Intersection_T_S_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
@@ -59095,14 +58932,14 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Intersection_T_S__pro
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Intersection_T_S. forall ab: Seq.seq t_T. forall b: t_Intersection_T_S. forall bc: Seq.seq t_T. forall c: t_Intersection_T_S. produces_Intersection_T_S a ab b
-                /\ produces_Intersection_T_S b bc c
-              -> produces_Intersection_T_S a ab b
-              /\ produces_Intersection_T_S b bc c
-              /\ (forall result: (). produces_Intersection_T_S a (Seq.(++) ab bc) c
-                -> produces_Intersection_T_S a (Seq.(++) ab bc) c)
+    forall a: t_Intersection_T_S_Global. forall ab: Seq.seq t_T. forall b: t_Intersection_T_S_Global. forall bc: Seq.seq t_T. forall c: t_Intersection_T_S_Global. produces_Intersection_T_S_Global a ab b
+                /\ produces_Intersection_T_S_Global b bc c
+              -> produces_Intersection_T_S_Global a ab b
+              /\ produces_Intersection_T_S_Global b bc c
+              /\ (forall result: (). produces_Intersection_T_S_Global a (Seq.(++) ab bc) c
+                -> produces_Intersection_T_S_Global a (Seq.(++) ab bc) c)
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produces_refl__refines (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S_Global__produces_refl__refines (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -59111,13 +58948,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   use set.Fset
   use int.Int
   
-  type t_Difference_T_S
+  type t_Difference_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Difference_T_S (self: t_Difference_T_S) : Fset.fset t_DeepModelTy
+  function view_Difference_T_S_Global (self: t_Difference_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -59132,16 +58969,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Difference_T_S) (visited: Seq.seq t_T) (end': t_Difference_T_S) =
-    Fset.cardinal (view_Difference_T_S start) = Seq.length visited + Fset.cardinal (view_Difference_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S start) x
+  predicate set_produces_ref_T (start: t_Difference_T_S_Global) (visited: Seq.seq t_T) (end': t_Difference_T_S_Global) =
+    Fset.cardinal (view_Difference_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Difference_T_S end') x)
+        \/ contains_DeepModelTy (view_Difference_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Difference_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Difference_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S end') x
-        -> contains_DeepModelTy (view_Difference_T_S start) x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global end') x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -59149,7 +58987,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Difference_T_S (self: t_Difference_T_S) (visited: Seq.seq t_T) (o: t_Difference_T_S) =
+  predicate produces_Difference_T_S_Global (self: t_Difference_T_S_Global) (visited: Seq.seq t_T) (o: t_Difference_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
@@ -59157,10 +58995,10 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   meta "select_lsinst" "all"
   
   goal refines:
-    forall self: t_Difference_T_S. forall result: (). produces_Difference_T_S self (Seq.empty: Seq.seq t_T) self
-        -> produces_Difference_T_S self (Seq.empty: Seq.seq t_T) self
+    forall self: t_Difference_T_S_Global. forall result: (). produces_Difference_T_S_Global self (Seq.empty: Seq.seq t_T) self
+        -> produces_Difference_T_S_Global self (Seq.empty: Seq.seq t_T) self
 end
-module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produces_trans__refines (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
+module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S_Global__produces_trans__refines (* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -59169,13 +59007,13 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   use set.Fset
   use int.Int
   
-  type t_Difference_T_S
+  type t_Difference_T_S_Global
   
   type t_T
   
   type t_DeepModelTy
   
-  function view_Difference_T_S (self: t_Difference_T_S) : Fset.fset t_DeepModelTy
+  function view_Difference_T_S_Global (self: t_Difference_T_S_Global) : Fset.fset t_DeepModelTy
   
   predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
   
@@ -59190,16 +59028,17 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  predicate set_produces_ref_T (start: t_Difference_T_S) (visited: Seq.seq t_T) (end': t_Difference_T_S) =
-    Fset.cardinal (view_Difference_T_S start) = Seq.length visited + Fset.cardinal (view_Difference_T_S end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S start) x
+  predicate set_produces_ref_T (start: t_Difference_T_S_Global) (visited: Seq.seq t_T) (end': t_Difference_T_S_Global) =
+    Fset.cardinal (view_Difference_T_S_Global start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_S_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global start) x
         -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Difference_T_S end') x)
+        \/ contains_DeepModelTy (view_Difference_T_S_Global end') x)
     /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Difference_T_S start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Difference_T_S end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S end') x
-        -> contains_DeepModelTy (view_Difference_T_S start) x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_S_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global end') x
+        -> contains_DeepModelTy (view_Difference_T_S_Global start) x
         /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
     /\ (forall i: int, j: int. 0 <= i
         /\ i < Seq.length visited
@@ -59207,7 +59046,7 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
         /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
       -> i = j)
   
-  predicate produces_Difference_T_S (self: t_Difference_T_S) (visited: Seq.seq t_T) (o: t_Difference_T_S) =
+  predicate produces_Difference_T_S_Global (self: t_Difference_T_S_Global) (visited: Seq.seq t_T) (o: t_Difference_T_S_Global) =
     set_produces_ref_T self visited o
   
   meta "compute_max_steps" 1000000
@@ -59215,12 +59054,12 @@ module M_std__collections__hash_set__impl_IteratorSpec_for_Difference_T_S__produ
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Difference_T_S. forall ab: Seq.seq t_T. forall b: t_Difference_T_S. forall bc: Seq.seq t_T. forall c: t_Difference_T_S. produces_Difference_T_S a ab b
-                /\ produces_Difference_T_S b bc c
-              -> produces_Difference_T_S a ab b
-              /\ produces_Difference_T_S b bc c
-              /\ (forall result: (). produces_Difference_T_S a (Seq.(++) ab bc) c
-                -> produces_Difference_T_S a (Seq.(++) ab bc) c)
+    forall a: t_Difference_T_S_Global. forall ab: Seq.seq t_T. forall b: t_Difference_T_S_Global. forall bc: Seq.seq t_T. forall c: t_Difference_T_S_Global. produces_Difference_T_S_Global a ab b
+                /\ produces_Difference_T_S_Global b bc c
+              -> produces_Difference_T_S_Global a ab b
+              /\ produces_Difference_T_S_Global b bc c
+              /\ (forall result: (). produces_Difference_T_S_Global a (Seq.(++) ab bc) c
+                -> produces_Difference_T_S_Global a (Seq.(++) ab bc) c)
 end
 module M_std__deque__impl_IteratorSpec_for_Iter_T__produces_trans__refines (* <std::collections::vec_deque::Iter<'a, T> as std::iter::IteratorSpec> *)
   type namespace_other
