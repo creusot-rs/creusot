@@ -1,9 +1,7 @@
 #![feature(exit_status_error, try_blocks)]
 use anyhow::{Context as _, anyhow, bail};
 use clap::*;
-use creusot_setup::{
-    self as setup, Binary, CreusotPaths, generate_why3_conf, run, tools_versions_urls::*,
-};
+use creusot_setup::{self as setup, Binary, CreusotPaths, tools_versions_urls::*};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -14,7 +12,7 @@ use std::{
 pub struct ManagedBinary {
     pub bin: setup::Binary,
     url: &'static Url,
-    download: fn(&Url, &Path, &Path) -> anyhow::Result<()>,
+    download: fn(&Url, &Path, &Path, &Args) -> anyhow::Result<()>,
 }
 
 const ALTERGO: ManagedBinary = ManagedBinary {
@@ -62,6 +60,9 @@ struct Args {
     /// Set the number of available threads for Why3
     #[arg(long)]
     provers_parallelism: Option<usize>,
+    /// Only print commands that will write anything
+    #[arg(long)]
+    dry_run: bool,
 }
 
 #[derive(Debug, ValueEnum, Clone, Copy, PartialEq)]
@@ -75,33 +76,99 @@ enum SetupTool {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     if !args.skip_prelude {
-        build_prelude()?;
+        build_prelude(&args)?;
     }
     if args.only_build_prelude {
         return Ok(());
     }
-    install(args)
+    install(&args)
 }
 
-fn build_prelude() -> anyhow::Result<()> {
-    Command::new("cargo").args(["run", "--bin", "prelude-generator"]).status()?.exit_ok()?;
-    Ok(())
+impl Args {
+    fn comment(&self) {
+        if self.dry_run {
+            print!("echo ");
+        }
+    }
+
+    fn run(&self, mut cmd: Command) -> anyhow::Result<()> {
+        if self.dry_run {
+            println!("{:?}", cmd);
+        } else if !cmd.status()?.success() {
+            bail!("Failed: {:?}", cmd)
+        }
+        Ok(())
+    }
+
+    fn create_dir_all(&self, path: &Path) -> anyhow::Result<()> {
+        if self.dry_run {
+            println!("mkdir -p {}", path.display());
+        } else {
+            fs::create_dir_all(path)?;
+        }
+        Ok(())
+    }
+
+    fn copy(&self, src: &Path, dst: &Path) -> anyhow::Result<()> {
+        if self.dry_run {
+            println!("cp {} {}", src.display(), dst.display());
+        } else {
+            fs::copy(src, dst)?;
+        }
+        Ok(())
+    }
+
+    fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(
+        &self,
+        original: P,
+        link: Q,
+    ) -> anyhow::Result<()> {
+        if self.dry_run {
+            println!("ln -sf {} {}", original.as_ref().display(), link.as_ref().display());
+        } else {
+            let _ = fs::remove_file(&link);
+            #[cfg(unix)]
+            {
+                std::os::unix::fs::symlink(original, link)?;
+            }
+            #[cfg(windows)]
+            {
+                std::os::windows::fs::symlink_file(original, link)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn remove_dir_all(&self, path: &Path) -> anyhow::Result<()> {
+        if self.dry_run {
+            println!("rm -rf {}", path.display());
+        } else {
+            fs::remove_dir_all(path)?;
+        }
+        Ok(())
+    }
 }
 
-fn install(args: Args) -> anyhow::Result<()> {
+fn build_prelude(args: &Args) -> anyhow::Result<()> {
+    let mut cargo = Command::new("cargo");
+    cargo.args(["run", "--bin", "prelude-generator"]);
+    args.run(cargo)
+}
+
+fn install(args: &Args) -> anyhow::Result<()> {
     let paths: CreusotPaths = setup::creusot_paths();
-    create_dirs(&paths)?;
+    create_dirs(&paths, args)?;
     if !args.skip_why3 {
-        install_why3(&paths)?;
+        install_why3(&paths, args)?;
     }
     if !args.skip_prelude {
-        install_prelude(&paths)?;
+        install_prelude(&paths, args)?;
     }
     if !args.skip_cargo_creusot {
-        install_cargo_creusot()?;
+        install_cargo_creusot(args)?;
     }
     if !args.skip_creusot_rustc {
-        install_creusot_rustc(&paths)?;
+        install_creusot_rustc(&paths, args)?;
     }
     if !args.skip_extra_tools {
         install_tools(&paths, &args)?;
@@ -112,38 +179,35 @@ fn install(args: Args) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn create_dirs(paths: &CreusotPaths) -> anyhow::Result<()> {
-    fs::create_dir_all(&paths.config_dir())?;
-    fs::create_dir_all(&paths.why3find_libs().join("packages/creusot/creusot"))?;
-    fs::create_dir_all(&paths.bin())?;
+fn create_dirs(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
+    args.create_dir_all(&paths.config_dir())?;
+    args.create_dir_all(&paths.why3find_libs().join("packages/creusot/creusot"))?;
+    args.create_dir_all(&paths.bin())?;
     Ok(())
 }
 
-fn install_why3(paths: &CreusotPaths) -> anyhow::Result<()> {
+fn install_why3(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
+    args.comment();
     println!("Installing Why3 and Why3find...");
     let switch_dir = opam_switch(paths);
     let opam_dir = switch_dir.join("_opam");
     if fs::exists(&opam_dir)? {
         // Upgrade existing switch
-        fs::copy(PathBuf::from("creusot-deps.opam"), switch_dir.join("creusot-deps.opam"))?;
+        args.copy(&PathBuf::from("creusot-deps.opam"), &switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
         cmd.args(["install", "--yes", "--update-invariant", "--switch"])
             .arg(&switch_dir)
             .arg(switch_dir);
-        if !cmd.status()?.success() {
-            bail!("Failed to upgrade why3 and why3find")
-        }
+        args.run(cmd)?;
     } else {
-        fs::create_dir_all(&switch_dir)?;
-        fs::copy(PathBuf::from("creusot-deps.opam"), switch_dir.join("creusot-deps.opam"))?;
+        args.create_dir_all(&switch_dir)?;
+        args.copy(&PathBuf::from("creusot-deps.opam"), &switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
         cmd.args(["switch", "create", "-y"]).arg(switch_dir);
-        if !cmd.status()?.success() {
-            bail!("Failed to create opam switch")
-        }
+        args.run(cmd)?;
     }
-    symlink_file(opam_dir.join("bin/why3"), paths.why3())?;
-    symlink_file(opam_dir.join("bin/why3find"), paths.why3find())?;
+    args.symlink_file(opam_dir.join("bin/why3"), paths.why3())?;
+    args.symlink_file(opam_dir.join("bin/why3find"), paths.why3find())?;
     Ok(())
 }
 
@@ -160,32 +224,29 @@ fn opam_switch(_: &CreusotPaths) -> PathBuf {
     directories::BaseDirs::new().expect("could not find home").home_dir().join(".creusot")
 }
 
-fn install_cargo_creusot() -> anyhow::Result<()> {
+fn install_cargo_creusot(args: &Args) -> anyhow::Result<()> {
+    args.comment();
     println!("Installing cargo-creusot...");
     let mut cmd = Command::new("cargo");
     cmd.args(["install", "--path", "cargo-creusot", "--quiet"]);
-    if !cmd.status()?.success() {
-        bail!("Failed to install cargo-creusot")
-    }
-    Ok(())
+    args.run(cmd)
 }
 
-fn install_creusot_rustc(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
+fn install_creusot_rustc(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
+    args.comment();
     println!("Installing creusot-rustc...");
     let toolchain = setup::toolchain_channel();
-    let _ = fs::remove_dir_all(paths.data_dir().join("toolchains"));
+    // Ignore error if dir doesn't exist
+    let _ = args.remove_dir_all(&paths.data_dir().join("toolchains"));
     // Usually ~/.local/share/creusot/toolchains/nightly-YYYY-MM-DD/
     let toolchain_dir = &setup::toolchain_dir(paths.data_dir(), &toolchain);
     let mut cmd = Command::new("cargo");
     cmd.args(["install", "--path", "creusot-rustc", "--quiet", "--root"]).arg(toolchain_dir);
-    if !cmd.status()?.success() {
-        bail!("Failed to install creusot-rustc")
-    }
-    Ok(())
+    args.run(cmd)
 }
 
 fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
-    fs::create_dir_all(&paths.cache_dir())?;
+    args.create_dir_all(&paths.cache_dir())?;
     for (bin, tool) in [
         (ALTERGO, SetupTool::AltErgo),
         (Z3, SetupTool::Z3),
@@ -194,41 +255,51 @@ fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()>
     ] {
         if args.external.contains(&tool) {
             // create symbolic links for external tools
-            symlink_file(get_path(bin.bin)?, paths.bin().join(bin.bin.binary_name))?;
+            args.symlink_file(get_path(bin.bin, args)?, paths.bin().join(bin.bin.binary_name))?;
         } else {
             // download binaries for builtins
-            download(bin, &paths.cache_dir(), &paths.bin())?;
+            download(bin, &paths.cache_dir(), &paths.bin(), args)?;
         }
     }
     Ok(())
 }
 
-fn install_prelude(paths: &setup::CreusotPaths) -> anyhow::Result<()> {
+fn install_prelude(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
+    args.comment();
     println!("Installing prelude...");
     let out_dir = &paths.why3find_libs().join("packages/creusot/creusot");
     for entry in fs::read_dir(&PathBuf::from("target/creusot/packages/creusot/creusot"))? {
         let entry = entry?;
         assert!(entry.file_type()?.is_file());
-
-        fs::copy(entry.path(), out_dir.join(&entry.file_name()))?;
+        args.copy(&entry.path(), &out_dir.join(&entry.file_name()))?;
     }
     Ok(())
 }
 
 fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     // Default why3find.json for `cargo creusot new`.
-    fs::copy("why3find.json", paths.data_dir().join("why3find.json"))?;
-    generate_why3_conf(paths, args.provers_parallelism)?;
-    Ok(())
+    args.copy(&PathBuf::from("why3find.json"), &paths.data_dir().join("why3find.json"))?;
+    if args.dry_run {
+        let mut why3_conf = Command::new("cargo");
+        why3_conf.args(["creusot", "why3-conf"]);
+        if let Some(parallelism) = args.provers_parallelism {
+            why3_conf.args(["--provers-parallelism", &format!("{}", parallelism)]);
+        }
+        args.run(why3_conf)
+    } else {
+        // ad hoc code so that the CI job for Why3 tests can get this config without installing cargo-creusot
+        setup::generate_why3_conf(paths, args.provers_parallelism)
+    }
 }
 
-fn get_path(bin: Binary) -> anyhow::Result<PathBuf> {
+fn get_path(bin: Binary, args: &Args) -> anyhow::Result<PathBuf> {
     let path = bin.detect_path().ok_or(anyhow!(
         "{} not found. Please install {} version {}",
         &bin.display_name,
         &bin.display_name,
         &bin.version
     ))?;
+    args.comment();
     println!("Found {} at path: {}", &bin.display_name, &path.display());
     Ok(path)
 }
@@ -243,7 +314,7 @@ pub fn sha256sum(file: &Path) -> anyhow::Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-fn download_from_url(url: &Url, dest: &Path) -> anyhow::Result<()> {
+fn download_from_url(url: &Url, dest: &Path, args: &Args) -> anyhow::Result<()> {
     const DOWNLOAD_RETRIES: u32 = 1;
     let mut success = false;
     let mut tries: u32 = 0;
@@ -251,8 +322,12 @@ fn download_from_url(url: &Url, dest: &Path) -> anyhow::Result<()> {
         if tries > 0 {
             eprintln!("Retrying...")
         };
-        run(Command::new("curl").arg(url.url).arg("-fLo").arg(dest))
-            .with_context(|| format!("downloading {} to {}", url.url, dest.display()))?;
+        let mut curl = Command::new("curl");
+        curl.arg(url.url).arg("-fLo").arg(dest);
+        args.run(curl)?;
+        if args.dry_run {
+            return Ok(());
+        }
         let file_hash = sha256sum(dest)?;
         if file_hash == url.sha256 {
             success = true
@@ -270,27 +345,42 @@ fn download_from_url(url: &Url, dest: &Path) -> anyhow::Result<()> {
 
 // looks up [cache_dir] to try to find a cached download; if not, stores the
 // result of the download in [cache_dir] (using the hash as the filename).
-fn download_from_url_with_cache(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
+fn download_from_url_with_cache(
+    url: &Url,
+    cache_dir: &Path,
+    dest: &Path,
+    args: &Args,
+) -> anyhow::Result<()> {
     let cached_path = cache_dir.join(url.sha256);
-    if !(cached_path.is_file() && sha256sum(&cached_path)? == url.sha256) {
-        download_from_url(url, &cached_path)?;
-        println!()
+    // With --dry-run, skip the checksum which would take a few seconds.
+    if !(cached_path.is_file() && (args.dry_run || sha256sum(&cached_path)? == url.sha256)) {
+        download_from_url(url, &cached_path, args)?;
     } else {
-        println!(" (cached)")
+        args.comment();
+        println!("Skipped download (cached)")
     }
     if cached_path != dest {
-        fs::copy(cached_path, dest)?;
+        args.copy(&cached_path, dest)?;
     }
     Ok(())
 }
 
 // download a list [ManagedBinary]s
 
-fn download(bin: ManagedBinary, cache_dir: &Path, dest_dir: &Path) -> anyhow::Result<()> {
-    print!("Downloading {} {}...", bin.bin.display_name, bin.bin.version);
+fn download(
+    bin: ManagedBinary,
+    cache_dir: &Path,
+    dest_dir: &Path,
+    args: &Args,
+) -> anyhow::Result<()> {
+    args.comment();
+    print!("Install {} {}...", bin.bin.display_name, bin.bin.version);
+    if args.dry_run {
+        println!()
+    }
     let path = dest_dir.join(bin.bin.binary_name);
     let dl = bin.download;
-    dl(bin.url, cache_dir, &path)?;
+    dl(bin.url, cache_dir, &path, args)?;
     set_executable(&path)
 }
 
@@ -298,12 +388,23 @@ fn download(bin: ManagedBinary, cache_dir: &Path, dest_dir: &Path) -> anyhow::Re
 // interested in the z3 binary, so we extract it from the archive and throw away
 // the rest.
 
-fn download_z3_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
+fn download_z3_from_url(
+    url: &Url,
+    cache_dir: &Path,
+    dest: &Path,
+    args: &Args,
+) -> anyhow::Result<()> {
     use zip::read::ZipArchive;
     // just use the zip file stored in the cache
     let zip_path = cache_dir.join(url.sha256);
-    download_from_url_with_cache(url, cache_dir, &zip_path)?;
-    {
+    download_from_url_with_cache(url, cache_dir, &zip_path, args)?;
+    if args.dry_run {
+        println!(
+            "unzip -jo {} */bin/z3 -d {}",
+            zip_path.display(),
+            dest.parent().unwrap().display()
+        );
+    } else {
         // extract the z3 binary from the .zip archive
         let zipfile = std::fs::File::open(&zip_path)?;
         let mut archive = ZipArchive::new(zipfile)?;
@@ -324,12 +425,23 @@ fn download_z3_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Res
 // interested in the cvc5 binary, so we extract it from the archive and throw away
 // the rest.
 
-fn download_cvc5_from_url(url: &Url, cache_dir: &Path, dest: &Path) -> anyhow::Result<()> {
+fn download_cvc5_from_url(
+    url: &Url,
+    cache_dir: &Path,
+    dest: &Path,
+    args: &Args,
+) -> anyhow::Result<()> {
     use zip::read::ZipArchive;
     // just use the zip file stored in the cache
     let zip_path = cache_dir.join(url.sha256);
-    download_from_url_with_cache(url, cache_dir, &zip_path)?;
-    {
+    download_from_url_with_cache(url, cache_dir, &zip_path, args)?;
+    if args.dry_run {
+        println!(
+            "unzip -jo {} */bin/cvc5 -d {}",
+            zip_path.display(),
+            dest.parent().unwrap().display()
+        );
+    } else {
         // extract the cvc5 binary from the .zip archive
         let zipfile = std::fs::File::open(&zip_path)?;
         let mut archive = ZipArchive::new(zipfile)?;
@@ -357,16 +469,4 @@ fn set_executable(dest: &Path) -> anyhow::Result<()> {
         fs::set_permissions(dest, perms)?;
     }
     Ok(())
-}
-
-fn symlink_file<P: AsRef<Path>, Q: AsRef<Path>>(original: P, link: Q) -> std::io::Result<()> {
-    let _ = fs::remove_file(&link);
-    #[cfg(unix)]
-    {
-        std::os::unix::fs::symlink(original, link)
-    }
-    #[cfg(windows)]
-    {
-        std::os::windows::fs::symlink_file(original, link)
-    }
 }
