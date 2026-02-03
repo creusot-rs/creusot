@@ -554,6 +554,7 @@ mod base_prelude {
     pub use crate::std::{
         char::CharExt as _,
         iter::{SkipExt as _, TakeExt as _},
+        num::NumExt as _,
         ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
         option::OptionExt as _,
         ptr::{PointerExt as _, SizedPointerExt as _, SlicePointerExt as _},
