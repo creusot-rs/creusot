@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use core::cell::*;
+#[cfg(creusot)]
+use core::cell::UnsafeCell;
 
 extern_spec! {
     impl<T> UnsafeCell<T> {

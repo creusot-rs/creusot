@@ -1,12 +1,13 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
-#[cfg(all(feature = "nightly", feature = "std"))]
-use core::alloc::Allocator;
+#[cfg(creusot)]
 use core::{
-    ops::{
-        Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-    },
+    alloc::Allocator,
+    ops::{Index, IndexMut},
+};
+use core::{
+    ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     slice::*,
 };
 

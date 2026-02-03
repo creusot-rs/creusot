@@ -2,9 +2,7 @@ use crate::prelude::*;
 #[cfg(all(creusot, feature = "std"))]
 use core::any::Any;
 #[cfg(creusot)]
-use core::fmt;
-#[cfg(feature = "nightly")]
-use core::panicking::*;
+use core::{fmt, panicking::AssertKind};
 
 extern_spec! {
     mod core {

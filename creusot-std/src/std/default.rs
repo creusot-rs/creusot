@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::default::*;
 
 #[cfg(creusot)]
 pub use creusot_std_proc::Default;

@@ -1,12 +1,16 @@
+#[cfg(feature = "nightly")]
+use crate::logic::ops::IndexLogic;
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve};
-use crate::{logic::ops::IndexLogic, prelude::*};
+
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
-use std::{
-    collections::{VecDeque, vec_deque::Iter},
-    ops::{Index, IndexMut},
-};
+#[cfg(feature = "nightly")]
+use std::collections::VecDeque;
+use std::collections::vec_deque::Iter;
+#[cfg(creusot)]
+use std::ops::{Index, IndexMut};
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for VecDeque<T, A> {

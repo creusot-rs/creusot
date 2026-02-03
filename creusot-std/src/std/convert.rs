@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::convert::*;
 
 extern_spec! {
     mod core {

@@ -67,7 +67,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> core::i
       Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
-        let old_self: Snapshot<Self> = snapshot! { *self };
+        let _old_self: Snapshot<Self> = snapshot! { *self };
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
@@ -76,7 +76,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> core::i
                 self.produced = produced;
                 #[allow(path_statements)]
                 let _ = snapshot! { Self::produces_one_invariant };
-                proof_assert! { old_self.produces_one(r, *self) };
+                proof_assert! { _old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)
             }

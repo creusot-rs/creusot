@@ -124,6 +124,7 @@ impl AtomicI32 {
     }
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::into_inner`].
+    #[allow(unused_variables)]
     #[requires(self == *own.ward())]
     #[ensures(result == *own.val())]
     #[trusted]

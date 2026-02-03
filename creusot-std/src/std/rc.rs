@@ -1,7 +1,10 @@
 use crate::prelude::*;
-use alloc::{boxed::Box, rc::Rc};
+#[cfg(feature = "nightly")]
+use alloc::boxed::Box;
+use alloc::rc::Rc;
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
+#[cfg(creusot)]
 use core::ops::Deref;
 
 #[cfg(feature = "nightly")]

@@ -1,7 +1,9 @@
 use crate::prelude::*;
+#[cfg(creusot)]
+use core::convert::Infallible;
 #[cfg(feature = "nightly")]
 use core::marker::Tuple;
-use core::{convert::Infallible, ops::*};
+use core::ops::*;
 
 // Note: we should NOT give a generic extern spec for Deref::deref, since this
 // method is an exception being used both as a logic function and as a program

@@ -521,7 +521,6 @@ pub mod model;
 pub mod peano;
 pub mod resolve;
 pub mod snapshot;
-#[cfg_attr(not(creusot), allow(unused))]
 pub mod std;
 
 // We add some common things at the root of the creusot-std library

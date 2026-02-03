@@ -1,9 +1,7 @@
 use crate::prelude::*;
-use core::{
-    ops::{Add, Sub},
-    time::*,
-};
-
+#[cfg(creusot)]
+use core::ops::{Add, Sub};
+use core::time::*;
 #[cfg(feature = "std")]
 use std::time::Instant;
 
