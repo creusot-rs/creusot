@@ -5,7 +5,9 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
-use std::{borrow::Borrow, collections::hash_set::*, hash::*};
+#[cfg(creusot)]
+use std::borrow::Borrow;
+use std::{collections::hash_set::*, hash::*};
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel, S, A: Allocator> View for HashSet<T, S, A> {

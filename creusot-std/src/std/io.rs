@@ -1,4 +1,5 @@
 use crate::prelude::*;
+#[cfg(creusot)]
 use core::fmt;
 
 extern_spec! {

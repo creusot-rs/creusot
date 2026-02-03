@@ -1,12 +1,9 @@
 #[cfg(creusot)]
-use crate::logic::such_that;
-use crate::{
-    logic::{Mapping, ord::ord_laws_impl},
-    prelude::*,
-};
+use crate::logic::{Mapping, such_that};
+use crate::{logic::ord::ord_laws_impl, prelude::*};
+use core::option::*;
 #[cfg(creusot)]
-use core::marker::Destruct;
-use core::{cmp::Ordering, option::*};
+use core::{cmp::Ordering, marker::Destruct};
 
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;

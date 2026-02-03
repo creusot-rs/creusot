@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use core::clone::*;
 
 #[cfg(creusot)]
 pub use creusot_std_proc::Clone;

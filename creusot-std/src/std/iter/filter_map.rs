@@ -1,4 +1,6 @@
-use crate::{logic::Mapping, prelude::*, std::ops::*};
+use crate::prelude::*;
+#[cfg(creusot)]
+use crate::{logic::Mapping, std::ops::*};
 use core::iter::FilterMap;
 
 pub trait FilterMapExt<I, F> {

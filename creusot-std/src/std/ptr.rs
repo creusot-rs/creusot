@@ -4,7 +4,8 @@ use crate::{
     ghost::perm::{Container, Perm},
     prelude::*,
 };
-use core::ptr::*;
+#[cfg(creusot)]
+use core::ptr::Pointee;
 
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;

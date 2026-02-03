@@ -1,4 +1,5 @@
 use crate::prelude::*;
+#[cfg(creusot)]
 use core::fmt::Debug;
 
 impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+#[cfg(creusot)]
 use core::borrow::Borrow;
 
 // "In particular Eq, Ord and Hash must be equivalent for borrowed and owned values:

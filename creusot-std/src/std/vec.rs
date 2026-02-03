@@ -4,6 +4,7 @@ use crate::{logic::ops::IndexLogic, prelude::*};
 use alloc::vec::*;
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
+#[cfg(creusot)]
 use core::ops::{Deref, DerefMut, Index, IndexMut};
 
 #[cfg(feature = "nightly")]
