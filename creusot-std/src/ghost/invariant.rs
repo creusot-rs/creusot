@@ -293,19 +293,6 @@ impl<T: Protocol> AtomicInvariant<T> {
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
     }
-
-    /// Open the invariant to get the data stored inside, immutably.
-    ///
-    /// NOTE: This is the counterpart of [`NonAtomicInvariant::open_const`], but
-    /// it is not expected to be useful in practice as atomicity prevents
-    /// re-entrancy anyway.
-    #[trusted]
-    #[requires(tokens.contains(self.namespace()))]
-    #[ensures(result.protocol(self.public()))]
-    #[check(ghost)]
-    pub fn open_const<'a>(&'a self, tokens: &'a Tokens) -> &'a T {
-        panic!("Should not be called outside ghost code")
-    }
 }
 
 /// A ghost structure, that holds a piece of data (`T`) together with an
