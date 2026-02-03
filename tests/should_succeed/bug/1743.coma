@@ -4,7 +4,6 @@ module M_impl_S__minimize (* S *)
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use creusot.int.Int32
-  use creusot.int.Int64
   use creusot.prelude.Any
   use int.Int
   
@@ -16,8 +15,6 @@ module M_impl_S__minimize (* S *)
   
   function ward_ptr_i32 (self: t_Perm_ptr_i32) : Opaque.ptr
   
-  predicate ptr_is_aligned_opaque_i32 (self: t_Perm_ptr_i32)
-  
   predicate metadata_matches_i32 [@inline:trivial] (_value: Int32.t) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_i32
@@ -26,34 +23,13 @@ module M_impl_S__minimize (* S *)
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
-  constant size_of_i32: int = 4
-  
-  meta "rewrite_def" constant size_of_i32
-  
-  axiom size_of_i32_spec: 0 <= size_of_i32
-  
-  function size_of_val_i32 [@inline:trivial] (val': Int32.t) : int = size_of_i32
-  
-  meta "rewrite_def" function size_of_val_i32
-  
-  axiom size_of_val_i32_spec: forall val': Int32.t. 0 <= size_of_val_i32 val'
-  
-  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
-  
-  constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
-  
   predicate inv_ref_i32 [@inline:trivial] (_1: Int32.t) = true
   
   meta "rewrite_def" predicate inv_ref_i32
   
   predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
     not is_null_ptr_i32 (ward_ptr_i32 self)
-    /\ ptr_is_aligned_opaque_i32 self
-    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
-    /\ size_of_val_i32 (val_ptr_i32 self) <= Int64.to_int const_MAX
-    /\ UInt64.t'int (Ptr.addr_logic_u64 (ward_ptr_i32 self)) + size_of_val_i32 (val_ptr_i32 self)
-      <= UInt64.t'int const_MAX'0
-    /\ inv_ref_i32 (val_ptr_i32 self)
+    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self)) /\ inv_ref_i32 (val_ptr_i32 self)
   
   predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
