@@ -129,6 +129,7 @@ impl<T: ?Sized> DeepModel for *const T {
     }
 }
 
+/// Extension trait for pointers
 pub trait PointerExt<T: ?Sized>: Sized {
     /// _logical_ address of the pointer
     #[logic]
@@ -501,7 +502,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// ```ignore
     /// Perm::from_ref(r)
     /// // erases to
-    /// r as *const T  // or *mut T (both are allowed)
+    /// r as *const T
     /// ```
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
@@ -521,7 +522,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// ```ignore
     /// Perm::from_mut(r)
     /// // erases to
-    /// r as *const T  // or *mut T (both are allowed)
+    /// r as *mut T
     /// ```
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
