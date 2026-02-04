@@ -126,7 +126,7 @@ impl<K, V: RA> UnitRA for FMap<K, V> {
         let _ = V::core_idemp;
         let c = self.core_total();
         proof_assert!(c.op(c).unwrap_logic().ext_eq(c));
-        proof_assert!(c.op(self).unwrap_logic().ext_eq(self));
+        proof_assert!(forall<k> c.op(self).unwrap_logic().get(k) == self.get(k));
     }
 }
 
