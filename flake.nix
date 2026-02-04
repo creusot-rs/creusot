@@ -48,12 +48,12 @@
         };
 
         cvc5 = {
-          version = "1.3.1";
+          version = "1.3.2";
           sha256 = "sha256-nxJjrpWZfYPuuKN4CWxOHEuou4r+MdK0AjdEPZHZbHI=";
         };
 
         z3 = {
-          version = "4.15.3";
+          version = "4.15.4";
           sha256 = "sha256-Lw037Z0t0ySxkgMXkbjNW5CB4QQLRrrSEBsLJqiomZ4=";
         };
 
