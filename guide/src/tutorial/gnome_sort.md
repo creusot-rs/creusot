@@ -139,4 +139,4 @@ where
 We have proved the functional correctness of Gnome sort.
 Then we generalized it to sort elements of arbitrary ordered types.
 
-Bonus challenge (non-trivial!): prove the termination of `gnome_sort`. See the [Termination](./termination.md) chapter for more information.
+Bonus challenge (non-trivial!): prove the termination of `gnome_sort`. See the [Termination](../termination.md) chapter for more information.
