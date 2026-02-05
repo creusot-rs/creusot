@@ -20,8 +20,8 @@ use crate::{
         signature::lower_program_sig,
         term::{lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int, ity_to_prelude, translate_ty, ty_to_prelude,
-            uty_to_prelude,
+            constructor, floatty_to_prelude, int, ity_to_prelude, sign_extend, translate_ty,
+            ty_to_prelude, uty_to_prelude,
         },
         ty_inv::{is_tyinv_trivial, sig_add_type_invariant_spec},
         wto::{Component, weak_topological_order},
@@ -959,7 +959,7 @@ impl<'tcx> Branches<'tcx> {
                             }
                             Exp::Const(Constant::Uint(val as u128, Some(why_ty)))
                         } else {
-                            Exp::Const(Constant::Int(val, Some(why_ty)))
+                            Exp::Const(Constant::Int(sign_extend(val, *ity), Some(why_ty)))
                         };
                         (e, mk_goto(block_idents, tgt))
                     }),
