@@ -267,18 +267,33 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
     names: &impl Namer<'tcx>,
     original_borrow: Exp,
     span: Span,
+    place_ty: &mut PlaceTy<'tcx>,
     projections: &[ProjectionElem<V, Ty<'tcx>>],
     mut translate_index: impl FnMut(&V) -> (Exp, Ty<'tcx>),
 ) -> Exp {
-    let mut borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "get_id")).app([original_borrow]);
-    for proj in projections {
+    let mut borrow_id =
+        Some(Exp::qvar(names.in_pre(PreMod::MutBor, "get_id")).app([original_borrow]));
+    let mut add_inherit_id = |idx| {
+        borrow_id = Some(
+            Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
+                .app([std::mem::take(&mut borrow_id).unwrap(), idx]),
+        )
+    };
+
+    for (proj, ty) in iter_projections_ty(ctx, projections, place_ty) {
         match proj {
             ProjectionElem::Deref => {
-                // TODO: If this is a deref of a mutable borrow, the id should change !
+                assert_eq!(ty.variant_index, None);
+                if ty.ty.is_ref() {
+                    // Doing a reborrow under a mutable borrow is actually a projection
+                    assert!(ty.ty.is_mutable_ptr()); // Cannot do a mutable reborrow under a shared borrow
+                    // Note: this case cannot be triggered by programs or by pearlite terms. So this
+                    // is dead code. But the theory says that we should do this.
+                    add_inherit_id(Exp::Const(Constant::Int(0, None)))
+                }
             }
             ProjectionElem::Field(idx, _) => {
-                borrow_id = Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id"))
-                    .app([borrow_id, Exp::Const(Constant::Int(idx.as_u32() as i128 + 1, None))]);
+                add_inherit_id(Exp::Const(Constant::Int(idx.as_u32() as i128, None)))
             }
             ProjectionElem::Index(idx) => {
                 let (mut idx, idxty) = translate_index(idx);
@@ -288,8 +303,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
                 } else {
                     assert_eq!(idxty, ctx.int_ty());
                 }
-                borrow_id =
-                    Exp::qvar(names.in_pre(PreMod::MutBor, "inherit_id")).app([borrow_id, idx]);
+                add_inherit_id(idx)
             }
             ProjectionElem::ConstantIndex { .. }
             | ProjectionElem::Subslice { .. }
@@ -301,7 +315,7 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
             ProjectionElem::Downcast(..) | ProjectionElem::OpaqueCast(_) => {}
         }
     }
-    borrow_id
+    borrow_id.unwrap()
 }
 
 pub(crate) fn projections_term<'tcx, 'a, V: Debug>(

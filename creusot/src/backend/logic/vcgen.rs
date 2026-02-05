@@ -26,7 +26,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::ProjectionElem,
+    mir::{PlaceTy, ProjectionElem},
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::Span;
@@ -525,6 +525,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             self.names,
                             inner.clone(),
                             t.span,
+                            &mut PlaceTy::from_ty(ty.builtin_deref(false).unwrap()),
                             &projs,
                             Clone::clone,
                         );
