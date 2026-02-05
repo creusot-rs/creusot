@@ -128,10 +128,10 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
     ///
     /// The fetch and the store are always sequentially consistent.
-    #[requires(forall<c: &mut Committer> !c.shot() ==> c.ward() == *self ==> c.new_value() == val + c.old_value() ==>
+    #[requires(forall<c: &mut Committer<Self>> !c.shot() ==> c.ward() == *self ==> c.new_value() == val + c.old_value() ==>
         f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
     )]
-    #[ensures(exists<c: &mut Committer>
+    #[ensures(exists<c: &mut Committer<Self>>
         !c.shot() && c.ward() == *self && c.new_value() == val + c.old_value() &&
         c.old_value() == result.0 && f.postcondition_once((c,), *(result.1))
     )]
@@ -139,7 +139,7 @@ impl AtomicI32 {
     #[allow(unused_variables)]
     pub fn fetch_add<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> (i32, Ghost<A>)
     where
-        F: FnGhost + FnOnce(&'a mut Committer) -> A,
+        F: FnGhost + FnOnce(&'a mut Committer<Self>) -> A,
     {
         let res = self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst);
         (res, Ghost::conjure())
@@ -148,10 +148,10 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     ///
     /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut Committer> !c.shot() ==> c.ward() == *self ==> c.new_value() == val ==>
+    #[requires(forall<c: &mut Committer<Self>> !c.shot() ==> c.ward() == *self ==> c.new_value() == val ==>
         f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
-    #[ensures(exists<c: &mut Committer>
+    #[ensures(exists<c: &mut Committer<Self>>
         !c.shot() && c.ward() == *self && c.new_value() == val &&
         f.postcondition_once((c,), *result)
     )]
@@ -159,7 +159,7 @@ impl AtomicI32 {
     #[allow(unused_variables)]
     pub fn store<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> Ghost<A>
     where
-        F: FnGhost + FnOnce(&'a mut Committer) -> A,
+        F: FnGhost + FnOnce(&'a mut Committer<Self>) -> A,
     {
         self.0.store(val, std::sync::atomic::Ordering::SeqCst);
         Ghost::conjure()

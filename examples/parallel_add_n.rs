@@ -103,7 +103,7 @@ pub fn parallel_add(n: i32) {
             let h = s.spawn(move |tokens: Ghost<Tokens>| {
                 atomic.fetch_add(
                     1,
-                    ghost! { |c: &mut Committer| {
+                    ghost! { |c: &mut Committer<_>| {
                         inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                             inv.auth.update(&mut *frag, OptionLocalUpdate(((), 1int)));
                             c.shoot(&mut inv.own);
