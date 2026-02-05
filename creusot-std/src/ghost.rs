@@ -26,6 +26,7 @@ pub mod invariant;
 pub mod resource;
 pub use fn_ghost::{FnGhost, FnGhostWrapper};
 pub mod perm;
+pub use perm::Container;
 
 /// A type that can be used in [`ghost!`] context.
 ///
@@ -228,9 +229,9 @@ impl<T> Plain for *mut T {}
 /// Wrapper around a single atomic operation, where multiple ghost steps can be
 /// performed.
 #[opaque]
-pub struct Committer;
+pub struct Committer<C: Container<Value: Sized>>(PhantomData<C>);
 
-impl Committer {
+impl<C: Container<Value: Sized>> Committer<C> {
     /// Status of the committer
     #[logic(opaque)]
     pub fn shot(self) -> bool {
@@ -241,20 +242,19 @@ impl Committer {
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
     #[logic(opaque)]
-    #[cfg(feature = "std")]
-    pub fn ward(self) -> crate::std::sync::AtomicI32 {
+    pub fn ward(self) -> C {
         dead
     }
 
     /// Value held by the [`AtomicOwn`], before the [`shoot`].
     #[logic(opaque)]
-    pub fn old_value(self) -> i32 {
+    pub fn old_value(self) -> C::Value {
         dead
     }
 
     /// Value held by the [`AtomicOwn`], after the [`shoot`].
     #[logic(opaque)]
-    pub fn new_value(self) -> i32 {
+    pub fn new_value(self) -> C::Value {
         dead
     }
 
@@ -270,8 +270,7 @@ impl Committer {
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    #[cfg(feature = "std")]
-    pub fn shoot(&mut self, own: &mut perm::Perm<crate::std::sync::AtomicI32>) {
+    pub fn shoot(&mut self, own: &mut perm::Perm<C>) {
         panic!("Should not be called outside ghost code")
     }
 }
