@@ -435,6 +435,21 @@ pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: &TyKind) -> PreMod {
     }
 }
 
+/// Integer constants are represented as their bit-patterns in an i128,
+/// with remaining bits set to 0. If the integer is supposed to be negative,
+/// we must sign-extend it. We use this function for patterns (`fmir::Branches`).
+/// Constants elsewhere are handled in `translation/constant.rs`.
+pub(crate) fn sign_extend(i: i128, ity: IntTy) -> i128 {
+    match ity {
+        IntTy::Isize => unreachable!(),
+        IntTy::I8 => i as i8 as i128,
+        IntTy::I16 => i as i16 as i128,
+        IntTy::I32 => i as i32 as i128,
+        IntTy::I64 => i as i64 as i128,
+        IntTy::I128 => i,
+    }
+}
+
 pub fn bool() -> MlT {
     MlT::qconstructor(name::bool())
 }
