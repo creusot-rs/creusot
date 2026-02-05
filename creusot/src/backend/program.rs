@@ -946,6 +946,25 @@ impl<'tcx> Branches<'tcx> {
                 let TyKind::Int(ity) = discr_ty.kind() else {
                     panic!("Branches::Int try to evaluate a type that is not Int")
                 };
+                // Build assumption for default branch: discr != val1 && discr != val2 && ...
+                let default_assumption = brs
+                    .iter()
+                    .map(|&(mut val, _)| {
+                        let why_ty =
+                            Type::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t"));
+                        let e = if names.bitwise_mode() {
+                            if val < 0 && *ity != IntTy::I128 {
+                                let target_width = ctx.tcx.sess.target.pointer_width;
+                                val += 1 << ity.normalize(target_width).bit_width().unwrap();
+                            }
+                            Exp::Const(Constant::Uint(val as u128, Some(why_ty)))
+                        } else {
+                            Exp::Const(Constant::Int(val, Some(why_ty)))
+                        };
+                        discr.clone().neq(e)
+                    })
+                    .reduce(|acc, e| acc.log_and(e))
+                    .unwrap_or_else(Exp::mk_true);
                 let brs = mk_switch_branches(
                     discr,
                     brs.into_iter().map(|(mut val, tgt)| {
@@ -966,7 +985,7 @@ impl<'tcx> Branches<'tcx> {
                 );
                 let brs = brs.chain([Defn::simple(
                     Ident::fresh_local("default"),
-                    mk_goto(block_idents, def).black_box(),
+                    Expr::assume(default_assumption, mk_goto(block_idents, def)).black_box(),
                 )]);
                 Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
@@ -975,7 +994,16 @@ impl<'tcx> Branches<'tcx> {
                     TyKind::Uint(uty) => uty,
                     _ => panic!("Branches::Uint try to evaluate a type that is not Uint"),
                 };
-
+                // Build assumption for default branch: discr != val1 && discr != val2 && ...
+                let default_assumption = brs
+                    .iter()
+                    .map(|&(val, _)| {
+                        let why_ty =
+                            Type::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t"));
+                        discr.clone().neq(Exp::Const(Constant::Uint(val, Some(why_ty))))
+                    })
+                    .reduce(|acc, e| acc.log_and(e))
+                    .unwrap_or_else(Exp::mk_true);
                 let brs = mk_switch_branches(
                     discr,
                     brs.into_iter().map(|(val, tgt)| {
@@ -987,7 +1015,7 @@ impl<'tcx> Branches<'tcx> {
                 )
                 .chain([Defn::simple(
                     Ident::fresh_local("default"),
-                    mk_goto(block_idents, def).black_box(),
+                    Expr::assume(default_assumption, mk_goto(block_idents, def)).black_box(),
                 )])
                 .collect();
                 Expr::Defn(Expr::Any.boxed(), false, brs)
