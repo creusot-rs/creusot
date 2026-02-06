@@ -972,7 +972,7 @@ impl<'tcx> Branches<'tcx> {
                     .rfold(Exp::mk_true(), |acc, e| e.log_and(acc));
                 let brs = mk_switch_branches(discr, branches).chain([Defn::simple(
                     Ident::fresh_local("default"),
-                    Expr::assume(default_assumption, mk_goto(block_idents, def)).black_box(),
+                    Expr::assume(default_assumption, mk_goto(block_idents, def).black_box()),
                 )]);
                 Expr::Defn(Expr::Any.boxed(), false, brs.collect())
             }
@@ -999,7 +999,7 @@ impl<'tcx> Branches<'tcx> {
                 let brs = mk_switch_branches(discr, branches)
                     .chain([Defn::simple(
                         Ident::fresh_local("default"),
-                        Expr::assume(default_assumption, mk_goto(block_idents, def)).black_box(),
+                        Expr::assume(default_assumption, mk_goto(block_idents, def).black_box()),
                     )])
                     .collect();
                 Expr::Defn(Expr::Any.boxed(), false, brs)
