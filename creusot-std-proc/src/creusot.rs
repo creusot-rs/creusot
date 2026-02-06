@@ -13,7 +13,7 @@ pub(crate) use self::{
     erasure::erasure,
     extern_spec::extern_spec,
     logic::{logic, pearlite},
-    proof::{ghost, ghost_let, invariant, proof_assert, snapshot},
+    proof::{ghost, ghost_let, invariant, proof_assert, proof_assert_, snapshot},
     specs::{bitwise_proof, check, ensures, maintains, requires, variant},
 };
 
@@ -22,9 +22,10 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    Error, FnArg, Ident, LitStr, Macro, Result, Token,
+    Error, FnArg, Ident, LitStr, Macro, Result, Token, parse,
     parse::{Parse, ParseStream},
     parse_macro_input, parse_quote,
+    spanned::Spanned as _,
 };
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
@@ -36,12 +37,43 @@ pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
-    let tokens = TokenStream::from(tokens);
-    TS1::from(quote! {
-        #[creusot::decl::trusted]
-        #[allow(creusot::experimental)]
-        #tokens
-    })
+    match from_proof_assert(tokens.clone()) {
+        Ok(Some(assertion)) => proof_assert_(assertion, true),
+        Ok(None) => {
+            let tokens = TokenStream::from(tokens);
+            TS1::from(quote! {
+                #[creusot::decl::trusted]
+                #[allow(creusot::experimental)]
+                #tokens
+            })
+        }
+        Err(e) => e.into_compile_error().into(),
+    }
+}
+
+/// Try to extract the body of a `proof_assert!`.
+/// Error if it is a macro different from `proof_assert!`.
+fn from_proof_assert(tokens: TS1) -> Result<Option<TS1>> {
+    let Ok(MacroSemicolon(m)) = parse(tokens.into()) else { return Ok(None) };
+    if m.path.is_ident("proof_assert") {
+        Ok(Some(m.tokens.into()))
+    } else {
+        Err(Error::new(
+            m.path.span(),
+            "Unexpected #[trusted] item: expected `proof_assert!` or a declaration or a closure",
+        ))
+    }
+}
+
+/// Macro with an optional semicolon for `#[trusted] proof_assert!()`
+struct MacroSemicolon(Macro);
+
+impl Parse for MacroSemicolon {
+    fn parse(src: ParseStream) -> Result<Self> {
+        let m = src.parse::<Macro>()?;
+        let _ = src.parse::<Option<Token![;]>>()?;
+        Ok(Self(m))
+    }
 }
 
 pub fn opaque(_: TS1, tokens: TS1) -> TS1 {

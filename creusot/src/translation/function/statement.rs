@@ -142,9 +142,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 .expect("Could not find body of assertion");
                             self.emit_statement(fmir::Statement {
                                 kind: fmir::StatementKind::Assertion {
-                                    cond: assertion,
+                                    cond: assertion.term,
                                     msg: Some("expl:assertion".to_owned()),
-                                    check: true,
+                                    check: !assertion.is_trusted,
                                     assume: true,
                                 },
                                 span,
