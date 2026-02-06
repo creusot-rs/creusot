@@ -16,9 +16,17 @@ use syn::{
 };
 
 pub fn proof_assert(assertion: TS1) -> TS1 {
+    proof_assert_(assertion.into(), false)
+}
+
+pub fn proof_assert_(assertion: TS1, trusted: bool) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
     let assert_body = pretyping::encode_block(&assert.0);
-
+    let attr = if trusted {
+        quote! { #[creusot::decl::trusted] }
+    } else {
+        quote! {}
+    };
     TS1::from(quote! {
         {
             #[allow(let_underscore_drop)]
@@ -26,6 +34,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::assert]
+                #attr
                 || -> bool #assert_body;
         }
     })
