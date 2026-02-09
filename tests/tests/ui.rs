@@ -162,6 +162,13 @@ impl CreusotPaths {
     fn creusot_std(&self) -> PathBuf {
         self.dir.join("libcreusot_std.rlib")
     }
+
+    fn creusot_std_with_features(&self, features: &[&str]) -> PathBuf {
+        self.dir.join(format!(
+            "libcreusot_std_with_features_{}.rlib",
+            if features.is_empty() { "nothing".to_owned() } else { features.join("_") }
+        ))
+    }
 }
 
 /// Returns `false` if the translation changed
@@ -244,28 +251,41 @@ fn build_creusot_std(
 ) -> Result<Output, io::Error> {
     let mut build = Command::new(CARGO_CREUSOT);
     build.arg("creusot"); // cargo creusot
+
     build.arg(match erasure_check {
         ErasureCheck::No => "--erasure-check=no",
         ErasureCheck::Warn => "--erasure-check=warn",
         ErasureCheck::Error => "--erasure-check=error",
     });
+
     if output_cmeta {
         build.args(["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
     } else {
         build.arg("--export-metadata=false");
     }
+
     if with_spans {
         build.arg("--span-mode=relative");
     } else {
         build.arg("--span-mode=off");
     }
+
     build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-std"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
+
     build.args(["--", "--package", "creusot-std", "--quiet"]).env("CREUSOT_CONTINUE", "true");
+
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
     }
-    build.output()
+
+    let output = build.output();
+
+    if output.is_ok() {
+        fs::rename(paths.creusot_std(), paths.creusot_std_with_features(&[])).unwrap();
+    }
+
+    output
 }
 
 fn run_creusot(
@@ -293,7 +313,10 @@ fn run_creusot(
 
     cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_std={}", paths.creusot_std().display())]);
+    cmd.args(&[
+        "--extern",
+        &format!("creusot_std={}", paths.creusot_std_with_features(&[]).display()),
+    ]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
