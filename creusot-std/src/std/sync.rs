@@ -107,6 +107,7 @@ impl<T> View for Arc<T> {
 /// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
 pub struct AtomicI32(::std::sync::atomic::AtomicI32);
 
+#[cfg(feature = "sc-drf")]
 impl Container for AtomicI32 {
     type Value = i32;
 
@@ -116,6 +117,7 @@ impl Container for AtomicI32 {
     }
 }
 
+#[cfg(feature = "sc-drf")]
 impl AtomicI32 {
     #[ensures(*result.1.val() == val)]
     #[ensures(*result.1.ward() == result.0)]
