@@ -183,7 +183,7 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
 
     println!("Building creusot-std...");
     let mut out = args.stream();
-    let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans)
+    let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans, &[])
         .expect("could not translate `creusot_std`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
@@ -248,6 +248,7 @@ fn build_creusot_std(
     output_cmeta: bool,
     erasure_check: ErasureCheck,
     with_spans: bool,
+    features: &[&str],
 ) -> Result<Output, io::Error> {
     let mut build = Command::new(CARGO_CREUSOT);
     build.arg("creusot"); // cargo creusot
@@ -273,7 +274,13 @@ fn build_creusot_std(
     build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-std"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
 
-    build.args(["--", "--package", "creusot-std", "--quiet"]).env("CREUSOT_CONTINUE", "true");
+    build.arg("--");
+
+    if !features.is_empty() {
+        build.arg("--features").arg(features.join(","));
+    }
+
+    build.args(["--package", "creusot-std", "--quiet"]).env("CREUSOT_CONTINUE", "true");
 
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
@@ -282,7 +289,7 @@ fn build_creusot_std(
     let output = build.output();
 
     if output.is_ok() {
-        fs::rename(paths.creusot_std(), paths.creusot_std_with_features(&[])).unwrap();
+        fs::rename(paths.creusot_std(), paths.creusot_std_with_features(features))?;
     }
 
     output
@@ -538,7 +545,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let output = build_creusot_std(paths, false, erasure_check, false).unwrap();
+        let output = build_creusot_std(paths, false, erasure_check, false, &[]).unwrap();
         if !output.status.success() {
             println!("failed");
             if !output.stderr.is_empty() {
