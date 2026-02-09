@@ -181,60 +181,68 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
         std::process::Command::new("touch").args(["creusot-std/src/lib.rs"]).status().unwrap();
     }
 
-    println!("Building creusot-std...");
-    let mut out = args.stream();
-    let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans, &[])
-        .expect("could not translate `creusot_std`");
-    if !output.status.success() {
-        writeln_color!(out, Color::Red, "could not translate");
-        out.flush().unwrap();
-        eprintln!("{}", String::from_utf8(output.stderr).unwrap());
-        std::process::exit(1);
-    }
+    let features_matrix: &[&[&str]] = &[&[], &["sc-drf"]];
+    for features in features_matrix {
+        println!("Building creusot-std with features: {:?}...", features);
+        let mut out = args.stream();
+        let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans, features)
+            .expect("could not translate `creusot_std`");
 
-    if !test_creusot_std {
-        println!();
-        return true;
-    }
-
-    let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
-    let mut succeeded = true;
-    let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
-
-    // Warnings in creusot-std will be counted as an error at the end,
-    // but we still allow --bless so we can experiment without resolving warnings immediately.
-    if !output.stderr.is_empty() {
-        writeln_color!(out, Color::Yellow, "warnings");
-        out.flush().unwrap();
-        eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
-        succeeded = false;
-    }
-
-    if args.bless {
-        if output.stdout.is_empty() {
-            panic!("creusot-std should have an output!")
+        if !output.status.success() {
+            writeln_color!(out, Color::Red, "could not translate");
+            out.flush().unwrap();
+            eprintln!("{}", String::from_utf8(output.stderr).unwrap());
+            std::process::exit(1);
         }
 
-        if success {
-            writeln_color!(out, Color::Green, "unchanged");
-        } else {
-            writeln_color!(out, Color::Blue, "blessed");
-            std::fs::write(expect, &output.stdout).unwrap();
+        if !test_creusot_std {
+            println!();
+            continue;
         }
-    } else {
-        if success {
-            writeln_color!(out, Color::Green, "ok");
-        } else {
-            writeln_color!(out, Color::Red, "failure");
+
+        let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
+        let mut succeeded = true;
+        let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
+
+        // Warnings in creusot-std will be counted as an error at the end,
+        // but we still allow --bless so we can experiment without resolving warnings immediately.
+        if !output.stderr.is_empty() {
+            writeln_color!(out, Color::Yellow, "warnings");
+            out.flush().unwrap();
+            eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
             succeeded = false;
-        };
+        }
 
-        let wrt = BufferWriter::stdout(ColorChoice::Always);
-        wrt.print(&buf).unwrap();
-        out.flush().unwrap();
+        if args.bless {
+            if output.stdout.is_empty() {
+                panic!("creusot-std should have an output!")
+            }
+
+            if success {
+                writeln_color!(out, Color::Green, "unchanged");
+            } else {
+                writeln_color!(out, Color::Blue, "blessed");
+                std::fs::write(expect, &output.stdout).unwrap();
+            }
+        } else {
+            if success {
+                writeln_color!(out, Color::Green, "ok");
+            } else {
+                writeln_color!(out, Color::Red, "failure");
+                succeeded = false;
+            };
+
+            let wrt = BufferWriter::stdout(ColorChoice::Always);
+            wrt.print(&buf).unwrap();
+            out.flush().unwrap();
+        }
+
+        if !succeeded {
+            return false;
+        }
     }
 
-    succeeded
+    return true;
 }
 
 enum ErasureCheck {
