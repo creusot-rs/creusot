@@ -1241,6 +1241,8 @@ impl<'tcx> Statement<'tcx> {
                         &rhs.projection[..deref_index],
                         self.span,
                     );
+                    let mid_ty = place_ty.ty;
+                    assert_eq!(place_ty.variant_index, None);
                     let (foc, constr) = projections_to_expr(
                         lower.ctx,
                         lower.names,
@@ -1259,6 +1261,7 @@ impl<'tcx> Statement<'tcx> {
                         lower.names,
                         original_borrow.call(&mut istmts),
                         self.span,
+                        &mut PlaceTy::from_ty(mid_ty.builtin_deref(true).unwrap()),
                         &rhs.projection[deref_index + 1..],
                         |sym| (Exp::var(sym.0), lower.ctx.types.usize),
                     );

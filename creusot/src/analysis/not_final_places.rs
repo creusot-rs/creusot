@@ -26,7 +26,7 @@ rustc_index::newtype_index! {
 
 #[derive(Clone, Debug)]
 struct PlaceInfo<'tcx> {
-    place: PlaceRef<'tcx>,
+    place: PlaceRef<'tcx>, // For debug only
     /// The number of mutable derefs this place contains.
     deref_count: usize,
     /// The set of subplaces of this place.
@@ -117,18 +117,17 @@ impl<'a, 'tcx> NotFinalPlaces<'a, 'tcx> {
         struct VisitAllPlaces<'a, 'tcx> {
             tcx: TyCtxt<'tcx>,
             body: &'a Body<'tcx>,
-            places: IndexVec<PlaceId, (PlaceRef<'tcx>, HPlace)>,
+            places: IndexVec<PlaceId, (PlaceRef<'tcx>, HPlace)>, // PlaceRef is stored for debug only
             places_ids: HashMap<HPlace, PlaceId>,
             places_per_local: HashMap<Local, Vec<PlaceId>>,
         }
         impl<'a, 'tcx> Visitor<'tcx> for VisitAllPlaces<'a, 'tcx> {
             fn visit_place(&mut self, place: &Place<'tcx>, _: PlaceContext, _: Location) {
                 let place_ref = place.as_ref();
-                for place in once(place_ref).chain(place_ref.iter_projections().map(|(p, _)| p)) {
-                    let (hplace, full) = HPlace::from_place(self.tcx, self.body, place);
-                    if !full {
+                for place in place_ref.iter_projections().map(|(p, _)| p).chain(once(place_ref)) {
+                    let (hplace, true) = HPlace::from_place(self.tcx, self.body, place) else {
                         break;
-                    }
+                    };
                     if let hash_map::Entry::Vacant(entry) = self.places_ids.entry(hplace.clone()) {
                         let id = self.places.push((place, hplace));
                         self.places_per_local.entry(place.local).or_default().push(id);
@@ -166,7 +165,7 @@ impl<'a, 'tcx> NotFinalPlaces<'a, 'tcx> {
             .map(|(place_id, &(place, ref hplace))| {
                 let (mut conflicting, mut subplaces) = (empty_bs.clone(), empty_bs.clone());
                 for other_id in
-                    places_per_local[&place.local].iter().filter(|&other_id| other_id != place_id)
+                    places_per_local[&hplace.local].iter().filter(|&other_id| other_id != place_id)
                 {
                     let (_, other_hplace) = &places[other_id];
                     if other_hplace.projection.get(..hplace.projection.len())

@@ -21,7 +21,10 @@ use crate::{
 };
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{self, Ty, TyCtxt, TyKind};
+use rustc_middle::{
+    mir::PlaceTy,
+    ty::{self, Ty, TyCtxt, TyKind},
+};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::IntTy;
 use why3::{
@@ -383,6 +386,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     self.names,
                     self.lower_term(inner),
                     term.span,
+                    &mut PlaceTy::from_ty(inner.ty.builtin_deref(false).unwrap()),
                     projections,
                     |ix: &Term<'tcx>| (self.lower_term(ix), ix.ty),
                 );
