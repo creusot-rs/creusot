@@ -3,9 +3,9 @@ use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
 use std::{
     env,
     fs::{self, File},
-    io::{BufRead, BufReader, IsTerminal, Write},
+    io::{self, BufRead, BufReader, IsTerminal, Write},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Output},
     sync::{
         Mutex,
         atomic::{self, AtomicUsize},
@@ -128,7 +128,7 @@ fn build_cargo_creusot(force_color: bool) {
 }
 
 fn cargo_build(target: &str, force_color: bool) {
-    println! {"Building {target}..."};
+    println!("Building {target}...");
     let mut cargo = Command::new("cargo");
     cargo.args(["build", "--bin", target]);
     if force_color {
@@ -169,9 +169,10 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
     if test_creusot_std {
         std::process::Command::new("touch").args(["creusot-std/src/lib.rs"]).status().unwrap();
     }
-    let mut build = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans);
+
     let mut out = args.stream();
-    let output = build.output().expect("could not translate `creusot_std`");
+    let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans)
+        .expect("could not translate `creusot_std`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
@@ -235,7 +236,7 @@ fn build_creusot_std(
     output_cmeta: bool,
     erasure_check: ErasureCheck,
     with_spans: bool,
-) -> Command {
+) -> Result<Output, io::Error> {
     let mut build = Command::new(CARGO_CREUSOT);
     build.arg("creusot"); // cargo creusot
     build.arg(match erasure_check {
@@ -261,7 +262,7 @@ fn build_creusot_std(
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
     }
-    build
+    build.output()
 }
 
 fn run_creusot(
@@ -511,8 +512,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let mut build = build_creusot_std(paths, false, erasure_check, false);
-        let output = build.output().unwrap();
+        let output = build_creusot_std(paths, false, erasure_check, false).unwrap();
         if !output.status.success() {
             println!("failed");
             if !output.stderr.is_empty() {
