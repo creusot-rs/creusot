@@ -175,12 +175,13 @@ impl CreusotPaths {
 ///
 /// This will only check the output of `creusot-std` if `test_creusot_std` is true.
 fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bool) -> bool {
-    print!("Translating creusot-std... ");
+    println!("Translating creusot-std...");
     if test_creusot_std {
         std::io::stdout().flush().unwrap();
         std::process::Command::new("touch").args(["creusot-std/src/lib.rs"]).status().unwrap();
     }
 
+    let mut succeeded = true;
     let features_matrix: &[&[&str]] = &[&[], &["sc-drf"]];
     for features in features_matrix {
         println!("Building creusot-std with features: {:?}...", features);
@@ -196,12 +197,10 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
         }
 
         if !test_creusot_std {
-            println!();
             continue;
         }
 
         let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
-        let mut succeeded = true;
         let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
 
         // Warnings in creusot-std will be counted as an error at the end,
@@ -236,13 +235,9 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
             wrt.print(&buf).unwrap();
             out.flush().unwrap();
         }
-
-        if !succeeded {
-            return false;
-        }
     }
 
-    return true;
+    succeeded
 }
 
 enum ErasureCheck {
