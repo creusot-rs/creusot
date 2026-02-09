@@ -58,7 +58,7 @@ pub enum ResolvedPlace<'tcx> {
 }
 
 type Resolves<'tcx> = Vec<ResolvedPlace<'tcx>>;
-type BorrowId = usize;
+type DerefPos = usize;
 
 /// Information computed by this analysis.
 #[derive(TyEncodable, TyDecodable, Clone, Debug)]
@@ -72,7 +72,7 @@ pub struct BorrowData<'tcx> {
     resolved_at: HashMap<Orphan<Location>, Resolves<'tcx>>,
     resolved_between_blocks: HashMap<BasicBlock, HashMap<BasicBlock, Resolves<'tcx>>>,
     /// Locations where final borrows are created.
-    final_borrows: HashMap<Orphan<Location>, BorrowId>,
+    final_borrows: HashMap<Orphan<Location>, DerefPos>,
     /// Locations where two-phase borrows are created.
     /// We will use this to delay the creation of two-phase borrows in our translation.
     two_phases_created: HashSet<Orphan<Location>>,
@@ -102,8 +102,8 @@ impl<'tcx> BorrowData<'tcx> {
         self.resolved_at.remove(&Orphan(loc)).unwrap_or(vec![])
     }
 
-    fn insert_final_borrow(&mut self, loc: Location, borrow_id: usize) {
-        self.final_borrows.insert(Orphan(loc), borrow_id);
+    fn insert_final_borrow(&mut self, loc: Location, deref_pos: usize) {
+        self.final_borrows.insert(Orphan(loc), deref_pos);
     }
 
     pub(crate) fn is_final_at(&self, loc: Location) -> fmir::BorrowKind {
@@ -874,8 +874,8 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             pl,
             loc.successor_within_block(),
         );
-        if let fmir::BorrowKind::Final(borrow_id) = is_final {
-            self.data.insert_final_borrow(loc, borrow_id);
+        if let fmir::BorrowKind::Final(deref_pos) = is_final {
+            self.data.insert_final_borrow(loc, deref_pos);
         }
     }
 }

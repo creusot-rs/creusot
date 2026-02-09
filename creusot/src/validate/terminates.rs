@@ -301,6 +301,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         subst: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
+        // WARNING: `subst`` is not normalized (but we don't seem to use the fact that it should be)
         let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
 
         let (called_node, bounds);
@@ -318,26 +319,21 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let bnds;
             (called_node, bnds) =
                 self.visit_specialized_default_function(ctx, impl_ldid, called_id);
-            bounds = ctx.instantiate_and_normalize_erasing_regions(
-                def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args),
-                typing_env,
-                EarlyBinder::bind(bnds),
-            );
+            bounds = EarlyBinder::bind(bnds)
+                .instantiate(ctx.tcx, def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args))
         } else {
             let subst_r;
             (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
             called_node = self.insert_function(GraphNode::Function(called_id));
-            bounds = ctx.instantiate_and_normalize_erasing_regions(
-                subst_r,
-                typing_env,
-                EarlyBinder::bind(ctx.param_env(called_id).caller_bounds()),
-            );
+            bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
+                .instantiate(ctx.tcx, subst_r)
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
 
         // Iterate over the trait bounds of the called function, and assume we call all functions
         // of the corresponding trait if they are specialized.
         for bound in bounds {
+            // WARNING: `bound`` is not normalized (but we don't seem to use the fact that it should be)
             let Some(clause) = bound.as_trait_clause() else { continue };
             let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
             if !matches!(ctx.def_kind(trait_ref.def_id), DefKind::Trait) {
@@ -444,11 +440,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         visitor.visit_term(&ctx.term(item_id).unwrap().1);
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
-            let actual_args = ctx.instantiate_and_normalize_erasing_regions(
-                func_impl_args,
-                typing_env,
-                EarlyBinder::bind(generic_args),
-            );
+            let actual_args = EarlyBinder::bind(generic_args).instantiate(ctx.tcx, func_impl_args);
 
             self.function_call(ctx, node, typing_env, called_id, actual_args, call_span);
         }
