@@ -73,16 +73,17 @@ fn main() {
     } else {
         args.force_color = args.force_color || std::io::stdout().is_terminal();
     }
+
     // Go to the root of the creusot repository.
     std::env::set_current_dir("..").unwrap();
     build_creusot_rustc(args.force_color);
     build_cargo_creusot(args.force_color);
 
     let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let paths = CreusotPaths::new(base_path.parent().unwrap());
+    let base_path = base_path.parent().unwrap();
 
     if args.erasure_check {
-        erasure_check(&paths);
+        erasure_check(base_path);
         return;
     }
 
@@ -92,16 +93,17 @@ fn main() {
             test_creusot_std = false;
         }
     }
-    let contracts_success = translate_creusot_std(&args, &paths, test_creusot_std);
+
+    let contracts_success = translate_creusot_std(&args, &base_path, test_creusot_std);
 
     let (mut failed, mut total) =
         (if contracts_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
     let (fail1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
-        run_creusot(p, &paths, args.with_spans)
+        run_creusot(p, &base_path, args.with_spans)
     });
     let (fail2, total2) =
         should_succeed(&["examples/**/*.rs", "tests/should_succeed/**/*.rs"], &args, |p| {
-            run_creusot(p, &paths, args.with_spans)
+            run_creusot(p, &base_path, args.with_spans)
         });
 
     total += total1 + total2;
@@ -142,39 +144,32 @@ fn cargo_build(target: &str, force_color: bool) {
 }
 
 struct CreusotPaths {
-    dir: PathBuf,
     cmeta: PathBuf,
-    creusot_rustc: PathBuf,
     deps: PathBuf,
+    std: PathBuf,
+    target_dir: PathBuf,
 }
 
 impl CreusotPaths {
-    fn new(base: &Path) -> Self {
-        let dir = base.join("target/creusot/debug");
+    fn new(base: &Path, features: &[&str]) -> Self {
+        let dir = if features.is_empty() { "nothing".to_owned() } else { features.join("_") };
+
+        let target_dir = base.join(format!("target/creusot-features-{}", dir));
+        let final_dir = target_dir.join("debug");
+
         Self {
-            dir: dir.to_path_buf(),
-            cmeta: dir.join("libcreusot_std.cmeta"),
-            creusot_rustc: base.join(CREUSOT_RUSTC),
-            deps: dir.join("deps"),
+            cmeta: final_dir.join("libcreusot_std.cmeta"),
+            deps: final_dir.join("deps"),
+            std: final_dir.join("libcreusot_std.rlib"),
+            target_dir: target_dir.to_path_buf(),
         }
-    }
-
-    fn creusot_std(&self) -> PathBuf {
-        self.dir.join("libcreusot_std.rlib")
-    }
-
-    fn creusot_std_with_features(&self, features: &[&str]) -> PathBuf {
-        self.dir.join(format!(
-            "libcreusot_std_with_features_{}.rlib",
-            if features.is_empty() { "nothing".to_owned() } else { features.join("_") }
-        ))
     }
 }
 
 /// Returns `false` if the translation changed
 ///
 /// This will only check the output of `creusot-std` if `test_creusot_std` is true.
-fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bool) -> bool {
+fn translate_creusot_std(args: &Args, base_path: &Path, test_creusot_std: bool) -> bool {
     println!("Translating creusot-std...");
     if test_creusot_std {
         std::io::stdout().flush().unwrap();
@@ -186,8 +181,9 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
     for features in features_matrix {
         println!("Building creusot-std with features: {:?}...", features);
         let mut out = args.stream();
-        let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans, features)
-            .expect("could not translate `creusot_std`");
+        let output =
+            build_creusot_std(base_path, true, ErasureCheck::No, args.with_spans, features)
+                .expect("could not translate `creusot_std`");
 
         if !output.status.success() {
             writeln_color!(out, Color::Red, "could not translate");
@@ -247,12 +243,14 @@ enum ErasureCheck {
 }
 
 fn build_creusot_std(
-    paths: &CreusotPaths,
+    base_path: &Path,
     output_cmeta: bool,
     erasure_check: ErasureCheck,
     with_spans: bool,
     features: &[&str],
 ) -> Result<Output, io::Error> {
+    let paths = CreusotPaths::new(base_path, features);
+
     let mut build = Command::new(CARGO_CREUSOT);
     build.arg("creusot"); // cargo creusot
 
@@ -275,7 +273,7 @@ fn build_creusot_std(
     }
 
     build.args(["--no-check-version", "--stdout", "--spans-relative-to=tests/creusot-std"]);
-    build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
+    build.arg("--creusot-rustc").arg(&base_path.join(CREUSOT_RUSTC));
 
     build.arg("--");
 
@@ -283,33 +281,24 @@ fn build_creusot_std(
         build.arg("--features").arg(features.join(","));
     }
 
+    build.args(["--target-dir", &format!("{}", paths.target_dir.display())]);
     build.args(["--package", "creusot-std", "--quiet"]).env("CREUSOT_CONTINUE", "true");
 
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
     }
 
-    let output = build.output();
-
-    if output.is_ok() {
-        fs::rename(paths.creusot_std(), paths.creusot_std_with_features(features))?;
-    }
-
-    output
+    build.output()
 }
 
-fn run_creusot(
-    file: &Path,
-    paths: &CreusotPaths,
-    with_spans: bool,
-) -> Option<std::process::Command> {
+fn run_creusot(file: &Path, base_path: &Path, with_spans: bool) -> Option<std::process::Command> {
     // Magic comment with instructions for creusot
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
     if header_line.contains("UISKIP") {
         return None;
     }
 
-    let mut cmd = Command::new(&paths.creusot_rustc);
+    let mut cmd = Command::new(&base_path.join(CREUSOT_RUSTC));
     cmd.current_dir(file.parent().unwrap());
 
     // Find comment chunks of the form CREUSOT_ARG=ARGUMENT. Does not support spaces in arguments currently (would require real parser)
@@ -329,12 +318,10 @@ fn run_creusot(
         })
         .collect();
 
+    let paths = CreusotPaths::new(base_path, &features);
     cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&[
-        "--extern",
-        &format!("creusot_std={}", paths.creusot_std_with_features(&features).display()),
-    ]);
+    cmd.args(&["--extern", &format!("creusot_std={}", paths.std.display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
@@ -552,11 +539,11 @@ where
 
 /// This test runs on its own because it sets `-Zbuild-std`
 /// which slows things down.
-fn erasure_check(paths: &CreusotPaths) {
+fn erasure_check(base_path: &Path) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let output = build_creusot_std(paths, false, erasure_check, false, &[]).unwrap();
+        let output = build_creusot_std(base_path, false, erasure_check, false, &[]).unwrap();
         if !output.status.success() {
             println!("failed");
             if !output.stderr.is_empty() {
