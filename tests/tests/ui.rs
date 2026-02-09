@@ -142,21 +142,25 @@ fn cargo_build(target: &str, force_color: bool) {
 }
 
 struct CreusotPaths {
+    dir: PathBuf,
+    cmeta: PathBuf,
     creusot_rustc: PathBuf,
     deps: PathBuf,
-    rlib: PathBuf,
-    cmeta: PathBuf,
 }
 
 impl CreusotPaths {
     fn new(base: &Path) -> Self {
-        let creusot = base.join("target/creusot/debug");
+        let dir = base.join("target/creusot/debug");
         Self {
+            dir: dir.to_path_buf(),
+            cmeta: dir.join("libcreusot_std.cmeta"),
             creusot_rustc: base.join(CREUSOT_RUSTC),
-            deps: creusot.join("deps"),
-            rlib: creusot.join("libcreusot_std.rlib"),
-            cmeta: creusot.join("libcreusot_std.cmeta"),
+            deps: dir.join("deps"),
         }
+    }
+
+    fn creusot_std(&self) -> PathBuf {
+        self.dir.join("libcreusot_std.rlib")
     }
 }
 
@@ -289,7 +293,7 @@ fn run_creusot(
 
     cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
-    cmd.args(&["--extern", &format!("creusot_std={}", paths.rlib.display())]);
+    cmd.args(&["--extern", &format!("creusot_std={}", paths.creusot_std().display())]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
 
