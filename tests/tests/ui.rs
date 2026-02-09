@@ -326,11 +326,19 @@ fn run_creusot(
         })
         .collect();
 
+    let features: Vec<_> = header_line
+        .split(" ")
+        .filter_map(|chunk| {
+            let (first, rest) = chunk.split_once("=")?;
+            if first != "FEATURE" { None } else { Some(rest) }
+        })
+        .collect();
+
     cmd.args(&["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(&["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&[
         "--extern",
-        &format!("creusot_std={}", paths.creusot_std_with_features(&[]).display()),
+        &format!("creusot_std={}", paths.creusot_std_with_features(&features).display()),
     ]);
     cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
