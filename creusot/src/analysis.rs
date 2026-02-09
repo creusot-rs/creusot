@@ -45,7 +45,7 @@ use crate::{
     naming::lowercase_prefix,
     translation::{
         fmir::{self, BorrowKind, LocalKind},
-        function::discriminator_for_switch,
+        function::{Assertion, discriminator_for_switch},
         pearlite::{Term, TermKind},
     },
     util::Orphan,
@@ -136,7 +136,7 @@ pub(crate) struct BodySpecs<'tcx> {
     /// Invariants to translate as assertions.
     pub(crate) invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
     /// Map of the `proof_assert!` blocks to their translated version.
-    pub(crate) assertions: HashMap<DefId, Term<'tcx>>,
+    pub(crate) assertions: HashMap<DefId, Assertion<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     pub(crate) snapshots: HashMap<DefId, Term<'tcx>>,
     pub(crate) erased_locals: MixedBitSet<Local>,
@@ -738,7 +738,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                         .invariant_assertions
                         .get_mut(def_id)
                         .map(|(term, _)| term)
-                        .or_else(|| self.body_specs.assertions.get_mut(def_id))
+                        .or_else(|| self.body_specs.assertions.get_mut(def_id).map(|a| &mut a.term))
                     {
                         let bad_vars = self.resolver.bad_vars_at(loc);
                         let subst = self.analysis_env.inline_pearlite_subst(tcx, si.scope);

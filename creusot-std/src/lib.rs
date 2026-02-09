@@ -335,6 +335,9 @@ pub mod macros {
     /// This assertion will not be checked at runtime but only during proofs. However,
     /// it can use [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite) syntax.
     ///
+    /// You can also use the `#[trusted]` attribute to disable checking a `proof_assert!`,
+    /// so it becomes a trusted assumption for the rest of the function.
+    ///
     /// # Example
     ///
     /// ```
@@ -381,6 +384,11 @@ pub mod macros {
     ///
     /// These declarations are part of the trusted computing base (TCB). You should strive to use
     /// this as little as possible.
+    ///
+    /// # `proof_assert!`
+    ///
+    /// `#[trusted]` can also be used with `proof_assert!` to not emit a proof obligation for it.
+    /// It becomes just a trusted assumption.
     pub use base_macros::trusted;
 
     /// Declares a variant for a function or a loop.

@@ -67,8 +67,9 @@ struct BodyTranslator<'a, 'tcx> {
     function_variant: Ident,
     /// Invariants to translate as assertions.
     invariant_assertions: HashMap<DefId, (Term<'tcx>, String)>,
-    /// Map of the `proof_assert!` blocks to their translated version.
-    assertions: HashMap<DefId, Term<'tcx>>,
+    /// Map of the `proof_assert!` blocks to their translated version
+    /// and a boolean, `true` for assumptions (`#[trusted]`) and `false` for assertions.
+    assertions: HashMap<DefId, Assertion<'tcx>>,
     /// Map of the `snapshot!` blocks to their translated version.
     snapshots: HashMap<DefId, Term<'tcx>>,
 
@@ -79,6 +80,11 @@ struct BodyTranslator<'a, 'tcx> {
     erased_locals: MixedBitSet<Local>,
 
     vars: LocalDecls<'tcx>,
+}
+
+pub struct Assertion<'tcx> {
+    pub is_trusted: bool,
+    pub term: Term<'tcx>,
 }
 
 /// The translator encountered something it cannot handle.

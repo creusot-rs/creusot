@@ -10,7 +10,7 @@ pub fn pearlite(_: TS1) -> TS1 {
 }
 
 pub fn proof_assert(_: TS1) -> TS1 {
-    TS1::new()
+    quote::quote! { {} }.into()
 }
 
 pub fn snapshot(_: TS1) -> TS1 {
@@ -135,6 +135,16 @@ impl VisitMut for DeleteInvariants {
         delete_invariants_attrs(&mut i.attrs);
         syn::visit_mut::visit_expr_loop_mut(self, i)
     }
+
+    fn visit_expr_macro_mut(&mut self, i: &mut syn::ExprMacro) {
+        delete_trusted_attrs(&mut i.attrs);
+        syn::visit_mut::visit_expr_macro_mut(self, i)
+    }
+
+    fn visit_stmt_macro_mut(&mut self, i: &mut syn::StmtMacro) {
+        delete_trusted_attrs(&mut i.attrs);
+        syn::visit_mut::visit_stmt_macro_mut(self, i)
+    }
 }
 
 // `invariant` or `creusot_std::invariant` or `::creusot_std::invariant`
@@ -170,6 +180,14 @@ fn delete_contracts(attrs: &mut Vec<syn::Attribute>) {
             true
         }
     });
+}
+
+fn delete_trusted_attrs(attrs: &mut Vec<syn::Attribute>) {
+    attrs.retain(
+        |attr| {
+            if let syn::Meta::Path(path) = &attr.meta { !is("trusted", &path) } else { true }
+        },
+    )
 }
 
 // Also delete other contracts to avoid redundant passes
