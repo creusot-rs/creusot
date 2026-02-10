@@ -18,7 +18,6 @@ pub mod seq;
 mod set;
 mod well_founded;
 
-// TODO: do not alias these names. decide either to re-export them, or use a submodule.
 pub use self::{
     fmap::FMap,
     fset::FSet,
