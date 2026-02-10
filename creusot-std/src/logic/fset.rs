@@ -266,6 +266,75 @@ impl<T> FSet<T> {
             }
         }
     }
+
+    /// Distributivity of `unions` over `union`.
+    #[logic]
+    #[ensures(self.union(other).unions(f) == self.unions(f).union(other.unions(f)))]
+    #[ensures(self.unions(|x| f.get(x).union(g.get(x))) == self.unions(f).union(self.unions(g)))]
+    pub fn unions_union<U>(self, other: Self, f: Mapping<T, FSet<U>>, g: Mapping<T, FSet<U>>) {}
+
+    /// Distributivity of `map` over `union`.
+    #[logic]
+    #[ensures(self.union(other).map(f) == self.map(f).union(other.map(f)))]
+    pub fn map_union<U>(self, other: Self, f: Mapping<T, U>) {}
+
+    /// Distributivity of `concat` over `union`.
+    #[logic]
+    #[ensures(FSet::concat(s1.union(s2), t) == FSet::concat(s1, t).union(FSet::concat(s2, t)))]
+    #[ensures(FSet::concat(t, s1.union(s2)) == FSet::concat(t, s1).union(FSet::concat(t, s2)))]
+    pub fn concat_union(s1: FSet<Seq<T>>, s2: FSet<Seq<T>>, t: FSet<Seq<T>>) {}
+
+    /// Distributivity of `cons` over `union`.
+    #[logic]
+    #[ensures(FSet::concat(FSet::cons(self, t), u) == FSet::cons(self, FSet::concat(t, u)))]
+    pub fn cons_concat(self, t: FSet<Seq<T>>, u: FSet<Seq<T>>) {
+        proof_assert!(forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x));
+        proof_assert!(forall<x: T, ys: Seq<T>> ys.push_front(x).tail() == ys);
+        proof_assert!(forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().push_front(ys[0]));
+    }
+
+    /// Distributivity of `replicate` over `union`.
+    #[logic]
+    #[requires(0 <= n && 0 <= m)]
+    #[ensures(self.replicate(n + m) == FSet::concat(self.replicate(n), self.replicate(m)))]
+    #[variant(n)]
+    pub fn concat_replicate(self, n: Int, m: Int) {
+        pearlite! {
+            if n == 0 {
+                Self::concat_empty(self.replicate(m));
+            } else {
+                self.cons_concat(self.replicate(n - 1), self.replicate(m));
+                self.concat_replicate(n - 1, m);
+            }
+        }
+    }
+
+    /// The neutral element of `FSet::concat` is `FSet::singleton(Seq::empty())`.
+    #[logic]
+    #[ensures(FSet::concat(FSet::singleton(Seq::empty()), s) == s)]
+    #[ensures(FSet::concat(s, FSet::singleton(Seq::empty())) == s)]
+    pub fn concat_empty(s: FSet<Seq<T>>) {
+        proof_assert!(forall<xs: Seq<T>> xs.concat(Seq::empty()) == xs);
+        proof_assert!(forall<xs: Seq<T>> Seq::empty().concat(xs) == xs);
+    }
+
+    /// An equation relating `s.replicate_up_to(m)` and `s.replicate_up_to(n)`.
+    #[logic]
+    #[requires(0 <= n && n < m)]
+    #[ensures(self.replicate_up_to(m) == self.replicate_up_to(n).union(
+        FSet::concat(self.replicate(n + 1), self.replicate_up_to(m - n - 1))))]
+    #[variant(m)]
+    pub fn concat_replicate_up_to(self, n: Int, m: Int) {
+        pearlite! {
+            if n + 1 == m {
+                Self::concat_empty(self.replicate(n + 1));
+            } else {
+                Self::concat_union(self.replicate(n), self.replicate(m - 1), self.replicate(m - n - 1));
+                self.concat_replicate(n, m - n - 1);
+                self.concat_replicate_up_to(n, m - 1);
+            }
+        }
+    }
 }
 
 impl FSet<Int> {
@@ -446,79 +515,4 @@ impl<T> Resolve for FSet<T> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
-}
-
-// Properties
-// TODO: replace quantification with parameters, and move to impl block.
-
-/// Distributivity of `unions` over `union`.
-#[logic(open)]
-#[ensures(forall<s1: FSet<T>, s2: FSet<T>, f: Mapping<T, FSet<U>>> s1.union(s2).unions(f) == s1.unions(f).union(s2.unions(f)))]
-#[ensures(forall<s: FSet<T>, f: Mapping<T, FSet<U>>, g: Mapping<T, FSet<U>>>
-    s.unions(|x| f.get(x).union(g.get(x))) == s.unions(f).union(s.unions(g)))]
-pub fn unions_union<T, U>() {}
-
-/// Distributivity of `map` over `union`.
-#[logic(open)]
-#[ensures(forall<s: FSet<T>, t: FSet<T>, f: Mapping<T, U>> s.union(t).map(f) == s.map(f).union(t.map(f)))]
-pub fn map_union<T, U>() {}
-
-/// Distributivity of `concat` over `union`.
-#[logic(open)]
-#[ensures(forall<s1: FSet<Seq<T>>, s2: FSet<Seq<T>>, t: FSet<Seq<T>>>
-    FSet::concat(s1.union(s2), t) == FSet::concat(s1, t).union(FSet::concat(s2, t)))]
-#[ensures(forall<s: FSet<Seq<T>>, t1: FSet<Seq<T>>, t2: FSet<Seq<T>>>
-    FSet::concat(s, t1.union(t2)) == FSet::concat(s, t1).union(FSet::concat(s, t2)))]
-pub fn concat_union<T>() {}
-
-/// Distributivity of `cons` over `union`.
-#[logic(open)]
-#[ensures(forall<s: FSet<T>, t: FSet<Seq<T>>, u: FSet<Seq<T>>> FSet::concat(FSet::cons(s, t), u) == FSet::cons(s, FSet::concat(t, u)))]
-pub fn cons_concat<T>() {
-    proof_assert! { forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x) };
-    proof_assert! { forall<x: T, ys: Seq<T>> ys.push_front(x).tail() == ys };
-    proof_assert! { forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().push_front(ys[0]) };
-}
-
-/// Distributivity of `replicate` over `union`.
-#[logic(open)]
-#[requires(0 <= n && 0 <= m)]
-#[ensures(s.replicate(n + m) == FSet::concat(s.replicate(n), s.replicate(m)))]
-#[variant(n)]
-pub fn concat_replicate<T>(n: Int, m: Int, s: FSet<T>) {
-    pearlite! {
-        if n == 0 {
-            concat_empty(s.replicate(m));
-        } else {
-            cons_concat::<T>();
-            concat_replicate(n - 1, m, s);
-        }
-    }
-}
-
-/// The neutral element of `FSet::concat` is `FSet::singleton(Seq::empty())`.
-#[logic(open)]
-#[ensures(FSet::concat(FSet::singleton(Seq::empty()), s) == s)]
-#[ensures(FSet::concat(s, FSet::singleton(Seq::empty())) == s)]
-pub fn concat_empty<T>(s: FSet<Seq<T>>) {
-    proof_assert! { forall<xs: Seq<T>> xs.concat(Seq::empty()) == xs };
-    proof_assert! { forall<xs: Seq<T>> Seq::empty().concat(xs) == xs };
-}
-
-/// An equation relating `s.replicate_up_to(m)` and `s.replicate_up_to(n)`.
-#[logic(open)]
-#[requires(0 <= n && n < m)]
-#[ensures(s.replicate_up_to(m) == s.replicate_up_to(n).union(
-    FSet::concat(s.replicate(n + 1), s.replicate_up_to(m - n - 1))))]
-#[variant(m)]
-pub fn concat_replicate_up_to<T>(n: Int, m: Int, s: FSet<T>) {
-    pearlite! {
-        if n + 1 == m {
-            concat_empty(s.replicate(n + 1));
-        } else {
-            concat_union::<T>();
-            concat_replicate(n, m - n - 1, s);
-            concat_replicate_up_to(n, m - 1, s);
-        }
-    }
 }
