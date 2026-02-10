@@ -1,3 +1,5 @@
+//! A logical/ghost finite map.
+
 #[cfg(creusot)]
 use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{
@@ -12,9 +14,8 @@ use core::marker::PhantomData;
 ///
 /// # Ghost
 ///
-/// Since [`std::collections::HashMap`](std::collections::HashMap) and
-/// [`std::collections::BTreeMap`](std::collections::BTreeMap) have finite
-/// capacity, this could cause some issues in ghost code:
+/// Since [`std::collections::HashMap`] and [`std::collections::BTreeMap`] have
+/// finite capacity, this could cause some issues in ghost code:
 /// ```rust,creusot,compile_fail
 /// ghost! {
 ///     let mut map = HashMap::new();
