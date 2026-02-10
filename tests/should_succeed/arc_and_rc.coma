@@ -1,5 +1,8 @@
 module M_rc
   use creusot.int.Int32
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
   use creusot.prelude.Any
   
   type t_Rc_i32_Global
@@ -13,8 +16,6 @@ module M_rc
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Rc_i32_Global result)
       /\ ([@stop_split] [@expl:new ensures] view_Rc_i32_Global result = value)}
       (! return {result}) ]
-  
-  predicate resolve_Rc_i32_Global (_1: t_Rc_i32_Global)
   
   predicate invariant_ref_Rc_i32_Global [@inline:trivial] (self: t_Rc_i32_Global) = inv_Rc_i32_Global self
   
@@ -30,6 +31,35 @@ module M_rc
     [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = view_Rc_i32_Global self_}
       (! return {result}) ]
   
+  let rec clone_Rc_i32_Global (self_: t_Rc_i32_Global) (return (x: t_Rc_i32_Global)) =
+    {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_i32_Global self_}
+    any
+    [ return (result: t_Rc_i32_Global) ->
+    {[@stop_split] [@expl:clone_Rc_i32_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Rc_i32_Global result)
+      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_Rc_i32_Global (_1: t_Rc_i32_Global)
+  
+  type t_PtrDeepModel__private
+  
+  type t_PtrDeepModel = { addr: UInt64.t; t_PtrDeepModel__private: t_PtrDeepModel__private }
+  
+  function deep_model_ptr_i32 (self: Opaque.ptr) : t_PtrDeepModel
+  
+  axiom deep_model_ptr_i32_spec: forall self: Opaque.ptr. (deep_model_ptr_i32 self).addr = Ptr.addr_logic_u64 self
+  
+  function as_ptr_Rc_i32_Global (self: t_Rc_i32_Global) : Opaque.ptr
+  
+  let rec ptr_eq_i32 (this: t_Rc_i32_Global) (other: t_Rc_i32_Global) (return (x: bool)) =
+    {[@stop_split] [@expl:ptr_eq_i32 requires] ([@stop_split] [@expl:ptr_eq 'this' type invariant] inv_ref_Rc_i32_Global this)
+    /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Rc_i32_Global other)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:ptr_eq_i32 ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
+        = (deep_model_ptr_i32 (as_ptr_Rc_i32_Global this) = deep_model_ptr_i32 (as_ptr_Rc_i32_Global other)))
+      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> view_Rc_i32_Global this = view_Rc_i32_Global other)}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -38,16 +68,43 @@ module M_rc
     [ bb0 = s0
       [ s0 = new_i32 {(1: Int32.t)} (fun (_x: t_Rc_i32_Global) -> [ &rc'0 <- _x ] s1)
       | s1 = {[@expl:assertion] view_Rc_i32_Global rc'0 = (1: Int32.t)} s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Rc_i32_Global rc'0} any) ]
-      | s3 = -{resolve_Rc_i32_Global rc'0}- s4
-      | s4 = as_ref_Rc_i32_Global {rc'0} (fun (_x: Int32.t) -> [ &inner <- _x ] s5)
-      | s5 = {[@expl:assertion] Int32.to_int inner = 1} s6
-      | s6 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & rc'0: t_Rc_i32_Global = Any.any_l () | & inner: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+      | s2 = as_ref_Rc_i32_Global {rc'0} (fun (_x: Int32.t) -> [ &inner <- _x ] s3)
+      | s3 = {[@expl:assertion] Int32.to_int inner = 1} s4
+      | s4 = clone_Rc_i32_Global {rc'0} (fun (_x: t_Rc_i32_Global) -> [ &rc2 <- _x ] s5)
+      | s5 = {[@expl:assertion] rc'0 = rc2} s6
+      | s6 = [ &_18 <- rc'0 ] s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Rc_i32_Global rc2} any) ]
+      | s8 = -{resolve_Rc_i32_Global rc2}- s9
+      | s9 = [ &_20 <- rc2 ] s10
+      | s10 = ptr_eq_i32 {_18} {_20} (fun (_x: bool) -> [ &b <- _x ] s11)
+      | s11 = {[@expl:assertion] b} s12
+      | s12 = new_i32 {(2: Int32.t)} (fun (_x: t_Rc_i32_Global) -> [ &rc3 <- _x ] s13)
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Rc_i32_Global rc'0} any) ]
+      | s14 = -{resolve_Rc_i32_Global rc'0}- s15
+      | s15 = [ &_27 <- rc'0 ] s16
+      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_Rc_i32_Global rc3} any) ]
+      | s17 = -{resolve_Rc_i32_Global rc3}- s18
+      | s18 = [ &_29 <- rc3 ] s19
+      | s19 = ptr_eq_i32 {_27} {_29} (fun (_x: bool) -> [ &b2 <- _x ] s20)
+      | s20 = {[@expl:assertion] not b2} s21
+      | s21 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & rc'0: t_Rc_i32_Global = Any.any_l ()
+    | & inner: Int32.t = Any.any_l ()
+    | & rc2: t_Rc_i32_Global = Any.any_l ()
+    | & b: bool = Any.any_l ()
+    | & _18: t_Rc_i32_Global = Any.any_l ()
+    | & _20: t_Rc_i32_Global = Any.any_l ()
+    | & rc3: t_Rc_i32_Global = Any.any_l ()
+    | & b2: bool = Any.any_l ()
+    | & _27: t_Rc_i32_Global = Any.any_l ()
+    | & _29: t_Rc_i32_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_arc
   use creusot.int.Int32
+  use creusot.prelude.Opaque
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
   use creusot.prelude.Any
   
   type t_Arc_i32_Global
@@ -61,8 +118,6 @@ module M_arc
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Arc_i32_Global result)
       /\ ([@stop_split] [@expl:new ensures] view_Arc_i32_Global result = value)}
       (! return {result}) ]
-  
-  predicate resolve_Arc_i32_Global (_1: t_Arc_i32_Global)
   
   predicate invariant_ref_Arc_i32_Global [@inline:trivial] (self: t_Arc_i32_Global) = inv_Arc_i32_Global self
   
@@ -78,19 +133,72 @@ module M_arc
     [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = view_Arc_i32_Global self_}
       (! return {result}) ]
   
+  let rec clone_Arc_i32_Global (self_: t_Arc_i32_Global) (return (x: t_Arc_i32_Global)) =
+    {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Arc_i32_Global self_}
+    any
+    [ return (result: t_Arc_i32_Global) ->
+    {[@stop_split] [@expl:clone_Arc_i32_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Arc_i32_Global result)
+      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_Arc_i32_Global (_1: t_Arc_i32_Global)
+  
+  type t_PtrDeepModel__private
+  
+  type t_PtrDeepModel = { addr: UInt64.t; t_PtrDeepModel__private: t_PtrDeepModel__private }
+  
+  function deep_model_ptr_i32 (self: Opaque.ptr) : t_PtrDeepModel
+  
+  axiom deep_model_ptr_i32_spec: forall self: Opaque.ptr. (deep_model_ptr_i32 self).addr = Ptr.addr_logic_u64 self
+  
+  function as_ptr_Arc_i32_Global (self: t_Arc_i32_Global) : Opaque.ptr
+  
+  let rec ptr_eq_i32 (this: t_Arc_i32_Global) (other: t_Arc_i32_Global) (return (x: bool)) =
+    {[@stop_split] [@expl:ptr_eq_i32 requires] ([@stop_split] [@expl:ptr_eq 'this' type invariant] inv_ref_Arc_i32_Global this)
+    /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Arc_i32_Global other)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:ptr_eq_i32 ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
+        = (deep_model_ptr_i32 (as_ptr_Arc_i32_Global this) = deep_model_ptr_i32 (as_ptr_Arc_i32_Global other)))
+      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> view_Arc_i32_Global this = view_Arc_i32_Global other)}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let rec arc (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(2: Int32.t)} (fun (_x: t_Arc_i32_Global) -> [ &arc'0 <- _x ] s1)
-      | s1 = {[@expl:assertion] view_Arc_i32_Global arc'0 = (2: Int32.t)} s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Arc_i32_Global arc'0} any) ]
-      | s3 = -{resolve_Arc_i32_Global arc'0}- s4
-      | s4 = as_ref_Arc_i32_Global {arc'0} (fun (_x: Int32.t) -> [ &inner <- _x ] s5)
-      | s5 = {[@expl:assertion] Int32.to_int inner = 2} s6
-      | s6 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & arc'0: t_Arc_i32_Global = Any.any_l () | & inner: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: t_Arc_i32_Global) -> [ &arc'0 <- _x ] s1)
+      | s1 = {[@expl:assertion] view_Arc_i32_Global arc'0 = (1: Int32.t)} s2
+      | s2 = as_ref_Arc_i32_Global {arc'0} (fun (_x: Int32.t) -> [ &inner <- _x ] s3)
+      | s3 = {[@expl:assertion] Int32.to_int inner = 1} s4
+      | s4 = clone_Arc_i32_Global {arc'0} (fun (_x: t_Arc_i32_Global) -> [ &arc2 <- _x ] s5)
+      | s5 = {[@expl:assertion] arc'0 = arc2} s6
+      | s6 = [ &_18 <- arc'0 ] s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Arc_i32_Global arc2} any) ]
+      | s8 = -{resolve_Arc_i32_Global arc2}- s9
+      | s9 = [ &_20 <- arc2 ] s10
+      | s10 = ptr_eq_i32 {_18} {_20} (fun (_x: bool) -> [ &b <- _x ] s11)
+      | s11 = {[@expl:assertion] b} s12
+      | s12 = new_i32 {(2: Int32.t)} (fun (_x: t_Arc_i32_Global) -> [ &arc3 <- _x ] s13)
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Arc_i32_Global arc'0} any) ]
+      | s14 = -{resolve_Arc_i32_Global arc'0}- s15
+      | s15 = [ &_27 <- arc'0 ] s16
+      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_Arc_i32_Global arc3} any) ]
+      | s17 = -{resolve_Arc_i32_Global arc3}- s18
+      | s18 = [ &_29 <- arc3 ] s19
+      | s19 = ptr_eq_i32 {_27} {_29} (fun (_x: bool) -> [ &b2 <- _x ] s20)
+      | s20 = {[@expl:assertion] not b2} s21
+      | s21 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & arc'0: t_Arc_i32_Global = Any.any_l ()
+    | & inner: Int32.t = Any.any_l ()
+    | & arc2: t_Arc_i32_Global = Any.any_l ()
+    | & b: bool = Any.any_l ()
+    | & _18: t_Arc_i32_Global = Any.any_l ()
+    | & _20: t_Arc_i32_Global = Any.any_l ()
+    | & arc3: t_Arc_i32_Global = Any.any_l ()
+    | & b2: bool = Any.any_l ()
+    | & _27: t_Arc_i32_Global = Any.any_l ()
+    | & _29: t_Arc_i32_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
