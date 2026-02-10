@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::std::ptr::PointerExt as _;
 use crate::{
     ghost::{
         Committer, FnGhost,
@@ -7,7 +9,29 @@ use crate::{
 };
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
+#[cfg(creusot)]
+use core::ops::Deref;
 use std::sync::Arc;
+
+/// Extension trait for [`Arc`].
+pub trait ArcExt {
+    /// The `T` in `Arc<T>`
+    type Pointee: ?Sized;
+
+    /// Get the underlying raw pointer, in logic.
+    ///
+    /// Used to specify [`Arc::as_ptr`].
+    #[logic]
+    fn as_ptr_logic(self) -> *const Self::Pointee;
+}
+#[cfg(feature = "nightly")]
+impl<T: ?Sized, A: Allocator> ArcExt for Arc<T, A> {
+    type Pointee = T;
+    #[logic(opaque)]
+    fn as_ptr_logic(self) -> *const T {
+        dead
+    }
+}
 
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {
@@ -36,6 +60,18 @@ extern_spec! {
                 fn new(value: T) -> Self;
             }
 
+            impl<T, A: Allocator> Arc<T, A> {
+                #[check(ghost)]
+                #[ensures(result == this.as_ptr_logic())]
+                #[ensures(!result.is_null_logic())]
+                fn as_ptr(this: &Arc<T, A>) -> *const T;
+
+                #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Arc`s.
+                #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
+                #[ensures(result ==> this@ == other@)]
+                fn ptr_eq(this: &Arc<T, A>, other: &Arc<T, A>) -> bool;
+            }
+
             impl<T, A: Allocator> AsRef for Arc<T, A> {
                 #[check(ghost)]
                 #[ensures(*result == *(*self)@)]
@@ -48,6 +84,12 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(result@ == (*self)@)]
         fn clone(&self) -> Arc<T, A>;
+    }
+
+    impl<T: ?Sized, A: Allocator> Deref for Arc<T, A> {
+        #[check(ghost)]
+        #[ensures(*result == *(*self)@)]
+        fn deref(&self) -> &T { self.as_ref() }
     }
 }
 
