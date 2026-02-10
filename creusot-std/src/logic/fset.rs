@@ -1,3 +1,5 @@
+//! A logical/ghost finite set.
+
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{logic::Mapping, prelude::*};

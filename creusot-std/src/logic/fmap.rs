@@ -1,3 +1,5 @@
+//! A logical/ghost finite map.
+
 #[cfg(creusot)]
 use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{
