@@ -60,9 +60,8 @@ impl Protocol for ParallelAddAtomicInv {
     }
 }
 
-#[requires(tokens.contains(PARALLEL_ADD()))]
 #[requires(n@ >= 0)]
-pub fn parallel_add(mut tokens: Ghost<Tokens>, n: i32) {
+pub fn parallel_add(n: i32) {
     let (atomic, own) = AtomicI32::new(0);
     let _ = snapshot!((fraction_1, fraction_add));
 
