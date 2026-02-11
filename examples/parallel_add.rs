@@ -38,8 +38,7 @@ impl Protocol for ParallelAddAtomicInv {
     }
 }
 
-#[requires(tokens.contains(PARALLEL_ADD()))]
-pub fn parallel_add(mut tokens: Ghost<Tokens>) {
+pub fn parallel_add() {
     let (atomic, own) = AtomicI32::new(0);
 
     // Create our ghost state

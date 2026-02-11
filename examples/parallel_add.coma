@@ -10,14 +10,6 @@ module M_parallel_add
   use set.Set
   use int.Int
   
-  type t_Tokens
-  
-  predicate resolve_Tokens (_1: t_Tokens)
-  
-  predicate resolve_Ghost_Tokens [@inline:trivial] (_1: t_Tokens) = resolve_Tokens _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_Tokens
-  
   type t_AtomicI32
   
   type t_Perm_AtomicI32
@@ -451,6 +443,8 @@ module M_parallel_add
     c0'0: t_AtomicI32;
     c1'0: t_AtomicInvariant_ParallelAddAtomicInv;
     c2'0: MutBorrow.t t_Fragment_Option_Excl_bool }
+  
+  type t_Tokens
   
   type closure0'1 = {
     c0'1: t_AtomicInvariant_ParallelAddAtomicInv;
@@ -1318,170 +1312,166 @@ module M_parallel_add
   
   meta "select_lsinst" "all"
   
-  let rec parallel_add (tokens: t_Tokens) (return (x: ())) =
-    {[@stop_split] [@expl:parallel_add requires] contains tokens (Namespace_PARALLEL_ADD 0)}
-    (! bb0
+  let rec parallel_add (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = -{resolve_Ghost_Tokens tokens}- s1
-      | s1 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) -> [ &_6 <- _x ] s2)
-      | s2 = [ &atomic <- _6.f0 ] s3
-      | s3 = [ &own'0 <- _6.f1 ] s4
-      | s4 = alloc_Option_Excl_bool (fun (_x: t_Authority_Option_Excl_bool) -> [ &auth1'0 <- _x ] s5)
-      | s5 = alloc_Option_Excl_bool (fun (_x: t_Authority_Option_Excl_bool) -> [ &auth2'0 <- _x ] s6)
-      | s6 = deref_Ghost_Authority_Option_Excl_bool {auth1'0}
-          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_13 <- _x ] s7)
-      | s7 = id_ghost_Option_Excl_bool {_13} (fun (_x: t_Id) -> [ &_11 <- _x ] s8)
-      | s8 = new_unit_Option_Excl_bool {_11} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_10 <- _x ] s9)
-      | s9 = new_Fragment_Option_Excl_bool {_10} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &frag1 <- _x ] s10)
-      | s10 = deref_Ghost_Authority_Option_Excl_bool {auth2'0}
-          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_19 <- _x ] s11)
-      | s11 = id_ghost_Option_Excl_bool {_19} (fun (_x: t_Id) -> [ &_17 <- _x ] s12)
-      | s12 = new_unit_Option_Excl_bool {_17} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_16 <- _x ] s13)
-      | s13 = new_Fragment_Option_Excl_bool {_16} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &frag2 <- _x ] s14)
-      | s14 = MutBorrow.borrow_mut <t_Authority_Option_Excl_bool> {auth1'0}
+      [ s0 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) -> [ &_3 <- _x ] s1)
+      | s1 = [ &atomic <- _3.f0 ] s2
+      | s2 = [ &own'0 <- _3.f1 ] s3
+      | s3 = alloc_Option_Excl_bool (fun (_x: t_Authority_Option_Excl_bool) -> [ &auth1'0 <- _x ] s4)
+      | s4 = alloc_Option_Excl_bool (fun (_x: t_Authority_Option_Excl_bool) -> [ &auth2'0 <- _x ] s5)
+      | s5 = deref_Ghost_Authority_Option_Excl_bool {auth1'0}
+          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_10 <- _x ] s6)
+      | s6 = id_ghost_Option_Excl_bool {_10} (fun (_x: t_Id) -> [ &_8 <- _x ] s7)
+      | s7 = new_unit_Option_Excl_bool {_8} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_7 <- _x ] s8)
+      | s8 = new_Fragment_Option_Excl_bool {_7} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &frag1 <- _x ] s9)
+      | s9 = deref_Ghost_Authority_Option_Excl_bool {auth2'0}
+          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_16 <- _x ] s10)
+      | s10 = id_ghost_Option_Excl_bool {_16} (fun (_x: t_Id) -> [ &_14 <- _x ] s11)
+      | s11 = new_unit_Option_Excl_bool {_14} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_13 <- _x ] s12)
+      | s12 = new_Fragment_Option_Excl_bool {_13} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &frag2 <- _x ] s13)
+      | s13 = MutBorrow.borrow_mut <t_Authority_Option_Excl_bool> {auth1'0}
           (fun (_bor: MutBorrow.t t_Authority_Option_Excl_bool) ->
-            [ &_26 <- _bor ] -{inv_Ghost_Authority_Option_Excl_bool _bor.final}-
-            [ &auth1'0 <- _bor.final ] s15)
+            [ &_23 <- _bor ] -{inv_Ghost_Authority_Option_Excl_bool _bor.final}-
+            [ &auth1'0 <- _bor.final ] s14)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Authority_Option_Excl_bool auth1'0} any) ]
-      | s15 = deref_mut_Ghost_Authority_Option_Excl_bool {_26}
-          (fun (_x: MutBorrow.t t_Authority_Option_Excl_bool) -> [ &_25 <- _x ] s16)
-      | s16 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag1}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_30 <- _bor ] [ &frag1 <- _bor.final ] s17)
-      | s17 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_30.current} {MutBorrow.get_id _30}
+      | s14 = deref_mut_Ghost_Authority_Option_Excl_bool {_23}
+          (fun (_x: MutBorrow.t t_Authority_Option_Excl_bool) -> [ &_22 <- _x ] s15)
+      | s15 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag1}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_27 <- _bor ] [ &frag1 <- _bor.final ] s16)
+      | s16 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_27.current} {MutBorrow.get_id _27}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
-            [ &_29 <- _bor ] [ &_30 <- { _30 with current = _bor.final } ] s18)
-      | s18 = deref_mut_Ghost_Fragment_Option_Excl_bool {_29}
-          (fun (_x: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_28 <- _x ] s19)
-      | s19 = MutBorrow.borrow_final <t_Authority_Option_Excl_bool> {_25.current} {MutBorrow.get_id _25}
+            [ &_26 <- _bor ] [ &_27 <- { _27 with current = _bor.final } ] s17)
+      | s17 = deref_mut_Ghost_Fragment_Option_Excl_bool {_26}
+          (fun (_x: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_25 <- _x ] s18)
+      | s18 = MutBorrow.borrow_final <t_Authority_Option_Excl_bool> {_22.current} {MutBorrow.get_id _22}
           (fun (_bor: MutBorrow.t t_Authority_Option_Excl_bool) ->
-            [ &_24 <- _bor ] -{inv_Authority_Option_Excl_bool _bor.final}-
-            [ &_25 <- { _25 with current = _bor.final } ] s20)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool _25.current} any) ]
-      | s20 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_28.current} {MutBorrow.get_id _28}
+            [ &_21 <- _bor ] -{inv_Authority_Option_Excl_bool _bor.final}-
+            [ &_22 <- { _22 with current = _bor.final } ] s19)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool _22.current} any) ]
+      | s19 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_25.current} {MutBorrow.get_id _25}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
-            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s21)
-      | s21 = update_Option_Excl_bool {_24} {_27} {{ f0'1 = Some { f0'0 = false }; f1'1 = Some { f0'0 = false } }}
-          (fun (_x: ()) -> [ &_23 <- _x ] s22)
-      | s22 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _30}- s23
-      | s23 = -{resolve_refmut_Fragment_Option_Excl_bool _28}- s24
-      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_Excl_bool _25} any) ]
-      | s25 = -{resolve_refmut_Authority_Option_Excl_bool _25}- s26
-      | s26 = MutBorrow.borrow_mut <t_Authority_Option_Excl_bool> {auth2'0}
+            [ &_24 <- _bor ] [ &_25 <- { _25 with current = _bor.final } ] s20)
+      | s20 = update_Option_Excl_bool {_21} {_24} {{ f0'1 = Some { f0'0 = false }; f1'1 = Some { f0'0 = false } }}
+          (fun (_x: ()) -> [ &_20 <- _x ] s21)
+      | s21 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _27}- s22
+      | s22 = -{resolve_refmut_Fragment_Option_Excl_bool _25}- s23
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_Excl_bool _22} any) ]
+      | s24 = -{resolve_refmut_Authority_Option_Excl_bool _22}- s25
+      | s25 = MutBorrow.borrow_mut <t_Authority_Option_Excl_bool> {auth2'0}
           (fun (_bor: MutBorrow.t t_Authority_Option_Excl_bool) ->
-            [ &_36 <- _bor ] -{inv_Ghost_Authority_Option_Excl_bool _bor.final}-
-            [ &auth2'0 <- _bor.final ] s27)
+            [ &_33 <- _bor ] -{inv_Ghost_Authority_Option_Excl_bool _bor.final}-
+            [ &auth2'0 <- _bor.final ] s26)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Authority_Option_Excl_bool auth2'0} any) ]
-      | s27 = deref_mut_Ghost_Authority_Option_Excl_bool {_36}
-          (fun (_x: MutBorrow.t t_Authority_Option_Excl_bool) -> [ &_35 <- _x ] s28)
-      | s28 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag2}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_40 <- _bor ] [ &frag2 <- _bor.final ] s29)
-      | s29 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_40.current} {MutBorrow.get_id _40}
+      | s26 = deref_mut_Ghost_Authority_Option_Excl_bool {_33}
+          (fun (_x: MutBorrow.t t_Authority_Option_Excl_bool) -> [ &_32 <- _x ] s27)
+      | s27 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag2}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_37 <- _bor ] [ &frag2 <- _bor.final ] s28)
+      | s28 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
-            [ &_39 <- _bor ] [ &_40 <- { _40 with current = _bor.final } ] s30)
-      | s30 = deref_mut_Ghost_Fragment_Option_Excl_bool {_39}
-          (fun (_x: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_38 <- _x ] s31)
-      | s31 = MutBorrow.borrow_final <t_Authority_Option_Excl_bool> {_35.current} {MutBorrow.get_id _35}
+            [ &_36 <- _bor ] [ &_37 <- { _37 with current = _bor.final } ] s29)
+      | s29 = deref_mut_Ghost_Fragment_Option_Excl_bool {_36}
+          (fun (_x: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_35 <- _x ] s30)
+      | s30 = MutBorrow.borrow_final <t_Authority_Option_Excl_bool> {_32.current} {MutBorrow.get_id _32}
           (fun (_bor: MutBorrow.t t_Authority_Option_Excl_bool) ->
-            [ &_34 <- _bor ] -{inv_Authority_Option_Excl_bool _bor.final}-
-            [ &_35 <- { _35 with current = _bor.final } ] s32)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool _35.current} any) ]
-      | s32 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_38.current} {MutBorrow.get_id _38}
+            [ &_31 <- _bor ] -{inv_Authority_Option_Excl_bool _bor.final}-
+            [ &_32 <- { _32 with current = _bor.final } ] s31)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool _32.current} any) ]
+      | s31 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_35.current} {MutBorrow.get_id _35}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
-            [ &_37 <- _bor ] [ &_38 <- { _38 with current = _bor.final } ] s33)
-      | s33 = update_Option_Excl_bool {_34} {_37} {{ f0'1 = Some { f0'0 = false }; f1'1 = Some { f0'0 = false } }}
-          (fun (_x: ()) -> [ &_33 <- _x ] s34)
-      | s34 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _40}- s35
-      | s35 = -{resolve_refmut_Fragment_Option_Excl_bool _38}- s36
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_Excl_bool _35} any) ]
-      | s37 = -{resolve_refmut_Authority_Option_Excl_bool _35}- s38
-      | s38 = new_unit {_22} (fun (_x: ()) -> [ &_21 <- _x ] s39)
-      | s39 = into_inner_Box_Perm_AtomicI32_Global {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_46 <- _x ] s40)
-      | s40 = into_inner_Authority_Option_Excl_bool {auth1'0}
-          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_48 <- _x ] s41)
-      | s41 = into_inner_Authority_Option_Excl_bool {auth2'0}
-          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_50 <- _x ] s42)
-      | s42 = [ &_45 <- { own = _46; auth1 = _48; auth2 = _50 } ] s43
-      | s43 = new_ParallelAddAtomicInv {_45} (fun (_x: t_ParallelAddAtomicInv) -> [ &_44 <- _x ] s44)
-      | s44 = new_ParallelAddAtomicInv'0 {_44} {{ f0'4 = atomic;
+            [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s32)
+      | s32 = update_Option_Excl_bool {_31} {_34} {{ f0'1 = Some { f0'0 = false }; f1'1 = Some { f0'0 = false } }}
+          (fun (_x: ()) -> [ &_30 <- _x ] s33)
+      | s33 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _37}- s34
+      | s34 = -{resolve_refmut_Fragment_Option_Excl_bool _35}- s35
+      | s35 = s36 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_Excl_bool _32} any) ]
+      | s36 = -{resolve_refmut_Authority_Option_Excl_bool _32}- s37
+      | s37 = new_unit {_19} (fun (_x: ()) -> [ &_18 <- _x ] s38)
+      | s38 = into_inner_Box_Perm_AtomicI32_Global {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_43 <- _x ] s39)
+      | s39 = into_inner_Authority_Option_Excl_bool {auth1'0}
+          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_45 <- _x ] s40)
+      | s40 = into_inner_Authority_Option_Excl_bool {auth2'0}
+          (fun (_x: t_Authority_Option_Excl_bool) -> [ &_47 <- _x ] s41)
+      | s41 = [ &_42 <- { own = _43; auth1 = _45; auth2 = _47 } ] s42
+      | s42 = new_ParallelAddAtomicInv {_42} (fun (_x: t_ParallelAddAtomicInv) -> [ &_41 <- _x ] s43)
+      | s43 = new_ParallelAddAtomicInv'0 {_41} {{ f0'4 = atomic;
                                                   f1'4 = id_Option_Excl_bool'0 frag1;
                                                   f2'4 = id_Option_Excl_bool'0 frag2 }} {Namespace_PARALLEL_ADD 0}
-          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s45)
-      | s45 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag1}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_61 <- _bor ] [ &frag1 <- _bor.final ] s46)
-      | s46 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag2}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_62 <- _bor ] [ &frag2 <- _bor.final ] s47)
-      | s47 = [ &_60 <- { c0 = _61; c1 = _62; c2 = inv; c3 = atomic } ] s48
-      | s48 = scope_closure0 {_60} (fun (_x: ()) -> [ &_59 <- _x ] s49)
-      | s49 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
-          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_68 <- _x ] s50)
-      | s50 = into_inner_ParallelAddAtomicInv {_68} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s51)
-      | s51 = -{resolve_Ghost_Fragment_Option_Excl_bool frag1}- s52
-      | s52 = [ &_75 <- frag1 ] s53
-      | s53 = deref_Ghost_Fragment_Option_Excl_bool {_75} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_73 <- _x ] s54)
-      | s54 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_73} (fun (_x: ()) -> [ &_70 <- _x ] s55)
-      | s55 = s56 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth2} any) ]
-      | s56 = -{resolve_Authority_Option_Excl_bool inv'0.auth2}- s57
-      | s57 = s58 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth1} any) ]
-      | s58 = -{resolve_Authority_Option_Excl_bool inv'0.auth1}- s59
-      | s59 = -{resolve_Ghost_Fragment_Option_Excl_bool frag2}- s60
-      | s60 = [ &_81 <- frag2 ] s61
-      | s61 = deref_Ghost_Fragment_Option_Excl_bool {_81} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_79 <- _x ] s62)
-      | s62 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_79} (fun (_x: ()) -> [ &_76 <- _x ] s63)
-      | s63 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s64)
-      | s64 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &n <- _x ] s65)
-      | s65 = {[@expl:assertion] n = (4: Int32.t)} s66
-      | s66 = return {_ret} ] ]
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s44)
+      | s44 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag1}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_58 <- _bor ] [ &frag1 <- _bor.final ] s45)
+      | s45 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag2}
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_59 <- _bor ] [ &frag2 <- _bor.final ] s46)
+      | s46 = [ &_57 <- { c0 = _58; c1 = _59; c2 = inv; c3 = atomic } ] s47
+      | s47 = scope_closure0 {_57} (fun (_x: ()) -> [ &_56 <- _x ] s48)
+      | s48 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_65 <- _x ] s49)
+      | s49 = into_inner_ParallelAddAtomicInv {_65} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s50)
+      | s50 = -{resolve_Ghost_Fragment_Option_Excl_bool frag1}- s51
+      | s51 = [ &_72 <- frag1 ] s52
+      | s52 = deref_Ghost_Fragment_Option_Excl_bool {_72} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_70 <- _x ] s53)
+      | s53 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_70} (fun (_x: ()) -> [ &_67 <- _x ] s54)
+      | s54 = s55 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth2} any) ]
+      | s55 = -{resolve_Authority_Option_Excl_bool inv'0.auth2}- s56
+      | s56 = s57 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth1} any) ]
+      | s57 = -{resolve_Authority_Option_Excl_bool inv'0.auth1}- s58
+      | s58 = -{resolve_Ghost_Fragment_Option_Excl_bool frag2}- s59
+      | s59 = [ &_78 <- frag2 ] s60
+      | s60 = deref_Ghost_Fragment_Option_Excl_bool {_78} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_76 <- _x ] s61)
+      | s61 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_76} (fun (_x: ()) -> [ &_73 <- _x ] s62)
+      | s62 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s63)
+      | s63 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &n <- _x ] s64)
+      | s64 = {[@expl:assertion] n = (4: Int32.t)} s65
+      | s65 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
-    | & tokens: t_Tokens = tokens
     | & atomic: t_AtomicI32 = Any.any_l ()
     | & own'0: t_Perm_AtomicI32 = Any.any_l ()
-    | & _6: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = Any.any_l ()
+    | & _3: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = Any.any_l ()
     | & auth1'0: t_Authority_Option_Excl_bool = Any.any_l ()
     | & auth2'0: t_Authority_Option_Excl_bool = Any.any_l ()
     | & frag1: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _10: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _11: t_Id = Any.any_l ()
-    | & _13: t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _7: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _8: t_Id = Any.any_l ()
+    | & _10: t_Authority_Option_Excl_bool = Any.any_l ()
     | & frag2: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _16: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _17: t_Id = Any.any_l ()
-    | & _19: t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _21: () = Any.any_l ()
-    | & _22: () = Any.any_l ()
-    | & _23: () = Any.any_l ()
-    | & _24: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _25: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _26: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _13: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _14: t_Id = Any.any_l ()
+    | & _16: t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _18: () = Any.any_l ()
+    | & _19: () = Any.any_l ()
+    | & _20: () = Any.any_l ()
+    | & _21: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _22: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _23: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _24: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _25: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _26: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
     | & _27: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _28: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _29: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _30: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _33: () = Any.any_l ()
-    | & _34: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _35: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _36: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _30: () = Any.any_l ()
+    | & _31: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _32: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _33: MutBorrow.t t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _34: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _35: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _36: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
     | & _37: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _38: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _39: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _40: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
     | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
-    | & _44: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _45: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _46: t_Perm_AtomicI32 = Any.any_l ()
-    | & _48: t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _50: t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _59: () = Any.any_l ()
-    | & _60: closure0 = Any.any_l ()
-    | & _61: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _62: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _41: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _42: t_ParallelAddAtomicInv = Any.any_l ()
+    | & _43: t_Perm_AtomicI32 = Any.any_l ()
+    | & _45: t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _47: t_Authority_Option_Excl_bool = Any.any_l ()
+    | & _56: () = Any.any_l ()
+    | & _57: closure0 = Any.any_l ()
+    | & _58: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _59: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
     | & own'1: t_Perm_AtomicI32 = Any.any_l ()
     | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _68: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
-    | & _70: () = Any.any_l ()
-    | & _73: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _75: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _76: () = Any.any_l ()
-    | & _79: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _81: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _65: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+    | & _67: () = Any.any_l ()
+    | & _70: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _72: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _73: () = Any.any_l ()
+    | & _76: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _78: t_Fragment_Option_Excl_bool = Any.any_l ()
     | & n: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
