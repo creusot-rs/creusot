@@ -4,7 +4,6 @@ use quote::{ToTokens, TokenStreamExt, quote_spanned};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
-    visit_mut::{VisitMut, visit_expr_closure_mut},
     *,
 };
 
@@ -159,14 +158,4 @@ pub(crate) fn ghost_int_lit_suffix(tokens: TokenStream) -> TokenStream {
             TokenTree::Ident(_) | TokenTree::Punct(_) => t,
         })
         .collect()
-}
-
-pub(crate) struct GhostClosuresVisitor;
-
-impl VisitMut for GhostClosuresVisitor {
-    fn visit_expr_closure_mut(&mut self, i: &mut ExprClosure) {
-        let attr: Attribute = parse_quote!(#[check(ghost)]);
-        i.attrs.push(attr);
-        visit_expr_closure_mut(self, i);
-    }
 }

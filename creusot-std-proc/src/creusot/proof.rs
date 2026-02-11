@@ -1,7 +1,7 @@
 //! Macros used to prove the internals of a function, or to create proof objects.
 
 use crate::{
-    common::{GhostClosuresVisitor, GhostLet, ghost_int_lit_suffix},
+    common::{GhostLet, ghost_int_lit_suffix},
     creusot::{invariant::desugar_invariant, pretyping},
 };
 use pearlite_syn::TBlock;
@@ -9,10 +9,10 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Delimiter, Group};
 use quote::{ToTokens, quote};
 use syn::{
-    Block,
+    Attribute, Block, ExprClosure,
     parse::{self, Parse},
-    parse_macro_input, token,
-    visit_mut::VisitMut,
+    parse_macro_input, parse_quote, token,
+    visit_mut::{VisitMut, visit_expr_closure_mut},
 };
 
 pub fn proof_assert(assertion: TS1) -> TS1 {
@@ -95,5 +95,15 @@ impl Parse for Assertion {
         let brace_token = token::Brace(input.span());
         let stmts = input.call(TBlock::parse_within)?;
         Ok(Assertion(TBlock { brace_token, stmts }))
+    }
+}
+
+pub(crate) struct GhostClosuresVisitor;
+
+impl VisitMut for GhostClosuresVisitor {
+    fn visit_expr_closure_mut(&mut self, i: &mut ExprClosure) {
+        let attr: Attribute = parse_quote!(#[check(ghost)]);
+        i.attrs.push(attr);
+        visit_expr_closure_mut(self, i);
     }
 }

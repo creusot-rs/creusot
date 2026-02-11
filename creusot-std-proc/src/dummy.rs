@@ -1,4 +1,4 @@
-use crate::common::{ContractSubject, GhostClosuresVisitor, GhostLet, ghost_int_lit_suffix};
+use crate::common::{ContractSubject, GhostLet, ghost_int_lit_suffix};
 use proc_macro::TokenStream as TS1;
 use quote::ToTokens as _;
 use syn::{Block, parse_macro_input, visit_mut::VisitMut};
@@ -25,7 +25,6 @@ pub fn ghost(body: TS1) -> TS1 {
     let group = proc_macro2::Group::new(proc_macro2::Delimiter::Brace, body.into());
     let body = ghost_int_lit_suffix(group.into_token_stream()).into();
     let mut body = parse_macro_input!(body as Block);
-    GhostClosuresVisitor.visit_block_mut(&mut body);
     DeleteInvariants.visit_block_mut(&mut body);
     quote::quote! { if false {
         ::creusot_std::ghost::Ghost::new({ #body })
@@ -38,7 +37,6 @@ pub fn ghost(body: TS1) -> TS1 {
 pub fn ghost_let(body: TS1) -> TS1 {
     let body = ghost_int_lit_suffix(proc_macro2::TokenStream::from(body)).into();
     let GhostLet { mutability, var, mut body } = parse_macro_input!(body);
-    GhostClosuresVisitor.visit_expr_mut(&mut body);
     DeleteInvariants.visit_expr_mut(&mut body);
     quote::quote! { let #mutability #var = if false {
         ::creusot_std::ghost::Ghost::new(#body)
