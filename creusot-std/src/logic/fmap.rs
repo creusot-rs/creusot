@@ -1,7 +1,7 @@
 //! A logical/ghost finite map.
 
 #[cfg(creusot)]
-use crate::{logic::such_that, resolve::structural_resolve};
+use crate::resolve::structural_resolve;
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
@@ -538,65 +538,37 @@ impl<K, V> Invariant for FMap<K, V> {
     }
 }
 
-// =========
-// Iterators
-// =========
-
-impl<K, V> IntoIterator for FMap<K, V> {
-    type Item = (K, V);
-    type IntoIter = FMapIter<K, V>;
-
-    #[check(ghost)]
-    #[ensures(result@ == self)]
-    fn into_iter(self) -> Self::IntoIter {
-        FMapIter { inner: self }
-    }
-}
-
-/// An owning iterator for [`FMap`].
-pub struct FMapIter<K, V> {
-    inner: FMap<K, V>,
-}
-
-impl<K, V> View for FMapIter<K, V> {
-    type ViewTy = FMap<K, V>;
-    #[logic]
-    fn view(self) -> Self::ViewTy {
-        self.inner
-    }
-}
-
-impl<K, V> Iterator for FMapIter<K, V> {
+impl<K, V> Iterator for FMap<K, V> {
     type Item = (K, V);
 
     #[check(ghost)]
     #[ensures(match result {
         None => self.completed(),
-        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.insert(k, v),
+        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self) == (^self).insert(k, v),
     })]
     fn next(&mut self) -> Option<(K, V)> {
-        self.inner.remove_one_ghost()
+        self.remove_one_ghost()
     }
 }
 
-impl<K, V> IteratorSpec for FMapIter<K, V> {
+impl<K, V> IteratorSpec for FMap<K, V> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<(K, V)>, o: Self) -> bool {
         pearlite! {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
             // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o@.contains(k) && self@.get(k) == Some(v)) &&
+            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o.contains(k) && self.get(k) == Some(v)) &&
             // Helper for the length
-            self@.len() == visited.len() + o@.len() &&
+            self.len() == visited.len() + o.len() &&
             // else, the key-value is the same in `self` and `o`
-            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.get(k) == self@.get(k))
+            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o.get(k) == self.get(k))
         }
     }
 
     #[logic(prophetic, open)]
     fn completed(&mut self) -> bool {
-        pearlite! { self@.is_empty() }
+        pearlite! { self.is_empty() }
     }
 
     #[logic(law)]
@@ -614,89 +586,20 @@ impl<K, V> IteratorSpec for FMapIter<K, V> {
         proof_assert!(forall<k> (forall<i> 0 <= i && i < ac.len() ==> ac[i].0 != k) ==> {
             (forall<i> 0 <= i && i < ab.len() ==> ab[i].0 != k) &&
             (forall<i> 0 <= i && i < bc.len() ==> bc[i].0 != k) &&
-            a@.get(k) == b@.get(k) && b@.get(k) == c@.get(k)
+            a.get(k) == b.get(k) && b.get(k) == c.get(k)
         });
     }
 }
 
 impl<'a, K, V> IntoIterator for &'a FMap<K, V> {
     type Item = (&'a K, &'a V);
-    type IntoIter = FMapIterRef<'a, K, V>;
+    type IntoIter = FMap<&'a K, &'a V>;
 
     #[check(ghost)]
-    #[ensures(result@ == *self)]
-    fn into_iter(self) -> FMapIterRef<'a, K, V> {
-        let _self = snapshot!(self);
-        let result = FMapIterRef { inner: self.as_ref_ghost() };
-        proof_assert!(result@.ext_eq(**_self));
-        result
-    }
-}
-
-/// An iterator over references in a [`FMap`].
-pub struct FMapIterRef<'a, K, V> {
-    inner: FMap<&'a K, &'a V>,
-}
-
-impl<K, V> View for FMapIterRef<'_, K, V> {
-    type ViewTy = FMap<K, V>;
-    #[logic]
-    fn view(self) -> FMap<K, V> {
-        pearlite! { such_that(|m: FMap<K, V>|
-            forall<k, v> (m.get(k) == Some(v)) == (self.inner.get(&k) == Some(&v))
-        ) }
-    }
-}
-
-impl<'a, K, V> Iterator for FMapIterRef<'a, K, V> {
-    type Item = (&'a K, &'a V);
-
-    #[trusted] // FIXME: the definition of the view makes this incredibly hard to prove.
-    #[check(ghost)]
-    #[ensures(match result {
-        None => self.completed(),
-        Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
-    fn next(&mut self) -> Option<(&'a K, &'a V)> {
-        self.inner.remove_one_ghost()
-    }
-}
-
-impl<'a, K, V> IteratorSpec for FMapIterRef<'a, K, V> {
-    #[logic(prophetic, open)]
-    fn produces(self, visited: Seq<(&'a K, &'a V)>, o: Self) -> bool {
-        pearlite! {
-            // We cannot visit the same key twice
-            (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
-            // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some((&k, &v)) ==> !o@.contains(k) && self@.get(k) == Some(v)) &&
-            // else, the key-value is the same in `self` and `o`
-            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != &k) ==> o@.get(k) == self@.get(k))
-        }
-    }
-
-    #[logic(prophetic, open)]
-    fn completed(&mut self) -> bool {
-        pearlite! { self@.is_empty() }
-    }
-
-    #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
-
-    #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
-        let ac = ab.concat(bc);
-        proof_assert!(forall<x> ab.contains(x) ==> ac.contains(x));
-        proof_assert!(forall<i> 0 <= i && i < bc.len() ==> ac[i + ab.len()] == bc[i]);
-        proof_assert!(forall<k> (forall<i> 0 <= i && i < ac.len() ==> ac[i].0 != k) ==> {
-            (forall<i> 0 <= i && i < ab.len() ==> ab[i].0 != k) &&
-            (forall<i> 0 <= i && i < bc.len() ==> bc[i].0 != k) &&
-            a@.get(*k) == b@.get(*k) && b@.get(*k) == c@.get(*k)
-        });
+    #[ensures(result.len() == self.len())]
+    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result.get(&k) == Some(&v)))]
+    fn into_iter(self) -> FMap<&'a K, &'a V> {
+        self.as_ref_ghost()
     }
 }
 
@@ -705,20 +608,6 @@ impl<K, V> Resolve for FMap<K, V> {
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { forall<k: K, v: V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
-    }
-
-    #[trusted]
-    #[logic(open(self), prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
-}
-
-impl<K, V> Resolve for FMapIter<K, V> {
-    #[logic(open, prophetic)]
-    #[creusot::trusted_trivial_if_param_trivial]
-    fn resolve(self) -> bool {
-        pearlite! { resolve(self@) }
     }
 
     #[trusted]

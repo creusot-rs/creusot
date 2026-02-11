@@ -10,7 +10,7 @@ pub fn complicated_identity<K, V>(m: Ghost<FMap<K, V>>) -> Ghost<FMap<K, V>> {
         let m_snap = snapshot!(m);
 
         #[variant(*len - produced.len())]
-        #[invariant(forall<k, v> (m_snap.get(k) == Some(v)) == (result.get(k) == Some(v) || iter@.get(k) == Some(v)))]
+        #[invariant(forall<k, v> (m_snap.get(k) == Some(v)) == (result.get(k) == Some(v) || iter.get(k) == Some(v)))]
         for (k, v) in m.into_inner() {
             result.insert_ghost(k, v);
         }
@@ -29,7 +29,7 @@ pub fn merge_fmaps<K, V>(m1: Ghost<FMap<K, V>>, m2: Ghost<FMap<K, V>>) -> Ghost<
         let len = snapshot!(m1.len());
 
         #[variant(*len - produced.len())]
-        #[invariant(merge.ext_eq(iter@.merge(result, |(v1, _)| v1)))]
+        #[invariant(merge.ext_eq(iter.merge(result, |(v1, _)| v1)))]
         for (k, v) in m1.into_inner() {
             result.insert_ghost(k, v);
         }
