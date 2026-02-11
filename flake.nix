@@ -19,12 +19,13 @@
     rust-overlay,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      lib = nixpkgs.lib.extend (_: _: (import ./nix {
-        inherit pins pkgs;
-      }));
+      inherit (lib) pkgs;
 
-      overlays = [rust-overlay.overlays.default];
-      pkgs = import nixpkgs {inherit overlays system;};
+      lib = nixpkgs.lib.extend (_: _: (import ./nix {
+        inherit pins nixpkgs system;
+
+        overlays = [rust-overlay.overlays.default];
+      }));
 
       pins = {
         why3 = {
@@ -106,9 +107,9 @@
         };
       in {
         why3Framework = let
-          licence = {
-            gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-            unfree = licence.gpl ++ (with lib.pkgs; [alt-ergo]);
+          licence = with pkgs; {
+            gpl = [cvc4 cvc5 lib.creusotPkgs.why3 lib.creusotPkgs.why3find lib.creusotPkgs.z3];
+            unfree = licence.gpl ++ [lib.creusotPkgs.alt-ergo];
           };
 
           why3json = pkgs.writeTextFile {

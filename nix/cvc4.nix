@@ -1,53 +1,21 @@
 {
-  pkgs,
   version,
   sha256,
 }:
-with pkgs; let
-  cvc4-cadical = pkgsStatic.cadical.overrideAttrs {
-    prePatch = ''
-      sed -i -e '104d' test/api/run.sh
-    '';
-  };
-
-  cvc4-cln = pkgsStatic.cln.overrideAttrs {
-    NIX_CFLAGS_COMPILE = "-DHZ=100";
-  };
-
-  cvc4-cryptominisat = pkgsStatic.cryptominisat.overrideAttrs {
-    src = fetchFromGitHub {
-      owner = "msoos";
-      repo = "cryptominisat";
-      rev = "5.8.0";
-      hash = "sha256-oGDsEYU9yXmHfbK4LyFzuJdfKHiFbSrT5PdY6GnrFQI=";
-    };
-
-    cmakeFlags = [
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-      "-DENABLE_PYTHON_INTERFACE=0"
-
-      "-DBUILD_SHARED_LIBS=0"
-      "-DSTATICCOMPILE=1"
-    ];
-
-    patchPhase = ''
-      sed -i -e '31,36d' src/main_exe.cpp
-      sed -i -e '28i#include <cstdint>' src/ccnr.h
-    '';
-  };
-in
-  stdenv.mkDerivation {
-    inherit (cvc4) meta patches pname preConfigure;
+_: pkgs:
+{
+  cvc4 = (pkgs.makeStatic pkgs.stdenv).mkDerivation {
+    inherit (pkgs.cvc4) meta patches pname preConfigure;
     inherit version;
 
-    src = fetchFromGitHub {
+    src = pkgs.fetchFromGitHub {
       owner = "cvc5";
       repo = "cvc5";
       rev = "cvc4-${version}";
       hash = sha256;
     };
 
-    nativeBuildInputs = [
+    nativeBuildInputs = with pkgs; [
       cmake
       pkg-config
       antlr3_4
@@ -56,12 +24,11 @@ in
       python3.pkgs.toml
     ];
 
-    buildInputs = with pkgsStatic; [
-      cvc4-cadical
-      cvc4-cln
-      cvc4-cryptominisat
+    buildInputs = with pkgs.pkgsStatic; [
+      cadical
+      cln
+      cryptominisat
       libantlr3c
-      pkgs.glibc.static
       symfpu
     ];
 
@@ -111,4 +78,5 @@ in
       "-DBUILD_SWIG_BINDINGS_PYTHON=0"
       "-DBUILD_BINDINGS_PYTHON=0"
     ];
-  }
+  };
+}
