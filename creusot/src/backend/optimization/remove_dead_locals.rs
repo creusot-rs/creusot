@@ -83,6 +83,9 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
 
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
+        if let RValue::Ptr(p) = r {
+            self.live.insert(p.local);
+        }
     }
 
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
