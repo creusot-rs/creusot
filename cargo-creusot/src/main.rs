@@ -343,7 +343,7 @@ fn check_contracts_version() -> Result<()> {
         bail!(
             r"{msg}
     creusot-std {contracts_version}
-    creusot           {self_version}
+    creusot     {self_version}
 {fixes}"
         )
     };
