@@ -1,17 +1,20 @@
+use crate::prelude::*;
+use std::sync::Arc;
+
 #[cfg(creusot)]
 use crate::std::ptr::PointerExt as _;
-use crate::{
-    ghost::{
-        Committer, FnGhost,
-        perm::{Container, Perm},
-    },
-    prelude::*,
-};
-#[cfg(feature = "nightly")]
-use core::alloc::Allocator;
+
 #[cfg(creusot)]
 use core::ops::Deref;
-use std::sync::Arc;
+
+#[cfg(feature = "sc-drf")]
+use crate::ghost::{
+    Committer, FnGhost,
+    perm::{Container, Perm},
+};
+
+#[cfg(feature = "nightly")]
+use core::alloc::Allocator;
 
 /// Extension trait for [`Arc`].
 pub trait ArcExt {
@@ -105,6 +108,7 @@ impl<T> View for Arc<T> {
 }
 
 /// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
+#[cfg(feature = "sc-drf")]
 pub struct AtomicI32(::std::sync::atomic::AtomicI32);
 
 #[cfg(feature = "sc-drf")]
