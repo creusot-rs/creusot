@@ -12,7 +12,7 @@ use creusot_std::{
     logic::{Id, ra::option::OptionLocalUpdate, real::PositiveReal as PR},
     prelude::{vec, *},
     std::{
-        sync::AtomicI32,
+        sync::atomic_sc::AtomicI32,
         thread::{self, JoinHandleExt},
     },
 };

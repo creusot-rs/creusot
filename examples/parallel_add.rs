@@ -11,7 +11,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::AtomicI32,
+        sync::atomic_sc::AtomicI32,
         thread::{self, JoinHandleExt},
     },
 };
