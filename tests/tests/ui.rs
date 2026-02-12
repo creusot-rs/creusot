@@ -165,8 +165,8 @@ impl CreusotPaths {
 /// This will only check the output of `creusot-std` if `test_creusot_std` is true.
 fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bool) -> bool {
     print!("Translating creusot-std... ");
+    std::io::stdout().flush().unwrap();
     if test_creusot_std {
-        std::io::stdout().flush().unwrap();
         std::process::Command::new("touch").args(["creusot-std/src/lib.rs"]).status().unwrap();
     }
     let mut build = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans);
