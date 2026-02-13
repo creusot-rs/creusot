@@ -25,8 +25,15 @@ extern_spec! {
     }
 }
 
-#[trusted]
-impl Plain for char {}
+impl Plain for char {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
 /// Extra methods for `char`
 pub trait CharExt {

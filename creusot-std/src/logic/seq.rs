@@ -800,8 +800,29 @@ impl<T: Clone + Copy> Clone for Seq<T> {
 }
 
 impl<T: Copy> Copy for Seq<T> {}
-#[trusted]
-impl<T: Plain> Plain for Seq<T> {}
+impl<T: Plain> Plain for Seq<T> {
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        ghost! {
+            let mut res = Seq::new().into_inner();
+            let len: Snapshot<Int> = snapshot!(snap.len());
+            let len = len.into_ghost().into_inner();
+            let mut i = 0int;
+            #[variant(len - i)]
+            #[invariant(i <= len)]
+            #[invariant(res.len() == i)]
+            #[invariant(forall<j> 0 <= j && j < i ==> res[j] == snap[j])]
+            while i < len {
+                let elem: Snapshot<T> = snapshot!(snap[i]);
+                res.push_back_ghost(elem.into_ghost().into_inner());
+                i = i + 1int;
+            }
+            res
+        }
+    }
+}
 
 impl<T> Invariant for Seq<T> {
     #[logic(open, prophetic, inline)]

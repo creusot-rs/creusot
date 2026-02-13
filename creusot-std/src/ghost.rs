@@ -207,24 +207,49 @@ impl<T, U: ?Sized> Ghost<(T, U)> {
     }
 }
 
-/// A marker trait for types that can be extracted from snapshots in ghost code.
-/// These are type that only contain plain data and whose onership does not convey
-/// any additional information.
+/// A trait for types that can be extracted from snapshots in ghost code.
 ///
-/// For example, Booleans and integers are plain, but references are not, be they
-/// mutable or not. Indeed, the ownership of a shared reference can be used to deduce
-/// facts, for example with `Perm::disjoint_lemma`.
-#[trusted]
-pub trait Plain: Copy {}
+/// These are types that only contain plain data and whose ownership does not
+/// convey any additional information.
+///
+/// For example, Booleans and integers are plain, but references are not, be
+/// they mutable or not. Indeed, the ownership of a shared reference can be used
+/// to deduce facts, for example with `Perm::disjoint_lemma`.
+pub trait Plain: Copy {
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self>;
+}
 
-#[trusted]
-impl Plain for bool {}
+impl Plain for bool {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
-#[trusted]
-impl<T> Plain for *const T {}
+impl<T> Plain for *const T {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
-#[trusted]
-impl<T> Plain for *mut T {}
+impl<T> Plain for *mut T {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be
 /// performed.

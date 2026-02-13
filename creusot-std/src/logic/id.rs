@@ -22,8 +22,15 @@ impl Clone for Id {
 }
 impl Copy for Id {}
 
-#[trusted]
-impl Plain for Id {}
+impl Plain for Id {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
 impl PartialEq for Id {
     #[trusted]
