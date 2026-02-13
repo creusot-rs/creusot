@@ -23,8 +23,15 @@ macro_rules! mach_int {
             }
         }
 
-        #[trusted]
-        impl Plain for $t {}
+        impl Plain for $t {
+            #[trusted]
+            #[ensures(*result == *snap)]
+            #[check(ghost)]
+            #[allow(unused_variables)]
+            fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+                Ghost::conjure()
+            }
+        }
 
         extern_spec! {
             impl Default for $t {

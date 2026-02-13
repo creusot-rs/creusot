@@ -101,8 +101,15 @@ impl Clone for Namespace {
 }
 impl Copy for Namespace {}
 
-#[trusted]
-impl Plain for Namespace {}
+impl Plain for Namespace {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
 /// Invariant tokens.
 ///

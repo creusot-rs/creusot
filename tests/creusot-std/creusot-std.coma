@@ -26305,6 +26305,187 @@ module M_logic__seq__impl_IndexMut_for_Seq_T__index_mut (* <logic::seq::Seq<T> a
         -> get_T self.current i = get_T self.final i)}
       (! return {result}) ]
 end
+module M_logic__seq__impl_Plain_for_Seq_T__into_ghost (* <logic::seq::Seq<T> as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.int.Int128
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_Ghost_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Seq_T
+  
+  predicate inv_Ghost_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Ghost_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Seq_T
+  
+  let rec new_T (return (x: Seq.seq t_T)) = any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
+      /\ ([@stop_split] [@expl:new ensures] result = (Seq.empty: Seq.seq t_T))}
+      (! return {result}) ]
+  
+  let rec into_inner_Seq_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Seq_T self}
+    any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:into_inner_Seq_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Seq_T result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let rec into_ghost_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  
+  let rec into_inner_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let rec new (value: Int128.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  let rec lt_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+  
+  predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_T
+  
+  predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_T
+  
+  let rec into_ghost_T (self: t_T) (return (x: t_T)) = any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
+      /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
+      (! return {result}) ]
+  
+  let rec into_inner_T (self: t_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_T self}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:into_inner_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
+  
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_T
+  
+  let rec push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+    {[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+      (! return {result}) ]
+  
+  let rec add_Int (self: int) (other: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:add ensures] result = self + other} (! return {result}) ]
+  
+  let rec new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
+    any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:new_Seq_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_ghost_Seq_T (snap: Seq.seq t_T) (return (x: Seq.seq t_T)) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_T (fun (_x: Seq.seq t_T) -> [ &_6 <- _x ] s1)
+      | s1 = into_inner_Seq_T {_6} (fun (_x: Seq.seq t_T) -> [ &res <- _x ] s2)
+      | s2 = [ &len <- Seq.length snap ] s3
+      | s3 = into_ghost_Int {len} (fun (_x: int) -> [ &_11 <- _x ] s4)
+      | s4 = into_inner_Int {_11} (fun (_x: int) -> [ &len'0 <- _x ] s5)
+      | s5 = new {(0: Int128.t)} (fun (_x: int) -> [ &_14 <- _x ] s6)
+      | s6 = into_inner_Int {_14} (fun (_x: int) -> [ &i <- _x ] s7)
+      | s7 = bb8 ]
+    | bb8 = bb8invariant
+      [ bb8 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb8 (len'0 - i)} bb8invariant
+      | bb8invariant = {[@expl:inferred invariant: type invariant] inv_Seq_T res}
+        {[@expl:loop invariant #0] i <= len'0}
+        {[@expl:loop invariant #1] Seq.length res = i}
+        {[@expl:loop invariant #2] forall j: int. 0 <= j /\ j < i -> Seq.get res j = Seq.get snap j}
+        (! [ &variant_old_bb8 <- len'0 - i ] s0)
+        [ s0 = lt_Int {i} {len'0} (fun (_x: bool) -> [ &_31 <- _x ] s1)
+        | s1 = any [ br0 -> {_31 = false} (! bb19) | br1 -> {_31} (! bb11) ] ]
+        [ bb11 = s0
+          [ s0 = [ &elem <- Seq.get snap i ] s1
+          | s1 = into_ghost_T {elem} (fun (_x: t_T) -> [ &_41 <- _x ] s2)
+          | s2 = into_inner_T {_41} (fun (_x: t_T) -> [ &_40 <- _x ] s3)
+          | s3 = MutBorrow.borrow_mut <Seq.seq t_T> {res}
+              (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+                [ &_39 <- _bor ] -{inv_Seq_T _bor.final}-
+                [ &res <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_T res} any) ]
+          | s4 = push_back_ghost_T {_39} {_40} (fun (_x: ()) -> [ &_38 <- _x ] s5)
+          | s5 = new {(1: Int128.t)} (fun (_x: int) -> [ &_46 <- _x ] s6)
+          | s6 = into_inner_Int {_46} (fun (_x: int) -> [ &_45 <- _x ] s7)
+          | s7 = add_Int {i} {_45} (fun (_x: int) -> [ &_43 <- _x ] s8)
+          | s8 = [ &i <- _43 ] s9
+          | s9 = bb8 ] ] ]
+    | bb19 = s0 [ s0 = new_Seq_T {res} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Seq.seq t_T = Any.any_l ()
+    | & snap: Seq.seq t_T = snap
+    | & res: Seq.seq t_T = Any.any_l ()
+    | & _6: Seq.seq t_T = Any.any_l ()
+    | & len: int = Any.any_l ()
+    | & len'0: int = Any.any_l ()
+    | & _11: int = Any.any_l ()
+    | & i: int = Any.any_l ()
+    | & _14: int = Any.any_l ()
+    | & _31: bool = Any.any_l ()
+    | & elem: t_T = Any.any_l ()
+    | & _38: () = Any.any_l ()
+    | & _39: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _40: t_T = Any.any_l ()
+    | & _41: t_T = Any.any_l ()
+    | & _43: int = Any.any_l ()
+    | & _45: int = Any.any_l ()
+    | & _46: int = Any.any_l ()
+    | & variant_old_bb8: int = Any.any_l () ])
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:into_ghost_Seq_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_Seq_T result)
+      /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}
+      (! return {result}) ]
+end
 module M_logic__seq__impl_IntoIterator_for_Seq_T__into_iter (* <logic::seq::Seq<T> as std::iter::IntoIterator> *)
   type namespace_other
   
@@ -32396,6 +32577,54 @@ module M_snapshot__impl_Clone_for_Snapshot_T__clone (* <snapshot::Snapshot<T> as
   let rec clone_Snapshot_T (self: t_T) (return (x: t_T)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ] [ & _ret: t_T = Any.any_l () | & self: t_T = self ])
     [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+end
+module M_snapshot__impl_Snapshot_T_0__into_ghost (* snapshot::Snapshot<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate precondition_into_ghost (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_into_ghost () args]. (let snap = args in true)
+      -> precondition_into_ghost () args
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_T
+  
+  predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_T
+  
+  predicate postcondition_once_into_ghost (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_T [postcondition_once_into_ghost () args res]. postcondition_once_into_ghost () args res
+      -> (let snap = args in inv_Ghost_T res /\ res = snap)
+  
+  let rec into_ghost_T (snap: t_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:into_ghost requires] precondition_into_ghost () snap}
+    any
+    [ return (result: t_T) -> {[@stop_split] [@expl:into_ghost ensures] postcondition_once_into_ghost () snap result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_ghost_T'0 (self: t_T) (return (x: t_T)) = (! bb0
+    [ bb0 = s0 [ s0 = into_ghost_T {self} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & self: t_T = self ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
+      /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
+      (! return {result}) ]
 end
 module M_std__array__impl_IteratorSpec_for_IntoIter_T__produces_refl (* <std::array::IntoIter<T, N> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -53086,6 +53315,291 @@ module M_ghost__fn_ghost__impl_Fn_for_FnGhostWrapper_F__call__refines (* <ghost:
         /\ (forall result: t_Output. inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result
           -> inv_Output result /\ postcondition_FnGhostWrapper_F self_ arg result)
 end
+module M_ghost__invariant__impl_Plain_for_Namespace__into_ghost__refines (* <ghost::invariant::Namespace as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: t_Namespace. forall result: t_Namespace. result = snap -> result = snap
+end
+module M_ghost__impl_Plain_for_bool__into_ghost__refines (* <bool as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: bool. forall result: bool. result = snap -> result = snap
+end
+module M_ghost__impl_Plain_for_ptr_T__into_ghost__refines (* <*const T as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Opaque.ptr. forall result: Opaque.ptr. result = snap -> result = snap
+end
+module M_ghost__impl_Plain_for_ptr_T_0__into_ghost__refines (* <*mut T as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Opaque
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Opaque.ptr. forall result: Opaque.ptr. result = snap -> result = snap
+end
+module M_logic__id__impl_Plain_for_Id__into_ghost__refines (* <logic::id::Id as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Id
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: t_Id. forall result: t_Id. result = snap -> result = snap
+end
+module M_logic__int__impl_Plain_for_Int__into_ghost__refines (* <logic::int::Int as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: int. forall result: int. result = snap -> result = snap
+end
+module M_logic__seq__impl_Plain_for_Seq_T__into_ghost__refines (* <logic::seq::Seq<T> as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_Ghost_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Seq_T
+  
+  predicate inv_Ghost_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Ghost_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Seq_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Seq.seq t_T. forall result: Seq.seq t_T. inv_Ghost_Seq_T result /\ result = snap
+        -> inv_Ghost_Seq_T result /\ result = snap
+end
+module M_std__char__impl_Plain_for_char__into_ghost__refines (* <char as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Char
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Char.t. forall result: Char.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_u8__into_ghost__refines (* <u8 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt8.t. forall result: UInt8.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_u16__into_ghost__refines (* <u16 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt16.t. forall result: UInt16.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_u32__into_ghost__refines (* <u32 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt32.t. forall result: UInt32.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_u64__into_ghost__refines (* <u64 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt64.t. forall result: UInt64.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_u128__into_ghost__refines (* <u128 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt128
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt128.t. forall result: UInt128.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_usize__into_ghost__refines (* <usize as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: UInt64.t. forall result: UInt64.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_i8__into_ghost__refines (* <i8 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int8.t. forall result: Int8.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_i16__into_ghost__refines (* <i16 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int16.t. forall result: Int16.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_i32__into_ghost__refines (* <i32 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int32.t. forall result: Int32.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_i64__into_ghost__refines (* <i64 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int64.t. forall result: Int64.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_i128__into_ghost__refines (* <i128 as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int128
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int128.t. forall result: Int128.t. result = snap -> result = snap
+end
+module M_std__num__impl_Plain_for_isize__into_ghost__refines (* <isize as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.Int64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: Int64.t. forall result: Int64.t. result = snap -> result = snap
+end
 module M_ghost__perm__impl_Resolve_for_Perm_C__resolve_coherence__refines (* <ghost::perm::Perm<C> as resolve::Resolve> *)
   type namespace_other
   
@@ -54020,28 +54534,6 @@ module M_invariant__impl_PartialEq_for_Subset_T__eq__refines (* <invariant::Subs
             = (deep_model_ref_Subset_T self_ = deep_model_ref_Subset_T rhs)
           -> result = (deep_model_ref_Subset_T self_ = deep_model_ref_Subset_T rhs)
 end
-module M_logic__id__impl_PartialEq_for_Id__ne__refines (* <logic::id::Id as std::cmp::PartialEq> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  type t_Id
-  
-  function deep_model_Id [@inline:trivial] (self: t_Id) : t_Id = self
-  
-  meta "rewrite_def" function deep_model_Id
-  
-  function deep_model_ref_Id [@inline:trivial] (self: t_Id) : t_Id = deep_model_Id self
-  
-  meta "rewrite_def" function deep_model_ref_Id
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_Id. forall rhs: t_Id. forall result: bool. result <> (self_ = rhs)
-          -> result = (deep_model_ref_Id self_ <> deep_model_ref_Id rhs)
-end
 module M_logic__id__impl_PartialEq_for_Id__eq__refines (* <logic::id::Id as std::cmp::PartialEq> *)
   type namespace_other
   
@@ -54063,6 +54555,28 @@ module M_logic__id__impl_PartialEq_for_Id__eq__refines (* <logic::id::Id as std:
   
   goal refines: forall self_: t_Id. forall rhs: t_Id. forall result: bool. result = (self_ = rhs)
           -> result = (deep_model_ref_Id self_ = deep_model_ref_Id rhs)
+end
+module M_logic__id__impl_PartialEq_for_Id__ne__refines (* <logic::id::Id as std::cmp::PartialEq> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Id
+  
+  function deep_model_Id [@inline:trivial] (self: t_Id) : t_Id = self
+  
+  meta "rewrite_def" function deep_model_Id
+  
+  function deep_model_ref_Id [@inline:trivial] (self: t_Id) : t_Id = deep_model_Id self
+  
+  meta "rewrite_def" function deep_model_ref_Id
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Id. forall rhs: t_Id. forall result: bool. result <> (self_ = rhs)
+          -> result = (deep_model_ref_Id self_ <> deep_model_ref_Id rhs)
 end
 module M_logic__int__impl_PartialEq_for_Int__eq__refines (* <logic::int::Int as std::cmp::PartialEq> *)
   type namespace_other
@@ -54800,29 +55314,6 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans__refines (*
               /\ produces_FMap_K_V b bc c
               /\ (forall result: (). produces_FMap_K_V a (Seq.(++) ab bc) c -> produces_FMap_K_V a (Seq.(++) ab bc) c)
 end
-module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIter_T = { inner: Seq.seq t_T }
-  
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
-  
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_SeqIter_T. forall result: (). produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
-        -> produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
-end
 module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
@@ -54849,6 +55340,29 @@ module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans__refines (*
               -> produces_SeqIter_T a ab b
               /\ produces_SeqIter_T b bc c
               /\ (forall result: (). produces_SeqIter_T a (Seq.(++) ab bc) c -> produces_SeqIter_T a (Seq.(++) ab bc) c)
+end
+module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  
+  type t_T
+  
+  type t_SeqIter_T = { inner: Seq.seq t_T }
+  
+  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  
+  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
+    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_SeqIter_T. forall result: (). produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
+        -> produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
 end
 module M_logic__seq__impl_IteratorSpec_for_SeqIterRef_T__produces_trans__refines (* <logic::seq::SeqIterRef<'a, T> as std::iter::IteratorSpec> *)
   type namespace_other
@@ -58518,6 +59032,28 @@ module M_logic__int__impl_PartialOrd_for_Int__le__refines (* <logic::int::Int as
   goal refines: forall self_: int. forall other: int. forall result: bool. result = (self_ <= other)
           -> result = (deep_model_ref_Int self_ <= deep_model_ref_Int other)
 end
+module M_logic__int__impl_PartialOrd_for_Int__lt__refines (* <logic::int::Int as std::cmp::PartialOrd> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  function deep_model_Int [@inline:trivial] (self: int) : int = self
+  
+  meta "rewrite_def" function deep_model_Int
+  
+  function deep_model_ref_Int [@inline:trivial] (self: int) : int = deep_model_Int self
+  
+  meta "rewrite_def" function deep_model_ref_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: int. forall other: int. forall result: bool. result = (self_ < other)
+          -> result = (deep_model_ref_Int self_ < deep_model_ref_Int other)
+end
 module M_logic__int__impl_PartialOrd_for_Int__gt__refines (* <logic::int::Int as std::cmp::PartialOrd> *)
   type namespace_other
   
@@ -58589,28 +59125,6 @@ module M_logic__int__impl_PartialOrd_for_Int__ge__refines (* <logic::int::Int as
   
   goal refines: forall self_: int. forall other: int. forall result: bool. result = (self_ >= other)
           -> result = (deep_model_ref_Int self_ >= deep_model_ref_Int other)
-end
-module M_logic__int__impl_PartialOrd_for_Int__lt__refines (* <logic::int::Int as std::cmp::PartialOrd> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use int.Int
-  
-  function deep_model_Int [@inline:trivial] (self: int) : int = self
-  
-  meta "rewrite_def" function deep_model_Int
-  
-  function deep_model_ref_Int [@inline:trivial] (self: int) : int = deep_model_Int self
-  
-  meta "rewrite_def" function deep_model_ref_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: int. forall other: int. forall result: bool. result = (self_ < other)
-          -> result = (deep_model_ref_Int self_ < deep_model_ref_Int other)
 end
 module M_peano__impl_PartialOrd_for_PeanoInt__ge__refines (* <peano::PeanoInt as std::cmp::PartialOrd> *)
   type namespace_other

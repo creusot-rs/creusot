@@ -106,13 +106,12 @@ impl<T> Snapshot<T> {
     }
 
     /// Extract a plain value from a snapshot in ghost code.
-    #[trusted]
     #[ensures(*result == *self)]
     #[check(ghost)]
     pub fn into_ghost(self) -> Ghost<T>
     where
         T: Plain,
     {
-        Ghost::conjure()
+        T::into_ghost(self)
     }
 }

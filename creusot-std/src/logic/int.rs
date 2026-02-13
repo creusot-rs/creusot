@@ -35,8 +35,15 @@ impl Clone for Int {
     }
 }
 impl Copy for Int {}
-#[trusted]
-impl Plain for Int {}
+impl Plain for Int {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+}
 
 // Logical functions
 impl Int {
