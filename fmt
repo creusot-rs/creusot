@@ -1,8 +1,28 @@
 #!/usr/bin/env bash
 
 set -e
-
 SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd $SCRIPTPATH > /dev/null
-rustfmt $@ $(git ls-files '*.rs')
+for i in "$@" ; do
+  case $1 in
+    --all)
+      FILES=$(git ls-files '*.rs')
+      ;;
+    --check)
+      ARGS=--check
+      ;;
+    -*)
+      echo "Unrecognized option $i"
+      exit 1;
+      ;;
+    *)
+      FILES+=" $i"
+      ;;
+  esac
+done
+if [ ! "$FILES" ] ; then
+  FILES=$(git diff --name-only origin/master '*.rs')
+  [ "$FILES" ] || exit 0
+fi
+rustfmt $ARGS $FILES
 popd > /dev/null
