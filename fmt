@@ -5,22 +5,32 @@ SCRIPTPATH=$(dirname "$BASH_SOURCE")
 pushd $SCRIPTPATH > /dev/null
 for i in "$@" ; do
   case $1 in
-    --all)
-      FILES=$(git ls-files '*.rs')
+    --help)
+      echo "Usage: ./fmt [--all] [ARGS]"
+      echo "    All other [ARGS] are forwarded to rustfmt; see below"
+      echo "Option:"
+      echo "    --all   Fmt all .rs files (default is to fmt files with changes from origin/master)"
+      echo
+      rustfmt --help
+      exit 0
       ;;
-    --check)
-      ARGS=--check
+    --all)
+      ARGS=$(git ls-files '*.rs')
+      NO_DEFAULT_FILES=1
+      shift
       ;;
     -*)
-      echo "Unrecognized option $i"
-      exit 1;
+      ARGS+=" $i"
+      shift
       ;;
     *)
-      FILES+=" $i"
+      ARGS+=" $i"
+      NO_DEFAULT_FILES=1
+      shift
       ;;
   esac
 done
-if [ ! "$FILES" ] ; then
+if [ ! "$NO_DEFAULT_FILES" ] ; then
   FILES=$(git diff --name-only origin/master '*.rs')
   [ "$FILES" ] || exit 0
 fi
