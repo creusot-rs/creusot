@@ -1,5 +1,5 @@
 use crate::prelude::*;
-#[cfg(creusot)]
+#[cfg(all(creusot, feature = "std"))]
 use core::ops::Deref;
 
 impl View for str {

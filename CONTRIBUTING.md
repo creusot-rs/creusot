@@ -6,38 +6,44 @@ Follow the instructions provided in the [README](./README.md). This will provide
 
 # 2. Running tests
 
+Run the default tests:
+
+```sh
+./t
+```
+
+For additional options, see `./t all`
+
 ## 2.1. UI Tests
 
 The UI tests are used to validate the translation of Creusot. They can be found in `tests/should_fail` and `tests/should_suceed`.
 Ideally, each test includes a comment specifying the property or feature being checked.
-To validate the translation one can run `cargo test --test ui`, or to run only a subset of tests run `cargo test --test ui "pattern"`.
+To validate the translation one can run `./t ui` (long form: `cargo test --test ui`), or to run only a subset of tests run `./t ui "pattern"` (long form: `cargo test --test ui -- "pattern"`).
 
 ## 2.2. Updating UI tests
 
-If you have made changes to the Creusot translation and the UI tests show a diff you believe to be legitimate, you can tell Creusot to record the new output using `cargo test --test ui "pattern" -- --bless`.
+If you have made changes to the Creusot translation and the UI tests show a diff you believe to be legitimate, you can tell Creusot to record the new output using  `./t ui --update`.
 When contributing or updating tests, we ask that you minimize avoidable warnings, in particular, top-level declarations should be marked public, and unused arguments removed or replaced by wildcards.
 The warnings and errors of each test are recorded in an accompanying `stderr` file if any were present.
 
 The `ui` test also runs the Creusot translation on `creusot-std`.
 The result is located at `tests/creusot-std/creusot-std.coma`.
-To run the translation only on `creusot-std`, use a pattern that matches nothing, like `cargo test --test ui qq`
 
 # 3. Verifying proofs
 
-Once you are satisfied with the coma output, you can validate the proofs of Creusot by running `cargo test --test why3`. This will run each test in the UI suite, and if a Why3 session is found, execute the proofs within.
-If you add a test that you believe should include a proof, you can add it using the `./ide` script provided in Creusot.
-Load your test case in the Why3 IDE, solve the proof and save the result, it will now be checked as part of CI.
+Once you are satisfied with the coma output, you can validate the proofs of Creusot by running `./t why3` (long form: `cargo test --test why3`). This will run each test that has changes compared to the branch `origin/master`, and if a Why3 session is found, execute the proofs within.
 
-Options of `cargo test --test why3`:
+Options for `./t why3`:
 
-- `--update`: update `proof.json` files (for `why3find` tests). (`why3session.xml` files
-    for `why3` tests with obsolete goals are automatically updated.)
+- `--update`: update `proof.json` files (for `why3find` tests). (Tests with `why3session.xml`
+    files are automatically updated if they have "obsolete" goals (minor changes);
+    for more substantial changes, you must edit them with `./ide MY/TEST/NAME/why3session.xml`.)
 
-- `--diff-from=` (accepts a Git ref): only check the coma files that have changed since then.
+- `--why3-all`: update all tests (default is only those with changes from `origin/master`)
 
 Note: the `why3` tests currently requires an installation of the supporting tools Why3, Why3find, and provers.
 The simplest way to get them in the right locations is to run the installer `./INSTALL`;
-`./INSTALL --skip-creusot-rustc --skip-cargo-creusot` also works to skip some steps if you only care about running the test suite.
+some steps can be skipped with `./INSTALL --skip-creusot-rustc --skip-cargo-creusot` if you only care about running the test suite.
 
 ## Inspecting/fixing the proof of a test
 
