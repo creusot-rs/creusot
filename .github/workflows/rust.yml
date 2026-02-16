@@ -212,32 +212,8 @@ jobs:
         opam --cli=2.1 var --global in-creusot-ci=true
     - run: ./INSTALL
     - name: test cargo creusot new
-      run: |
-        set -x
-        cd ..
-        cargo creusot new test-project --main --creusot-std ../creusot/creusot-std
-        cd test-project
-        cargo fmt --check
-        cargo build
-        cargo creusot
-        cargo creusot prove
-      env:
-        RUSTFLAGS: -D warnings
+      run: ./tests/build-new.sh
     - name: test no_std build
-      run: |
-        set -x
-        TLC=$(rustup show active-toolchain | cut -d " " -f1)
-        rustup component add --toolchain $TLC rustfmt
-        rustup component add --toolchain $TLC rust-src
-        rustup target add thumbv7em-none-eabi
-        cd ..
-        cargo creusot new test-project-nostd --no-std --creusot-std ../creusot/creusot-std
-        cd test-project-nostd
-        echo $TLC > rust-toolchain
-        cargo fmt --check
-        cargo build
-        cargo build --target thumbv7em-none-eabi -Zbuild-std=core,alloc
-        cargo creusot prove
-        cargo creusot prove -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
+      run: ./tests/build-new-no-std.sh
     - name: Minimize Opam cache
       run: opam clean --all-switches --download-cache --logs --repo-cache
