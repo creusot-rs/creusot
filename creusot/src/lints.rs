@@ -17,22 +17,22 @@ use crate::validate;
 // are defined in `creusot/messages.ftl`
 #[derive(Debug, LintDiagnostic)]
 pub(crate) enum Diagnostics {
-    #[diag(creusot_trusted_code)]
+    #[diag("used the `#[trusted]` attribute")]
     TrustedAttribute,
     /// Usually lints are emitted by implementing lint passes with the `impl_lint_pass!` macro.
     ///
     /// Since the lint is emmited at a "weird" time (during translation to
     /// fmir), we cannot do this, so this structure will be used with the
     /// `TyCtxt::emit_node_span_lint` function.
-    #[diag(creusot_contractless_external_function)]
+    #[diag("calling external function `{$name}` with no contract will yield an impossible precondition")]
     ContractlessExternalFunction {
         /// Name of the function
         name: Symbol,
         /// Location of the call
-        #[label]
+        #[label("function called here")]
         span: Span,
     },
-    #[diag(creusot_dyn_experimental)]
+    #[diag("support for trait objects (dyn) is limited and experimental")]
     DynExperimental,
 }
 

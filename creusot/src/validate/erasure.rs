@@ -17,7 +17,7 @@ use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
 use creusot_args::options::ErasureCheck;
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{BindingMode, ByRef, Mutability};
-use rustc_errors::{Diag, DiagMessage, SubdiagMessage};
+use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
     ItemLocalId,
     def_id::{DefId, LocalDefId},
@@ -661,7 +661,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     fn unsupported_syntax_(
         &self,
         span: Span,
-        msg: impl Into<SubdiagMessage>,
+        msg: impl Into<DiagMessage>,
         note: Option<String>,
     ) {
         let diag = warn_or_error(
@@ -681,14 +681,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         diag.emit();
     }
 
-    fn unsupported_syntax(&self, span: Span, msg: impl Into<SubdiagMessage>) {
+    fn unsupported_syntax(&self, span: Span, msg: impl Into<DiagMessage>) {
         self.unsupported_syntax_(span, msg, None)
     }
 
     fn unsupported_syntax_with_note(
         &self,
         span: Span,
-        msg: impl Into<SubdiagMessage>,
+        msg: impl Into<DiagMessage>,
         note: String,
     ) {
         self.unsupported_syntax_(span, msg, Some(note))
@@ -1479,9 +1479,9 @@ impl<'tcx> EqualityChecker<'tcx> {
     fn error(
         &self,
         span: Span,
-        msg: impl Into<SubdiagMessage>,
+        msg: impl Into<DiagMessage>,
         span2: Span,
-        msg2: impl Into<SubdiagMessage>,
+        msg2: impl Into<DiagMessage>,
     ) {
         warn_or_error(
             self.tcx,

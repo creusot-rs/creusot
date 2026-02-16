@@ -70,7 +70,6 @@ impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
         self.set_output_dir(config);
 
-        config.locale_resources.push(crate::DEFAULT_LOCALE_RESOURCE);
         config.override_queries = Some(|_sess, providers| {
             // Remove MIR of Pearlite code (logic functions, contracts, assertions, snapshots)
             // One might wonder why not override `mir_promoted` instead: that would be too late because
