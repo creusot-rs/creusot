@@ -44411,11 +44411,11 @@ module M_std__ops__extern_spec_core_option_T_FromResidual_Option_Infallible_Opti
   
   use creusot.prelude.Any
   
+  type t_Option_Infallible = None | Some ()
+  
   type t_T
   
-  type t_Option_T = None | Some t_T
-  
-  type t_Option_Infallible = None'0 | Some'0 ()
+  type t_Option_T = None'0 | Some'0 t_T
   
   predicate inv_Infallible [@inline:trivial] (_1: ()) = false
   
@@ -44425,8 +44425,8 @@ module M_std__ops__extern_spec_core_option_T_FromResidual_Option_Infallible_Opti
   
   axiom inv_axiom [@rewrite]: forall x: t_Option_Infallible [inv_Option_Infallible x]. inv_Option_Infallible x
       = match x with
-        | None'0 -> true
-        | Some'0 f0 -> inv_Infallible f0
+        | None -> true
+        | Some f0 -> inv_Infallible f0
         end
   
   predicate inv_T (_1: t_T)
@@ -44435,8 +44435,8 @@ module M_std__ops__extern_spec_core_option_T_FromResidual_Option_Infallible_Opti
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
-        | None -> true
-        | Some f0 -> inv_T f0
+        | None'0 -> true
+        | Some'0 f0 -> inv_T f0
         end
   
   meta "compute_max_steps" 1000000
@@ -44447,11 +44447,14 @@ module M_std__ops__extern_spec_core_option_T_FromResidual_Option_Infallible_Opti
     (residual: t_Option_Infallible) (return (x: t_Option_T)) =
     {[@stop_split] [@expl:extern_spec_core_option_T_FromResidual_Option_Infallible_Option_T_from_residual_body 'residual' type invariant] inv_Option_Infallible residual}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Option_T = Any.any_l () ])
+    [ bb0 = any [ br0 -> {residual = None} (! bb2) | br1 (x0: ()) -> {residual = Some x0} (! bb1) ]
+    | bb1 = {false} any
+    | bb2 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l () | & residual: t_Option_Infallible = residual ])
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:extern_spec_core_option_T_FromResidual_Option_Infallible_Option_T_from_residual_body_T ensures] ([@stop_split] [@expl:extern_spec_core_option_T_FromResidual_Option_Infallible_Option_T_from_residual_body result type invariant] inv_Option_T result)
       /\ ([@stop_split] [@expl:extern_spec_core_option_T_FromResidual_Option_Infallible_Option_T_from_residual_body ensures] result
-      = None)}
+      = None'0)}
       (! return {result}) ]
 end
 module M_std__ops__extern_spec_core_result_T_E_Try_Result_T_E_from_output_body
@@ -44601,6 +44604,31 @@ module M_std__ops__extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_
   
   type t_Result_Infallible_E = Ok () | Err t_E
   
+  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_Infallible
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Result_Infallible_E [inv_Result_Infallible_E x]. inv_Result_Infallible_E x
+      = match x with
+        | Ok f0 -> inv_Infallible f0
+        | Err f0 -> inv_E f0
+        end
+  
+  predicate resolve_E (_1: t_E)
+  
+  predicate resolve_Result_Infallible_E (_1: t_Result_Infallible_E)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Result_Infallible_E [resolve_Result_Infallible_E x]. resolve_Result_Infallible_E x
+      = match x with
+        | Ok x0 -> true
+        | Err x0 -> resolve_E x0
+        end
+  
   let rec elim_Err (_x: t_Result_Infallible_E) (return (f0: t_E)) = any
     [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Err] match _x with
@@ -44610,8 +44638,6 @@ module M_std__ops__extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_
       any) ]
   
   type t_F
-  
-  predicate inv_E (_1: t_E)
   
   predicate precondition_from (self: ()) (args: t_E)
   
@@ -44634,18 +44660,6 @@ module M_std__ops__extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_
   type t_T
   
   type t_Result_T_F = Ok'0 t_T | Err'0 t_F
-  
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
-  
-  meta "rewrite_def" predicate inv_Infallible
-  
-  predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Result_Infallible_E [inv_Result_Infallible_E x]. inv_Result_Infallible_E x
-      = match x with
-        | Ok f0 -> inv_Infallible f0
-        | Err f0 -> inv_E f0
-        end
   
   predicate inv_T (_1: t_T)
   
@@ -44722,15 +44736,20 @@ module M_std__ops__extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_
     (residual: t_Result_Infallible_E) (return (x: t_Result_T_F)) =
     {[@stop_split] [@expl:extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body 'residual' type invariant] inv_Result_Infallible_E residual}
     (! bb0
-    [ bb0 = s0
+    [ bb0 = any [ br0 (x0: ()) -> {residual = Ok x0} (! bb1) | br1 (x0: t_E) -> {residual = Err x0} (! bb2) ]
+    | bb1 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_Infallible_E residual} any) ]
+      | s1 = -{resolve_Result_Infallible_E residual}- s2
+      | s2 = {false} any ]
+    | bb2 = s0
       [ s0 = elim_Err {residual} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-      | s1 = from_F {e} (fun (_x: t_F) -> [ &_5 <- _x ] s2)
-      | s2 = [ &_ret <- Err'0 _5 ] s3
+      | s1 = from_F {e} (fun (_x: t_F) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- Err'0 _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Result_T_F = Any.any_l ()
     | & residual: t_Result_Infallible_E = residual
     | & e: t_E = Any.any_l ()
-    | & _5: t_F = Any.any_l () ])
+    | & _6: t_F = Any.any_l () ])
     [ return (result: t_Result_T_F) ->
     {[@stop_split] [@expl:extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body_T ensures] ([@stop_split] [@expl:extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body result type invariant] inv_Result_T_F result)
       /\ ([@stop_split] [@expl:extern_spec_core_result_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body ensures] match { f0 = result;
@@ -51636,15 +51655,15 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_ptr_perm (* <[T] as std::slic
       [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_9 <- _x ] s1)
       | s1 = [ &ptr <- _9.f0 ] s2
       | s2 = [ &own <- _9.f1 ] s3
-      | s3 = [ &_11 <- Opaque.thin ptr ] s4
-      | s4 = [ &_ret <- { f0'0 = _11; f1'0 = own } ] s5
+      | s3 = [ &_12 <- Opaque.thin ptr ] s4
+      | s4 = [ &_ret <- { f0'0 = _12; f1'0 = own } ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
     | & self: Slice64.slice t_T = self
     | & ptr: Opaque.ptr = Any.any_l ()
     | & own: t_Perm_ptr_slice_T = Any.any_l ()
     | & _9: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
-    | & _11: Opaque.ptr = Any.any_l () ])
+    | & _12: Opaque.ptr = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
     {[@stop_split] [@expl:as_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
       /\ ([@stop_split] [@expl:as_ptr_perm ensures #0] result.f0'0 = Opaque.thin (ward_ptr_slice_T result.f1'0))
@@ -51827,8 +51846,8 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_perm (* <[T] as std::
       | s1 = from_mut_slice_T {_12} (fun (_x: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T) -> [ &_11 <- _x ] s2)
       | s2 = [ &ptr <- _11.f0 ] s3
       | s3 = [ &own <- _11.f1 ] s4
-      | s4 = [ &_13 <- Opaque.thin ptr ] s5
-      | s5 = [ &_ret <- { f0'0 = _13; f1'0 = own } ] s6
+      | s4 = [ &_14 <- Opaque.thin ptr ] s5
+      | s5 = [ &_ret <- { f0'0 = _14; f1'0 = own } ] s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self} any) ]
       | s7 = -{resolve_refmut_slice_T self}- s8
       | s8 = return {_ret} ] ]
@@ -51838,7 +51857,7 @@ module M_std__slice__impl_SliceExt_for_slice_T__as_mut_ptr_perm (* <[T] as std::
     | & own: MutBorrow.t t_Perm_ptr_slice_T = Any.any_l ()
     | & _11: tup2_ptr_slice_T_Ghost_refmut_Perm_ptr_slice_T = Any.any_l ()
     | & _12: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
-    | & _13: Opaque.ptr = Any.any_l () ])
+    | & _14: Opaque.ptr = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
     {[@stop_split] [@expl:as_mut_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
       /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #0] result.f0'0
