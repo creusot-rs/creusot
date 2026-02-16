@@ -35,6 +35,12 @@ impl<T: Sized> Container for PermCell<T> {
     }
 }
 
+unsafe impl<T> Send for PermCell<T> {}
+unsafe impl<T> Sync for PermCell<T> {}
+
+unsafe impl<T: Send> Send for Perm<PermCell<T>> {}
+unsafe impl<T: Sync> Sync for Perm<PermCell<T>> {}
+
 impl<T: Sized> Invariant for Perm<PermCell<T>> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
