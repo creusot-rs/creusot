@@ -261,6 +261,7 @@ impl<C: Container<Value: Sized>> Committer<C> {
     /// 'Shoot' the committer
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
+    #[cfg(feature = "sc-drf")]
     #[requires(!self.shot())]
     #[requires(self.ward() == *own.ward())]
     #[ensures((^self).shot())]
@@ -271,6 +272,23 @@ impl<C: Container<Value: Sized>> Committer<C> {
     #[trusted]
     #[allow(unused_variables)]
     pub fn shoot(&mut self, own: &mut perm::Perm<C>) {
+        panic!("Should not be called outside ghost code")
+    }
+
+    /// 'Shoot' the committer
+    ///
+    /// This does the write on the atomic in ghost code, and can only be called once.
+    #[cfg(not(feature = "sc-drf"))]
+    #[requires(!self.shot())]
+    #[requires(self.ward() == *own.ward())]
+    #[ensures((^self).shot())]
+    #[ensures((^own).ward() == (*own).ward())]
+    #[ensures(*(*own).val() == (*self).old_value())]
+    #[ensures(*(^own).val() == (*self).new_value())]
+    #[check(ghost)]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn shoot(&mut self, view: crate::view::SyncView, own: &mut perm::Perm<C>) {
         panic!("Should not be called outside ghost code")
     }
 }

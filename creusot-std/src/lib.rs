@@ -530,6 +530,7 @@ pub mod peano;
 pub mod resolve;
 pub mod snapshot;
 pub mod std;
+pub mod view;
 
 // We add some common things at the root of the creusot-std library
 mod base_prelude {
