@@ -42,46 +42,46 @@ impl OpacityVisitor<'_, '_> {
 impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
-            TermKind::Item(id, _) => {
+            &TermKind::Item(id, _) => {
                 if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
                     return;
                 }
-                if matches!(self.ctx.def_kind(*id), DefKind::ConstParam) {
+                if matches!(self.ctx.def_kind(id), DefKind::ConstParam) {
                     return;
                 }
-                if !self.is_visible_enough(*id) {
-                    self.error(*id, term.span)
+                if !self.is_visible_enough(id) {
+                    self.error(id, term.span)
                 }
             }
-            TermKind::Call { id, .. } => {
-                if !self.is_visible_enough(*id) {
-                    self.error(*id, term.span)
+            &TermKind::Call { id, .. } => {
+                if !self.is_visible_enough(id) {
+                    self.error(id, term.span)
                 }
             }
-            TermKind::Constructor { variant, .. } => {
+            &TermKind::Constructor { variant, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, term.ty);
                 let Some(adt) = ty.ty_adt_def() else { return };
                 if !self.is_visible_enough(adt.did()) {
                     self.error(adt.did(), term.span);
                     return;
                 }
-                for fld in &adt.variant(*variant).fields {
+                for fld in &adt.variant(variant).fields {
                     if !self.is_visible_enough(fld.did) {
                         self.error(fld.did, term.span);
                         return;
                     }
                 }
             }
-            TermKind::Projection { idx, lhs } => {
+            &TermKind::Projection { idx, ref lhs } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
                 let Some(adt) = ty.ty_adt_def() else { return };
-                let fdid = adt.non_enum_variant().fields[*idx].did;
+                let fdid = adt.non_enum_variant().fields[idx].did;
                 if !self.is_visible_enough(fdid) {
                     self.error(fdid, term.span);
                     return;
                 }
             }
-            TermKind::Reborrow { projections, inner } => {
+            &TermKind::Reborrow { ref projections, ref inner } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
                 let ty = ty.builtin_deref(false).unwrap();
                 for (elem, place_ty) in
@@ -104,7 +104,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                     }
                 }
             }
-            TermKind::Assert { .. } => return,
+            &TermKind::Assert { .. } => return,
             _ => (),
         }
         super_visit_term(term, self);

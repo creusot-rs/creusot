@@ -37,7 +37,7 @@ macro_rules! attribute_functions {
             #[doc = concat!("Detect if `def_id` has the attribute `", stringify!($($p)*), "`")]
             pub(crate) fn $fn_name(tcx: TyCtxt, def_id: DefId) -> bool {
                 let path = &path_to_str!($($p)*);
-                let has_attr = get_attr(tcx, tcx.get_all_attrs(def_id), path).is_some();
+                let has_attr = get_attr(tcx, def_id, path).is_some();
                 attribute_functions!(@negate $($not)? has_attr)
             }
         )+
@@ -78,7 +78,7 @@ attribute_functions! {
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
-    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "spec", "invariant"])
+    get_attr(tcx, def_id, &["creusot", "spec", "invariant"])
         .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
 }
 
@@ -105,7 +105,7 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
         return None;
     }
 
-    let a = get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "builtin"])?;
+    let a = get_attr(tcx, def_id, &["creusot", "builtin"])?;
     Some(a.value_str().unwrap_or_else(|| {
         tcx.dcx().span_fatal(
             a.span(),
@@ -115,16 +115,16 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 }
 
 pub(crate) fn get_intrinsic(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    Some(get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "intrinsic"])?.value_str().unwrap())
+    Some(get_attr(tcx, def_id, &["creusot", "intrinsic"])?.value_str().unwrap())
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "clause", "open"])
+    get_attr(tcx, def_id, &["creusot", "clause", "open"])
         .map(|a| a.value_str().expect("invalid creusot::clause::open"))
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
-    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "why3_attr"])
+    get_attrs(tcx, def_id, &["creusot", "why3_attr"])
         .into_iter()
         .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
@@ -135,7 +135,7 @@ pub(crate) fn why3_metas(
     def_id: DefId,
     ident: why3::Ident,
 ) -> impl Iterator<Item = Meta> {
-    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "why3_meta"]).into_iter().map(move |a| {
+    get_attrs(tcx, def_id, &["creusot", "why3_meta"]).into_iter().map(move |a| {
         let Some(items) = &a.meta_item_list() else {
             tcx.crash_and_error(
                 a.span(),
@@ -187,7 +187,7 @@ pub(crate) enum ErasureKind {
 }
 
 pub(crate) fn get_erasure(tcx: TyCtxt, def_id: DefId) -> Option<ErasureKind> {
-    let attr = get_attrs(tcx.get_all_attrs(def_id), &["creusot", "spec", "erasure"]).pop()?;
+    let attr = get_attrs(tcx, def_id, &["creusot", "spec", "erasure"]).pop()?;
     let Attribute::Unparsed(attr) = attr else { unreachable!() };
     match &attr.args {
         AttrArgs::Delimited(args) => Some(parse_erasure_arg(tcx, def_id, &args.tokens)),
@@ -228,7 +228,7 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
     // Attributes are given in reverse order. So we need to rever the list of
     // attributes to make sure requires/ensures clauses appear in the same
     // order in WhyML code as they appear in Rust code.
-    get_attrs(tcx.get_all_attrs(def_id), &["creusot", "clause", clause])
+    get_attrs(tcx, def_id, &["creusot", "clause", clause])
         .into_iter()
         .rev()
         .map(|a| &a.get_normal_item().args)
@@ -236,7 +236,7 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
 
 pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     Some(
-        get_attr(tcx, tcx.get_all_attrs(def_id), &["creusot", "item"])?
+        get_attr(tcx, def_id, &["creusot", "item"])?
             .value_str()
             .expect("invalid creusot::item attribute"),
     )
@@ -273,31 +273,13 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     found
 }
 
-fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
-    let mut matched = Vec::new();
-
-    for attr in attrs.iter() {
-        if attr.is_doc_comment().is_some() {
-            continue;
-        }
-
-        let Attribute::Unparsed(item) = attr else { continue };
-
-        if item.path.segments.len() != path.len() {
-            continue;
-        }
-
-        let matches = item.path.segments.iter().zip(path).all(|(seg, s)| seg.as_str() == *s);
-
-        if matches {
-            matched.push(attr)
-        }
-    }
-    matched
+fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx Attribute> {
+    let path = path.into_iter().map(|s| Symbol::intern(s)).collect::<Vec<_>>();
+    tcx.get_attrs_by_path(def_id, &path).collect::<Vec<_>>()
 }
 
-fn get_attr<'a>(tcx: TyCtxt, attrs: &'a [Attribute], path: &[&str]) -> Option<&'a Attribute> {
-    let matched = get_attrs(attrs, path);
+fn get_attr<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Option<&'tcx Attribute> {
+    let matched = get_attrs(tcx, def_id, path);
     match matched.len() {
         0 => None,
         1 => Some(matched[0]),

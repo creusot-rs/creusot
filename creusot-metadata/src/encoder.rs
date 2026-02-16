@@ -4,10 +4,7 @@ use crate::{
 };
 use rustc_data_structures::fx::FxHashMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
-use rustc_middle::{
-    dep_graph::DepContext,
-    ty::{self, PredicateKind, Ty, TyCtxt, codec::TyEncoder},
-};
+use rustc_middle::ty::{self, PredicateKind, Ty, TyCtxt, codec::TyEncoder};
 use rustc_serialize::{
     Encodable, Encoder,
     opaque::{FileEncoder, IntEncodedWithFixedSize},
@@ -110,7 +107,7 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
             return TAG_PARTIAL_SPAN.encode(self);
         }
 
-        let source_file = self.tcx.sess().source_map().lookup_source_file(span.lo);
+        let source_file = self.tcx.sess.source_map().lookup_source_file(span.lo);
         if !source_file.contains(span.hi) {
             // Unfortunately, macro expansion still sometimes generates Spans
             // that malformed in this way.

@@ -1,8 +1,8 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_patterns)]
 #![feature(never_type, try_blocks)]
-#![feature(closure_lifetime_binder, assert_matches)]
-#![feature(if_let_guard, alloc_slice_into_array)]
+#![feature(closure_lifetime_binder)]
+#![feature(alloc_slice_into_array)]
 #![feature(iter_intersperse, map_try_insert)]
 
 extern crate either;
@@ -16,7 +16,6 @@ extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
-extern crate rustc_fluent_macro;
 extern crate rustc_hashes;
 extern crate rustc_hir;
 extern crate rustc_hir_typeck;
@@ -55,5 +54,3 @@ mod translation;
 mod util;
 mod validate;
 mod very_stable_hash;
-
-rustc_fluent_macro::fluent_messages! { "../messages.ftl" }
