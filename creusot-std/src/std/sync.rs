@@ -13,6 +13,9 @@ use core::alloc::Allocator;
 #[cfg(feature = "sc-drf")]
 pub mod atomic_sc;
 
+#[cfg(not(feature = "sc-drf"))]
+pub mod atomic_relacq;
+
 /// Extension trait for [`Arc`].
 pub trait ArcExt {
     /// The `T` in `Arc<T>`
