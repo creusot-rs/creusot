@@ -1,9 +1,9 @@
 //! Generic permissions for accessing memory pointed to by pointers or within an interior mutable
 //! type.
 
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
+use crate::{logic::objective, prelude::*};
 use core::marker::PhantomData;
 
 pub trait Container {
@@ -59,7 +59,14 @@ pub trait Container {
 /// Certain facts about the layout and alignment of pointers can be made available
 /// through the type invariant of [`crate::std::ptr::PtrLive`] by calling [`Perm::live`].
 #[opaque]
-pub struct Perm<C: ?Sized + Container>(#[allow(unused)] [PhantomData<C::Value>]);
+pub struct Perm<C: ?Sized + Container>(
+    objective::NotObjective,
+    #[allow(unused)] [PhantomData<C::Value>],
+);
+
+#[cfg(creusot)]
+#[trusted]
+impl objective::Objective for Perm<crate::std::sync::atomic_relacq::AtomicI32> {}
 
 impl<C: ?Sized + Container> Perm<C> {
     /// Returns the underlying container that is managed by this permission.
