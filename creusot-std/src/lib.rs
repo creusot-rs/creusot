@@ -67,7 +67,9 @@
         edition_panic,
         new_range_api,
         range_bounds_is_empty,
-        decl_macro
+        decl_macro,
+        auto_traits,
+        negative_impls,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
