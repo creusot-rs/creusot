@@ -232,16 +232,16 @@ macro_rules! impl_logic_tag {
             )*
 
             fn open(&mut self, span: Span, vis: Visibility) -> Result<()> {
-                if std::mem::replace(&mut self.open, Some(vis)).is_some() {
+                if self.open.replace(vis).is_some() {
                     return Err(Error::new(span, "`open` can only be specified once."));
                 }
                 Ok(())
             }
 
             fn doc_str(&self) -> String {
-                let mut doc_str = String::new();
+                let mut doc_str = String::from("logic");
                 let mut push = |s: &str| {
-                    if doc_str.is_empty() {
+                    if doc_str == "logic" {
                         doc_str.push('(');
                     } else {
                         doc_str.push_str(", ");
@@ -263,7 +263,7 @@ macro_rules! impl_logic_tag {
                     }
                 )*
 
-                if !doc_str.is_empty() {
+                if doc_str != "logic" {
                     doc_str.push(')')
                 }
 
