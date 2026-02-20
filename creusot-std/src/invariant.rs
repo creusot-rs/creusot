@@ -1,4 +1,6 @@
 //! Type invariants
+//!
+//! See [`Invariant`].
 
 use crate::prelude::*;
 #[cfg(creusot)]
@@ -8,6 +10,9 @@ use core::ops::{Deref, DerefMut};
 /// A user-defined _type invariant_.
 ///
 /// Type invariants are additional pre- and postconditions added to each program functions.
+///
+/// Not to be confused with [loop invariants][crate::macros::invariant] or
+/// [resource invariants][crate::ghost::invariant].
 ///
 /// # Example
 ///

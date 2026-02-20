@@ -1,4 +1,8 @@
-//! Define atomic and non-atomic invariants.
+//! Resource invariants.
+//!
+//! Resource invariants allow the use of a shared piece of data to be used in
+//! the invariant (see [`Protocol`]), but in return they impose a much more
+//! restricted access to the underlying data, as well as the use of [`Tokens`].
 //!
 //! [Atomic invariants](AtomicInvariant) are used to specify concurrent
 //! operations.
@@ -6,10 +10,8 @@
 //! [Non-atomic invariants](NonAtomicInvariant) are used to specify thread-local
 //! operations.
 //!
-//! These invariants are not the same as [type invariants](Invariant), allow the
-//! use of a shared piece of data to be used in the invariant (see
-//! [`Protocol`]), but in return they impose a much more restricted access to
-//! the underlying data, as well as the use of [`Tokens`].
+//! Not to be confused with [loop invariants][crate::macros::invariant] or
+//! [type invariants][crate::invariant::Invariant].
 //!
 //! # Example
 //!

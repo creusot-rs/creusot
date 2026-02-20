@@ -238,10 +238,15 @@ pub mod macros {
 
     /// A loop invariant
     ///
-    /// The inside of a `invariant` may look like Rust code, but it is in fact
-    /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
+    /// A loop invariant is an assertion (in [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite)) which
+    /// must be true at every iteration of the loop.
     ///
-    /// # Produced
+    /// See the [guide: Loop invariants](https://creusot-rs.github.io/creusot/guide/basic_concepts/loop_invariants).
+    ///
+    /// Not to be confused with [type invariants][crate::invariant::Invariant]
+    /// or [resource invariants][crate::ghost::invariant].
+    ///
+    /// # `produced`
     ///
     /// If the loop is a `for` loop, you have access to a special variable `produced`, that
     /// holds a [sequence](crate::logic::Seq) of all the (logical representations of) items the
