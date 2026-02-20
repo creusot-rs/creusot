@@ -164,6 +164,35 @@ impl PositiveReal {
     }
 }
 
+impl OrdLogic for PositiveReal {
+    #[logic(open)]
+    fn cmp_log(self, o: Self) -> Ordering {
+        self.to_real().cmp_log(o.to_real())
+    }
+
+    #[logic(open)]
+    fn le_log(self, o: Self) -> bool {
+        self.to_real().le_log(o.to_real())
+    }
+
+    #[logic(open)]
+    fn lt_log(self, o: Self) -> bool {
+        self.to_real().lt_log(o.to_real())
+    }
+
+    #[logic(open)]
+    fn ge_log(self, o: Self) -> bool {
+        self.to_real().ge_log(o.to_real())
+    }
+
+    #[logic(open)]
+    fn gt_log(self, o: Self) -> bool {
+        self.to_real().gt_log(o.to_real())
+    }
+
+    crate::logic::ord::ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+}
+
 impl AddLogic for PositiveReal {
     type Output = Self;
     #[logic]
