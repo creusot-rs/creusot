@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::cmp::Ordering;
+use core::{cmp::Ordering, marker::PhantomData};
 
 /// ↑V
 #[opaque]
@@ -59,6 +59,43 @@ impl OrdLogic for SyncView {
     #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
     #[trusted]
     fn eq_cmp(x: Self, y: Self) {}
+}
+
+/// P@V
+pub struct AtView<T>(PhantomData<T>);
+
+impl<T> AtView<T> {
+    #[logic(opaque)]
+    pub fn view_logic(&self) -> SyncView {
+        dead
+    }
+
+    #[logic(opaque)]
+    pub fn value(&self) -> T {
+        dead
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[ensures(result.0 == result.1.view_logic() && result.1.value() == *x)]
+    pub fn new(x: Ghost<T>) -> Ghost<(SyncView, Self)> {
+        Ghost::conjure()
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[requires(self.view_logic() == v)]
+    #[ensures(result == self.value())]
+    pub fn into_inner(self, v: SyncView) -> T {
+        panic!("Should not be called outside ghost code")
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[ensures(result == self.view_logic())]
+    pub fn view(&self) -> SyncView {
+        panic!("Should not be called outside ghost code")
+    }
 }
 
 pub type Timestamp = Int;

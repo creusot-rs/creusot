@@ -68,7 +68,7 @@
         new_range_api,
         range_bounds_is_empty,
         bound_copied,
-        decl_macro
+        decl_macro,
         auto_traits,
         negative_impls,
     )
