@@ -14,7 +14,7 @@
 
 - [Basic concepts](./basic_concepts.md)
   - [`requires` and `ensures`](basic_concepts/requires_ensures.md)
-  - [Invariants](basic_concepts/invariants.md)
+  - [Loop invariants](basic_concepts/loop_invariants.md)
   - [Variants](basic_concepts/variants.md)
   - [`proof_assert`](basic_concepts/proof_assert.md)
 - [Trusted](./trusted.md)
