@@ -91,6 +91,8 @@ pub mod macros {
     /// The inside of a `requires` may look like Rust code, but it is in fact
     /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
     ///
+    /// See also the [guide: `requires` and `ensures`](https://creusot-rs.github.io/creusot/guide/basic_concepts/requires_ensures).
+    ///
     /// # Example
     ///
     /// ```
@@ -102,8 +104,13 @@ pub mod macros {
 
     /// A post-condition of a function or trait item
     ///
+    /// The post-condition can refer to the result of the function using
+    /// the special variable `result`.
+    ///
     /// The inside of a `ensures` may look like Rust code, but it is in fact
     /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
+    ///
+    /// See also the [guide: `requires` and `ensures`](https://creusot-rs.github.io/creusot/guide/basic_concepts/requires_ensures).
     ///
     /// # Example
     ///
