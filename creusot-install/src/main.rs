@@ -113,6 +113,9 @@ impl Args {
         if self.dry_run {
             println!("cp {} {}", src.display(), dst.display());
         } else {
+            // Remove dst first in case it is a (possibly broken) symlink;
+            // fs::copy would otherwise follow the symlink and fail.
+            let _ = fs::remove_file(dst);
             fs::copy(src, dst)?;
         }
         Ok(())
@@ -469,4 +472,51 @@ fn set_executable(dest: &Path) -> anyhow::Result<()> {
         fs::set_permissions(dest, perms)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_args() -> Args {
+        Args {
+            external: vec![],
+            skip_cargo_creusot: false,
+            skip_creusot_rustc: false,
+            skip_why3: false,
+            skip_why3_conf: false,
+            skip_prelude: false,
+            skip_extra_tools: false,
+            only_build_prelude: false,
+            provers_parallelism: None,
+            dry_run: false,
+        }
+    }
+
+    /// Regression test: copying a binary over a broken symlink (e.g. a stale
+    /// symlink left by a previous opam-managed install) must succeed.
+    /// `fs::copy` follows symlinks on the destination side, so without
+    /// removing `dst` first it would fail with "No such file or directory".
+    #[test]
+    #[cfg(unix)]
+    fn copy_over_broken_symlink() {
+        let dir = std::env::temp_dir().join("creusot_test_copy_over_broken_symlink");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let src = dir.join("source");
+        let dst = dir.join("dest");
+
+        fs::write(&src, b"binary content").unwrap();
+
+        // Simulate a stale opam symlink at the destination.
+        std::os::unix::fs::symlink("/nonexistent/path/alt-ergo", &dst).unwrap();
+        assert!(!dst.exists(), "symlink should be broken before the copy");
+
+        test_args().copy(&src, &dst).expect("copy over broken symlink should succeed");
+
+        assert_eq!(fs::read(&dst).unwrap(), b"binary content");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
 }
