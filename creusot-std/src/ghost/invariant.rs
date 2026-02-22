@@ -238,7 +238,7 @@ pub trait Protocol {
 }
 
 #[opaque]
-pub struct AtomicInvariant<T>(PhantomData<T>);
+pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
 unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
