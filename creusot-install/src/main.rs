@@ -500,9 +500,12 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn copy_over_broken_symlink() {
-        let dir = tempfile::tempdir().unwrap();
-        let src = dir.path().join("source");
-        let dst = dir.path().join("dest");
+        let dir = std::env::temp_dir().join("creusot_test_copy_over_broken_symlink");
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let src = dir.join("source");
+        let dst = dir.join("dest");
 
         fs::write(&src, b"binary content").unwrap();
 
@@ -513,5 +516,7 @@ mod tests {
         test_args().copy(&src, &dst).expect("copy over broken symlink should succeed");
 
         assert_eq!(fs::read(&dst).unwrap(), b"binary content");
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }
