@@ -238,7 +238,7 @@ pub trait Protocol {
 }
 
 #[opaque]
-pub struct AtomicInvariant<T>(PhantomData<T>);
+pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
 unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
@@ -306,8 +306,14 @@ impl<T: Protocol> AtomicInvariant<T> {
 
 /// A ghost structure, that holds a piece of data (`T`) together with an
 /// [protocol](Protocol).
+///
+/// # Note
+///
+/// `NonAtomicInvariant` is not `Sync`, and is invariant in the underlying data.
+/// - not `Sync` precisely because it is non-atomic, so access to the data is unsyncronized
+/// - invariant because it gives access to a mutable borrow of this data.
 #[opaque]
-pub struct NonAtomicInvariant<T: Protocol>(PhantomData<T>);
+pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 
 /// Define method call syntax for [`NonAtomicInvariant::open`].
 pub trait NonAtomicInvariantExt<'a> {
