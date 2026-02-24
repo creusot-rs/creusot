@@ -1134,20 +1134,106 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
   
   type t_Namespace = Other namespace_other
   
-  use creusot.prelude.Any
   use map.Map
-  
-  type t_Resource_View_AuthViewRel_R
-  
-  type t_Authority_R = { f0: t_Resource_View_AuthViewRel_R }
-  
-  type t_View_AuthViewRel_R
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   
   type t_R
   
+  type t_View_AuthViewRel_R
+  
   type t_Option_R = None | Some t_R
   
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+    match a with
+      | Some a'0 -> incl_R f a'0
+      | None -> true
+      end
+  
+  function rel_unit_AuthViewRel_R (a: t_Option_R) : ()
+  
+  axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+  
+  function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : ()
+  
+  axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+  
+  function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : ()
+  
+  axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+      -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+  
   function auth_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_Option_R
+  
+  function frag_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_R
+  
+  axiom frag_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R. rel_AuthViewRel_R (auth_AuthViewRel_R self) (frag_AuthViewRel_R self)
+  
+  function new_AuthViewRel_R (auth: t_Option_R) (frag: t_R) : t_View_AuthViewRel_R
+  
+  axiom new_AuthViewRel_R_spec: forall auth: t_Option_R, frag: t_R. rel_AuthViewRel_R auth frag
+      -> auth_AuthViewRel_R (new_AuthViewRel_R auth frag) = auth
+  
+  axiom new_AuthViewRel_R_spec'0: forall auth: t_Option_R, frag: t_R. rel_AuthViewRel_R auth frag
+      -> frag_AuthViewRel_R (new_AuthViewRel_R auth frag) = frag
+  
+  function new_frag_AuthViewRel_R [@inline:trivial] (frag: t_R) : t_View_AuthViewRel_R = new_AuthViewRel_R (None) frag
+  
+  meta "rewrite_def" function new_frag_AuthViewRel_R
+  
+  type t_Resource_View_AuthViewRel_R
   
   function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
   
@@ -1156,12 +1242,10 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
   
   meta "rewrite_def" function view_Resource_View_AuthViewRel_R
   
-  predicate invariant_Authority_R (self: t_Authority_R) =
-    auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0) <> None
+  function new_auth_AuthViewRel_R [@inline:trivial] (auth: t_R) : t_View_AuthViewRel_R =
+    new_AuthViewRel_R (Some auth) unit_R
   
-  predicate inv_Authority_R (_1: t_Authority_R)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+  meta "rewrite_def" function new_auth_AuthViewRel_R
   
   predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
   
@@ -1177,29 +1261,163 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
       | None -> such_that_R (fun (__0: t_R) -> true)
       end
   
-  function view_Authority_R (self: t_Authority_R) : t_R =
-    unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0))
+  type t_Option_View_AuthViewRel_R = None'0 | Some'0 t_View_AuthViewRel_R
+  
+  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+  
+  function op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) : t_Option_View_AuthViewRel_R
+   = match op_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R other) with
+      | Some f -> match { f0 = auth_AuthViewRel_R self; f1 = auth_AuthViewRel_R other } with
+        | {f0 = None; f1 = a} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+        | {f0 = a; f1 = None} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+        | _ -> None'0
+        end
+      | None -> None'0
+      end
+  
+  function commutative_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) : ()
+  
+  axiom commutative_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b = op_View_AuthViewRel_R b a
+  
+  function factor_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (factor: t_View_AuthViewRel_R) : t_Option_View_AuthViewRel_R
+   = match factor_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R factor) with
+      | Some f -> match { f0 = auth_AuthViewRel_R self; f1 = auth_AuthViewRel_R factor } with
+        | {f0 = Some a; f1 = None} -> Some'0 (new_AuthViewRel_R (Some a) f)
+        | {f0 = a1; f1 = a2} -> if a1 = a2 then Some'0 (new_frag_AuthViewRel_R f) else None'0
+        end
+      | None -> None'0
+      end
+  
+  axiom factor_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, factor: t_View_AuthViewRel_R. match factor_View_AuthViewRel_R self factor with
+        | Some'0 c -> op_View_AuthViewRel_R factor c = Some'0 self
+        | None'0 -> forall c: t_View_AuthViewRel_R. op_View_AuthViewRel_R factor c <> Some'0 self
+        end
+  
+  predicate incl_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    factor_View_AuthViewRel_R other self <> None'0
+  
+  function incl_transitive_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) : ()
+  
+  axiom incl_transitive_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R. incl_View_AuthViewRel_R a b
+      -> incl_View_AuthViewRel_R b c -> incl_View_AuthViewRel_R a c
+  
+  function associative_some_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (ab: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+  
+  axiom associative_some_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, ab: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+        = Some'0 ab -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = op_View_AuthViewRel_R ab c
+  
+  function associative_none_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+  
+  axiom associative_none_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+        = None'0 -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = None'0
+  
+  function incl_op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) (comb: t_View_AuthViewRel_R) : ()
+  
+  axiom incl_op_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R, comb: t_View_AuthViewRel_R. op_View_AuthViewRel_R self other
+        = Some'0 comb -> incl_View_AuthViewRel_R self comb
+  
+  predicate eq_View_AuthViewRel_R [@inline:trivial] (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    auth_AuthViewRel_R self = auth_AuthViewRel_R other /\ frag_AuthViewRel_R self = frag_AuthViewRel_R other
+  
+  meta "rewrite_def" predicate eq_View_AuthViewRel_R
+  
+  axiom eq_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R. eq_View_AuthViewRel_R self other = (self = other)
+  
+  predicate incl_eq_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    eq_View_AuthViewRel_R self other \/ incl_View_AuthViewRel_R self other
+  
+  predicate incl_eq_op_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (x: t_View_AuthViewRel_R) =
+    match op_View_AuthViewRel_R a b with
+      | None'0 -> false
+      | Some'0 ab -> incl_eq_View_AuthViewRel_R ab x
+      end
   
   type t_Id
   
   function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
   
-  function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0
+  let rec split_off_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (r: t_View_AuthViewRel_R)
+    (s: t_View_AuthViewRel_R) (return (x: t_Resource_View_AuthViewRel_R)) =
+    {[@stop_split] [@expl:split_off requires] incl_eq_op_View_AuthViewRel_R r s (view_Resource_View_AuthViewRel_R self.current)}
+    any
+    [ return (result: t_Resource_View_AuthViewRel_R) ->
+    {[@stop_split] [@expl:split_off_View_AuthViewRel_R ensures] ([@stop_split] [@expl:split_off ensures #0] id_View_AuthViewRel_R self.final
+          = id_View_AuthViewRel_R self.current
+        /\ id_View_AuthViewRel_R result = id_View_AuthViewRel_R self.current)
+      /\ ([@stop_split] [@expl:split_off ensures #1] view_Resource_View_AuthViewRel_R self.final = s)
+      /\ ([@stop_split] [@expl:split_off ensures #2] view_Resource_View_AuthViewRel_R result = r)}
+      (! return {result}) ]
+  
+  type t_Authority_R = { f0'0: t_Resource_View_AuthViewRel_R }
+  
+  type t_Fragment_R = { f0'1: t_Resource_View_AuthViewRel_R }
+  
+  type tup2_Authority_R_Fragment_R = { f0'2: t_Authority_R; f1'2: t_Fragment_R }
+  
+  predicate invariant_Authority_R (self: t_Authority_R) =
+    auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0) <> None
+  
+  predicate inv_Authority_R (_1: t_Authority_R)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+  
+  predicate inv_tup2_Authority_R_Fragment_R [@inline:trivial] (_1: tup2_Authority_R_Fragment_R) =
+    inv_Authority_R _1.f0'2
+  
+  meta "rewrite_def" predicate inv_tup2_Authority_R_Fragment_R
+  
+  function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0'0
+  
+  function id_R'0 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'1
+  
+  function view_Authority_R (self: t_Authority_R) : t_R =
+    unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0))
+  
+  function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'1)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec from_resource_R (r: t_Resource_View_AuthViewRel_R) (return (x: t_Authority_R)) =
+  let rec from_resource_R (r: t_Resource_View_AuthViewRel_R) (return (x: tup2_Authority_R_Fragment_R)) =
     {[@stop_split] [@expl:from_resource requires] auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r) <> None}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = r } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Authority_R = Any.any_l () | & r: t_Resource_View_AuthViewRel_R = r ])
-    [ return (result: t_Authority_R) ->
-    {[@stop_split] [@expl:from_resource_R ensures] ([@stop_split] [@expl:from_resource result type invariant] inv_Authority_R result)
-      /\ ([@stop_split] [@expl:from_resource ensures #0] view_Authority_R result
+    [ bb0 = s0
+      [ s0 = [ &fragment <- new_frag_AuthViewRel_R (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)) ] s1
+      | s1 =
+        [ &authority <- new_auth_AuthViewRel_R (unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))) ]
+        s2
+      | s2 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {r}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) -> [ &_17 <- _bor ] [ &r <- _bor.final ] s3)
+      | s3 = split_off_View_AuthViewRel_R {_17} {fragment} {authority}
+          (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &frag <- _x ] s4)
+      | s4 = [ &_20 <- { f0'0 = r } ] s5
+      | s5 = [ &_22 <- { f0'1 = frag } ] s6
+      | s6 = [ &_ret <- { f0'2 = _20; f1'2 = _22 } ] s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: tup2_Authority_R_Fragment_R = Any.any_l ()
+    | & r: t_Resource_View_AuthViewRel_R = r
+    | & fragment: t_View_AuthViewRel_R = Any.any_l ()
+    | & authority: t_View_AuthViewRel_R = Any.any_l ()
+    | & frag: t_Resource_View_AuthViewRel_R = Any.any_l ()
+    | & _17: MutBorrow.t t_Resource_View_AuthViewRel_R = Any.any_l ()
+    | & _20: t_Authority_R = Any.any_l ()
+    | & _22: t_Fragment_R = Any.any_l () ])
+    [ return (result: tup2_Authority_R_Fragment_R) ->
+    {[@stop_split] [@expl:from_resource_R ensures] ([@stop_split] [@expl:from_resource result type invariant] inv_tup2_Authority_R_Fragment_R result)
+      /\ ([@stop_split] [@expl:from_resource ensures #0] id_R result.f0'2 = id_View_AuthViewRel_R r
+        /\ id_R'0 result.f1'2 = id_View_AuthViewRel_R r)
+      /\ ([@stop_split] [@expl:from_resource ensures #1] view_Authority_R result.f0'2
         = unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))
-      /\ ([@stop_split] [@expl:from_resource ensures #1] id_R result = id_View_AuthViewRel_R r)}
+      /\ ([@stop_split] [@expl:from_resource ensures #2] view_Fragment_R result.f1'2
+      = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))}
       (! return {result}) ]
 end
 module M_ghost__resource__auth__impl_Authority_R__update (* ghost::resource::auth::Authority<R> *)

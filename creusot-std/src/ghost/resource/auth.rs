@@ -85,13 +85,17 @@ impl<R: UnitRA> Authority<R> {
         ghost!(Self(Resource::alloc(snapshot!(Auth::new_auth(R::unit()))).into_inner()))
     }
 
-    /// Create a new, empty authority.
+    /// Create a new authority/fragment pair from a raw [`Auth`] resource.
     #[check(ghost)]
     #[requires(r@.auth() != None)]
-    #[ensures(result@ == r@.auth().unwrap_logic())]
-    #[ensures(result.id() == r.id())]
-    pub fn from_resource(r: Resource<Auth<R>>) -> Self {
-        Self(r)
+    #[ensures(result.0.id() == r.id() && result.1.id() == r.id())]
+    #[ensures(result.0@ == r@.auth().unwrap_logic())]
+    #[ensures(result.1@ == r@.frag())]
+    pub fn from_resource(mut r: Resource<Auth<R>>) -> (Self, Fragment<R>) {
+        let fragment = snapshot!(Auth::new_frag(r@.frag()));
+        let authority = snapshot!(Auth::new_auth(r@.auth().unwrap_logic()));
+        let frag = r.split_off(fragment, authority);
+        (Self(r), Fragment(frag))
     }
 
     /// Perform a local update on an authority, fragment pair
