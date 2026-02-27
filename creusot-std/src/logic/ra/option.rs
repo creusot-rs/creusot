@@ -118,6 +118,26 @@ impl<T: RA> UnitRA for Option<T> {
     }
 }
 
+/// Apply an [update](Update) to the inner value of an [`Option`] resource.
+///
+/// This requires the resource to be in the `Some` state.
+///
+/// # Example
+///
+/// ```
+/// use creusot_std::{
+///     ghost::resource::Resource,
+///     logic::ra::{
+///         excl::{Excl, ExclUpdate},
+///         option::OptionUpdate,
+///     },
+///     prelude::*,
+/// };
+///
+/// let mut res = Resource::alloc(snapshot!(Some(Excl(1))));
+/// ghost! { res.update(OptionUpdate(ExclUpdate(snapshot!(2)))) };
+/// proof_assert!(res@ == Some(Excl(2)));
+/// ```
 pub struct OptionUpdate<U>(pub U);
 
 impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
@@ -152,6 +172,10 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
     }
 }
 
+/// Apply an [update](LocalUpdate) to the inner value of an authority/fragment
+/// pair of [`Option`]s.
+///
+/// This requires that both the authority and the fragment are not `None`.
 pub struct OptionLocalUpdate<U>(pub U);
 
 impl<R: RA, U: LocalUpdate<R>> LocalUpdate<Option<R>> for OptionLocalUpdate<U> {

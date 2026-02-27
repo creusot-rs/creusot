@@ -94,6 +94,27 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 }
 
+/// Apply an [update](Update) to the left side of a [`Sum`].
+///
+/// This requires the resource to be in the `Left` state.
+///
+/// # Example
+///
+/// ```
+/// use creusot_std::{
+///     ghost::resource::Resource,
+///     logic::ra::{
+///         excl::{Excl, ExclUpdate},
+///         sum::{Sum, SumUpdateL},
+///     },
+///     prelude::*,
+/// };
+///
+/// let mut res: Ghost<Resource<Sum<Excl<Int>, Excl<()>>>> =
+///     Resource::alloc(snapshot!(Sum::Left(Excl(1))));
+/// ghost! { res.update(SumUpdateL(ExclUpdate(snapshot!(2)))) };
+/// proof_assert!(res@ == Sum::Left(Excl(2)));
+/// ```
 pub struct SumUpdateL<U>(pub U);
 
 impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
@@ -128,6 +149,27 @@ impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
     }
 }
 
+/// Apply an [update](Update) to the right side of a [`Sum`].
+///
+/// This requires the resource to be in the `Right` state.
+///
+/// # Example
+///
+/// ```
+/// use creusot_std::{
+///     ghost::resource::Resource,
+///     logic::ra::{
+///         excl::{Excl, ExclUpdate},
+///         sum::{Sum, SumUpdateR},
+///     },
+///     prelude::*,
+/// };
+///
+/// let mut res: Ghost<Resource<Sum<Excl<()>, Excl<Int>>>> =
+///     Resource::alloc(snapshot!(Sum::Right(Excl(1))));
+/// ghost! { res.update(SumUpdateR(ExclUpdate(snapshot!(2)))) };
+/// proof_assert!(res@ == Sum::Right(Excl(2)));
+/// ```
 pub struct SumUpdateR<U>(pub U);
 
 impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
@@ -162,6 +204,10 @@ impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
     }
 }
 
+/// Apply an [update](LocalUpdate) to the [`Left`](Sum::Left) variant of an
+/// authority/fragment pair of [`Sum`]s.
+///
+/// This requires both the authority and the fragment to be in the `Left` state.
 pub struct SumLocalUpdateL<U>(pub U);
 
 impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUpdateL<U> {
@@ -210,6 +256,10 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
     }
 }
 
+/// Apply an [update](LocalUpdate) to the [`Right`](Sum::Right) variant of an
+/// authority/fragment pair of [`Sum`]s.
+///
+/// This requires both the authority and the fragment to be in the `Right` state.
 pub struct SumLocalUpdateR<U>(pub U);
 
 impl<R1: RA, R2: RA, U: LocalUpdate<R2>> LocalUpdate<Sum<R1, R2>> for SumLocalUpdateR<U> {

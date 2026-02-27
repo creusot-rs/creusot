@@ -245,6 +245,12 @@ mod m {
 
         /// Perform an update.
         ///
+        /// This function will change the content of the resource, according
+        /// to `upd`.
+        ///
+        /// If the update is non-deterministic, this function will return the
+        /// _choice_ it made.
+        ///
         /// # Corresponding reasoning
         ///
         /// `⌜a ⇝ B⌝ ∧ Own(a, γ) ⊢ ∃b∈B, Own(b, γ)`

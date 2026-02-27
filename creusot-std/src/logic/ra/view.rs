@@ -61,7 +61,7 @@ impl<R: ViewRel> InhabitedInvariant for ViewInner<R> {
 
 /// The 'view' Resource Algebra.
 ///
-/// This resource is parametrized by a [relation](ViewRel) `R` between an
+/// This resource is parameterized by a [relation](ViewRel) `R` between an
 /// **authoritative** part (of type `R::Auth`) and a **fragment** part
 /// (of type `R::Frag`).
 ///
@@ -225,6 +225,8 @@ impl<R: ViewRel> UnitRA for View<R> {
     }
 }
 
+/// Apply an [update](Update) to a [`View`], that changes both the authority and
+/// the fragment part, non-deterministically.
 pub struct ViewUpdate<R: ViewRel, Choice>(pub Snapshot<Mapping<Choice, (R::Auth, R::Frag)>>);
 
 impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
@@ -263,6 +265,10 @@ impl<R: ViewRel, Choice> Update<View<R>> for ViewUpdate<R, Choice> {
     }
 }
 
+/// Apply an [update](Update) to a [`View`], that changes both the authority and the
+/// fragment part.
+///
+/// This is the same as [`ViewUpdate`], but deterministic.
 pub struct ViewUpdateInsert<R: ViewRel>(pub Snapshot<R::Auth>, pub Snapshot<R::Frag>);
 
 impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
@@ -296,6 +302,11 @@ impl<R: ViewRel> Update<View<R>> for ViewUpdateInsert<R> {
     }
 }
 
+/// Apply an [update](Update) to a [`View`], that replace the view with a pure
+/// authority.
+///
+/// This is the same as [`ViewUpdateInsert`], with the fragment part set to the
+/// unit value of [`R::Frag`](ViewRel::Frag).
 pub struct ViewUpdateRemove<R: ViewRel>(pub Snapshot<R::Auth>);
 
 impl<R: ViewRel> Update<View<R>> for ViewUpdateRemove<R> {

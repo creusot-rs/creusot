@@ -1134,20 +1134,106 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
   
   type t_Namespace = Other namespace_other
   
-  use creusot.prelude.Any
   use map.Map
-  
-  type t_Resource_View_AuthViewRel_R
-  
-  type t_Authority_R = { f0: t_Resource_View_AuthViewRel_R }
-  
-  type t_View_AuthViewRel_R
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
   
   type t_R
   
+  type t_View_AuthViewRel_R
+  
   type t_Option_R = None | Some t_R
   
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+    match a with
+      | Some a'0 -> incl_R f a'0
+      | None -> true
+      end
+  
+  function rel_unit_AuthViewRel_R (a: t_Option_R) : ()
+  
+  axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+  
+  function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : ()
+  
+  axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+  
+  function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : ()
+  
+  axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+      -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+  
   function auth_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_Option_R
+  
+  function frag_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_R
+  
+  axiom frag_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R. rel_AuthViewRel_R (auth_AuthViewRel_R self) (frag_AuthViewRel_R self)
+  
+  function new_AuthViewRel_R (auth: t_Option_R) (frag: t_R) : t_View_AuthViewRel_R
+  
+  axiom new_AuthViewRel_R_spec: forall auth: t_Option_R, frag: t_R. rel_AuthViewRel_R auth frag
+      -> auth_AuthViewRel_R (new_AuthViewRel_R auth frag) = auth
+  
+  axiom new_AuthViewRel_R_spec'0: forall auth: t_Option_R, frag: t_R. rel_AuthViewRel_R auth frag
+      -> frag_AuthViewRel_R (new_AuthViewRel_R auth frag) = frag
+  
+  function new_frag_AuthViewRel_R [@inline:trivial] (frag: t_R) : t_View_AuthViewRel_R = new_AuthViewRel_R (None) frag
+  
+  meta "rewrite_def" function new_frag_AuthViewRel_R
+  
+  type t_Resource_View_AuthViewRel_R
   
   function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
   
@@ -1156,12 +1242,10 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
   
   meta "rewrite_def" function view_Resource_View_AuthViewRel_R
   
-  predicate invariant_Authority_R (self: t_Authority_R) =
-    auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0) <> None
+  function new_auth_AuthViewRel_R [@inline:trivial] (auth: t_R) : t_View_AuthViewRel_R =
+    new_AuthViewRel_R (Some auth) unit_R
   
-  predicate inv_Authority_R (_1: t_Authority_R)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+  meta "rewrite_def" function new_auth_AuthViewRel_R
   
   predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
   
@@ -1177,29 +1261,163 @@ module M_ghost__resource__auth__impl_Authority_R__from_resource (* ghost::resour
       | None -> such_that_R (fun (__0: t_R) -> true)
       end
   
-  function view_Authority_R (self: t_Authority_R) : t_R =
-    unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0))
+  type t_Option_View_AuthViewRel_R = None'0 | Some'0 t_View_AuthViewRel_R
+  
+  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+  
+  function op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) : t_Option_View_AuthViewRel_R
+   = match op_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R other) with
+      | Some f -> match { f0 = auth_AuthViewRel_R self; f1 = auth_AuthViewRel_R other } with
+        | {f0 = None; f1 = a} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+        | {f0 = a; f1 = None} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+        | _ -> None'0
+        end
+      | None -> None'0
+      end
+  
+  function commutative_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) : ()
+  
+  axiom commutative_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b = op_View_AuthViewRel_R b a
+  
+  function factor_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (factor: t_View_AuthViewRel_R) : t_Option_View_AuthViewRel_R
+   = match factor_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R factor) with
+      | Some f -> match { f0 = auth_AuthViewRel_R self; f1 = auth_AuthViewRel_R factor } with
+        | {f0 = Some a; f1 = None} -> Some'0 (new_AuthViewRel_R (Some a) f)
+        | {f0 = a1; f1 = a2} -> if a1 = a2 then Some'0 (new_frag_AuthViewRel_R f) else None'0
+        end
+      | None -> None'0
+      end
+  
+  axiom factor_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, factor: t_View_AuthViewRel_R. match factor_View_AuthViewRel_R self factor with
+        | Some'0 c -> op_View_AuthViewRel_R factor c = Some'0 self
+        | None'0 -> forall c: t_View_AuthViewRel_R. op_View_AuthViewRel_R factor c <> Some'0 self
+        end
+  
+  predicate incl_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    factor_View_AuthViewRel_R other self <> None'0
+  
+  function incl_transitive_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) : ()
+  
+  axiom incl_transitive_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R. incl_View_AuthViewRel_R a b
+      -> incl_View_AuthViewRel_R b c -> incl_View_AuthViewRel_R a c
+  
+  function associative_some_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (ab: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+  
+  axiom associative_some_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, ab: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+        = Some'0 ab -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = op_View_AuthViewRel_R ab c
+  
+  function associative_none_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+  
+  axiom associative_none_View_AuthViewRel_R_spec:
+    forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+        = None'0 -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = None'0
+  
+  function incl_op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) (comb: t_View_AuthViewRel_R) : ()
+  
+  axiom incl_op_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R, comb: t_View_AuthViewRel_R. op_View_AuthViewRel_R self other
+        = Some'0 comb -> incl_View_AuthViewRel_R self comb
+  
+  predicate eq_View_AuthViewRel_R [@inline:trivial] (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    auth_AuthViewRel_R self = auth_AuthViewRel_R other /\ frag_AuthViewRel_R self = frag_AuthViewRel_R other
+  
+  meta "rewrite_def" predicate eq_View_AuthViewRel_R
+  
+  axiom eq_View_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R. eq_View_AuthViewRel_R self other = (self = other)
+  
+  predicate incl_eq_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+    eq_View_AuthViewRel_R self other \/ incl_View_AuthViewRel_R self other
+  
+  predicate incl_eq_op_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (x: t_View_AuthViewRel_R) =
+    match op_View_AuthViewRel_R a b with
+      | None'0 -> false
+      | Some'0 ab -> incl_eq_View_AuthViewRel_R ab x
+      end
   
   type t_Id
   
   function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
   
-  function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0
+  let rec split_off_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (r: t_View_AuthViewRel_R)
+    (s: t_View_AuthViewRel_R) (return (x: t_Resource_View_AuthViewRel_R)) =
+    {[@stop_split] [@expl:split_off requires] incl_eq_op_View_AuthViewRel_R r s (view_Resource_View_AuthViewRel_R self.current)}
+    any
+    [ return (result: t_Resource_View_AuthViewRel_R) ->
+    {[@stop_split] [@expl:split_off_View_AuthViewRel_R ensures] ([@stop_split] [@expl:split_off ensures #0] id_View_AuthViewRel_R self.final
+          = id_View_AuthViewRel_R self.current
+        /\ id_View_AuthViewRel_R result = id_View_AuthViewRel_R self.current)
+      /\ ([@stop_split] [@expl:split_off ensures #1] view_Resource_View_AuthViewRel_R self.final = s)
+      /\ ([@stop_split] [@expl:split_off ensures #2] view_Resource_View_AuthViewRel_R result = r)}
+      (! return {result}) ]
+  
+  type t_Authority_R = { f0'0: t_Resource_View_AuthViewRel_R }
+  
+  type t_Fragment_R = { f0'1: t_Resource_View_AuthViewRel_R }
+  
+  type tup2_Authority_R_Fragment_R = { f0'2: t_Authority_R; f1'2: t_Fragment_R }
+  
+  predicate invariant_Authority_R (self: t_Authority_R) =
+    auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0) <> None
+  
+  predicate inv_Authority_R (_1: t_Authority_R)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+  
+  predicate inv_tup2_Authority_R_Fragment_R [@inline:trivial] (_1: tup2_Authority_R_Fragment_R) =
+    inv_Authority_R _1.f0'2
+  
+  meta "rewrite_def" predicate inv_tup2_Authority_R_Fragment_R
+  
+  function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0'0
+  
+  function id_R'0 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'1
+  
+  function view_Authority_R (self: t_Authority_R) : t_R =
+    unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0))
+  
+  function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'1)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec from_resource_R (r: t_Resource_View_AuthViewRel_R) (return (x: t_Authority_R)) =
+  let rec from_resource_R (r: t_Resource_View_AuthViewRel_R) (return (x: tup2_Authority_R_Fragment_R)) =
     {[@stop_split] [@expl:from_resource requires] auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r) <> None}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = r } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Authority_R = Any.any_l () | & r: t_Resource_View_AuthViewRel_R = r ])
-    [ return (result: t_Authority_R) ->
-    {[@stop_split] [@expl:from_resource_R ensures] ([@stop_split] [@expl:from_resource result type invariant] inv_Authority_R result)
-      /\ ([@stop_split] [@expl:from_resource ensures #0] view_Authority_R result
+    [ bb0 = s0
+      [ s0 = [ &fragment <- new_frag_AuthViewRel_R (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)) ] s1
+      | s1 =
+        [ &authority <- new_auth_AuthViewRel_R (unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))) ]
+        s2
+      | s2 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {r}
+          (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) -> [ &_17 <- _bor ] [ &r <- _bor.final ] s3)
+      | s3 = split_off_View_AuthViewRel_R {_17} {fragment} {authority}
+          (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &frag <- _x ] s4)
+      | s4 = [ &_20 <- { f0'0 = r } ] s5
+      | s5 = [ &_22 <- { f0'1 = frag } ] s6
+      | s6 = [ &_ret <- { f0'2 = _20; f1'2 = _22 } ] s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: tup2_Authority_R_Fragment_R = Any.any_l ()
+    | & r: t_Resource_View_AuthViewRel_R = r
+    | & fragment: t_View_AuthViewRel_R = Any.any_l ()
+    | & authority: t_View_AuthViewRel_R = Any.any_l ()
+    | & frag: t_Resource_View_AuthViewRel_R = Any.any_l ()
+    | & _17: MutBorrow.t t_Resource_View_AuthViewRel_R = Any.any_l ()
+    | & _20: t_Authority_R = Any.any_l ()
+    | & _22: t_Fragment_R = Any.any_l () ])
+    [ return (result: tup2_Authority_R_Fragment_R) ->
+    {[@stop_split] [@expl:from_resource_R ensures] ([@stop_split] [@expl:from_resource result type invariant] inv_tup2_Authority_R_Fragment_R result)
+      /\ ([@stop_split] [@expl:from_resource ensures #0] id_R result.f0'2 = id_View_AuthViewRel_R r
+        /\ id_R'0 result.f1'2 = id_View_AuthViewRel_R r)
+      /\ ([@stop_split] [@expl:from_resource ensures #1] view_Authority_R result.f0'2
         = unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))
-      /\ ([@stop_split] [@expl:from_resource ensures #1] id_R result = id_View_AuthViewRel_R r)}
+      /\ ([@stop_split] [@expl:from_resource ensures #2] view_Fragment_R result.f1'2
+      = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))}
       (! return {result}) ]
 end
 module M_ghost__resource__auth__impl_Authority_R__update (* ghost::resource::auth::Authority<R> *)
@@ -1620,6 +1838,250 @@ module M_ghost__resource__auth__impl_Authority_R__update (* ghost::resource::aut
       /\ ([@stop_split] [@expl:update ensures #3] { f0'3 = view_Authority_R self.final;
                                                     f1'3 = view_Fragment_R frag.final }
       = update_U upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+      (! return {result}) ]
+end
+module M_ghost__resource__auth__impl_Authority_R__add_fragment (* ghost::resource::auth::Authority<R> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  
+  type t_Resource_View_AuthViewRel_R
+  
+  type t_Authority_R = { f0: t_Resource_View_AuthViewRel_R }
+  
+  type t_Id
+  
+  type t_View_AuthViewRel_R
+  
+  type t_R
+  
+  type t_Option_R = None | Some t_R
+  
+  function auth_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_Option_R
+  
+  function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+  
+  function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+   = val_View_AuthViewRel_R self
+  
+  meta "rewrite_def" function view_Resource_View_AuthViewRel_R
+  
+  predicate invariant_Authority_R (self: t_Authority_R) =
+    auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0) <> None
+  
+  predicate inv_Authority_R (_1: t_Authority_R)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+  
+  predicate invariant_ref_Authority_R [@inline:trivial] (self: t_Authority_R) = inv_Authority_R self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_R
+  
+  predicate inv_ref_Authority_R [@inline:trivial] (_1: t_Authority_R) = invariant_ref_Authority_R _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_R
+  
+  function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
+  
+  function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0
+  
+  let rec id_ghost_R (self: t_Authority_R) (return (x: t_Id)) =
+    {[@stop_split] [@expl:id_ghost 'self' type invariant] inv_ref_Authority_R self}
+    any [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_R self} (! return {result}) ]
+  
+  type t_Fragment_R = { f0'0: t_Resource_View_AuthViewRel_R }
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+    match a with
+      | Some a'0 -> incl_R f a'0
+      | None -> true
+      end
+  
+  function rel_unit_AuthViewRel_R (a: t_Option_R) : ()
+  
+  axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+  
+  function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : ()
+  
+  axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+  
+  function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : ()
+  
+  axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+      -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+  
+  function frag_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_R
+  
+  axiom frag_AuthViewRel_R_spec:
+    forall self: t_View_AuthViewRel_R. rel_AuthViewRel_R (auth_AuthViewRel_R self) (frag_AuthViewRel_R self)
+  
+  function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0)
+  
+  function id_R'0 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'0
+  
+  let rec new_unit_R (id: t_Id) (return (x: t_Fragment_R)) = any
+    [ return (result: t_Fragment_R) -> {[@stop_split] [@expl:new_unit ensures] view_Fragment_R result = unit_R
+      /\ id_R'0 result = id}
+      (! return {result}) ]
+  
+  type t_AuthIncrease_R = { f0'1: t_R }
+  
+  predicate invariant_refmut_Authority_R [@inline:trivial] (self: MutBorrow.t t_Authority_R) =
+    inv_Authority_R self.current /\ inv_Authority_R self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Authority_R
+  
+  predicate inv_refmut_Authority_R [@inline:trivial] (_1: MutBorrow.t t_Authority_R) = invariant_refmut_Authority_R _1
+  
+  meta "rewrite_def" predicate inv_refmut_Authority_R
+  
+  predicate premise_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) =
+    op_R from_auth self.f0'1 <> None /\ op_R from_frag self.f0'1 <> None /\ rel_AuthViewRel_R (Some from_auth) from_frag
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+      | Some x -> x
+      | None -> such_that_R (fun (__0: t_R) -> true)
+      end
+  
+  function view_Authority_R (self: t_Authority_R) : t_R =
+    unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0))
+  
+  type tup2_R_R = { f0'2: t_R; f1'2: t_R }
+  
+  function update_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+    { f0'2 = unwrap_Option_R (op_R from_auth self.f0'1); f1'2 = unwrap_Option_R (op_R from_frag self.f0'1) }
+  
+  let rec update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) (upd: t_AuthIncrease_R)
+    (return (x: ())) =
+    {[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_R self)
+    /\ ([@stop_split] [@expl:update requires #0] id_R self.current = id_R'0 frag.current)
+    /\ ([@stop_split] [@expl:update requires #1] premise_AuthIncrease_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:update_R ensures] ([@stop_split] [@expl:update ensures #0] id_R self.current
+        = id_R self.final)
+      /\ ([@stop_split] [@expl:update ensures #1] id_R'0 frag.current = id_R'0 frag.final)
+      /\ ([@stop_split] [@expl:update ensures #2] incl_R (view_Fragment_R frag.current) (view_Authority_R self.current))
+      /\ ([@stop_split] [@expl:update ensures #3] { f0'2 = view_Authority_R self.final;
+                                                    f1'2 = view_Fragment_R frag.final }
+      = update_AuthIncrease_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Fragment_R [@inline:trivial] (_1: MutBorrow.t t_Fragment_R) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Fragment_R
+  
+  predicate resolve_refmut_Authority_R [@inline:trivial] (_1: MutBorrow.t t_Authority_R) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_R
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec add_fragment_R (self: MutBorrow.t t_Authority_R) (frag: t_R) (return (x: t_Fragment_R)) =
+    {[@stop_split] [@expl:add_fragment_R requires] ([@stop_split] [@expl:add_fragment 'self' type invariant] inv_refmut_Authority_R self)
+    /\ ([@stop_split] [@expl:add_fragment requires] op_R (view_Authority_R self.current) frag <> None)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = id_ghost_R {self.current} (fun (_x: t_Id) -> [ &_14 <- _x ] s1)
+      | s1 = new_unit_R {_14} (fun (_x: t_Fragment_R) -> [ &unit' <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Fragment_R> {unit'}
+          (fun (_bor: MutBorrow.t t_Fragment_R) -> [ &_19 <- _bor ] [ &unit' <- _bor.final ] s3)
+      | s3 = [ &_20 <- { f0'1 = frag } ] s4
+      | s4 = MutBorrow.borrow_final <t_Authority_R> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Authority_R) ->
+            [ &_17 <- _bor ] -{inv_Authority_R _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_R self.current} any) ]
+      | s5 = MutBorrow.borrow_final <t_Fragment_R> {_19.current} {MutBorrow.get_id _19}
+          (fun (_bor: MutBorrow.t t_Fragment_R) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s6)
+      | s6 = update_R {_17} {_18} {_20} (fun (_x: ()) -> [ &_16 <- _x ] s7)
+      | s7 = -{resolve_refmut_Fragment_R _19}- s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_R self} any) ]
+      | s9 = -{resolve_refmut_Authority_R self}- s10
+      | s10 = [ &_ret <- unit' ] s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: t_Fragment_R = Any.any_l ()
+    | & self: MutBorrow.t t_Authority_R = self
+    | & frag: t_R = frag
+    | & unit': t_Fragment_R = Any.any_l ()
+    | & _14: t_Id = Any.any_l ()
+    | & _16: () = Any.any_l ()
+    | & _17: MutBorrow.t t_Authority_R = Any.any_l ()
+    | & _18: MutBorrow.t t_Fragment_R = Any.any_l ()
+    | & _19: MutBorrow.t t_Fragment_R = Any.any_l ()
+    | & _20: t_AuthIncrease_R = Any.any_l () ])
+    [ return (result: t_Fragment_R) ->
+    {[@stop_split] [@expl:add_fragment_R ensures] ([@stop_split] [@expl:add_fragment ensures #0] view_Authority_R self.final
+        = unwrap_Option_R (op_R (view_Authority_R self.current) frag))
+      /\ ([@stop_split] [@expl:add_fragment ensures #1] view_Fragment_R result = frag)
+      /\ ([@stop_split] [@expl:add_fragment ensures #2] id_R'0 result = id_R self.current
+      /\ id_R self.final = id_R self.current)}
       (! return {result}) ]
 end
 module M_ghost__resource__auth__impl_Authority_R__frag_lemma (* ghost::resource::auth::Authority<R> *)
@@ -12969,6 +13431,150 @@ module M_logic__ra__auth__impl_Update_for_AuthUpdate_U__frame_preserving (* <log
       = Some'1 (Some to_auth))
     -> (let _ = frame_preserving_U self.f0 auth (frag_AuthViewRel_R from) (Some f) in [@stop_split] [@expl:frame_preserving ensures] op_View_AuthViewRel_R (update_AuthUpdate_U self from ()) frame
     <> None'0)))))))
+end
+module M_logic__ra__auth__impl_LocalUpdate_for_AuthIncrease_R__frame_preserving (* <logic::ra::auth::AuthIncrease<R> as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  type t_AuthIncrease_R = { f0: t_R }
+  
+  type t_Option_R = None | Some t_R
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+    match a with
+      | Some a'0 -> incl_R f a'0
+      | None -> true
+      end
+  
+  function rel_unit_AuthViewRel_R (a: t_Option_R) : () = ()
+  
+  axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+  
+  function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : () = ()
+  
+  axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+  
+  function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : () = ()
+  
+  axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+      -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+  
+  predicate premise_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) =
+    op_R from_auth self.f0 <> None /\ op_R from_frag self.f0 <> None /\ rel_AuthViewRel_R (Some from_auth) from_frag
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
+                                                                                            f1'0 = other } with
+      | {f0'0 = None} -> Some'0 other
+      | {f1'0 = None} -> Some'0 self
+      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  type tup2_R_R = { f0'1: t_R; f1'1: t_R }
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+      | Some x -> x
+      | None -> such_that_R (fun (__0: t_R) -> true)
+      end
+  
+  function update_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+    { f0'1 = unwrap_Option_R (op_R from_auth self.f0); f1'1 = unwrap_Option_R (op_R from_frag self.f0) }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_AuthIncrease_R
+  
+  constant from_auth : t_R
+  
+  constant from_frag : t_R
+  
+  constant frame : t_Option_R
+  
+  function frame_preserving_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) (frame: t_Option_R) : ()
+  
+  goal vc_frame_preserving_AuthIncrease_R: premise_AuthIncrease_R self from_auth from_frag
+    -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+    -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'1 = to_auth; f1'1 = to_frag} = update_AuthIncrease_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+    = Some'0 (Some to_auth))
 end
 module M_logic__ra__excl__impl_RA_for_Excl_T__factor (* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
   type namespace_other
@@ -75462,6 +76068,1234 @@ module M_logic__ra__view__impl_Update_for_ViewUpdateRemove_R__frame_preserving__
           /\ (forall result: (). op_View_R (update_ViewUpdateRemove_R self from result) frame <> None'1
             -> op_View_R (update_ViewUpdateRemove_R self from result) frame <> None'1)
 end
+module M_logic__ra__auth__impl_LocalUpdate_for_AuthIncrease_R__frame_preserving__refines (* <logic::ra::auth::AuthIncrease<R> as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  type t_AuthIncrease_R = { f0: t_R }
+  
+  type t_Option_R = None | Some t_R
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+    match a with
+      | Some a'0 -> incl_R f a'0
+      | None -> true
+      end
+  
+  function rel_unit_AuthViewRel_R (a: t_Option_R) : () = ()
+  
+  axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+  
+  function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : () = ()
+  
+  axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+  
+  function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : () = ()
+  
+  axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+      -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+  
+  predicate premise_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) =
+    op_R from_auth self.f0 <> None /\ op_R from_frag self.f0 <> None /\ rel_AuthViewRel_R (Some from_auth) from_frag
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
+                                                                                            f1'0 = other } with
+      | {f0'0 = None} -> Some'0 other
+      | {f1'0 = None} -> Some'0 self
+      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  type tup2_R_R = { f0'1: t_R; f1'1: t_R }
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+      | Some x -> x
+      | None -> such_that_R (fun (__0: t_R) -> true)
+      end
+  
+  function update_AuthIncrease_R (self: t_AuthIncrease_R) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+    { f0'1 = unwrap_Option_R (op_R from_auth self.f0); f1'1 = unwrap_Option_R (op_R from_frag self.f0) }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_AuthIncrease_R. forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_AuthIncrease_R self from_auth from_frag
+              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_AuthIncrease_R self from_auth from_frag
+            /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'1 = to_auth; f1'1 = to_frag} = update_AuthIncrease_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'1 = to_auth; f1'1 = to_frag} = update_AuthIncrease_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_preserving__refines (* <logic::ra::fmap::FMapInsertLocalUpdate<K, V> as logic::ra::update::LocalUpdate<logic::fmap::FMap<K, V>>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use int.Int
+  
+  type t_K
+  
+  type t_V
+  
+  type t_FMapInsertLocalUpdate_K_V = { f0: t_K; f1: t_V }
+  
+  type t_FMap_K_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate premise_FMapInsertLocalUpdate_K_V [@inline:trivial] (self: t_FMapInsertLocalUpdate_K_V) (from_auth: t_FMap_K_V) (_3: t_FMap_K_V) =
+    get_K from_auth self.f0 = None
+  
+  meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_K_V
+  
+  type t_Option_FMap_K_V = None'0 | Some'0 t_FMap_K_V
+  
+  type t_Option_Option_FMap_K_V = None'1 | Some'1 t_Option_FMap_K_V
+  
+  type tup2_Option_FMap_K_V_Option_FMap_K_V = { f0'0: t_Option_FMap_K_V; f1'0: t_Option_FMap_K_V }
+  
+  function map_Option_FMap_K_V (self: t_Option_FMap_K_V) (f: Map.map t_FMap_K_V t_Option_FMap_K_V) : t_Option_Option_FMap_K_V
+   = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
+  type t_Option_Option_V = None'2 | Some'2 t_Option_V
+  
+  type tup2_Option_V_Option_V = { f0'1: t_Option_V; f1'1: t_Option_V }
+  
+  function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+      | None -> None'2
+      | Some x -> Some'2 (Map.get f x)
+      end
+  
+  function op_V (self: t_V) (other: t_V) : t_Option_V
+  
+  function factor_V (self: t_V) (factor: t_V) : t_Option_V
+  
+  axiom factor_V_spec: forall self: t_V, factor: t_V. match factor_V self factor with
+        | Some c -> op_V factor c = Some self
+        | None -> forall c: t_V. op_V factor c <> Some self
+        end
+  
+  predicate incl_V (self: t_V) (other: t_V) = factor_V other self <> None
+  
+  function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+  
+  axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+  
+  function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+  
+  axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some ab
+      -> op_V b c = Some bc -> op_V a bc = op_V ab c
+  
+  function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+  
+  axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None
+      -> op_V b c = Some bc -> op_V a bc = None
+  
+  function commutative_V (a: t_V) (b: t_V) : ()
+  
+  axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+  
+  function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+  
+  axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
+  
+  function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0'1 = self;
+                                                                                            f1'1 = other } with
+      | {f0'1 = None} -> Some'2 other
+      | {f1'1 = None} -> Some'2 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some z)
+      end
+  
+  function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
+  
+  axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
+  
+  type tup2_V_V = { f0'2: t_V; f1'2: t_V }
+  
+  function index_Mapping_tup2_V_V_V [@inline:trivial] (self: Map.map tup2_V_V t_V) (a: tup2_V_V) : t_V = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_tup2_V_V_V
+  
+  function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
+  
+  axiom merge_K_spec:
+    forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V. forall k: t_K [get_K (merge_K self m f) k]. match { f0'1 = get_K self k;
+                                                                                                                         f1'1 = get_K m k } with
+          | {f0'1 = None; f1'1 = y} -> get_K (merge_K self m f) k = y
+          | {f0'1 = x; f1'1 = None} -> get_K (merge_K self m f) k = x
+          | {f0'1 = Some x; f1'1 = Some y} -> get_K (merge_K self m f) k
+          = Some (index_Mapping_tup2_V_V_V f { f0'2 = x; f1'2 = y })
+          end
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V =
+    merge_K self other (fun (__0: tup2_V_V) -> let {f0'2 = x; f1'2 = y} = __0 in match op_V x y with
+      | Some r -> r
+      | _ -> such_that_V (fun (__0'0: t_V) -> true)
+      end)
+  
+  axiom total_op_K_spec:
+    forall self: t_FMap_K_V, other: t_FMap_K_V. (forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'2)
+      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+  
+  function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
+    if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'2 then
+      Some'0 (total_op_K self other)
+    else
+      None'0
+  
+  
+  function commutative_FMap_K_V (a: t_FMap_K_V) (b: t_FMap_K_V) : () = ()
+  
+  axiom commutative_FMap_K_V_spec: forall a: t_FMap_K_V, b: t_FMap_K_V. op_FMap_K_V a b = op_FMap_K_V b a
+  
+  function op_Option_FMap_K_V (self: t_Option_FMap_K_V) (other: t_Option_FMap_K_V) : t_Option_Option_FMap_K_V =
+    match { f0'0 = self; f1'0 = other } with
+      | {f0'0 = None'0} -> Some'1 other
+      | {f1'0 = None'0} -> Some'1 self
+      | {f0'0 = Some'0 x; f1'0 = Some'0 y} -> map_Option_FMap_K_V (op_FMap_K_V x y) (fun (z: t_FMap_K_V) -> Some'0 z)
+      end
+  
+  function commutative_Option_FMap_K_V (a: t_Option_FMap_K_V) (b: t_Option_FMap_K_V) : ()
+  
+  axiom commutative_Option_FMap_K_V_spec: forall a: t_Option_FMap_K_V, b: t_Option_FMap_K_V. op_Option_FMap_K_V a b
+      = op_Option_FMap_K_V b a
+  
+  type tup2_FMap_K_V_FMap_K_V = { f0'3: t_FMap_K_V; f1'3: t_FMap_K_V }
+  
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  
+  meta "rewrite_def" predicate contains_K
+  
+  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
+  
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some v)
+  
+  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
+      = (if contains_K self k then len_K self else len_K self + 1)
+  
+  function update_FMapInsertLocalUpdate_K_V [@inline:trivial] (self: t_FMapInsertLocalUpdate_K_V) (from_auth: t_FMap_K_V) (from_frag: t_FMap_K_V) : tup2_FMap_K_V_FMap_K_V
+   = { f0'3 = insert_K from_auth self.f0 self.f1; f1'3 = insert_K from_frag self.f0 self.f1 }
+  
+  meta "rewrite_def" function update_FMapInsertLocalUpdate_K_V
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_FMapInsertLocalUpdate_K_V. forall from_auth: t_FMap_K_V. forall from_frag: t_FMap_K_V. forall frame: t_Option_FMap_K_V. premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
+              /\ op_Option_FMap_K_V (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
+            -> premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
+            /\ op_Option_FMap_K_V (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
+            /\ (forall result: (). (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some'0 to_frag) frame
+                = Some'1 (Some'0 to_auth))
+              -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some'0 to_frag) frame
+              = Some'1 (Some'0 to_auth)))
+end
+module M_logic__ra__int__impl_LocalUpdate_for_Int__frame_preserving__refines (* <logic::int::Int as logic::ra::update::LocalUpdate<logic::int::Int>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use int.Int
+  
+  predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
+  
+  meta "rewrite_def" predicate premise_Int
+  
+  type t_Option_Int = None | Some int
+  
+  type t_Option_Option_Int = None'0 | Some'0 t_Option_Int
+  
+  type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
+  
+  function map_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Option_Int = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : () = ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  function op_Option_Int (self: t_Option_Int) (other: t_Option_Int) : t_Option_Option_Int = match { f0 = self;
+                                                                                                    f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_Int (op_Int x y) (fun (z: int) -> Some z)
+      end
+  
+  function commutative_Option_Int (a: t_Option_Int) (b: t_Option_Int) : ()
+  
+  axiom commutative_Option_Int_spec: forall a: t_Option_Int, b: t_Option_Int. op_Option_Int a b = op_Option_Int b a
+  
+  type tup2_Int_Int = { f0'0: int; f1'0: int }
+  
+  function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int =
+    { f0'0 = from_auth + self; f1'0 = from_frag + self }
+  
+  meta "rewrite_def" function update_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: int. forall from_auth: int. forall from_frag: int. forall frame: t_Option_Int. premise_Int self from_auth from_frag
+              /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_Int self from_auth from_frag
+            /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__option__impl_LocalUpdate_for_OptionLocalUpdate_U__frame_preserving__refines (* <logic::ra::option::OptionLocalUpdate<U> as logic::ra::update::LocalUpdate<std::option::Option<R>>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_U
+  
+  type t_OptionLocalUpdate_U = { f0: t_U }
+  
+  type t_R
+  
+  type t_Option_R = None | Some t_R
+  
+  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
+  
+  predicate premise_U (self: t_U) (from_auth: t_R) (from_frag: t_R)
+  
+  predicate premise_OptionLocalUpdate_U [@inline:trivial] (self: t_OptionLocalUpdate_U) (from_auth: t_Option_R) (from_frag: t_Option_R) =
+    match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Some from_auth'0; f1'0 = Some from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
+      | _ -> false
+      end
+  
+  meta "rewrite_def" predicate premise_OptionLocalUpdate_U
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type t_Option_Option_Option_R = None'1 | Some'1 t_Option_Option_R
+  
+  type tup2_Option_Option_R_Option_Option_R = { f0'1: t_Option_Option_R; f1'1: t_Option_Option_R }
+  
+  function map_Option_Option_R (self: t_Option_Option_R) (f: Map.map t_Option_R t_Option_Option_R) : t_Option_Option_Option_R
+   = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
+                                                                                            f1'0 = other } with
+      | {f0'0 = None} -> Some'0 other
+      | {f1'0 = None} -> Some'0 self
+      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : () = ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  function op_Option_Option_R (self: t_Option_Option_R) (other: t_Option_Option_R) : t_Option_Option_Option_R =
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None'0} -> Some'1 other
+      | {f1'1 = None'0} -> Some'1 self
+      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> map_Option_Option_R (op_Option_R x y) (fun (z: t_Option_R) -> Some'0 z)
+      end
+  
+  function commutative_Option_Option_R (a: t_Option_Option_R) (b: t_Option_Option_R) : () = ()
+  
+  axiom commutative_Option_Option_R_spec: forall a: t_Option_Option_R, b: t_Option_Option_R. op_Option_Option_R a b
+      = op_Option_Option_R b a
+  
+  type tup2_R_R = { f0'2: t_R; f1'2: t_R }
+  
+  function update_U (self: t_U) (from_auth: t_R) (from_frag: t_R) : tup2_R_R
+  
+  function update_OptionLocalUpdate_U [@inline:trivial] (self: t_OptionLocalUpdate_U) (from_auth: t_Option_R) (from_frag: t_Option_R) : tup2_Option_R_Option_R
+   = match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Some from_auth'0; f1'0 = Some from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Some to_auth;
+                                                                                                                                                   f1'0 = Some to_frag }
+      | _ -> { f0'0 = None; f1'0 = None }
+      end
+  
+  meta "rewrite_def" function update_OptionLocalUpdate_U
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_OptionLocalUpdate_U. forall from_auth: t_Option_R. forall from_frag: t_Option_R. forall frame: t_Option_Option_R. premise_OptionLocalUpdate_U self from_auth from_frag
+              /\ op_Option_Option_R (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
+            -> premise_OptionLocalUpdate_U self from_auth from_frag
+            /\ op_Option_Option_R (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_OptionLocalUpdate_U self from_auth from_frag in op_Option_Option_R (Some'0 to_frag) frame
+                = Some'1 (Some'0 to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_OptionLocalUpdate_U self from_auth from_frag in op_Option_Option_R (Some'0 to_frag) frame
+              = Some'1 (Some'0 to_auth)))
+end
+module M_logic__ra__prod__impl_LocalUpdate_for_tup2_U1_U2__frame_preserving__refines (* <(U1, U2) as logic::ra::update::LocalUpdate<(R1, R2)>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_U1
+  
+  type t_U2
+  
+  type tup2_U1_U2 = { f0: t_U1; f1: t_U2 }
+  
+  type t_R1
+  
+  type t_R2
+  
+  type tup2_R1_R2 = { f0'0: t_R1; f1'0: t_R2 }
+  
+  predicate premise_U1 (self: t_U1) (from_auth: t_R1) (from_frag: t_R1)
+  
+  predicate premise_U2 (self: t_U2) (from_auth: t_R2) (from_frag: t_R2)
+  
+  predicate premise_tup2_U1_U2 [@inline:trivial] (self: tup2_U1_U2) (from_auth: tup2_R1_R2) (from_frag: tup2_R1_R2) =
+    premise_U1 self.f0 from_auth.f0'0 from_frag.f0'0 /\ premise_U2 self.f1 from_auth.f1'0 from_frag.f1'0
+  
+  meta "rewrite_def" predicate premise_tup2_U1_U2
+  
+  type t_Option_tup2_R1_R2 = None | Some tup2_R1_R2
+  
+  type t_Option_Option_tup2_R1_R2 = None'0 | Some'0 t_Option_tup2_R1_R2
+  
+  type tup2_Option_tup2_R1_R2_Option_tup2_R1_R2 = { f0'1: t_Option_tup2_R1_R2; f1'1: t_Option_tup2_R1_R2 }
+  
+  function map_Option_tup2_R1_R2 (self: t_Option_tup2_R1_R2) (f: Map.map tup2_R1_R2 t_Option_tup2_R1_R2) : t_Option_Option_tup2_R1_R2
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  type t_Option_R1 = None'1 | Some'1 t_R1
+  
+  type t_Option_R2 = None'2 | Some'2 t_R2
+  
+  type tup2_Option_R1_Option_R2 = { f0'2: t_Option_R1; f1'2: t_Option_R2 }
+  
+  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
+  
+  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
+  
+  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
+        | Some'1 c -> op_R1 factor c = Some'1 self
+        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
+        end
+  
+  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
+  
+  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
+  
+  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
+  
+  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
+  
+  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
+  
+  function commutative_R1 (a: t_R1) (b: t_R1) : ()
+  
+  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
+  
+  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
+  
+  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
+  
+  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
+  
+  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
+  
+  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
+        | Some'2 c -> op_R2 factor c = Some'2 self
+        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
+        end
+  
+  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
+  
+  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
+  
+  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
+  
+  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
+  
+  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
+  
+  function commutative_R2 (a: t_R2) (b: t_R2) : ()
+  
+  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
+  
+  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
+  
+  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
+  
+  function op_tup2_R1_R2 (self: tup2_R1_R2) (other: tup2_R1_R2) : t_Option_tup2_R1_R2 =
+    match { f0'2 = op_R1 self.f0'0 other.f0'0; f1'2 = op_R2 self.f1'0 other.f1'0 } with
+      | {f0'2 = Some'1 r1; f1'2 = Some'2 r2} -> Some { f0'0 = r1; f1'0 = r2 }
+      | _ -> None
+      end
+  
+  function commutative_tup2_R1_R2 (a: tup2_R1_R2) (b: tup2_R1_R2) : () = ()
+  
+  axiom commutative_tup2_R1_R2_spec: forall a: tup2_R1_R2, b: tup2_R1_R2. op_tup2_R1_R2 a b = op_tup2_R1_R2 b a
+  
+  function op_Option_tup2_R1_R2 (self: t_Option_tup2_R1_R2) (other: t_Option_tup2_R1_R2) : t_Option_Option_tup2_R1_R2 =
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> Some'0 other
+      | {f1'1 = None} -> Some'0 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_tup2_R1_R2 (op_tup2_R1_R2 x y) (fun (z: tup2_R1_R2) -> Some z)
+      end
+  
+  function commutative_Option_tup2_R1_R2 (a: t_Option_tup2_R1_R2) (b: t_Option_tup2_R1_R2) : ()
+  
+  axiom commutative_Option_tup2_R1_R2_spec:
+    forall a: t_Option_tup2_R1_R2, b: t_Option_tup2_R1_R2. op_Option_tup2_R1_R2 a b = op_Option_tup2_R1_R2 b a
+  
+  type tup2_tup2_R1_R2_tup2_R1_R2 = { f0'3: tup2_R1_R2; f1'3: tup2_R1_R2 }
+  
+  type tup2_R1_R1 = { f0'4: t_R1; f1'4: t_R1 }
+  
+  function update_U1 (self: t_U1) (from_auth: t_R1) (from_frag: t_R1) : tup2_R1_R1
+  
+  type tup2_R2_R2 = { f0'5: t_R2; f1'5: t_R2 }
+  
+  function update_U2 (self: t_U2) (from_auth: t_R2) (from_frag: t_R2) : tup2_R2_R2
+  
+  function update_tup2_U1_U2 [@inline:trivial] (self: tup2_U1_U2) (from_auth: tup2_R1_R2) (from_frag: tup2_R1_R2) : tup2_tup2_R1_R2_tup2_R1_R2
+   =
+    let {f0'4 = to_auth0; f1'4 = to_frag0} = update_U1 self.f0 from_auth.f0'0 from_frag.f0'0 in let {f0'5 = to_auth1; f1'5 = to_frag1} = update_U2 self.f1 from_auth.f1'0 from_frag.f1'0 in { f0'3 = { f0'0 = to_auth0;
+                                                                                                                                                                                                       f1'0 = to_auth1 };
+                                                                                                                                                                                              f1'3 = { f0'0 = to_frag0;
+                                                                                                                                                                                                       f1'0 = to_frag1 } }
+  
+  meta "rewrite_def" function update_tup2_U1_U2
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: tup2_U1_U2. forall from_auth: tup2_R1_R2. forall from_frag: tup2_R1_R2. forall frame: t_Option_tup2_R1_R2. premise_tup2_U1_U2 self from_auth from_frag
+              /\ op_Option_tup2_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_tup2_U1_U2 self from_auth from_frag
+            /\ op_Option_tup2_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'3 = to_auth; f1'3 = to_frag} = update_tup2_U1_U2 self from_auth from_frag in op_Option_tup2_R1_R2 (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_tup2_U1_U2 self from_auth from_frag in op_Option_tup2_R1_R2 (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__sum__impl_LocalUpdate_for_SumLocalUpdateL_U__frame_preserving__refines (* <logic::ra::sum::SumLocalUpdateL<U> as logic::ra::update::LocalUpdate<logic::ra::sum::Sum<R1, R2>>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_U
+  
+  type t_SumLocalUpdateL_U = { f0: t_U }
+  
+  type t_R1
+  
+  type t_R2
+  
+  type t_Sum_R1_R2 = Left t_R1 | Right t_R2
+  
+  type tup2_Sum_R1_R2_Sum_R1_R2 = { f0'0: t_Sum_R1_R2; f1'0: t_Sum_R1_R2 }
+  
+  predicate premise_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1)
+  
+  predicate premise_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) =
+    match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
+      | {f0'0 = Right _; f1'0 = Right _} -> false
+      | _ -> true
+      end
+  
+  meta "rewrite_def" predicate premise_SumLocalUpdateL_U
+  
+  type t_Option_Sum_R1_R2 = None | Some t_Sum_R1_R2
+  
+  type t_Option_Option_Sum_R1_R2 = None'0 | Some'0 t_Option_Sum_R1_R2
+  
+  type tup2_Option_Sum_R1_R2_Option_Sum_R1_R2 = { f0'1: t_Option_Sum_R1_R2; f1'1: t_Option_Sum_R1_R2 }
+  
+  function map_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (f: Map.map t_Sum_R1_R2 t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  type t_Option_R1 = None'1 | Some'1 t_R1
+  
+  function map_Option_R1 (self: t_Option_R1) (f: Map.map t_R1 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+      | None'1 -> None
+      | Some'1 x -> Some (Map.get f x)
+      end
+  
+  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
+  
+  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
+  
+  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
+        | Some'1 c -> op_R1 factor c = Some'1 self
+        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
+        end
+  
+  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
+  
+  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
+  
+  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
+  
+  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
+  
+  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
+  
+  function commutative_R1 (a: t_R1) (b: t_R1) : ()
+  
+  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
+  
+  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
+  
+  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
+  
+  type t_Option_R2 = None'2 | Some'2 t_R2
+  
+  function map_Option_R2 (self: t_Option_R2) (f: Map.map t_R2 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+      | None'2 -> None
+      | Some'2 x -> Some (Map.get f x)
+      end
+  
+  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
+  
+  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
+  
+  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
+        | Some'2 c -> op_R2 factor c = Some'2 self
+        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
+        end
+  
+  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
+  
+  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
+  
+  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
+  
+  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
+  
+  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
+  
+  function commutative_R2 (a: t_R2) (b: t_R2) : ()
+  
+  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
+  
+  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
+  
+  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
+  
+  function op_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match { f0'0 = self;
+                                                                                                f1'0 = other } with
+      | {f0'0 = Left x; f1'0 = Left y} -> map_Option_R1 (op_R1 x y) (fun (l: t_R1) -> Left l)
+      | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R2 (op_R2 x y) (fun (r: t_R2) -> Right r)
+      | _ -> None
+      end
+  
+  function commutative_Sum_R1_R2 (a: t_Sum_R1_R2) (b: t_Sum_R1_R2) : () = ()
+  
+  axiom commutative_Sum_R1_R2_spec: forall a: t_Sum_R1_R2, b: t_Sum_R1_R2. op_Sum_R1_R2 a b = op_Sum_R1_R2 b a
+  
+  function op_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (other: t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2 =
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> Some'0 other
+      | {f1'1 = None} -> Some'0 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Sum_R1_R2 (op_Sum_R1_R2 x y) (fun (z: t_Sum_R1_R2) -> Some z)
+      end
+  
+  function commutative_Option_Sum_R1_R2 (a: t_Option_Sum_R1_R2) (b: t_Option_Sum_R1_R2) : ()
+  
+  axiom commutative_Option_Sum_R1_R2_spec: forall a: t_Option_Sum_R1_R2, b: t_Option_Sum_R1_R2. op_Option_Sum_R1_R2 a b
+      = op_Option_Sum_R1_R2 b a
+  
+  type tup2_R1_R1 = { f0'2: t_R1; f1'2: t_R1 }
+  
+  function update_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1) : tup2_R1_R1
+  
+  predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool [@inline:trivial] (self: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) (a: tup2_Sum_R1_R2_Sum_R1_R2) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool
+  
+  function such_that_tup2_Sum_R1_R2_Sum_R1_R2 (p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) : tup2_Sum_R1_R2_Sum_R1_R2
+  
+  axiom such_that_tup2_Sum_R1_R2_Sum_R1_R2_spec:
+    forall p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool. (exists x: tup2_Sum_R1_R2_Sum_R1_R2. index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p x)
+      -> index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p (such_that_tup2_Sum_R1_R2_Sum_R1_R2 p)
+  
+  function update_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) : tup2_Sum_R1_R2_Sum_R1_R2
+   = match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Left to_auth;
+                                                                                                                                                   f1'0 = Left to_frag }
+      | _ -> such_that_tup2_Sum_R1_R2_Sum_R1_R2 (fun (__0: tup2_Sum_R1_R2_Sum_R1_R2) -> true)
+      end
+  
+  meta "rewrite_def" function update_SumLocalUpdateL_U
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_SumLocalUpdateL_U. forall from_auth: t_Sum_R1_R2. forall from_frag: t_Sum_R1_R2. forall frame: t_Option_Sum_R1_R2. premise_SumLocalUpdateL_U self from_auth from_frag
+              /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_SumLocalUpdateL_U self from_auth from_frag
+            /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__sum__impl_LocalUpdate_for_SumLocalUpdateR_U__frame_preserving__refines (* <logic::ra::sum::SumLocalUpdateR<U> as logic::ra::update::LocalUpdate<logic::ra::sum::Sum<R1, R2>>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_U
+  
+  type t_SumLocalUpdateR_U = { f0: t_U }
+  
+  type t_R1
+  
+  type t_R2
+  
+  type t_Sum_R1_R2 = Left t_R1 | Right t_R2
+  
+  type tup2_Sum_R1_R2_Sum_R1_R2 = { f0'0: t_Sum_R1_R2; f1'0: t_Sum_R1_R2 }
+  
+  predicate premise_U (self: t_U) (from_auth: t_R2) (from_frag: t_R2)
+  
+  predicate premise_SumLocalUpdateR_U [@inline:trivial] (self: t_SumLocalUpdateR_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) =
+    match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Right from_auth'0; f1'0 = Right from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
+      | {f0'0 = Left _; f1'0 = Left _} -> false
+      | _ -> true
+      end
+  
+  meta "rewrite_def" predicate premise_SumLocalUpdateR_U
+  
+  type t_Option_Sum_R1_R2 = None | Some t_Sum_R1_R2
+  
+  type t_Option_Option_Sum_R1_R2 = None'0 | Some'0 t_Option_Sum_R1_R2
+  
+  type tup2_Option_Sum_R1_R2_Option_Sum_R1_R2 = { f0'1: t_Option_Sum_R1_R2; f1'1: t_Option_Sum_R1_R2 }
+  
+  function map_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (f: Map.map t_Sum_R1_R2 t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  type t_Option_R1 = None'1 | Some'1 t_R1
+  
+  function map_Option_R1 (self: t_Option_R1) (f: Map.map t_R1 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+      | None'1 -> None
+      | Some'1 x -> Some (Map.get f x)
+      end
+  
+  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
+  
+  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
+  
+  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
+        | Some'1 c -> op_R1 factor c = Some'1 self
+        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
+        end
+  
+  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
+  
+  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
+  
+  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
+  
+  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
+  
+  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
+  
+  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
+      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
+  
+  function commutative_R1 (a: t_R1) (b: t_R1) : ()
+  
+  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
+  
+  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
+  
+  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
+  
+  type t_Option_R2 = None'2 | Some'2 t_R2
+  
+  function map_Option_R2 (self: t_Option_R2) (f: Map.map t_R2 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+      | None'2 -> None
+      | Some'2 x -> Some (Map.get f x)
+      end
+  
+  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
+  
+  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
+  
+  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
+        | Some'2 c -> op_R2 factor c = Some'2 self
+        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
+        end
+  
+  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
+  
+  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
+  
+  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
+  
+  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
+  
+  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
+  
+  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
+      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
+  
+  function commutative_R2 (a: t_R2) (b: t_R2) : ()
+  
+  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
+  
+  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
+  
+  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
+  
+  function op_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match { f0'0 = self;
+                                                                                                f1'0 = other } with
+      | {f0'0 = Left x; f1'0 = Left y} -> map_Option_R1 (op_R1 x y) (fun (l: t_R1) -> Left l)
+      | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R2 (op_R2 x y) (fun (r: t_R2) -> Right r)
+      | _ -> None
+      end
+  
+  function commutative_Sum_R1_R2 (a: t_Sum_R1_R2) (b: t_Sum_R1_R2) : () = ()
+  
+  axiom commutative_Sum_R1_R2_spec: forall a: t_Sum_R1_R2, b: t_Sum_R1_R2. op_Sum_R1_R2 a b = op_Sum_R1_R2 b a
+  
+  function op_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (other: t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2 =
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> Some'0 other
+      | {f1'1 = None} -> Some'0 self
+      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Sum_R1_R2 (op_Sum_R1_R2 x y) (fun (z: t_Sum_R1_R2) -> Some z)
+      end
+  
+  function commutative_Option_Sum_R1_R2 (a: t_Option_Sum_R1_R2) (b: t_Option_Sum_R1_R2) : ()
+  
+  axiom commutative_Option_Sum_R1_R2_spec: forall a: t_Option_Sum_R1_R2, b: t_Option_Sum_R1_R2. op_Option_Sum_R1_R2 a b
+      = op_Option_Sum_R1_R2 b a
+  
+  type tup2_R2_R2 = { f0'2: t_R2; f1'2: t_R2 }
+  
+  function update_U (self: t_U) (from_auth: t_R2) (from_frag: t_R2) : tup2_R2_R2
+  
+  predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool [@inline:trivial] (self: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) (a: tup2_Sum_R1_R2_Sum_R1_R2) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool
+  
+  function such_that_tup2_Sum_R1_R2_Sum_R1_R2 (p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) : tup2_Sum_R1_R2_Sum_R1_R2
+  
+  axiom such_that_tup2_Sum_R1_R2_Sum_R1_R2_spec:
+    forall p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool. (exists x: tup2_Sum_R1_R2_Sum_R1_R2. index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p x)
+      -> index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p (such_that_tup2_Sum_R1_R2_Sum_R1_R2 p)
+  
+  function update_SumLocalUpdateR_U [@inline:trivial] (self: t_SumLocalUpdateR_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) : tup2_Sum_R1_R2_Sum_R1_R2
+   = match { f0'0 = from_auth; f1'0 = from_frag } with
+      | {f0'0 = Right from_auth'0; f1'0 = Right from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Right to_auth;
+                                                                                                                                                     f1'0 = Right to_frag }
+      | _ -> such_that_tup2_Sum_R1_R2_Sum_R1_R2 (fun (__0: tup2_Sum_R1_R2_Sum_R1_R2) -> true)
+      end
+  
+  meta "rewrite_def" function update_SumLocalUpdateR_U
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_SumLocalUpdateR_U. forall from_auth: t_Sum_R1_R2. forall from_frag: t_Sum_R1_R2. forall frame: t_Option_Sum_R1_R2. premise_SumLocalUpdateR_U self from_auth from_frag
+              /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_SumLocalUpdateR_U self from_auth from_frag
+            /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateR_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateR_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__update__impl_LocalUpdate_for_Snapshot_tup2_R_R__frame_preserving__refines (* <snapshot::Snapshot<(R, R)> as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  type tup2_R_R = { f0: t_R; f1: t_R }
+  
+  type t_Option_R = None | Some t_R
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
+                                                                                            f1'0 = other } with
+      | {f0'0 = None} -> Some'0 other
+      | {f1'0 = None} -> Some'0 self
+      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  predicate premise_Snapshot_tup2_R_R [@inline:trivial] (self: tup2_R_R) (from_auth: t_R) (from_frag: t_R) =
+    forall f: t_Option_R. op_Option_R (Some from_frag) f = Some'0 (Some from_auth)
+      -> op_Option_R (Some (self.f1)) f = Some'0 (Some (self.f0))
+  
+  meta "rewrite_def" predicate premise_Snapshot_tup2_R_R
+  
+  function update_Snapshot_tup2_R_R [@inline:trivial] (self: tup2_R_R) (_2: t_R) (_3: t_R) : tup2_R_R = self
+  
+  meta "rewrite_def" function update_Snapshot_tup2_R_R
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: tup2_R_R. forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_Snapshot_tup2_R_R self from_auth from_frag
+              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_Snapshot_tup2_R_R self from_auth from_frag
+            /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__update__impl_LocalUpdate_for_unit__frame_preserving__refines (* <() as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  predicate premise_unit [@inline:trivial] (self: ()) (_2: t_R) (_3: t_R) = true
+  
+  meta "rewrite_def" predicate premise_unit
+  
+  type t_Option_R = None | Some t_R
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  type tup2_R_R = { f0'0: t_R; f1'0: t_R }
+  
+  function update_unit [@inline:trivial] (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R = { f0'0 = from_auth;
+                                                                                                     f1'0 = from_frag }
+  
+  meta "rewrite_def" function update_unit
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: (). forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_unit self from_auth from_frag
+              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_unit self from_auth from_frag in op_Option_R (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
 module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit__refines (* <logic::fmap::FMap<K, V> as logic::ra::UnitRA> *)
   type namespace_other
   
@@ -77140,1095 +78974,6 @@ module M_logic__ra__view__impl_UnitRA_for_View_R__core_total_idemp__refines (* <
           /\ op_View_R (core_total_View_R self) self = Some self
         -> op_View_R (core_total_View_R self) (core_total_View_R self) = Some (core_total_View_R self)
         /\ op_View_R (core_total_View_R self) self = Some self
-end
-module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_preserving__refines (* <logic::ra::fmap::FMapInsertLocalUpdate<K, V> as logic::ra::update::LocalUpdate<logic::fmap::FMap<K, V>>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  use int.Int
-  
-  type t_K
-  
-  type t_V
-  
-  type t_FMapInsertLocalUpdate_K_V = { f0: t_K; f1: t_V }
-  
-  type t_FMap_K_V
-  
-  type t_Option_V = None | Some t_V
-  
-  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
-  
-  meta "rewrite_def" function get_K
-  
-  predicate premise_FMapInsertLocalUpdate_K_V [@inline:trivial] (self: t_FMapInsertLocalUpdate_K_V) (from_auth: t_FMap_K_V) (_3: t_FMap_K_V) =
-    get_K from_auth self.f0 = None
-  
-  meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_K_V
-  
-  type t_Option_FMap_K_V = None'0 | Some'0 t_FMap_K_V
-  
-  type t_Option_Option_FMap_K_V = None'1 | Some'1 t_Option_FMap_K_V
-  
-  type tup2_Option_FMap_K_V_Option_FMap_K_V = { f0'0: t_Option_FMap_K_V; f1'0: t_Option_FMap_K_V }
-  
-  function map_Option_FMap_K_V (self: t_Option_FMap_K_V) (f: Map.map t_FMap_K_V t_Option_FMap_K_V) : t_Option_Option_FMap_K_V
-   = match self with
-      | None'0 -> None'1
-      | Some'0 x -> Some'1 (Map.get f x)
-      end
-  
-  type t_Option_Option_V = None'2 | Some'2 t_Option_V
-  
-  type tup2_Option_V_Option_V = { f0'1: t_Option_V; f1'1: t_Option_V }
-  
-  function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
-      | None -> None'2
-      | Some x -> Some'2 (Map.get f x)
-      end
-  
-  function op_V (self: t_V) (other: t_V) : t_Option_V
-  
-  function factor_V (self: t_V) (factor: t_V) : t_Option_V
-  
-  axiom factor_V_spec: forall self: t_V, factor: t_V. match factor_V self factor with
-        | Some c -> op_V factor c = Some self
-        | None -> forall c: t_V. op_V factor c <> Some self
-        end
-  
-  predicate incl_V (self: t_V) (other: t_V) = factor_V other self <> None
-  
-  function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
-  
-  axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
-  
-  function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
-  
-  axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some ab
-      -> op_V b c = Some bc -> op_V a bc = op_V ab c
-  
-  function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
-  
-  axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None
-      -> op_V b c = Some bc -> op_V a bc = None
-  
-  function commutative_V (a: t_V) (b: t_V) : ()
-  
-  axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
-  
-  function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
-  
-  axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
-  
-  function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0'1 = self;
-                                                                                            f1'1 = other } with
-      | {f0'1 = None} -> Some'2 other
-      | {f1'1 = None} -> Some'2 self
-      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some z)
-      end
-  
-  function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
-  
-  axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
-  
-  type tup2_V_V = { f0'2: t_V; f1'2: t_V }
-  
-  function index_Mapping_tup2_V_V_V [@inline:trivial] (self: Map.map tup2_V_V t_V) (a: tup2_V_V) : t_V = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_V_V_V
-  
-  function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
-  
-  axiom merge_K_spec:
-    forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V. forall k: t_K [get_K (merge_K self m f) k]. match { f0'1 = get_K self k;
-                                                                                                                         f1'1 = get_K m k } with
-          | {f0'1 = None; f1'1 = y} -> get_K (merge_K self m f) k = y
-          | {f0'1 = x; f1'1 = None} -> get_K (merge_K self m f) k = x
-          | {f0'1 = Some x; f1'1 = Some y} -> get_K (merge_K self m f) k
-          = Some (index_Mapping_tup2_V_V_V f { f0'2 = x; f1'2 = y })
-          end
-  
-  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_V_bool
-  
-  function such_that_V (p: Map.map t_V bool) : t_V
-  
-  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
-      -> index_Mapping_V_bool p (such_that_V p)
-  
-  function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V =
-    merge_K self other (fun (__0: tup2_V_V) -> let {f0'2 = x; f1'2 = y} = __0 in match op_V x y with
-      | Some r -> r
-      | _ -> such_that_V (fun (__0'0: t_V) -> true)
-      end)
-  
-  axiom total_op_K_spec:
-    forall self: t_FMap_K_V, other: t_FMap_K_V. (forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'2)
-      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
-  
-  function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
-    if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'2 then
-      Some'0 (total_op_K self other)
-    else
-      None'0
-  
-  
-  function commutative_FMap_K_V (a: t_FMap_K_V) (b: t_FMap_K_V) : () = ()
-  
-  axiom commutative_FMap_K_V_spec: forall a: t_FMap_K_V, b: t_FMap_K_V. op_FMap_K_V a b = op_FMap_K_V b a
-  
-  function op_Option_FMap_K_V (self: t_Option_FMap_K_V) (other: t_Option_FMap_K_V) : t_Option_Option_FMap_K_V =
-    match { f0'0 = self; f1'0 = other } with
-      | {f0'0 = None'0} -> Some'1 other
-      | {f1'0 = None'0} -> Some'1 self
-      | {f0'0 = Some'0 x; f1'0 = Some'0 y} -> map_Option_FMap_K_V (op_FMap_K_V x y) (fun (z: t_FMap_K_V) -> Some'0 z)
-      end
-  
-  function commutative_Option_FMap_K_V (a: t_Option_FMap_K_V) (b: t_Option_FMap_K_V) : ()
-  
-  axiom commutative_Option_FMap_K_V_spec: forall a: t_Option_FMap_K_V, b: t_Option_FMap_K_V. op_Option_FMap_K_V a b
-      = op_Option_FMap_K_V b a
-  
-  type tup2_FMap_K_V_FMap_K_V = { f0'3: t_FMap_K_V; f1'3: t_FMap_K_V }
-  
-  function len_K (self: t_FMap_K_V) : int
-  
-  axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
-  
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
-  
-  meta "rewrite_def" predicate contains_K
-  
-  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
-  
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
-      = Map.set (to_mapping_K self) k (Some v)
-  
-  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
-      = (if contains_K self k then len_K self else len_K self + 1)
-  
-  function update_FMapInsertLocalUpdate_K_V [@inline:trivial] (self: t_FMapInsertLocalUpdate_K_V) (from_auth: t_FMap_K_V) (from_frag: t_FMap_K_V) : tup2_FMap_K_V_FMap_K_V
-   = { f0'3 = insert_K from_auth self.f0 self.f1; f1'3 = insert_K from_frag self.f0 self.f1 }
-  
-  meta "rewrite_def" function update_FMapInsertLocalUpdate_K_V
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_FMapInsertLocalUpdate_K_V. forall from_auth: t_FMap_K_V. forall from_frag: t_FMap_K_V. forall frame: t_Option_FMap_K_V. premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
-              /\ op_Option_FMap_K_V (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
-            -> premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
-            /\ op_Option_FMap_K_V (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
-            /\ (forall result: (). (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some'0 to_frag) frame
-                = Some'1 (Some'0 to_auth))
-              -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some'0 to_frag) frame
-              = Some'1 (Some'0 to_auth)))
-end
-module M_logic__ra__int__impl_LocalUpdate_for_Int__frame_preserving__refines (* <logic::int::Int as logic::ra::update::LocalUpdate<logic::int::Int>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  use int.Int
-  
-  predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
-  
-  meta "rewrite_def" predicate premise_Int
-  
-  type t_Option_Int = None | Some int
-  
-  type t_Option_Option_Int = None'0 | Some'0 t_Option_Int
-  
-  type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
-  
-  function map_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Option_Int = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
-  
-  meta "rewrite_def" function op_Int
-  
-  function commutative_Int (a: int) (b: int) : () = ()
-  
-  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
-  
-  function op_Option_Int (self: t_Option_Int) (other: t_Option_Int) : t_Option_Option_Int = match { f0 = self;
-                                                                                                    f1 = other } with
-      | {f0 = None} -> Some'0 other
-      | {f1 = None} -> Some'0 self
-      | {f0 = Some x; f1 = Some y} -> map_Option_Int (op_Int x y) (fun (z: int) -> Some z)
-      end
-  
-  function commutative_Option_Int (a: t_Option_Int) (b: t_Option_Int) : ()
-  
-  axiom commutative_Option_Int_spec: forall a: t_Option_Int, b: t_Option_Int. op_Option_Int a b = op_Option_Int b a
-  
-  type tup2_Int_Int = { f0'0: int; f1'0: int }
-  
-  function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int =
-    { f0'0 = from_auth + self; f1'0 = from_frag + self }
-  
-  meta "rewrite_def" function update_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: int. forall from_auth: int. forall from_frag: int. forall frame: t_Option_Int. premise_Int self from_auth from_frag
-              /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
-            -> premise_Int self from_auth from_frag
-            /\ op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
-                = Some'0 (Some to_auth))
-              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
-              = Some'0 (Some to_auth)))
-end
-module M_logic__ra__option__impl_LocalUpdate_for_OptionLocalUpdate_U__frame_preserving__refines (* <logic::ra::option::OptionLocalUpdate<U> as logic::ra::update::LocalUpdate<std::option::Option<R>>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_U
-  
-  type t_OptionLocalUpdate_U = { f0: t_U }
-  
-  type t_R
-  
-  type t_Option_R = None | Some t_R
-  
-  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
-  
-  predicate premise_U (self: t_U) (from_auth: t_R) (from_frag: t_R)
-  
-  predicate premise_OptionLocalUpdate_U [@inline:trivial] (self: t_OptionLocalUpdate_U) (from_auth: t_Option_R) (from_frag: t_Option_R) =
-    match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Some from_auth'0; f1'0 = Some from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
-      | _ -> false
-      end
-  
-  meta "rewrite_def" predicate premise_OptionLocalUpdate_U
-  
-  type t_Option_Option_R = None'0 | Some'0 t_Option_R
-  
-  type t_Option_Option_Option_R = None'1 | Some'1 t_Option_Option_R
-  
-  type tup2_Option_Option_R_Option_Option_R = { f0'1: t_Option_Option_R; f1'1: t_Option_Option_R }
-  
-  function map_Option_Option_R (self: t_Option_Option_R) (f: Map.map t_Option_R t_Option_Option_R) : t_Option_Option_Option_R
-   = match self with
-      | None'0 -> None'1
-      | Some'0 x -> Some'1 (Map.get f x)
-      end
-  
-  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  function op_R (self: t_R) (other: t_R) : t_Option_R
-  
-  function factor_R (self: t_R) (factor: t_R) : t_Option_R
-  
-  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
-        | Some c -> op_R factor c = Some self
-        | None -> forall c: t_R. op_R factor c <> Some self
-        end
-  
-  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
-  
-  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
-  
-  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
-  
-  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
-  
-  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
-      -> op_R b c = Some bc -> op_R a bc = op_R ab c
-  
-  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
-  
-  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
-      -> op_R b c = Some bc -> op_R a bc = None
-  
-  function commutative_R (a: t_R) (b: t_R) : ()
-  
-  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
-  
-  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
-  
-  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
-  
-  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
-                                                                                            f1'0 = other } with
-      | {f0'0 = None} -> Some'0 other
-      | {f1'0 = None} -> Some'0 self
-      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
-      end
-  
-  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : () = ()
-  
-  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
-  
-  function op_Option_Option_R (self: t_Option_Option_R) (other: t_Option_Option_R) : t_Option_Option_Option_R =
-    match { f0'1 = self; f1'1 = other } with
-      | {f0'1 = None'0} -> Some'1 other
-      | {f1'1 = None'0} -> Some'1 self
-      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> map_Option_Option_R (op_Option_R x y) (fun (z: t_Option_R) -> Some'0 z)
-      end
-  
-  function commutative_Option_Option_R (a: t_Option_Option_R) (b: t_Option_Option_R) : () = ()
-  
-  axiom commutative_Option_Option_R_spec: forall a: t_Option_Option_R, b: t_Option_Option_R. op_Option_Option_R a b
-      = op_Option_Option_R b a
-  
-  type tup2_R_R = { f0'2: t_R; f1'2: t_R }
-  
-  function update_U (self: t_U) (from_auth: t_R) (from_frag: t_R) : tup2_R_R
-  
-  function update_OptionLocalUpdate_U [@inline:trivial] (self: t_OptionLocalUpdate_U) (from_auth: t_Option_R) (from_frag: t_Option_R) : tup2_Option_R_Option_R
-   = match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Some from_auth'0; f1'0 = Some from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Some to_auth;
-                                                                                                                                                   f1'0 = Some to_frag }
-      | _ -> { f0'0 = None; f1'0 = None }
-      end
-  
-  meta "rewrite_def" function update_OptionLocalUpdate_U
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_OptionLocalUpdate_U. forall from_auth: t_Option_R. forall from_frag: t_Option_R. forall frame: t_Option_Option_R. premise_OptionLocalUpdate_U self from_auth from_frag
-              /\ op_Option_Option_R (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
-            -> premise_OptionLocalUpdate_U self from_auth from_frag
-            /\ op_Option_Option_R (Some'0 from_frag) frame = Some'1 (Some'0 from_auth)
-            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_OptionLocalUpdate_U self from_auth from_frag in op_Option_Option_R (Some'0 to_frag) frame
-                = Some'1 (Some'0 to_auth))
-              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_OptionLocalUpdate_U self from_auth from_frag in op_Option_Option_R (Some'0 to_frag) frame
-              = Some'1 (Some'0 to_auth)))
-end
-module M_logic__ra__prod__impl_LocalUpdate_for_tup2_U1_U2__frame_preserving__refines (* <(U1, U2) as logic::ra::update::LocalUpdate<(R1, R2)>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_U1
-  
-  type t_U2
-  
-  type tup2_U1_U2 = { f0: t_U1; f1: t_U2 }
-  
-  type t_R1
-  
-  type t_R2
-  
-  type tup2_R1_R2 = { f0'0: t_R1; f1'0: t_R2 }
-  
-  predicate premise_U1 (self: t_U1) (from_auth: t_R1) (from_frag: t_R1)
-  
-  predicate premise_U2 (self: t_U2) (from_auth: t_R2) (from_frag: t_R2)
-  
-  predicate premise_tup2_U1_U2 [@inline:trivial] (self: tup2_U1_U2) (from_auth: tup2_R1_R2) (from_frag: tup2_R1_R2) =
-    premise_U1 self.f0 from_auth.f0'0 from_frag.f0'0 /\ premise_U2 self.f1 from_auth.f1'0 from_frag.f1'0
-  
-  meta "rewrite_def" predicate premise_tup2_U1_U2
-  
-  type t_Option_tup2_R1_R2 = None | Some tup2_R1_R2
-  
-  type t_Option_Option_tup2_R1_R2 = None'0 | Some'0 t_Option_tup2_R1_R2
-  
-  type tup2_Option_tup2_R1_R2_Option_tup2_R1_R2 = { f0'1: t_Option_tup2_R1_R2; f1'1: t_Option_tup2_R1_R2 }
-  
-  function map_Option_tup2_R1_R2 (self: t_Option_tup2_R1_R2) (f: Map.map tup2_R1_R2 t_Option_tup2_R1_R2) : t_Option_Option_tup2_R1_R2
-   = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  type t_Option_R1 = None'1 | Some'1 t_R1
-  
-  type t_Option_R2 = None'2 | Some'2 t_R2
-  
-  type tup2_Option_R1_Option_R2 = { f0'2: t_Option_R1; f1'2: t_Option_R2 }
-  
-  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
-  
-  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
-  
-  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
-        | Some'1 c -> op_R1 factor c = Some'1 self
-        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
-        end
-  
-  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
-  
-  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
-  
-  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
-  
-  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
-  
-  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
-  
-  function commutative_R1 (a: t_R1) (b: t_R1) : ()
-  
-  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
-  
-  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
-  
-  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
-  
-  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
-  
-  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
-  
-  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
-        | Some'2 c -> op_R2 factor c = Some'2 self
-        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
-        end
-  
-  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
-  
-  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
-  
-  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
-  
-  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
-  
-  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
-  
-  function commutative_R2 (a: t_R2) (b: t_R2) : ()
-  
-  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
-  
-  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
-  
-  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
-  
-  function op_tup2_R1_R2 (self: tup2_R1_R2) (other: tup2_R1_R2) : t_Option_tup2_R1_R2 =
-    match { f0'2 = op_R1 self.f0'0 other.f0'0; f1'2 = op_R2 self.f1'0 other.f1'0 } with
-      | {f0'2 = Some'1 r1; f1'2 = Some'2 r2} -> Some { f0'0 = r1; f1'0 = r2 }
-      | _ -> None
-      end
-  
-  function commutative_tup2_R1_R2 (a: tup2_R1_R2) (b: tup2_R1_R2) : () = ()
-  
-  axiom commutative_tup2_R1_R2_spec: forall a: tup2_R1_R2, b: tup2_R1_R2. op_tup2_R1_R2 a b = op_tup2_R1_R2 b a
-  
-  function op_Option_tup2_R1_R2 (self: t_Option_tup2_R1_R2) (other: t_Option_tup2_R1_R2) : t_Option_Option_tup2_R1_R2 =
-    match { f0'1 = self; f1'1 = other } with
-      | {f0'1 = None} -> Some'0 other
-      | {f1'1 = None} -> Some'0 self
-      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_tup2_R1_R2 (op_tup2_R1_R2 x y) (fun (z: tup2_R1_R2) -> Some z)
-      end
-  
-  function commutative_Option_tup2_R1_R2 (a: t_Option_tup2_R1_R2) (b: t_Option_tup2_R1_R2) : ()
-  
-  axiom commutative_Option_tup2_R1_R2_spec:
-    forall a: t_Option_tup2_R1_R2, b: t_Option_tup2_R1_R2. op_Option_tup2_R1_R2 a b = op_Option_tup2_R1_R2 b a
-  
-  type tup2_tup2_R1_R2_tup2_R1_R2 = { f0'3: tup2_R1_R2; f1'3: tup2_R1_R2 }
-  
-  type tup2_R1_R1 = { f0'4: t_R1; f1'4: t_R1 }
-  
-  function update_U1 (self: t_U1) (from_auth: t_R1) (from_frag: t_R1) : tup2_R1_R1
-  
-  type tup2_R2_R2 = { f0'5: t_R2; f1'5: t_R2 }
-  
-  function update_U2 (self: t_U2) (from_auth: t_R2) (from_frag: t_R2) : tup2_R2_R2
-  
-  function update_tup2_U1_U2 [@inline:trivial] (self: tup2_U1_U2) (from_auth: tup2_R1_R2) (from_frag: tup2_R1_R2) : tup2_tup2_R1_R2_tup2_R1_R2
-   =
-    let {f0'4 = to_auth0; f1'4 = to_frag0} = update_U1 self.f0 from_auth.f0'0 from_frag.f0'0 in let {f0'5 = to_auth1; f1'5 = to_frag1} = update_U2 self.f1 from_auth.f1'0 from_frag.f1'0 in { f0'3 = { f0'0 = to_auth0;
-                                                                                                                                                                                                       f1'0 = to_auth1 };
-                                                                                                                                                                                              f1'3 = { f0'0 = to_frag0;
-                                                                                                                                                                                                       f1'0 = to_frag1 } }
-  
-  meta "rewrite_def" function update_tup2_U1_U2
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: tup2_U1_U2. forall from_auth: tup2_R1_R2. forall from_frag: tup2_R1_R2. forall frame: t_Option_tup2_R1_R2. premise_tup2_U1_U2 self from_auth from_frag
-              /\ op_Option_tup2_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            -> premise_tup2_U1_U2 self from_auth from_frag
-            /\ op_Option_tup2_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). (let {f0'3 = to_auth; f1'3 = to_frag} = update_tup2_U1_U2 self from_auth from_frag in op_Option_tup2_R1_R2 (Some to_frag) frame
-                = Some'0 (Some to_auth))
-              -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_tup2_U1_U2 self from_auth from_frag in op_Option_tup2_R1_R2 (Some to_frag) frame
-              = Some'0 (Some to_auth)))
-end
-module M_logic__ra__sum__impl_LocalUpdate_for_SumLocalUpdateL_U__frame_preserving__refines (* <logic::ra::sum::SumLocalUpdateL<U> as logic::ra::update::LocalUpdate<logic::ra::sum::Sum<R1, R2>>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_U
-  
-  type t_SumLocalUpdateL_U = { f0: t_U }
-  
-  type t_R1
-  
-  type t_R2
-  
-  type t_Sum_R1_R2 = Left t_R1 | Right t_R2
-  
-  type tup2_Sum_R1_R2_Sum_R1_R2 = { f0'0: t_Sum_R1_R2; f1'0: t_Sum_R1_R2 }
-  
-  predicate premise_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1)
-  
-  predicate premise_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) =
-    match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
-      | {f0'0 = Right _; f1'0 = Right _} -> false
-      | _ -> true
-      end
-  
-  meta "rewrite_def" predicate premise_SumLocalUpdateL_U
-  
-  type t_Option_Sum_R1_R2 = None | Some t_Sum_R1_R2
-  
-  type t_Option_Option_Sum_R1_R2 = None'0 | Some'0 t_Option_Sum_R1_R2
-  
-  type tup2_Option_Sum_R1_R2_Option_Sum_R1_R2 = { f0'1: t_Option_Sum_R1_R2; f1'1: t_Option_Sum_R1_R2 }
-  
-  function map_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (f: Map.map t_Sum_R1_R2 t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2
-   = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  type t_Option_R1 = None'1 | Some'1 t_R1
-  
-  function map_Option_R1 (self: t_Option_R1) (f: Map.map t_R1 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
-      | None'1 -> None
-      | Some'1 x -> Some (Map.get f x)
-      end
-  
-  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
-  
-  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
-  
-  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
-        | Some'1 c -> op_R1 factor c = Some'1 self
-        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
-        end
-  
-  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
-  
-  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
-  
-  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
-  
-  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
-  
-  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
-  
-  function commutative_R1 (a: t_R1) (b: t_R1) : ()
-  
-  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
-  
-  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
-  
-  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
-  
-  type t_Option_R2 = None'2 | Some'2 t_R2
-  
-  function map_Option_R2 (self: t_Option_R2) (f: Map.map t_R2 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
-      | None'2 -> None
-      | Some'2 x -> Some (Map.get f x)
-      end
-  
-  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
-  
-  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
-  
-  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
-        | Some'2 c -> op_R2 factor c = Some'2 self
-        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
-        end
-  
-  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
-  
-  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
-  
-  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
-  
-  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
-  
-  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
-  
-  function commutative_R2 (a: t_R2) (b: t_R2) : ()
-  
-  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
-  
-  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
-  
-  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
-  
-  function op_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match { f0'0 = self;
-                                                                                                f1'0 = other } with
-      | {f0'0 = Left x; f1'0 = Left y} -> map_Option_R1 (op_R1 x y) (fun (l: t_R1) -> Left l)
-      | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R2 (op_R2 x y) (fun (r: t_R2) -> Right r)
-      | _ -> None
-      end
-  
-  function commutative_Sum_R1_R2 (a: t_Sum_R1_R2) (b: t_Sum_R1_R2) : () = ()
-  
-  axiom commutative_Sum_R1_R2_spec: forall a: t_Sum_R1_R2, b: t_Sum_R1_R2. op_Sum_R1_R2 a b = op_Sum_R1_R2 b a
-  
-  function op_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (other: t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2 =
-    match { f0'1 = self; f1'1 = other } with
-      | {f0'1 = None} -> Some'0 other
-      | {f1'1 = None} -> Some'0 self
-      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Sum_R1_R2 (op_Sum_R1_R2 x y) (fun (z: t_Sum_R1_R2) -> Some z)
-      end
-  
-  function commutative_Option_Sum_R1_R2 (a: t_Option_Sum_R1_R2) (b: t_Option_Sum_R1_R2) : ()
-  
-  axiom commutative_Option_Sum_R1_R2_spec: forall a: t_Option_Sum_R1_R2, b: t_Option_Sum_R1_R2. op_Option_Sum_R1_R2 a b
-      = op_Option_Sum_R1_R2 b a
-  
-  type tup2_R1_R1 = { f0'2: t_R1; f1'2: t_R1 }
-  
-  function update_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1) : tup2_R1_R1
-  
-  predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool [@inline:trivial] (self: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) (a: tup2_Sum_R1_R2_Sum_R1_R2) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool
-  
-  function such_that_tup2_Sum_R1_R2_Sum_R1_R2 (p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) : tup2_Sum_R1_R2_Sum_R1_R2
-  
-  axiom such_that_tup2_Sum_R1_R2_Sum_R1_R2_spec:
-    forall p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool. (exists x: tup2_Sum_R1_R2_Sum_R1_R2. index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p x)
-      -> index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p (such_that_tup2_Sum_R1_R2_Sum_R1_R2 p)
-  
-  function update_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) : tup2_Sum_R1_R2_Sum_R1_R2
-   = match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Left to_auth;
-                                                                                                                                                   f1'0 = Left to_frag }
-      | _ -> such_that_tup2_Sum_R1_R2_Sum_R1_R2 (fun (__0: tup2_Sum_R1_R2_Sum_R1_R2) -> true)
-      end
-  
-  meta "rewrite_def" function update_SumLocalUpdateL_U
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_SumLocalUpdateL_U. forall from_auth: t_Sum_R1_R2. forall from_frag: t_Sum_R1_R2. forall frame: t_Option_Sum_R1_R2. premise_SumLocalUpdateL_U self from_auth from_frag
-              /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            -> premise_SumLocalUpdateL_U self from_auth from_frag
-            /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
-                = Some'0 (Some to_auth))
-              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
-              = Some'0 (Some to_auth)))
-end
-module M_logic__ra__sum__impl_LocalUpdate_for_SumLocalUpdateR_U__frame_preserving__refines (* <logic::ra::sum::SumLocalUpdateR<U> as logic::ra::update::LocalUpdate<logic::ra::sum::Sum<R1, R2>>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_U
-  
-  type t_SumLocalUpdateR_U = { f0: t_U }
-  
-  type t_R1
-  
-  type t_R2
-  
-  type t_Sum_R1_R2 = Left t_R1 | Right t_R2
-  
-  type tup2_Sum_R1_R2_Sum_R1_R2 = { f0'0: t_Sum_R1_R2; f1'0: t_Sum_R1_R2 }
-  
-  predicate premise_U (self: t_U) (from_auth: t_R2) (from_frag: t_R2)
-  
-  predicate premise_SumLocalUpdateR_U [@inline:trivial] (self: t_SumLocalUpdateR_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) =
-    match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Right from_auth'0; f1'0 = Right from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
-      | {f0'0 = Left _; f1'0 = Left _} -> false
-      | _ -> true
-      end
-  
-  meta "rewrite_def" predicate premise_SumLocalUpdateR_U
-  
-  type t_Option_Sum_R1_R2 = None | Some t_Sum_R1_R2
-  
-  type t_Option_Option_Sum_R1_R2 = None'0 | Some'0 t_Option_Sum_R1_R2
-  
-  type tup2_Option_Sum_R1_R2_Option_Sum_R1_R2 = { f0'1: t_Option_Sum_R1_R2; f1'1: t_Option_Sum_R1_R2 }
-  
-  function map_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (f: Map.map t_Sum_R1_R2 t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2
-   = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  type t_Option_R1 = None'1 | Some'1 t_R1
-  
-  function map_Option_R1 (self: t_Option_R1) (f: Map.map t_R1 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
-      | None'1 -> None
-      | Some'1 x -> Some (Map.get f x)
-      end
-  
-  function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
-  
-  function factor_R1 (self: t_R1) (factor: t_R1) : t_Option_R1
-  
-  axiom factor_R1_spec: forall self: t_R1, factor: t_R1. match factor_R1 self factor with
-        | Some'1 c -> op_R1 factor c = Some'1 self
-        | None'1 -> forall c: t_R1. op_R1 factor c <> Some'1 self
-        end
-  
-  predicate incl_R1 (self: t_R1) (other: t_R1) = factor_R1 other self <> None'1
-  
-  function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
-  
-  axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
-  
-  function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
-  
-  function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
-  
-  axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
-      -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
-  
-  function commutative_R1 (a: t_R1) (b: t_R1) : ()
-  
-  axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
-  
-  function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
-  
-  axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
-  
-  type t_Option_R2 = None'2 | Some'2 t_R2
-  
-  function map_Option_R2 (self: t_Option_R2) (f: Map.map t_R2 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
-      | None'2 -> None
-      | Some'2 x -> Some (Map.get f x)
-      end
-  
-  function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
-  
-  function factor_R2 (self: t_R2) (factor: t_R2) : t_Option_R2
-  
-  axiom factor_R2_spec: forall self: t_R2, factor: t_R2. match factor_R2 self factor with
-        | Some'2 c -> op_R2 factor c = Some'2 self
-        | None'2 -> forall c: t_R2. op_R2 factor c <> Some'2 self
-        end
-  
-  predicate incl_R2 (self: t_R2) (other: t_R2) = factor_R2 other self <> None'2
-  
-  function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
-  
-  axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
-  
-  function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
-  
-  function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
-  
-  axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
-      -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
-  
-  function commutative_R2 (a: t_R2) (b: t_R2) : ()
-  
-  axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
-  
-  function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
-  
-  axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
-  
-  function op_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match { f0'0 = self;
-                                                                                                f1'0 = other } with
-      | {f0'0 = Left x; f1'0 = Left y} -> map_Option_R1 (op_R1 x y) (fun (l: t_R1) -> Left l)
-      | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R2 (op_R2 x y) (fun (r: t_R2) -> Right r)
-      | _ -> None
-      end
-  
-  function commutative_Sum_R1_R2 (a: t_Sum_R1_R2) (b: t_Sum_R1_R2) : () = ()
-  
-  axiom commutative_Sum_R1_R2_spec: forall a: t_Sum_R1_R2, b: t_Sum_R1_R2. op_Sum_R1_R2 a b = op_Sum_R1_R2 b a
-  
-  function op_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (other: t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2 =
-    match { f0'1 = self; f1'1 = other } with
-      | {f0'1 = None} -> Some'0 other
-      | {f1'1 = None} -> Some'0 self
-      | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Sum_R1_R2 (op_Sum_R1_R2 x y) (fun (z: t_Sum_R1_R2) -> Some z)
-      end
-  
-  function commutative_Option_Sum_R1_R2 (a: t_Option_Sum_R1_R2) (b: t_Option_Sum_R1_R2) : ()
-  
-  axiom commutative_Option_Sum_R1_R2_spec: forall a: t_Option_Sum_R1_R2, b: t_Option_Sum_R1_R2. op_Option_Sum_R1_R2 a b
-      = op_Option_Sum_R1_R2 b a
-  
-  type tup2_R2_R2 = { f0'2: t_R2; f1'2: t_R2 }
-  
-  function update_U (self: t_U) (from_auth: t_R2) (from_frag: t_R2) : tup2_R2_R2
-  
-  predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool [@inline:trivial] (self: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) (a: tup2_Sum_R1_R2_Sum_R1_R2) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool
-  
-  function such_that_tup2_Sum_R1_R2_Sum_R1_R2 (p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) : tup2_Sum_R1_R2_Sum_R1_R2
-  
-  axiom such_that_tup2_Sum_R1_R2_Sum_R1_R2_spec:
-    forall p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool. (exists x: tup2_Sum_R1_R2_Sum_R1_R2. index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p x)
-      -> index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p (such_that_tup2_Sum_R1_R2_Sum_R1_R2 p)
-  
-  function update_SumLocalUpdateR_U [@inline:trivial] (self: t_SumLocalUpdateR_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) : tup2_Sum_R1_R2_Sum_R1_R2
-   = match { f0'0 = from_auth; f1'0 = from_frag } with
-      | {f0'0 = Right from_auth'0; f1'0 = Right from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Right to_auth;
-                                                                                                                                                     f1'0 = Right to_frag }
-      | _ -> such_that_tup2_Sum_R1_R2_Sum_R1_R2 (fun (__0: tup2_Sum_R1_R2_Sum_R1_R2) -> true)
-      end
-  
-  meta "rewrite_def" function update_SumLocalUpdateR_U
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_SumLocalUpdateR_U. forall from_auth: t_Sum_R1_R2. forall from_frag: t_Sum_R1_R2. forall frame: t_Option_Sum_R1_R2. premise_SumLocalUpdateR_U self from_auth from_frag
-              /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            -> premise_SumLocalUpdateR_U self from_auth from_frag
-            /\ op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateR_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
-                = Some'0 (Some to_auth))
-              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateR_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
-              = Some'0 (Some to_auth)))
-end
-module M_logic__ra__update__impl_LocalUpdate_for_Snapshot_tup2_R_R__frame_preserving__refines (* <snapshot::Snapshot<(R, R)> as logic::ra::update::LocalUpdate<R>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_R
-  
-  type tup2_R_R = { f0: t_R; f1: t_R }
-  
-  type t_Option_R = None | Some t_R
-  
-  type t_Option_Option_R = None'0 | Some'0 t_Option_R
-  
-  type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
-  
-  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  function op_R (self: t_R) (other: t_R) : t_Option_R
-  
-  function factor_R (self: t_R) (factor: t_R) : t_Option_R
-  
-  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
-        | Some c -> op_R factor c = Some self
-        | None -> forall c: t_R. op_R factor c <> Some self
-        end
-  
-  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
-  
-  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
-  
-  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
-  
-  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
-  
-  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
-      -> op_R b c = Some bc -> op_R a bc = op_R ab c
-  
-  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
-  
-  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
-      -> op_R b c = Some bc -> op_R a bc = None
-  
-  function commutative_R (a: t_R) (b: t_R) : ()
-  
-  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
-  
-  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
-  
-  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
-  
-  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0'0 = self;
-                                                                                            f1'0 = other } with
-      | {f0'0 = None} -> Some'0 other
-      | {f1'0 = None} -> Some'0 self
-      | {f0'0 = Some x; f1'0 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
-      end
-  
-  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
-  
-  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
-  
-  predicate premise_Snapshot_tup2_R_R [@inline:trivial] (self: tup2_R_R) (from_auth: t_R) (from_frag: t_R) =
-    forall f: t_Option_R. op_Option_R (Some from_frag) f = Some'0 (Some from_auth)
-      -> op_Option_R (Some (self.f1)) f = Some'0 (Some (self.f0))
-  
-  meta "rewrite_def" predicate premise_Snapshot_tup2_R_R
-  
-  function update_Snapshot_tup2_R_R [@inline:trivial] (self: tup2_R_R) (_2: t_R) (_3: t_R) : tup2_R_R = self
-  
-  meta "rewrite_def" function update_Snapshot_tup2_R_R
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: tup2_R_R. forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_Snapshot_tup2_R_R self from_auth from_frag
-              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-            -> premise_Snapshot_tup2_R_R self from_auth from_frag
-            /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). (let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
-                = Some'0 (Some to_auth))
-              -> (let {f0 = to_auth; f1 = to_frag} = update_Snapshot_tup2_R_R self from_auth from_frag in op_Option_R (Some to_frag) frame
-              = Some'0 (Some to_auth)))
-end
-module M_logic__ra__update__impl_LocalUpdate_for_unit__frame_preserving__refines (* <() as logic::ra::update::LocalUpdate<R>> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use map.Map
-  
-  type t_R
-  
-  predicate premise_unit [@inline:trivial] (self: ()) (_2: t_R) (_3: t_R) = true
-  
-  meta "rewrite_def" predicate premise_unit
-  
-  type t_Option_R = None | Some t_R
-  
-  type t_Option_Option_R = None'0 | Some'0 t_Option_R
-  
-  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
-  
-  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  function op_R (self: t_R) (other: t_R) : t_Option_R
-  
-  function factor_R (self: t_R) (factor: t_R) : t_Option_R
-  
-  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
-        | Some c -> op_R factor c = Some self
-        | None -> forall c: t_R. op_R factor c <> Some self
-        end
-  
-  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
-  
-  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
-  
-  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
-  
-  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
-  
-  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
-      -> op_R b c = Some bc -> op_R a bc = op_R ab c
-  
-  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
-  
-  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
-      -> op_R b c = Some bc -> op_R a bc = None
-  
-  function commutative_R (a: t_R) (b: t_R) : ()
-  
-  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
-  
-  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
-  
-  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
-  
-  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
-      | {f0 = None} -> Some'0 other
-      | {f1 = None} -> Some'0 self
-      | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
-      end
-  
-  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
-  
-  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
-  
-  type tup2_R_R = { f0'0: t_R; f1'0: t_R }
-  
-  function update_unit [@inline:trivial] (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R = { f0'0 = from_auth;
-                                                                                                     f1'0 = from_frag }
-  
-  meta "rewrite_def" function update_unit
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: (). forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_unit self from_auth from_frag
-              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-            -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-            /\ (forall result: (). op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_unit self from_auth from_frag in op_Option_R (Some to_frag) frame
-              = Some'0 (Some to_auth)))
 end
 module M_logic__well_founded__impl_WellFounded_for_Int__no_infinite_decreasing_sequence__refines (* <logic::int::Int as logic::well_founded::WellFounded> *)
   type namespace_other

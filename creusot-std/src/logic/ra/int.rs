@@ -68,6 +68,7 @@ impl UnitRA for Int {
     fn core_total_idemp(self) {}
 }
 
+/// Add an integer to an authority/fragment pair of integers.
 impl LocalUpdate<Int> for Int {
     #[logic(open, inline)]
     fn premise(self, _: Int, _: Int) -> bool {
