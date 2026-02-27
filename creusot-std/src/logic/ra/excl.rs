@@ -57,6 +57,19 @@ impl<T> RA for Excl<T> {
     fn core_is_maximal_idemp(self, i: Self) {}
 }
 
+/// Apply an [update](Update) to the content of an [exclusive](Excl) resource.
+///
+/// This changes the content of the resource. Because it is exclusive, no
+/// premise is needed.
+///
+/// # Example
+///
+/// ```
+/// use creusot_std::{prelude::*, logic::ra::excl::{Excl, ExclUpdate}, ghost::resource::Resource};
+/// let mut res = Resource::alloc(snapshot!(Excl(1)));
+/// ghost! { res.update(ExclUpdate(snapshot!(2))) };
+/// proof_assert!(res@ == Excl(2));
+/// ```
 pub struct ExclUpdate<T>(pub Snapshot<T>);
 
 impl<T> Update<Excl<T>> for ExclUpdate<T> {

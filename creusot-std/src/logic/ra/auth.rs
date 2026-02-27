@@ -50,6 +50,8 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     fn rel_unit(a: Option<T>) {}
 }
 
+/// Apply an [update](Update) to an [`Auth`] resource, by using a [local
+/// update](LocalUpdate) on the authority/fragment.
 pub struct AuthUpdate<U>(pub U);
 
 impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
