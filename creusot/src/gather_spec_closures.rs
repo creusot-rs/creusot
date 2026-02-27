@@ -145,25 +145,25 @@ impl InvariantsVisitor<'_, '_> {
 
 impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
-        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, *id) {
+        if let &Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
+            let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, id) {
                 LoopSpecKind::Invariant(expl)
-            } else if is_loop_variant(self.ctx.tcx, *id) {
+            } else if is_loop_variant(self.ctx.tcx, id) {
                 LoopSpecKind::Variant
             } else {
-                if is_before_loop(self.ctx.tcx, *id) {
+                if is_before_loop(self.ctx.tcx, id) {
                     self.before_loop.insert(loc.block);
                 }
                 return;
             };
-            let term = self.ctx.term(*id).unwrap().1.clone();
+            let term = self.ctx.term(id).unwrap().1.clone();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(
                         self.ctx.def_span(id),
                         "This loop does not loop. This invariant could just be an assertion.",
                     );
-                    self.invariants_and_variants.assertions.insert(*id, (term, expl));
+                    self.invariants_and_variants.assertions.insert(id, (term, expl));
                 }
                 None => self.ctx.warn(
                     self.ctx.def_span(id),

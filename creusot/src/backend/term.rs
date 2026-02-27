@@ -208,15 +208,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
             },
             TermKind::Coerce { arg } => self.lower_term(arg),
-            TermKind::Item(id, subst)
+            &TermKind::Item(id, subst)
                 if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() =>
             {
                 if !self.weakdep {
-                    self.names.item(*id, subst);
+                    self.names.item(id, subst);
                 }
                 Exp::unit()
             }
-            TermKind::Item(id, subst) => Exp::Var(self.names.item(*id, subst)),
+            &TermKind::Item(id, subst) => Exp::Var(self.names.item(id, subst)),
             TermKind::Const(c) => self.lower_term(&tyconst_to_term_final(
                 *c,
                 term.ty,

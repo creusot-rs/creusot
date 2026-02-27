@@ -297,12 +297,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
-            TermKind::Item(id, subst) => {
-                if *id == self.self_id {
+            &TermKind::Item(id, subst) => {
+                if id == self.self_id {
                     self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
                 }
                 // We pull (id, subst) as a dependency, because it may be useful for the proof
-                let item_name = self.names.item(*id, subst);
+                let item_name = self.names.item(id, subst);
                 if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().kind() {
                     k(Exp::unit())
                 } else {

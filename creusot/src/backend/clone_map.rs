@@ -471,7 +471,7 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
                                     ty.kind(),
                                     TyKind::Adt(..) | TyKind::Tuple(_) | TyKind::Closure(..)
                                 ),
-                                Dependency::Item(did, _) => matches!(
+                                &Dependency::Item(did, _) => matches!(
                                     tcx.def_kind(did),
                                     DefKind::Struct
                                         | DefKind::Enum
@@ -586,31 +586,33 @@ fn display_cycle_<'tcx>(
     for (i, dep) in scc.into_iter().enumerate() {
         use Dependency::*;
         match dep {
-            Type(ty) => write!(f, "{ty}"),
-            Item(def_id, args) => {
+            &Type(ty) => write!(f, "{ty}"),
+            &Item(def_id, args) => {
                 write!(f, "{}{}", tcx.def_path_str(def_id), args.print_as_list())
             }
-            TyInvAxiom(ty) => write!(f, "ty inv axiom {ty}"),
-            ResolveAxiom(ty) => write!(f, "resolve axiom {ty}"),
-            ClosureAccessor(def_id, args, _) => {
+            &TyInvAxiom(ty) => write!(f, "ty inv axiom {ty}"),
+            &ResolveAxiom(ty) => write!(f, "resolve axiom {ty}"),
+            &ClosureAccessor(def_id, args, _) => {
                 write!(f, "closure accessor {}{}", tcx.def_path_str(def_id), args.print_as_list())
             }
-            TupleField(args, field_idx) => write!(
+            &TupleField(args, field_idx) => write!(
                 f,
                 "tuple field ({}).{}",
                 args.into_iter().map(|ty| ty.to_string()).join(", "),
                 field_idx.as_u32()
             ),
-            PreMod(pre_mod) => write!(f, "PreMod::{pre_mod:?}"),
-            Eliminator(def_id, _args) => write!(f, "eliminator {}", tcx.def_path_str(def_id)),
-            DynCast(ty1, ty2) => write!(f, "dyncast {ty1} -> {ty2}"),
-            PrivateFields(def_id, _args) => {
+            &PreMod(pre_mod) => write!(f, "PreMod::{pre_mod:?}"),
+            &Eliminator(def_id, _args) => write!(f, "eliminator {}", tcx.def_path_str(def_id)),
+            &DynCast(ty1, ty2) => write!(f, "dyncast {ty1} -> {ty2}"),
+            &PrivateFields(def_id, _args) => {
                 write!(f, "private fields {}", tcx.def_path_str(def_id))
             }
-            PrivateResolve(def_id, _args) => {
+            &PrivateResolve(def_id, _args) => {
                 write!(f, "private resolve {}", tcx.def_path_str(def_id))
             }
-            PrivateTyInv(def_id, _args) => write!(f, "private ty inv {}", tcx.def_path_str(def_id)),
+            &PrivateTyInv(def_id, _args) => {
+                write!(f, "private ty inv {}", tcx.def_path_str(def_id))
+            }
         }?;
         f.write_str(";")?;
         if i < scc.len() - 1 {

@@ -209,7 +209,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 _,
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
             Rvalue::CopyForDeref(_)
-            | Rvalue::ShallowInitBox(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::WrapUnsafeBinder(_, _) => self.ctx.crash_and_error(
                 si.span,

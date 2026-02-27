@@ -19,7 +19,7 @@ use rustc_middle::{
     },
     ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
-use rustc_span::{ErrorGuaranteed, sym};
+use rustc_span::{ErrorGuaranteed, Symbol, sym};
 use std::{
     assert_matches,
     fmt::{Display, Formatter},
@@ -27,6 +27,10 @@ use std::{
 
 type Triggers<'tcx> = Box<[Trigger<'tcx>]>;
 type BoundVars<'tcx> = Box<[(PIdent, Ty<'tcx>)]>;
+
+fn deref_mut_method() -> Symbol {
+    Symbol::intern("deref_mut_method")
+}
 
 /// Get a Pearlite term together with its free variables.
 pub(crate) fn from_thir<'tcx>(
@@ -491,7 +495,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::Deref { arg }
                 if let ExprKind::Call { ty, ref args, .. } = self.head(arg).kind
                     && let &TyKind::FnDef(f_did, subst) = ty.kind()
-                    && self.ctx.is_diagnostic_item(sym::deref_mut_method, f_did)
+                    && self.ctx.is_diagnostic_item(deref_mut_method(), f_did)
                     && let ExprKind::Borrow { borrow_kind, arg } = self.head(args[0]).kind =>
             {
                 // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
@@ -538,7 +542,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             ExprKind::Use { source } => self.expr_term(source),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
-            ExprKind::Box { value } => self.expr_term(value),
             ExprKind::NonHirLiteral { .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => Ok(Term::item(*id, substs, ty).span(span)),
                 _ => Err(self.ctx.dcx().span_err(span, "unhandled literal expression")),
@@ -797,7 +800,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         ),
                         span: self.thir[arg].span,
                     };
-                    let did = self.ctx.get_diagnostic_item(sym::deref_mut_method).unwrap();
+                    let did = self.ctx.get_diagnostic_item(deref_mut_method()).unwrap();
                     return Ok((
                         Term::call_no_normalize(self.ctx.tcx, did, subst, [arg]).span(span),
                         Vec::new(),

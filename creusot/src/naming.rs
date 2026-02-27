@@ -278,7 +278,7 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
         }
         FnDef(id, _) => push_(prefix, &ascii_item_name("", tcx, *id)),
         FnPtr(_, _) => push_(prefix, "FnPtr"),
-        Closure(id, _) => {
+        &Closure(id, _) => {
             push_(prefix, &format!("closure{}", tcx.def_key(id).disambiguated_data.disambiguator))
         }
         Never => push_(prefix, "never"),

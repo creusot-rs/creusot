@@ -17,7 +17,7 @@ use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
 use creusot_args::options::ErasureCheck;
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{BindingMode, ByRef, Mutability};
-use rustc_errors::{Diag, DiagMessage, SubdiagMessage};
+use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
     ItemLocalId,
     def_id::{DefId, LocalDefId},
@@ -658,12 +658,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         self.tcx.def_span(self.def_id)
     }
 
-    fn unsupported_syntax_(
-        &self,
-        span: Span,
-        msg: impl Into<SubdiagMessage>,
-        note: Option<String>,
-    ) {
+    fn unsupported_syntax_(&self, span: Span, msg: impl Into<DiagMessage>, note: Option<String>) {
         let diag = warn_or_error(
             self.tcx,
             self.level,
@@ -681,16 +676,11 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         diag.emit();
     }
 
-    fn unsupported_syntax(&self, span: Span, msg: impl Into<SubdiagMessage>) {
+    fn unsupported_syntax(&self, span: Span, msg: impl Into<DiagMessage>) {
         self.unsupported_syntax_(span, msg, None)
     }
 
-    fn unsupported_syntax_with_note(
-        &self,
-        span: Span,
-        msg: impl Into<SubdiagMessage>,
-        note: String,
-    ) {
+    fn unsupported_syntax_with_note(&self, span: Span, msg: impl Into<DiagMessage>, note: String) {
         self.unsupported_syntax_(span, msg, Some(note))
     }
 
@@ -1479,9 +1469,9 @@ impl<'tcx> EqualityChecker<'tcx> {
     fn error(
         &self,
         span: Span,
-        msg: impl Into<SubdiagMessage>,
+        msg: impl Into<DiagMessage>,
         span2: Span,
-        msg2: impl Into<SubdiagMessage>,
+        msg2: impl Into<DiagMessage>,
     ) {
         warn_or_error(
             self.tcx,
@@ -1643,7 +1633,7 @@ impl<'tcx> PrintAnf<'tcx> {
         match tag {
             Value => write!(f, "value"),
             Read => write!(f, "read"),
-            Call(def_id, subst) => {
+            &Call(def_id, subst) => {
                 write!(
                     f,
                     "call {}{}",
@@ -1661,7 +1651,7 @@ impl<'tcx> PrintAnf<'tcx> {
             Return => write!(f, "return"),
             Deref => write!(f, "deref"),
             UnsafeBorrow => write!(f, "unsafe_borrow"),
-            Const(def_id, _) => write!(f, "const {}", self.tcx.def_path_str(def_id)),
+            &Const(def_id, _) => write!(f, "const {}", self.tcx.def_path_str(def_id)),
             Guard => write!(f, "guard"),
             Break => write!(f, "break"),
             Loop => write!(f, "loop"),
@@ -1734,7 +1724,7 @@ impl<'tcx> PrintAnf<'tcx> {
                 self.print_value(value, f)?;
                 write!(f, ")")
             }
-            Fn(def_id, subst) => write!(
+            &Fn(def_id, subst) => write!(
                 f,
                 "fn {}{}",
                 self.tcx.def_path_str(def_id),
