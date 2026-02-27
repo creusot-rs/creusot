@@ -6,6 +6,9 @@ use crate::{
 /// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
 pub struct AtomicI32(::std::sync::atomic::AtomicI32);
 
+unsafe impl Send for Perm<AtomicI32> {}
+unsafe impl Sync for Perm<AtomicI32> {}
+
 impl Container for AtomicI32 {
     type Value = i32;
 
