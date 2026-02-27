@@ -6,6 +6,9 @@ use crate::{
 /// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
 pub struct AtomicI32(::std::sync::atomic::AtomicI32);
 
+unsafe impl Send for Perm<AtomicI32> {}
+unsafe impl Sync for Perm<AtomicI32> {}
+
 impl Container for AtomicI32 {
     type Value = i32;
 
@@ -41,6 +44,26 @@ impl AtomicI32 {
         F: FnGhost + FnOnce(&'a mut Committer<Self>) -> A,
     {
         let res = self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst);
+        (res, Ghost::conjure())
+    }
+
+    /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
+    ///
+    /// The fetch and the store are always sequentially consistent.
+    #[requires(forall<c: &mut Committer<Self>> !c.shot() ==> c.ward() == *self ==> c.new_value() == c.old_value() ==>
+        f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
+    )]
+    #[ensures(exists<c: &mut Committer<Self>>
+        !c.shot() && c.ward() == *self && c.new_value() == c.old_value() &&
+        c.new_value() == result.0 && f.postcondition_once((c,), *(result.1))
+    )]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn load<'a, A, F>(&'a self, f: Ghost<F>) -> (i32, Ghost<A>)
+    where
+        F: FnGhost + FnOnce(&'a mut Committer<Self>) -> A,
+    {
+        let res = self.0.load(std::sync::atomic::Ordering::SeqCst);
         (res, Ghost::conjure())
     }
 
