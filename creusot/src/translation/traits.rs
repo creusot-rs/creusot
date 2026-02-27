@@ -7,12 +7,11 @@ use crate::{
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };
-use rustc_hir::def_id::DefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::{
     infer::{DefineOpaqueTypes, InferCtxt, TyCtxtInferExt},
     traits::{
-        CodegenObligationError, Obligation, ObligationCause, TraitEngine,
-        specialization_graph::Graph,
+        CodegenObligationError, Obligation, ObligationCause, ObligationCauseCode, SelectionError, TraitEngine, specialization_graph::Graph
     },
 };
 use rustc_middle::ty::{
@@ -22,15 +21,14 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
-    error_reporting::InferCtxtErrorExt,
-    traits::{FulfillmentError, ImplSource, InCrate, TraitEngineExt, orphan_check_trait_ref},
+    error_reporting::InferCtxtErrorExt, solve::inspect::{InspectGoal, ProofTreeVisitor}, traits::{FulfillmentError, ImplSource, InCrate, SelectionContext, TraitEngineExt, orphan_check_trait_ref}
 };
 use rustc_type_ir::{
     TypeSuperFoldable,
     fast_reject::{TreatParams, simplify_type},
-    inherent::Ty as _,
+    inherent::Ty as _, solve::NoSolution,
 };
-use std::{collections::HashMap, iter};
+use std::{collections::HashMap, iter, ops::ControlFlow};
 
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
@@ -179,6 +177,19 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     }
     let errors = fulfill_cx.evaluate_obligations_error_on_ambiguity(infcx);
     if !errors.is_empty() { Err(errors) } else { Ok(()) }
+}
+
+fn resolve_trait_ref_wip<'tcx>(tcx: TyCtxt<'tcx>, typing_env: TypingEnv<'tcx>, cause: ObligationCause<'tcx>, trait_ref: TraitRef<'tcx>) -> TraitResolved<'tcx> {
+    let infcx = tcx.infer_ctxt().ignoring_regions().build(typing_env.typing_mode);
+    let mut selcx = SelectionContext::new(&infcx);
+    let span = cause.span;
+    let oblg = Obligation::new(tcx, cause, typing_env.param_env, trait_ref);
+    match selcx.select(&oblg) {
+        Ok(None) => TraitResolved::UnknownFound,
+        Ok(Some(r)) => todo!(),
+        Err(SelectionError::Unimplemented) => TraitResolved::NoInstance(NoInstance { tcx, typing_env, trait_ref }),
+        Err(e) => tcx.crash_and_error(span, format!("Bad resolve: {e:?}"))
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
