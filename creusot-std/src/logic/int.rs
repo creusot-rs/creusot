@@ -4,7 +4,9 @@ use crate::{
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
     prelude::*,
 };
-use core::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use core::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+};
 
 /// An unbounded, mathematical integer.
 ///
@@ -364,6 +366,46 @@ impl Neg for Int {
     #[ensures(result == -self)]
     fn neg(self) -> Self {
         panic!()
+    }
+}
+
+impl AddAssign for Int {
+    #[check(ghost)]
+    #[ensures(^self == *self + rhs)]
+    fn add_assign(&mut self, rhs: Int) {
+        *self = *self + rhs;
+    }
+}
+
+impl SubAssign for Int {
+    #[check(ghost)]
+    #[ensures(^self == *self - rhs)]
+    fn sub_assign(&mut self, rhs: Int) {
+        *self = *self - rhs;
+    }
+}
+
+impl MulAssign for Int {
+    #[check(ghost)]
+    #[ensures(^self == *self * rhs)]
+    fn mul_assign(&mut self, rhs: Int) {
+        *self = *self * rhs;
+    }
+}
+
+impl DivAssign for Int {
+    #[check(ghost)]
+    #[ensures(^self == *self / rhs)]
+    fn div_assign(&mut self, rhs: Int) {
+        *self = *self / rhs;
+    }
+}
+
+impl RemAssign for Int {
+    #[check(ghost)]
+    #[ensures(^self == *self % rhs)]
+    fn rem_assign(&mut self, rhs: Int) {
+        *self = *self % rhs;
     }
 }
 
