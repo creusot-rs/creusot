@@ -67,6 +67,7 @@
         edition_panic,
         new_range_api,
         range_bounds_is_empty,
+        bound_copied,
         decl_macro
     )
 )]

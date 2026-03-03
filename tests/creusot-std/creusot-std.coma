@@ -45107,6 +45107,97 @@ module M_std__num__extern_spec_Clone_isize_clone_body
     [ return (result: Int64.t) -> {[@stop_split] [@expl:extern_spec_Clone_isize_clone_body ensures] result = self_}
       (! return {result}) ]
 end
+module M_std__ops__extern_spec_core_ops_T_Bound_ref_T_copied_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Bound_ref_T = Included t_T | Excluded t_T | Unbounded
+  
+  type t_Bound_T = Included'0 t_T | Excluded'0 t_T | Unbounded'0
+  
+  let rec elim_Excluded (_x: t_Bound_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Excluded f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Excluded] match _x with
+        | Excluded _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec elim_Included (_x: t_Bound_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Included f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Included] match _x with
+        | Included _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate inv_Bound_ref_T (_1: t_Bound_ref_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Bound_ref_T [inv_Bound_ref_T x]. inv_Bound_ref_T x
+      = match x with
+        | Included f0 -> inv_ref_T f0
+        | Excluded f0 -> inv_ref_T f0
+        | Unbounded -> true
+        end
+  
+  predicate inv_Bound_T (_1: t_Bound_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Bound_T [inv_Bound_T x]. inv_Bound_T x
+      = match x with
+        | Included'0 f0 -> inv_T f0
+        | Excluded'0 f0 -> inv_T f0
+        | Unbounded'0 -> true
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_core_ops_T_Bound__ref_T_copied_body_T (self_: t_Bound_ref_T) (return (x: t_Bound_T)) =
+    {[@stop_split] [@expl:extern_spec_core_ops_T_Bound__ref_T_copied_body 'self_' type invariant] inv_Bound_ref_T self_}
+    (! bb0
+    [ bb0 = any
+      [ br0 (x0: t_T) -> {self_ = Included x0} (! bb5)
+      | br1 (x0: t_T) -> {self_ = Excluded x0} (! bb4)
+      | br2 -> {self_ = Unbounded} (! bb6) ]
+    | bb6 = s0 [ s0 = [ &_ret <- Unbounded'0 ] s1 | s1 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Excluded {self_} (fun (r0: t_T) -> [ &x'0 <- r0 ] s1)
+      | s1 = [ &_ret <- Excluded'0 x'0 ] s2
+      | s2 = return {_ret} ]
+    | bb5 = s0
+      [ s0 = elim_Included {self_} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+      | s1 = [ &_ret <- Included'0 x ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Bound_T = Any.any_l ()
+    | & self_: t_Bound_ref_T = self_
+    | & x: t_T = Any.any_l ()
+    | & x'0: t_T = Any.any_l () ])
+    [ return (result: t_Bound_T) ->
+    {[@stop_split] [@expl:extern_spec_core_ops_T_Bound__ref_T_copied_body_T ensures] ([@stop_split] [@expl:extern_spec_core_ops_T_Bound__ref_T_copied_body result type invariant] inv_Bound_T result)
+      /\ ([@stop_split] [@expl:extern_spec_core_ops_T_Bound__ref_T_copied_body ensures] result
+      = match self_ with
+        | Unbounded -> Unbounded'0
+        | Included x -> Included'0 x
+        | Excluded x -> Excluded'0 x
+        end)}
+      (! return {result}) ]
+end
 module M_std__ops__extern_spec_core_option_T_Try_Option_T_from_output_body
   type namespace_other
   

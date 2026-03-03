@@ -286,6 +286,22 @@ extern_spec! {
                 fn is_empty(&self) -> bool
                 where T: PartialOrd;
             }
+
+            impl<T: Copy> Bound<&T> {
+                #[erasure]
+                #[ensures(result == match self {
+                    Bound::Unbounded => Bound::Unbounded,
+                    Bound::Included(x) => Bound::Included(*x),
+                    Bound::Excluded(x) => Bound::Excluded(*x),
+                })]
+                fn copied(self) -> Bound<T> {
+                    match self {
+                        Bound::Unbounded => Bound::Unbounded,
+                        Bound::Included(x) => Bound::Included(*x),
+                        Bound::Excluded(x) => Bound::Excluded(*x),
+                    }
+                }
+            }
         }
     }
 }
