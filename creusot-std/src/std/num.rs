@@ -128,9 +128,11 @@ mach_int!(isize, "creusot.int.Int16$BW$", 0isize, ".to_int");
 macro_rules! spec_type {
     ($type:ty) => {
         // Specify addition, subtraction and multiplication
-        spec_op_common!($type, +, checked_add, wrapping_add, saturating_add, overflowing_add, unchecked_add);
-        spec_op_common!($type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub, unchecked_sub);
-        spec_op_common!($type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul, unchecked_mul);
+        spec_op_common!{$type, +, checked_add, wrapping_add, saturating_add, overflowing_add, unchecked_add}
+        spec_op_common!{$type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub, unchecked_sub}
+        spec_op_common!{$type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul, unchecked_mul}
+        spec_impl_common!{$type}
+        spec_div_rem!{$type}
 
         extern_spec! {
             impl $type {
@@ -350,6 +352,87 @@ macro_rules! spec_op_common {
                 #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
                 #[ensures(result@ == self@ $op rhs@)]
                 unsafe fn $unchecked(self, rhs: $type) -> $type;
+            }
+        }
+    };
+}
+
+macro_rules! spec_impl_common {
+    ($type:ty) => {
+        spec_impl_common!{Add, add, +, AddAssign, add_assign, +=, $type}
+        spec_impl_common!{Sub, sub, -, SubAssign, sub_assign, -=, $type}
+        spec_impl_common!{Mul, mul, *, MulAssign, mul_assign, *=, $type}
+    };
+    ($op_trait:ident, $op_method:ident, $op:tt, $op_assign_trait:ident, $op_assign_method:ident, $op_assign:tt, $type:ty) => {
+        spec_impl_common!{@ $op_trait, $op_method, $op, $type, $type, $type}
+        spec_impl_common!{@ $op_trait, $op_method, $op, $type, $type, &$type}
+        spec_impl_common!{@ $op_trait, $op_method, $op, $type, &$type, $type}
+        spec_impl_common!{@ $op_trait, $op_method, $op, $type, &$type, &$type}
+        spec_impl_common!{@assign $op_assign_trait, $op_assign_method, $op_assign, $op, $type, $type}
+        spec_impl_common!{@assign $op_assign_trait, $op_assign_method, $op_assign, $op, $type, &$type}
+    };
+    (@ $op_trait:ident, $op_method:ident, $op:tt, $type:ty, $lhs:ty, $rhs:ty) => {
+        extern_spec! {
+            impl core::ops::$op_trait<$rhs> for $lhs {
+                #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
+                #[ensures(result@ == self@ $op rhs@)]
+                fn $op_method(self, rhs: $rhs) -> $type {
+                    self $op rhs
+                }
+            }
+        }
+    };
+    (@assign $op_assign_trait:ident, $op_assign_method:ident, $op_assign:tt, $op:tt, $type:ty, $rhs:ty) => {
+        extern_spec! {
+            impl core::ops::$op_assign_trait<$rhs> for $type {
+                #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
+                #[ensures((^self)@ == self@ $op rhs@)]
+                fn $op_assign_method(&mut self, rhs: $rhs) {
+                    *self $op_assign rhs
+                }
+            }
+        }
+    }
+}
+
+macro_rules! spec_div_rem {
+    ($type:ty) => {
+        spec_div_rem!{@ Div, div, /, $type}
+        spec_div_rem!{@ Rem, rem, %, $type}
+        spec_div_rem!{@assign DivAssign, div_assign, /=, /, $type}
+        spec_div_rem!{@assign RemAssign, rem_assign, %=, %, $type}
+    };
+    (@ $divrem_trait:ident, $divrem_method:ident, $op:tt, $type:ty) => {
+        spec_div_rem!{@ $divrem_trait, $divrem_method, $op, $type, $type, $type}
+        spec_div_rem!{@ $divrem_trait, $divrem_method, $op, $type, $type, &$type}
+        spec_div_rem!{@ $divrem_trait, $divrem_method, $op, $type, &$type, $type}
+        spec_div_rem!{@ $divrem_trait, $divrem_method, $op, $type, &$type, &$type}
+    };
+    (@ $divrem_trait:ident, $divrem_method:ident, $op:tt, $type:ty, $lhs:ty, $rhs:ty) => {
+        extern_spec! {
+            impl core::ops::$divrem_trait<$rhs> for $lhs {
+                #[requires(rhs@ != 0)]
+                #[requires(!(self@ == $type::MIN@ && rhs@ == -1))]
+                #[ensures(result@ == self@ $op rhs@)]
+                fn $divrem_method(self, rhs: $rhs) -> $type {
+                    self $op rhs
+                }
+            }
+        }
+    };
+    (@assign $divrem_assign_trait:ident, $divrem_assign_method:ident, $op_assign:tt, $op:tt, $type:ty) => {
+        spec_div_rem!{@assign $divrem_assign_trait, $divrem_assign_method, $op_assign, $op, $type, $type}
+        spec_div_rem!{@assign $divrem_assign_trait, $divrem_assign_method, $op_assign, $op, $type, &$type}
+    };
+    (@assign $divrem_assign_trait:ident, $divrem_assign_method:ident, $op_assign:tt, $op:tt, $type:ty, $rhs:ty) => {
+        extern_spec! {
+            impl core::ops::$divrem_assign_trait<$rhs> for $type {
+                #[requires(rhs@ != 0)]
+                #[requires(!(*self == $type::MIN && rhs@ == -1))]
+                #[ensures((^self)@ == self@ $op rhs@)]
+                fn $divrem_assign_method(&mut self, rhs: $rhs) {
+                    *self $op_assign rhs
+                }
             }
         }
     };
