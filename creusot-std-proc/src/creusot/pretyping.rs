@@ -3,7 +3,7 @@
 //! Some macros accept pearlite rather than Rust. This module converts the
 //! latter to the former.
 //!
-//! For example, `1 + 2` becomes `creusot_std::logic::AddLogic::add(Int::new(1), Int::new(2))`.
+//! For example, `1 + 2` becomes `creusot_std::logic::AddLogic::add_logic(Int::new(1), Int::new(2))`.
 
 use pearlite_syn::{Term, term::*};
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
@@ -198,23 +198,23 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                         .into())
                 }
                 Add(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::AddLogic::add(#left, #right) }
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::AddLogic::add_logic(#left, #right) }
                         .into(),
                 ),
                 Sub(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::SubLogic::sub(#left, #right) }
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::SubLogic::sub_logic(#left, #right) }
                         .into(),
                 ),
                 Mul(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::MulLogic::mul(#left, #right) }
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::MulLogic::mul_logic(#left, #right) }
                         .into(),
                 ),
                 Div(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::DivLogic::div(#left, #right) }
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::DivLogic::div_logic(#left, #right) }
                         .into(),
                 ),
                 Rem(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::RemLogic::rem(#left, #right) }
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::RemLogic::rem_logic(#left, #right) }
                         .into(),
                 ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }.into()),
@@ -400,7 +400,8 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         Term::Unary(TermUnary { op, expr }) => match op {
             UnOp::Neg(_) => {
                 let term = encode_term_(expr, locals)?.toks();
-                Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NegLogic::neg(#term) }.into())
+                Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NegLogic::neg_logic(#term) }
+                    .into())
             }
             UnOp::Deref(_) => {
                 let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
