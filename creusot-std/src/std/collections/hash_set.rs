@@ -20,32 +20,27 @@ impl<T: DeepModel, S, A: Allocator> View for HashSet<T, S, A> {
 }
 
 extern_spec! {
-    mod std {
-        mod collections {
-            mod hash_set {
-                impl<T: DeepModel, S, A: Allocator> HashSet<T, S, A> {
-                    #[ensures(self@ == result@)]
-                    fn iter(&self) -> Iter<'_, T>;
-                }
-                impl<T, S, A: Allocator> HashSet<T, S, A>
-                where
-                    T: Eq + Hash + DeepModel,
-                    S: BuildHasher,
-                {
-                    #[ensures(result@ == self@.intersection(other@))]
-                    fn intersection<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Intersection<'a, T, S, A>;
+    impl<T: DeepModel, S, A: Allocator> HashSet<T, S, A> {
+        #[ensures(self@ == result@)]
+        fn iter(&self) -> Iter<'_, T>;
+    }
 
-                    #[ensures(result@ == self@.difference(other@))]
-                    fn difference<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Difference<'a, T, S, A>;
+    impl<T, S, A: Allocator> HashSet<T, S, A>
+    where
+        T: Eq + Hash + DeepModel,
+        S: BuildHasher,
+    {
+        #[ensures(result@ == self@.intersection(other@))]
+        fn intersection<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Intersection<'a, T, S, A>;
 
-                    #[ensures(result == self@.contains(value.deep_model()))]
-                    fn contains<Q: ?Sized>(&self, value: &Q) -> bool
-                    where
-                        T: Borrow<Q>,
-                        Q: Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>;
-                }
-            }
-        }
+        #[ensures(result@ == self@.difference(other@))]
+        fn difference<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Difference<'a, T, S, A>;
+
+        #[ensures(result == self@.contains(value.deep_model()))]
+        fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+        where
+            T: Borrow<Q>,
+            Q: Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>;
     }
 
     impl<T: DeepModel, S, A: Allocator> IntoIterator for HashSet<T, S, A> {

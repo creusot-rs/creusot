@@ -286,21 +286,21 @@ extern_spec! {
                 fn is_empty(&self) -> bool
                 where T: PartialOrd;
             }
+        }
+    }
 
-            impl<T: Copy> Bound<&T> {
-                #[erasure]
-                #[ensures(result == match self {
-                    Bound::Unbounded => Bound::Unbounded,
-                    Bound::Included(x) => Bound::Included(*x),
-                    Bound::Excluded(x) => Bound::Excluded(*x),
-                })]
-                fn copied(self) -> Bound<T> {
-                    match self {
-                        Bound::Unbounded => Bound::Unbounded,
-                        Bound::Included(x) => Bound::Included(*x),
-                        Bound::Excluded(x) => Bound::Excluded(*x),
-                    }
-                }
+    impl<T: Copy> Bound<&T> {
+        #[erasure]
+        #[ensures(result == match self {
+            Bound::Unbounded => Bound::Unbounded,
+            Bound::Included(x) => Bound::Included(*x),
+            Bound::Excluded(x) => Bound::Excluded(*x),
+        })]
+        fn copied(self) -> Bound<T> {
+            match self {
+                Bound::Unbounded => Bound::Unbounded,
+                Bound::Included(x) => Bound::Included(*x),
+                Bound::Excluded(x) => Bound::Excluded(*x),
             }
         }
     }
@@ -599,93 +599,82 @@ impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
 }
 
 extern_spec! {
-    mod core {
-        mod ops {
-            impl<Idx> RangeInclusive<Idx> {
-                #[ensures(result.start_log() == start)]
-                #[ensures(result.end_log() == end)]
-                #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
-                fn new(start: Idx, end: Idx) -> Self
-                    where Idx: DeepModel, Idx::DeepModelTy: OrdLogic;
+    impl<Idx> RangeInclusive<Idx> {
+        #[ensures(result.start_log() == start)]
+        #[ensures(result.end_log() == end)]
+        #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
+        fn new(start: Idx, end: Idx) -> Self
+            where Idx: DeepModel, Idx::DeepModelTy: OrdLogic;
 
-                #[ensures(*result == self.start_log())]
-                fn start(&self) -> &Idx;
+        #[ensures(*result == self.start_log())]
+        fn start(&self) -> &Idx;
 
-                #[ensures(*result == self.end_log())]
-                fn end(&self) -> &Idx;
-            }
+        #[ensures(*result == self.end_log())]
+        fn end(&self) -> &Idx;
+    }
 
-            impl<Idx: PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
-            where Idx::DeepModelTy: OrdLogic
-            {
-                #[ensures(result == self.is_empty_log())]
-                fn is_empty(&self) -> bool;
-            }
-        }
+    impl<Idx: PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
+    where Idx::DeepModelTy: OrdLogic
+    {
+        #[ensures(result == self.is_empty_log())]
+        fn is_empty(&self) -> bool;
     }
 }
 
 extern_spec! {
-    mod core {
-        mod option {
-            impl<T> Try for Option<T> {
-                #[ensures(result == Some(output))]
-                fn from_output(output: T) -> Self {
-                    Some(output)
-                }
+    impl<T> Try for Option<T> {
+        #[ensures(result == Some(output))]
+        fn from_output(output: T) -> Self {
+            Some(output)
+        }
 
-                #[ensures(match self {
-                    Some(v) => result == ControlFlow::Continue(v),
-                    None => result == ControlFlow::Break(None)
-                })]
-                fn branch(self) -> ControlFlow<Option<Infallible>, T> {
-                    match self {
-                        Some(v) => ControlFlow::Continue(v),
-                        None => ControlFlow::Break(None),
-                    }
-                }
-            }
-
-            impl<T> FromResidual<Option<Infallible>> for Option<T> {
-                #[ensures(result == None)]
-                fn from_residual(residual: Option<Infallible>) -> Self {
-                    match residual {
-                        None => None,
-                    }
-                }
+        #[ensures(match self {
+            Some(v) => result == ControlFlow::Continue(v),
+            None => result == ControlFlow::Break(None)
+        })]
+        fn branch(self) -> ControlFlow<Option<Infallible>, T> {
+            match self {
+                Some(v) => ControlFlow::Continue(v),
+                None => ControlFlow::Break(None),
             }
         }
     }
-    mod core {
-        mod result {
-            impl<T, E> Try for Result<T, E> {
-                #[ensures(result == Ok(output))]
-                fn from_output(output: T) -> Self {
-                    Ok(output)
-                }
 
-                #[ensures(match self {
-                    Ok(v) => result == ControlFlow::Continue(v),
-                    Err(e) => result == ControlFlow::Break(Err(e))
-                })]
-                fn branch(self) -> ControlFlow<Result<Infallible, E>, T> {
-                    match self {
-                        Ok(v) => ControlFlow::Continue(v),
-                        Err(e) => ControlFlow::Break(Err(e)),
-                    }
-                }
+    impl<T> FromResidual<Option<Infallible>> for Option<T> {
+        #[ensures(result == None)]
+        fn from_residual(residual: Option<Infallible>) -> Self {
+            match residual {
+                None => None,
             }
+        }
+    }
 
-            impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
-                #[ensures(match (result, residual) {
-                   (Err(result), Err(residual)) => F::from.postcondition((residual,), result),
-                    _ => false,
-                })]
-                fn from_residual(residual: Result<Infallible, E>) -> Self {
-                    match residual {
-                        Err(e) => Err(core::convert::From::from(e)),
-                    }
-                }
+    impl<T, E> Try for Result<T, E> {
+        #[ensures(result == Ok(output))]
+        fn from_output(output: T) -> Self {
+            Ok(output)
+        }
+
+        #[ensures(match self {
+            Ok(v) => result == ControlFlow::Continue(v),
+            Err(e) => result == ControlFlow::Break(Err(e))
+        })]
+        fn branch(self) -> ControlFlow<Result<Infallible, E>, T> {
+            match self {
+                Ok(v) => ControlFlow::Continue(v),
+                Err(e) => ControlFlow::Break(Err(e)),
+            }
+        }
+    }
+
+    impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
+        #[ensures(match (result, residual) {
+            (Err(result), Err(residual)) => F::from.postcondition((residual,), result),
+            _ => false,
+        })]
+        fn from_residual(residual: Result<Infallible, E>) -> Self {
+            match residual {
+                Err(e) => Err(core::convert::From::from(e)),
             }
         }
     }

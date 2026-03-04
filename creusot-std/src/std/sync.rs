@@ -52,32 +52,28 @@ impl<T: ?Sized, A: Allocator> View for Arc<T, A> {
 }
 
 extern_spec! {
-    mod std {
-        mod sync {
-            impl<T> Arc<T> {
-                #[check(ghost)]
-                #[ensures(*result@ == value)]
-                fn new(value: T) -> Self;
-            }
+    impl<T> Arc<T> {
+        #[check(ghost)]
+        #[ensures(*result@ == value)]
+        fn new(value: T) -> Self;
+    }
 
-            impl<T, A: Allocator> Arc<T, A> {
-                #[check(ghost)]
-                #[ensures(result == this.as_ptr_logic())]
-                #[ensures(!result.is_null_logic())]
-                fn as_ptr(this: &Arc<T, A>) -> *const T;
+    impl<T, A: Allocator> Arc<T, A> {
+        #[check(ghost)]
+        #[ensures(result == this.as_ptr_logic())]
+        #[ensures(!result.is_null_logic())]
+        fn as_ptr(this: &Arc<T, A>) -> *const T;
 
-                #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Arc`s.
-                #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
-                #[ensures(result ==> this@ == other@)]
-                fn ptr_eq(this: &Arc<T, A>, other: &Arc<T, A>) -> bool;
-            }
+        #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Arc`s.
+        #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
+        #[ensures(result ==> this@ == other@)]
+        fn ptr_eq(this: &Arc<T, A>, other: &Arc<T, A>) -> bool;
+    }
 
-            impl<T, A: Allocator> AsRef for Arc<T, A> {
-                #[check(ghost)]
-                #[ensures(*result == *(*self)@)]
-                fn as_ref(&self) -> &T;
-            }
-        }
+    impl<T, A: Allocator> AsRef<T> for Arc<T, A> {
+        #[check(ghost)]
+        #[ensures(*result == *(*self)@)]
+        fn as_ref(&self) -> &T;
     }
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Arc<T, A> {

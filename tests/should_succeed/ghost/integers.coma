@@ -25,7 +25,9 @@ module M_in_ghost_block
   let rec new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let rec ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) = any
+  let rec ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) =
+    {[@stop_split] [@expl:ghost_function requires] z <> 0}
+    any
     [ return (result: int) -> {[@stop_split] [@expl:ghost_function ensures] result = x + ComputerDivision.mod y z}
       (! return {result}) ]
   
@@ -85,7 +87,8 @@ module M_ghost_function
   use creusot.prelude.Any
   use int.Int
   
-  let rec rem_Int (self: int) (other: int) (return (x: int)) = any
+  let rec rem_Int (self: int) (other: int) (return (x: int)) = {[@stop_split] [@expl:rem requires] other <> 0}
+    any
     [ return (result: int) -> {[@stop_split] [@expl:rem ensures] result = ComputerDivision.mod self other}
       (! return {result}) ]
   
@@ -96,12 +99,14 @@ module M_ghost_function
   
   meta "select_lsinst" "all"
   
-  let rec ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) = (! bb0
+  let rec ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) =
+    {[@stop_split] [@expl:ghost_function requires] z <> 0}
+    (! bb0
     [ bb0 = s0
-      [ s0 = rem_Int {y} {z} (fun (_x: int) -> [ &_9 <- _x ] s1)
-      | s1 = add_Int {x} {_9} (fun (_x: int) -> [ &_ret <- _x ] s2)
+      [ s0 = rem_Int {y} {z} (fun (_x: int) -> [ &_11 <- _x ] s1)
+      | s1 = add_Int {x} {_11} (fun (_x: int) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
-    [ & _ret: int = Any.any_l () | & x: int = x | & y: int = y | & z: int = z | & _9: int = Any.any_l () ])
+    [ & _ret: int = Any.any_l () | & x: int = x | & y: int = y | & z: int = z | & _11: int = Any.any_l () ])
     [ return (result: int) -> {[@stop_split] [@expl:ghost_function ensures] result = x + ComputerDivision.mod y z}
       (! return {result}) ]
 end

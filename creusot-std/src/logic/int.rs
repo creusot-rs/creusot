@@ -341,6 +341,7 @@ impl Div for Int {
     type Output = Int;
     #[trusted]
     #[check(ghost)]
+    #[requires(other != 0)]
     #[ensures(result == self / other)]
     #[allow(unused_variables)]
     fn div(self, other: Int) -> Self {
@@ -352,6 +353,7 @@ impl Rem for Int {
     type Output = Int;
     #[trusted]
     #[check(ghost)]
+    #[requires(other != 0)]
     #[ensures(result == self % other)]
     #[allow(unused_variables)]
     fn rem(self, other: Int) -> Self {
@@ -395,6 +397,7 @@ impl MulAssign for Int {
 
 impl DivAssign for Int {
     #[check(ghost)]
+    #[requires(rhs != 0)]
     #[ensures(^self == *self / rhs)]
     fn div_assign(&mut self, rhs: Int) {
         *self = *self / rhs;
@@ -403,6 +406,7 @@ impl DivAssign for Int {
 
 impl RemAssign for Int {
     #[check(ghost)]
+    #[requires(rhs != 0)]
     #[ensures(^self == *self % rhs)]
     fn rem_assign(&mut self, rhs: Int) {
         *self = *self % rhs;

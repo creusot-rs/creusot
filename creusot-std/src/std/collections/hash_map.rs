@@ -22,20 +22,14 @@ impl<K: DeepModel, V, S, A: Allocator> View for HashMap<K, V, S, A> {
 }
 
 extern_spec! {
-    mod std {
-        mod collections {
-            mod hash_map {
-                impl<K: DeepModel, V, S, A: Allocator> HashMap<K, V, S, A> {
-                    #[ensures(self@ == result@)]
-                    fn iter(&self) -> Iter<'_, K, V>;
+    impl<K: DeepModel, V, S, A: Allocator> HashMap<K, V, S, A> {
+        #[ensures(self@ == result@)]
+        fn iter(&self) -> Iter<'_, K, V>;
 
-                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
-                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
-                    #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
-                    fn iter_mut(&mut self) -> IterMut<'_, K, V>;
-                }
-            }
-        }
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
+        fn iter_mut(&mut self) -> IterMut<'_, K, V>;
     }
 
     impl<K: DeepModel, V, S, A: Allocator> IntoIterator for HashMap<K, V, S, A> {

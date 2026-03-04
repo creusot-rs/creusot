@@ -83,59 +83,55 @@ impl<T, A: Allocator> Invariant for VecDeque<T, A> {
 }
 
 extern_spec! {
-    mod std {
-        mod collections {
-            impl<T> VecDeque<T> {
-                #[check(ghost)]
-                #[ensures(result@.len() == 0)]
-                fn new() -> Self;
+    impl<T> VecDeque<T> {
+        #[check(ghost)]
+        #[ensures(result@.len() == 0)]
+        fn new() -> Self;
 
-                #[check(terminates)] // can OOM
-                #[ensures(result@.len() == 0)]
-                fn with_capacity(capacity: usize) -> Self;
-            }
+        #[check(terminates)] // can OOM
+        #[ensures(result@.len() == 0)]
+        fn with_capacity(capacity: usize) -> Self;
+    }
 
-            impl<T, A: Allocator> VecDeque<T, A> {
-                #[check(ghost)]
-                #[ensures(result@ == self@.len())]
-                fn len(&self) -> usize;
+    impl<T, A: Allocator> VecDeque<T, A> {
+        #[check(ghost)]
+        #[ensures(result@ == self@.len())]
+        fn len(&self) -> usize;
 
-                #[check(ghost)]
-                #[ensures(result == (self@.len() == 0))]
-                fn is_empty(&self) -> bool;
+        #[check(ghost)]
+        #[ensures(result == (self@.len() == 0))]
+        fn is_empty(&self) -> bool;
 
-                #[check(ghost)]
-                #[ensures((^self)@.len() == 0)]
-                fn clear(&mut self);
+        #[check(ghost)]
+        #[ensures((^self)@.len() == 0)]
+        fn clear(&mut self);
 
-                #[check(ghost)]
-                #[ensures(match result {
-                    Some(t) =>
-                        (^self)@ == self@.subsequence(1, self@.len()) &&
-                        self@ == (^self)@.push_front(t),
-                    None => *self == ^self && self@.len() == 0
-                })]
-                fn pop_front(&mut self) -> Option<T>;
+        #[check(ghost)]
+        #[ensures(match result {
+            Some(t) =>
+                (^self)@ == self@.subsequence(1, self@.len()) &&
+                self@ == (^self)@.push_front(t),
+            None => *self == ^self && self@.len() == 0
+        })]
+        fn pop_front(&mut self) -> Option<T>;
 
-                #[check(ghost)]
-                #[ensures(match result {
-                    Some(t) =>
-                        (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push_back(t),
-                    None => *self == ^self && self@.len() == 0
-                })]
-                fn pop_back(&mut self) -> Option<T>;
+        #[check(ghost)]
+        #[ensures(match result {
+            Some(t) =>
+                (^self)@ == self@.subsequence(0, self@.len() - 1) &&
+                self@ == (^self)@.push_back(t),
+            None => *self == ^self && self@.len() == 0
+        })]
+        fn pop_back(&mut self) -> Option<T>;
 
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@.len() == self@.len() + 1)]
-                #[ensures((^self)@ == self@.push_front(value))]
-                fn push_front(&mut self, value: T);
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@.len() == self@.len() + 1)]
+        #[ensures((^self)@ == self@.push_front(value))]
+        fn push_front(&mut self, value: T);
 
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@ == self@.push_back(value))]
-                fn push_back(&mut self, value: T);
-            }
-        }
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@ == self@.push_back(value))]
+        fn push_back(&mut self, value: T);
     }
 
     impl<T, A: Allocator> Index<usize> for VecDeque<T, A> {

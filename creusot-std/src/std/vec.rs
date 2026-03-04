@@ -91,116 +91,117 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
 extern_spec! {
     mod alloc {
         mod vec {
-            impl<T> Vec<T> {
-                #[check(ghost)]
-                #[ensures(result@.len() == 0)]
-                fn new() -> Vec<T>;
-
-                #[check(terminates)] // can OOM
-                #[ensures(result@.len() == 0)]
-                fn with_capacity(capacity: usize) -> Vec<T>;
-            }
-            impl<T, A: Allocator> Vec<T, A> {
-                #[check(ghost)]
-                #[ensures(result@ == self@.len())]
-                fn len(&self) -> usize;
-
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@ == self@.push_back(v))]
-                fn push(&mut self, v: T);
-
-                #[check(ghost)]
-                #[ensures(match result {
-                    Some(t) =>
-                        (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                        self@ == (^self)@.push_back(t),
-                    None => *self == ^self && self@.len() == 0
-                })]
-                fn pop(&mut self) -> Option<T>;
-
-                #[check(ghost)]
-                #[requires(ix@ < self@.len())]
-                #[ensures(result == self[ix@])]
-                #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
-                #[ensures((^self)@.len() == self@.len() - 1)]
-                fn remove(&mut self, ix: usize) -> T;
-
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@.len() == self@.len() + 1)]
-                #[ensures(forall<i> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
-                #[ensures((^self)[index@] == element)]
-                #[ensures(forall<i> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
-                fn insert(&mut self, index: usize, element: T);
-
-                #[check(ghost)]
-                #[ensures(result@ >= self@.len())]
-                fn capacity(&self) -> usize;
-
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@ == self@)]
-                fn reserve(&mut self, additional: usize);
-
-                #[check(terminates)] // can OOM
-                #[ensures((^self)@ == self@)]
-                fn reserve_exact(&mut self, additional: usize);
-
-                #[check(ghost)]
-                #[ensures((^self)@ == self@)]
-                fn shrink_to_fit(&mut self);
-
-                #[check(ghost)]
-                #[ensures((^self)@ == self@)]
-                fn shrink_to(&mut self, min_capacity: usize);
-
-                #[check(ghost)]
-                #[ensures((^self)@.len() == 0)]
-                fn clear(&mut self);
-            }
-
-            impl<T, A: Allocator> Extend<T> for Vec<T, A> {
-                #[requires(I::into_iter.precondition((iter,)))]
-                #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
-                    inv(start_) && inv(done) && inv(prod) &&
-                    I::into_iter.postcondition((iter,), start_) &&
-                    done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
-                )]
-                fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
-            }
-
-            impl<T, I: SliceIndexSpec<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
-                #[check(ghost)]
-                #[requires(ix.in_bounds(self@))]
-                #[ensures(ix.has_value(self@, *result))]
-                #[ensures(ix.has_value((^self)@, ^result))]
-                #[ensures(ix.resolve_elswhere(self@, (^self)@))]
-                #[ensures((^self)@.len() == self@.len())]
-                fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
-            }
-
-            impl<T, I: SliceIndexSpec<[T]>, A: Allocator> Index<I> for Vec<T, A> {
-                #[check(ghost)]
-                #[requires(ix.in_bounds(self@))]
-                #[ensures(ix.has_value(self@, *result))]
-                fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
-            }
-
-            impl<T, A: Allocator> Deref for Vec<T, A> {
-                #[check(ghost)]
-                #[ensures(result@ == self@)]
-                fn deref(&self) -> &[T];
-            }
-
-            impl<T, A: Allocator> DerefMut for Vec<T, A> {
-                #[check(ghost)]
-                #[ensures(result@ == self@)]
-                #[ensures((^result)@ == (^self)@)]
-                fn deref_mut(&mut self) -> &mut [T];
-            }
-
             #[ensures(result@.len() == n@)]
             #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem)]
             fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T>;
         }
+    }
+
+    impl<T> Vec<T> {
+        #[check(ghost)]
+        #[ensures(result@.len() == 0)]
+        fn new() -> Vec<T>;
+
+        #[check(terminates)] // can OOM
+        #[ensures(result@.len() == 0)]
+        fn with_capacity(capacity: usize) -> Vec<T>;
+    }
+
+    impl<T, A: Allocator> Vec<T, A> {
+        #[check(ghost)]
+        #[ensures(result@ == self@.len())]
+        fn len(&self) -> usize;
+
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@ == self@.push_back(v))]
+        fn push(&mut self, v: T);
+
+        #[check(ghost)]
+        #[ensures(match result {
+            Some(t) =>
+                (^self)@ == self@.subsequence(0, self@.len() - 1) &&
+                self@ == (^self)@.push_back(t),
+            None => *self == ^self && self@.len() == 0
+        })]
+        fn pop(&mut self) -> Option<T>;
+
+        #[check(ghost)]
+        #[requires(ix@ < self@.len())]
+        #[ensures(result == self[ix@])]
+        #[ensures((^self)@ == self@.subsequence(0, ix@).concat(self@.subsequence(ix@ + 1, self@.len())))]
+        #[ensures((^self)@.len() == self@.len() - 1)]
+        fn remove(&mut self, ix: usize) -> T;
+
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@.len() == self@.len() + 1)]
+        #[ensures(forall<i> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
+        #[ensures((^self)[index@] == element)]
+        #[ensures(forall<i> index@ < i && i < (^self)@.len() ==> (^self)[i] == self[i - 1])]
+        fn insert(&mut self, index: usize, element: T);
+
+        #[check(ghost)]
+        #[ensures(result@ >= self@.len())]
+        fn capacity(&self) -> usize;
+
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@ == self@)]
+        fn reserve(&mut self, additional: usize);
+
+        #[check(terminates)] // can OOM
+        #[ensures((^self)@ == self@)]
+        fn reserve_exact(&mut self, additional: usize);
+
+        #[check(ghost)]
+        #[ensures((^self)@ == self@)]
+        fn shrink_to_fit(&mut self);
+
+        #[check(ghost)]
+        #[ensures((^self)@ == self@)]
+        fn shrink_to(&mut self, min_capacity: usize);
+
+        #[check(ghost)]
+        #[ensures((^self)@.len() == 0)]
+        fn clear(&mut self);
+    }
+
+    impl<T, A: Allocator> Extend<T> for Vec<T, A> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
+            inv(start_) && inv(done) && inv(prod) &&
+            I::into_iter.postcondition((iter,), start_) &&
+            done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
+        )]
+        fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
+    }
+
+    impl<T, I: SliceIndexSpec<[T]>, A: Allocator> IndexMut<I> for Vec<T, A> {
+        #[check(ghost)]
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        #[ensures(ix.has_value((^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (^self)@))]
+        #[ensures((^self)@.len() == self@.len())]
+        fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
+    }
+
+    impl<T, I: SliceIndexSpec<[T]>, A: Allocator> Index<I> for Vec<T, A> {
+        #[check(ghost)]
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
+    }
+
+    impl<T, A: Allocator> Deref for Vec<T, A> {
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        fn deref(&self) -> &[T];
+    }
+
+    impl<T, A: Allocator> DerefMut for Vec<T, A> {
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        #[ensures((^result)@ == (^self)@)]
+        fn deref_mut(&mut self) -> &mut [T];
     }
 
     impl<T, A: Allocator> IntoIterator for Vec<T, A> {

@@ -649,8 +649,13 @@ fn flatten(
             }
         }
         ExternSpec::Impl(impl_) => {
-            if prefix.path.leading_colon.is_none() {
-                prefix.path.leading_colon = Some(Default::default());
+            // `impl $ty { fn f }`            --> `<$ty>::f` (path = `::f`)
+            // `impl $ty for $trait { fn f }` --> `<$ty as $trait>::f` (path = `$trait::f`)
+            if prefix.path.segments.len() != 0 {
+                return Err(Error::new(
+                    impl_.brace_token.span.join(),
+                    "extern_spec no longer supports impl inside mod. Suggestion: move the impl out of the mod.",
+                ));
             }
             let mut ty = impl_.self_ty;
             while let Type::Group(TypeGroup { elem, .. }) | Type::Paren(TypeParen { elem, .. }) =
@@ -658,32 +663,23 @@ fn flatten(
             {
                 ty = elem
             }
-            if prefix.path.segments.is_empty() {
-                prefix.qself = Some(QSelf {
-                    lt_token: Default::default(),
-                    ty: ty.clone(),
-                    position: 0,
-                    as_token: None,
-                    gt_token: Default::default(),
-                });
-            } else if let Type::Path(ty_path) = &*ty
-                && ty_path.path.segments.len() == 1
-            {
-                let mut segment = ty_path.path.segments[0].clone();
-                if let PathArguments::AngleBracketed(arg) = &mut segment.arguments {
-                    arg.colon2_token = Some(Default::default());
-                }
-
-                prefix.path.segments.push(segment);
-            } else {
-                return Err(Error::new(impl_.brace_token.span.join(), "unsupported form of impl"));
-            }
-
             item_name.add_generics(&impl_.generics);
             if let Some((trait_, _)) = &impl_.trait_ {
                 item_name.add_path(trait_);
+                prefix.path = trait_.clone();
+            } else {
+                prefix.path =
+                    Path { leading_colon: Some(Default::default()), segments: Default::default() };
             }
             item_name.add_type(&ty);
+            // Write `$ty` in prefix.qself
+            prefix.qself = Some(QSelf {
+                lt_token: Default::default(),
+                ty: ty.clone(),
+                position: prefix.path.segments.len(),
+                as_token: None,
+                gt_token: Default::default(),
+            });
             for item in impl_.items {
                 flatten(
                     ExternSpec::Fn(item),

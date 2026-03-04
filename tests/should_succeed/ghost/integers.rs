@@ -17,6 +17,7 @@ pub fn in_ghost_block() {
 }
 
 #[check(ghost)]
+#[requires(z != 0)]
 #[ensures(result == x + y % z)]
 pub fn ghost_function(x: Int, y: Int, z: Int) -> Int {
     x + y % z
