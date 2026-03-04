@@ -54,7 +54,7 @@ macro_rules! mach_int {
             #[logic]
             #[builtin(concat!($ty_nm, ".add"))]
             #[allow(unused_variables)]
-            fn add(self, other: Self) -> Self {
+            fn add_logic(self, other: Self) -> Self {
                 dead
             }
         }
@@ -64,7 +64,7 @@ macro_rules! mach_int {
             #[logic]
             #[builtin(concat!($ty_nm, ".sub"))]
             #[allow(unused_variables)]
-            fn sub(self, other: Self) -> Self {
+            fn sub_logic(self, other: Self) -> Self {
                 dead
             }
         }
@@ -74,7 +74,7 @@ macro_rules! mach_int {
             #[logic]
             #[builtin(concat!($ty_nm, ".mul"))]
             #[allow(unused_variables)]
-            fn mul(self, other: Self) -> Self {
+            fn mul_logic(self, other: Self) -> Self {
                 dead
             }
         }
@@ -83,7 +83,7 @@ macro_rules! mach_int {
             type Output = Self;
             #[logic]
             #[builtin(concat!($ty_nm, ".neg"))]
-            fn neg(self) -> Self {
+            fn neg_logic(self) -> Self {
                 dead
             }
         }

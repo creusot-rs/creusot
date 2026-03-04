@@ -160,7 +160,7 @@ impl AddLogic for Int {
     #[logic]
     #[builtin("int.Int.(+)")]
     #[allow(unused_variables)]
-    fn add(self, other: Self) -> Self {
+    fn add_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -170,7 +170,7 @@ impl SubLogic for Int {
     #[logic]
     #[builtin("int.Int.(-)")]
     #[allow(unused_variables)]
-    fn sub(self, other: Self) -> Self {
+    fn sub_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -180,7 +180,7 @@ impl MulLogic for Int {
     #[logic]
     #[builtin("int.Int.(*)")]
     #[allow(unused_variables)]
-    fn mul(self, other: Self) -> Self {
+    fn mul_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -190,7 +190,7 @@ impl DivLogic for Int {
     #[logic]
     #[builtin("int.ComputerDivision.div")]
     #[allow(unused_variables)]
-    fn div(self, other: Self) -> Self {
+    fn div_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -200,7 +200,7 @@ impl RemLogic for Int {
     #[logic]
     #[builtin("int.ComputerDivision.mod")]
     #[allow(unused_variables)]
-    fn rem(self, other: Self) -> Self {
+    fn rem_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -209,7 +209,7 @@ impl NegLogic for Int {
     type Output = Self;
     #[logic]
     #[builtin("int.Int.(-_)")]
-    fn neg(self) -> Self {
+    fn neg_logic(self) -> Self {
         dead
     }
 }
@@ -455,7 +455,7 @@ impl AddLogic for Nat {
     type Output = Self;
     #[logic]
     #[ensures(result.to_int() == self.to_int() + other.to_int())]
-    fn add(self, other: Self) -> Self {
+    fn add_logic(self, other: Self) -> Self {
         Self::new(self.to_int() + other.to_int())
     }
 }
@@ -464,7 +464,7 @@ impl MulLogic for Nat {
     type Output = Self;
     #[logic]
     #[ensures(result.to_int() == self.to_int() * other.to_int())]
-    fn mul(self, other: Self) -> Self {
+    fn mul_logic(self, other: Self) -> Self {
         Self::new(self.to_int() * other.to_int())
     }
 }

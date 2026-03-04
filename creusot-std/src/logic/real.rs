@@ -73,7 +73,7 @@ impl AddLogic for Real {
     #[logic]
     #[builtin("real.Real.(+)")]
     #[allow(unused_variables)]
-    fn add(self, other: Self) -> Self {
+    fn add_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -83,7 +83,7 @@ impl SubLogic for Real {
     #[logic]
     #[builtin("real.Real.(-)")]
     #[allow(unused_variables)]
-    fn sub(self, other: Self) -> Self {
+    fn sub_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -93,7 +93,7 @@ impl MulLogic for Real {
     #[logic]
     #[builtin("real.Real.(*)")]
     #[allow(unused_variables)]
-    fn mul(self, other: Self) -> Self {
+    fn mul_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -103,7 +103,7 @@ impl DivLogic for Real {
     #[logic]
     #[builtin("real.Real.(/)")]
     #[allow(unused_variables)]
-    fn div(self, other: Self) -> Self {
+    fn div_logic(self, other: Self) -> Self {
         dead
     }
 }
@@ -112,7 +112,7 @@ impl NegLogic for Real {
     type Output = Self;
     #[logic]
     #[builtin("real.Real.(-_)")]
-    fn neg(self) -> Self {
+    fn neg_logic(self) -> Self {
         dead
     }
 }
@@ -197,7 +197,7 @@ impl AddLogic for PositiveReal {
     type Output = Self;
     #[logic]
     #[ensures(result.to_real() == self.to_real() + other.to_real())]
-    fn add(self, other: Self) -> Self {
+    fn add_logic(self, other: Self) -> Self {
         Self::new(self.to_real() + other.to_real())
     }
 }
@@ -206,7 +206,7 @@ impl MulLogic for PositiveReal {
     type Output = Self;
     #[logic]
     #[ensures(result.to_real() == self.to_real() * other.to_real())]
-    fn mul(self, other: Self) -> Self {
+    fn mul_logic(self, other: Self) -> Self {
         Self::new(self.to_real() * other.to_real())
     }
 }
@@ -215,7 +215,7 @@ impl DivLogic for PositiveReal {
     type Output = Self;
     #[logic]
     #[ensures(result.to_real() == self.to_real() / other.to_real())]
-    fn div(self, other: Self) -> Self {
+    fn div_logic(self, other: Self) -> Self {
         Self::new(self.to_real() / other.to_real())
     }
 }
