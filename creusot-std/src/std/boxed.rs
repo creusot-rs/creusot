@@ -50,44 +50,42 @@ impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
 }
 
 extern_spec! {
-    mod alloc {
-        mod boxed {
-            impl<T> Box<T> {
-                #[check(ghost)]
-                #[ensures(*result == val)]
-                fn new(val: T) -> Self;
-            }
-
-            impl<T: ?Sized> Box<T> {
-                // Postulate `check(ghost)`.
-                // It is used in a `#[trusted]` primitive in `ptr`.
-                #[check(ghost)]
-                #[requires(false)]
-                unsafe fn from_raw(raw: *mut T) -> Box<T>;
-
-                #[check(ghost)]
-                fn into_raw(self) -> *const T;
-            }
-
-            impl<T, A: Allocator> Box<T, A> {
-                #[check(ghost)]
-                #[ensures(**self == *result)]
-                #[ensures(*^self == ^result)]
-                fn as_mut(&mut self) -> &mut T;
-
-                #[check(ghost)]
-                #[ensures(**self == *result)]
-                fn as_ref(&self) -> &T;
-
-                #[check(ghost)]
-                #[ensures(*result == *b)]
-                fn leak<'a>(b: Box<T, A>) -> &'a mut T
-                where
-                    A: 'a;
-            }
-        }
+    impl<T> Box<T> {
+        #[check(ghost)]
+        #[ensures(*result == val)]
+        fn new(val: T) -> Self;
     }
 
+    impl<T: ?Sized> Box<T> {
+        // Postulate `check(ghost)`.
+        // It is used in a `#[trusted]` primitive in `ptr`.
+        #[check(ghost)]
+        #[requires(false)]
+        unsafe fn from_raw(raw: *mut T) -> Box<T>;
+
+        #[check(ghost)]
+        fn into_raw(self) -> *const T;
+    }
+
+    impl<T, A: Allocator> Box<T, A> {
+        #[check(ghost)]
+        #[ensures(**self == *result)]
+        #[ensures(*^self == ^result)]
+        fn as_mut(&mut self) -> &mut T;
+
+        #[check(ghost)]
+        #[ensures(**self == *result)]
+        fn as_ref(&self) -> &T;
+
+        #[check(ghost)]
+        #[ensures(*result == *b)]
+        fn leak<'a>(b: Box<T, A>) -> &'a mut T
+        where
+            A: 'a;
+    }
+}
+
+extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
         #[ensures(T::clone.postcondition((&**self,), *result))]
         fn clone(&self) -> Box<T, A>;

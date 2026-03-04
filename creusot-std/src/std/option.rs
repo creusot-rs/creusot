@@ -44,573 +44,569 @@ extern_spec! {
         }
     }
 
-    mod core {
-        mod option {
-            impl<T> Option<T> {
-                #[check(ghost)]
-                #[erasure]
-                #[ensures(result == (*self != None))]
-                fn is_some(&self) -> bool {
-                    match *self {
-                        Some(_) => true,
-                        None => false,
-                    }
-                }
-
-                #[erasure]
-                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
-                #[ensures(match self {
-                    None => result == false,
-                    Some(t) => f.postcondition_once((t,), result),
-                })]
-                fn is_some_and(self, f: impl FnOnce(T) -> bool + Destruct) -> bool {
-                    match self {
-                        None => false,
-                        Some(t) => f(t),
-                    }
-                }
-
-                #[check(ghost)]
-                #[erasure]
-                #[ensures(result == (*self == None))]
-                fn is_none(&self) -> bool {
-                    !self.is_some()
-                }
-
-                #[check(ghost)]
-                #[erasure]
-                #[ensures(*self == None ==> result == None)]
-                #[ensures(
-                    *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
-                )]
-                fn as_ref(&self) -> Option<&T> {
-                    match *self {
-                        Some(ref t) => Some(t),
-                        None => None,
-                    }
-                }
-
-                #[check(ghost)]
-                #[erasure]
-                #[ensures(*self == None ==> result == None && ^self == None)]
-                #[ensures(
-                    *self == None
-                    || exists<r: &mut T> result == Some(r) && *self == Some(*r) && ^self == Some(^r)
-                )]
-                fn as_mut(&mut self) -> Option<&mut T> {
-                    match *self {
-                        Some(ref mut t) => Some(t),
-                        None => None,
-                    }
-                }
-
-                // FIXME: specify those once we have a specification for `Pin`
-                // const fn as_pin_ref(self: Pin<&Option<T>>) -> Option<Pin<&T>>;
-                // const fn as_pin_mut(self: Pin<&mut Option<T>>) -> Option<Pin<&mut T>>;
-
-                #[check(ghost)]
-                #[ensures(match *self {
-                    None => result@.len() == 0,
-                    Some(t) => result@.len() == 1 && result@[0] == t
-                })]
-                fn as_slice(&self) -> &[T] {
-                    match self {
-                        None => &[],
-                        Some(t) => core::slice::from_ref(t),
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(match *self {
-                    None => result@.len() == 0,
-                    Some(_) => exists<b:&mut T>
-                        *self == Some(*b) && ^self == Some(^b) &&
-                        (*result)@[0] == *b && (^result)@[0] == ^b &&
-                        (*result)@.len() == 1 && (^result)@.len() == 1,
-                })]
-                fn as_mut_slice(&mut self) -> &mut [T] {
-                    match self {
-                        None => &mut [],
-                        Some(t) => core::slice::from_mut(t),
-                    }
-                }
-
-                #[check(ghost)]
-                #[requires(self != None)]
-                #[ensures(Some(result) == self)]
-                fn expect(self, msg: &str) -> T {
-                    match self {
-                        None => panic!(),
-                        Some(t) => t,
-                    }
-                }
-
-                #[check(ghost)]
-                #[requires(self != None)]
-                #[ensures(Some(result) == self)]
-                fn unwrap(self) -> T {
-                    match self {
-                        None => panic!(),
-                        Some(t) => t,
-                    }
-                }
-
-                #[check(ghost)]
-                #[erasure]
-                #[ensures(self == None ==> result == default)]
-                #[ensures(self == None || (self == Some(result) && resolve(default)))]
-                fn unwrap_or(self, default: T) -> T {
-                    match self {
-                        Some(t) => t,
-                        None => default,
-                    }
-                }
-
-                #[erasure]
-                #[requires(self == None ==> f.precondition(()))]
-                #[ensures(match self {
-                    None => f.postcondition_once((), result),
-                    Some(t) => result == t
-                })]
-                fn unwrap_or_else<F>(self, f: F) -> T
-                where
-                    F: FnOnce() -> T {
-                    match self {
-                        Some(t) => t,
-                        None => f(),
-                    }
-                }
-
-                #[erasure]
-                #[ensures(self == None ==> T::default.postcondition((), result))]
-                #[ensures(self == None || self == Some(result))]
-                fn unwrap_or_default(self) -> T
-                where
-                    T: Default {
-                    match self {
-                        Some(t) => t,
-                        None => T::default(),
-                    }
-                }
-
-                #[check(ghost)]
-                #[requires(self != None)]
-                #[ensures(Some(result) == self)]
-                unsafe fn unwrap_unchecked(self) -> T {
-                    match self {
-                        None => panic!(),
-                        Some(t) => t,
-                    }
-                }
-
-                #[erasure]
-                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
-                #[ensures(match self {
-                    None => result == None,
-                    Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
-                })]
-                fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Option<U> {
-                    match self {
-                        Some(t) => Some(f(t)),
-                        None => None,
-                    }
-                }
-
-                #[requires(match self { None => true, Some(t) => f.precondition((&t,)) })]
-                #[ensures(result == self)]
-                #[ensures(match self {
-                    None => true,
-                    Some(t) => f.postcondition_once((&t,), ()),
-                })]
-                fn inspect<F: FnOnce(&T)>(self, f: F) -> Option<T> {
-                    match self {
-                        None => None,
-                        Some(t) => { f(&t); Some(t) }
-                    }
-                }
-
-                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
-                #[ensures(match self {
-                    None => result == default,
-                    Some(t) => f.postcondition_once((t,), result)
-                })]
-                fn map_or<U, F: FnOnce(T) -> U>(self, default: U, f: F) -> U {
-                    match self {
-                        None => default,
-                        Some(t) => f(t),
-                    }
-                }
-
-                #[requires(match self {
-                    None => default.precondition(()),
-                    Some(t) => f.precondition((t,)),
-                })]
-                #[ensures(match self {
-                    None => default.postcondition_once((), result),
-                    Some(t) => f.postcondition_once((t,), result),
-                })]
-                fn map_or_else<U, D: FnOnce() -> U, F: FnOnce(T) -> U>(self, default: D, f: F) -> U {
-                    match self {
-                        None => default(),
-                        Some(t) => f(t),
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(match self {
-                    None => result == Err(err),
-                    Some(t) => result == Ok(t) && resolve(err),
-                })]
-                fn ok_or<E>(self, err: E) -> Result<T, E> {
-                    match self {
-                        None => Err(err),
-                        Some(t) => Ok(t),
-                    }
-                }
-
-                #[requires(self == None ==> err.precondition(()))]
-                #[ensures(match self {
-                    None => exists<r> result == Err(r) && err.postcondition_once((), r),
-                    Some(t) => result == Ok(t),
-                })]
-                fn ok_or_else<E, F: FnOnce() -> E>(self, err: F) -> Result<T, E> {
-                    match self {
-                        None => Err(err()),
-                        Some(t) => Ok(t),
-                    }
-                }
-
-                #[requires(match self {
-                    None => true,
-                    Some(x) => T::deref.precondition((x,)),
-                })]
-                #[ensures(match (self, result) {
-                    (None, None) => true,
-                    (Some(x), Some(r)) => T::deref.postcondition((x,), r),
-                    _ => false,
-                })]
-                fn as_deref(&self) -> Option<&<T as ::core::ops::Deref>::Target>
-                    where T: ::core::ops::Deref,
-                {
-                    match self {
-                        Some(x) => Some(&*x),
-                        None => None,
-                    }
-                }
-
-                #[requires(match *self {
-                    None => true,
-                    Some(cur) => forall<bor: &mut T> *bor == cur ==> T::deref_mut.precondition((bor,)),
-                })]
-                #[ensures(match (*self, ^self, result) {
-                    (None, None, None) => true,
-                    (Some(cur), Some(fin), Some(r)) => exists<bor: &mut T> *bor == cur && ^bor == fin && T::deref_mut.postcondition((bor,), r),
-                    _ => false,
-                })]
-                fn as_deref_mut(&mut self) -> Option<&mut<T as ::core::ops::Deref>::Target>
-                    where T: ::core::ops::DerefMut,
-                {
-                    match self {
-                        Some(x) => Some(&mut *x),
-                        None => None,
-                    }
-                }
-
-                #[ensures(match *self {
-                    None => exists<it: &mut Iter<'_, T>> it.completed() && *it == result,
-                    Some(x) => exists<s: Seq<&T>, it: &mut Iter<'_, T>> {
-                        it.completed() && s.len() == 1 && *s[0] == x && result.produces(s, *it)
-                    }
-                })]
-                fn iter(&self) -> Iter<'_, T>;
-
-                #[ensures(match (*self, ^self) {
-                    (None, None) => exists<it: &mut IterMut<'_, T>> it.completed() && *it == result,
-                    (Some(cur), Some(fin)) => exists<s: Seq<&mut T>, it: &mut IterMut<'_, T>> {
-                        it.completed() && s.len() == 1 && *s[0] == cur && ^s[0] == fin && result.produces(s, *it)
-                    },
-                    _ => false,
-                })]
-                fn iter_mut(&mut self) -> IterMut<'_, T>;
-
-
-                #[check(ghost)]
-                #[ensures(self == None ==> result == None && resolve(optb))]
-                #[ensures(self == None || (result == optb && resolve(self)))]
-                fn and<U>(self, optb: Option<U>) -> Option<U> {
-                    match self {
-                        None => None,
-                        Some(_) => optb,
-                    }
-                }
-
-                #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
-                #[ensures(match self {
-                    None => result == None,
-                    Some(t) => f.postcondition_once((t,), result),
-                })]
-                fn and_then<U, F: FnOnce(T) -> Option<U>>(self, f: F) -> Option<U> {
-                    match self {
-                        None => None,
-                        Some(t) => f(t),
-                    }
-                }
-
-                #[requires(match self { None => true, Some(t) => predicate.precondition((&t,)) })]
-                #[ensures(match self {
-                    None => result == None,
-                    Some(t) => match result {
-                        None => predicate.postcondition_once((&t,), false) && resolve(t),
-                        Some(r) => predicate.postcondition_once((&t,), true) && r == t,
-                    },
-                })]
-                fn filter<P: FnOnce(&T) -> bool>(self, predicate: P) -> Option<T> {
-                    match self {
-                        None => None,
-                        Some(t) => if predicate(&t) { Some(t) } else { None }
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(self == None ==> result == optb)]
-                #[ensures(self == None || (result == self && resolve(optb)))]
-                fn or(self, optb: Option<T>) -> Option<T> {
-                    match self {
-                        None => optb,
-                        Some(t) => Some(t),
-                    }
-                }
-
-                #[requires(self == None ==> f.precondition(()))]
-                #[ensures(match self {
-                    None => f.postcondition_once((), result),
-                    Some(t) => result == Some(t),
-                })]
-                fn or_else<F: FnOnce() -> Option<T>>(self, f: F) -> Option<T> {
-                    match self {
-                        None => f(),
-                        Some(t) => Some(t),
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(match (self, optb) {
-                    (None, None)         => result == None,
-                    (Some(t1), Some(t2)) => result == None && resolve(t1) && resolve(t2),
-                    (Some(t), None)      => result == Some(t),
-                    (None, Some(t))      => result == Some(t),
-                })]
-                fn xor(self, optb: Option<T>) -> Option<T> {
-                    match (self, optb) {
-                        (Some(t), None) | (None, Some(t)) => Some(t),
-                        _ => None,
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(match *self { Some(t) => resolve(t), None => true })]
-                #[ensures(*result == value && ^self == Some(^result))]
-                fn insert(&mut self, value: T) -> &mut T {
-                    *self = Some(value);
-                    match self {
-                        None => unreachable!(),
-                        Some(v) => v,
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(match *self {
-                    None => *result == value && ^self == Some(^result),
-                    Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(value),
-                })]
-                fn get_or_insert(&mut self, value: T) -> &mut T {
-                    match self {
-                        None => *self = Some(value),
-                        Some(_) => {}
-                    }
-                    match self {
-                        None => unreachable!(),
-                        Some(v) => v,
-                    }
-                }
-
-                #[requires(match self {
-                    None => T::default.precondition(()),
-                    Some(_) => true,
-                })]
-                #[ensures(match *self {
-                    None => T::default.postcondition((), *result) && ^self == Some(^result),
-                    Some(_) => *self == Some(*result) && ^self == Some(^result),
-                })]
-                fn get_or_insert_default(&mut self) -> &mut T
-                    where T: Default,
-                {
-                    self.get_or_insert(T::default())
-                }
-
-                #[requires(*self == None ==> f.precondition(()))]
-                #[ensures(match *self {
-                    None => f.postcondition_once((), *result) && ^self == Some(^result),
-                    Some(_) => *self == Some(*result) && ^self == Some(^result),
-                })]
-                fn get_or_insert_with<F: FnOnce() -> T>(&mut self, f: F) -> &mut T {
-                    match self {
-                        None => { *self = Some(f()); self.as_mut().unwrap() }
-                        Some(t) => t,
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(result == *self && ^self == None)]
-                fn take(&mut self) -> Option<T> {
-                    core::mem::replace(self, None)
-                }
-
-                #[requires(match *self {
-                    None => true,
-                    Some(t) => forall<b:&mut T> inv(b) && *b == t ==> predicate.precondition((b,)),
-                })]
-                #[ensures(match *self {
-                    None => result == None && ^self == None,
-                    Some(cur) =>
-                        exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res) &&
-                            if res {
-                                ^self == None && result == Some(^b)
-                            } else {
-                                ^self == Some(^b) && result == None
-                            }
-                })]
-                fn take_if<P: FnOnce(&mut T) -> bool>(&mut self, predicate: P) -> Option<T> {
-                    match self {
-                        None => None,
-                        Some(t) => if predicate(t) { self.take() } else { None },
-                    }
-                }
-
-                #[check(ghost)]
-                #[ensures(result == *self && ^self == Some(value))]
-                fn replace(&mut self, value: T) -> Option<T> {
-                    core::mem::replace(self, Some(value))
-                }
-
-                #[check(ghost)]
-                #[ensures(match (self, other) {
-                    (None, _)          => result == None && resolve(other),
-                    (_, None)          => result == None && resolve(self),
-                    (Some(t), Some(u)) => result == Some((t, u)),
-                })]
-                fn zip<U>(self, other: Option<U>) -> Option<(T, U)> {
-                    match (self, other) {
-                        (Some(t), Some(u)) => Some((t, u)),
-                        _ => None,
-                    }
-                }
+    impl<T> Option<T> {
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == (*self != None))]
+        fn is_some(&self) -> bool {
+            match *self {
+                Some(_) => true,
+                None => false,
             }
+        }
 
-            impl<T, U> Option<(T, U)> {
-                #[check(ghost)]
-                #[ensures(match self {
-                    None => result == (None, None),
-                    Some((t, u)) => result == (Some(t), Some(u)),
-                })]
-                fn unzip(self) -> (Option<T>, Option<U>) {
-                    match self {
-                        Some((t, u)) => (Some(t), Some(u)),
-                        None => (None, None),
-                    }
-                }
+        #[erasure]
+        #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
+        #[ensures(match self {
+            None => result == false,
+            Some(t) => f.postcondition_once((t,), result),
+        })]
+        fn is_some_and(self, f: impl FnOnce(T) -> bool + Destruct) -> bool {
+            match self {
+                None => false,
+                Some(t) => f(t),
             }
+        }
 
-            impl<T> Option<&T> {
-                #[check(ghost)]
-                #[ensures(match self {
-                    None => result == None,
-                    Some(s) => result == Some(*s)
-                })]
-                fn copied(self) -> Option<T>
-                where
-                    T: Copy
-                {
-                    match self {
-                        None => None,
-                        Some(t) => Some(*t),
-                    }
-                }
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == (*self == None))]
+        fn is_none(&self) -> bool {
+            !self.is_some()
+        }
 
-                #[ensures(match (self, result) {
-                    (None, None) => true,
-                    (Some(s), Some(r)) =>T::clone.postcondition((s,), r),
-                    _ => false
-                })]
-                fn cloned(self) -> Option<T>
-                where
-                    T: Clone
-                {
-                    match self {
-                        None => None,
-                        Some(t) => Some(t.clone()),
-                    }
-                }
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(*self == None ==> result == None)]
+        #[ensures(
+            *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
+        )]
+        fn as_ref(&self) -> Option<&T> {
+            match *self {
+                Some(ref t) => Some(t),
+                None => None,
             }
+        }
 
-            impl<T> Option<&mut T> {
-                #[check(ghost)]
-                #[ensures(match self {
-                    None => result == None,
-                    Some(s) => result == Some(*s) && ^s == *s
-                })]
-                fn copied(self) -> Option<T>
-                where
-                    T: Copy
-                {
-                    match self {
-                        None => None,
-                        Some(t) => Some(*t),
-                    }
-                }
-
-                #[ensures(match (self, result) {
-                    (None, None) => true,
-                    (Some(s), Some(r)) => T::clone.postcondition((s,), r) && ^s == *s,
-                    _ => false
-                })]
-                fn cloned(self) -> Option<T>
-                where
-                    T: Clone
-                {
-                    match self {
-                        None => None,
-                        Some(t) => Some(t.clone()),
-                    }
-                }
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(*self == None ==> result == None && ^self == None)]
+        #[ensures(
+            *self == None
+            || exists<r: &mut T> result == Some(r) && *self == Some(*r) && ^self == Some(^r)
+        )]
+        fn as_mut(&mut self) -> Option<&mut T> {
+            match *self {
+                Some(ref mut t) => Some(t),
+                None => None,
             }
+        }
 
-            impl<T, E> Option<Result<T, E>> {
-                #[check(ghost)]
-                #[ensures(match self {
-                    None => result == Ok(None),
-                    Some(Ok(ok)) => result == Ok(Some(ok)),
-                    Some(Err(err)) => result == Err(err),
-                })]
-                fn transpose(self) -> Result<Option<T>, E> {
-                    match self {
-                        None => Ok(None),
-                        Some(Ok(ok)) => Ok(Some(ok)),
-                        Some(Err(err)) => Err(err),
-                    }
-                }
+        // FIXME: specify those once we have a specification for `Pin`
+        // const fn as_pin_ref(self: Pin<&Option<T>>) -> Option<Pin<&T>>;
+        // const fn as_pin_mut(self: Pin<&mut Option<T>>) -> Option<Pin<&mut T>>;
+
+        #[check(ghost)]
+        #[ensures(match *self {
+            None => result@.len() == 0,
+            Some(t) => result@.len() == 1 && result@[0] == t
+        })]
+        fn as_slice(&self) -> &[T] {
+            match self {
+                None => &[],
+                Some(t) => core::slice::from_ref(t),
             }
+        }
 
-            impl<T> Option<Option<T>> {
-                #[check(ghost)]
-                #[ensures(self == None ==> result == None)]
-                #[ensures(self == None || self == Some(result))]
-                fn flatten(self) -> Option<T> {
-                    match self {
-                        None => None,
-                        Some(opt) => opt,
+        #[check(ghost)]
+        #[ensures(match *self {
+            None => result@.len() == 0,
+            Some(_) => exists<b:&mut T>
+                *self == Some(*b) && ^self == Some(^b) &&
+                (*result)@[0] == *b && (^result)@[0] == ^b &&
+                (*result)@.len() == 1 && (^result)@.len() == 1,
+        })]
+        fn as_mut_slice(&mut self) -> &mut [T] {
+            match self {
+                None => &mut [],
+                Some(t) => core::slice::from_mut(t),
+            }
+        }
+
+        #[check(ghost)]
+        #[requires(self != None)]
+        #[ensures(Some(result) == self)]
+        fn expect(self, msg: &str) -> T {
+            match self {
+                None => panic!(),
+                Some(t) => t,
+            }
+        }
+
+        #[check(ghost)]
+        #[requires(self != None)]
+        #[ensures(Some(result) == self)]
+        fn unwrap(self) -> T {
+            match self {
+                None => panic!(),
+                Some(t) => t,
+            }
+        }
+
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(self == None ==> result == default)]
+        #[ensures(self == None || (self == Some(result) && resolve(default)))]
+        fn unwrap_or(self, default: T) -> T {
+            match self {
+                Some(t) => t,
+                None => default,
+            }
+        }
+
+        #[erasure]
+        #[requires(self == None ==> f.precondition(()))]
+        #[ensures(match self {
+            None => f.postcondition_once((), result),
+            Some(t) => result == t
+        })]
+        fn unwrap_or_else<F>(self, f: F) -> T
+        where
+            F: FnOnce() -> T {
+            match self {
+                Some(t) => t,
+                None => f(),
+            }
+        }
+
+        #[erasure]
+        #[ensures(self == None ==> T::default.postcondition((), result))]
+        #[ensures(self == None || self == Some(result))]
+        fn unwrap_or_default(self) -> T
+        where
+            T: Default {
+            match self {
+                Some(t) => t,
+                None => T::default(),
+            }
+        }
+
+        #[check(ghost)]
+        #[requires(self != None)]
+        #[ensures(Some(result) == self)]
+        unsafe fn unwrap_unchecked(self) -> T {
+            match self {
+                None => panic!(),
+                Some(t) => t,
+            }
+        }
+
+        #[erasure]
+        #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
+        #[ensures(match self {
+            None => result == None,
+            Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
+        })]
+        fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Option<U> {
+            match self {
+                Some(t) => Some(f(t)),
+                None => None,
+            }
+        }
+
+        #[requires(match self { None => true, Some(t) => f.precondition((&t,)) })]
+        #[ensures(result == self)]
+        #[ensures(match self {
+            None => true,
+            Some(t) => f.postcondition_once((&t,), ()),
+        })]
+        fn inspect<F: FnOnce(&T)>(self, f: F) -> Option<T> {
+            match self {
+                None => None,
+                Some(t) => { f(&t); Some(t) }
+            }
+        }
+
+        #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
+        #[ensures(match self {
+            None => result == default,
+            Some(t) => f.postcondition_once((t,), result)
+        })]
+        fn map_or<U, F: FnOnce(T) -> U>(self, default: U, f: F) -> U {
+            match self {
+                None => default,
+                Some(t) => f(t),
+            }
+        }
+
+        #[requires(match self {
+            None => default.precondition(()),
+            Some(t) => f.precondition((t,)),
+        })]
+        #[ensures(match self {
+            None => default.postcondition_once((), result),
+            Some(t) => f.postcondition_once((t,), result),
+        })]
+        fn map_or_else<U, D: FnOnce() -> U, F: FnOnce(T) -> U>(self, default: D, f: F) -> U {
+            match self {
+                None => default(),
+                Some(t) => f(t),
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(match self {
+            None => result == Err(err),
+            Some(t) => result == Ok(t) && resolve(err),
+        })]
+        fn ok_or<E>(self, err: E) -> Result<T, E> {
+            match self {
+                None => Err(err),
+                Some(t) => Ok(t),
+            }
+        }
+
+        #[requires(self == None ==> err.precondition(()))]
+        #[ensures(match self {
+            None => exists<r> result == Err(r) && err.postcondition_once((), r),
+            Some(t) => result == Ok(t),
+        })]
+        fn ok_or_else<E, F: FnOnce() -> E>(self, err: F) -> Result<T, E> {
+            match self {
+                None => Err(err()),
+                Some(t) => Ok(t),
+            }
+        }
+
+        #[requires(match self {
+            None => true,
+            Some(x) => T::deref.precondition((x,)),
+        })]
+        #[ensures(match (self, result) {
+            (None, None) => true,
+            (Some(x), Some(r)) => T::deref.postcondition((x,), r),
+            _ => false,
+        })]
+        fn as_deref(&self) -> Option<&<T as ::core::ops::Deref>::Target>
+            where T: ::core::ops::Deref,
+        {
+            match self {
+                Some(x) => Some(&*x),
+                None => None,
+            }
+        }
+
+        #[requires(match *self {
+            None => true,
+            Some(cur) => forall<bor: &mut T> *bor == cur ==> T::deref_mut.precondition((bor,)),
+        })]
+        #[ensures(match (*self, ^self, result) {
+            (None, None, None) => true,
+            (Some(cur), Some(fin), Some(r)) => exists<bor: &mut T> *bor == cur && ^bor == fin && T::deref_mut.postcondition((bor,), r),
+            _ => false,
+        })]
+        fn as_deref_mut(&mut self) -> Option<&mut<T as ::core::ops::Deref>::Target>
+            where T: ::core::ops::DerefMut,
+        {
+            match self {
+                Some(x) => Some(&mut *x),
+                None => None,
+            }
+        }
+
+        #[ensures(match *self {
+            None => exists<it: &mut Iter<'_, T>> it.completed() && *it == result,
+            Some(x) => exists<s: Seq<&T>, it: &mut Iter<'_, T>> {
+                it.completed() && s.len() == 1 && *s[0] == x && result.produces(s, *it)
+            }
+        })]
+        fn iter(&self) -> Iter<'_, T>;
+
+        #[ensures(match (*self, ^self) {
+            (None, None) => exists<it: &mut IterMut<'_, T>> it.completed() && *it == result,
+            (Some(cur), Some(fin)) => exists<s: Seq<&mut T>, it: &mut IterMut<'_, T>> {
+                it.completed() && s.len() == 1 && *s[0] == cur && ^s[0] == fin && result.produces(s, *it)
+            },
+            _ => false,
+        })]
+        fn iter_mut(&mut self) -> IterMut<'_, T>;
+
+
+        #[check(ghost)]
+        #[ensures(self == None ==> result == None && resolve(optb))]
+        #[ensures(self == None || (result == optb && resolve(self)))]
+        fn and<U>(self, optb: Option<U>) -> Option<U> {
+            match self {
+                None => None,
+                Some(_) => optb,
+            }
+        }
+
+        #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
+        #[ensures(match self {
+            None => result == None,
+            Some(t) => f.postcondition_once((t,), result),
+        })]
+        fn and_then<U, F: FnOnce(T) -> Option<U>>(self, f: F) -> Option<U> {
+            match self {
+                None => None,
+                Some(t) => f(t),
+            }
+        }
+
+        #[requires(match self { None => true, Some(t) => predicate.precondition((&t,)) })]
+        #[ensures(match self {
+            None => result == None,
+            Some(t) => match result {
+                None => predicate.postcondition_once((&t,), false) && resolve(t),
+                Some(r) => predicate.postcondition_once((&t,), true) && r == t,
+            },
+        })]
+        fn filter<P: FnOnce(&T) -> bool>(self, predicate: P) -> Option<T> {
+            match self {
+                None => None,
+                Some(t) => if predicate(&t) { Some(t) } else { None }
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(self == None ==> result == optb)]
+        #[ensures(self == None || (result == self && resolve(optb)))]
+        fn or(self, optb: Option<T>) -> Option<T> {
+            match self {
+                None => optb,
+                Some(t) => Some(t),
+            }
+        }
+
+        #[requires(self == None ==> f.precondition(()))]
+        #[ensures(match self {
+            None => f.postcondition_once((), result),
+            Some(t) => result == Some(t),
+        })]
+        fn or_else<F: FnOnce() -> Option<T>>(self, f: F) -> Option<T> {
+            match self {
+                None => f(),
+                Some(t) => Some(t),
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(match (self, optb) {
+            (None, None)         => result == None,
+            (Some(t1), Some(t2)) => result == None && resolve(t1) && resolve(t2),
+            (Some(t), None)      => result == Some(t),
+            (None, Some(t))      => result == Some(t),
+        })]
+        fn xor(self, optb: Option<T>) -> Option<T> {
+            match (self, optb) {
+                (Some(t), None) | (None, Some(t)) => Some(t),
+                _ => None,
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(match *self { Some(t) => resolve(t), None => true })]
+        #[ensures(*result == value && ^self == Some(^result))]
+        fn insert(&mut self, value: T) -> &mut T {
+            *self = Some(value);
+            match self {
+                None => unreachable!(),
+                Some(v) => v,
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(match *self {
+            None => *result == value && ^self == Some(^result),
+            Some(_) => *self == Some(*result) && ^self == Some(^result) && resolve(value),
+        })]
+        fn get_or_insert(&mut self, value: T) -> &mut T {
+            match self {
+                None => *self = Some(value),
+                Some(_) => {}
+            }
+            match self {
+                None => unreachable!(),
+                Some(v) => v,
+            }
+        }
+
+        #[requires(match self {
+            None => T::default.precondition(()),
+            Some(_) => true,
+        })]
+        #[ensures(match *self {
+            None => T::default.postcondition((), *result) && ^self == Some(^result),
+            Some(_) => *self == Some(*result) && ^self == Some(^result),
+        })]
+        fn get_or_insert_default(&mut self) -> &mut T
+            where T: Default,
+        {
+            self.get_or_insert(T::default())
+        }
+
+        #[requires(*self == None ==> f.precondition(()))]
+        #[ensures(match *self {
+            None => f.postcondition_once((), *result) && ^self == Some(^result),
+            Some(_) => *self == Some(*result) && ^self == Some(^result),
+        })]
+        fn get_or_insert_with<F: FnOnce() -> T>(&mut self, f: F) -> &mut T {
+            match self {
+                None => { *self = Some(f()); self.as_mut().unwrap() }
+                Some(t) => t,
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(result == *self && ^self == None)]
+        fn take(&mut self) -> Option<T> {
+            core::mem::replace(self, None)
+        }
+
+        #[requires(match *self {
+            None => true,
+            Some(t) => forall<b:&mut T> inv(b) && *b == t ==> predicate.precondition((b,)),
+        })]
+        #[ensures(match *self {
+            None => result == None && ^self == None,
+            Some(cur) =>
+                exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res) &&
+                    if res {
+                        ^self == None && result == Some(^b)
+                    } else {
+                        ^self == Some(^b) && result == None
                     }
-                }
+        })]
+        fn take_if<P: FnOnce(&mut T) -> bool>(&mut self, predicate: P) -> Option<T> {
+            match self {
+                None => None,
+                Some(t) => if predicate(t) { self.take() } else { None },
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(result == *self && ^self == Some(value))]
+        fn replace(&mut self, value: T) -> Option<T> {
+            core::mem::replace(self, Some(value))
+        }
+
+        #[check(ghost)]
+        #[ensures(match (self, other) {
+            (None, _)          => result == None && resolve(other),
+            (_, None)          => result == None && resolve(self),
+            (Some(t), Some(u)) => result == Some((t, u)),
+        })]
+        fn zip<U>(self, other: Option<U>) -> Option<(T, U)> {
+            match (self, other) {
+                (Some(t), Some(u)) => Some((t, u)),
+                _ => None,
+            }
+        }
+    }
+
+    impl<T, U> Option<(T, U)> {
+        #[check(ghost)]
+        #[ensures(match self {
+            None => result == (None, None),
+            Some((t, u)) => result == (Some(t), Some(u)),
+        })]
+        fn unzip(self) -> (Option<T>, Option<U>) {
+            match self {
+                Some((t, u)) => (Some(t), Some(u)),
+                None => (None, None),
+            }
+        }
+    }
+
+    impl<T> Option<&T> {
+        #[check(ghost)]
+        #[ensures(match self {
+            None => result == None,
+            Some(s) => result == Some(*s)
+        })]
+        fn copied(self) -> Option<T>
+        where
+            T: Copy
+        {
+            match self {
+                None => None,
+                Some(t) => Some(*t),
+            }
+        }
+
+        #[ensures(match (self, result) {
+            (None, None) => true,
+            (Some(s), Some(r)) =>T::clone.postcondition((s,), r),
+            _ => false
+        })]
+        fn cloned(self) -> Option<T>
+        where
+            T: Clone
+        {
+            match self {
+                None => None,
+                Some(t) => Some(t.clone()),
+            }
+        }
+    }
+
+    impl<T> Option<&mut T> {
+        #[check(ghost)]
+        #[ensures(match self {
+            None => result == None,
+            Some(s) => result == Some(*s) && ^s == *s
+        })]
+        fn copied(self) -> Option<T>
+        where
+            T: Copy
+        {
+            match self {
+                None => None,
+                Some(t) => Some(*t),
+            }
+        }
+
+        #[ensures(match (self, result) {
+            (None, None) => true,
+            (Some(s), Some(r)) => T::clone.postcondition((s,), r) && ^s == *s,
+            _ => false
+        })]
+        fn cloned(self) -> Option<T>
+        where
+            T: Clone
+        {
+            match self {
+                None => None,
+                Some(t) => Some(t.clone()),
+            }
+        }
+    }
+
+    impl<T, E> Option<Result<T, E>> {
+        #[check(ghost)]
+        #[ensures(match self {
+            None => result == Ok(None),
+            Some(Ok(ok)) => result == Ok(Some(ok)),
+            Some(Err(err)) => result == Err(err),
+        })]
+        fn transpose(self) -> Result<Option<T>, E> {
+            match self {
+                None => Ok(None),
+                Some(Ok(ok)) => Ok(Some(ok)),
+                Some(Err(err)) => Err(err),
+            }
+        }
+    }
+
+    impl<T> Option<Option<T>> {
+        #[check(ghost)]
+        #[ensures(self == None ==> result == None)]
+        #[ensures(self == None || self == Some(result))]
+        fn flatten(self) -> Option<T> {
+            match self {
+                None => None,
+                Some(opt) => opt,
             }
         }
     }

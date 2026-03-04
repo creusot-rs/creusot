@@ -47,33 +47,29 @@ impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
 }
 
 extern_spec! {
-    mod alloc {
-        mod rc {
-            impl<T> Rc<T> {
-                #[check(ghost)]
-                #[ensures(*result@ == value)]
-                fn new(value: T) -> Self;
-            }
+    impl<T> Rc<T> {
+        #[check(ghost)]
+        #[ensures(*result@ == value)]
+        fn new(value: T) -> Self;
+    }
 
-            impl<T, A: Allocator> Rc<T, A> {
-                #[check(ghost)]
-                #[ensures(result == this.as_ptr_logic())]
-                #[ensures(!result.is_null_logic())]
-                fn as_ptr(this: &Rc<T, A>) -> *const T;
+    impl<T, A: Allocator> Rc<T, A> {
+        #[check(ghost)]
+        #[ensures(result == this.as_ptr_logic())]
+        #[ensures(!result.is_null_logic())]
+        fn as_ptr(this: &Rc<T, A>) -> *const T;
 
-                #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Rc`s.
-                #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
-                #[ensures(result ==> this@ == other@)]
-                fn ptr_eq(this: &Rc<T, A>, other: &Rc<T, A>) -> bool;
-            }
+        #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Rc`s.
+        #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
+        #[ensures(result ==> this@ == other@)]
+        fn ptr_eq(this: &Rc<T, A>, other: &Rc<T, A>) -> bool;
+    }
 
 
-            impl<T, A: Allocator> AsRef for Rc<T, A> {
-                #[check(ghost)]
-                #[ensures(*result == *(*self)@)]
-                fn as_ref(&self) -> &T;
-            }
-        }
+    impl<T, A: Allocator> AsRef<T> for Rc<T, A> {
+        #[check(ghost)]
+        #[ensures(*result == *(*self)@)]
+        fn as_ref(&self) -> &T;
     }
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {

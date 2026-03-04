@@ -42,25 +42,21 @@ impl DeepModel for String {
 
 #[cfg(feature = "std")]
 extern_spec! {
-    mod std {
-        mod string {
-            impl Deref for String {
-                #[check(ghost)]
-                #[ensures(result@ == self@)]
-                fn deref(&self) -> &str;
-            }
+    impl Deref for String {
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        fn deref(&self) -> &str;
+    }
 
-            impl String {
-                #[check(ghost)]
-                #[ensures(result@ == self@.to_bytes().len())]
-                fn len(&self) -> usize;
+    impl String {
+        #[check(ghost)]
+        #[ensures(result@ == self@.to_bytes().len())]
+        fn len(&self) -> usize;
 
-                #[check(ghost)]
-                #[requires(exists<s: Seq<char>> s.to_bytes() == bytes@)]
-                #[ensures(result@.to_bytes() == bytes@)]
-                unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> String;
-            }
-        }
+        #[check(ghost)]
+        #[requires(exists<s: Seq<char>> s.to_bytes() == bytes@)]
+        #[ensures(result@.to_bytes() == bytes@)]
+        unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> String;
     }
 }
 

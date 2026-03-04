@@ -44,18 +44,14 @@ impl<T> JoinHandleExt<T> for ScopedJoinHandle<'_, T> {
 }
 
 extern_spec! {
-    mod std {
-        mod thread {
-            impl<T> JoinHandle<T> {
-                #[ensures(true)] // no spec, but you can call this if you want
-                fn is_finished(&self) -> bool;
-            }
+    impl<T> JoinHandle<T> {
+        #[ensures(true)] // no spec, but you can call this if you want
+        fn is_finished(&self) -> bool;
+    }
 
-            impl<T> ScopedJoinHandle<'_, T> {
-                #[ensures(true)] // no spec, but you can call this if you want
-                fn is_finished(&self) -> bool;
-            }
-        }
+    impl<T> ScopedJoinHandle<'_, T> {
+        #[ensures(true)] // no spec, but you can call this if you want
+        fn is_finished(&self) -> bool;
     }
 }
 

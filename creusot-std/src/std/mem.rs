@@ -62,43 +62,43 @@ extern_spec! {
             #[check(terminates)]
             #[ensures(result == align_of_logic::<T>())]
             fn align_of<T>() -> usize;
-
-            impl<T> MaybeUninit<T> {
-                #[ensures(result@ == Some(val))]
-                #[check(ghost)]
-                fn new(val: T) -> Self;
-
-                #[ensures(result@ == None)]
-                #[check(ghost)]
-                fn uninit() -> Self;
-
-                #[requires(self@ == None)] // NOTE: we could allow calling this on an initialized `MaybeUninit`, but this would leak the contents.
-                #[ensures(*result == val)]
-                #[ensures((^self)@ == Some(^result))]
-                #[check(ghost)]
-                fn write(&mut self, val: T) -> &mut T;
-
-                #[requires(self@ != None)]
-                #[ensures(self@ == Some(result))]
-                #[check(ghost)]
-                const unsafe fn assume_init(self) -> T;
-
-                #[requires(self@ != None)]
-                #[ensures((^self)@ == None)]
-                #[check(ghost)]
-                unsafe fn assume_init_drop(&mut self);
-
-                #[requires(self@ != None)]
-                #[ensures(self@ == Some(*result))]
-                #[check(ghost)]
-                const unsafe fn assume_init_ref(&self) -> &T;
-
-                #[requires(self@ != None)]
-                #[ensures((*self)@ == Some(*result) && (^self)@ == Some(^result))]
-                #[check(ghost)]
-                const unsafe fn assume_init_mut(&mut self) -> &mut T;
-            }
         }
+    }
+
+    impl<T> MaybeUninit<T> {
+        #[ensures(result@ == Some(val))]
+        #[check(ghost)]
+        fn new(val: T) -> Self;
+
+        #[ensures(result@ == None)]
+        #[check(ghost)]
+        fn uninit() -> Self;
+
+        #[requires(self@ == None)] // NOTE: we could allow calling this on an initialized `MaybeUninit`, but this would leak the contents.
+        #[ensures(*result == val)]
+        #[ensures((^self)@ == Some(^result))]
+        #[check(ghost)]
+        fn write(&mut self, val: T) -> &mut T;
+
+        #[requires(self@ != None)]
+        #[ensures(self@ == Some(result))]
+        #[check(ghost)]
+        const unsafe fn assume_init(self) -> T;
+
+        #[requires(self@ != None)]
+        #[ensures((^self)@ == None)]
+        #[check(ghost)]
+        unsafe fn assume_init_drop(&mut self);
+
+        #[requires(self@ != None)]
+        #[ensures(self@ == Some(*result))]
+        #[check(ghost)]
+        const unsafe fn assume_init_ref(&self) -> &T;
+
+        #[requires(self@ != None)]
+        #[ensures((*self)@ == Some(*result) && (^self)@ == Some(^result))]
+        #[check(ghost)]
+        const unsafe fn assume_init_mut(&mut self) -> &mut T;
     }
 }
 

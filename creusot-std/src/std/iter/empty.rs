@@ -23,13 +23,9 @@ impl<T> IteratorSpec for Empty<T> {
 }
 
 extern_spec! {
-    mod core {
-        mod iter {
-            impl<T> Iterator for Empty<T> {
-                #[check(ghost)]
-                #[ensures(result == None && self.completed())]
-                fn next(&mut self) -> Option<T>;
-            }
-        }
+    impl<T> Iterator for Empty<T> {
+        #[check(ghost)]
+        #[ensures(result == None && self.completed())]
+        fn next(&mut self) -> Option<T>;
     }
 }

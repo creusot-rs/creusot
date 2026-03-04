@@ -35,16 +35,12 @@ impl<T> IteratorSpec for Once<T> {
 }
 
 extern_spec! {
-    mod core {
-        mod iter {
-            impl<T> Iterator for Once<T> {
-                #[check(ghost)]
-                #[ensures(match result {
-                    None => self.completed(),
-                    Some(v) => (*self).produces(Seq::singleton(v), ^self)
-                })]
-                fn next(&mut self) -> Option<T>;
-            }
-        }
+    impl<T> Iterator for Once<T> {
+        #[check(ghost)]
+        #[ensures(match result {
+            None => self.completed(),
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
+        })]
+        fn next(&mut self) -> Option<T>;
     }
 }
