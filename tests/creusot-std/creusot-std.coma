@@ -6450,6 +6450,28 @@ module M_logic__int__impl_Clone_for_Int__clone (* <logic::int::Int as std::clone
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ] [ & _ret: int = Any.any_l () | & self: int = self ])
     [ return (result: int) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
 end
+module M_logic__int__impl_PartialEq_for_Int__ne (* <logic::int::Int as std::cmp::PartialEq> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  
+  let rec eq_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (self = other)} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ne_Int (self: int) (other: int) (return (x: bool)) = (! bb0
+    [ bb0 = s0
+      [ s0 = eq_Int {self} {other} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- not _6 ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: int = self | & other: int = other | & _6: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:ne ensures] result = (self <> other)} (! return {result}) ]
+end
 module M_logic__int__impl_AddAssign_for_Int__add_assign (* <logic::int::Int as std::ops::AddAssign> *)
   type namespace_other
   
@@ -71743,6 +71765,26 @@ module M_logic__id__impl_PartialEq_for_Id__ne__refines (* <logic::id::Id as std:
   
   goal refines: forall self_: t_Id. forall rhs: t_Id. forall result: bool. result <> (self_ = rhs)
           -> result = (deep_model_ref_Id self_ <> deep_model_ref_Id rhs)
+end
+module M_logic__int__impl_PartialEq_for_Int__ne__refines (* <logic::int::Int as std::cmp::PartialEq> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  function deep_model_Int [@inline:trivial] (self: int) : int = self
+  
+  meta "rewrite_def" function deep_model_Int
+  
+  function deep_model_ref_Int [@inline:trivial] (self: int) : int = deep_model_Int self
+  
+  meta "rewrite_def" function deep_model_ref_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: int. forall rhs: int. forall result: bool. result = (self_ <> rhs)
+          -> result = (deep_model_ref_Int self_ <> deep_model_ref_Int rhs)
 end
 module M_logic__int__impl_PartialEq_for_Int__eq__refines (* <logic::int::Int as std::cmp::PartialEq> *)
   type namespace_other
