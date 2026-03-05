@@ -260,6 +260,12 @@ impl PartialEq for Int {
     fn eq(&self, other: &Self) -> bool {
         panic!()
     }
+
+    #[check(ghost)]
+    #[ensures(result == (*self != *other))]
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
 }
 
 impl PartialOrd for Int {
