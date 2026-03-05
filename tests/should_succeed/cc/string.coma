@@ -118,13 +118,17 @@ module M_test_str_len
       (! return {result}) ]
 end
 module M_test_split_at
-  use creusot.prelude.Char
   use seq.Seq
+  use creusot.prelude.Char
+  use creusot.int.UInt64
   use creusot.int.UInt8
   use map.Map
-  use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
+  
+  function view_str (self: string) : Seq.seq Char.t
+  
+  type tup2_ref_str_ref_str = { f0: string; f1: string }
   
   function tail_char (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
@@ -137,15 +141,6 @@ module M_test_split_at
       else
         Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_char (tail_char self) other)
       )
-  
-  constant flat_map_singleton_char: () = ()
-  
-  axiom flat_map_singleton_char_spec:
-    forall x: Char.t, f: Map.map Char.t (Seq.seq UInt8.t). flat_map_char (Seq.singleton x) f = Map.get f x
-  
-  function view_str (self: string) : Seq.seq Char.t
-  
-  type tup2_ref_str_ref_str = { f0: string; f1: string }
   
   function to_utf8_char (self: Char.t) : Seq.seq UInt8.t
   
@@ -176,11 +171,9 @@ module M_test_split_at
     = Seq.create 2 [|(195: UInt8.t);(131: UInt8.t)|])}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_7 <- flat_map_singleton_char ] s1
-      | s1 = {[@expl:assertion] Seq.([..]) (view_str s) 0 1 = view_str s} s2
-      | s2 = split_at {s} {(2: UInt64.t)} (fun (_x: tup2_ref_str_ref_str) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: tup2_ref_str_ref_str = Any.any_l () | & s: string = s | & _7: () = Any.any_l () ])
+      [ s0 = {[@expl:assertion] Seq.([..]) (view_str s) 0 1 = view_str s} s1
+      | s1 = split_at {s} {(2: UInt64.t)} (fun (_x: tup2_ref_str_ref_str) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: tup2_ref_str_ref_str = Any.any_l () | & s: string = s ])
     [ return (result: tup2_ref_str_ref_str) -> {[@stop_split] [@expl:test_split_at ensures] view_str result.f0
         = view_str s
       /\ view_str result.f1 = (Seq.empty: Seq.seq Char.t)}

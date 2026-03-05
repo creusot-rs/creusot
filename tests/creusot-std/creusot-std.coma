@@ -27061,6 +27061,844 @@ module M_logic__seq__impl_Seq_Seq_T__flatten (* logic::seq::Seq<logic::seq::Seq<
       [@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_Seq_T self))
 
 end
+module M_logic__seq__impl_Seq_T_0__get_ghost (* logic::seq::Seq<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  let rec sub_Int (self: int) (other: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+  
+  let rec le_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result = (self <= other)} (! return {result}) ]
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let rec len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
+    {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
+    any
+    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  
+  let rec lt_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let rec as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+    {[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
+    any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:as_refs_T ensures] ([@stop_split] [@expl:as_refs result type invariant] inv_Seq_ref_T result)
+      /\ ([@stop_split] [@expl:as_refs ensures] self = result)}
+      (! return {result}) ]
+  
+  predicate resolve_ref_T [@inline:trivial] (_1: t_T) = true
+  
+  meta "rewrite_def" predicate resolve_ref_T
+  
+  let rec extract_ref_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+    {[@stop_split] [@expl:extract_ref_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_ref_T self)
+    /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:extract_ref_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+      /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+        -> resolve_ref_T (Seq.get self i))}
+      (! return {result}) ]
+  
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
+  type t_Option_T = None'0 | Some'0 t_T
+  
+  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+      Some'0 (Seq.get self ix)
+    else
+      None'0
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+    {[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_8 <- _x ] s1)
+      | s1 = le_Int {_8} {index} (fun (_x: bool) -> [ &_6 <- _x ] s2)
+      | s2 = any [ br0 -> {_6 = false} (! bb11) | br1 -> {_6} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
+      | s1 = lt_Int {index} {_15} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+      | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb6) ] ]
+    | bb6 = s0
+      [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_19 <- _x ] s1)
+      | s1 = extract_ref_T {_19} {index} (fun (_x: t_T) -> [ &_18 <- _x ] s2)
+      | s2 = [ &_ret <- Some _18 ] s3
+      | s3 = return {_ret} ]
+    | bb11 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_ref_T = Any.any_l ()
+    | & self: Seq.seq t_T = self
+    | & index: int = index
+    | & _6: bool = Any.any_l ()
+    | & _8: int = Any.any_l ()
+    | & _12: bool = Any.any_l ()
+    | & _15: int = Any.any_l ()
+    | & _18: t_T = Any.any_l ()
+    | & _19: Seq.seq t_T = Any.any_l () ])
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index with
+        | None'0 -> result = None
+        | Some'0 v -> result = Some v
+        end)}
+      (! return {result}) ]
+end
+module M_logic__seq__impl_Seq_T_0__get_mut_ghost (* logic::seq::Seq<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  let rec sub_Int (self: int) (other: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+  
+  let rec le_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result = (self <= other)} (! return {result}) ]
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let rec len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
+    {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
+    any
+    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  
+  let rec lt_Int (self: int) (other: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+  
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
+  
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_T
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_refmut_T
+  
+  predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_refmut_T
+  
+  predicate invariant_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_refmut_T
+  
+  predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_refmut_T
+  
+  let rec as_muts_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: Seq.seq (MutBorrow.t t_T))) =
+    {[@stop_split] [@expl:as_muts 'self' type invariant] inv_refmut_Seq_T self}
+    any
+    [ return (result: Seq.seq (MutBorrow.t t_T)) ->
+    {[@stop_split] [@expl:as_muts_T ensures] ([@stop_split] [@expl:as_muts result type invariant] inv_Seq_refmut_T result)
+      /\ ([@stop_split] [@expl:as_muts ensures #0] Seq.length result = Seq.length self.current)
+      /\ ([@stop_split] [@expl:as_muts ensures #1] Seq.length self.final = Seq.length self.current)
+      /\ ([@stop_split] [@expl:as_muts ensures #2] forall i: int. 0 <= i /\ i < Seq.length self.current
+          -> (Seq.get result i).current = Seq.get self.current i)
+      /\ ([@stop_split] [@expl:as_muts ensures #3] forall i: int. 0 <= i /\ i < Seq.length self.current
+        -> (Seq.get result i).final = Seq.get self.final i)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  let rec extract_refmut_T (self: Seq.seq (MutBorrow.t t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
+    {[@stop_split] [@expl:extract_refmut_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_refmut_T self)
+    /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+    any
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:extract_refmut_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+      /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+        -> resolve_refmut_T (Seq.get self i))}
+      (! return {result}) ]
+  
+  type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
+  
+  predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Seq_T
+  
+  predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_refmut_T f0
+        end
+  
+  type t_Option_T = None'0 | Some'0 t_T
+  
+  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+      Some'0 (Seq.get self ix)
+    else
+      None'0
+  
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+    {[@stop_split] [@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_13 <- _x ] s1)
+      | s1 = le_Int {_13} {index} (fun (_x: bool) -> [ &_11 <- _x ] s2)
+      | s2 = any [ br0 -> {_11 = false} (! bb10) | br1 -> {_11} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = len_ghost_T {self.current} (fun (_x: int) -> [ &_20 <- _x ] s1)
+      | s1 = lt_Int {index} {_20} (fun (_x: bool) -> [ &_17 <- _x ] s2)
+      | s2 = any [ br0 -> {_17 = false} (! bb9) | br1 -> {_17} (! bb6) ] ]
+    | bb6 = s0
+      [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_25 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+      | s1 = as_muts_T {_25} (fun (_x: Seq.seq (MutBorrow.t t_T)) -> [ &_24 <- _x ] s2)
+      | s2 = extract_refmut_T {_24} {index} (fun (_x: MutBorrow.t t_T) -> [ &_23 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_T> {_23.current} {MutBorrow.get_id _23}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_22 <- _bor ] -{inv_T _bor.final}-
+            [ &_23 <- { _23 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_T _23.current} any) ]
+      | s4 = [ &_ret <- Some _22 ] s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _23} any) ]
+      | s6 = -{resolve_refmut_T _23}- s7
+      | s7 = bb12 ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s1 = -{resolve_refmut_Seq_T self}- s2
+      | s2 = bb11 ]
+    | bb10 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s1 = -{resolve_refmut_Seq_T self}- s2
+      | s2 = bb11 ]
+    | bb11 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb12 ]
+    | bb12 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s1 = -{resolve_refmut_Seq_T self}- s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_refmut_T = Any.any_l ()
+    | & self: MutBorrow.t (Seq.seq t_T) = self
+    | & index: int = index
+    | & _11: bool = Any.any_l ()
+    | & _13: int = Any.any_l ()
+    | & _17: bool = Any.any_l ()
+    | & _20: int = Any.any_l ()
+    | & _22: MutBorrow.t t_T = Any.any_l ()
+    | & _23: MutBorrow.t t_T = Any.any_l ()
+    | & _24: Seq.seq (MutBorrow.t t_T) = Any.any_l ()
+    | & _25: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+    [ return (result: t_Option_refmut_T) ->
+    {[@stop_split] [@expl:get_mut_ghost_T ensures] ([@stop_split] [@expl:get_mut_ghost result type invariant] inv_Option_refmut_T result)
+      /\ ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
+          | None -> get_T self.current index = None'0 /\ self.current = self.final
+          | Some r -> get_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+          end)
+      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall i: int. i <> index
+          -> get_T self.current i = get_T self.final i)
+      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
+      (! return {result}) ]
+end
+module M_logic__seq__impl_Seq_T_0__extract (* logic::seq::Seq<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+    Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
+  
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_T
+  
+  type t_RangeTo_Int = { end': int }
+  
+  function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_Int) : Seq.seq t_T =
+    Seq.([..]) self 0 range.end'
+  
+  meta "rewrite_def" function index_Seq_T'0
+  
+  let rec split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+    {[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+    any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:split_off_ghost_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_T result)
+      /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final = index_Seq_T'0 self.current { end' = mid })
+      /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T self.current { start = mid })}
+      (! return {result}) ]
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_Option_T (_1: t_Option_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_T x0
+        end
+  
+  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+      Some (Seq.get self ix)
+    else
+      None
+  
+  
+  predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. resolve_Option_T (get_T self i)
+  
+  predicate resolve_Seq_T'0 (_1: Seq.seq t_T)
+  
+  axiom resolve_axiom'0: forall x: Seq.seq t_T [resolve_Seq_T'0 x]. resolve_Seq_T'0 x -> resolve_Seq_T x
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  
+  let rec pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+    any
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+        | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
+        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
+        end)}
+      (! return {result}) ]
+  
+  let rec unwrap_T (self_: t_Option_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_T self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extract_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+    {[@stop_split] [@expl:extract_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_T self)
+    /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:assertion] forall i: int. index < i /\ i < Seq.length self
+          -> Seq.get self i = Seq.get (index_Seq_T self { start = index + 1 }) (i - index - 1)}
+        s1
+      | s1 = MutBorrow.borrow_mut <Seq.seq t_T> {self}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_19 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &self <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
+      | s2 = split_off_ghost_T {_19} {index} (fun (_x: Seq.seq t_T) -> [ &_18 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
+      | s4 = -{resolve_Seq_T'0 self}- s5
+      | s5 = MutBorrow.borrow_mut <Seq.seq t_T> {_18}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_17 <- _bor ] -{inv_Seq_T _bor.final}- [ &_18 <- _bor.final ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
+      | s6 = pop_front_ghost_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s7)
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
+      | s8 = -{resolve_Seq_T'0 _18}- s9
+      | s9 = unwrap_T {_16} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
+      | s10 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: Seq.seq t_T = self
+    | & index: int = index
+    | & _16: t_Option_T = Any.any_l ()
+    | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _18: Seq.seq t_T = Any.any_l ()
+    | & _19: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:extract_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+      /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+        -> resolve_T (Seq.get self i))}
+      (! return {result}) ]
+end
+module M_logic__seq__impl_Seq_T_0__remove (* logic::seq::Seq<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
+  
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_T
+  
+  type t_RangeTo_Int = { end': int }
+  
+  function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_Int) : Seq.seq t_T =
+    Seq.([..]) self 0 range.end'
+  
+  meta "rewrite_def" function index_Seq_T
+  
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+    Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_T'0
+  
+  let rec split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+    {[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+    any
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:split_off_ghost_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_T result)
+      /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final = index_Seq_T self.current { end' = mid })
+      /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T'0 self.current { start = mid })}
+      (! return {result}) ]
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  
+  let rec pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+    any
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+        | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
+        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
+        end)}
+      (! return {result}) ]
+  
+  let rec unwrap_T (self_: t_Option_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_T self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
+  
+  let rec extend_T (self: MutBorrow.t (Seq.seq t_T)) (rhs: Seq.seq t_T) (return (x: ())) =
+    {[@stop_split] [@expl:extend_T requires] ([@stop_split] [@expl:extend 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:extend 'rhs' type invariant] inv_Seq_T rhs)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:extend ensures] self.final = Seq.(++) self.current rhs}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Seq_T
+  
+  function removed_T (self: Seq.seq t_T) (index: int) : Seq.seq t_T =
+    Seq.(++) (index_Seq_T self { end' = index }) (index_Seq_T'0 self { start = index + 1 })
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec remove_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_T)) =
+    {[@stop_split] [@expl:remove_T requires] ([@stop_split] [@expl:remove 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:remove requires] 0 <= index /\ index < Seq.length self.current)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <Seq.seq t_T> {self.current}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_13 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+      | s1 = split_off_ghost_T {_13} {index} (fun (_x: Seq.seq t_T) -> [ &right <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <Seq.seq t_T> {right}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &right <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Seq_T right} any) ]
+      | s3 = pop_front_ghost_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s4)
+      | s4 = unwrap_T {_16} (fun (_x: t_T) -> [ &result <- _x ] s5)
+      | s5 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_19 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+      | s6 = extend_T {_19} {right} (fun (_x: ()) -> [ &_18 <- _x ] s7)
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s8 = -{resolve_refmut_Seq_T self}- s9
+      | s9 = [ &_ret <- result ] s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: MutBorrow.t (Seq.seq t_T) = self
+    | & index: int = index
+    | & right: Seq.seq t_T = Any.any_l ()
+    | & _13: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & result: t_T = Any.any_l ()
+    | & _16: t_Option_T = Any.any_l ()
+    | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _18: () = Any.any_l ()
+    | & _19: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:remove_T ensures] ([@stop_split] [@expl:remove result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:remove ensures #0] result = Seq.get self.current index)
+      /\ ([@stop_split] [@expl:remove ensures #1] self.final = removed_T self.current index)}
+      (! return {result}) ]
+end
+module M_logic__seq__impl_Seq_T_0__extend (* logic::seq::Seq<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
+  
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_T
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  
+  let rec pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+    any
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+        | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
+        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
+        end)}
+      (! return {result}) ]
+  
+  let rec elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+    {[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+      (! return {result}) ]
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_Option_T (_1: t_Option_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_T x0
+        end
+  
+  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+      Some (Seq.get self ix)
+    else
+      None
+  
+  
+  predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. resolve_Option_T (get_T self i)
+  
+  predicate resolve_Seq_T'0 (_1: Seq.seq t_T)
+  
+  axiom resolve_axiom'0: forall x: Seq.seq t_T [resolve_Seq_T'0 x]. resolve_Seq_T'0 x -> resolve_Seq_T x
+  
+  predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Seq_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extend_T (self: MutBorrow.t (Seq.seq t_T)) (rhs: Seq.seq t_T) (return (x: ())) =
+    {[@stop_split] [@expl:extend_T requires] ([@stop_split] [@expl:extend 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:extend 'rhs' type invariant] inv_Seq_T rhs)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_final <- Seq.(++) self.current rhs ] s1 | s1 = [ &_old <- self.final ] s2 | s2 = bb2 ]
+    | bb2 = bb2invariant
+      [ bb2 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb2 (Seq.length rhs)} bb2invariant
+      | bb2invariant = {[@expl:inferred invariant: type invariant] inv_Seq_T rhs}
+        {[@expl:inferred invariant: type invariant] inv_refmut_Seq_T self}
+        {[@expl:inferred invariant: unchanged value] _old = self.final}
+        {[@expl:loop invariant] Seq.(++) self.current rhs = _final}
+        (! [ &variant_old_bb2 <- Seq.length rhs ] s0)
+        [ s0 = MutBorrow.borrow_mut <Seq.seq t_T> {rhs}
+            (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+              [ &_19 <- _bor ] -{inv_Seq_T _bor.final}-
+              [ &rhs <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Seq_T rhs} any) ]
+        | s1 = pop_front_ghost_T {_19} (fun (_x: t_Option_T) -> [ &_18 <- _x ] s2)
+        | s2 = any [ br0 -> {_18 = None} (! bb8) | br1 (x0: t_T) -> {_18 = Some x0} (! bb6) ] ]
+        [ bb6 = s0
+          [ s0 = elim_Some {_18} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+          | s1 = MutBorrow.borrow_mut <Seq.seq t_T> {self.current}
+              (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+                [ &_22 <- _bor ] -{inv_Seq_T _bor.final}-
+                [ &self <- { self with current = _bor.final } ] s2)
+            [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+          | s2 = push_back_ghost_T {_22} {x} (fun (_x: ()) -> [ &_11 <- _x ] s3)
+          | s3 = bb2 ] ] ]
+    | bb8 = s0
+      [ s0 = s1
+        [ _ck -> (! {[@expl:type invariant] match _18 with
+            | Some x'0 -> inv_T x'0
+            | _ -> true
+            end}
+          any) ]
+      | s1 = -{match _18 with
+          | Some x'0 -> resolve_T x'0
+          | _ -> true
+          end}-
+        s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Seq_T rhs} any) ]
+      | s3 = -{resolve_Seq_T'0 rhs}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s5 = -{resolve_refmut_Seq_T self}- s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t (Seq.seq t_T) = self
+    | & rhs: Seq.seq t_T = rhs
+    | & _final: Seq.seq t_T = Any.any_l ()
+    | & _11: () = Any.any_l ()
+    | & _18: t_Option_T = Any.any_l ()
+    | & _19: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & x: t_T = Any.any_l ()
+    | & _22: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+    | & _old: Seq.seq t_T = Any.any_l ()
+    | & variant_old_bb2: int = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:extend ensures] self.final = Seq.(++) self.current rhs}
+      (! return {result}) ]
+end
 module M_logic__seq__impl_Index_for_Seq_T__index (* <logic::seq::Seq<T> as std::ops::Index<logic::int::Int>> *)
   type namespace_other
   
@@ -27486,59 +28324,7 @@ module M_logic__seq__impl_Plain_for_Seq_T__into_ghost (* <logic::seq::Seq<T> as 
       /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}
       (! return {result}) ]
 end
-module M_logic__seq__impl_IntoIterator_for_Seq_T__into_iter (* <logic::seq::Seq<T> as std::iter::IntoIterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  type t_SeqIter_T = { inner: Seq.seq t_T }
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate inv_SeqIter_T (_1: t_SeqIter_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
-  
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec into_iter_Seq_T (self: Seq.seq t_T) (return (x: t_SeqIter_T)) =
-    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_Seq_T self}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { inner = self } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_SeqIter_T = Any.any_l () | & self: Seq.seq t_T = self ])
-    [ return (result: t_SeqIter_T) ->
-    {[@stop_split] [@expl:into_iter_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_SeqIter_T result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_SeqIter_T result = self)}
-      (! return {result}) ]
-end
-module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T> as std::iter::Iterator> *)
+module M_logic__seq__impl_Iterator_for_Iter_T__next (* <logic::seq::Iter<T> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -27550,7 +28336,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
   predicate inv_T (_1: t_T)
   
@@ -27587,7 +28373,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
   axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_T f0
+        | Some f0'0 -> inv_T f0'0
         end
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
@@ -27603,70 +28389,69 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next (* <logic::seq::SeqIter<T
         end)}
       (! return {result}) ]
   
-  predicate inv_SeqIter_T (_1: t_SeqIter_T)
+  predicate inv_Iter_T (_1: t_Iter_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
   
-  predicate invariant_refmut_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
-    inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_SeqIter_T
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
   
-  predicate inv_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_refmut_SeqIter_T _1
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
   
-  meta "rewrite_def" predicate inv_refmut_SeqIter_T
+  meta "rewrite_def" predicate inv_refmut_Iter_T
   
-  predicate resolve_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = _1.final = _1.current
+  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_SeqIter_T
+  meta "rewrite_def" predicate resolve_refmut_Iter_T
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
   
-  function produces_trans_SeqIter_T (a: t_SeqIter_T) (ab: Seq.seq t_T) (b: t_SeqIter_T) (bc: Seq.seq t_T) (c: t_SeqIter_T) : ()
-   = ()
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () = ()
   
-  axiom produces_trans_SeqIter_T_spec:
-    forall a: t_SeqIter_T, ab: Seq.seq t_T, b: t_SeqIter_T, bc: Seq.seq t_T, c: t_SeqIter_T. produces_SeqIter_T a ab b
-      -> produces_SeqIter_T b bc c -> produces_SeqIter_T a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
   
-  function produces_refl_SeqIter_T (self: t_SeqIter_T) : () = ()
+  function produces_refl_Iter_T (self: t_Iter_T) : () = ()
   
-  axiom produces_refl_SeqIter_T_spec: forall self: t_SeqIter_T. produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
   
-  predicate completed_SeqIter_T (self: MutBorrow.t t_SeqIter_T) = view_SeqIter_T self.current = (Seq.empty: Seq.seq t_T)
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) = view_Iter_T self.current = (Seq.empty: Seq.seq t_T)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next_SeqIter_T (self: MutBorrow.t t_SeqIter_T) (return (x: t_Option_T)) =
-    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_SeqIter_T self}
+  let rec next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current.inner} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
+      [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
             [ &_4 <- _bor ] -{inv_Seq_T _bor.final}-
-            [ &self <- { self with current = { inner = _bor.final } } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current.inner} any) ]
+            [ &self <- { self with current = { f0 = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current.f0} any) ]
       | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIter_T self} any) ]
-      | s3 = -{resolve_refmut_SeqIter_T self}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T self} any) ]
+      | s3 = -{resolve_refmut_Iter_T self}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
-    | & self: MutBorrow.t t_SeqIter_T = self
+    | & self: MutBorrow.t t_Iter_T = self
     | & _4: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
     [ return (result: t_Option_T) ->
-    {[@stop_split] [@expl:next_SeqIter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
+    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_SeqIter_T self
-        | Some v -> produces_SeqIter_T self.current (Seq.singleton v) self.final
+        | None -> completed_Iter_T self
+        | Some v -> produces_Iter_T self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
 end
-module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
+module M_logic__seq__impl_IteratorSpec_for_Iter_T__produces_refl (* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -27675,25 +28460,25 @@ module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl (* <logic::s
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_SeqIter_T
+  constant self : t_Iter_T
   
-  function produces_refl_SeqIter_T (self: t_SeqIter_T) : ()
+  function produces_refl_Iter_T (self: t_Iter_T) : ()
   
-  goal vc_produces_refl_SeqIter_T:
-    [@stop_split] [@expl:produces_refl ensures] produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
+  goal vc_produces_refl_Iter_T:
+    [@stop_split] [@expl:produces_refl ensures] produces_Iter_T self (Seq.empty: Seq.seq t_T) self
 end
-module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
+module M_logic__seq__impl_IteratorSpec_for_Iter_T__produces_trans (* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -27702,32 +28487,83 @@ module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans (* <logic::
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_SeqIter_T
+  constant a : t_Iter_T
   
   constant ab : Seq.seq t_T
   
-  constant b : t_SeqIter_T
+  constant b : t_Iter_T
   
   constant bc : Seq.seq t_T
   
-  constant c : t_SeqIter_T
+  constant c : t_Iter_T
   
-  function produces_trans_SeqIter_T (a: t_SeqIter_T) (ab: Seq.seq t_T) (b: t_SeqIter_T) (bc: Seq.seq t_T) (c: t_SeqIter_T) : ()
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
   
-  goal vc_produces_trans_SeqIter_T: produces_SeqIter_T a ab b
-    -> produces_SeqIter_T b bc c
-    -> ([@stop_split] [@expl:produces_trans ensures] produces_SeqIter_T a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Iter_T: produces_Iter_T a ab b
+    -> produces_Iter_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Iter_T a (Seq.(++) ab bc) c)
+end
+module M_logic__seq__impl_IntoIterator_for_Seq_T__into_iter (* <logic::seq::Seq<T> as std::iter::IntoIterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_Iter_T = { f0: Seq.seq t_T }
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate inv_Iter_T (_1: t_Iter_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
+  
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_iter_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_T)) =
+    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_Seq_T self}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = self } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Iter_T = Any.any_l () | & self: Seq.seq t_T = self ])
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:into_iter_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_T result)}
+      (! return {result}) ]
 end
 module M_logic__seq__impl_IntoIterator_for_ref_Seq_T__into_iter (* <&'a logic::seq::Seq<T> as std::iter::IntoIterator> *)
   type namespace_other
@@ -27767,67 +28603,67 @@ module M_logic__seq__impl_IntoIterator_for_ref_Seq_T__into_iter (* <&'a logic::s
   
   meta "rewrite_def" predicate inv_ref_Seq_T
   
-  let rec len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
-    {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let rec as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+    {[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
     any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+    [ return (result: Seq.seq t_T) ->
+    {[@stop_split] [@expl:as_refs_T ensures] ([@stop_split] [@expl:as_refs result type invariant] inv_Seq_ref_T result)
+      /\ ([@stop_split] [@expl:as_refs ensures] self = result)}
+      (! return {result}) ]
   
-  let rec sub_Int (self: int) (other: int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+  type t_Iter_ref_T = { f0: Seq.seq t_T }
   
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
+  predicate inv_Iter_ref_T (_1: t_Iter_ref_T)
   
-  predicate invariant_SeqIterRef_T (self: t_SeqIterRef_T) = 0 <= self.index /\ self.index <= Seq.length self.inner
+  axiom inv_axiom [@rewrite]: forall x: t_Iter_ref_T [inv_Iter_ref_T x]. inv_Iter_ref_T x = inv_Seq_ref_T x.f0
   
-  predicate inv_SeqIterRef_T (_1: t_SeqIterRef_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_SeqIterRef_T [inv_SeqIterRef_T x]. inv_SeqIterRef_T x
-      = (invariant_SeqIterRef_T x /\ inv_ref_Seq_T x.inner)
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
+  function view_Iter_ref_T (self: t_Iter_ref_T) : Seq.seq t_T = self.f0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_SeqIterRef_T)) =
+  let rec into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_ref_T)) =
     {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_Seq_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_6 <- _x ] s1)
-      | s1 = len_ghost_T {self} (fun (_x: int) -> [ &_8 <- _x ] s2)
-      | s2 = sub_Int {_6} {_8} (fun (_x: int) -> [ &_5 <- _x ] s3)
-      | s3 = [ &_ret <- { inner = self; index = _5 } ] s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: t_SeqIterRef_T = Any.any_l ()
-    | & self: Seq.seq t_T = self
-    | & _5: int = Any.any_l ()
-    | & _6: int = Any.any_l ()
-    | & _8: int = Any.any_l () ])
-    [ return (result: t_SeqIterRef_T) ->
-    {[@stop_split] [@expl:into_iter_ref_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_SeqIterRef_T result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_SeqIterRef_T result = self)}
+      [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_4 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = _4 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Iter_ref_T = Any.any_l () | & self: Seq.seq t_T = self | & _4: Seq.seq t_T = Any.any_l () ])
+    [ return (result: t_Iter_ref_T) ->
+    {[@stop_split] [@expl:into_iter_ref_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_ref_T result)}
       (! return {result}) ]
 end
-module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIterRef<'a, T> as std::iter::Iterator> *)
+module M_logic__seq__impl_IntoIterator_for_refmut_Seq_T__into_iter (* <&'a mut logic::seq::Seq<T> as std::iter::IntoIterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
   
-  use seq.Seq
   use creusot.prelude.MutBorrow
+  use seq.Seq
   use creusot.prelude.Any
   use int.Int
   
   type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  type t_Option_ref_T = None | Some t_T
   
   predicate inv_T (_1: t_T)
   
@@ -27848,204 +28684,99 @@ module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next (* <logic::seq::SeqIte
   
   meta "rewrite_def" predicate inv_Seq_T
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+    inv_Seq_T self.current /\ inv_Seq_T self.final
   
-  meta "rewrite_def" predicate invariant_ref_Seq_T
+  meta "rewrite_def" predicate invariant_refmut_Seq_T
   
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
   
-  meta "rewrite_def" predicate inv_ref_Seq_T
+  meta "rewrite_def" predicate inv_refmut_Seq_T
   
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_ref_T f0
-        end
+  meta "rewrite_def" predicate invariant_refmut_T
   
-  type t_Option_T = None'0 | Some'0 t_T
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
   
-  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
-      Some'0 (Seq.get self ix)
-    else
-      None'0
+  meta "rewrite_def" predicate inv_refmut_T
   
+  predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
   
-  let rec get_ghost_T (self: Seq.seq t_T) (index'0: int) (return (x: t_Option_ref_T)) =
-    {[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+  meta "rewrite_def" predicate invariant_ref_refmut_T
+  
+  predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_refmut_T
+  
+  predicate invariant_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_refmut_T
+  
+  predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_refmut_T
+  
+  let rec as_muts_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: Seq.seq (MutBorrow.t t_T))) =
+    {[@stop_split] [@expl:as_muts 'self' type invariant] inv_refmut_Seq_T self}
     any
-    [ return (result: t_Option_ref_T) ->
-    {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index'0 with
-        | None'0 -> result = None
-        | Some'0 v -> result = Some v
-        end)}
+    [ return (result: Seq.seq (MutBorrow.t t_T)) ->
+    {[@stop_split] [@expl:as_muts_T ensures] ([@stop_split] [@expl:as_muts result type invariant] inv_Seq_refmut_T result)
+      /\ ([@stop_split] [@expl:as_muts ensures #0] Seq.length result = Seq.length self.current)
+      /\ ([@stop_split] [@expl:as_muts ensures #1] Seq.length self.final = Seq.length self.current)
+      /\ ([@stop_split] [@expl:as_muts ensures #2] forall i: int. 0 <= i /\ i < Seq.length self.current
+          -> (Seq.get result i).current = Seq.get self.current i)
+      /\ ([@stop_split] [@expl:as_muts ensures #3] forall i: int. 0 <= i /\ i < Seq.length self.current
+        -> (Seq.get result i).final = Seq.get self.final i)}
       (! return {result}) ]
   
-  predicate invariant_SeqIterRef_T (self: t_SeqIterRef_T) = 0 <= self.index /\ self.index <= Seq.length self.inner
+  type t_Iter_refmut_T = { f0: Seq.seq (MutBorrow.t t_T) }
   
-  predicate inv_SeqIterRef_T (_1: t_SeqIterRef_T)
+  predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_SeqIterRef_T [inv_SeqIterRef_T x]. inv_SeqIterRef_T x
-      = (invariant_SeqIterRef_T x /\ inv_ref_Seq_T x.inner)
+  meta "rewrite_def" predicate resolve_refmut_Seq_T
   
-  predicate invariant_refmut_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
-    inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
+  predicate inv_Iter_refmut_T (_1: t_Iter_refmut_T)
   
-  meta "rewrite_def" predicate invariant_refmut_SeqIterRef_T
+  axiom inv_axiom [@rewrite]: forall x: t_Iter_refmut_T [inv_Iter_refmut_T x]. inv_Iter_refmut_T x
+      = inv_Seq_refmut_T x.f0
   
-  predicate inv_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) =
-    invariant_refmut_SeqIterRef_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_SeqIterRef_T
-  
-  predicate resolve_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_SeqIterRef_T
-  
-  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec incr_ghost (self: MutBorrow.t int) (return (x: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:incr_ghost ensures] self.final = self.current + 1}
-      (! return {result}) ]
-  
-  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  function produces_trans_SeqIterRef_T (a: t_SeqIterRef_T) (ab: Seq.seq t_T) (b: t_SeqIterRef_T) (bc: Seq.seq t_T) (c: t_SeqIterRef_T) : ()
-   = ()
-  
-  axiom produces_trans_SeqIterRef_T_spec:
-    forall a: t_SeqIterRef_T, ab: Seq.seq t_T, b: t_SeqIterRef_T, bc: Seq.seq t_T, c: t_SeqIterRef_T. produces_SeqIterRef_T a ab b
-      -> produces_SeqIterRef_T b bc c -> produces_SeqIterRef_T a (Seq.(++) ab bc) c
-  
-  function produces_refl_SeqIterRef_T (self: t_SeqIterRef_T) : () = ()
-  
-  axiom produces_refl_SeqIterRef_T_spec:
-    forall self: t_SeqIterRef_T. produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
-  
-  predicate completed_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) =
-    view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)
+  function view_Iter_refmut_T (self: t_Iter_refmut_T) : Seq.seq (MutBorrow.t t_T) = self.f0
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) (return (x: t_Option_ref_T)) =
-    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_SeqIterRef_T self}
+  let rec into_iter_refmut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Iter_refmut_T)) =
+    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_refmut_Seq_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_before <- view_SeqIterRef_T self.current ] s1
-      | s1 = get_ghost_T {self.current.inner} {self.current.index} (fun (_x: t_Option_ref_T) -> [ &_7 <- _x ] s2)
-      | s2 = any [ br0 -> {_7 = None} (! bb6) | br1 (x0: t_T) -> {_7 = Some x0} (! bb4) ] ]
-    | bb6 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIterRef_T self} any) ]
-      | s1 = -{resolve_refmut_SeqIterRef_T self}- s2
-      | s2 = {[@expl:assertion] self.current.index = Seq.length self.current.inner} s3
-      | s3 = {[@expl:assertion] view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)} s4
-      | s4 = [ &_ret <- None ] s5
-      | s5 = return {_ret} ]
-    | bb4 = s0
-      [ s0 = elim_Some {_7} (fun (r0: t_T) -> [ &res <- r0 ] s1)
-      | s1 = MutBorrow.borrow_final <int> {self.current.index} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t int) ->
-            [ &_13 <- _bor ] [ &self <- { self with current = { self.current with index = _bor.final } } ] s2)
-      | s2 = incr_ghost {_13} (fun (_x: ()) -> [ &_12 <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqIterRef_T self} any) ]
-      | s4 = -{resolve_refmut_SeqIterRef_T self}- s5
-      | s5 = {[@expl:assertion] view_SeqIterRef_T self.current = tail_T _before} s6
-      | s6 = [ &_ret <- Some res ] s7
-      | s7 = return {_ret} ] ]
-    [ & _ret: t_Option_ref_T = Any.any_l ()
-    | & self: MutBorrow.t t_SeqIterRef_T = self
-    | & _before: Seq.seq t_T = Any.any_l ()
-    | & _7: t_Option_ref_T = Any.any_l ()
-    | & res: t_T = Any.any_l ()
-    | & _12: () = Any.any_l ()
-    | & _13: MutBorrow.t int = Any.any_l () ])
-    [ return (result: t_Option_ref_T) ->
-    {[@stop_split] [@expl:next_SeqIterRef_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_SeqIterRef_T self
-        | Some v -> produces_SeqIterRef_T self.current (Seq.singleton v) self.final
-        end)}
+      [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+            [ &_11 <- _bor ] -{inv_Seq_T _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+      | s1 = as_muts_T {_11} (fun (_x: Seq.seq (MutBorrow.t t_T)) -> [ &_10 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _10 } ] s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+      | s4 = -{resolve_refmut_Seq_T self}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Iter_refmut_T = Any.any_l ()
+    | & self: MutBorrow.t (Seq.seq t_T) = self
+    | & _10: Seq.seq (MutBorrow.t t_T) = Any.any_l ()
+    | & _11: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+    [ return (result: t_Iter_refmut_T) ->
+    {[@stop_split] [@expl:into_iter_refmut_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_refmut_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures #0] Seq.length (view_Iter_refmut_T result) = Seq.length self.current)
+      /\ ([@stop_split] [@expl:into_iter ensures #1] Seq.length self.final = Seq.length self.current)
+      /\ ([@stop_split] [@expl:into_iter ensures #2] forall i: int. 0 <= i /\ i < Seq.length self.current
+          -> (Seq.get (view_Iter_refmut_T result) i).current = Seq.get self.current i)
+      /\ ([@stop_split] [@expl:into_iter ensures #3] forall i: int. 0 <= i /\ i < Seq.length self.current
+        -> (Seq.get (view_Iter_refmut_T result) i).final = Seq.get self.final i)}
       (! return {result}) ]
 end
-module M_logic__seq__impl_IteratorSpec_for_SeqIterRef_T__produces_refl (* <logic::seq::SeqIterRef<'a, T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_SeqIterRef_T
-  
-  function produces_refl_SeqIterRef_T (self: t_SeqIterRef_T) : ()
-  
-  goal vc_produces_refl_SeqIterRef_T:
-    [@stop_split] [@expl:produces_refl ensures] produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
-end
-module M_logic__seq__impl_IteratorSpec_for_SeqIterRef_T__produces_trans (* <logic::seq::SeqIterRef<'a, T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a : t_SeqIterRef_T
-  
-  constant ab : Seq.seq t_T
-  
-  constant b : t_SeqIterRef_T
-  
-  constant bc : Seq.seq t_T
-  
-  constant c : t_SeqIterRef_T
-  
-  function produces_trans_SeqIterRef_T (a: t_SeqIterRef_T) (ab: Seq.seq t_T) (b: t_SeqIterRef_T) (bc: Seq.seq t_T) (c: t_SeqIterRef_T) : ()
-  
-  goal vc_produces_trans_SeqIterRef_T: produces_SeqIterRef_T a ab b
-    -> produces_SeqIterRef_T b bc c
-    -> ([@stop_split] [@expl:produces_trans ensures] produces_SeqIterRef_T a (Seq.(++) ab bc) c)
-end
-module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence (* <logic::seq::SeqIter<T> as resolve::Resolve> *)
+module M_logic__seq__impl_Resolve_for_Iter_T__resolve_coherence (* <logic::seq::Iter<T> as resolve::Resolve> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -28055,7 +28786,7 @@ module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence (* <logic::se
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
   type t_Option_T = None | Some t_T
   
@@ -28081,26 +28812,26 @@ module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence (* <logic::se
   
   axiom resolve_axiom'0: forall x: Seq.seq t_T [resolve_Seq_T'0 x]. resolve_Seq_T'0 x -> resolve_Seq_T x
   
-  predicate structural_resolve_SeqIter_T (_1: t_SeqIter_T) = resolve_Seq_T'0 _1.inner
+  predicate structural_resolve_Iter_T (_1: t_Iter_T) = resolve_Seq_T'0 _1.f0
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate resolve_SeqIter_T [@inline:trivial] (self: t_SeqIter_T) = resolve_Seq_T'0 (view_SeqIter_T self)
+  predicate resolve_Iter_T [@inline:trivial] (self: t_Iter_T) = resolve_Seq_T'0 (view_Iter_T self)
   
-  meta "rewrite_def" predicate resolve_SeqIter_T
+  meta "rewrite_def" predicate resolve_Iter_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_SeqIter_T
+  constant self : t_Iter_T
   
-  function resolve_coherence_SeqIter_T (self: t_SeqIter_T) : ()
+  function resolve_coherence_Iter_T (self: t_Iter_T) : ()
   
-  goal vc_resolve_coherence_SeqIter_T: structural_resolve_SeqIter_T self
-    -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_SeqIter_T self)
+  goal vc_resolve_coherence_Iter_T: structural_resolve_Iter_T self
+    -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Iter_T self)
 end
-module M_logic__seq__flat_map_singleton
+module M_logic__seq__impl_Seq_T_1__flat_map_singleton (* logic::seq::Seq<T> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -28108,32 +28839,35 @@ module M_logic__seq__flat_map_singleton
   use seq.Seq
   use map.Map
   
-  type t_A
+  type t_T
   
-  type t_B
+  type t_U
   
-  function tail_A (self: Seq.seq t_A) : Seq.seq t_A = Seq.([..]) self 1 (Seq.length self)
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function flat_map_A (self: Seq.seq t_A) (other: Map.map t_A (Seq.seq t_B)) : Seq.seq t_B
+  function flat_map_T (self: Seq.seq t_T) (other: Map.map t_T (Seq.seq t_U)) : Seq.seq t_U
   
-  axiom flat_map_A_def: forall self: Seq.seq t_A, other: Map.map t_A (Seq.seq t_B). flat_map_A self other
+  axiom flat_map_T_def: forall self: Seq.seq t_T, other: Map.map t_T (Seq.seq t_U). flat_map_T self other
       = (if Seq.length self = 0 then
-        Seq.empty: Seq.seq t_B
+        Seq.empty: Seq.seq t_U
       else
-        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_A (tail_A self) other)
+        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_T (tail_T self) other)
       )
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  function flat_map_singleton_A : ()
+  constant x : t_T
   
-  goal vc_flat_map_singleton_A:
-    [@stop_split] [@expl:flat_map_singleton ensures] forall x: t_A, f: Map.map t_A (Seq.seq t_B). flat_map_A (Seq.singleton x) f
-      = Map.get f x
+  constant f : Map.map t_T (Seq.seq t_U)
+  
+  function flat_map_singleton_T (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : ()
+  
+  goal vc_flat_map_singleton_T: [@stop_split] [@expl:flat_map_singleton ensures] flat_map_T (Seq.singleton x) f
+    = Map.get f x
 end
-module M_logic__seq__flat_map_push_back
+module M_logic__seq__impl_Seq_T_1__flat_map_push_back (* logic::seq::Seq<T> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -28142,19 +28876,19 @@ module M_logic__seq__flat_map_push_back
   use map.Map
   use int.Int
   
-  type t_A
+  type t_T
   
-  type t_B
+  type t_U
   
-  function tail_A (self: Seq.seq t_A) : Seq.seq t_A = Seq.([..]) self 1 (Seq.length self)
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function flat_map_A (self: Seq.seq t_A) (other: Map.map t_A (Seq.seq t_B)) : Seq.seq t_B
+  function flat_map_T (self: Seq.seq t_T) (other: Map.map t_T (Seq.seq t_U)) : Seq.seq t_U
   
-  axiom flat_map_A_def: forall self: Seq.seq t_A, other: Map.map t_A (Seq.seq t_B). flat_map_A self other
+  axiom flat_map_T_def: forall self: Seq.seq t_T, other: Map.map t_T (Seq.seq t_U). flat_map_T self other
       = (if Seq.length self = 0 then
-        Seq.empty: Seq.seq t_B
+        Seq.empty: Seq.seq t_U
       else
-        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_A (tail_A self) other)
+        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_T (tail_T self) other)
       )
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
@@ -28165,20 +28899,24 @@ module M_logic__seq__flat_map_push_back
   
   meta "select_lsinst" "all"
   
-  constant xs : Seq.seq t_A
+  constant self : Seq.seq t_T
   
-  function flat_map_push_back_A (xs: Seq.seq t_A) : ()
+  constant x : t_T
   
-  goal vc_flat_map_push_back_A: if Seq.length xs > 0 then
-      ([@expl:variant decreases] well_founded_relation_Int (Seq.length xs) (Seq.length (tail_A xs)))
-      /\ (([@stop_split] [@expl:flat_map_push_back ensures] forall x: t_A, f: Map.map t_A (Seq.seq t_B). flat_map_A (Seq.snoc (tail_A xs) x) f
-          = Seq.(++) (flat_map_A (tail_A xs) f) (Map.get f x))
-      -> (let _ = flat_map_push_back_A (tail_A xs) in (forall x: t_A. Seq.snoc (tail_A xs) x = tail_A (Seq.snoc xs x))
-      && ([@stop_split] [@expl:flat_map_push_back ensures] forall x: t_A, f: Map.map t_A (Seq.seq t_B). flat_map_A (Seq.snoc xs x) f
-        = Seq.(++) (flat_map_A xs f) (Map.get f x))))
+  constant f : Map.map t_T (Seq.seq t_U)
+  
+  function flat_map_push_back_T (self: Seq.seq t_T) (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : ()
+  
+  goal vc_flat_map_push_back_T: if Seq.length self > 0 then
+      ([@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_T self)))
+      /\ (([@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc (tail_T self) x) f
+        = Seq.(++) (flat_map_T (tail_T self) f) (Map.get f x))
+      -> (let _ = flat_map_push_back_T (tail_T self) x f in Seq.snoc (tail_T self) x = tail_T (Seq.snoc self x)
+      && ([@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc self x) f
+      = Seq.(++) (flat_map_T self f) (Map.get f x))))
     else
-      [@stop_split] [@expl:flat_map_push_back ensures] forall x: t_A, f: Map.map t_A (Seq.seq t_B). flat_map_A (Seq.snoc xs x) f
-        = Seq.(++) (flat_map_A xs f) (Map.get f x)
+      [@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc self x) f
+      = Seq.(++) (flat_map_T self f) (Map.get f x)
 
 end
 module M_logic__well_founded__impl_WellFounded_for_u8__no_infinite_decreasing_sequence (* <u8 as logic::well_founded::WellFounded> *)
@@ -71023,7 +71761,7 @@ module M_logic__seq__impl_Resolve_for_Seq_T__resolve_coherence__refines (* <logi
   goal refines: forall self: Seq.seq t_T. inv_Seq_T self /\ structural_resolve_Seq_T self
       -> structural_resolve_Seq_T self /\ (forall result: (). resolve_Seq_T self -> resolve_Seq_T self)
 end
-module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence__refines (* <logic::seq::SeqIter<T> as resolve::Resolve> *)
+module M_logic__seq__impl_Resolve_for_Iter_T__resolve_coherence__refines (* <logic::seq::Iter<T> as resolve::Resolve> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -71052,11 +71790,11 @@ module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence__refines (* <
   
   meta "rewrite_def" predicate inv_Seq_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
-  predicate inv_SeqIter_T (_1: t_SeqIter_T)
+  predicate inv_Iter_T (_1: t_Iter_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
+  axiom inv_axiom [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
   
   type t_Option_T = None | Some t_T
   
@@ -71082,20 +71820,20 @@ module M_logic__seq__impl_Resolve_for_SeqIter_T__resolve_coherence__refines (* <
   
   axiom resolve_axiom'0: forall x: Seq.seq t_T [resolve_Seq_T'0 x]. resolve_Seq_T'0 x -> resolve_Seq_T x
   
-  predicate structural_resolve_SeqIter_T (_1: t_SeqIter_T) = resolve_Seq_T'0 _1.inner
+  predicate structural_resolve_Iter_T (_1: t_Iter_T) = resolve_Seq_T'0 _1.f0
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate resolve_SeqIter_T [@inline:trivial] (self: t_SeqIter_T) = resolve_Seq_T'0 (view_SeqIter_T self)
+  predicate resolve_Iter_T [@inline:trivial] (self: t_Iter_T) = resolve_Seq_T'0 (view_Iter_T self)
   
-  meta "rewrite_def" predicate resolve_SeqIter_T
+  meta "rewrite_def" predicate resolve_Iter_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_SeqIter_T. inv_SeqIter_T self /\ structural_resolve_SeqIter_T self
-      -> structural_resolve_SeqIter_T self /\ (forall result: (). resolve_SeqIter_T self -> resolve_SeqIter_T self)
+  goal refines: forall self: t_Iter_T. inv_Iter_T self /\ structural_resolve_Iter_T self
+      -> structural_resolve_Iter_T self /\ (forall result: (). resolve_Iter_T self -> resolve_Iter_T self)
 end
 module M_resolve__impl_Resolve_for_ref_T__resolve_coherence__refines (* <&'a T as resolve::Resolve> *)
   type namespace_other
@@ -71989,7 +72727,7 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
           | Some'0 v -> produces_FMap_K_V self_.current (Seq.singleton v) self_.final
           end)
 end
-module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::SeqIter<T> as std::iter::Iterator> *)
+module M_logic__seq__impl_Iterator_for_Iter_T__next__refines (* <logic::seq::Iter<T> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -72000,7 +72738,7 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
   predicate inv_T (_1: t_T)
   
@@ -72021,18 +72759,18 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   
   meta "rewrite_def" predicate inv_Seq_T
   
-  predicate inv_SeqIter_T (_1: t_SeqIter_T)
+  predicate inv_Iter_T (_1: t_Iter_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_SeqIter_T [inv_SeqIter_T x]. inv_SeqIter_T x = inv_Seq_T x.inner
+  axiom inv_axiom [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
   
-  predicate invariant_refmut_SeqIter_T [@inline:trivial] (self: MutBorrow.t t_SeqIter_T) =
-    inv_SeqIter_T self.current /\ inv_SeqIter_T self.final
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_SeqIter_T
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
   
-  predicate inv_refmut_SeqIter_T [@inline:trivial] (_1: MutBorrow.t t_SeqIter_T) = invariant_refmut_SeqIter_T _1
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
   
-  meta "rewrite_def" predicate inv_refmut_SeqIter_T
+  meta "rewrite_def" predicate inv_refmut_Iter_T
   
   type t_Option_T = None | Some t_T
   
@@ -72041,147 +72779,41 @@ module M_logic__seq__impl_Iterator_for_SeqIter_T__next__refines (* <logic::seq::
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_T f0
+        | Some f0'0 -> inv_T f0'0
         end
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
   
-  function produces_trans_SeqIter_T (a: t_SeqIter_T) (ab: Seq.seq t_T) (b: t_SeqIter_T) (bc: Seq.seq t_T) (c: t_SeqIter_T) : ()
-   = ()
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () = ()
   
-  axiom produces_trans_SeqIter_T_spec:
-    forall a: t_SeqIter_T, ab: Seq.seq t_T, b: t_SeqIter_T, bc: Seq.seq t_T, c: t_SeqIter_T. produces_SeqIter_T a ab b
-      -> produces_SeqIter_T b bc c -> produces_SeqIter_T a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
   
-  function produces_refl_SeqIter_T (self: t_SeqIter_T) : () = ()
+  function produces_refl_Iter_T (self: t_Iter_T) : () = ()
   
-  axiom produces_refl_SeqIter_T_spec: forall self: t_SeqIter_T. produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
   
-  predicate completed_SeqIter_T (self: MutBorrow.t t_SeqIter_T) = view_SeqIter_T self.current = (Seq.empty: Seq.seq t_T)
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) = view_Iter_T self.current = (Seq.empty: Seq.seq t_T)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_SeqIter_T. inv_refmut_SeqIter_T self_
-      -> inv_refmut_SeqIter_T self_
+  goal refines: forall self_: MutBorrow.t t_Iter_T. inv_refmut_Iter_T self_
+      -> inv_refmut_Iter_T self_
       /\ (forall result: t_Option_T. inv_Option_T result
           /\ match result with
-            | None -> completed_SeqIter_T self_
-            | Some v -> produces_SeqIter_T self_.current (Seq.singleton v) self_.final
+            | None -> completed_Iter_T self_
+            | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
             end
         -> inv_Option_T result
         /\ match result with
-          | None -> completed_SeqIter_T self_
-          | Some v -> produces_SeqIter_T self_.current (Seq.singleton v) self_.final
-          end)
-end
-module M_logic__seq__impl_Iterator_for_SeqIterRef_T__next__refines (* <logic::seq::SeqIterRef<'a, T> as std::iter::Iterator> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use int.Int
-  
-  type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  predicate invariant_SeqIterRef_T (self: t_SeqIterRef_T) = 0 <= self.index /\ self.index <= Seq.length self.inner
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  predicate inv_SeqIterRef_T (_1: t_SeqIterRef_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_SeqIterRef_T [inv_SeqIterRef_T x]. inv_SeqIterRef_T x
-      = (invariant_SeqIterRef_T x /\ inv_ref_Seq_T x.inner)
-  
-  predicate invariant_refmut_SeqIterRef_T [@inline:trivial] (self: MutBorrow.t t_SeqIterRef_T) =
-    inv_SeqIterRef_T self.current /\ inv_SeqIterRef_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_SeqIterRef_T
-  
-  predicate inv_refmut_SeqIterRef_T [@inline:trivial] (_1: MutBorrow.t t_SeqIterRef_T) =
-    invariant_refmut_SeqIterRef_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_SeqIterRef_T
-  
-  type t_Option_ref_T = None | Some t_T
-  
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_ref_T f0
-        end
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  function produces_trans_SeqIterRef_T (a: t_SeqIterRef_T) (ab: Seq.seq t_T) (b: t_SeqIterRef_T) (bc: Seq.seq t_T) (c: t_SeqIterRef_T) : ()
-   = ()
-  
-  axiom produces_trans_SeqIterRef_T_spec:
-    forall a: t_SeqIterRef_T, ab: Seq.seq t_T, b: t_SeqIterRef_T, bc: Seq.seq t_T, c: t_SeqIterRef_T. produces_SeqIterRef_T a ab b
-      -> produces_SeqIterRef_T b bc c -> produces_SeqIterRef_T a (Seq.(++) ab bc) c
-  
-  function produces_refl_SeqIterRef_T (self: t_SeqIterRef_T) : () = ()
-  
-  axiom produces_refl_SeqIterRef_T_spec:
-    forall self: t_SeqIterRef_T. produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
-  
-  predicate completed_SeqIterRef_T (self: MutBorrow.t t_SeqIterRef_T) =
-    view_SeqIterRef_T self.current = (Seq.empty: Seq.seq t_T)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: MutBorrow.t t_SeqIterRef_T. inv_refmut_SeqIterRef_T self_
-      -> inv_refmut_SeqIterRef_T self_
-      /\ (forall result: t_Option_ref_T. inv_Option_ref_T result
-          /\ match result with
-            | None -> completed_SeqIterRef_T self_
-            | Some v -> produces_SeqIterRef_T self_.current (Seq.singleton v) self_.final
-            end
-        -> inv_Option_ref_T result
-        /\ match result with
-          | None -> completed_SeqIterRef_T self_
-          | Some v -> produces_SeqIterRef_T self_.current (Seq.singleton v) self_.final
+          | None -> completed_Iter_T self_
+          | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
           end)
 end
 module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std::iter::map_inv::MapInv<I, F> as std::iter::Iterator> *)
@@ -72522,7 +73154,7 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans__refines (*
               /\ produces_FMap_K_V b bc c
               /\ (forall result: (). produces_FMap_K_V a (Seq.(++) ab bc) c -> produces_FMap_K_V a (Seq.(++) ab bc) c)
 end
-module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
+module M_logic__seq__impl_IteratorSpec_for_Iter_T__produces_refl__refines (* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -72531,99 +73163,46 @@ module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_trans__refines (*
   
   type t_T
   
-  type t_SeqIter_T = { inner: Seq.seq t_T }
+  type t_Iter_T = { f0: Seq.seq t_T }
   
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
   
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Iter_T. forall result: (). produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+        -> produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+end
+module M_logic__seq__impl_IteratorSpec_for_Iter_T__produces_trans__refines (* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use seq.Seq
+  
+  type t_T
+  
+  type t_Iter_T = { f0: Seq.seq t_T }
+  
+  function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+  
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+    view_Iter_T self = Seq.(++) visited (view_Iter_T o)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_SeqIter_T. forall ab: Seq.seq t_T. forall b: t_SeqIter_T. forall bc: Seq.seq t_T. forall c: t_SeqIter_T. produces_SeqIter_T a ab b
-                /\ produces_SeqIter_T b bc c
-              -> produces_SeqIter_T a ab b
-              /\ produces_SeqIter_T b bc c
-              /\ (forall result: (). produces_SeqIter_T a (Seq.(++) ab bc) c -> produces_SeqIter_T a (Seq.(++) ab bc) c)
-end
-module M_logic__seq__impl_IteratorSpec_for_SeqIter_T__produces_refl__refines (* <logic::seq::SeqIter<T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIter_T = { inner: Seq.seq t_T }
-  
-  function view_SeqIter_T (self: t_SeqIter_T) : Seq.seq t_T = self.inner
-  
-  predicate produces_SeqIter_T (self: t_SeqIter_T) (visited: Seq.seq t_T) (o: t_SeqIter_T) =
-    view_SeqIter_T self = Seq.(++) visited (view_SeqIter_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_SeqIter_T. forall result: (). produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
-        -> produces_SeqIter_T self (Seq.empty: Seq.seq t_T) self
-end
-module M_logic__seq__impl_IteratorSpec_for_SeqIterRef_T__produces_trans__refines (* <logic::seq::SeqIterRef<'a, T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_SeqIterRef_T. forall ab: Seq.seq t_T. forall b: t_SeqIterRef_T. forall bc: Seq.seq t_T. forall c: t_SeqIterRef_T. produces_SeqIterRef_T a ab b
-                /\ produces_SeqIterRef_T b bc c
-              -> produces_SeqIterRef_T a ab b
-              /\ produces_SeqIterRef_T b bc c
-              /\ (forall result: (). produces_SeqIterRef_T a (Seq.(++) ab bc) c
-                -> produces_SeqIterRef_T a (Seq.(++) ab bc) c)
-end
-module M_logic__seq__impl_IteratorSpec_for_SeqIterRef_T__produces_refl__refines (* <logic::seq::SeqIterRef<'a, T> as std::iter::IteratorSpec> *)
-  type namespace_other
-  
-  type t_Namespace = Other namespace_other
-  
-  use seq.Seq
-  
-  type t_T
-  
-  type t_SeqIterRef_T = { inner: Seq.seq t_T; index: int }
-  
-  function view_SeqIterRef_T (self: t_SeqIterRef_T) : Seq.seq t_T =
-    Seq.([..]) self.inner self.index (Seq.length self.inner)
-  
-  predicate produces_SeqIterRef_T (self: t_SeqIterRef_T) (visited: Seq.seq t_T) (o: t_SeqIterRef_T) =
-    let visited'0 = visited in view_SeqIterRef_T self = Seq.(++) visited'0 (view_SeqIterRef_T o)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_SeqIterRef_T. forall result: (). produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
-        -> produces_SeqIterRef_T self (Seq.empty: Seq.seq t_T) self
+    forall a: t_Iter_T. forall ab: Seq.seq t_T. forall b: t_Iter_T. forall bc: Seq.seq t_T. forall c: t_Iter_T. produces_Iter_T a ab b
+                /\ produces_Iter_T b bc c
+              -> produces_Iter_T a ab b
+              /\ produces_Iter_T b bc c
+              /\ (forall result: (). produces_Iter_T a (Seq.(++) ab bc) c -> produces_Iter_T a (Seq.(++) ab bc) c)
 end
 module M_std__array__impl_IteratorSpec_for_IntoIter_T__produces_trans__refines (* <std::array::IntoIter<T, N> as std::iter::IteratorSpec> *)
   type namespace_other
