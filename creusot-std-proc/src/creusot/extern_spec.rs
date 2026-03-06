@@ -284,16 +284,37 @@ impl FlatSpec {
         };
 
         let doc = {
-            let mut path = String::new();
-            if let Some(qself) = &self.path.qself {
-                path.push_str(&format!("{}", display::DisplayType(&qself.ty)));
-            }
-            if self.path.path.leading_colon.is_none() && self.path.qself.is_some() {
-                path.push_str("::");
-            }
-
-            path.push_str(&format!("{}", display::DisplayPath(&self.path.path)));
-            format!("extern spec for [`{path}`]")
+            let path = if let Some(qself) = &self.path.qself {
+                if let Type::Reference(_) = *qself.ty {
+                    // Unsupported self types by rustdoc, we might as well print out the fully qualified path.
+                    let trait_ = display::DisplayPath(&Path {
+                        leading_colon: None,
+                        segments: self
+                            .path
+                            .path
+                            .segments
+                            .iter()
+                            .take(qself.position)
+                            .cloned()
+                            .collect(),
+                    });
+                    format!(
+                        "`<{} as {}>::{}`",
+                        display::DisplayType(&qself.ty),
+                        trait_,
+                        self.path.path.segments[qself.position].ident
+                    )
+                } else {
+                    format!(
+                        "[`{}::{}`]",
+                        display::DisplayType(&qself.ty),
+                        self.path.path.segments[qself.position].ident
+                    )
+                }
+            } else {
+                format!("[`{}`]", display::DisplayPath(&self.path.path))
+            };
+            format!("extern spec for {path}")
         };
         // only used in documentation
         let f_doc = ItemFn {

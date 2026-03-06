@@ -678,7 +678,7 @@ impl<T: ?Sized> Perm<*const T> {
 ///
 /// - To split a `&Perm<*const [T]>`: [`split_at`](Perm::split_at), [`split_at_mut`](Perm::split_at_mut).
 /// - To index a `&Perm<*const [T]>` into `&Perm<*const T>`: [`elements`](Perm::elements), [`elements_mut`](Perm::elements_mut).
-/// - To extract a [`PtrLive<T>`][PtrLive] (evidence used by pointer arithmetic): [`live`](Perm::live), [`live_mut`](LiveMut::live_mut).
+/// - To extract a [`PtrLive<T>`][PtrLive] (evidence used by pointer arithmetic): [`live`](Perm::live), [`live_mut`](Perm::live_mut).
 impl<T> Perm<*const [T]> {
     /// The number of elements in the slice.
     #[logic(open, inline)]

@@ -3,6 +3,9 @@ use crate::{
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     prelude::*,
 };
+// Resolve links like [`i8::add`] in the generated documentation
+#[cfg(doc)]
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
