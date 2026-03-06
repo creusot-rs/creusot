@@ -482,7 +482,8 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (exists<i> result.get(i) == Some((k, v))))]
+    #[ensures(forall<i, j> 0 <= i && i < self.len() && 0 <= j && j < self.len() && result[i].0 == result[j].0 ==> i == j)]
+    #[ensures(forall<k, v> (self.get(k) == Some(v)) == result.contains((k, v)))]
     pub fn to_seq(self) -> Seq<(K, V)> {
         panic!()
     }
@@ -498,6 +499,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
+    #[ensures((^self).len() == self.len())]
     #[ensures(forall<k> match result.get(&k) {
         None => !(*self).contains(k) && !(^self).contains(k),
         Some(v) => (*self).get(k) == Some(*v) && (^self).get(k) == Some(^v),
@@ -538,37 +540,49 @@ impl<K, V> Invariant for FMap<K, V> {
     }
 }
 
-impl<K, V> Iterator for FMap<K, V> {
+/// Iterator for `FMap`.
+pub struct Iter<K, V>(FMap<K, V>);
+
+impl<K, V> View for Iter<K, V> {
+    type ViewTy = FMap<K, V>;
+
+    #[logic]
+    fn view(self) -> Self::ViewTy {
+        self.0
+    }
+}
+
+impl<K, V> Iterator for Iter<K, V> {
     type Item = (K, V);
 
     #[check(ghost)]
     #[ensures(match result {
         None => self.completed(),
-        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self) == (^self).insert(k, v),
+        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.insert(k, v),
     })]
     fn next(&mut self) -> Option<(K, V)> {
-        self.remove_one_ghost()
+        self.0.remove_one_ghost()
     }
 }
 
-impl<K, V> IteratorSpec for FMap<K, V> {
+impl<K, V> IteratorSpec for Iter<K, V> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<(K, V)>, o: Self) -> bool {
         pearlite! {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
             // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o.contains(k) && self.get(k) == Some(v)) &&
+            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o@.contains(k) && self@.get(k) == Some(v)) &&
             // Helper for the length
-            self.len() == visited.len() + o.len() &&
+            self@.len() == visited.len() + o@.len() &&
             // else, the key-value is the same in `self` and `o`
-            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o.get(k) == self.get(k))
+            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.get(k) == self@.get(k))
         }
     }
 
     #[logic(prophetic, open)]
     fn completed(&mut self) -> bool {
-        pearlite! { self.is_empty() }
+        pearlite! { self@.is_empty() }
     }
 
     #[logic(law)]
@@ -586,20 +600,46 @@ impl<K, V> IteratorSpec for FMap<K, V> {
         proof_assert!(forall<k> (forall<i> 0 <= i && i < ac.len() ==> ac[i].0 != k) ==> {
             (forall<i> 0 <= i && i < ab.len() ==> ab[i].0 != k) &&
             (forall<i> 0 <= i && i < bc.len() ==> bc[i].0 != k) &&
-            a.get(k) == b.get(k) && b.get(k) == c.get(k)
+            a@.get(k) == b@.get(k) && b@.get(k) == c@.get(k)
         });
+    }
+}
+
+impl<K, V> IntoIterator for FMap<K, V> {
+    type Item = (K, V);
+    type IntoIter = Iter<K, V>;
+
+    #[check(ghost)]
+    #[ensures(result@.len() == self.len())]
+    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result@.get(k) == Some(v)))]
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self)
     }
 }
 
 impl<'a, K, V> IntoIterator for &'a FMap<K, V> {
     type Item = (&'a K, &'a V);
-    type IntoIter = FMap<&'a K, &'a V>;
+    type IntoIter = Iter<&'a K, &'a V>;
 
     #[check(ghost)]
-    #[ensures(result.len() == self.len())]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result.get(&k) == Some(&v)))]
-    fn into_iter(self) -> FMap<&'a K, &'a V> {
-        self.as_ref_ghost()
+    #[ensures(result@.len() == self.len())]
+    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result@.get(&k) == Some(&v)))]
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self.as_ref_ghost())
+    }
+}
+
+impl<'a, K, V> IntoIterator for &'a mut FMap<K, V> {
+    type Item = (&'a K, &'a mut V);
+    type IntoIter = Iter<&'a K, &'a mut V>;
+
+    #[check(ghost)]
+    #[ensures(result@.len() == (*self).len())]
+    #[ensures((^self).len() == (*self).len())]
+    #[ensures(forall<k, v> (*self).get(k) == Some(v) ==> exists<w> result@.get(&k) == Some(w) && v == *w && (^self).get(k) == Some(^w))]
+    #[ensures(forall<k, w> result@.get(&k) == Some(w) ==> (*self).get(k) == Some(*w) && (^self).get(k) == Some(^w))]
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self.as_mut_ghost())
     }
 }
 
@@ -611,7 +651,20 @@ impl<K, V> Resolve for FMap<K, V> {
     }
 
     #[trusted]
-    #[logic(open(self), prophetic)]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
+impl<K, V> Resolve for Iter<K, V> {
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        pearlite! { resolve(self@) }
+    }
+
+    #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
