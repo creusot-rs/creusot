@@ -275,6 +275,8 @@ impl<T> Seq<T> {
 
     /// Returns a new sequence, made of the concatenation of `self` and `other`.
     ///
+    /// See also the program function [`Seq::extend`].
+    ///
     /// # Example
     ///
     /// ```
@@ -331,6 +333,22 @@ impl<T> Seq<T> {
     #[builtin("seq.Reverse.reverse")]
     pub fn reverse(self) -> Self {
         dead
+    }
+
+    /// Returns a new sequence, which is `self` with the element at the given `index` removed.
+    ///
+    /// See also the program function [`Seq::remove`].
+    ///
+    /// # Example
+    ///
+    /// ```rust,creusot
+    /// # use creusot_std::prelude::*;
+    /// let s = snapshot!(seq![7, 8, 9]);
+    /// proof_assert!(removed(*s, 1) == seq![7, 9]);
+    /// ```
+    #[logic(open)]
+    pub fn removed(self, index: Int) -> Self {
+        pearlite! { self[..index].concat(self[index+1..]) }
     }
 
     /// Returns `true` if `other` is a permutation of `self`.
@@ -614,15 +632,18 @@ impl<T> Seq<T> {
     ///     proof_assert!(get2 == None);
     /// };
     /// ```
-    #[trusted]
     #[check(ghost)]
     #[ensures(match self.get(index) {
         None => result == None,
         Some(v) => result == Some(&v),
     })]
     pub fn get_ghost(&self, index: Int) -> Option<&T> {
-        let _ = index;
-        panic!()
+        // FIXME: we can't write 0 outside of a `ghost!` block
+        if index - index <= index && index < self.len_ghost() {
+            Some(self.as_refs().extract(index))
+        } else {
+            None
+        }
     }
 
     /// Returns a mutable reference to an element at `index` or `None` if `index` is out of bounds.
@@ -643,7 +664,6 @@ impl<T> Seq<T> {
     ///     proof_assert!(s[0] == 0i32 && s[1] == 42i32 && s[2] == 2i32);
     /// };
     /// ```
-    #[trusted]
     #[check(ghost)]
     #[ensures(match result {
         None => self.get(index) == None && *self == ^self,
@@ -652,8 +672,59 @@ impl<T> Seq<T> {
     #[ensures(forall<i> i != index ==> (*self).get(i) == (^self).get(i))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
-        let _ = index;
-        panic!()
+        // FIXME: we can't write 0 outside of a `ghost!` block
+        if index - index <= index && index < self.len_ghost() {
+            Some(self.as_muts().extract(index))
+        } else {
+            None
+        }
+    }
+
+    /// Remove an element and discard the rest of the sequence.
+    ///
+    /// This is sometimes preferable to `remove` because this avoids reasoning about subsequences.
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result == self[index])]
+    #[ensures(forall<i> 0 <= i && i < self.len() && i != index ==> resolve(self[i]))]
+    pub fn extract(mut self, index: Int) -> T {
+        proof_assert! { forall<i> index < i && i < self.len() ==> self[i] == self[index + 1..][i - index - 1] }
+        self.split_off_ghost(index).pop_front_ghost().unwrap()
+    }
+
+    /// Remove an element from a sequence.
+    ///
+    /// See also the logic function [`Seq::removed`].
+    #[check(ghost)]
+    #[requires(0 <= index && index < self.len())]
+    #[ensures(result == self[index])]
+    #[ensures(^self == (*self).removed(index))]
+    pub fn remove(&mut self, index: Int) -> T {
+        let mut right = self.split_off_ghost(index);
+        let result = right.pop_front_ghost().unwrap();
+        self.extend(right);
+        result
+    }
+
+    /// Append a sequence to another.
+    ///
+    /// See also the logic function [`Seq::concat`].
+    ///
+    /// ## Remark
+    ///
+    /// The second argument is currently restricted to sequences.
+    /// Generalizing it to arbitrary `IntoIterator` requires some missing features
+    /// to specify that the iterator terminates and that its methods are
+    /// callable in ghost code.
+    #[check(ghost)]
+    #[ensures(^self == (*self).concat(rhs))]
+    pub fn extend(&mut self, mut rhs: Self) {
+        let _final = snapshot! { self.concat(rhs) };
+        #[variant(rhs.len())]
+        #[invariant(self.concat(rhs) == *_final)]
+        while let Some(x) = rhs.pop_front_ghost() {
+            self.push_back_ghost(x)
+        }
     }
 
     /// Removes the last element from a vector and returns it, or `None` if it is empty.
@@ -736,6 +807,25 @@ impl<T> Seq<T> {
     #[ensures(result == self[mid..])]
     pub fn split_off_ghost(&mut self, mid: Int) -> Self {
         let _ = mid;
+        panic!("ghost code")
+    }
+
+    /// Borrow every element of a borrowed sequence.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(*self == result.to_owned_seq())]
+    pub fn as_refs(&self) -> Seq<&T> {
+        panic!("ghost code")
+    }
+
+    /// Mutably borrow every element of a borrowed sequence.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.len() == self.len())]
+    #[ensures((^self).len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *result[i] == (*self)[i])]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> ^result[i] == (^self)[i])]
+    pub fn as_muts(&mut self) -> Seq<&mut T> {
         panic!("ghost code")
     }
 }
@@ -836,18 +926,13 @@ impl<T> Invariant for Seq<T> {
 // Iterators
 // =========
 
-impl<T> IntoIterator for Seq<T> {
-    type Item = T;
-    type IntoIter = SeqIter<T>;
-
-    #[check(ghost)]
-    #[ensures(result@ == self)]
-    fn into_iter(self) -> SeqIter<T> {
-        SeqIter { inner: self }
-    }
-}
-
-/// An owning iterator for [`Seq`].
+/// Iterator for sequences.
+///
+/// This provides all three variants of `IntoIter` for `Seq`:
+/// `Iter<T>`, `Iter<&T>`, `Iter<&mut T>`.
+///
+/// This is a different type from `Seq` to enable `IntoIterator for &mut Seq<T>`
+/// (if `Seq` were an iterator, that would conflict with `IntoIterator for I where I: Iterator`).
 ///
 /// # Ghost code and variants
 ///
@@ -865,19 +950,17 @@ impl<T> IntoIterator for Seq<T> {
 ///     }
 /// }
 /// ```
-pub struct SeqIter<T> {
-    inner: Seq<T>,
-}
+pub struct Iter<T>(Seq<T>);
 
-impl<T> View for SeqIter<T> {
+impl<T> View for Iter<T> {
     type ViewTy = Seq<T>;
     #[logic]
-    fn view(self) -> Seq<T> {
-        self.inner
+    fn view(self) -> Self::ViewTy {
+        self.0
     }
 }
 
-impl<T> Iterator for SeqIter<T> {
+impl<T> Iterator for Iter<T> {
     type Item = T;
 
     #[check(ghost)]
@@ -886,11 +969,11 @@ impl<T> Iterator for SeqIter<T> {
         Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<T> {
-        self.inner.pop_front_ghost()
+        self.0.pop_front_ghost()
     }
 }
 
-impl<T> IteratorSpec for SeqIter<T> {
+impl<T> IteratorSpec for Iter<T> {
     #[logic(prophetic, open)]
     fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
@@ -912,79 +995,40 @@ impl<T> IteratorSpec for SeqIter<T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
+impl<T> IntoIterator for Seq<T> {
+    type Item = T;
+    type IntoIter = Iter<T>;
+
+    #[check(ghost)]
+    #[ensures(self == result@)]
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self)
+    }
+}
+
 impl<'a, T> IntoIterator for &'a Seq<T> {
     type Item = &'a T;
-    type IntoIter = SeqIterRef<'a, T>;
+    type IntoIter = Iter<&'a T>;
 
     #[check(ghost)]
-    #[ensures(result@ == *self)]
+    #[ensures(*self == result@.to_owned_seq())]
     fn into_iter(self) -> Self::IntoIter {
-        SeqIterRef { inner: self, index: self.len_ghost() - self.len_ghost() }
+        Iter(self.as_refs())
     }
 }
 
-/// An iterator over references in a [`Seq`].
-pub struct SeqIterRef<'a, T> {
-    inner: &'a Seq<T>,
-    index: Int,
-}
-impl<T> Invariant for SeqIterRef<'_, T> {
-    #[logic]
-    fn invariant(self) -> bool {
-        0 <= self.index && self.index <= self.inner.len()
-    }
-}
-
-impl<T> View for SeqIterRef<'_, T> {
-    type ViewTy = Seq<T>;
-    #[logic]
-    fn view(self) -> Seq<T> {
-        self.inner.subsequence(self.index, self.inner.len())
-    }
-}
-
-impl<'a, T> Iterator for SeqIterRef<'a, T> {
-    type Item = &'a T;
+impl<'a, T> IntoIterator for &'a mut Seq<T> {
+    type Item = &'a mut T;
+    type IntoIter = Iter<&'a mut T>;
 
     #[check(ghost)]
-    #[ensures(match result {
-        None => self.completed(),
-        Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
-    fn next(&mut self) -> Option<&'a T> {
-        let _before = snapshot!((*self)@);
-        if let Some(res) = self.inner.get_ghost(self.index) {
-            self.index.incr_ghost();
-            proof_assert!((*self)@ == _before.tail());
-            Some(res)
-        } else {
-            proof_assert!(self.index == self.inner.len());
-            proof_assert!(self@ == Seq::empty());
-            None
-        }
+    #[ensures(result@.len() == self.len())]
+    #[ensures((^self).len() == self.len())]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *result@[i] == (*self)[i])]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> ^result@[i] == (^self)[i])]
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self.as_muts())
     }
-}
-impl<'a, T> IteratorSpec for SeqIterRef<'a, T> {
-    #[logic(prophetic, open)]
-    fn produces(self, visited: Seq<&'a T>, o: Self) -> bool {
-        let visited: Seq<T> = visited.to_owned_seq();
-        pearlite! { self@ == visited.concat(o@) }
-    }
-
-    #[logic(prophetic, open)]
-    fn completed(&mut self) -> bool {
-        pearlite! { self@ == Seq::empty() }
-    }
-
-    #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
-
-    #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 impl<T> Resolve for Seq<T> {
@@ -995,38 +1039,38 @@ impl<T> Resolve for Seq<T> {
     }
 
     #[trusted]
-    #[logic(open(self), prophetic)]
+    #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
 }
 
-impl<T> Resolve for SeqIter<T> {
+impl<T> Resolve for Iter<T> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
         pearlite! { resolve(self@) }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(prophetic)]
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
 }
 
-// Some properties
-// TODO : use parameters instead of quantification, and mode to impl block
+/// Properties
+impl<T> Seq<T> {
+    #[logic(open)]
+    #[ensures(Seq::singleton(x).flat_map(f) == f.get(x))]
+    pub fn flat_map_singleton<U>(x: T, f: Mapping<T, Seq<U>>) {}
 
-#[logic(open)]
-#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> Seq::singleton(x).flat_map(f) == f.get(x))]
-pub fn flat_map_singleton<A, B>() {}
-
-#[logic(open)]
-#[ensures(forall<x: A, f: Mapping<A, Seq<B>>> xs.push_back(x).flat_map(f) == xs.flat_map(f).concat(f.get(x)))]
-#[variant(xs.len())]
-pub fn flat_map_push_back<A, B>(xs: Seq<A>) {
-    if xs.len() > 0 {
-        flat_map_push_back::<A, B>(xs.tail());
-        proof_assert! { forall<x: A> xs.tail().push_back(x) == xs.push_back(x).tail() }
+    #[logic(open)]
+    #[ensures(self.push_back(x).flat_map(f) == self.flat_map(f).concat(f.get(x)))]
+    #[variant(self.len())]
+    pub fn flat_map_push_back<U>(self, x: T, f: Mapping<T, Seq<U>>) {
+        if self.len() > 0 {
+            Self::flat_map_push_back::<U>(self.tail(), x, f);
+            proof_assert! { self.tail().push_back(x) == self.push_back(x).tail() }
+        }
     }
 }
