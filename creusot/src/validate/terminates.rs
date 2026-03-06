@@ -42,7 +42,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{
-            Term, TermKind,
+            Ident, PIdent, Pattern, ScopedTerm, Term, TermKind,
             visit::{TermVisitor, super_visit_term},
         },
         traits::{ImplSource_, TraitResolved},
@@ -59,6 +59,7 @@ use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
+use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
 use rustc_middle::{
     thir::{self, visit::Visitor},
@@ -70,7 +71,7 @@ use rustc_span::Span;
 use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
-use std::iter::repeat;
+use std::{collections::HashMap, iter::repeat};
 
 pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 
@@ -110,24 +111,28 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
         if let Some(self_edge) = call_graph.edges_connecting(fun_index, fun_index).next() {
+            assert!(def_id.is_local());
             let (self_edge, call) = (self_edge.id(), *self_edge.weight());
             let CallKind::Direct(span) = call else { continue };
             call_graph.remove_edge(self_edge);
-            if !is_pearlite(ctx.tcx, def_id)
-                && !has_variant_clause(ctx.tcx, def_id)
-                && def_id.is_local()
-            {
-                let fun_span = ctx.def_span(def_id);
-                let mut error =
-                    ctx.error(fun_span, "Recursive function without a `#[variant]` clause");
-                error.span_note(span, "Recursive call happens here");
-                error.emit();
-            }
-            if is_pearlite(ctx.tcx, def_id) && !has_variant_clause(ctx.tcx, def_id) {
-                // Allow simple recursion in logic functions
+            if has_variant_clause(ctx.tcx, def_id) {
+                recursive_calls.entry(def_id).or_default().insert(def_id);
                 continue;
             }
-            recursive_calls.entry(def_id).or_default().insert(def_id);
+            let pearlite = is_pearlite(ctx.tcx, def_id);
+            if pearlite && is_structurally_recursive(ctx, def_id) {
+                // Termination is guaranteed, we can forget that this function is recursive.
+                continue;
+            }
+            let fun_span = ctx.def_span(def_id);
+            let msg = if pearlite {
+                "Recursive logic function without a #[variant] clause or a structurally decreasing argument"
+            } else {
+                "Recursive program function without a `#[variant]` clause"
+            };
+            let mut error = ctx.error(fun_span, msg);
+            error.span_note(span, "Recursive call happens here");
+            error.emit();
         };
     }
 
@@ -652,4 +657,114 @@ impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
             self.results.insert((*id, subst, term.span));
         }
     }
+}
+
+/// Verifies whether a given term is structurally recursive: that is, each
+/// recursive call is made to a component of an argument to the prior call.
+///
+/// The check must also ensure that we are always recursing on the *same*
+/// argument since otherwise we could 'ping pong' infinitely.
+///
+/// This check can be extended in the future
+fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -> bool {
+    struct StructuralRecursion<'a> {
+        /// A tuple `(v, (root, strictly))` in this map means that
+        /// `v` is smaller than `root` (or `strictly` smaller)
+        smaller_than: HashMap<Ident, (Ident, bool)>,
+        self_id: DefId,
+        /// Candidate decreasing arguments
+        decreasing_args: DenseBitSet<usize>,
+        args: &'a [PIdent],
+    }
+
+    impl StructuralRecursion<'_> {
+        fn valid(&self) -> bool {
+            !self.decreasing_args.is_empty()
+        }
+
+        /// `t` is strictly smaller than `arg`
+        fn is_smaller_than(&self, t: &Term, arg: Ident) -> bool {
+            self.root(t) == Some((arg, true))
+        }
+
+        /// Find argument that `t` is smaller than, if any
+        fn root(&self, t: &Term) -> Option<(Ident, bool)> {
+            let (var, strictly) = local_root(t)?;
+            let &(nm, strictly2) = self.smaller_than.get(&var)?;
+            Some((nm, strictly || strictly2))
+        }
+
+        /// Record that the variables in `pat` are smaller (possibly `strictly`) than the root, if any
+        fn bind_smaller(&mut self, root: Ident, strictly: bool, pat: &Pattern) {
+            let mut binds = Vec::new();
+            pat.binds_smaller(false, &mut binds);
+            binds.into_iter().for_each(|(b, strictly2)| {
+                self.smaller_than.insert(b, (root, strictly || strictly2));
+            })
+        }
+    }
+
+    /// Return a variable `v` such that the value of `t` is a substructure of `v`,
+    /// and `true` if it is a strictly smaller substructure.
+    fn local_root(mut t: &Term) -> Option<(Ident, bool)> {
+        let mut strictly = false;
+        loop {
+            match &t.kind {
+                TermKind::Var(var) => return Some((var.0, strictly)),
+                TermKind::Coerce { arg } => {
+                    t = arg;
+                    continue;
+                }
+                TermKind::Projection { lhs, .. } => {
+                    t = lhs;
+                    strictly = true;
+                    continue;
+                }
+                _ => return None,
+            }
+        }
+    }
+
+    impl TermVisitor<'_> for StructuralRecursion<'_> {
+        fn visit_term(&mut self, term: &Term<'_>) {
+            match &term.kind {
+                TermKind::Call { id, args, .. } if *id == self.self_id => {
+                    for (i, (arg, nm)) in args.iter().zip(self.args.iter()).enumerate() {
+                        if !self.is_smaller_than(arg, nm.0) {
+                            self.decreasing_args.remove(i);
+                        }
+                    }
+                }
+                // Recall that binders in `Term` are already unique, so we can just process all the binders
+                // ahead of time, without deleting unbound variables when descending in different subterms.
+                TermKind::Let { pattern, arg, .. } => {
+                    if let Some((root, strictly)) = self.root(arg) {
+                        self.bind_smaller(root, strictly, pattern);
+                    }
+                }
+                TermKind::Match { arms, scrutinee } => {
+                    if let Some((root, strictly)) = self.root(scrutinee) {
+                        for (pat, _) in arms {
+                            self.bind_smaller(root, strictly, pat);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            super_visit_term(term, self)
+        }
+    }
+
+    let ScopedTerm(args, term) = &ctx.term(self_id).unwrap();
+
+    let mut s = StructuralRecursion {
+        self_id,
+        smaller_than: args.iter().map(|ident| (ident.0, (ident.0, false))).collect(),
+        decreasing_args: DenseBitSet::new_filled(args.len()),
+        args,
+    };
+
+    s.visit_term(term);
+
+    s.valid()
 }

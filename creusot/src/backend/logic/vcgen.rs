@@ -16,10 +16,7 @@ use crate::{
     ctx::{HasTyCtxt, PreMod},
     naming::name,
     translation::{
-        pearlite::{
-            BinOp, Literal, Pattern, Term, TermKind, UnOp,
-            visit::{TermVisitor, super_visit_term},
-        },
+        pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
         traits::TraitResolved,
     },
     util::erased_identity_for_item,
@@ -30,10 +27,7 @@ use rustc_middle::{
     ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::Span;
-use std::{
-    collections::{HashMap, HashSet},
-    iter::repeat_n,
-};
+use std::{collections::HashMap, iter::repeat_n};
 use why3::{
     Exp, Ident, Name,
     declaration::Attribute,
@@ -61,7 +55,6 @@ struct VCGen<'a, 'tcx> {
     ctx: &'a Why3Generator<'tcx>,
     names: &'a Dependencies<'a, 'tcx>,
     self_id: DefId,
-    structurally_recursive: bool,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
     typing_env: TypingEnv<'tcx>,
@@ -78,131 +71,9 @@ pub(super) fn wp<'tcx>(
     dest: Ident,
     post: Exp,
 ) -> Exp {
-    let structurally_recursive = is_structurally_recursive(ctx, self_id, &t);
-    let vcgen = VCGen {
-        typing_env: ctx.typing_env(self_id),
-        ctx,
-        names,
-        self_id,
-        structurally_recursive,
-        args_names,
-        variant,
-    };
+    let vcgen =
+        VCGen { typing_env: ctx.typing_env(self_id), ctx, names, self_id, args_names, variant };
     vcgen.build_wp(&t, &|exp| Exp::let_(dest, exp, post.clone()))
-}
-
-/// Verifies whether a given term is structurally recursive: that is, each
-/// recursive call is made to a component of an argument to the prior call.
-///
-/// The check must also ensure that we are always recursing on the *same*
-/// argument since otherwise we could 'ping pong' infinitely.
-///
-/// Currently, the check is *very* naive: we only consider variables and only
-/// check `match`. This means that something like the following would fail:
-///
-/// ``` match x { Cons(_, tl) => recursive((tl, 0).0) } ```
-///
-/// This check can be extended in the future
-fn is_structurally_recursive<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    self_id: DefId,
-    t: &Term<'tcx>,
-) -> bool {
-    struct StructuralRecursion {
-        smaller_than: HashMap<Ident, Ident>,
-        self_id: DefId,
-        /// Index of the decreasing argument
-        decreasing_args: HashSet<Ident>,
-        orig_args: Vec<Ident>,
-    }
-
-    impl StructuralRecursion {
-        fn valid(&self) -> bool {
-            self.decreasing_args.len() == 1
-        }
-
-        /// Is `t` smaller than the argument `nm`?
-        fn is_smaller_than(&self, t: &Term, nm: Ident) -> bool {
-            match &t.kind {
-                TermKind::Var(s) => self.smaller_than.get(&s.0) == Some(&nm),
-                TermKind::Coerce { arg } => self.is_smaller_than(arg, nm),
-                _ => false,
-            }
-        }
-
-        // TODO: could make this a `pattern` to term comparison to make it more powerful
-        /// Mark `nm` as smaller than `term`. Currently, this only updates the relation if `term` is a variable.
-        fn smaller_than(&mut self, nm: Ident, term: &Term<'_>) {
-            match &term.kind {
-                TermKind::Var(var) => {
-                    let parent = self.smaller_than.get(&var.0).unwrap_or(&var.0);
-                    self.smaller_than.insert(nm, *parent);
-                }
-                TermKind::Coerce { arg } => self.smaller_than(nm, arg),
-                _ => (),
-            }
-        }
-    }
-
-    impl TermVisitor<'_> for StructuralRecursion {
-        fn visit_term(&mut self, term: &Term<'_>) {
-            match &term.kind {
-                TermKind::Call { id, args, .. } if *id == self.self_id => {
-                    for (arg, nm) in args.iter().zip(self.orig_args.iter()) {
-                        if self.is_smaller_than(arg, *nm) {
-                            self.decreasing_args.insert(*nm);
-                        }
-                    }
-                }
-                TermKind::Quant { binder, body, .. } => {
-                    let old_smaller = self.smaller_than.clone();
-                    for (name, _) in binder {
-                        self.smaller_than.remove(&name.0);
-                    }
-                    self.visit_term(body);
-                    self.smaller_than = old_smaller;
-                }
-
-                TermKind::Let { pattern, arg, body } => {
-                    self.visit_term(arg);
-                    let mut binds = Default::default();
-                    pattern.binds(&mut binds);
-                    let old_smaller = self.smaller_than.clone();
-                    self.smaller_than.retain(|nm, _| !binds.contains(nm));
-                    binds.into_iter().for_each(|b| self.smaller_than(b, arg));
-                    self.visit_term(body);
-                    self.smaller_than = old_smaller;
-                }
-
-                TermKind::Match { arms, scrutinee } => {
-                    self.visit_term(scrutinee);
-
-                    for (pat, exp) in arms {
-                        let mut binds = Default::default();
-                        pat.binds(&mut binds);
-                        let old_smaller = self.smaller_than.clone();
-                        self.smaller_than.retain(|nm, _| !binds.contains(nm));
-                        binds.into_iter().for_each(|b| self.smaller_than(b, scrutinee));
-                        self.visit_term(exp);
-                        self.smaller_than = old_smaller;
-                    }
-                }
-                _ => super_visit_term(term, self),
-            }
-        }
-    }
-
-    let orig_args = ctx.sig(self_id).inputs.iter().map(|a| a.0.0).collect();
-    let mut s = StructuralRecursion {
-        self_id,
-        smaller_than: Default::default(),
-        decreasing_args: Default::default(),
-        orig_args,
-    };
-
-    s.visit_term(t);
-
-    s.valid()
 }
 
 // We use Fn because some continuations may be called several times (in the case
@@ -353,8 +224,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     let variant = pre_sig.contract.variant.clone();
                     if let Some(variant) = variant {
                         self.build_variant(&args, variant)
-                    } else if self.structurally_recursive {
-                        Exp::mk_true()
                     } else {
                         self.ctx.crash_and_error(
                             self.ctx.def_span(self.self_id),

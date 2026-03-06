@@ -46,6 +46,7 @@ pub fn old<'a, T: ?Sized>(_: T) -> &'a T {
     dead
 }
 
+#[creusot::no_translate] // avoid the termination checker
 #[logic(opaque)]
 #[intrinsic("dead")]
 #[allow(unconditional_recursion)]
