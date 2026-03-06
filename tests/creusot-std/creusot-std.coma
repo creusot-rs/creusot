@@ -4762,7 +4762,7 @@ module M_logic__fmap__impl_Index_for_FMap_K_V__index (* <logic::fmap::FMap<K, V>
       /\ ([@stop_split] [@expl:index ensures] Some'0 result = get_K self key)}
       (! return {result}) ]
 end
-module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, V> as std::iter::Iterator> *)
+module M_logic__fmap__impl_Iterator_for_Iter_K_V__next (* <logic::fmap::Iter<K, V> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -4775,6 +4775,8 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
   use int.Int
   
   type t_FMap_K_V
+  
+  type t_Iter_K_V = { f0: t_FMap_K_V }
   
   type t_K
   
@@ -4827,7 +4829,7 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
   
   axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
   
@@ -4840,7 +4842,7 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
   
   meta "rewrite_def" predicate inv_refmut_FMap_K_V
   
-  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0 /\ inv_V _1.f1
+  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0'0 /\ inv_V _1.f1'0
   
   meta "rewrite_def" predicate inv_tup2_K_V
   
@@ -4849,7 +4851,7 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_tup2_K_V [inv_Option_tup2_K_V x]. inv_Option_tup2_K_V x
       = match x with
         | None'0 -> true
-        | Some'0 f0'0 -> inv_tup2_K_V f0'0
+        | Some'0 f0'1 -> inv_tup2_K_V f0'1
         end
   
   predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
@@ -4883,13 +4885,26 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
     {[@stop_split] [@expl:remove_one_ghost_K ensures] ([@stop_split] [@expl:remove_one_ghost result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:remove_one_ghost ensures] match result with
         | None'0 -> self.current = self.final /\ is_empty_K self.current
-        | Some'0 {f0 = k; f1 = v} -> self.current = insert_K self.final k v /\ not contains_K self.final k
+        | Some'0 {f0'0 = k; f1'0 = v} -> self.current = insert_K self.final k v /\ not contains_K self.final k
         end)}
       (! return {result}) ]
   
-  predicate resolve_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = _1.final = _1.current
+  predicate inv_Iter_K_V (_1: t_Iter_K_V)
   
-  meta "rewrite_def" predicate resolve_refmut_FMap_K_V
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+  
+  predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
+    inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_K_V
+  
+  predicate inv_refmut_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = invariant_refmut_Iter_K_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_K_V
+  
+  predicate resolve_refmut_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_K_V
   
   function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = if 0 <= ix /\ ix < Seq.length self then
       Some'0 (Seq.get self ix)
@@ -4897,58 +4912,61 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next (* <logic::fmap::FMap<K, 
       None'0
   
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
-    (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some'0 { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
   
-  function produces_trans_FMap_K_V (a: t_FMap_K_V) (ab: Seq.seq tup2_K_V) (b: t_FMap_K_V) (bc: Seq.seq tup2_K_V) (c: t_FMap_K_V) : ()
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
+    (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some'0 { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
+  
+  function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
    = let ac = Seq.(++) ab bc in ()
   
-  axiom produces_trans_FMap_K_V_spec:
-    forall a: t_FMap_K_V, ab: Seq.seq tup2_K_V, b: t_FMap_K_V, bc: Seq.seq tup2_K_V, c: t_FMap_K_V. produces_FMap_K_V a ab b
-      -> produces_FMap_K_V b bc c -> produces_FMap_K_V a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_K_V_spec:
+    forall a: t_Iter_K_V, ab: Seq.seq tup2_K_V, b: t_Iter_K_V, bc: Seq.seq tup2_K_V, c: t_Iter_K_V. produces_Iter_K_V a ab b
+      -> produces_Iter_K_V b bc c -> produces_Iter_K_V a (Seq.(++) ab bc) c
   
-  function produces_refl_FMap_K_V (self: t_FMap_K_V) : () = ()
+  function produces_refl_Iter_K_V (self: t_Iter_K_V) : () = ()
   
-  axiom produces_refl_FMap_K_V_spec: forall self: t_FMap_K_V. produces_FMap_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+  axiom produces_refl_Iter_K_V_spec: forall self: t_Iter_K_V. produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
   
-  predicate completed_FMap_K_V (self: MutBorrow.t t_FMap_K_V) = is_empty_K self.current
+  predicate completed_Iter_K_V (self: MutBorrow.t t_Iter_K_V) = is_empty_K (view_Iter_K_V self.current)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec next_FMap_K_V (self: MutBorrow.t t_FMap_K_V) (return (x: t_Option_tup2_K_V)) =
-    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_FMap_K_V self}
+  let rec next_Iter_K_V (self: MutBorrow.t t_Iter_K_V) (return (x: t_Option_tup2_K_V)) =
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_K_V self}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_FMap_K_V> {self.current} {MutBorrow.get_id self}
+      [ s0 = MutBorrow.borrow_final <t_FMap_K_V> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t t_FMap_K_V) ->
             [ &_4 <- _bor ] -{inv_FMap_K_V _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_FMap_K_V self.current} any) ]
+            [ &self <- { self with current = { f0 = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_FMap_K_V self.current.f0} any) ]
       | s1 = remove_one_ghost_K {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMap_K_V self} any) ]
-      | s3 = -{resolve_refmut_FMap_K_V self}- s4
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_K_V self} any) ]
+      | s3 = -{resolve_refmut_Iter_K_V self}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_K_V = Any.any_l ()
-    | & self: MutBorrow.t t_FMap_K_V = self
+    | & self: MutBorrow.t t_Iter_K_V = self
     | & _4: MutBorrow.t t_FMap_K_V = Any.any_l () ])
     [ return (result: t_Option_tup2_K_V) ->
-    {[@stop_split] [@expl:next_FMap_K_V ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_tup2_K_V result)
+    {[@stop_split] [@expl:next_Iter_K_V ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None'0 -> completed_FMap_K_V self
-        | Some'0 {f0 = k; f1 = v} -> produces_FMap_K_V self.current (Seq.singleton { f0 = k; f1 = v }) self.final
-        /\ self.current = insert_K self.final k v
+        | None'0 -> completed_Iter_K_V self
+        | Some'0 {f0'0 = k; f1'0 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0'0 = k;
+                                                                                         f1'0 = v }) self.final
+        /\ view_Iter_K_V self.current = insert_K (view_Iter_K_V self.final) k v
         end)}
       (! return {result}) ]
 end
-module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl (* <logic::fmap::FMap<K, V> as std::iter::IteratorSpec> *)
+module M_logic__fmap__impl_IteratorSpec_for_Iter_K_V__produces_refl (* <logic::fmap::Iter<K, V> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -4959,11 +4977,13 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl (* <logic::f
   
   type t_FMap_K_V
   
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
   type t_K
   
   type t_V
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None | Some tup2_K_V
   
@@ -4985,31 +5005,33 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl (* <logic::f
   
   meta "rewrite_def" predicate contains_K
   
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
   function len_K (self: t_FMap_K_V) : int
   
   axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some'0 v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant self : t_FMap_K_V
+  constant self : t_Iter_K_V
   
-  function produces_refl_FMap_K_V (self: t_FMap_K_V) : ()
+  function produces_refl_Iter_K_V (self: t_Iter_K_V) : ()
   
-  goal vc_produces_refl_FMap_K_V:
-    [@stop_split] [@expl:produces_refl ensures] produces_FMap_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+  goal vc_produces_refl_Iter_K_V:
+    [@stop_split] [@expl:produces_refl ensures] produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
 end
-module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans (* <logic::fmap::FMap<K, V> as std::iter::IteratorSpec> *)
+module M_logic__fmap__impl_IteratorSpec_for_Iter_K_V__produces_trans (* <logic::fmap::Iter<K, V> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -5020,11 +5042,13 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans (* <logic::
   
   type t_FMap_K_V
   
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
   type t_K
   
   type t_V
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None | Some tup2_K_V
   
@@ -5046,18 +5070,20 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans (* <logic::
   
   meta "rewrite_def" predicate contains_K
   
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
   function len_K (self: t_FMap_K_V) : int
   
   axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some'0 v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
   
   predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
     exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
@@ -5066,27 +5092,118 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans (* <logic::
   
   meta "select_lsinst" "all"
   
-  constant a : t_FMap_K_V
+  constant a : t_Iter_K_V
   
   constant ab : Seq.seq tup2_K_V
   
-  constant b : t_FMap_K_V
+  constant b : t_Iter_K_V
   
   constant bc : Seq.seq tup2_K_V
   
-  constant c : t_FMap_K_V
+  constant c : t_Iter_K_V
   
-  function produces_trans_FMap_K_V (a: t_FMap_K_V) (ab: Seq.seq tup2_K_V) (b: t_FMap_K_V) (bc: Seq.seq tup2_K_V) (c: t_FMap_K_V) : ()
+  function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
   
-  goal vc_produces_trans_FMap_K_V: produces_FMap_K_V a ab b
-    -> produces_FMap_K_V b bc c
+  goal vc_produces_trans_Iter_K_V: produces_Iter_K_V a ab b
+    -> produces_Iter_K_V b bc c
     -> (let ac = Seq.(++) ab bc in (forall x: tup2_K_V. contains_tup2_K_V ab x -> contains_tup2_K_V ac x)
     && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get ac (i + Seq.length ab) = Seq.get bc i)
-    && (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length ac -> (Seq.get ac i).f0 <> k)
-        -> (forall i: int. 0 <= i /\ i < Seq.length ab -> (Seq.get ab i).f0 <> k)
-        /\ (forall i: int. 0 <= i /\ i < Seq.length bc -> (Seq.get bc i).f0 <> k)
-        /\ get_K a k = get_K b k /\ get_K b k = get_K c k)
-    && ([@stop_split] [@expl:produces_trans ensures] produces_FMap_K_V a (Seq.(++) ab bc) c))
+    && (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length ac -> (Seq.get ac i).f0'0 <> k)
+        -> (forall i: int. 0 <= i /\ i < Seq.length ab -> (Seq.get ab i).f0'0 <> k)
+        /\ (forall i: int. 0 <= i /\ i < Seq.length bc -> (Seq.get bc i).f0'0 <> k)
+        /\ get_K (view_Iter_K_V a) k = get_K (view_Iter_K_V b) k
+        /\ get_K (view_Iter_K_V b) k = get_K (view_Iter_K_V c) k)
+    && ([@stop_split] [@expl:produces_trans ensures] produces_Iter_K_V a (Seq.(++) ab bc) c))
+end
+module M_logic__fmap__impl_IntoIterator_for_FMap_K_V__into_iter (* <logic::fmap::FMap<K, V> as std::iter::IntoIterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  use map.Map
+  use int.Int
+  
+  type t_FMap_K_V
+  
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  
+  meta "rewrite_def" predicate contains_K
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
+      end
+  
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+  
+  meta "rewrite_def" function lookup_K
+  
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  
+  meta "rewrite_def" function index_FMap_K_V
+  
+  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_K_V
+  
+  predicate inv_FMap_K_V (_1: t_FMap_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+  
+  predicate inv_Iter_K_V (_1: t_Iter_K_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+  
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
+  
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_K_V)) =
+    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = self } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Iter_K_V = Any.any_l () | & self: t_FMap_K_V = self ])
+    [ return (result: t_Iter_K_V) ->
+    {[@stop_split] [@expl:into_iter_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_K_V result)
+      /\ ([@stop_split] [@expl:into_iter ensures #0] len_K (view_Iter_K_V result) = len_K self)
+      /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
+        = (get_K (view_Iter_K_V result) k = Some v))}
+      (! return {result}) ]
 end
 module M_logic__fmap__impl_IntoIterator_for_ref_FMap_K_V__into_iter (* <&'a logic::fmap::FMap<K, V> as std::iter::IntoIterator> *)
   type namespace_other
@@ -5240,22 +5357,292 @@ module M_logic__fmap__impl_IntoIterator_for_ref_FMap_K_V__into_iter (* <&'a logi
         = (get_ref_K result k = Some'0 v))}
       (! return {result}) ]
   
+  type t_Iter_ref_K_ref_V = { f0: t_FMap_ref_K_ref_V }
+  
+  predicate inv_Iter_ref_K_ref_V (_1: t_Iter_ref_K_ref_V)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Iter_ref_K_ref_V [inv_Iter_ref_K_ref_V x]. inv_Iter_ref_K_ref_V x
+      = inv_FMap_ref_K_ref_V x.f0
+  
+  function view_Iter_ref_K_ref_V (self: t_Iter_ref_K_ref_V) : t_FMap_ref_K_ref_V = self.f0
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
+  let rec into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
     {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_FMap_K_V self}
     (! bb0
     [ bb0 = s0
-      [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: t_FMap_ref_K_ref_V = Any.any_l () | & self: t_FMap_K_V = self ])
-    [ return (result: t_FMap_ref_K_ref_V) ->
-    {[@stop_split] [@expl:into_iter_ref_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_FMap_ref_K_ref_V result)
-      /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K result = len_K self)
+      [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = _6 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Iter_ref_K_ref_V = Any.any_l () | & self: t_FMap_K_V = self | & _6: t_FMap_ref_K_ref_V = Any.any_l () ])
+    [ return (result: t_Iter_ref_K_ref_V) ->
+    {[@stop_split] [@expl:into_iter_ref_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_ref_V result)
+      /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_ref_V result) = len_K self)
       /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
-        = (get_ref_K result k = Some'0 v))}
+        = (get_ref_K (view_Iter_ref_K_ref_V result) k = Some'0 v))}
       (! return {result}) ]
+end
+module M_logic__fmap__impl_IntoIterator_for_refmut_FMap_K_V__into_iter (* <&'a mut logic::fmap::FMap<K, V> as std::iter::IntoIterator> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_FMap_K_V
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  
+  meta "rewrite_def" predicate contains_K
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
+      end
+  
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+  
+  meta "rewrite_def" function lookup_K
+  
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  
+  meta "rewrite_def" function index_FMap_K_V
+  
+  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_K_V
+  
+  predicate inv_FMap_K_V (_1: t_FMap_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+  
+  type t_FMap_ref_K_refmut_V
+  
+  predicate invariant_refmut_FMap_K_V [@inline:trivial] (self: MutBorrow.t t_FMap_K_V) =
+    inv_FMap_K_V self.current /\ inv_FMap_K_V self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_FMap_K_V
+  
+  predicate inv_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = invariant_refmut_FMap_K_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_FMap_K_V
+  
+  type t_Option_refmut_V = None'0 | Some'0 (MutBorrow.t t_V)
+  
+  function to_mapping_ref_K (self: t_FMap_ref_K_refmut_V) : Map.map t_K t_Option_refmut_V
+  
+  function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_refmut_V) (k: t_K) : t_Option_refmut_V =
+    Map.get (to_mapping_ref_K self) k
+  
+  meta "rewrite_def" function get_ref_K
+  
+  predicate contains_ref_K [@inline:trivial] (self: t_FMap_ref_K_refmut_V) (k: t_K) = get_ref_K self k <> None'0
+  
+  meta "rewrite_def" predicate contains_ref_K
+  
+  predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
+  
+  meta "rewrite_def" predicate invariant_ref_K
+  
+  predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
+  
+  meta "rewrite_def" predicate inv_ref_K
+  
+  predicate invariant_refmut_V [@inline:trivial] (self: MutBorrow.t t_V) = inv_V self.current /\ inv_V self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_V
+  
+  predicate inv_refmut_V [@inline:trivial] (_1: MutBorrow.t t_V) = invariant_refmut_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_V
+  
+  predicate index_Mapping_refmut_V_bool [@inline:trivial] (self: Map.map (MutBorrow.t t_V) bool) (a: MutBorrow.t t_V) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_refmut_V_bool
+  
+  function such_that_refmut_V (p: Map.map (MutBorrow.t t_V) bool) : MutBorrow.t t_V
+  
+  axiom such_that_refmut_V_spec:
+    forall p: Map.map (MutBorrow.t t_V) bool. (exists x: MutBorrow.t t_V. index_Mapping_refmut_V_bool p x)
+      -> index_Mapping_refmut_V_bool p (such_that_refmut_V p)
+  
+  function unwrap_Option_refmut_V (self: t_Option_refmut_V) : MutBorrow.t t_V = match self with
+      | Some'0 x -> x
+      | None'0 -> such_that_refmut_V (fun (__0: MutBorrow.t t_V) -> true)
+      end
+  
+  function lookup_ref_K [@inline:trivial] (self: t_FMap_ref_K_refmut_V) (k: t_K) : MutBorrow.t t_V =
+    unwrap_Option_refmut_V (get_ref_K self k)
+  
+  meta "rewrite_def" function lookup_ref_K
+  
+  function index_FMap_ref_K_refmut_V [@inline:trivial] (self: t_FMap_ref_K_refmut_V) (key: t_K) : MutBorrow.t t_V =
+    lookup_ref_K self key
+  
+  meta "rewrite_def" function index_FMap_ref_K_refmut_V
+  
+  predicate invariant_FMap_ref_K_refmut_V [@inline:trivial] (self: t_FMap_ref_K_refmut_V) =
+    forall k: t_K. contains_ref_K self k -> inv_ref_K k /\ inv_refmut_V (index_FMap_ref_K_refmut_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_ref_K_refmut_V
+  
+  predicate inv_FMap_ref_K_refmut_V (_1: t_FMap_ref_K_refmut_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_FMap_ref_K_refmut_V [inv_FMap_ref_K_refmut_V x]. inv_FMap_ref_K_refmut_V x
+      = invariant_FMap_ref_K_refmut_V x
+  
+  function len_ref_K (self: t_FMap_ref_K_refmut_V) : int
+  
+  axiom len_ref_K_spec: forall self: t_FMap_ref_K_refmut_V. len_ref_K self >= 0
+  
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
+  
+  let rec as_mut_ghost_K (self: MutBorrow.t t_FMap_K_V) (return (x: t_FMap_ref_K_refmut_V)) =
+    {[@stop_split] [@expl:as_mut_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
+    any
+    [ return (result: t_FMap_ref_K_refmut_V) ->
+    {[@stop_split] [@expl:as_mut_ghost_K ensures] ([@stop_split] [@expl:as_mut_ghost result type invariant] inv_FMap_ref_K_refmut_V result)
+      /\ ([@stop_split] [@expl:as_mut_ghost ensures #0] len_ref_K result = len_K self.current)
+      /\ ([@stop_split] [@expl:as_mut_ghost ensures #1] len_K self.final = len_K self.current)
+      /\ ([@stop_split] [@expl:as_mut_ghost ensures #2] forall k: t_K. match get_ref_K result k with
+          | None'0 -> not contains_K self.current k /\ not contains_K self.final k
+          | Some'0 v -> get_K self.current k = Some (v.current) /\ get_K self.final k = Some (v.final)
+          end)}
+      (! return {result}) ]
+  
+  type t_Iter_ref_K_refmut_V = { f0: t_FMap_ref_K_refmut_V }
+  
+  predicate resolve_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_FMap_K_V
+  
+  predicate inv_Iter_ref_K_refmut_V (_1: t_Iter_ref_K_refmut_V)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Iter_ref_K_refmut_V [inv_Iter_ref_K_refmut_V x]. inv_Iter_ref_K_refmut_V x
+      = inv_FMap_ref_K_refmut_V x.f0
+  
+  function view_Iter_ref_K_refmut_V (self: t_Iter_ref_K_refmut_V) : t_FMap_ref_K_refmut_V = self.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_iter_refmut_FMap_K_V (self: MutBorrow.t t_FMap_K_V) (return (x: t_Iter_ref_K_refmut_V)) =
+    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_refmut_FMap_K_V self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_FMap_K_V> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_FMap_K_V) ->
+            [ &_11 <- _bor ] -{inv_FMap_K_V _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_FMap_K_V self.current} any) ]
+      | s1 = as_mut_ghost_K {_11} (fun (_x: t_FMap_ref_K_refmut_V) -> [ &_10 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _10 } ] s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FMap_K_V self} any) ]
+      | s4 = -{resolve_refmut_FMap_K_V self}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Iter_ref_K_refmut_V = Any.any_l ()
+    | & self: MutBorrow.t t_FMap_K_V = self
+    | & _10: t_FMap_ref_K_refmut_V = Any.any_l ()
+    | & _11: MutBorrow.t t_FMap_K_V = Any.any_l () ])
+    [ return (result: t_Iter_ref_K_refmut_V) ->
+    {[@stop_split] [@expl:into_iter_refmut_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_refmut_V result)
+      /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_refmut_V result) = len_K self.current)
+      /\ ([@stop_split] [@expl:into_iter ensures #1] len_K self.final = len_K self.current)
+      /\ ([@stop_split] [@expl:into_iter ensures #2] forall k: t_K, v: t_V. get_K self.current k = Some v
+          -> (exists w: MutBorrow.t t_V. get_ref_K (view_Iter_ref_K_refmut_V result) k = Some'0 w
+            /\ v = w.current /\ get_K self.final k = Some (w.final)))
+      /\ ([@stop_split] [@expl:into_iter ensures #3] forall k: t_K, w: MutBorrow.t t_V. get_ref_K (view_Iter_ref_K_refmut_V result) k
+          = Some'0 w -> get_K self.current k = Some (w.current) /\ get_K self.final k = Some (w.final))}
+      (! return {result}) ]
+end
+module M_logic__fmap__impl_Resolve_for_Iter_K_V__resolve_coherence (* <logic::fmap::Iter<K, V> as resolve::Resolve> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_FMap_K_V
+  
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_FMap_K_V (self: t_FMap_K_V) =
+    forall k: t_K, v: t_V. get_K self k = Some v -> resolve_K k /\ resolve_V v
+  
+  predicate resolve_FMap_K_V'0 (_1: t_FMap_K_V)
+  
+  axiom resolve_axiom: forall x: t_FMap_K_V [resolve_FMap_K_V'0 x]. resolve_FMap_K_V'0 x -> resolve_FMap_K_V x
+  
+  predicate structural_resolve_Iter_K_V (_1: t_Iter_K_V) = resolve_FMap_K_V'0 _1.f0
+  
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
+  predicate resolve_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) = resolve_FMap_K_V'0 (view_Iter_K_V self)
+  
+  meta "rewrite_def" predicate resolve_Iter_K_V
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Iter_K_V
+  
+  function resolve_coherence_Iter_K_V (self: t_Iter_K_V) : ()
+  
+  goal vc_resolve_coherence_Iter_K_V: structural_resolve_Iter_K_V self
+    -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Iter_K_V self)
 end
 module M_logic__fset__impl_FSet_T__ext_eq (* logic::fset::FSet<T> *)
   type namespace_other
@@ -71667,6 +72054,98 @@ module M_logic__fmap__impl_Resolve_for_FMap_K_V__resolve_coherence__refines (* <
   goal refines: forall self: t_FMap_K_V. inv_FMap_K_V self /\ structural_resolve_FMap_K_V self
       -> structural_resolve_FMap_K_V self /\ (forall result: (). resolve_FMap_K_V self -> resolve_FMap_K_V self)
 end
+module M_logic__fmap__impl_Resolve_for_Iter_K_V__resolve_coherence__refines (* <logic::fmap::Iter<K, V> as resolve::Resolve> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_FMap_K_V
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  
+  meta "rewrite_def" predicate contains_K
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_V_bool
+  
+  function such_that_V (p: Map.map t_V bool) : t_V
+  
+  axiom such_that_V_spec: forall p: Map.map t_V bool. (exists x: t_V. index_Mapping_V_bool p x)
+      -> index_Mapping_V_bool p (such_that_V p)
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> such_that_V (fun (__0: t_V) -> true)
+      end
+  
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+  
+  meta "rewrite_def" function lookup_K
+  
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  
+  meta "rewrite_def" function index_FMap_K_V
+  
+  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_K_V
+  
+  predicate inv_FMap_K_V (_1: t_FMap_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+  
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
+  predicate inv_Iter_K_V (_1: t_Iter_K_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_FMap_K_V (self: t_FMap_K_V) =
+    forall k: t_K, v: t_V. get_K self k = Some v -> resolve_K k /\ resolve_V v
+  
+  predicate resolve_FMap_K_V'0 (_1: t_FMap_K_V)
+  
+  axiom resolve_axiom: forall x: t_FMap_K_V [resolve_FMap_K_V'0 x]. resolve_FMap_K_V'0 x -> resolve_FMap_K_V x
+  
+  predicate structural_resolve_Iter_K_V (_1: t_Iter_K_V) = resolve_FMap_K_V'0 _1.f0
+  
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
+  predicate resolve_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) = resolve_FMap_K_V'0 (view_Iter_K_V self)
+  
+  meta "rewrite_def" predicate resolve_Iter_K_V
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Iter_K_V. inv_Iter_K_V self /\ structural_resolve_Iter_K_V self
+      -> structural_resolve_Iter_K_V self /\ (forall result: (). resolve_Iter_K_V self -> resolve_Iter_K_V self)
+end
 module M_logic__fset__impl_Resolve_for_FSet_T__resolve_coherence__refines (* <logic::fset::FSet<T> as resolve::Resolve> *)
   type namespace_other
   
@@ -72568,7 +73047,7 @@ module M_peano__impl_PartialEq_for_PeanoInt__eq__refines (* <peano::PeanoInt as 
   goal refines: forall self_: t_PeanoInt. forall rhs: t_PeanoInt. forall result: bool. result = (self_ = rhs)
           -> result = (deep_model_ref_PeanoInt self_ = deep_model_ref_PeanoInt rhs)
 end
-module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap::FMap<K, V> as std::iter::Iterator> *)
+module M_logic__fmap__impl_Iterator_for_Iter_K_V__next__refines (* <logic::fmap::Iter<K, V> as std::iter::Iterator> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -72580,6 +73059,8 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
   use int.Int
   
   type t_FMap_K_V
+  
+  type t_Iter_K_V = { f0: t_FMap_K_V }
   
   type t_K
   
@@ -72632,29 +73113,33 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
   
   axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
   
-  predicate invariant_refmut_FMap_K_V [@inline:trivial] (self: MutBorrow.t t_FMap_K_V) =
-    inv_FMap_K_V self.current /\ inv_FMap_K_V self.final
+  predicate inv_Iter_K_V (_1: t_Iter_K_V)
   
-  meta "rewrite_def" predicate invariant_refmut_FMap_K_V
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
   
-  predicate inv_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = invariant_refmut_FMap_K_V _1
+  predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
+    inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
   
-  meta "rewrite_def" predicate inv_refmut_FMap_K_V
+  meta "rewrite_def" predicate invariant_refmut_Iter_K_V
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  predicate inv_refmut_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = invariant_refmut_Iter_K_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_K_V
+  
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
   
-  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0 /\ inv_V _1.f1
+  predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0'0 /\ inv_V _1.f1'0
   
   meta "rewrite_def" predicate inv_tup2_K_V
   
   predicate inv_Option_tup2_K_V (_1: t_Option_tup2_K_V)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_tup2_K_V [inv_Option_tup2_K_V x]. inv_Option_tup2_K_V x
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_tup2_K_V [inv_Option_tup2_K_V x]. inv_Option_tup2_K_V x
       = match x with
         | None'0 -> true
-        | Some'0 f0'0 -> inv_tup2_K_V f0'0
+        | Some'0 f0'1 -> inv_tup2_K_V f0'1
         end
   
   function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = if 0 <= ix /\ ix < Seq.length self then
@@ -72663,29 +73148,31 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
       None'0
   
   
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
   function len_K (self: t_FMap_K_V) : int
   
   axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some'0 { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some'0 { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
   
-  function produces_trans_FMap_K_V (a: t_FMap_K_V) (ab: Seq.seq tup2_K_V) (b: t_FMap_K_V) (bc: Seq.seq tup2_K_V) (c: t_FMap_K_V) : ()
+  function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
    = let ac = Seq.(++) ab bc in ()
   
-  axiom produces_trans_FMap_K_V_spec:
-    forall a: t_FMap_K_V, ab: Seq.seq tup2_K_V, b: t_FMap_K_V, bc: Seq.seq tup2_K_V, c: t_FMap_K_V. produces_FMap_K_V a ab b
-      -> produces_FMap_K_V b bc c -> produces_FMap_K_V a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_K_V_spec:
+    forall a: t_Iter_K_V, ab: Seq.seq tup2_K_V, b: t_Iter_K_V, bc: Seq.seq tup2_K_V, c: t_Iter_K_V. produces_Iter_K_V a ab b
+      -> produces_Iter_K_V b bc c -> produces_Iter_K_V a (Seq.(++) ab bc) c
   
-  function produces_refl_FMap_K_V (self: t_FMap_K_V) : () = ()
+  function produces_refl_Iter_K_V (self: t_Iter_K_V) : () = ()
   
-  axiom produces_refl_FMap_K_V_spec: forall self: t_FMap_K_V. produces_FMap_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+  axiom produces_refl_Iter_K_V_spec: forall self: t_Iter_K_V. produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
   
   predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
   
@@ -72699,7 +73186,7 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
   
   predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
   
-  predicate completed_FMap_K_V (self: MutBorrow.t t_FMap_K_V) = is_empty_K self.current
+  predicate completed_Iter_K_V (self: MutBorrow.t t_Iter_K_V) = is_empty_K (view_Iter_K_V self.current)
   
   function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
@@ -72713,18 +73200,19 @@ module M_logic__fmap__impl_Iterator_for_FMap_K_V__next__refines (* <logic::fmap:
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: MutBorrow.t t_FMap_K_V. inv_refmut_FMap_K_V self_
-      -> inv_refmut_FMap_K_V self_
+  goal refines: forall self_: MutBorrow.t t_Iter_K_V. inv_refmut_Iter_K_V self_
+      -> inv_refmut_Iter_K_V self_
       /\ (forall result: t_Option_tup2_K_V. inv_Option_tup2_K_V result
           /\ match result with
-            | None'0 -> completed_FMap_K_V self_
-            | Some'0 {f0 = k; f1 = v} -> produces_FMap_K_V self_.current (Seq.singleton { f0 = k; f1 = v }) self_.final
-            /\ self_.current = insert_K self_.final k v
+            | None'0 -> completed_Iter_K_V self_
+            | Some'0 {f0'0 = k; f1'0 = v} -> produces_Iter_K_V self_.current (Seq.singleton { f0'0 = k;
+                                                                                              f1'0 = v }) self_.final
+            /\ view_Iter_K_V self_.current = insert_K (view_Iter_K_V self_.final) k v
             end
         -> inv_Option_tup2_K_V result
         /\ match result with
-          | None'0 -> completed_FMap_K_V self_
-          | Some'0 v -> produces_FMap_K_V self_.current (Seq.singleton v) self_.final
+          | None'0 -> completed_Iter_K_V self_
+          | Some'0 v -> produces_Iter_K_V self_.current (Seq.singleton v) self_.final
           end)
 end
 module M_logic__seq__impl_Iterator_for_Iter_T__next__refines (* <logic::seq::Iter<T> as std::iter::Iterator> *)
@@ -73036,7 +73524,7 @@ module M_std__iter__map_inv__impl_Iterator_for_MapInv_I_F__next__refines (* <std
           | Some v -> produces_MapInv_I_F self_.current (Seq.singleton v) self_.final
           end)
 end
-module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl__refines (* <logic::fmap::FMap<K, V> as std::iter::IteratorSpec> *)
+module M_logic__fmap__impl_IteratorSpec_for_Iter_K_V__produces_refl__refines (* <logic::fmap::Iter<K, V> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -73047,11 +73535,13 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl__refines (* 
   
   type t_FMap_K_V
   
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
   type t_K
   
   type t_V
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None | Some tup2_K_V
   
@@ -73073,27 +73563,29 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_refl__refines (* 
   
   meta "rewrite_def" predicate contains_K
   
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
   function len_K (self: t_FMap_K_V) : int
   
   axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some'0 v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_FMap_K_V. forall result: (). produces_FMap_K_V self (Seq.empty: Seq.seq tup2_K_V) self
-        -> produces_FMap_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+  goal refines: forall self: t_Iter_K_V. forall result: (). produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+        -> produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
 end
-module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans__refines (* <logic::fmap::FMap<K, V> as std::iter::IteratorSpec> *)
+module M_logic__fmap__impl_IteratorSpec_for_Iter_K_V__produces_trans__refines (* <logic::fmap::Iter<K, V> as std::iter::IteratorSpec> *)
   type namespace_other
   
   type t_Namespace = Other namespace_other
@@ -73104,11 +73596,13 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans__refines (*
   
   type t_FMap_K_V
   
+  type t_Iter_K_V = { f0: t_FMap_K_V }
+  
   type t_K
   
   type t_V
   
-  type tup2_K_V = { f0: t_K; f1: t_V }
+  type tup2_K_V = { f0'0: t_K; f1'0: t_V }
   
   type t_Option_tup2_K_V = None | Some tup2_K_V
   
@@ -73130,29 +73624,31 @@ module M_logic__fmap__impl_IteratorSpec_for_FMap_K_V__produces_trans__refines (*
   
   meta "rewrite_def" predicate contains_K
   
+  function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+  
   function len_K (self: t_FMap_K_V) : int
   
   axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
   
-  predicate produces_FMap_K_V (self: t_FMap_K_V) (visited: Seq.seq tup2_K_V) (o: t_FMap_K_V) =
+  predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
-        -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0 = k; f1 = v }
-        -> not contains_K o k /\ get_K self k = Some'0 v)
-    /\ len_K self = Seq.length visited + len_K o
-    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K o k = get_K self k)
+        -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+    /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+    /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_FMap_K_V. forall ab: Seq.seq tup2_K_V. forall b: t_FMap_K_V. forall bc: Seq.seq tup2_K_V. forall c: t_FMap_K_V. produces_FMap_K_V a ab b
-                /\ produces_FMap_K_V b bc c
-              -> produces_FMap_K_V a ab b
-              /\ produces_FMap_K_V b bc c
-              /\ (forall result: (). produces_FMap_K_V a (Seq.(++) ab bc) c -> produces_FMap_K_V a (Seq.(++) ab bc) c)
+    forall a: t_Iter_K_V. forall ab: Seq.seq tup2_K_V. forall b: t_Iter_K_V. forall bc: Seq.seq tup2_K_V. forall c: t_Iter_K_V. produces_Iter_K_V a ab b
+                /\ produces_Iter_K_V b bc c
+              -> produces_Iter_K_V a ab b
+              /\ produces_Iter_K_V b bc c
+              /\ (forall result: (). produces_Iter_K_V a (Seq.(++) ab bc) c -> produces_Iter_K_V a (Seq.(++) ab bc) c)
 end
 module M_logic__seq__impl_IteratorSpec_for_Iter_T__produces_refl__refines (* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
   type namespace_other
