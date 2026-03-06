@@ -419,6 +419,29 @@ impl<'tcx> Pattern<'tcx> {
             PatternKind::Or(patterns) => patterns.iter().for_each(|f| f.binds(binders)),
         }
     }
+
+    /// Collect bound variables along with whether they represent "stricly smaller" values
+    /// than the scrutinee (this is for the structural recursion check)
+    pub(crate) fn binds_smaller(&self, strictly: bool, binders: &mut Vec<(Ident, bool)>) {
+        match &self.kind {
+            PatternKind::Constructor(_, fields) => {
+                fields.iter().for_each(|(_, f)| f.binds_smaller(true, binders))
+            }
+            PatternKind::Tuple(fields) => {
+                fields.iter().for_each(|f| f.binds_smaller(true, binders))
+            }
+            PatternKind::Wildcard => {}
+            PatternKind::Binder(s, pat) => {
+                binders.push((s.0, strictly));
+                pat.binds_smaller(strictly, binders);
+            }
+            PatternKind::Bool(_) => {}
+            PatternKind::Deref(pointee) => pointee.binds_smaller(strictly, binders),
+            PatternKind::Or(patterns) => {
+                patterns.iter().for_each(|f| f.binds_smaller(strictly, binders))
+            }
+        }
+    }
 }
 
 impl<'tcx> Term<'tcx> {
