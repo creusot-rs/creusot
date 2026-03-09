@@ -363,7 +363,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 .instantiate(ctx.tcx, subst_r)
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+        // TODO eprintln!("{call_span:?} {bounds:?}");
         for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
+            // TODO eprintln!("{call_span:?} depends on {impl_id:?}");
             let item_node = self.insert_node(GraphNode::impl_(impl_id));
             self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
         }
@@ -484,7 +486,14 @@ impl CallGraph {
             }
             let node = build_call_graph.insert_node(GraphNode::function(def_id));
 
-            let typing_env = ctx.typing_env(def_id);
+            // For termination checking of trait impl members, `typing_env` should be the one from the trait definition.
+            // This prevents smuggling recursive constraints within redundant trait bounds.
+            let typing_env = if let Some(trait_item_id) = ctx.trait_item_of(def_id) {
+                let typing_env = ctx.typing_env(trait_item_id);
+                todo!()
+            } else {
+                ctx.typing_env(def_id)
+            };
             let (thir, expr) = ctx.thir_body(local_id);
             let thir = &thir.borrow();
 
@@ -816,9 +825,12 @@ fn proof_tree_nodes<'tcx>(
     let mut nodes = Vec::new();
     let mut predicates: Vec<_> = as_predicates(tcx, clauses).collect();
     while let Some(trait_ref) = predicates.pop() {
+        eprintln!("next bound: {trait_ref:?}");
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
+            eprintln!("skip");
             continue;
         };
+        eprintln!("{source:?}");
         let ImplSource::UserDefined(source) = source else { continue };
         nodes.push(source.impl_def_id);
         let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
