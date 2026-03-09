@@ -45,7 +45,7 @@ use crate::{
             Ident, PIdent, Pattern, ScopedTerm, Term, TermKind,
             visit::{TermVisitor, super_visit_term},
         },
-        traits::{ImplSource_, TraitResolved},
+        traits::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
     },
     util::erased_identity_for_item,
 };
@@ -60,11 +60,15 @@ use rustc_hir::{
     def_id::{DefId, LocalDefId},
 };
 use rustc_index::bit_set::DenseBitSet;
-use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
+use rustc_infer::{
+    infer::TyCtxtInferExt as _,
+    traits::{ImplSource, ObligationCause},
+};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
-        Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TypingEnv, TypingMode,
+        self, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
+        TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
@@ -192,7 +196,8 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
                 let adverb = if last && cycle.len() > 1 { "finally" } else { "then" };
                 let punct = if last { "." } else { "..." };
                 let f1 = ctx.def_path_str(call_graph.node_weight(current_node).unwrap().def_id());
-                let f2 = ctx.def_path_str(call_graph.node_weight(next_node).unwrap().def_id());
+                let next_node = call_graph.node_weight(next_node).unwrap().def_id();
+                let f2 = ctx.def_path_str(next_node);
 
                 match call {
                     CallKind::Direct(span) => {
@@ -203,8 +208,14 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
                         error.span_note(
                             span,
                             format!(
-                                "{adverb} `{f1}` might call `{f2}` via the call to `{f3}`{punct}"
+                                "{adverb} `{f1}` uses the impl `{f2}` via the call to `{f3}`{punct}"
                             ),
+                        );
+                    }
+                    CallKind::ImplMember => {
+                        error.span_note(
+                            ctx.def_span(next_node),
+                            format!("{adverb} the member `{f2}` might be called"),
                         );
                     }
                 }
@@ -232,9 +243,15 @@ struct BuildFunctionsGraph<'tcx> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum GraphNode {
+struct GraphNode {
+    def_id: DefId,
+    kind: GraphNodeKind,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum GraphNodeKind {
     /// A normal function.
-    Function(DefId),
+    Function,
     /// This node is used in the following case:
     /// ```
     /// # macro_rules! ignore { ($($t:tt)*) => {}; }
@@ -256,19 +273,29 @@ enum GraphNode {
     /// Then we feel this is justified to do this transformation, precisely because the
     /// default function is transparent at the point of the impl, so the user can 'see'
     /// its definition.
+    ///
+    /// The `def_id` in the `GraphNode` will be the default implementation selected for the impl block.
     ImplDefaultTransparent {
-        /// The default implementation selected for the impl block.
-        item_id: DefId,
         impl_id: LocalDefId,
     },
+    Impl,
 }
 
 impl GraphNode {
     fn def_id(&self) -> DefId {
-        match self {
-            GraphNode::Function(def_id) => *def_id,
-            GraphNode::ImplDefaultTransparent { item_id, .. } => *item_id,
-        }
+        self.def_id
+    }
+
+    fn function(def_id: DefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::Function }
+    }
+
+    fn impl_default(def_id: DefId, impl_id: LocalDefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::ImplDefaultTransparent { impl_id: impl_id } }
+    }
+
+    fn impl_(def_id: DefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::Impl }
     }
 }
 
@@ -285,11 +312,13 @@ enum CallKind {
     ///
     /// The `DefId` is the one for the generic function, here `f`.
     GenericBound(DefId, Span),
+    /// Edge from an impl block to its member
+    ImplMember,
 }
 
 impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Insert a new node in the graph, or fetch an existing node id.
-    fn insert_function(&mut self, graph_node: GraphNode) -> graph::NodeIndex {
+    fn insert_node(&mut self, graph_node: GraphNode) -> graph::NodeIndex {
         *self
             .graph_node_to_index
             .entry(graph_node)
@@ -329,44 +358,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         } else {
             let subst_r;
             (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
-            called_node = self.insert_function(GraphNode::Function(called_id));
+            called_node = self.insert_node(GraphNode::function(called_id));
             bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
                 .instantiate(ctx.tcx, subst_r)
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
-
-        // Iterate over the trait bounds of the called function, and assume we call all functions
-        // of the corresponding trait if they are specialized.
-        for bound in bounds {
-            // WARNING: `bound`` is not normalized (but we don't seem to use the fact that it should be)
-            let Some(clause) = bound.as_trait_clause() else { continue };
-            let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
-            if !matches!(ctx.def_kind(trait_ref.def_id), DefKind::Trait) {
-                // Some bounds can be trait aliases and we skip them.
-                // The implied bounds should already appear separately.
-                continue;
-            }
-            // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
-            // used by this trait solving, including those that are used indirectly.
-            for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
-                if !matches!(ctx.def_kind(item), DefKind::AssocFn) {
-                    continue;
-                }
-                let TraitResolved::Instance { def: (item_id, _), impl_ } =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
-                else {
-                    continue;
-                };
-                if matches!(impl_, ImplSource_::Param) {
-                    continue;
-                }
-                let item_node = self.insert_function(GraphNode::Function(item_id));
-                self.graph.update_edge(
-                    node,
-                    item_node,
-                    CallKind::GenericBound(called_id, call_span),
-                );
-            }
+        for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
+            let item_node = self.insert_node(GraphNode::impl_(impl_id));
+            self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
         }
     }
 
@@ -396,7 +395,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         impl_id: LocalDefId,
         item_id: DefId,
     ) -> (graph::NodeIndex, Clauses<'tcx>) {
-        let node = self.insert_function(GraphNode::ImplDefaultTransparent { item_id, impl_id });
+        let node = self.insert_node(GraphNode::impl_default(item_id, impl_id));
         if let Some(bounds) = self.default_functions_bounds.get(&node) {
             return (node, bounds);
         }
@@ -483,7 +482,7 @@ impl CallGraph {
                 }
                 continue;
             }
-            let node = build_call_graph.insert_function(GraphNode::Function(def_id));
+            let node = build_call_graph.insert_node(GraphNode::function(def_id));
 
             let typing_env = ctx.typing_env(def_id);
             let (thir, expr) = ctx.thir_body(local_id);
@@ -502,6 +501,28 @@ impl CallGraph {
                     generic_args,
                     call_span,
                 );
+            }
+        }
+
+        let tcx = ctx.tcx;
+        for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
+            let trait_def = tcx.trait_def(trait_id);
+            for &impl_id in impls {
+                let ancestors = trait_def.ancestors(tcx, impl_id.to_def_id()).unwrap();
+                for &item in tcx.associated_item_def_ids(trait_id) {
+                    if let DefKind::AssocFn = tcx.def_kind(item) {
+                        let leaf_def = ancestors.leaf_def(tcx, item).unwrap();
+                        let impl_node =
+                            build_call_graph.insert_node(GraphNode::impl_(impl_id.to_def_id()));
+                        let item_node =
+                            build_call_graph.insert_node(GraphNode::function(leaf_def.item.def_id));
+                        build_call_graph.graph.update_edge(
+                            impl_node,
+                            item_node,
+                            CallKind::ImplMember,
+                        );
+                    }
+                }
             }
         }
 
@@ -767,4 +788,42 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
     s.visit_term(term);
 
     s.valid()
+}
+
+fn as_predicates<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    clauses: ty::Clauses<'tcx>,
+) -> impl Iterator<Item = ty::TraitRef<'tcx>> {
+    clauses.into_iter().filter_map(move |clause| {
+        // WARNING: `clause` is not normalized (but we don't seem to use the fact that it should be)
+        let Some(clause) = clause.as_trait_clause() else { return None };
+        let ty::PredicatePolarity::Positive = clause.polarity() else { return None };
+        let trait_ref = tcx.instantiate_bound_regions_with_erased(clause).trait_ref;
+        if !matches!(tcx.def_kind(trait_ref.def_id), DefKind::Trait) {
+            // Some bounds can be trait aliases and we skip them.
+            // The implied bounds should already appear separately.
+            return None;
+        }
+        Some(trait_ref)
+    })
+}
+
+fn proof_tree_nodes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    clauses: ty::Clauses<'tcx>,
+) -> Vec<DefId> {
+    let mut nodes = Vec::new();
+    let mut predicates: Vec<_> = as_predicates(tcx, clauses).collect();
+    while let Some(trait_ref) = predicates.pop() {
+        let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
+            continue;
+        };
+        let ImplSource::UserDefined(source) = source else { continue };
+        nodes.push(source.impl_def_id);
+        let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
+            .instantiate(tcx, source.args);
+        predicates.extend(as_predicates(tcx, bounds));
+    }
+    nodes
 }
