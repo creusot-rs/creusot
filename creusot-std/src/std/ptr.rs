@@ -369,6 +369,13 @@ extern_spec! {
             self as _
         }
 
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == self as _)]
+        const fn cast_mut(self) -> *mut T {
+            self as _
+        }
+
         #[check(terminates)]
         #[erasure]
         #[ensures(result == self.is_aligned_logic())]
@@ -405,6 +412,13 @@ extern_spec! {
         #[erasure]
         #[ensures(result == self as _)]
         fn cast<U>(self) -> *mut U {
+            self as _
+        }
+
+        #[check(ghost)]
+        #[erasure]
+        #[ensures(result == self as _)]
+        fn cast_const(self) -> *const T {
             self as _
         }
 
