@@ -3,7 +3,6 @@ extern crate creusot_std;
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        Committer,
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::Resource,
@@ -11,7 +10,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::AtomicI32,
+        sync::atomic_sc::{AtomicI32, Committer},
         thread::{self, JoinHandleExt},
     },
 };
@@ -50,7 +49,6 @@ pub fn message_passing() {
     let (data, mut data_own) = PermCell::new(0i32);
     let excl = Resource::alloc(snapshot!(Excl(())));
 
-    // Initialize our invariant
     let inv = AtomicInvariant::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
