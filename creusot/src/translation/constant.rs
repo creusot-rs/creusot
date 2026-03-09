@@ -1,6 +1,7 @@
 use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
-    translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
+    resolution::TraitResolved,
+    translation::{fmir::Operand, pearlite::Literal},
 };
 use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};

@@ -4,10 +4,10 @@ use crate::{
     contracts_items::{Intrinsic, is_open_inv_result, is_trivial_if_param_trivial},
     ctx::{Namer, TranslationCtx},
     naming::{field_name, name},
+    resolution::TraitResolved,
     translation::{
         pearlite::{Ident, Pattern, Term, TermKind, Trigger},
         specification::{Condition, PreSignature},
-        traits::TraitResolved,
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};

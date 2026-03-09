@@ -2,10 +2,10 @@ use super::specification::inputs_and_output_from_thir;
 use crate::{
     contracts_items::{ErasureKind, get_erasure, is_trusted},
     ctx::*,
+    resolution::TraitResolved,
     translation::{
         pearlite::PIdent,
         specification::{ContractClauses, contract_clauses_of},
-        traits::TraitResolved,
     },
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_or_snap,

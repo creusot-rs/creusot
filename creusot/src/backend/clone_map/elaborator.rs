@@ -16,11 +16,11 @@ use crate::{
     contracts_items::{Intrinsic, get_builtin, is_inline, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt, ItemType},
     naming::name,
+    resolution::TraitResolved,
     translation::{
         constant::try_const_to_term,
         pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Substable, Term, Trigger, normalize},
         specification::Condition,
-        traits::TraitResolved,
     },
 };
 use petgraph::graphmap::DiGraphMap;

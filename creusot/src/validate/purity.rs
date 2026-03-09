@@ -5,7 +5,7 @@ use crate::{
         is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    translation::traits::TraitResolved,
+    resolution::TraitResolved,
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;

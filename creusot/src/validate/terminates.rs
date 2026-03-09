@@ -40,12 +40,10 @@ use crate::{
         has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
-    translation::{
-        pearlite::{
-            Ident, PIdent, Pattern, Scoped, Term, TermKind,
-            visit::{TermVisitor, super_visit_term},
-        },
-        traits::{ImplSource_, TraitResolved},
+    resolution::{ImplSource_, TraitResolved},
+    translation::pearlite::{
+        Ident, PIdent, Pattern, Scoped, Term, TermKind,
+        visit::{TermVisitor, super_visit_term},
     },
     util::erased_identity_for_item,
 };
