@@ -240,6 +240,7 @@ pub trait Protocol {
 #[opaque]
 pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
+// TODO: [VL] How to use Objective on T, because of #[cfg(creusot)]
 unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
 impl<T: Protocol> AtomicInvariant<T> {
@@ -314,6 +315,9 @@ impl<T: Protocol> AtomicInvariant<T> {
 /// - invariant because it gives access to a mutable borrow of this data.
 #[opaque]
 pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
+
+impl<T> !Send for NonAtomicInvariant<T> {}
+impl<T> !Sync for NonAtomicInvariant<T> {}
 
 /// Define method call syntax for [`NonAtomicInvariant::open`].
 pub trait NonAtomicInvariantExt<'a> {

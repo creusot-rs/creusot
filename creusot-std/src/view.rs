@@ -5,6 +5,13 @@ use core::{cmp::Ordering, marker::PhantomData};
 #[opaque]
 pub struct SyncView;
 
+impl SyncView {
+    #[check(ghost)]
+    pub fn new() -> Self {
+        SyncView
+    }
+}
+
 impl OrdLogic for SyncView {
     #[logic(opaque)]
     fn cmp_log(self, _: Self) -> Ordering {
@@ -77,8 +84,9 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[ensures(result.0 == result.1.view_logic() && result.1.value() == *x)]
-    pub fn new(x: Ghost<T>) -> Ghost<(SyncView, Self)> {
+    #[ensures(result.0 == result.1.view_logic() && result.1.value() == *val)]
+    #[allow(unused_variables)]
+    pub fn new(val: Ghost<T>) -> Ghost<(SyncView, Self)> {
         Ghost::conjure()
     }
 
@@ -86,6 +94,7 @@ impl<T> AtView<T> {
     #[trusted]
     #[requires(self.view_logic() == v)]
     #[ensures(result == self.value())]
+    #[allow(unused_variables)]
     pub fn into_inner(self, v: SyncView) -> T {
         panic!("Should not be called outside ghost code")
     }
