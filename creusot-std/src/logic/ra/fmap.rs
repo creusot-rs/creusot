@@ -142,6 +142,9 @@ impl<K, V: RA> FMap<K, V> {
     }
 }
 
+/// Add a key-value to an authority/fragment pair of [`FMap`]s.
+///
+/// It requires that the key is not in the map yet.
 pub struct FMapInsertLocalUpdate<K, V>(pub Snapshot<K>, pub Snapshot<V>);
 
 impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {

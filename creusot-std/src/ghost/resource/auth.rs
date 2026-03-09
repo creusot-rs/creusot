@@ -4,7 +4,7 @@ use crate::{
         Id,
         ra::{
             UnitRA,
-            auth::{Auth, AuthUpdate},
+            auth::{Auth, AuthUpdate, OpLocalUpdate},
             update::LocalUpdate,
         },
     },
@@ -85,13 +85,17 @@ impl<R: UnitRA> Authority<R> {
         ghost!(Self(Resource::alloc(snapshot!(Auth::new_auth(R::unit()))).into_inner()))
     }
 
-    /// Create a new, empty authority.
+    /// Create a new authority/fragment pair from a raw [`Auth`] resource.
     #[check(ghost)]
     #[requires(r@.auth() != None)]
-    #[ensures(result@ == r@.auth().unwrap_logic())]
-    #[ensures(result.id() == r.id())]
-    pub fn from_resource(r: Resource<Auth<R>>) -> Self {
-        Self(r)
+    #[ensures(result.0.id() == r.id() && result.1.id() == r.id())]
+    #[ensures(result.0@ == r@.auth().unwrap_logic())]
+    #[ensures(result.1@ == r@.frag())]
+    pub fn from_resource(mut r: Resource<Auth<R>>) -> (Self, Fragment<R>) {
+        let fragment = snapshot!(Auth::new_frag(r@.frag()));
+        let authority = snapshot!(Auth::new_auth(r@.auth().unwrap_logic()));
+        let frag = r.split_off(fragment, authority);
+        (Self(r), Fragment(frag))
     }
 
     /// Perform a local update on an authority, fragment pair
@@ -111,6 +115,21 @@ impl<R: UnitRA> Authority<R> {
         self.0.update(AuthUpdate(upd));
         let rs = snapshot!((Auth::new_frag(self.0@.frag()), Auth::new(self.0@.auth(), R::unit())));
         frag.0 = self.0.split_off(snapshot!(rs.0), snapshot!(rs.1));
+    }
+
+    /// Add a piece to the authority, and return a new fragment corresponding to this piece.
+    ///
+    /// This is a specialization of [`Self::update`] with [`OpLocalUpdate`].
+    #[check(ghost)]
+    #[requires(self@.op(*frag) != None)]
+    #[ensures((^self)@ == self@.op(*frag).unwrap_logic())]
+    #[ensures(result@ == *frag)]
+    #[ensures(result.id() == self.id() && (^self).id() == self.id())]
+    #[allow(unused_variables)]
+    pub fn add_fragment(&mut self, frag: Snapshot<R>) -> Fragment<R> {
+        let mut unit: Fragment<R> = Fragment::new_unit(self.id_ghost());
+        self.update(&mut unit, OpLocalUpdate(frag));
+        unit
     }
 
     /// Asserts that the fragment represented by `frag` is contained in `self`.

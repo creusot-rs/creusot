@@ -50,6 +50,8 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     fn rel_unit(a: Option<T>) {}
 }
 
+/// Apply an [update](Update) to an [`Auth`] resource, by using a [local
+/// update](LocalUpdate) on the authority/fragment.
 pub struct AuthUpdate<U>(pub U);
 
 impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
@@ -85,4 +87,30 @@ impl<R: UnitRA, U: LocalUpdate<R>> Update<Auth<R>> for AuthUpdate<U> {
         let f = frame.frag().op(y).unwrap_logic();
         self.0.frame_preserving(auth, from.frag(), Some(f));
     }
+}
+
+/// Add some data to both an authority and a fragment, at the same time.
+///
+/// Used in `Authority::add_fragment`.
+pub struct OpLocalUpdate<R>(pub Snapshot<R>);
+
+impl<R: UnitRA> LocalUpdate<R> for OpLocalUpdate<R> {
+    #[logic(open)]
+    fn premise(self, from_auth: R, _: R) -> bool {
+        from_auth.op(*self.0) != None
+    }
+
+    #[logic(open)]
+    fn update(self, from_auth: R, from_frag: R) -> (R, R) {
+        (from_auth.op(*self.0).unwrap_logic(), from_frag.op(*self.0).unwrap_logic())
+    }
+
+    #[logic]
+    #[requires(self.premise(from_auth, from_frag))]
+    #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
+    #[ensures({
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
+    fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>) {}
 }
