@@ -60,11 +60,11 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     ///
     /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_value() == val ==>
+    #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.value() == val ==>
         f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut StoreCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.new_value() == val &&
+        !c.shot() && c.ward() == *self && c.value() == val &&
         f.postcondition_once((c,), *result)
     )]
     #[trusted]
@@ -118,7 +118,7 @@ impl<C: Container<Value: Sized>> LoadCommitter<C> {
         dead
     }
 
-    /// Value held by the [`AtomicOwn`].
+    /// Value read from the atomic operation.
     #[logic(opaque)]
     pub fn value(self) -> C::Value {
         dead
@@ -128,7 +128,7 @@ impl<C: Container<Value: Sized>> LoadCommitter<C> {
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
-    #[requires(self.ward() == *own.ward())]
+    #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
     #[ensures((*self).value() == *own.val())]
     #[check(ghost)]
@@ -159,15 +159,9 @@ impl<C: Container<Value: Sized>> StoreCommitter<C> {
         dead
     }
 
-    /// Value held by the [`AtomicOwn`], before the [`shoot`].
+    /// Value written by the atomic operation.
     #[logic(opaque)]
-    pub fn old_value(self) -> C::Value {
-        dead
-    }
-
-    /// Value held by the [`AtomicOwn`], after the [`shoot`].
-    #[logic(opaque)]
-    pub fn new_value(self) -> C::Value {
+    pub fn value(self) -> C::Value {
         dead
     }
 
@@ -175,11 +169,10 @@ impl<C: Container<Value: Sized>> StoreCommitter<C> {
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
-    #[requires(self.ward() == *own.ward())]
+    #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(*own).val() == (*self).old_value())]
-    #[ensures(*(^own).val() == (*self).new_value())]
+    #[ensures(*(^own).val() == (*self).value())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -224,7 +217,7 @@ impl<C: Container<Value: Sized>> UpdateCommitter<C> {
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
-    #[requires(self.ward() == *own.ward())]
+    #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures(*(*own).val() == (*self).old_value())]

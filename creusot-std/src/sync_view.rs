@@ -1,5 +1,20 @@
 use crate::prelude::*;
-use core::{cmp::Ordering, marker::PhantomData};
+use core::marker::PhantomData;
+
+#[cfg(creusot)]
+use core::cmp::Ordering;
+
+pub type Timestamp = Int;
+
+pub trait HasTimestamp {
+    #[logic]
+    fn get_timestamp(self, view: SyncView) -> Timestamp;
+
+    #[logic(law)]
+    #[requires(x.le_log(y))]
+    #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
+    fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
+}
 
 /// ↑V
 #[opaque]
@@ -7,8 +22,9 @@ pub struct SyncView;
 
 impl SyncView {
     #[check(ghost)]
-    pub fn new() -> Self {
-        SyncView
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
     }
 }
 
@@ -105,15 +121,4 @@ impl<T> AtView<T> {
     pub fn view(&self) -> SyncView {
         panic!("Should not be called outside ghost code")
     }
-}
-
-pub type Timestamp = Int;
-
-pub trait HasTimestamp {
-    #[logic]
-    fn get_timestamp(self, view: SyncView) -> Timestamp;
-
-    #[logic(law)]
-    #[ensures(x.le_log(y) == self.get_timestamp(x).le_log(self.get_timestamp(y)))]
-    fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
 }
