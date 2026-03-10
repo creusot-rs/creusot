@@ -273,8 +273,43 @@ struct AnfStmt<'tcx> {
 #[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
 struct AnfOp<'tcx> {
     tag: OpTag<'tcx>,
-    args: Box<[(AnfValue<'tcx>, Span)]>,
-    arms: Box<[AnfBlock<'tcx>]>,
+    args: Vec<(AnfValue<'tcx>, Span)>,
+    arms: Vec<AnfBlock<'tcx>>,
+}
+
+///
+#[derive(Clone, Copy, Debug, PartialEq, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
+enum AssignOp {
+    /// `x = y`
+    Plain,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    BitXor,
+    BitAnd,
+    BitOr,
+    Shl,
+    Shr,
+}
+
+impl From<mir::AssignOp> for AssignOp {
+    fn from(op: mir::AssignOp) -> Self {
+        use mir::AssignOp::*;
+        match op {
+            AddAssign => AssignOp::Add,
+            SubAssign => AssignOp::Sub,
+            MulAssign => AssignOp::Mul,
+            DivAssign => AssignOp::Div,
+            RemAssign => AssignOp::Rem,
+            BitXorAssign => AssignOp::BitXor,
+            BitAndAssign => AssignOp::BitAnd,
+            BitOrAssign => AssignOp::BitOr,
+            ShlAssign => AssignOp::Shl,
+            ShrAssign => AssignOp::Shr,
+        }
+    }
 }
 
 /// Tag for `AnfOp`
@@ -283,6 +318,7 @@ enum OpTag<'tcx> {
     Value,
     Deref,
     Read,
+    Assign(AssignOp),
     BinOp(mir::BinOp),
     UnOp(mir::UnOp),
     LogicalOp(LogicalOp),
@@ -302,40 +338,44 @@ enum OpTag<'tcx> {
 }
 
 impl<'tcx> AnfOp<'tcx> {
-    fn by_value(tag: OpTag<'tcx>, args: Box<[(AnfValue<'tcx>, Span)]>) -> Self {
-        Self { tag, args, arms: [].into() }
+    fn by_value(tag: OpTag<'tcx>, args: Vec<(AnfValue<'tcx>, Span)>) -> Self {
+        Self { tag, args, arms: vec![] }
     }
 
     fn value(arg: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::Value, [arg].into())
+        Self::by_value(OpTag::Value, vec![arg])
     }
 
     fn deref(arg: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::Deref, [arg].into())
+        Self::by_value(OpTag::Deref, vec![arg])
     }
 
     fn read(arg: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::Read, [arg].into())
+        Self::by_value(OpTag::Read, vec![arg])
+    }
+
+    fn assign(op: AssignOp, lhs: (AnfPlace<'tcx>, Span), rhs: (AnfValue<'tcx>, Span)) -> Self {
+        Self::by_value(OpTag::Assign(op), vec![(AnfValue::Borrow(lhs.0.into()), lhs.1), rhs])
     }
 
     fn binary(op: mir::BinOp, arg1: (AnfValue<'tcx>, Span), arg2: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::BinOp(op), [arg1, arg2].into())
+        Self::by_value(OpTag::BinOp(op), vec![arg1, arg2])
     }
 
     fn unary(op: mir::UnOp, arg: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::UnOp(op), [arg].into())
+        Self::by_value(OpTag::UnOp(op), vec![arg])
     }
 
     fn call(
         fun_id: DefId,
         subst: NamelessGenericArgs<'tcx>,
-        args: Box<[(AnfValue<'tcx>, Span)]>,
+        args: Vec<(AnfValue<'tcx>, Span)>,
     ) -> Self {
         Self::by_value(OpTag::Call(fun_id, subst), args)
     }
 
     fn const_(const_id: DefId, subst: ty::GenericArgsRef<'tcx>) -> Self {
-        Self::by_value(OpTag::Const(const_id, subst.into()), [].into())
+        Self::by_value(OpTag::Const(const_id, subst.into()), vec![])
     }
 
     fn return_(res: Option<(AnfValue<'tcx>, Span)>) -> Self {
@@ -343,29 +383,29 @@ impl<'tcx> AnfOp<'tcx> {
     }
 
     fn unsafe_borrow(bor: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::UnsafeBorrow, [bor].into())
+        Self::by_value(OpTag::UnsafeBorrow, vec![bor])
     }
 
     /// The body of the `if let` is ANF-ed into preceding statements:
     /// `if let pat = f(x)` -> `if let y = f(x) && let pat = y`
     fn iflet(val: (AnfValue<'tcx>, Span)) -> Self {
-        Self::by_value(OpTag::IfLet, [val].into())
+        Self::by_value(OpTag::IfLet, vec![val])
     }
 
     fn break_(label: (AnfValue<'tcx>, Span), value: Option<(AnfValue<'tcx>, Span)>) -> Self {
         Self::by_value(
             OpTag::Break,
             match value {
-                None => [label].into(),
-                Some(value) => [label, value].into(),
+                None => vec![label],
+                Some(value) => vec![label, value],
             },
         )
     }
 
     fn control(
         tag: OpTag<'tcx>,
-        args: Box<[(AnfValue<'tcx>, Span)]>,
-        arms: Box<[AnfBlock<'tcx>]>,
+        args: Vec<(AnfValue<'tcx>, Span)>,
+        arms: Vec<AnfBlock<'tcx>>,
     ) -> Self {
         Self { tag, args, arms }
     }
@@ -374,26 +414,26 @@ impl<'tcx> AnfOp<'tcx> {
     /// which has special semantics
     fn if_(cond: AnfBlock<'tcx>, then: AnfBlock<'tcx>, else_: Option<AnfBlock<'tcx>>) -> Self {
         let arms = match else_ {
-            None => [cond, then].into(),
-            Some(else_) => [cond, then, else_].into(),
+            None => vec![cond, then],
+            Some(else_) => vec![cond, then, else_],
         };
-        Self::control(OpTag::If, [].into(), arms)
+        Self::control(OpTag::If, vec![], arms)
     }
 
     fn logicalop(op: thir::LogicalOp, lhs: AnfBlock<'tcx>, rhs: AnfBlock<'tcx>) -> Self {
-        Self::control(op.into(), [].into(), [lhs, rhs].into())
+        Self::control(op.into(), vec![], vec![lhs, rhs])
     }
 
     fn loop_(body: AnfBlock<'tcx>) -> Self {
-        Self::control(OpTag::Loop, [].into(), [body].into())
+        Self::control(OpTag::Loop, vec![], vec![body])
     }
 
-    fn match_(scrutinee: (AnfValue<'tcx>, Span), arms: Box<[AnfBlock<'tcx>]>) -> Self {
+    fn match_(scrutinee: (AnfValue<'tcx>, Span), arms: Vec<AnfBlock<'tcx>>) -> Self {
         Self::control(OpTag::Match, [scrutinee].into(), arms)
     }
 
     fn guard(cond: AnfBlock<'tcx>) -> Self {
-        Self::control(OpTag::Guard, [].into(), [cond].into())
+        Self::control(OpTag::Guard, vec![], [cond].into())
     }
 
     fn letelse(val: (AnfValue<'tcx>, Span), else_: AnfBlock<'tcx>) -> Self {
@@ -405,7 +445,7 @@ impl<'tcx> AnfOp<'tcx> {
 enum AnfPattern {
     Wild,
     Var(Var),
-    Ctor(Ctor, Box<[AnfPattern]>, Span),
+    Ctor(Ctor, Vec<AnfPattern>, Span),
     Deref(Box<AnfPattern>),
 }
 
@@ -423,7 +463,7 @@ enum AnfValue<'tcx> {
     Const(ty::Const<'tcx>),
     Borrow(Box<AnfPlace<'tcx>>),
     RawBorrow(Box<AnfPlace<'tcx>>),
-    Ctor(Ctor, Box<[(AnfValue<'tcx>, Span)]>),
+    Ctor(Ctor, Vec<(AnfValue<'tcx>, Span)>),
     Field(VariantIdx, FieldIdx, Box<AnfValue<'tcx>>),
     /// Cast from *[T] to *T
     Thin(Box<AnfValue<'tcx>>),
@@ -698,7 +738,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 }
                 Some(pat)
             })
-            .collect::<Result<Box<[_]>, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(AnfPattern::Ctor(Ctor::Tuple, args, self.span()))
     }
 
@@ -764,7 +804,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                         let args = args
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
-                            .collect::<Result<std::boxed::Box<[_]>, _>>()?;
+                            .collect::<Result<Vec<_>, _>>()?;
                         let (fun_id_resolved, subst_resolved) =
                             TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst.0)
                                 .to_opt(fun_id, subst.0)
@@ -879,7 +919,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let values = fields
                     .iter()
                     .map(|f| self.a_normal_form_expr(*f, stmts))
-                    .collect::<Result<std::boxed::Box<[_]>, _>>()?;
+                    .collect::<Result<Vec<_>, _>>()?;
                 if fields.len() >= 1
                     && fields.iter().skip(1).all(|e| is_ghost_or_snap(self.tcx, self.thir[*e].ty))
                 {
@@ -964,6 +1004,28 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 AnfValue::Field(*variant_index, *name, value.into())
             }
             ValueTypeAscription { source, .. } => self.a_normal_form_expr(*source, stmts)?.0,
+            &Assign { lhs, rhs } => {
+                let lspan = self.thir[lhs].span;
+                let lhs = self.a_normal_form_place(lhs, stmts)?;
+                let rhs = self.a_normal_form_expr(rhs, stmts)?;
+                stmts.push(AnfStmt {
+                    pattern: AnfPattern::Wild,
+                    rhs: AnfOp::assign(self::AssignOp::Plain, (lhs, lspan), rhs),
+                    span: expr.span,
+                });
+                AnfValue::Unit
+            }
+            &AssignOp { op, lhs, rhs } => {
+                let lspan = self.thir[lhs].span;
+                let lhs = self.a_normal_form_place(lhs, stmts)?;
+                let rhs = self.a_normal_form_expr(rhs, stmts)?;
+                stmts.push(AnfStmt {
+                    pattern: AnfPattern::Wild,
+                    rhs: AnfOp::assign(op.into(), (lhs, lspan), rhs),
+                    span: expr.span,
+                });
+                AnfValue::Unit
+            }
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1185,7 +1247,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let subpatterns = subpatterns
                     .iter()
                     .map(|p| self.a_normal_form_pat(&p.pattern))
-                    .collect::<Result<Box<[_]>, _>>()?;
+                    .collect::<Result<Vec<_>, _>>()?;
                 // the actual constructor doesn't matter for a `Leaf` so we just use `Tuple`
                 Ok(AnfPattern::Ctor(Ctor::Tuple, subpatterns, pat.span))
             }
@@ -1193,7 +1255,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let subpatterns = subpatterns
                     .iter()
                     .map(|p| self.a_normal_form_pat(&p.pattern))
-                    .collect::<Result<Box<[_]>, _>>()?;
+                    .collect::<Result<Vec<_>, _>>()?;
                 Ok(AnfPattern::Ctor(
                     Ctor::Adt(adt_def.did(), *variant_index),
                     subpatterns,
@@ -1206,7 +1268,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             Constant { value } if value.ty.is_bool() => {
                 let b = value.try_to_bool().unwrap();
-                Ok(AnfPattern::Ctor(Ctor::Bool(b), [].into(), pat.span))
+                Ok(AnfPattern::Ctor(Ctor::Bool(b), vec![], pat.span))
             }
             kind => Err(self.unsupported_syntax_with_note(
                 pat.span,
@@ -1607,7 +1669,7 @@ impl<'tcx> PrintAnf<'tcx> {
         self.print_op(&stmt.rhs, f)
     }
 
-    fn print_op(&self, op: &AnfOp<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+    fn print_op(&self, op: &AnfOp<'tcx>, f: &mut Formatter) -> std::fmt::Result {
         self.print_op_tag(&op.tag, f)?;
         if op.args.len() != 0 {
             write!(f, "(")?;
@@ -1628,11 +1690,29 @@ impl<'tcx> PrintAnf<'tcx> {
         Ok(())
     }
 
-    fn print_op_tag(&self, tag: &OpTag<'tcx>, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+    fn print_assign_op(&self, op: AssignOp, f: &mut Formatter) -> std::fmt::Result {
+        use AssignOp::*;
+        match op {
+            Plain => write!(f, "(=)"),
+            Add => write!(f, "(+=)"),
+            Sub => write!(f, "(-=)"),
+            Mul => write!(f, "(*=)"),
+            Div => write!(f, "(/=)"),
+            Rem => write!(f, "(%=)"),
+            BitXor => write!(f, "(^=)"),
+            BitAnd => write!(f, "(&=)"),
+            BitOr => write!(f, "(|=)"),
+            Shl => write!(f, "(<<=)"),
+            Shr => write!(f, "(>>=)"),
+        }
+    }
+
+    fn print_op_tag(&self, tag: &OpTag<'tcx>, f: &mut Formatter) -> std::fmt::Result {
         use OpTag::*;
         match tag {
             Value => write!(f, "value"),
             Read => write!(f, "read"),
+            Assign(op) => self.print_assign_op(*op, f),
             &Call(def_id, subst) => {
                 write!(
                     f,
@@ -1658,11 +1738,7 @@ impl<'tcx> PrintAnf<'tcx> {
         }
     }
 
-    fn print_place(
-        &self,
-        place: &AnfPlace<'tcx>,
-        f: &mut Formatter,
-    ) -> Result<(), std::fmt::Error> {
+    fn print_place(&self, place: &AnfPlace<'tcx>, f: &mut Formatter) -> std::fmt::Result {
         match &place.base {
             AnfPlaceBase::MutVar(v) => self.print_var(*v, f)?,
             AnfPlaceBase::ImmutVar(v) => self.print_value(v, f)?,
@@ -1681,11 +1757,7 @@ impl<'tcx> PrintAnf<'tcx> {
         Ok(())
     }
 
-    fn print_value(
-        &self,
-        value: &AnfValue<'tcx>,
-        f: &mut Formatter,
-    ) -> Result<(), std::fmt::Error> {
+    fn print_value(&self, value: &AnfValue<'tcx>, f: &mut Formatter) -> std::fmt::Result {
         use AnfValue::*;
         match value {
             Unit => write!(f, "()"),
@@ -1747,11 +1819,7 @@ impl<'tcx> PrintAnf<'tcx> {
         }
     }
 
-    fn print_hir_id(
-        &self,
-        local_id: ItemLocalId,
-        f: &mut Formatter,
-    ) -> Result<(), std::fmt::Error> {
+    fn print_hir_id(&self, local_id: ItemLocalId, f: &mut Formatter) -> std::fmt::Result {
         match self.owner {
             Some(def_id) => {
                 let hir_id = rustc_hir::HirId { owner: rustc_hir::OwnerId { def_id }, local_id };

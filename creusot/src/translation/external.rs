@@ -377,11 +377,12 @@ fn build_erased<'tcx>(
     Erasure { def: (def_id2, subst2), erase_args }
 }
 
-/// `ty1` equals `ty2` up to erasure if:
+/// `ty1` equals `ty2` up to erasure if either:
 /// - `ty1 == ty2`
-/// - `ty2 == (ty3, Ghost<_>)` and `ty1` equals `ty2` up to erasure
+/// - `ty1 == Ghost<_>` and `ty2 == ()`
+/// - `ty1 == (ty0, Ghost<_>)` for some `ty0` and `ty0` equals `ty2` up to erasure
 fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
-    if ty1 == ty2 {
+    if ty1 == ty2 || is_ghost_or_snap(tcx, ty1) && ty2.is_unit() {
         return true;
     }
     match ty1.kind() {
