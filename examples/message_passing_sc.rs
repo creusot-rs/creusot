@@ -10,7 +10,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::{AtomicI32, Committer},
+        sync::atomic_sc::{AtomicI32, LoadCommitter, StoreCommitter},
         thread::{self, JoinHandleExt},
     },
 };
@@ -38,7 +38,7 @@ impl Protocol for MessagePassingAtomicInv {
             match self.state {
                 State::NotWrittenYet => self.atomic_own.val()@ == 0,
                 State::Synchronisation(data_own) => data.1 == *data_own.ward() && self.atomic_own.val()@ == 1 && data_own.val()@ == 1,
-                State::Readable(tok) => data.2 == tok.id() && self.atomic_own.val()@ == 1
+                State::Readable(tok) => data.2 == tok.id()
             }
         }
     }
@@ -70,7 +70,7 @@ pub fn message_passing() {
 
             atomic.store(
                 1,
-                ghost! { |c: &mut Committer<_>| {
+                ghost! { |c: &mut StoreCommitter<_>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.state = State::Synchronisation(data_own.into_inner());
                         c.shoot(&mut inv.atomic_own);
@@ -86,13 +86,13 @@ pub fn message_passing() {
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             loop {
-                let (atomic_res, data_own) = atomic.load(ghost! { |c: &mut Committer<_>| {
+                let (atomic_res, data_own) = atomic.load(ghost! { |c: &mut LoadCommitter<_>| {
                     inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                         if let State::Readable(excl_state) = &inv.state {
                             excl.as_mut().unwrap().valid_op_lemma(excl_state);
                         }
 
-                        c.shoot(&mut inv.atomic_own);
+                        c.shoot(&inv.atomic_own);
 
                         match &inv.state {
                             State::Synchronisation(_) => {
