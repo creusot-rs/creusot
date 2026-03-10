@@ -29,7 +29,8 @@ To learn more, see the chapter on [Pearlite](../pearlite.md) and [Views](../view
 
 ## Postconditions with `ensures`
 
-A _postcondition_ is an assertions that is proven true at the end of the function. The return value of the function can be accessed via the `result` keyword.
+A _postcondition_ is an assertion that is proven true at the end of the function.
+The return value of the function is named `result` by default.
 
 In the case of the example above, we want to assert that the returned integer is the first of the slice:
 
@@ -44,3 +45,18 @@ fn head(v: &[i32]) -> i32 {
 Note that we:
 - use the `@` operator on the slice to get a `Seq<i32>`
 - we can then index this `Seq<i32>` to get a `i32`.
+
+The result variable in an `ensures` clause can be bound explicitly using closure notation:
+
+```rust
+#[ensures(|resultat| v@[0] == resultat)]
+```
+
+The result binder can also be an irrefutable pattern.
+
+```rust
+#[ensures(|(fst, snd)| fst <= snd)]
+pub fn apair() -> (i32, i32) {
+    (0, 1)
+}
+```

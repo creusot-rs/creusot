@@ -1,5 +1,6 @@
 mod contractless_external_function;
 mod experimental_types;
+mod result_param;
 mod trusted;
 
 use rustc_lint::LintStore;
@@ -8,13 +9,11 @@ use rustc_session::Session;
 use rustc_span::{Span, Symbol};
 
 pub(crate) use contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION;
+pub(crate) use result_param::RESULT_PARAM;
 
 use crate::validate;
 
 // Diagnostics for creusot's lints.
-//
-// This only describes the structure of the diagnostics. The actual messages
-// are defined in `creusot/messages.ftl`
 #[derive(Debug, Diagnostic)]
 pub(crate) enum Diagnostics {
     #[diag("used the `#[trusted]` attribute")]
@@ -36,6 +35,10 @@ pub(crate) enum Diagnostics {
     },
     #[diag("support for trait objects (dyn) is limited and experimental")]
     DynExperimental,
+    #[diag(
+        "`result` used as a parameter name. It is confusing because it is also the default name of the function's result"
+    )]
+    ResultParam,
 }
 
 pub fn register_lints(_sess: &Session, store: &mut LintStore) {
@@ -43,6 +46,7 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
         experimental_types::EXPERIMENTAL,
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
         trusted::TRUSTED_CODE,
+        result_param::RESULT_PARAM,
     ]);
     store.register_late_pass(move |_| Box::new(validate::GhostValidate {}));
     store.register_late_pass(move |_| Box::new(experimental_types::Experimental {}));

@@ -2,11 +2,12 @@ use crate::{
     backend::closures::ClosSubst,
     contracts_items::{Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates},
     ctx::*,
+    lints::{Diagnostics, RESULT_PARAM},
     naming::{lowercase_prefix, name},
     translation::pearlite::{Ident, PIdent, Term, normalize},
     util::erased_identity_for_item,
 };
-use rustc_hir::{AttrArgs, Safety, def::DefKind, def_id::DefId};
+use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     thir::{BodyTy, Pat, PatKind, Thir},
@@ -375,7 +376,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     }
 
     if !presig.contract.extern_no_spec {
-        for (input, _, _) in &presig.inputs {
+        for &(input, span, _) in &presig.inputs {
             if input.0.name() == why3::Symbol::intern("result")
                 && !matches!(
                     ctx.intrinsic(def_id),
@@ -386,10 +387,8 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                         | Intrinsic::Precondition
                 )
             {
-                ctx.crash_and_error(
-                    ctx.def_span(def_id),
-                    "`result` is not allowed as a parameter name",
-                )
+                let hir = HirId::make_owner(def_id.expect_local());
+                ctx.tcx.emit_node_span_lint(RESULT_PARAM, hir, span, Diagnostics::ResultParam);
             }
         }
     }

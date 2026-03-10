@@ -12,7 +12,7 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    Attribute, Ident, Item, Path, ReturnType, Signature, Stmt, Token, Type, parenthesized,
+    Attribute, Ident, Item, Pat, Path, ReturnType, Signature, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
@@ -78,6 +78,30 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
+    let (result, term) = match term {
+        Term::Closure(closure) => {
+            if closure.inputs.len() != 1 {
+                let span = if closure.inputs.len() == 0 {
+                    closure
+                        .or1_token
+                        .span()
+                        .join(closure.or2_token.span())
+                        .unwrap_or_else(|| Span::call_site())
+                } else {
+                    closure.inputs.span()
+                };
+                return quote::quote_spanned! { span=>
+                    compile_error!{"`#[ensures]` clause expects only one result parameter"}
+                }
+                .into();
+            }
+            (closure.inputs.into_iter().next().unwrap(), *closure.body)
+        }
+        _ => {
+            let result = ident_to_pat(Ident::new("result", Span::call_site()));
+            (result, term)
+        }
+    };
     item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -87,8 +111,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let attrs = std::mem::take(&mut s.attrs);
             let mut sig = s.sig.clone();
             let result = match sig.output {
-                ReturnType::Default => parse_quote! { result: () },
-                ReturnType::Type(_, ty) => parse_quote! { result: #ty },
+                ReturnType::Default => parse_quote! { #result: () },
+                ReturnType::Type(_, ty) => parse_quote! { #result: #ty },
             };
 
             sig.ident = ens_name.clone();
@@ -109,7 +133,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 ReturnType::Default => parse_quote! { () },
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
             };
-            let ensures_tokens = fn_spec_item(ens_name, FnSpecResultKind::Typed(ty_result), term);
+            let ensures_tokens =
+                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), term);
             if let Some(b) = f.body.as_mut() {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
             }
@@ -123,7 +148,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractSubject::Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
             let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Unified(res_id.clone()), term);
+                fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), term);
 
             let body = &clos.body;
             *clos.body = parse_quote!({
@@ -238,9 +263,9 @@ fn spec_attrs(tag: Ident) -> TokenStream {
 }
 
 enum FnSpecResultKind {
-    NoResult,       // No result identifier (for ensures clauses)
-    Typed(Type),    // The result identifier is typed explicitely (i.e. |result : #ty| ... )
-    Unified(Ident), // The type of the result identifier is unified with the type of another variable
+    NoResult,            // No result identifier (for ensures clauses)
+    Typed(Pat, Type),    // The result identifier is typed explicitly (i.e. `|result : #ty| ...`)
+    Unified(Pat, Ident), // The type of the result identifier is unified with the type of another variable
 }
 
 // Generate a token stream for the item representing a specific
@@ -248,9 +273,8 @@ enum FnSpecResultKind {
 fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
     let fn_spec_body = pretyping::encode_term(&p);
     let attrs = spec_attrs(tag);
-    let result = Ident::new("result", Span::call_site());
 
-    let unify_ty_result = if let FnSpecResultKind::Unified(res) = &reskind {
+    let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
         // Tell type inference that res and result have the same type
         quote! { ::creusot_std::__stubs::closure_result(#res, #result); }
     } else {
@@ -259,8 +283,8 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
 
     let result_bind = match &reskind {
         FnSpecResultKind::NoResult => quote! {},
-        FnSpecResultKind::Unified(_) => quote! { #result },
-        FnSpecResultKind::Typed(ty) => quote! { #result: #ty },
+        FnSpecResultKind::Unified(result, _) => quote! { #result },
+        FnSpecResultKind::Typed(result, ty) => quote! { #result: #ty },
     };
 
     quote! {
@@ -377,4 +401,8 @@ fn maintains_impl(attr: TS1, body: TS1) -> syn::Result<TS1> {
       #body
     }
     .into())
+}
+
+fn ident_to_pat(i: Ident) -> Pat {
+    Pat::Path(syn::ExprPath { attrs: vec![], qself: None, path: i.into() })
 }
