@@ -1062,3 +1062,76 @@ module M_slice_as_mut_ptr_perm
     {[@stop_split] [@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
       (! return {result}) ]
 end
+module M_apply
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec apply_F (f: t_F) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply_F requires] ([@stop_split] [@expl:apply 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:apply requires] precondition_F f (0: Int32.t))}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_5 <- (0: Int32.t) ] s1
+      | s1 = call_once_F {f} {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _5: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_apply_test
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate precondition_foo [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
+  
+  meta "rewrite_def" predicate precondition_foo
+  
+  let rec apply_foo (f: ()) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply requires] precondition_foo f (0: Int32.t)}
+    any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec apply_test (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = apply_foo {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_apply_test2
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate precondition_foo3 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
+  
+  meta "rewrite_def" predicate precondition_foo3
+  
+  let rec apply_foo3 (f: ()) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply requires] precondition_foo3 f (0: Int32.t)}
+    any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec apply_test2 (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = apply_foo3 {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+end

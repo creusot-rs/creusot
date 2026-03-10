@@ -1,3 +1,4 @@
+#![feature(core_intrinsics)]
 extern crate creusot_std;
 use creusot_std::{ghost::perm::Perm, prelude::*};
 
@@ -180,4 +181,18 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 #[erasure(slice_as_mut_ptr)]
 pub fn slice_as_mut_ptr_perm<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
     s.as_mut_ptr_perm()
+}
+
+#[requires(f.precondition((0i32,)))]
+pub fn apply<F: FnOnce(i32) -> i32>(f: F) -> i32 {
+    f(0)
+}
+
+pub fn apply_test() -> i32 {
+    apply(foo)
+}
+
+#[erasure(apply_test)]
+pub fn apply_test2() -> i32 {
+    apply(foo3)
 }

@@ -3,7 +3,7 @@ use crate::{
     callbacks,
     contracts_items::{
         Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
-        is_open_inv_param, is_prophetic, opacity_witness_name,
+        is_open_inv_param, is_prophetic, is_trusted, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::{ComaNames, ModulePath, lowercase_prefix},
@@ -176,7 +176,7 @@ pub struct TranslationCtx<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
-    erasures_to_check: IndexMap<LocalDefId, Erasure<'tcx>>,
+    erasures_to_check: IndexSet<LocalDefId>,
     coma_names: ComaNames,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
@@ -547,13 +547,13 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn load_erasures(&mut self) {
         for def_id in self.tcx.hir_body_owners() {
             let thir = self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
-            let Some((eraser, erasure, to_check)) = extract_erasure_from_item(self, def_id, thir)
-            else {
+            let Some((eraser, erasure)) = extract_erasure_from_item(self, def_id, thir) else {
                 continue;
             };
             self.erased_local_defid.insert(eraser, erasure);
-            if let Some(to_check) = to_check {
-                self.erasures_to_check.insert(eraser, to_check);
+            if !is_trusted(self.tcx, eraser.to_def_id()) {
+                // erasure can't be None (`#[erasure(_)]` must be `#[trusted]`)
+                self.erasures_to_check.insert(eraser);
             }
         }
         if self.erasures_to_check.is_empty() {
@@ -561,8 +561,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
         for def_id in self.tcx.hir_body_owners() {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
-                self.erased_local_defid.insert(def_id, Some(erasure.clone()));
-                self.erasures_to_check.insert(def_id, erasure);
+                self.erased_local_defid.insert(def_id, Some(erasure));
+                self.erasures_to_check.insert(def_id);
             }
         }
     }
@@ -570,7 +570,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn iter_erasures_to_check(
         &self,
     ) -> impl Iterator<Item = (&LocalDefId, &Erasure<'tcx>)> {
-        self.erasures_to_check.iter()
+        self.erasures_to_check.iter().map(|id| (id, self.erased_local_defid[id].as_ref().unwrap()))
     }
 
     pub(crate) fn write_erasure_required(&self) {
@@ -640,10 +640,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             Some(local) => self.erased_local_defid.get(&local),
             None => self.externs.erasure(def_id),
         }
-    }
-
-    pub(crate) fn erasure_to_check(&self, def_id: LocalDefId) -> Option<&Erasure<'tcx>> {
-        self.erasures_to_check.get(&def_id)
     }
 
     /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
