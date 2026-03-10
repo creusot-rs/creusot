@@ -31,7 +31,7 @@ use rustc_middle::{
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span, SpanDecoder, SpanEncoder};
-use rustc_type_ir::{Interner, VisitorResult as _};
+use rustc_type_ir::{Interner, TypeFoldable, TypeSuperFoldable as _, VisitorResult as _};
 
 use crate::{
     backend::is_trusted_item,
@@ -450,10 +450,16 @@ enum AnfPattern {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+enum ErasureInfo {
+    Ghost,
+    EraseArgs(Vec<bool>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfValue<'tcx> {
     Unit,
     Var(Var),
-    Fn(DefId, NamelessGenericArgs<'tcx>),
+    Fn(DefId, NamelessGenericArgs<'tcx>, Option<ErasureInfo>),
     Literal(
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
@@ -794,49 +800,36 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             Call { fun, args, .. } => {
                 let fun = self.a_normal_form_expr(*fun, stmts)?;
                 match fun.0 {
-                    AnfValue::Fn(fun_id, _)
+                    AnfValue::Fn(fun_id, _, _)
                         if let Some(ctx) = self.ctx
                             && Intrinsic::SnapshotFromFn.is(ctx, fun_id) =>
                     {
                         AnfValue::Unit
                     }
-                    AnfValue::Fn(fun_id, subst) => 'fun: {
+                    AnfValue::Fn(fun_id, subst, ref erasure) => 'fun: {
                         let args = args
                             .iter()
                             .map(|arg| self.a_normal_form_expr(*arg, stmts))
                             .collect::<Result<Vec<_>, _>>()?;
-                        let (fun_id_resolved, subst_resolved) =
-                            TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst.0)
-                                .to_opt(fun_id, subst.0)
-                                .unwrap_or_else(|| {
-                                    self.tcx.crash_and_error(
-                                        self.span(),
-                                        "could not resolve call in `#[erasure]` check",
-                                    )
-                                });
-                        let (fun_id, subst, args) = if let Some(erased) =
-                            self.ctx.and_then(|ctx| ctx.erasure(fun_id_resolved))
-                        {
-                            let Some(erased) = erased else { break 'fun AnfValue::Unit };
-                            let args = args
-                                .into_iter()
-                                .zip(&erased.erase_args)
+                        let args = if let Some(erasure) = erasure {
+                            let ErasureInfo::EraseArgs(erased) = erasure else {
+                                break 'fun AnfValue::Unit;
+                            };
+                            args.into_iter()
+                                .zip(erased)
                                 .filter_map(|(arg, &erase)| if erase { None } else { Some(arg) })
-                                .collect();
-                            let subst = ty::EarlyBinder::bind(erased.def.1)
-                                .instantiate(self.tcx, subst_resolved);
-                            (erased.def.0, (*subst).into(), args)
-                        } else if let Some(ctx) = self.ctx
+                                .collect()
+                        } else {
+                            args
+                        };
+                        if let Some(ctx) = self.ctx
                             && let Intrinsic::PermAsRef | Intrinsic::PermAsMut =
                                 ctx.intrinsic(fun_id)
                         {
                             let arg0 = args.into_iter().next().unwrap();
                             let mut place = std::boxed::Box::new(AnfPlace::immut(arg0.0));
                             place.add_deref(true); // Add unsafe deref
-                            break 'fun bind_var(
-                                stmts,
-                                AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)),
-                            );
+                            bind_var(stmts, AnfOp::unsafe_borrow((AnfValue::Borrow(place), arg0.1)))
                         } else if let Some(ctx) = self.ctx
                             && let Intrinsic::PermFromRef | Intrinsic::PermFromMut =
                                 ctx.intrinsic(fun_id)
@@ -844,11 +837,10 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                             let arg0 = args.into_iter().next().unwrap();
                             let mut place = AnfPlace::immut(arg0.0);
                             place.add_deref(false);
-                            break 'fun place.raw_borrow();
+                            place.raw_borrow()
                         } else {
-                            (fun_id, subst, args)
-                        };
-                        bind_var(stmts, AnfOp::call(fun_id, subst, args))
+                            bind_var(stmts, AnfOp::call(fun_id, subst, args))
+                        }
                     }
                     _ => {
                         return Err(
@@ -858,7 +850,33 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 }
             }
             ZstLiteral { .. } => match expr.ty.kind() {
-                ty::TyKind::FnDef(def_id, subst) => AnfValue::Fn(*def_id, (*subst).into()),
+                &ty::TyKind::FnDef(fun_id, subst) => {
+                    let (mut fun_id, mut subst) =
+                        TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst)
+                            .to_opt(fun_id, subst)
+                            .unwrap_or_else(|| {
+                                self.tcx.crash_and_error(
+                                    self.span(),
+                                    "could not resolve call in `#[erasure]` check",
+                                )
+                            });
+                    let mut erasure_info = None;
+                    if let Some(ctx) = self.ctx {
+                        subst = erase_types(ctx, subst);
+                        if let Some(erasure) = ctx.erasure(fun_id) {
+                            if let Some(erasure) = erasure {
+                                fun_id = erasure.def.0;
+                                subst = ty::EarlyBinder::bind(erasure.def.1)
+                                    .instantiate(self.tcx, subst);
+                                erasure_info =
+                                    Some(ErasureInfo::EraseArgs(erasure.erase_args.clone()));
+                            } else {
+                                erasure_info = Some(ErasureInfo::Ghost);
+                            }
+                        }
+                    }
+                    AnfValue::Fn(fun_id, subst.into(), erasure_info)
+                }
                 _ => AnfValue::Unit,
             },
             Binary { op, lhs, rhs } => {
@@ -1316,6 +1334,37 @@ fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
     }
 }
 
+/// Replace function types with their erasure when it exists
+/// (This is very simplistic and experimental)
+fn erase_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(ctx: &TranslationCtx<'tcx>, t: T) -> T {
+    struct Eraser<'a, 'tcx>(&'a TranslationCtx<'tcx>);
+
+    impl<'tcx> ty::TypeFolder<TyCtxt<'tcx>> for Eraser<'_, 'tcx> {
+        fn cx(&self) -> TyCtxt<'tcx> {
+            self.0.tcx()
+        }
+
+        fn fold_ty(&mut self, t: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
+            match t.kind() {
+                &ty::TyKind::FnDef(fun_id, args)
+                    if let Some(Some(erasure)) = self.0.erasure(fun_id) =>
+                {
+                    let tcx = self.cx();
+                    ty::Ty::new_fn_def(
+                        tcx,
+                        erasure.def.0,
+                        ty::EarlyBinder::bind(erasure.def.1).instantiate(tcx, args),
+                    )
+                }
+                _ => t,
+            }
+            .super_fold_with(self)
+        }
+    }
+
+    t.fold_with(&mut Eraser(ctx))
+}
+
 ////////////////////////////////////////////////////////////////
 // * Equality checking
 ////////////////////////////////////////////////////////////////
@@ -1357,7 +1406,7 @@ impl<'tcx> EqualityChecker<'tcx> {
             (Field(variant1, field1, v1), Field(variant2, field2, v2)) => {
                 variant1 == variant2 && field1 == field2 && self.equate_value(v1, v2)
             }
-            (Fn(f1, s1), Fn(f2, s2)) => f1 == f2 && s1 == s2,
+            (Fn(f1, s1, _), Fn(f2, s2, _)) => f1 == f2 && s1 == s2,
             (Cast(from1, to1, value1), Cast(from2, to2, value2)) => {
                 from1 == from2 && to1 == to2 && self.equate_value(value1, value2)
             }
@@ -1796,7 +1845,7 @@ impl<'tcx> PrintAnf<'tcx> {
                 self.print_value(value, f)?;
                 write!(f, ")")
             }
-            &Fn(def_id, subst) => write!(
+            &Fn(def_id, subst, _) => write!(
                 f,
                 "fn {}{}",
                 self.tcx.def_path_str(def_id),
