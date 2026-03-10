@@ -31,15 +31,19 @@ impl Quux for i32 {
 }
 
 #[erasure(<i32 as Quux>::quux)]
-fn quux2(x: &i32, y: Ghost<Int>) {
+fn quux2(x: &i32, y: Ghost<Int>) -> Ghost<Int> {
     let _ = foo2(*x, y);
+    ghost! { 0int }
 }
 
 pub fn test_foo(x: i32) -> i32 {
     let a = foo(x);
     let b = foo(a);
     let c = baz::<42>();
-    c.quux();
+    let mut p = (0i32, 1i32);
+    p.1 = p.0;
+    p.0 += p.1;
+    p.0.quux();
     if -10 < a && a < 10 && -10 < b && b < 10 { a + b } else { c }
 }
 
@@ -48,7 +52,10 @@ pub fn test_foo2(x: i32, y: Ghost<Int>) -> i32 {
     let a = foo(x);
     let b = foo2(a, y);
     let c = baz::<42>();
-    quux2(&c, y);
+    let mut p = (0i32, 1i32);
+    p.1 = p.0;
+    p.0 += p.1;
+    quux2(&p.0, y);
     if -10 < a && a < 10 && -10 < b && b < 10 { a + b } else { c }
 }
 

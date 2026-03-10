@@ -53,18 +53,37 @@ module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
 end
 module M_quux2
   use creusot.int.Int32
+  use creusot.int.Int128
   use creusot.prelude.Any
   
   let rec foo2 (x: Int32.t) (_2: int) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  let rec new (value: Int128.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
+  
+  let rec into_inner_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let rec new_Int (x: int) (return (x'0: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec quux2 (x: Int32.t) (y: int) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: Int32.t = x | & y: int = y | & _5: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+  let rec quux2 (x: Int32.t) (y: int) (return (x'0: int)) = (! bb0
+    [ bb0 = s0
+      [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
+      | s1 = new {(0: Int128.t)} (fun (_x: int) -> [ &_9 <- _x ] s2)
+      | s2 = into_inner_Int {_9} (fun (_x: int) -> [ &_8 <- _x ] s3)
+      | s3 = new_Int {_8} (fun (_x: int) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: int = Any.any_l ()
+    | & x: Int32.t = x
+    | & y: int = y
+    | & _5: Int32.t = Any.any_l ()
+    | & _8: int = Any.any_l ()
+    | & _9: int = Any.any_l () ]) [ return (result: int) -> (! return {result}) ]
 end
 module M_test_foo
   use creusot.int.Int32
@@ -73,6 +92,8 @@ module M_test_foo
   let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
   
   let rec baz (return (x: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
   
   let rec quux_i32 (self: Int32.t) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
   
@@ -85,18 +106,21 @@ module M_test_foo
       [ s0 = foo {x} (fun (_x: Int32.t) -> [ &a <- _x ] s1)
       | s1 = foo {a} (fun (_x: Int32.t) -> [ &b <- _x ] s2)
       | s2 = baz (fun (_x: Int32.t) -> [ &c <- _x ] s3)
-      | s3 = quux_i32 {c} (fun (_x: ()) -> [ &_7 <- _x ] s4)
-      | s4 = [ &_9 <- Int32.lt (-10: Int32.t) a ] s5
-      | s5 = any [ br0 -> {_9 = false} (! bb13) | br1 -> {_9} (! bb5) ] ]
+      | s3 = [ &p <- { f0 = (0: Int32.t); f1 = (1: Int32.t) } ] s4
+      | s4 = [ &p <- { p with f1 = p.f0 } ] s5
+      | s5 = Int32.add {p.f0} {p.f1} (fun (_x: Int32.t) -> [ &p <- { p with f0 = _x } ] s6)
+      | s6 = quux_i32 {p.f0} (fun (_x: ()) -> [ &_10 <- _x ] s7)
+      | s7 = [ &_12 <- Int32.lt (-10: Int32.t) a ] s8
+      | s8 = any [ br0 -> {_12 = false} (! bb13) | br1 -> {_12} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = [ &_11 <- Int32.lt a (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_11 = false} (! bb13) | br1 -> {_11} (! bb6) ] ]
+      [ s0 = [ &_14 <- Int32.lt a (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_14 = false} (! bb13) | br1 -> {_14} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = [ &_13 <- Int32.lt (-10: Int32.t) b ] s1
-      | s1 = any [ br0 -> {_13 = false} (! bb13) | br1 -> {_13} (! bb7) ] ]
+      [ s0 = [ &_16 <- Int32.lt (-10: Int32.t) b ] s1
+      | s1 = any [ br0 -> {_16 = false} (! bb13) | br1 -> {_16} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = [ &_15 <- Int32.lt b (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_15 = false} (! bb13) | br1 -> {_15} (! bb8) ] ]
+      [ s0 = [ &_18 <- Int32.lt b (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_18 = false} (! bb13) | br1 -> {_18} (! bb8) ] ]
     | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
     | bb13 = s0 [ s0 = [ &_ret <- c ] s1 | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l ()
@@ -104,11 +128,12 @@ module M_test_foo
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()
     | & c: Int32.t = Any.any_l ()
-    | & _7: () = Any.any_l ()
-    | & _9: bool = Any.any_l ()
-    | & _11: bool = Any.any_l ()
-    | & _13: bool = Any.any_l ()
-    | & _15: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+    | & p: tup2_i32_i32 = Any.any_l ()
+    | & _10: () = Any.any_l ()
+    | & _12: bool = Any.any_l ()
+    | & _14: bool = Any.any_l ()
+    | & _16: bool = Any.any_l ()
+    | & _18: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_foo2
   use creusot.int.Int32
@@ -120,7 +145,9 @@ module M_test_foo2
   
   let rec baz (return (x: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
   
-  let rec quux2 (x: Int32.t) (y: int) (return (x'0: ())) = any [ return (result: ()) -> (! return {result}) ]
+  type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
+  
+  let rec quux2 (x: Int32.t) (y: int) (return (x'0: int)) = any [ return (result: int) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -131,19 +158,22 @@ module M_test_foo2
       [ s0 = foo {x} (fun (_x: Int32.t) -> [ &a <- _x ] s1)
       | s1 = foo2 {a} {y} (fun (_x: Int32.t) -> [ &b <- _x ] s2)
       | s2 = baz (fun (_x: Int32.t) -> [ &c <- _x ] s3)
-      | s3 = [ &_13 <- c ] s4
-      | s4 = quux2 {_13} {y} (fun (_x: ()) -> [ &_11 <- _x ] s5)
-      | s5 = [ &_15 <- Int32.lt (-10: Int32.t) a ] s6
-      | s6 = any [ br0 -> {_15 = false} (! bb13) | br1 -> {_15} (! bb5) ] ]
+      | s3 = [ &p <- { f0 = (0: Int32.t); f1 = (1: Int32.t) } ] s4
+      | s4 = [ &p <- { p with f1 = p.f0 } ] s5
+      | s5 = Int32.add {p.f0} {p.f1} (fun (_x: Int32.t) -> [ &p <- { p with f0 = _x } ] s6)
+      | s6 = [ &_16 <- p.f0 ] s7
+      | s7 = quux2 {_16} {y} (fun (_x: int) -> [ &_14 <- _x ] s8)
+      | s8 = [ &_18 <- Int32.lt (-10: Int32.t) a ] s9
+      | s9 = any [ br0 -> {_18 = false} (! bb13) | br1 -> {_18} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = [ &_17 <- Int32.lt a (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_17 = false} (! bb13) | br1 -> {_17} (! bb6) ] ]
+      [ s0 = [ &_20 <- Int32.lt a (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_20 = false} (! bb13) | br1 -> {_20} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = [ &_19 <- Int32.lt (-10: Int32.t) b ] s1
-      | s1 = any [ br0 -> {_19 = false} (! bb13) | br1 -> {_19} (! bb7) ] ]
+      [ s0 = [ &_22 <- Int32.lt (-10: Int32.t) b ] s1
+      | s1 = any [ br0 -> {_22 = false} (! bb13) | br1 -> {_22} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = [ &_21 <- Int32.lt b (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb8) ] ]
+      [ s0 = [ &_24 <- Int32.lt b (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_24 = false} (! bb13) | br1 -> {_24} (! bb8) ] ]
     | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
     | bb13 = s0 [ s0 = [ &_ret <- c ] s1 | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l ()
@@ -152,12 +182,13 @@ module M_test_foo2
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()
     | & c: Int32.t = Any.any_l ()
-    | & _11: () = Any.any_l ()
-    | & _13: Int32.t = Any.any_l ()
-    | & _15: bool = Any.any_l ()
-    | & _17: bool = Any.any_l ()
-    | & _19: bool = Any.any_l ()
-    | & _21: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+    | & p: tup2_i32_i32 = Any.any_l ()
+    | & _14: int = Any.any_l ()
+    | & _16: Int32.t = Any.any_l ()
+    | & _18: bool = Any.any_l ()
+    | & _20: bool = Any.any_l ()
+    | & _22: bool = Any.any_l ()
+    | & _24: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
   use creusot.int.Int32
