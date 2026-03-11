@@ -3,15 +3,14 @@ extern crate creusot_std;
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        Committer,
-        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::Resource,
     },
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::AtomicI32,
+        sync::atomic_sc::{AtomicI32, LoadCommitter, StoreCommitter},
         thread::{self, JoinHandleExt},
     },
 };
@@ -46,7 +45,7 @@ pub fn message_passing() {
     let mut excl = Resource::alloc(snapshot!(Some(Excl(()))));
 
     // Initialize our invariant
-    let inv = AtomicInvariant::new(
+    let inv = AtomicInvariantSC::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             data_own: None,
@@ -66,7 +65,7 @@ pub fn message_passing() {
 
             atomic.store(
                 1,
-                ghost! { |c: &mut Committer<_>| {
+                ghost! { |c: &mut StoreCommitter<_>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.data_own = Some(data_own.into_inner());
                         c.shoot(&mut inv.atomic_own);
@@ -81,16 +80,17 @@ pub fn message_passing() {
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             loop {
-                let (atomic_res, data_own) = atomic.load(ghost! { |c: &mut Committer<AtomicI32>| {
-                    inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                        excl.valid_op_lemma(&inv.tok);
-                        if snapshot!{ c.old_value() }.into_ghost().into_inner() == 1 {
-                            std::mem::swap(&mut inv.tok, &mut *excl);
-                        }
-                        c.shoot(&mut inv.atomic_own);
-                        inv.data_own.take()
-                    })
-                }});
+                let (atomic_res, data_own) =
+                    atomic.load(ghost! { |c: &mut LoadCommitter<AtomicI32>| {
+                        inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                            excl.valid_op_lemma(&inv.tok);
+                            if snapshot!{ c.val() }.into_ghost().into_inner() == 1 {
+                                std::mem::swap(&mut inv.tok, &mut *excl);
+                            }
+                            c.shoot(&mut inv.atomic_own);
+                            inv.data_own.take()
+                        })
+                    }});
 
                 if atomic_res != 1 {
                     continue;
