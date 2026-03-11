@@ -256,8 +256,6 @@ module Int$bits_count$BW
   use bv.BVConverter_$bits_count$_256
   use mach.int.Int
 
-  constant min_sint : t = $min_signed_value$
-  constant minus_one : t = $max_unsigned_value$
   constant min_sint_as_BV256 : BV256.t = $min_signed_value$
   constant max_sint_as_BV256 : BV256.t = $max_signed_value$
   predicate in_bounds [@inline:trivial] (n:int) = - $min_signed_value$ <= n <= $max_unsigned_value$
@@ -288,15 +286,15 @@ module Int$bits_count$BW
     (ret (result :t)  { to_int result = - to_int a  } { result = neg a})
     = any
   let add (a:t) (b:t)
-    { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a + to_int b < two_power_size_minus_one \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+    { [@expl:arithmetic overflow] - two_power_sizem1 <= to_int a + to_int b < two_power_sizem1 \/ let r = BV256.add (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
     (ret (result :t)  { to_int result = to_int a + to_int b } { result = add a b })
     = any
   let sub (a:t)  (b:t)
-    { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a - to_int b < two_power_size_minus_one \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+    { [@expl:arithmetic overflow] - two_power_sizem1 <= to_int a - to_int b < two_power_sizem1 \/ let r = BV256.sub (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
     (ret (result: t) { to_int result = to_int a - to_int b } { result = sub a b })
     = any
   let mul (a:t) (b:t)
-    { [@expl:arithmetic overflow] - two_power_size_minus_one <= to_int a * to_int b < two_power_size_minus_one \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
+    { [@expl:arithmetic overflow] - two_power_sizem1 <= to_int a * to_int b < two_power_sizem1 \/ let r = BV256.mul (to_BV256 a) (to_BV256 b) in (BV256.sle min_sint_as_BV256 r /\ BV256.sle r max_sint_as_BV256) }
     (ret (result: t) { to_int result = to_int a * to_int b } { result = mul a b })
     = any
   let div (a:t) (b:t)
