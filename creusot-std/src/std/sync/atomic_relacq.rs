@@ -55,40 +55,38 @@ impl AtomicI32 {
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
     #[requires(forall<c: &mut LoadCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==>
-        f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
+        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut LoadCommitter<i32, Self>>
         !c.shot() && c.ward() == *self &&
-        c.val() == result.0 && f.postcondition_once((c,), *(result.1))
+        c.val() == result && f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn load<'a, A, F>(&'a self, f: Ghost<F>) -> (i32, Ghost<A>)
+    pub fn load<'a, F>(&'a self, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut LoadCommitter<i32, Self>) -> A,
+        F: FnGhost + FnOnce(&'a mut LoadCommitter<i32, Self>),
     {
-        let res = self.0.load(if cfg!(feature = "sc-drf") {
+        self.0.load(if cfg!(feature = "sc-drf") {
             ::std::sync::atomic::Ordering::SeqCst
         } else {
             ::std::sync::atomic::Ordering::Acquire
-        });
-
-        (res, Ghost::conjure())
+        })
     }
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     #[requires(forall<c: &mut StoreCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
-        f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
+        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut StoreCommitter<i32, Self>>
         !c.shot() && c.ward() == *self && c.val() == val &&
-        f.postcondition_once((c,), *result)
+        f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn store<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> Ghost<A>
+    pub fn store<'a, F>(&'a self, val: i32, f: Ghost<F>)
     where
-        F: FnGhost + FnOnce(&'a mut StoreCommitter<i32, Self>) -> A,
+        F: FnGhost + FnOnce(&'a mut StoreCommitter<i32, Self>),
     {
         self.0.store(
             val,
@@ -97,9 +95,7 @@ impl AtomicI32 {
             } else {
                 ::std::sync::atomic::Ordering::Release
             },
-        );
-
-        Ghost::conjure()
+        )
     }
 }
 
