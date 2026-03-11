@@ -57,7 +57,7 @@ use petgraph::{
 };
 use rustc_hir::{
     def::DefKind,
-    def_id::{DefId, LocalDefId},
+    def_id::{CRATE_DEF_ID, DefId, LocalDefId},
 };
 use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::{
@@ -460,6 +460,7 @@ impl CallGraph {
     ///
     /// In particular, this means it only contains `#[check(terminates)]` functions.
     fn build(ctx: &TranslationCtx) -> Self {
+        let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
         for local_id in ctx.hir_body_owners() {
@@ -488,9 +489,11 @@ impl CallGraph {
 
             // For termination checking of trait impl members, `typing_env` should be the one from the trait definition.
             // This prevents smuggling recursive constraints within redundant trait bounds.
-            let typing_env = if let Some(trait_item_id) = ctx.trait_item_of(def_id) {
-                let typing_env = ctx.typing_env(trait_item_id);
-                todo!()
+            let typing_env = if let Some(trait_item_id) = tcx.trait_item_of(def_id) {
+                TypingEnv {
+                    typing_mode: ctx.typing_mode(def_id),
+                    param_env: param_env_for_termination(tcx, trait_item_id, def_id),
+                }
             } else {
                 ctx.typing_env(def_id)
             };
@@ -513,7 +516,7 @@ impl CallGraph {
             }
         }
 
-        let tcx = ctx.tcx;
+        // Add an edge from every trait impl to its methods.
         for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
             let trait_def = tcx.trait_def(trait_id);
             for &impl_id in impls {
@@ -817,6 +820,7 @@ fn as_predicates<'tcx>(
     })
 }
 
+/// Return all the trait impls that appear in the proof trees of `clauses`.
 fn proof_tree_nodes<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -825,12 +829,9 @@ fn proof_tree_nodes<'tcx>(
     let mut nodes = Vec::new();
     let mut predicates: Vec<_> = as_predicates(tcx, clauses).collect();
     while let Some(trait_ref) = predicates.pop() {
-        eprintln!("next bound: {trait_ref:?}");
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
-            eprintln!("skip");
             continue;
         };
-        eprintln!("{source:?}");
         let ImplSource::UserDefined(source) = source else { continue };
         nodes.push(source.impl_def_id);
         let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
@@ -838,4 +839,32 @@ fn proof_tree_nodes<'tcx>(
         predicates.extend(as_predicates(tcx, bounds));
     }
     nodes
+}
+
+/// For a method in a trait impl (`impl_item_id`), construct a `ParamEnv` that
+/// combines bounds from the parent impl and bounds from the original declaration (`trait_item_id`)
+fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: DefId) -> ParamEnv {
+    let impl_id = tcx.impl_of_assoc(impl_item_id).unwrap();
+    let trait_ref = tcx.impl_trait_ref(impl_id).instantiate_identity();
+    let trait_item_args = GenericArgs::identity_for_item(tcx, trait_item_id);
+    let args = tcx.mk_args_from_iter(
+        trait_ref.args.iter().chain(trait_item_args.iter().skip(trait_ref.args.len())),
+    );
+
+    // Reverse engineered from `GenericPredicates::instantiate_into`
+    let mut predicates = tcx.predicates_of(impl_id).instantiate_identity(tcx).predicates;
+    predicates.extend(
+        tcx.predicates_of(trait_item_id)
+            .predicates
+            .iter()
+            .map(|(p, _)| EarlyBinder::bind(*p).instantiate(tcx, args)),
+    );
+    let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));
+
+    // Code from `param_env` in `rustc_ty_utils/src/ty.rs`
+    let local_did = impl_item_id.as_local();
+    let body_id = local_did.unwrap_or(CRATE_DEF_ID);
+    let cause =
+        rustc_trait_selection::traits::ObligationCause::misc(tcx.def_span(impl_item_id), body_id);
+    normalize_param_env_or_error(tcx, unnormalized_env, cause)
 }
