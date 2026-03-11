@@ -40,7 +40,7 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
     ///
     /// The load is always sequentially consistent.
-    #[requires(forall<c: &mut LoadCommitter<Self>> !c.shot() ==> c.ward() == *self ==> 
+    #[requires(forall<c: &mut LoadCommitter<Self>> !c.shot() ==> c.ward() == *self ==>
         f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut LoadCommitter<Self>>
