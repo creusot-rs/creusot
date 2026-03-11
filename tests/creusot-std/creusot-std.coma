@@ -35322,6 +35322,250 @@ module M_snapshot__impl_Snapshot_T_0__into_ghost (* snapshot::Snapshot<T> *)
       /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
       (! return {result}) ]
 end
+module M_std__alloc__round_nearest_multiple
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use int.Int
+  
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function such_that_Int (p: Map.map int bool) : int
+  
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant n : int
+  
+  constant of : int
+  
+  function round_nearest_multiple (n: int) (of: int) : int
+  
+  goal vc_round_nearest_multiple: n >= 0 /\ of > 0
+    -> ([@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool (fun (m: int) -> m >= 0
+        /\ (m - 1) * of < n /\ n <= m * of) x)
+    /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (m: int) -> m >= 0
+      /\ (m - 1) * of < n /\ n <= m * of) (such_that_Int (fun (m: int) -> m >= 0 /\ (m - 1) * of < n /\ n <= m * of)))
+    -> (let m = such_that_Int (fun (m: int) -> m >= 0 /\ (m - 1) * of < n /\ n <= m * of) in let result = m
+    * of in [@stop_split] [@expl:round_nearest_multiple ensures] ([@stop_split] [@expl:round_nearest_multiple ensures #0] result
+      >= n)
+    /\ ([@stop_split] [@expl:round_nearest_multiple ensures #1] exists m'0: int. m'0 * of = result)
+    /\ ([@stop_split] [@expl:round_nearest_multiple ensures #2] result - of < n)))
+end
+module M_std__alloc__extern_spec_Layout_new_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  use int.ComputerDivision
+  use bv.Pow2int
+  use creusot.int.Int64
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  let rec size_of_T'0 (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:size_of ensures] UInt64.t'int result = size_of_T}
+      (! return {result}) ]
+  
+  constant align_of_T : UInt64.t
+  
+  axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
+    /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
+  
+  axiom align_of_T_spec'0: ComputerDivision.mod size_of_T (UInt64.t'int align_of_T) = 0
+  
+  let rec align_of_T'0 (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:align_of ensures] result = align_of_T} (! return {result}) ]
+  
+  type t_Layout
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function such_that_Int (p: Map.map int bool) : int
+  
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
+  
+  function round_nearest_multiple (n: int) (of: int) : int = let m = such_that_Int (fun (m: int) -> m >= 0
+    /\ (m - 1) * of < n /\ n <= m * of) in m * of
+  
+  axiom round_nearest_multiple_spec: forall n: int, of: int. n >= 0 /\ of > 0 -> round_nearest_multiple n of >= n
+  
+  axiom round_nearest_multiple_spec'0: forall n: int, of: int. n >= 0 /\ of > 0
+      -> (exists m: int. m * of = round_nearest_multiple n of)
+  
+  axiom round_nearest_multiple_spec'1: forall n: int, of: int. n >= 0 /\ of > 0 -> round_nearest_multiple n of - of < n
+  
+  predicate layout_requirements (size: int) (align: int) =
+    align > 0
+    /\ (exists a: int. a >= 0 /\ Pow2int.pow2 a = align)
+    /\ align <= Int64.to_int const_MAX /\ round_nearest_multiple size align <= Int64.to_int const_MAX
+  
+  predicate inv_Layout (_1: t_Layout)
+  
+  function size_log_Layout (self: t_Layout) : UInt64.t
+  
+  function align_log_Layout (self: t_Layout) : UInt64.t
+  
+  let rec from_size_align_unchecked (size: UInt64.t) (align: UInt64.t) (return (x: t_Layout)) =
+    {[@stop_split] [@expl:from_size_align_unchecked requires] layout_requirements (UInt64.t'int size) (UInt64.t'int align)}
+    any
+    [ return (result: t_Layout) ->
+    {[@stop_split] [@expl:from_size_align_unchecked ensures] ([@stop_split] [@expl:from_size_align_unchecked result type invariant] inv_Layout result)
+      /\ ([@stop_split] [@expl:from_size_align_unchecked ensures] size_log_Layout result = size
+      /\ align_log_Layout result = align)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_Layout_new_body_T (return (x: t_Layout)) =
+    {[@stop_split] [@expl:extern_spec_Layout_new_body requires] layout_requirements size_of_T (UInt64.t'int align_of_T)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = size_of_T'0 (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1)
+      | s1 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_6 <- _x ] s2)
+      | s2 = from_size_align_unchecked {_5} {_6} (fun (_x: t_Layout) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Layout = Any.any_l () | & _5: UInt64.t = Any.any_l () | & _6: UInt64.t = Any.any_l () ])
+    [ return (result: t_Layout) ->
+    {[@stop_split] [@expl:extern_spec_Layout_new_body_T ensures] ([@stop_split] [@expl:extern_spec_Layout_new_body result type invariant] inv_Layout result)
+      /\ ([@stop_split] [@expl:extern_spec_Layout_new_body ensures #0] UInt64.t'int (size_log_Layout result)
+        = size_of_T)
+      /\ ([@stop_split] [@expl:extern_spec_Layout_new_body ensures #1] align_log_Layout result = align_of_T)
+      /\ ([@stop_split] [@expl:extern_spec_Layout_new_body ensures #2] exists n: int. UInt64.t'int (size_log_Layout result)
+        = n * UInt64.t'int (align_log_Layout result))}
+      (! return {result}) ]
+end
+module M_std__alloc__extern_spec_Layout_align_to_body
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.int.UInt64
+  use bv.Pow2int
+  use creusot.int.Int64
+  use map.Map
+  use creusot.prelude.Any
+  use int.MinMax
+  use int.Int
+  
+  type t_Layout
+  
+  predicate inv_Layout (_1: t_Layout)
+  
+  predicate invariant_ref_Layout [@inline:trivial] (self: t_Layout) = inv_Layout self
+  
+  meta "rewrite_def" predicate invariant_ref_Layout
+  
+  predicate inv_ref_Layout [@inline:trivial] (_1: t_Layout) = invariant_ref_Layout _1
+  
+  meta "rewrite_def" predicate inv_ref_Layout
+  
+  function size_log_Layout (self: t_Layout) : UInt64.t
+  
+  let rec size (self_: t_Layout) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:size 'self_' type invariant] inv_ref_Layout self_}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:size ensures] result = size_log_Layout self_}
+      (! return {result}) ]
+  
+  type t_Result_Layout_LayoutError = Ok t_Layout | Err ()
+  
+  predicate inv_Result_Layout_LayoutError (_1: t_Result_Layout_LayoutError)
+  
+  axiom inv_axiom [@rewrite]:
+    forall x: t_Result_Layout_LayoutError [inv_Result_Layout_LayoutError x]. inv_Result_Layout_LayoutError x
+      = match x with
+        | Ok f0 -> inv_Layout f0
+        | Err f0 -> true
+        end
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function such_that_Int (p: Map.map int bool) : int
+  
+  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+      -> index_Mapping_Int_bool p (such_that_Int p)
+  
+  function round_nearest_multiple (n: int) (of: int) : int = let m = such_that_Int (fun (m: int) -> m >= 0
+    /\ (m - 1) * of < n /\ n <= m * of) in m * of
+  
+  axiom round_nearest_multiple_spec: forall n: int, of: int. n >= 0 /\ of > 0 -> round_nearest_multiple n of >= n
+  
+  axiom round_nearest_multiple_spec'0: forall n: int, of: int. n >= 0 /\ of > 0
+      -> (exists m: int. m * of = round_nearest_multiple n of)
+  
+  axiom round_nearest_multiple_spec'1: forall n: int, of: int. n >= 0 /\ of > 0 -> round_nearest_multiple n of - of < n
+  
+  predicate layout_requirements (size'0: int) (align: int) =
+    align > 0
+    /\ (exists a: int. a >= 0 /\ Pow2int.pow2 a = align)
+    /\ align <= Int64.to_int const_MAX /\ round_nearest_multiple size'0 align <= Int64.to_int const_MAX
+  
+  function align_log_Layout (self: t_Layout) : UInt64.t
+  
+  let rec from_size_align (size'0: UInt64.t) (align: UInt64.t) (return (x: t_Result_Layout_LayoutError)) = any
+    [ return (result: t_Result_Layout_LayoutError) ->
+    {[@stop_split] [@expl:from_size_align ensures] ([@stop_split] [@expl:from_size_align result type invariant] inv_Result_Layout_LayoutError result)
+      /\ ([@stop_split] [@expl:from_size_align ensures] if layout_requirements (UInt64.t'int size'0) (UInt64.t'int align) then
+        exists res: t_Layout. result = Ok res /\ size_log_Layout res = size'0 /\ align_log_Layout res = align
+      else
+        exists err: (). result = Err err
+      )}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec extern_spec_Layout_align_to_body (self_: t_Layout) (align: UInt64.t)
+    (return (x: t_Result_Layout_LayoutError)) =
+    {[@stop_split] [@expl:extern_spec_Layout_align_to_body 'self_' type invariant] inv_ref_Layout self_}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = size {self_} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      | s1 = from_size_align {_6} {align} (fun (_x: t_Result_Layout_LayoutError) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Result_Layout_LayoutError = Any.any_l ()
+    | & self_: t_Layout = self_
+    | & align: UInt64.t = align
+    | & _6: UInt64.t = Any.any_l () ])
+    [ return (result: t_Result_Layout_LayoutError) ->
+    {[@stop_split] [@expl:extern_spec_Layout_align_to_body ensures] ([@stop_split] [@expl:extern_spec_Layout_align_to_body result type invariant] inv_Result_Layout_LayoutError result)
+      /\ ([@stop_split] [@expl:extern_spec_Layout_align_to_body ensures] if layout_requirements (UInt64.t'int (size_log_Layout self_)) (UInt64.t'int align) then
+        exists res: t_Layout. result = Ok res
+          /\ size_log_Layout res = size_log_Layout self_
+          /\ UInt64.t'int (align_log_Layout res)
+          = MinMax.max (UInt64.t'int (align_log_Layout self_)) (UInt64.t'int align)
+      else
+        exists err: (). result = Err err
+      )}
+      (! return {result}) ]
+end
 module M_std__array__impl_IteratorSpec_for_IntoIter_T__produces_refl (* <std::array::IntoIter<T, N> as std::iter::IteratorSpec> *)
   type namespace_other
   

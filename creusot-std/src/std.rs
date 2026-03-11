@@ -1,4 +1,5 @@
 //! Specifications for the `std` crate
+pub mod alloc;
 mod array;
 mod borrow;
 mod boxed;
