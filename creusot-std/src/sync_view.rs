@@ -38,7 +38,6 @@ pub trait HasTimestamp {
 }
 
 /// ↑V
-// TODO: [VL] Send issue opaque + Clone
 #[opaque]
 #[derive(Copy)]
 pub struct SyncView;
@@ -128,13 +127,13 @@ impl<T> AtView<T> {
     }
 
     #[logic(opaque)]
-    pub fn value(&self) -> T {
+    pub fn val(&self) -> T {
         dead
     }
 
     #[check(ghost)]
     #[trusted]
-    #[ensures(result.0 == result.1.view_logic() && result.1.value() == *val)]
+    #[ensures(result.0 == result.1.view_logic() && result.1.val() == *val)]
     #[allow(unused_variables)]
     pub fn new(val: Ghost<T>) -> Ghost<(SyncView, Self)> {
         Ghost::conjure()
@@ -143,7 +142,7 @@ impl<T> AtView<T> {
     #[check(ghost)]
     #[trusted]
     #[requires(self.view_logic().le_log(v))]
-    #[ensures(result == self.value())]
+    #[ensures(result == self.val())]
     #[allow(unused_variables)]
     pub fn into_inner(self, v: SyncView) -> T {
         panic!("Should not be called outside ghost code")

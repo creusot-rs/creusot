@@ -250,7 +250,7 @@ module M_message_passing
   
   type t_AtomicInvariant_MessagePassingAtomicInv
   
-  function value_Box_Perm_PermCell_i32_Global (self: t_AtView_Box_Perm_PermCell_i32_Global) : t_Perm_PermCell_i32
+  function val_Box_Perm_PermCell_i32_Global (self: t_AtView_Box_Perm_PermCell_i32_Global) : t_Perm_PermCell_i32
   
   function view_Box_Perm_PermCell_i32_Global'0 (self: t_AtView_Box_Perm_PermCell_i32_Global) : t_SyncView
   
@@ -266,8 +266,8 @@ module M_message_passing
       /\ (forall t: int. match get_Int (val_AtomicI32 self.atomic_own) t with
           | Some {f0'0 = v; f1'0 = view} -> v = (0: Int32.t)
           \/ v = (1: Int32.t)
-          /\ perm = ward_PermCell_i32 (value_Box_Perm_PermCell_i32_Global data_own)
-          /\ Int32.to_int (val_PermCell_i32 (value_Box_Perm_PermCell_i32_Global data_own)) = 1
+          /\ perm = ward_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)
+          /\ Int32.to_int (val_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)) = 1
           /\ le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 data_own) view
           | None -> true
           end)
@@ -425,7 +425,7 @@ module M_message_passing
     [ return (result: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global) ->
     {[@stop_split] [@expl:new_Box_Perm_PermCell_i32_Global ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global result)
       /\ ([@stop_split] [@expl:new ensures] result.f0'4 = view_Box_Perm_PermCell_i32_Global'0 result.f1'4
-      /\ value_Box_Perm_PermCell_i32_Global result.f1'4 = val')}
+      /\ val_Box_Perm_PermCell_i32_Global result.f1'4 = val')}
       (! return {result}) ]
   
   let rec into_inner_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global
@@ -502,7 +502,7 @@ module M_message_passing
   
   function ward_i32 (self: t_StoreCommitter_i32_AtomicI32) : t_AtomicI32
   
-  function value_i32 (self: t_StoreCommitter_i32_AtomicI32) : Int32.t
+  function val_i32 (self: t_StoreCommitter_i32_AtomicI32) : Int32.t
   
   let rec shoot_i32 (self: MutBorrow.t t_StoreCommitter_i32_AtomicI32) (own: MutBorrow.t t_Perm_AtomicI32)
     (view: MutBorrow.t t_SyncView) (return (x: int)) =
@@ -517,7 +517,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot ensures #4] result <= get_timestamp_AtomicI32 (ward_i32 self.current) view.final)
       /\ ([@stop_split] [@expl:shoot ensures #5] get_Int (val_AtomicI32 own.current) result = None)
       /\ ([@stop_split] [@expl:shoot ensures #6] val_AtomicI32 own.final
-      = insert_Int (val_AtomicI32 own.current) result { f0'0 = value_i32 self.current; f1'0 = view.current })}
+      = insert_Int (val_AtomicI32 own.current) result { f0'0 = val_i32 self.current; f1'0 = view.current })}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -763,14 +763,14 @@ module M_message_passing
     {[@stop_split] [@expl:store_unit requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_StoreCommitter_i32_AtomicI32. not shot_i32 c.current
       -> ward_i32 c.current = self
-      -> value_i32 c.current = val'
+      -> val_i32 c.current = val'
       -> precondition_FnGhostWrapper_closure0'0 f c
       /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot_i32 c.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_StoreCommitter_i32_AtomicI32. not shot_i32 c.current
         /\ ward_i32 c.current = self
-        /\ value_i32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c result}
+        /\ val_i32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c result}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
@@ -944,7 +944,7 @@ module M_message_passing
   let rec deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
     [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  function value_i32'0 (self: t_LoadCommitter_i32_AtomicI32) : Int32.t
+  function val_i32'0 (self: t_LoadCommitter_i32_AtomicI32) : Int32.t
   
   let rec into_ghost_i32 (self: Int32.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
@@ -965,7 +965,7 @@ module M_message_passing
         <= result)
       /\ ([@stop_split] [@expl:shoot ensures #3] result <= get_timestamp_AtomicI32 (ward_i32'0 self.current) view.final)
       /\ ([@stop_split] [@expl:shoot ensures #4] match get_Int (val_AtomicI32 own) result with
-        | Some {f0'0 = v; f1'0 = v_view} -> v = value_i32'0 self.current /\ le_log_SyncView v_view view.final
+        | Some {f0'0 = v; f1'0 = v_view} -> v = val_i32'0 self.current /\ le_log_SyncView v_view view.final
         | None -> false
         end)}
       (! return {result}) ]
@@ -1020,7 +1020,7 @@ module M_message_passing
     /\ ([@stop_split] [@expl:into_inner requires] le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 self) v)}
     any
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:into_inner ensures] result
-      = value_Box_Perm_PermCell_i32_Global self}
+      = val_Box_Perm_PermCell_i32_Global self}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_LoadCommitter_i32_AtomicI32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_LoadCommitter_i32_AtomicI32)) =
@@ -1080,7 +1080,7 @@ module M_message_passing
       [ s0 = new (fun (_x: t_SyncView) -> [ &_18 <- _x ] s1)
       | s1 = deref_Ghost_SyncView {_18} (fun (_x: t_SyncView) -> [ &_16 <- _x ] s2)
       | s2 = [ &sync_view <- _16 ] s3
-      | s3 = into_ghost_i32 {value_i32'0 self.current.c1'5.current.current} (fun (_x: Int32.t) -> [ &value <- _x ] s4)
+      | s3 = into_ghost_i32 {val_i32'0 self.current.c1'5.current.current} (fun (_x: Int32.t) -> [ &value <- _x ] s4)
       | s4 = [ &_26 <- inv.current.atomic_own ] s5
       | s5 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &sync_view <- _bor.final ] s6)
@@ -1442,7 +1442,7 @@ module M_message_passing
     [ return (result: tup2_i32_Ghost_Option_Box_Perm_PermCell_i32_Global) ->
     {[@stop_split] [@expl:load ensures] exists c: MutBorrow.t t_LoadCommitter_i32_AtomicI32. not shot_i32'0 c.current
         /\ ward_i32'0 c.current = self
-        /\ value_i32'0 c.current = result.f0'9 /\ postcondition_once_FnGhostWrapper_closure4 f c result.f1'9}
+        /\ val_i32'0 c.current = result.f0'9 /\ postcondition_once_FnGhostWrapper_closure4 f c result.f1'9}
       (! return {result}) ]
   
   predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true

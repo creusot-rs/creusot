@@ -17,7 +17,7 @@ unsafe impl Sync for Perm<AtomicI32> {}
 
 #[cfg(creusot)]
 #[trusted]
-impl Objective for Perm<crate::std::sync::atomic_relacq::AtomicI32> {}
+impl Objective for Perm<AtomicI32> {}
 
 impl Container for AtomicI32 {
     type Value = FMap<Timestamp, (i32, SyncView)>;
@@ -51,13 +51,7 @@ impl AtomicI32 {
         (Self(std::sync::atomic::AtomicI32::new(val)), Ghost::conjure())
     }
 
-    /// Wrapper for [`std::sync::atomic::AtomicI32::into_inner`].
-    // TODO: [VL]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn into_inner(self, own: Ghost<Box<Perm<AtomicI32>>>) -> i32 {
-        self.0.into_inner()
-    }
+    // TODO: [VL] into_inner
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
     #[requires(forall<c: &mut LoadCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==>
@@ -65,7 +59,7 @@ impl AtomicI32 {
     )]
     #[ensures(exists<c: &mut LoadCommitter<i32, Self>>
         !c.shot() && c.ward() == *self &&
-        c.value() == result.0 && f.postcondition_once((c,), *(result.1))
+        c.val() == result.0 && f.postcondition_once((c,), *(result.1))
     )]
     #[trusted]
     #[allow(unused_variables)]
@@ -83,11 +77,11 @@ impl AtomicI32 {
     }
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
-    #[requires(forall<c: &mut StoreCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==> c.value() == val ==>
+    #[requires(forall<c: &mut StoreCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
         f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut StoreCommitter<i32, Self>>
-        !c.shot() && c.ward() == *self && c.value() == val &&
+        !c.shot() && c.ward() == *self && c.val() == val &&
         f.postcondition_once((c,), *result)
     )]
     #[trusted]
@@ -133,13 +127,13 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
 
     /// Value held by the [`AtomicOwn`].
     #[logic(opaque)]
-    pub fn value(self) -> T {
+    pub fn val(self) -> T {
         dead
     }
 
     /// 'Shoot' the committer
     ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
+    /// This does the read on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
@@ -147,7 +141,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     #[ensures((*self).ward().get_timestamp(*view) <= result)]
     #[ensures(result <= (*self).ward().get_timestamp(^view))]
     #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == (*self).value() && v_view.le_log(^view),
+        Some((v, v_view)) => v == (*self).val() && v_view.le_log(^view),
         None => false
     })]
     #[check(ghost)]
@@ -182,7 +176,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
 
     /// Value held by the [`AtomicOwn`], before the [`shoot`].
     #[logic(opaque)]
-    pub fn value(self) -> T {
+    pub fn val(self) -> T {
         dead
     }
 
@@ -197,7 +191,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((*self).ward().get_timestamp(*view) < result)]
     #[ensures(result <= (*self).ward().get_timestamp(^view))]
     #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).value(), (*view))))]
+    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), (*view))))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]

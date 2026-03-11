@@ -1,4 +1,4 @@
-// TIME 2
+// DEPTH 8
 
 extern crate creusot_std;
 
@@ -46,7 +46,7 @@ impl Protocol for MessagePassingAtomicInv {
                     None => true
                 },
                 State::Synchronisation(data_own, tok_write) => excl_write == tok_write.id() && forall<t> match self.atomic_own.val().get(t) {
-                    Some((v, view)) => v == 0i32 || (v == 1i32 && perm == *data_own.value().ward() && data_own.value().val()@ == 1 && data_own.view_logic().le_log(view)),
+                    Some((v, view)) => v == 0i32 || (v == 1i32 && perm == *data_own.val().ward() && data_own.val().val()@ == 1 && data_own.view_logic().le_log(view)),
                     None => true
                 },
                 State::Readable(tok_write, tok_read) => excl_write == tok_write.id() && excl_read == tok_read.id(),
@@ -113,7 +113,7 @@ pub fn message_passing() {
                         }
 
                         let mut sync_view = *SyncView::new();
-                        let value = snapshot!(c.value()).into_ghost();
+                        let value = snapshot!(c.val()).into_ghost();
 
                         c.shoot(&inv.atomic_own, &mut sync_view);
 
