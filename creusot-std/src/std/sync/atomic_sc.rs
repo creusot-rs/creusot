@@ -45,7 +45,7 @@ impl AtomicI32 {
     )]
     #[ensures(exists<c: &mut LoadCommitter<Self>>
         !c.shot() && c.ward() == *self &&
-        c.value() == result.0 && f.postcondition_once((c,), *(result.1))
+        c.val() == result.0 && f.postcondition_once((c,), *(result.1))
     )]
     #[trusted]
     #[allow(unused_variables)]
@@ -60,11 +60,11 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     ///
     /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.value() == val ==>
+    #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
         f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
     )]
     #[ensures(exists<c: &mut StoreCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.value() == val &&
+        !c.shot() && c.ward() == *self && c.val() == val &&
         f.postcondition_once((c,), *result)
     )]
     #[trusted]
@@ -80,12 +80,12 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
     ///
     /// The load and the store are always sequentially consistent.
-    #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_value() == val + c.old_value() ==>
+    #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
         f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut UpdateCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.new_value() == val + c.old_value() &&
-        c.old_value() == result.0 && f.postcondition_once((c,), *(result.1))
+        !c.shot() && c.ward() == *self && c.new_val() == val + c.old_val() &&
+        c.old_val() == result.0 && f.postcondition_once((c,), *(result.1))
     )]
     #[trusted]
     #[allow(unused_variables)]
@@ -120,17 +120,17 @@ impl<C: Container<Value: Sized>> LoadCommitter<C> {
 
     /// Value read from the atomic operation.
     #[logic(opaque)]
-    pub fn value(self) -> C::Value {
+    pub fn val(self) -> C::Value {
         dead
     }
 
     /// 'Shoot' the committer
     ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
+    /// This does the read on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
-    #[ensures((*self).value() == *own.val())]
+    #[ensures((*self).val() == *own.val())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -161,7 +161,7 @@ impl<C: Container<Value: Sized>> StoreCommitter<C> {
 
     /// Value written by the atomic operation.
     #[logic(opaque)]
-    pub fn value(self) -> C::Value {
+    pub fn val(self) -> C::Value {
         dead
     }
 
@@ -172,7 +172,7 @@ impl<C: Container<Value: Sized>> StoreCommitter<C> {
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(^own).val() == (*self).value())]
+    #[ensures(*(^own).val() == (*self).val())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -203,25 +203,25 @@ impl<C: Container<Value: Sized>> UpdateCommitter<C> {
 
     /// Value held by the [`AtomicOwn`], before the [`shoot`].
     #[logic(opaque)]
-    pub fn old_value(self) -> C::Value {
+    pub fn old_val(self) -> C::Value {
         dead
     }
 
     /// Value held by the [`AtomicOwn`], after the [`shoot`].
     #[logic(opaque)]
-    pub fn new_value(self) -> C::Value {
+    pub fn new_val(self) -> C::Value {
         dead
     }
 
     /// 'Shoot' the committer
     ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
+    /// This does the update on the atomic in ghost code, and can only be called once.
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(*own).val() == (*self).old_value())]
-    #[ensures(*(^own).val() == (*self).new_value())]
+    #[ensures(*(*own).val() == (*self).old_val())]
+    #[ensures(*(^own).val() == (*self).new_val())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]

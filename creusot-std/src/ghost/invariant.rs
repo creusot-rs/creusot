@@ -229,10 +229,12 @@ impl View for Tokens<'_> {
     }
 }
 
-/// A variant of [`Invariant`] for use in [`AtomicInvariant`]s and [`NonAtomicInvariant`]s.
+/// A variant of [`Invariant`] for use in [`AtomicInvariantSC`]s,
+/// [`AtomicInvariantRelAcq`]s and [`NonAtomicInvariant`]s.
 ///
 /// This allows to specify an invariant that depends on some public data
-/// (`AtomicInvariant::public`, `NonAtomicInvariant::public`).
+/// (`AtomicInvariantSC::public`, `AtomicInvariantRelAcq::public`
+/// `NonAtomicInvariant::public`).
 pub trait Protocol {
     type Public;
 
@@ -241,16 +243,83 @@ pub trait Protocol {
 }
 
 #[opaque]
-pub struct AtomicInvariant<T>(PhantomData<*mut T>);
+pub struct AtomicInvariantSC<T>(PhantomData<*mut T>);
+
+unsafe impl<T: Send> Sync for AtomicInvariantSC<T> {}
+
+impl<T: Protocol> AtomicInvariantSC<T> {
+    /// Construct a `AtomicInvariant`
+    ///
+    /// # Parameters
+    /// - `value`: the actual data contained in the invariant. Use [`Self::open`] to
+    /// access it. Also called the 'private' part of the invariant.
+    /// - `public`: the 'public' part of the invariant.
+    /// - `namespace`: the namespace of the invariant.
+    ///   This is required to avoid [open](Self::open)ing the same invariant twice.
+    #[trusted]
+    #[requires(value.protocol(*public))]
+    #[ensures(result.public() == *public)]
+    #[ensures(result.namespace() == *namespace)]
+    #[check(ghost)]
+    pub fn new(
+        value: Ghost<T>,
+        public: Snapshot<T::Public>,
+        namespace: Snapshot<Namespace>,
+    ) -> Ghost<Self> {
+        Ghost::conjure()
+    }
+
+    /// Get the namespace associated with this invariant.
+    #[logic(opaque)]
+    pub fn namespace(self) -> Namespace {
+        dead
+    }
+
+    /// Get the 'public' part of this invariant.
+    #[logic(opaque)]
+    pub fn public(self) -> T::Public {
+        dead
+    }
+
+    /// Gives the actual invariant held by the [`AtomicInvariant`].
+    #[trusted]
+    #[ensures(result.protocol(self.public()))]
+    #[check(ghost)]
+    pub fn into_inner(self) -> T {
+        panic!("Should not be called outside ghost code")
+    }
+
+    /// Open the invariant to get the data stored inside.
+    ///
+    /// This will call the closure `f` with the inner data. You must restore the
+    /// contained [`Protocol`] before returning from the closure.
+    ///
+    /// NOTE: This function can only be called from ghost code, because atomic
+    /// invariants are always wrapped in `Ghost`. This guarantees atomicity.
+    #[trusted]
+    #[requires(tokens.contains(self.namespace()))]
+    #[requires(forall<t: &mut T> t.protocol(self.public()) && inv(t) ==>
+        f.precondition((t,)) &&
+        // f must restore the invariant
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol(self.public())))]
+    #[ensures(exists<t: &mut T> inv(t) && t.protocol(self.public()) && f.postcondition_once((t,), result))]
+    #[check(ghost)]
+    pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
+        panic!("Should not be called outside ghost code")
+    }
+}
+
+#[opaque]
+pub struct AtomicInvariantRelAcq<T>(PhantomData<*mut T>);
 
 // TODO: Find a real hack to achieve this.
 #[cfg(creusot)]
-unsafe impl<T: Send + Objective> Sync for AtomicInvariant<T> {}
+unsafe impl<T: Send + Objective> Sync for AtomicInvariantRelAcq<T> {}
 
 #[cfg(not(creusot))]
-unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
+unsafe impl<T: Send> Sync for AtomicInvariantRelAcq<T> {}
 
-impl<T: Protocol> AtomicInvariant<T> {
+impl<T: Protocol> AtomicInvariantRelAcq<T> {
     /// Construct a `AtomicInvariant`
     ///
     /// # Parameters
