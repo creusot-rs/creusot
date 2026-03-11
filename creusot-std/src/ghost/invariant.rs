@@ -74,6 +74,9 @@ use crate::{
 };
 use core::marker::PhantomData;
 
+#[cfg(creusot)]
+use crate::sync_view::Objective;
+
 /// Declare a new namespace.
 ///
 /// # Example
@@ -240,7 +243,11 @@ pub trait Protocol {
 #[opaque]
 pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
-// TODO: [VL] How to use Objective on T, because of #[cfg(creusot)]
+// TODO: Find a real hack to achieve this.
+#[cfg(creusot)]
+unsafe impl<T: Send + Objective> Sync for AtomicInvariant<T> {}
+
+#[cfg(not(creusot))]
 unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
 impl<T: Protocol> AtomicInvariant<T> {

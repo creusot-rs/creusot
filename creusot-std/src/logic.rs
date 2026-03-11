@@ -10,7 +10,6 @@ mod fset;
 mod id;
 mod int;
 mod mapping;
-pub mod objective;
 pub mod ops;
 pub mod ord;
 pub mod ra;

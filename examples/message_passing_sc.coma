@@ -240,9 +240,7 @@ module M_message_passing
   
   function ward_AtomicI32'0 (self: t_StoreCommitter_AtomicI32) : t_AtomicI32
   
-  function old_value_AtomicI32 (self: t_StoreCommitter_AtomicI32) : Int32.t
-  
-  function new_value_AtomicI32 (self: t_StoreCommitter_AtomicI32) : Int32.t
+  function value_AtomicI32 (self: t_StoreCommitter_AtomicI32) : Int32.t
   
   let rec shoot_AtomicI32 (self: MutBorrow.t t_StoreCommitter_AtomicI32) (own: MutBorrow.t t_Perm_AtomicI32)
     (return (x: ())) =
@@ -252,8 +250,7 @@ module M_message_passing
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_AtomicI32 ensures] ([@stop_split] [@expl:shoot ensures #0] shot_AtomicI32 self.final)
       /\ ([@stop_split] [@expl:shoot ensures #1] ward_AtomicI32 own.current = ward_AtomicI32 own.final)
-      /\ ([@stop_split] [@expl:shoot ensures #2] val_AtomicI32 own.current = old_value_AtomicI32 self.current)
-      /\ ([@stop_split] [@expl:shoot ensures #3] val_AtomicI32 own.final = new_value_AtomicI32 self.current)}
+      /\ ([@stop_split] [@expl:shoot ensures #2] val_AtomicI32 own.final = value_AtomicI32 self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) =
@@ -432,14 +429,14 @@ module M_message_passing
     {[@stop_split] [@expl:store_unit requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_StoreCommitter_AtomicI32. not shot_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
-      -> new_value_AtomicI32 c.current = val'
+      -> value_AtomicI32 c.current = val'
       -> precondition_FnGhostWrapper_closure0'0 f c
       /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot_AtomicI32 c.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_StoreCommitter_AtomicI32. not shot_AtomicI32 c.current
         /\ ward_AtomicI32'0 c.current = self
-        /\ new_value_AtomicI32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c result}
+        /\ value_AtomicI32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c result}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
@@ -643,7 +640,7 @@ module M_message_passing
   
   function ward_AtomicI32'1 (self: t_LoadCommitter_AtomicI32) : t_AtomicI32
   
-  function value_AtomicI32 (self: t_LoadCommitter_AtomicI32) : Int32.t
+  function value_AtomicI32'0 (self: t_LoadCommitter_AtomicI32) : Int32.t
   
   let rec shoot_AtomicI32'0 (self: MutBorrow.t t_LoadCommitter_AtomicI32) (own: t_Perm_AtomicI32) (return (x: ())) =
     {[@stop_split] [@expl:shoot_AtomicI32 requires] ([@stop_split] [@expl:shoot requires #0] not shot_AtomicI32'0 self.current)
@@ -651,7 +648,7 @@ module M_message_passing
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_AtomicI32 ensures] ([@stop_split] [@expl:shoot ensures #0] shot_AtomicI32'0 self.final)
-      /\ ([@stop_split] [@expl:shoot ensures #1] value_AtomicI32 self.current = val_AtomicI32 own)}
+      /\ ([@stop_split] [@expl:shoot ensures #1] value_AtomicI32'0 self.current = val_AtomicI32 own)}
       (! return {result}) ]
   
   predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'3) = _1.final = _1.current
@@ -1049,7 +1046,7 @@ module M_message_passing
     [ return (result: tup2_i32_Ghost_Option_Box_Perm_PermCell_i32_Global) ->
     {[@stop_split] [@expl:load ensures] exists c: MutBorrow.t t_LoadCommitter_AtomicI32. not shot_AtomicI32'0 c.current
         /\ ward_AtomicI32'1 c.current = self
-        /\ value_AtomicI32 c.current = result.f0'7 /\ postcondition_once_FnGhostWrapper_closure4 f c result.f1'7}
+        /\ value_AtomicI32'0 c.current = result.f0'7 /\ postcondition_once_FnGhostWrapper_closure4 f c result.f1'7}
       (! return {result}) ]
   
   predicate resolve_Option_Box_Perm_PermCell_i32_Global (_1: t_Option_Box_Perm_PermCell_i32_Global)

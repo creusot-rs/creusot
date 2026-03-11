@@ -4,6 +4,27 @@ use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::cmp::Ordering;
 
+/// An assertion whose meaning is independent of this thread's view.
+///
+/// Since `Objective` refers to ghost objects whose memory is objective, Rust's
+/// `Unique<T>` (and therefore `Box<T>`, `Vec<T>`, ...) are therefore objective.
+#[cfg(creusot)]
+#[trusted]
+pub auto trait Objective {}
+
+/// A guard for potentially subjective types
+///
+/// Some types, such as `Perm`, could hold a permission to access a value that
+/// depends on the view.
+///
+/// This negative implementation primarily targets `Perm<PermCell<T>>` and
+/// `Perm<*const T>`.
+pub(crate) struct NotObjective {}
+
+#[cfg(creusot)]
+#[trusted]
+impl !Objective for NotObjective {}
+
 pub type Timestamp = Int;
 
 pub trait HasTimestamp {
@@ -17,8 +38,17 @@ pub trait HasTimestamp {
 }
 
 /// ↑V
+// TODO: [VL] Send issue opaque + Clone
 #[opaque]
+#[derive(Copy)]
 pub struct SyncView;
+
+impl Clone for SyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
 impl SyncView {
     #[check(ghost)]
@@ -87,6 +117,10 @@ impl OrdLogic for SyncView {
 /// P@V
 pub struct AtView<T>(PhantomData<T>);
 
+#[cfg(creusot)]
+#[trusted]
+impl<T> Objective for AtView<T> {}
+
 impl<T> AtView<T> {
     #[logic(opaque)]
     pub fn view_logic(&self) -> SyncView {
@@ -108,7 +142,7 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[requires(self.view_logic() == v)]
+    #[requires(self.view_logic().le_log(v))]
     #[ensures(result == self.value())]
     #[allow(unused_variables)]
     pub fn into_inner(self, v: SyncView) -> T {
