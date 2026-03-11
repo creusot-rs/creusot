@@ -10,6 +10,7 @@ use core::ops::Deref;
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
 
+pub mod atomic_relacq;
 #[cfg(feature = "sc-drf")]
 pub mod atomic_sc;
 

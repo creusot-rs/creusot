@@ -68,7 +68,9 @@
         new_range_api,
         range_bounds_is_empty,
         bound_copied,
-        decl_macro
+        decl_macro,
+        auto_traits,
+        negative_impls,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
@@ -544,6 +546,7 @@ pub mod peano;
 pub mod resolve;
 pub mod snapshot;
 pub mod std;
+pub mod sync_view;
 
 // We add some common things at the root of the creusot-std library
 mod base_prelude {

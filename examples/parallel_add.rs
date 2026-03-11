@@ -3,15 +3,14 @@ extern crate creusot_std;
 
 use creusot_std::{
     ghost::{
-        Committer,
-        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::{Authority, Fragment},
     },
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::AtomicI32,
+        sync::atomic_sc::{AtomicI32, UpdateCommitter},
         thread::{self, JoinHandleExt},
     },
 };
@@ -52,7 +51,7 @@ pub fn parallel_add() {
     };
 
     // Initialize our invariant
-    let inv = AtomicInvariant::new(
+    let inv = AtomicInvariantSC::new(
         ghost!(ParallelAddAtomicInv {
             own: own.into_inner(),
             auth1: auth1.into_inner(),
@@ -74,7 +73,7 @@ pub fn parallel_add() {
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { |c: &mut Committer<_>| {
+                ghost! { |c: &mut UpdateCommitter<_>| {
                     inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth1.update(*frag1, snapshot!((Some(Excl(true)), Some(Excl(true)))));
                         c.shoot(&mut inv.own);
@@ -86,7 +85,7 @@ pub fn parallel_add() {
         let t2 = s.spawn(move |tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { |c: &mut Committer<_>| {
+                ghost! { |c: &mut UpdateCommitter<_>| {
                     inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth2.update(*frag2, snapshot!((Some(Excl(true)), Some(Excl(true)))));
                         c.shoot(&mut inv.own);

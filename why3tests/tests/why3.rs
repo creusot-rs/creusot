@@ -54,6 +54,7 @@ fn main() {
     let orange = Color::Ansi256(214);
     let tactic_re = Regex::new(r"TACTIC (\S*)").unwrap();
     let time_re = Regex::new(r"TIME ((\d|\.)+)").unwrap();
+    let depth_re = Regex::new(r"DEPTH ((\d|\.)+)").unwrap();
 
     std::env::set_current_dir("..").unwrap();
 
@@ -254,6 +255,9 @@ fn main() {
             }
             if let Some(time) = time_re.captures_iter(&header_line).next() {
                 why3find.args(["--time", time.get(1).unwrap().as_str()]);
+            }
+            if let Some(depth) = depth_re.captures_iter(&header_line).next() {
+                why3find.args(["--depth", depth.get(1).unwrap().as_str()]);
             }
             if args.no_cache {
                 why3find.arg("--no-cache");

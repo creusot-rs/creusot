@@ -5,7 +5,7 @@ use ::std::thread::{self, JoinHandle, ScopedJoinHandle};
 pub trait JoinHandleExt<T> {
     /// Predicate that specifies the valid return results for the handle.
     #[logic]
-    fn valid_result(self, x: T) -> bool; // TODO: [VL] Rename valid_result.
+    fn valid_result(self, x: T) -> bool;
 
     /// This function is a wrapper `self.join().unwrap()`.
     ///
