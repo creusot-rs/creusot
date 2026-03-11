@@ -5,7 +5,7 @@ extern crate creusot_std;
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        invariant::{AtomicInvariantRelAcq, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::Resource,
     },
@@ -62,7 +62,7 @@ pub fn message_passing() {
     let excl_write = Resource::alloc(snapshot!(Excl(())));
     let excl_read = Resource::alloc(snapshot!(Excl(())));
 
-    let inv = AtomicInvariantRelAcq::new(
+    let inv = AtomicInvariant::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             state: State::NotWrittenYet,

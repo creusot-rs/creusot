@@ -4,7 +4,7 @@
 //! the invariant (see [`Protocol`]), but in return they impose a much more
 //! restricted access to the underlying data, as well as the use of [`Tokens`].
 //!
-//! [Atomic invariants](AtomicInvariantSC) are used to specify concurrent
+//! [Atomic invariants](AtomicInvariant) are used to specify concurrent
 //! operations.
 //!
 //! [Non-atomic invariants](NonAtomicInvariant) are used to specify thread-local
@@ -230,10 +230,10 @@ impl View for Tokens<'_> {
 }
 
 /// A variant of [`Invariant`] for use in [`AtomicInvariantSC`]s,
-/// [`AtomicInvariantRelAcq`]s and [`NonAtomicInvariant`]s.
+/// [`AtomicInvariant`]s and [`NonAtomicInvariant`]s.
 ///
 /// This allows to specify an invariant that depends on some public data
-/// (`AtomicInvariantSC::public`, `AtomicInvariantRelAcq::public`
+/// (`AtomicInvariantSC::public`, `AtomicInvariant::public`
 /// `NonAtomicInvariant::public`).
 pub trait Protocol {
     type Public;
@@ -310,16 +310,16 @@ impl<T: Protocol> AtomicInvariantSC<T> {
 }
 
 #[opaque]
-pub struct AtomicInvariantRelAcq<T>(PhantomData<*mut T>);
+pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
 // TODO: Find a real hack to achieve this.
 #[cfg(creusot)]
-unsafe impl<T: Send + Objective> Sync for AtomicInvariantRelAcq<T> {}
+unsafe impl<T: Send + Objective> Sync for AtomicInvariant<T> {}
 
 #[cfg(not(creusot))]
-unsafe impl<T: Send> Sync for AtomicInvariantRelAcq<T> {}
+unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
 
-impl<T: Protocol> AtomicInvariantRelAcq<T> {
+impl<T: Protocol> AtomicInvariant<T> {
     /// Construct a `AtomicInvariant`
     ///
     /// # Parameters
