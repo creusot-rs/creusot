@@ -215,7 +215,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
                     CallKind::ImplMember => {
                         error.span_note(
                             ctx.def_span(next_node),
-                            format!("{adverb} the member `{f2}` might be called"),
+                            format!("{adverb} the method `{f2}` might be called"),
                         );
                     }
                 }
