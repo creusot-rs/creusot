@@ -28,8 +28,8 @@
 
       pins = {
         why3 = {
-          version = "56a157605dad7403f5d6b8534ed1f89ea67dde96";
-          sha256 = "sha256-NQdF3TJCf+TTRG8YpwMhCxQ6UaXxHb+ic/AXjLBY3pU=";
+          version = "2c0f2992af85f82f3eda0f158dcf10e62e0db875";
+          sha256 = "sha256-9ReUqizS2Jmh2qqRmnygKmFCTaHrpvMGg+wiwrhONiE=";
         };
 
         why3find = {
