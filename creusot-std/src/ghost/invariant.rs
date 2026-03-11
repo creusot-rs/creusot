@@ -4,7 +4,7 @@
 //! the invariant (see [`Protocol`]), but in return they impose a much more
 //! restricted access to the underlying data, as well as the use of [`Tokens`].
 //!
-//! [Atomic invariants](AtomicInvariant) are used to specify concurrent
+//! [Atomic invariants](AtomicInvariantSC) are used to specify concurrent
 //! operations.
 //!
 //! [Non-atomic invariants](NonAtomicInvariant) are used to specify thread-local
