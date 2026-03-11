@@ -392,8 +392,7 @@ impl<T: Protocol> AtomicInvariantRelAcq<T> {
 #[opaque]
 pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 
-impl<T> !Send for NonAtomicInvariant<T> {}
-impl<T> !Sync for NonAtomicInvariant<T> {}
+unsafe impl<T: Protocol> Send for NonAtomicInvariant<T> {}
 
 /// Define method call syntax for [`NonAtomicInvariant::open`].
 pub trait NonAtomicInvariantExt<'a> {
