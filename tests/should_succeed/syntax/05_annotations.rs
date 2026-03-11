@@ -11,3 +11,8 @@ pub fn assume(b: bool) {
     #[trusted]
     proof_assert! { b };
 }
+
+#[ensures(|(fst, snd)| fst == snd)]
+pub fn apair(result: i64) -> (i64, i64) {
+    (result, result)
+}

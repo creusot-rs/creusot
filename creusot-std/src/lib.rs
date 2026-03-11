@@ -105,8 +105,8 @@ pub mod macros {
 
     /// A post-condition of a function or trait item
     ///
-    /// The post-condition can refer to the result of the function using
-    /// the special variable `result`.
+    /// The post-condition can refer to the result of the function as
+    /// `result` by default, or by naming it explicitly; see example below.
     ///
     /// The inside of a `ensures` may look like Rust code, but it is in fact
     /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
@@ -118,6 +118,7 @@ pub mod macros {
     /// ```
     /// # use creusot_std::prelude::*;
     /// #[ensures(result@ == 1)]
+    /// #[ensures(|one| one@ == 1)] // Explicitly name the result variable `one`
     /// fn foo() -> i32 { 1 }
     /// ```
     pub use base_macros::ensures;
