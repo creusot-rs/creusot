@@ -210,7 +210,7 @@ extern_spec! {
 impl<T: DeepModel> DeepModel for Bound<T> {
     type DeepModelTy = Bound<T::DeepModelTy>;
 
-    #[logic]
+    #[logic(open)]
     fn deep_model(self) -> Self::DeepModelTy {
         match self {
             Bound::Included(b) => Bound::Included(b.deep_model()),
@@ -276,13 +276,13 @@ extern_spec! {
                 #[ensures(result == self.end_bound_logic())]
                 fn end_bound(&self) -> Bound<&T>;
 
-                #[ensures(between(self.start_bound_logic().deep_model(), item.deep_model(), self.end_bound_logic().deep_model()))]
+                #[ensures(result == between(self.start_bound_logic().deep_model(), item.deep_model(), self.end_bound_logic().deep_model()))]
                 fn contains<U>(&self, item: &U) -> bool
                 where
                     T: PartialOrd<U>,
                     U: ?Sized + PartialOrd<T> + DeepModel<DeepModelTy = T::DeepModelTy>;
 
-                #[ensures(!exists<item: T::DeepModelTy> between(self.start_bound_logic().deep_model(), item, self.end_bound_logic().deep_model()))]
+                #[ensures(result == !exists<item: T::DeepModelTy> between(self.start_bound_logic().deep_model(), item, self.end_bound_logic().deep_model()))]
                 fn is_empty(&self) -> bool
                 where T: PartialOrd;
             }
