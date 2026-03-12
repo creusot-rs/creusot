@@ -80,12 +80,13 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while atomic.load(ghost! { |c: &mut LoadCommitter<AtomicI32>| {
+            while atomic.load(ghost! { |c: &LoadCommitter<AtomicI32>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                excl.valid_op_lemma(&inv.tok);
-                if snapshot!{ c.val() }.into_ghost().into_inner() == 1 {
-                    std::mem::swap(&mut inv.tok, &mut *excl);
+                if *snapshot!{ c.val() }.into_ghost() != 1 {
+                    return
                 }
+                excl.valid_op_lemma(&inv.tok);
+                std::mem::swap(&mut inv.tok, &mut *excl);
                 c.shoot(&mut inv.atomic_own);
                 data_own = Ghost::new(inv.data_own.take())
             })}})

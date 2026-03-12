@@ -40,17 +40,15 @@ impl AtomicI32 {
     /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
     ///
     /// The load is always sequentially consistent.
-    #[requires(forall<c: &mut LoadCommitter<Self>> !c.shot() ==> c.ward() == *self ==>
-        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
-    )]
-    #[ensures(exists<c: &mut LoadCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+    #[requires(forall<c: &LoadCommitter<Self>> c.ward() == *self ==> f.precondition((c,)))]
+    #[ensures(exists<c: &LoadCommitter<Self>>
+        c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn load<'a, F>(&'a self, f: Ghost<F>) -> i32
+    pub fn load<F>(&self, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut LoadCommitter<Self>),
+        F: FnGhost + FnOnce(&LoadCommitter<Self>),
     {
         self.0.load(std::sync::atomic::Ordering::SeqCst)
     }
@@ -67,9 +65,9 @@ impl AtomicI32 {
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn store<'a, F>(&'a self, val: i32, f: Ghost<F>)
+    pub fn store<F>(&self, val: i32, f: Ghost<F>)
     where
-        F: FnGhost + FnOnce(&'a mut StoreCommitter<Self>),
+        F: FnGhost + FnOnce(&mut StoreCommitter<Self>),
     {
         self.0.store(val, std::sync::atomic::Ordering::SeqCst)
     }
@@ -86,9 +84,9 @@ impl AtomicI32 {
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn fetch_add<'a, F>(&'a self, val: i32, f: Ghost<F>) -> i32
+    pub fn fetch_add<F>(&self, val: i32, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut UpdateCommitter<Self>),
+        F: FnGhost + FnOnce(&mut UpdateCommitter<Self>),
     {
         self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst)
     }
@@ -96,16 +94,15 @@ impl AtomicI32 {
 
 /// Wrapper around a single atomic load operation, where multiple ghost steps
 /// can be performed.
+///
+/// Note: this committer has no observable effect on ghost ressources. Thus, it is optional to shoot
+/// it, and nothing prevent the user from shooting it several times.
+// This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
+// perhaps not for C20's SC accesses.
 #[opaque]
 pub struct LoadCommitter<C: Container<Value: Sized>>(PhantomData<C>);
 
 impl<C: Container<Value: Sized>> LoadCommitter<C> {
-    /// Status of the committer
-    #[logic(opaque)]
-    pub fn shot(self) -> bool {
-        dead
-    }
-
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -123,14 +120,12 @@ impl<C: Container<Value: Sized>> LoadCommitter<C> {
     /// 'Shoot' the committer
     ///
     /// This does the read on the atomic in ghost code, and can only be called once.
-    #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
-    #[ensures((*self).val() == *own.val())]
+    #[ensures(self.val() == *own.val())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &Perm<C>) {
+    pub fn shoot(&self, own: &Perm<C>) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -167,6 +162,7 @@ impl<C: Container<Value: Sized>> StoreCommitter<C> {
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
+    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures(*(^own).val() == (*self).val())]
     #[check(ghost)]
@@ -215,6 +211,8 @@ impl<C: Container<Value: Sized>> UpdateCommitter<C> {
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
+    #[ensures((*self).ward() == (^self).ward())]
+    #[ensures((*self).old_val() == (^self).old_val() && (*self).new_val() == (^self).new_val())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures(*(*own).val() == (*self).old_val())]
     #[ensures(*(^own).val() == (*self).new_val())]

@@ -83,9 +83,9 @@ pub fn message_passing() {
                 1,
                 ghost! { |c: &mut StoreCommitter<_, _>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
-                        let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         excl.valid_op_lemma(&inv.tok_write);
                         std::mem::swap(&mut inv.tok_write, &mut *excl);
+                        let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         inv.at_view = Some(at_view);
                         c.shoot(&mut inv.atomic_own, &mut sync_view);
                     })
@@ -100,16 +100,16 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while atomic.load(ghost! { |c: &mut LoadCommitter<i32, _>| {
+            while atomic.load(ghost! { |c: &LoadCommitter<i32, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                if *snapshot!{ c.val() }.into_ghost() != 1 {
+                    return
+                }
                 excl.valid_op_lemma(&inv.tok_read);
-                let value = snapshot!{ c.val() }.into_ghost().into_inner();
+                std::mem::swap(&mut inv.tok_read, &mut *excl);
                 let mut sync_view = *SyncView::new();
                 c.shoot(&inv.atomic_own, &mut sync_view);
-                if value == 1 {
-                    std::mem::swap(&mut inv.tok_read, &mut *excl);
-                    data_own = Ghost::new(Some(inv.at_view.take().unwrap().into_inner(sync_view)))
-                }
+                data_own = Ghost::new(Some(inv.at_view.take().unwrap().into_inner(sync_view)))
             })}})
                 != 1
             {}

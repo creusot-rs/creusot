@@ -86,20 +86,22 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while atomic.load(ghost! { |c: &mut LoadCommitter<_>| {
+            while atomic.load(ghost! { |c: &LoadCommitter<AtomicI32>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if let State::Readable(excl_state) = &inv.state {
-                    excl.as_mut().unwrap().valid_op_lemma(excl_state);
+                if *snapshot!{ c.val() }.into_ghost() != 1 {
+                    return
+                } else if let State::Readable(excl_state) = &inv.state {
+                    excl.as_mut().unwrap().valid_op_lemma(excl_state)
                 }
 
                 c.shoot(&inv.atomic_own);
-
-                if let State::Synchronisation(_) = &inv.state {
-                    let State::Synchronisation(d_own) = std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap())) else {
-                            unreachable!();
-                    };
-                    data_own = Ghost::new(Some(d_own));
-            }})}})
+                let State::Synchronisation(d_own) =
+                    std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap()))
+                else {
+                    unreachable!();
+                };
+                data_own = Ghost::new(Some(d_own));
+            })}})
                 != 1
             {}
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };

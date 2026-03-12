@@ -104,24 +104,23 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while atomic.load(ghost! { |c: &mut LoadCommitter<i32, _>| {
+            while atomic.load(ghost! { |c: &LoadCommitter<i32, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if let State::Readable(_, excl_state) = &inv.state {
+                if *snapshot!(c.val()).into_ghost() != 1 {
+                    return
+                } else if let State::Readable(_, excl_state) = &inv.state {
                     excl.as_mut().unwrap().valid_op_lemma(excl_state);
                 }
 
                 let mut sync_view = *SyncView::new();
-                let value = snapshot!(c.val()).into_ghost();
-
                 c.shoot(&inv.atomic_own, &mut sync_view);
-
-                if *value == 1 {
-                    let State::Synchronisation(at_view, tok_write) = std::mem::replace(&mut inv.state, State::Invalid) else {
-                        unreachable!();
-                    };
-                    inv.state = State::Readable(tok_write, excl.take().unwrap());
-                    data_own = Ghost::new(Some(at_view.into_inner(sync_view)))
-                }
+                let State::Synchronisation(at_view, tok_write) =
+                    std::mem::replace(&mut inv.state, State::Invalid)
+                else {
+                    unreachable!();
+                };
+                inv.state = State::Readable(tok_write, excl.take().unwrap());
+                data_own = Ghost::new(Some(at_view.into_inner(sync_view)))
             })}})
                 != 1
             {}
