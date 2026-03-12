@@ -1,13 +1,14 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
-    ty::{TyKind, TypingEnv},
+    thir::{self, Thir, visit::Visitor},
+    ty::{self, TyKind, TypingEnv},
 };
 use rustc_span::Span;
 
 use crate::{
     backend::projections::iter_projections_ty,
-    contracts_items::{is_logic, is_opaque},
+    contracts_items::{is_logic, is_opaque, is_trusted},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
         Pattern, PatternKind, ScopedTerm, Term, TermKind,
@@ -129,10 +130,74 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     }
 }
 
+/// Forbid use of opaque type constructors and fields
+struct NoOpaqueTypeAccess<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
+    thir: &'a Thir<'tcx>,
+}
+
+impl TranslationCtx<'_> {
+    fn assert_non_opaque_ty(&self, ty: ty::Ty, span: Span, desc: &str) {
+        if let &TyKind::Adt(adt_def, _) = ty.kind() {
+            self.assert_non_opaque_adt(adt_def, span, desc)
+        }
+    }
+
+    fn assert_non_opaque_adt(&self, adt_def: ty::AdtDef, span: Span, desc: &str) {
+        if is_opaque(self.tcx, adt_def.did()) {
+            self.error(
+                span,
+                format!("Forbidden {desc} of opaque type `{}`", self.def_path_str(adt_def.did())),
+            )
+            .with_help("Only `#[trusted]` program functions can see through opaque types")
+            .emit();
+        }
+    }
+}
+
+impl<'thir, 'tcx> Visitor<'thir, 'tcx> for NoOpaqueTypeAccess<'thir, 'tcx> {
+    fn thir(&self) -> &'thir Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
+        match expr.kind {
+            thir::ExprKind::Field { lhs, .. } => {
+                self.ctx.assert_non_opaque_ty(self.thir()[lhs].ty, expr.span, "field access")
+            }
+            thir::ExprKind::Adt(ref constr) => {
+                self.ctx.assert_non_opaque_adt(constr.adt_def, expr.span, "constructor")
+            }
+            _ => {}
+        }
+        thir::visit::walk_expr(self, expr);
+    }
+
+    fn visit_pat(&mut self, pat: &'thir thir::Pat<'tcx>) {
+        match pat.kind {
+            thir::PatKind::Variant { adt_def, .. } => {
+                self.ctx.assert_non_opaque_adt(adt_def, pat.span, "constructor")
+            }
+            thir::PatKind::Leaf { .. } => {
+                self.ctx.assert_non_opaque_ty(pat.ty, pat.span, "constructor")
+            }
+            _ => {}
+        }
+        thir::visit::walk_pat(self, pat);
+    }
+}
+
 /// Validates that a private function is not made visible in a public one which is open.
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     let typing_env = ctx.typing_env(item);
-    if is_logic(ctx.tcx, item) && !is_opaque(ctx.tcx, item) {
+    let is_logic = is_logic(ctx.tcx, item);
+    // Forbid use of opaque type constructors and fields, except in trusted program functions
+    if is_logic || !is_trusted(ctx.tcx, item) {
+        let (thir, expr) = ctx.thir_body(item.expect_local());
+        let thir = &thir.borrow();
+        NoOpaqueTypeAccess { ctx, thir }.visit_expr(&thir[expr]);
+    }
+    if is_logic && !is_opaque(ctx.tcx, item) {
         let Some(ScopedTerm(_, term)) = ctx.term(item) else { return };
         OpacityVisitor { opacity: *ctx.opacity(item), ctx, item, typing_env }.visit_term(term);
     }

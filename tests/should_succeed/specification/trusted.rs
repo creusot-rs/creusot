@@ -45,3 +45,12 @@ mod foo {
         }
     }
 }
+
+#[opaque]
+pub struct Opaque;
+
+// `#[trusted]` allows seeing through opaque types
+#[trusted]
+pub fn xray() -> Opaque {
+    Opaque
+}
