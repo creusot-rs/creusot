@@ -54,18 +54,15 @@ impl AtomicI32 {
     // TODO: [VL] into_inner
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
-    #[requires(forall<c: &mut LoadCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==>
-        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
-    )]
-    #[ensures(exists<c: &mut LoadCommitter<i32, Self>>
-        !c.shot() && c.ward() == *self &&
-        c.val() == result && f.postcondition_once((c,), ())
+    #[requires(forall<c: &LoadCommitter<i32, Self>> c.ward() == *self ==> f.precondition((c,)))]
+    #[ensures(exists<c: &LoadCommitter<i32, Self>>
+        c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn load<'a, F>(&'a self, f: Ghost<F>) -> i32
+    pub fn load<F>(&self, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut LoadCommitter<i32, Self>),
+        F: FnGhost + FnOnce(&LoadCommitter<i32, Self>),
     {
         self.0.load(if cfg!(feature = "sc-drf") {
             ::std::sync::atomic::Ordering::SeqCst
@@ -84,9 +81,9 @@ impl AtomicI32 {
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn store<'a, F>(&'a self, val: i32, f: Ghost<F>)
+    pub fn store<F>(&self, val: i32, f: Ghost<F>)
     where
-        F: FnGhost + FnOnce(&'a mut StoreCommitter<i32, Self>),
+        F: FnGhost + FnOnce(&mut StoreCommitter<i32, Self>),
     {
         self.0.store(
             val,
@@ -101,18 +98,17 @@ impl AtomicI32 {
 
 /// Wrapper around a single atomic load operation, where multiple ghost steps
 /// can be performed.
+///
+/// Note: this committer has no observable effect on ghost ressources. Thus, it is optional to shoot
+/// it, and nothing prevent the user from shooting it several times.
+// This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
+// perhaps not for C20's SC accesses.
 #[opaque]
 pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
     PhantomData<(T, C)>,
 );
 
 impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<T, C> {
-    /// Status of the committer
-    #[logic(opaque)]
-    pub fn shot(self) -> bool {
-        dead
-    }
-
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -129,21 +125,19 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
 
     /// 'Shoot' the committer
     ///
-    /// This does the read on the atomic in ghost code, and can only be called once.
-    #[requires(!(*self).shot())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
+    /// This does the read on the atomic in ghost code.
+    #[requires(self.ward() == *own.ward())]
     #[ensures((*view).le_log(^view))]
-    #[ensures((*self).ward().get_timestamp(*view) <= result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^view))]
+    #[ensures(self.ward().get_timestamp(*view) <= result)]
+    #[ensures(result <= self.ward().get_timestamp(^view))]
     #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == (*self).val() && v_view.le_log(^view),
+        Some((v, v_view)) => v == self.val() && v_view.le_log(^view),
         None => false
     })]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &Perm<C>, view: &mut SyncView) -> Timestamp {
+    pub fn shoot(&self, own: &Perm<C>, view: &mut SyncView) -> Timestamp {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -182,6 +176,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
+    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures((*view).le_log(^view))]
     #[ensures((*self).ward().get_timestamp(*view) < result)]
