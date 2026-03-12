@@ -17,7 +17,7 @@ use core::marker::PhantomData;
 /// proof_assert!(map.get(1) == 4);
 /// ```
 #[builtin("map.Map.map")]
-pub struct Mapping<A: ?Sized, B>(PhantomData<A>, PhantomData<B>);
+pub struct Mapping<A: ?Sized, B>(PhantomData<fn(&A) -> B>);
 
 impl<A: ?Sized, B> Mapping<A, B> {
     /// Get the value associated with `a` in the map.
