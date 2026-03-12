@@ -40,7 +40,7 @@ pub trait HasTimestamp {
 /// ↑V
 #[opaque]
 #[derive(Copy)]
-pub struct SyncView;
+pub struct SyncView(());
 
 impl Clone for SyncView {
     #[ensures(result == *self)]
