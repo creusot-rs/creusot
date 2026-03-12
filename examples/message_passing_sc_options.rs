@@ -76,31 +76,24 @@ pub fn message_passing() {
 
         let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
             let excl_snap = snapshot!(excl);
+            let mut data_own = ghost!(None);
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            loop {
-                let (atomic_res, data_own) =
-                    atomic.load(ghost! { |c: &mut LoadCommitter<AtomicI32>| {
-                        inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                            excl.valid_op_lemma(&inv.tok);
-                            if snapshot!{ c.val() }.into_ghost().into_inner() == 1 {
-                                std::mem::swap(&mut inv.tok, &mut *excl);
-                            }
-                            c.shoot(&mut inv.atomic_own);
-                            inv.data_own.take()
-                        })
-                    }});
-
-                if atomic_res != 1 {
-                    continue;
+            while atomic.load(ghost! { |c: &mut LoadCommitter<AtomicI32>| {
+            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                excl.valid_op_lemma(&inv.tok);
+                if snapshot!{ c.val() }.into_ghost().into_inner() == 1 {
+                    std::mem::swap(&mut inv.tok, &mut *excl);
                 }
+                c.shoot(&mut inv.atomic_own);
+                data_own = Ghost::new(inv.data_own.take())
+            })}})
+                != 1
+            {}
 
-                let data_own = ghost! { data_own.into_inner().unwrap() };
-                let res = unsafe { data.get(ghost! { &**data_own }) };
-                proof_assert!(res == 1i32);
-                break;
-            }
+            let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
+            proof_assert!(res == 1i32);
         });
 
         let _ = t1.join_unwrap();

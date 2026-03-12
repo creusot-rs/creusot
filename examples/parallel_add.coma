@@ -725,8 +725,6 @@ module M_parallel_add
     [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  type tup2_i32_Ghost_unit = { f0'7: Int32.t; f1'7: () }
-  
   predicate invariant_ref_AtomicI32 [@inline:trivial] (self: t_AtomicI32) = inv_AtomicI32 self
   
   meta "rewrite_def" predicate invariant_ref_AtomicI32
@@ -755,20 +753,20 @@ module M_parallel_add
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
   
-  let rec fetch_add_unit (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'0)
-    (return (x: tup2_i32_Ghost_unit)) =
-    {[@stop_split] [@expl:fetch_add_unit requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
+  let rec fetch_add_FnGhostWrapper_closure0 (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'0)
+    (return (x: Int32.t)) =
+    {[@stop_split] [@expl:fetch_add_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
       -> new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-      -> precondition_FnGhostWrapper_closure0'0 f c
-      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot_AtomicI32 c.final))}
+      -> precondition_FnGhostWrapper_closure0'0 f c /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()
+      -> shot_AtomicI32 c.final)}
     any
-    [ return (result: tup2_i32_Ghost_unit) ->
+    [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
         /\ ward_AtomicI32'0 c.current = self
         /\ new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-        /\ old_val_AtomicI32 c.current = result.f0'7 /\ postcondition_once_FnGhostWrapper_closure0'0 f c result.f1'7}
+        /\ old_val_AtomicI32 c.current = result /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
@@ -798,14 +796,14 @@ module M_parallel_add
       | s3 = [ &_7 <- { c0'1 = _8; c1'1 = tokens; c2'1 = _9 } ] s4
       | s4 = __new_closure0'0 {_7} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_6 <- _x ] s5)
       | s5 = new_FnGhostWrapper_closure0 {_6} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_5 <- _x ] s6)
-      | s6 = fetch_add_unit {_4} {(2: Int32.t)} {_5} (fun (_x: tup2_i32_Ghost_unit) -> [ &_3 <- _x ] s7)
+      | s6 = fetch_add_FnGhostWrapper_closure0 {_4} {(2: Int32.t)} {_5} (fun (_x: Int32.t) -> [ &_3 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_closure0 self} any) ]
       | s8 = -{resolve_closure0'0 self}- s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'0 = self
     | & tokens: t_Tokens = tokens
-    | & _3: tup2_i32_Ghost_unit = Any.any_l ()
+    | & _3: Int32.t = Any.any_l ()
     | & _4: t_AtomicI32 = Any.any_l ()
     | & _5: t_FnGhostWrapper_closure0'0 = Any.any_l ()
     | & _6: t_FnGhostWrapper_closure0'0 = Any.any_l ()
@@ -983,10 +981,10 @@ module M_parallel_add
     forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'4, res: (). postcondition_mut_closure0'0 self args res_state res
       -> hist_inv_closure0'0 self res_state
   
-  type t_FnGhostWrapper_closure0'1 = { f0'8: closure0'4 }
+  type t_FnGhostWrapper_closure0'1 = { f0'7: closure0'4 }
   
   let rec __new_closure0'1 (f: closure0'4) (return (x: t_FnGhostWrapper_closure0'1)) = any
-    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'8 = f}
+    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'7 = f}
       (! return {result}) ]
   
   predicate precondition_closure0'2 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) =
@@ -995,12 +993,12 @@ module M_parallel_add
   meta "rewrite_def" predicate precondition_closure0'2
   
   predicate precondition_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) =
-    precondition_closure0'2 self.f0'8 args
+    precondition_closure0'2 self.f0'7 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
   
   predicate postcondition_once_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
-    postcondition_once_closure0'2 self.f0'8 args result
+    postcondition_once_closure0'2 self.f0'7 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
   
@@ -1056,10 +1054,10 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure0'3'post'return
   
-  type t_FnGhostWrapper_closure0'2 = { f0'9: closure0'3 }
+  type t_FnGhostWrapper_closure0'2 = { f0'8: closure0'3 }
   
   let rec __new_closure0'2 (f: closure0'3) (return (x: t_FnGhostWrapper_closure0'2)) = any
-    [ return (result: t_FnGhostWrapper_closure0'2) -> {[@stop_split] [@expl:__new ensures] result.f0'9 = f}
+    [ return (result: t_FnGhostWrapper_closure0'2) -> {[@stop_split] [@expl:__new ensures] result.f0'8 = f}
       (! return {result}) ]
   
   let rec new_FnGhostWrapper_closure0'0 (x: t_FnGhostWrapper_closure0'2) (return (x'0: t_FnGhostWrapper_closure0'2)) =
@@ -1073,7 +1071,7 @@ module M_parallel_add
   meta "rewrite_def" predicate precondition_closure0'3
   
   predicate precondition_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_UpdateCommitter_AtomicI32) =
-    precondition_closure0'3 self.f0'9 args
+    precondition_closure0'3 self.f0'8 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
   
@@ -1083,24 +1081,24 @@ module M_parallel_add
   meta "rewrite_def" predicate postcondition_once_closure0'3
   
   predicate postcondition_once_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_UpdateCommitter_AtomicI32) (result: ()) =
-    postcondition_once_closure0'3 self.f0'9 args result
+    postcondition_once_closure0'3 self.f0'8 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'2
   
-  let rec fetch_add_unit'0 (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'2)
-    (return (x: tup2_i32_Ghost_unit)) =
-    {[@stop_split] [@expl:fetch_add_unit requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
+  let rec fetch_add_FnGhostWrapper_closure0'0 (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'2)
+    (return (x: Int32.t)) =
+    {[@stop_split] [@expl:fetch_add_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
       -> new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-      -> precondition_FnGhostWrapper_closure0'2 f c
-      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'2 f c r -> shot_AtomicI32 c.final))}
+      -> precondition_FnGhostWrapper_closure0'2 f c /\ postcondition_once_FnGhostWrapper_closure0'2 f c ()
+      -> shot_AtomicI32 c.final)}
     any
-    [ return (result: tup2_i32_Ghost_unit) ->
+    [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
         /\ ward_AtomicI32'0 c.current = self
         /\ new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-        /\ old_val_AtomicI32 c.current = result.f0'7 /\ postcondition_once_FnGhostWrapper_closure0'2 f c result.f1'7}
+        /\ old_val_AtomicI32 c.current = result /\ postcondition_once_FnGhostWrapper_closure0'2 f c ()}
       (! return {result}) ]
   
   predicate inv_closure1 [@inline:trivial] (_1: closure1) =
@@ -1124,14 +1122,14 @@ module M_parallel_add
       | s3 = [ &_7 <- { c0'4 = _8; c1'4 = tokens; c2'4 = _9 } ] s4
       | s4 = __new_closure0'2 {_7} (fun (_x: t_FnGhostWrapper_closure0'2) -> [ &_6 <- _x ] s5)
       | s5 = new_FnGhostWrapper_closure0'0 {_6} (fun (_x: t_FnGhostWrapper_closure0'2) -> [ &_5 <- _x ] s6)
-      | s6 = fetch_add_unit'0 {_4} {(2: Int32.t)} {_5} (fun (_x: tup2_i32_Ghost_unit) -> [ &_3 <- _x ] s7)
+      | s6 = fetch_add_FnGhostWrapper_closure0'0 {_4} {(2: Int32.t)} {_5} (fun (_x: Int32.t) -> [ &_3 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_closure1 self} any) ]
       | s8 = -{resolve_closure1 self}- s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure1 = self
     | & tokens: t_Tokens = tokens
-    | & _3: tup2_i32_Ghost_unit = Any.any_l ()
+    | & _3: Int32.t = Any.any_l ()
     | & _4: t_AtomicI32 = Any.any_l ()
     | & _5: t_FnGhostWrapper_closure0'2 = Any.any_l ()
     | & _6: t_FnGhostWrapper_closure0'2 = Any.any_l ()

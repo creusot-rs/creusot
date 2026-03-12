@@ -180,16 +180,20 @@ module M_message_passing
   
   type t_Excl_unit = { f0'2: () }
   
-  type t_Resource_Excl_unit
+  type t_Option_Excl_unit = None'0 | Some'0 t_Excl_unit
   
-  function val_Excl_unit (self: t_Resource_Excl_unit) : t_Excl_unit
+  type t_Resource_Option_Excl_unit
   
-  function view_Resource_Excl_unit [@inline:trivial] (self: t_Resource_Excl_unit) : t_Excl_unit = val_Excl_unit self
+  function val_Option_Excl_unit (self: t_Resource_Option_Excl_unit) : t_Option_Excl_unit
   
-  meta "rewrite_def" function view_Resource_Excl_unit
+  function view_Resource_Option_Excl_unit [@inline:trivial] (self: t_Resource_Option_Excl_unit) : t_Option_Excl_unit =
+    val_Option_Excl_unit self
   
-  let rec alloc_Excl_unit (r: t_Excl_unit) (return (x: t_Resource_Excl_unit)) = any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:alloc ensures] view_Resource_Excl_unit result = r}
+  meta "rewrite_def" function view_Resource_Option_Excl_unit
+  
+  let rec alloc_Option_Excl_unit (r: t_Option_Excl_unit) (return (x: t_Resource_Option_Excl_unit)) = any
+    [ return (result: t_Resource_Option_Excl_unit) ->
+    {[@stop_split] [@expl:alloc ensures] view_Resource_Option_Excl_unit result = r}
       (! return {result}) ]
   
   let rec into_inner_Box_Perm_AtomicI32_Global (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
@@ -198,31 +202,83 @@ module M_message_passing
   
   type t_AtView_Box_Perm_PermCell_i32_Global
   
-  type t_State =
-    | NotWrittenYet
-    | Synchronisation t_AtView_Box_Perm_PermCell_i32_Global t_Resource_Excl_unit
-    | Readable t_Resource_Excl_unit t_Resource_Excl_unit
-    | Invalid
+  type t_Option_AtView_Box_Perm_PermCell_i32_Global = None'1 | Some'1 t_AtView_Box_Perm_PermCell_i32_Global
   
-  type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicI32; state: t_State }
+  let rec deref_Ghost_Resource_Option_Excl_unit (self: t_Resource_Option_Excl_unit)
+    (return (x: t_Resource_Option_Excl_unit)) = any
+    [ return (result: t_Resource_Option_Excl_unit) -> {[@stop_split] [@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Id
+  
+  function id_Option_Excl_unit (self: t_Resource_Option_Excl_unit) : t_Id
+  
+  let rec id_ghost_Option_Excl_unit (self: t_Resource_Option_Excl_unit) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_Option_Excl_unit self}
+      (! return {result}) ]
+  
+  type t_Option_Option_Excl_unit = None'2 | Some'2 t_Option_Excl_unit
+  
+  type tup2_Option_Excl_unit_Option_Excl_unit = { f0'3: t_Option_Excl_unit; f1'3: t_Option_Excl_unit }
+  
+  function map_Option_Excl_unit (self: t_Option_Excl_unit) (f: Map.map t_Excl_unit t_Option_Excl_unit) : t_Option_Option_Excl_unit
+   = match self with
+      | None'0 -> None'2
+      | Some'0 x -> Some'2 (Map.get f x)
+      end
+  
+  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'0
+  
+  function commutative_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) : ()
+  
+  axiom commutative_Excl_unit_spec: forall a: t_Excl_unit, b: t_Excl_unit. op_Excl_unit a b = op_Excl_unit b a
+  
+  function op_Option_Excl_unit (self: t_Option_Excl_unit) (other: t_Option_Excl_unit) : t_Option_Option_Excl_unit =
+    match { f0'3 = self; f1'3 = other } with
+      | {f0'3 = None'0} -> Some'2 other
+      | {f1'3 = None'0} -> Some'2 self
+      | {f0'3 = Some'0 x; f1'3 = Some'0 y} -> map_Option_Excl_unit (op_Excl_unit x y) (fun (z: t_Excl_unit) -> Some'0 z)
+      end
+  
+  function commutative_Option_Excl_unit (a: t_Option_Excl_unit) (b: t_Option_Excl_unit) : ()
+  
+  axiom commutative_Option_Excl_unit_spec: forall a: t_Option_Excl_unit, b: t_Option_Excl_unit. op_Option_Excl_unit a b
+      = op_Option_Excl_unit b a
+  
+  constant unit_Option_Excl_unit: t_Option_Excl_unit = None'0
+  
+  axiom unit_Option_Excl_unit_spec:
+    forall x: t_Option_Excl_unit [op_Option_Excl_unit x unit_Option_Excl_unit]. op_Option_Excl_unit x unit_Option_Excl_unit
+      = Some'2 x
+  
+  let rec new_unit_Option_Excl_unit (id: t_Id) (return (x: t_Resource_Option_Excl_unit)) = any
+    [ return (result: t_Resource_Option_Excl_unit) ->
+    {[@stop_split] [@expl:new_unit ensures] view_Resource_Option_Excl_unit result = unit_Option_Excl_unit
+      /\ id_Option_Excl_unit result = id}
+      (! return {result}) ]
+  
+  type t_MessagePassingAtomicInv = {
+    atomic_own: t_Perm_AtomicI32;
+    at_view: t_Option_AtView_Box_Perm_PermCell_i32_Global;
+    tok_write: t_Resource_Option_Excl_unit;
+    tok_read: t_Resource_Option_Excl_unit }
   
   predicate inv_AtView_Box_Perm_PermCell_i32_Global (_1: t_AtView_Box_Perm_PermCell_i32_Global)
   
-  predicate inv_State (_1: t_State)
+  predicate inv_Option_AtView_Box_Perm_PermCell_i32_Global (_1: t_Option_AtView_Box_Perm_PermCell_i32_Global)
   
-  axiom inv_axiom [@rewrite]: forall x: t_State [inv_State x]. inv_State x
+  axiom inv_axiom [@rewrite]:
+    forall x: t_Option_AtView_Box_Perm_PermCell_i32_Global [inv_Option_AtView_Box_Perm_PermCell_i32_Global x]. inv_Option_AtView_Box_Perm_PermCell_i32_Global x
       = match x with
-        | NotWrittenYet -> true
-        | Synchronisation f0'3 f1'2 -> inv_AtView_Box_Perm_PermCell_i32_Global f0'3
-        | Readable f0'3 f1'2 -> true
-        | Invalid -> true
+        | None'1 -> true
+        | Some'1 f0'4 -> inv_AtView_Box_Perm_PermCell_i32_Global f0'4
         end
   
   predicate inv_MessagePassingAtomicInv (_1: t_MessagePassingAtomicInv)
   
   axiom inv_axiom'0 [@rewrite]:
     forall x: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv x]. inv_MessagePassingAtomicInv x
-      = inv_State x.state
+      = inv_Option_AtView_Box_Perm_PermCell_i32_Global x.at_view
   
   predicate invariant_Ghost_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
     inv_MessagePassingAtomicInv self
@@ -242,11 +298,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type t_Id
-  
-  type tup4_AtomicI32_PermCell_i32_Id_Id = { f0'3: t_AtomicI32; f1'3: t_PermCell_i32; f2'3: t_Id; f3'3: t_Id }
-  
-  function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
+  type tup4_AtomicI32_PermCell_i32_Id_Id = { f0'4: t_AtomicI32; f1'4: t_PermCell_i32; f2'4: t_Id; f3'4: t_Id }
   
   type t_AtomicInvariant_MessagePassingAtomicInv
   
@@ -255,25 +307,22 @@ module M_message_passing
   function view_Box_Perm_PermCell_i32_Global'0 (self: t_AtView_Box_Perm_PermCell_i32_Global) : t_SyncView
   
   predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) (data: tup4_AtomicI32_PermCell_i32_Id_Id) =
-    let {f0'3 = atomic; f1'3 = perm; f2'3 = excl_write; f3'3 = excl_read} = data in atomic
+    let {f0'4 = atomic; f1'4 = perm; f2'4 = excl_write; f3'4 = excl_read} = data in atomic
       = ward_AtomicI32 self.atomic_own
-    /\ match self.state with
-      | NotWrittenYet -> forall t: int. match get_Int (val_AtomicI32 self.atomic_own) t with
-          | Some {f0'0 = v} -> v = (0: Int32.t)
-          | None -> true
+    /\ excl_write = id_Option_Excl_unit self.tok_write
+    /\ excl_read = id_Option_Excl_unit self.tok_read
+    /\ (forall t: int. match get_Int (val_AtomicI32 self.atomic_own) t with
+        | Some {f0'0 = v; f1'0 = view} -> v = (0: Int32.t)
+        \/ v = (1: Int32.t)
+        /\ val_Option_Excl_unit self.tok_write = Some'0 { f0'2 = () }
+        /\ match self.at_view with
+          | Some'1 at_view'0 -> perm = ward_PermCell_i32 (val_Box_Perm_PermCell_i32_Global at_view'0)
+          /\ Int32.to_int (val_PermCell_i32 (val_Box_Perm_PermCell_i32_Global at_view'0)) = 1
+          /\ le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 at_view'0) view
+          | None'1 -> val_Option_Excl_unit self.tok_read = Some'0 { f0'2 = () }
           end
-      | Synchronisation data_own tok_write -> excl_write = id_Excl_unit tok_write
-      /\ (forall t: int. match get_Int (val_AtomicI32 self.atomic_own) t with
-          | Some {f0'0 = v; f1'0 = view} -> v = (0: Int32.t)
-          \/ v = (1: Int32.t)
-          /\ perm = ward_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)
-          /\ Int32.to_int (val_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)) = 1
-          /\ le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 data_own) view
-          | None -> true
-          end)
-      | Readable tok_write tok_read -> excl_write = id_Excl_unit tok_write /\ excl_read = id_Excl_unit tok_read
-      | Invalid -> false
-      end
+        | None -> true
+        end)
   
   meta "rewrite_def" predicate protocol_MessagePassingAtomicInv
   
@@ -307,9 +356,9 @@ module M_message_passing
     c0: t_AtomicInvariant_MessagePassingAtomicInv;
     c1: t_PermCell_i32;
     c2: t_AtomicI32;
-    c3: t_Resource_Excl_unit;
+    c3: t_Resource_Option_Excl_unit;
     c4: t_Perm_PermCell_i32;
-    c5: t_Resource_Excl_unit }
+    c5: t_Resource_Option_Excl_unit }
   
   let rec borrow_AtomicInvariant_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv)
     (return (x: t_AtomicInvariant_MessagePassingAtomicInv)) = any
@@ -317,18 +366,21 @@ module M_message_passing
       (! return {result}) ]
   
   type closure0'0 = {
-    c0'0: t_Resource_Excl_unit;
+    c0'0: t_Resource_Option_Excl_unit;
     c1'0: t_PermCell_i32;
     c2'0: t_Perm_PermCell_i32;
     c3'0: t_AtomicI32;
     c4'0: t_AtomicInvariant_MessagePassingAtomicInv }
   
-  let rec into_inner_Resource_Excl_unit (self: t_Resource_Excl_unit) (return (x: t_Resource_Excl_unit)) = any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+  let rec into_inner_Resource_Option_Excl_unit (self: t_Resource_Option_Excl_unit)
+    (return (x: t_Resource_Option_Excl_unit)) = any
+    [ return (result: t_Resource_Option_Excl_unit) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  let rec new_Resource_Excl_unit (x: t_Resource_Excl_unit) (return (x'0: t_Resource_Excl_unit)) = any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  let rec new_Resource_Option_Excl_unit (x: t_Resource_Option_Excl_unit) (return (x'0: t_Resource_Option_Excl_unit)) =
+    any
+    [ return (result: t_Resource_Option_Excl_unit) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
   
   let rec deref_mut_Ghost_Box_Perm_PermCell_i32_Global (self: MutBorrow.t t_Perm_PermCell_i32)
     (return (x: MutBorrow.t t_Perm_PermCell_i32)) = any
@@ -377,7 +429,7 @@ module M_message_passing
     c0'1: t_AtomicInvariant_MessagePassingAtomicInv;
     c1'1: t_Tokens;
     c2'1: t_Perm_PermCell_i32;
-    c3'1: t_Resource_Excl_unit }
+    c3'1: MutBorrow.t t_Resource_Option_Excl_unit }
   
   let rec deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv)
     (return (x: t_AtomicInvariant_MessagePassingAtomicInv)) = any
@@ -391,7 +443,7 @@ module M_message_passing
   
   type closure0'2 = {
     c0'2: t_Perm_PermCell_i32;
-    c1'2: t_Resource_Excl_unit;
+    c1'2: MutBorrow.t t_Resource_Option_Excl_unit;
     c2'2: MutBorrow.t t_StoreCommitter_i32_AtomicI32 }
   
   let rec into_inner_Box_Perm_PermCell_i32_Global (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
@@ -402,11 +454,11 @@ module M_message_passing
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global = {
-    f0'4: t_SyncView;
-    f1'4: t_AtView_Box_Perm_PermCell_i32_Global }
+    f0'5: t_SyncView;
+    f1'5: t_AtView_Box_Perm_PermCell_i32_Global }
   
   predicate inv_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global) =
-    inv_AtView_Box_Perm_PermCell_i32_Global _1.f1'4
+    inv_AtView_Box_Perm_PermCell_i32_Global _1.f1'5
   
   meta "rewrite_def" predicate inv_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global
   
@@ -424,8 +476,8 @@ module M_message_passing
     (return (x: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global)) = any
     [ return (result: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global) ->
     {[@stop_split] [@expl:new_Box_Perm_PermCell_i32_Global ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global result)
-      /\ ([@stop_split] [@expl:new ensures] result.f0'4 = view_Box_Perm_PermCell_i32_Global'0 result.f1'4
-      /\ val_Box_Perm_PermCell_i32_Global result.f1'4 = val')}
+      /\ ([@stop_split] [@expl:new ensures] result.f0'5 = view_Box_Perm_PermCell_i32_Global'0 result.f1'5
+      /\ val_Box_Perm_PermCell_i32_Global result.f1'5 = val')}
       (! return {result}) ]
   
   let rec into_inner_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global
@@ -438,64 +490,45 @@ module M_message_passing
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let rec elim_Readable (_x: t_State) (return (f0'5: t_Resource_Excl_unit) (f1'2: t_Resource_Excl_unit)) = any
-    [ _k (f0'5: t_Resource_Excl_unit) (f1'2: t_Resource_Excl_unit) -> {Readable f0'5 f1'2 = _x} (! return {f0'5} {f1'2})
-    | _chk -> (! {[@expl:elim Readable] match _x with
-        | Readable _ _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec elim_Synchronisation (_x: t_State)
-    (return (f0'5: t_AtView_Box_Perm_PermCell_i32_Global) (f1'2: t_Resource_Excl_unit)) = any
-    [ _k (f0'5: t_AtView_Box_Perm_PermCell_i32_Global) (f1'2: t_Resource_Excl_unit) -> {Synchronisation f0'5 f1'2 = _x}
-      (! return {f0'5} {f1'2})
-    | _chk -> (! {[@expl:elim Synchronisation] match _x with
-        | Synchronisation _ _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec deref_mut_Ghost_Resource_Excl_unit (self: MutBorrow.t t_Resource_Excl_unit)
-    (return (x: MutBorrow.t t_Resource_Excl_unit)) = any
-    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+  let rec deref_mut_Ghost_Resource_Option_Excl_unit (self: MutBorrow.t t_Resource_Option_Excl_unit)
+    (return (x: MutBorrow.t t_Resource_Option_Excl_unit)) = any
+    [ return (result: MutBorrow.t t_Resource_Option_Excl_unit) -> {[@stop_split] [@expl:deref_mut ensures] result
+      = self}
       (! return {result}) ]
   
-  type t_Option_Excl_unit = None'0 | Some'0 t_Excl_unit
-  
-  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'0
-  
-  function commutative_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) : ()
-  
-  axiom commutative_Excl_unit_spec: forall a: t_Excl_unit, b: t_Excl_unit. op_Excl_unit a b = op_Excl_unit b a
-  
-  let rec valid_op_lemma_Excl_unit (self: MutBorrow.t t_Resource_Excl_unit) (other: t_Resource_Excl_unit)
-    (return (x: ())) = {[@stop_split] [@expl:valid_op_lemma requires] id_Excl_unit self.current = id_Excl_unit other}
+  let rec valid_op_lemma_Option_Excl_unit (self: MutBorrow.t t_Resource_Option_Excl_unit)
+    (other: t_Resource_Option_Excl_unit) (return (x: ())) =
+    {[@stop_split] [@expl:valid_op_lemma requires] id_Option_Excl_unit self.current = id_Option_Excl_unit other}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:valid_op_lemma_Excl_unit ensures] ([@stop_split] [@expl:valid_op_lemma ensures #0] self.final
+    {[@stop_split] [@expl:valid_op_lemma_Option_Excl_unit ensures] ([@stop_split] [@expl:valid_op_lemma ensures #0] self.final
         = self.current)
-      /\ ([@stop_split] [@expl:valid_op_lemma ensures #1] op_Excl_unit (view_Resource_Excl_unit self.current) (view_Resource_Excl_unit other)
-      <> None'0)}
+      /\ ([@stop_split] [@expl:valid_op_lemma ensures #1] op_Option_Excl_unit (view_Resource_Option_Excl_unit self.current) (view_Resource_Option_Excl_unit other)
+      <> None'2)}
       (! return {result}) ]
   
-  predicate resolve_refmut_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_unit) =
+  predicate resolve_refmut_Resource_Option_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Resource_Option_Excl_unit) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Resource_Excl_unit
+  meta "rewrite_def" predicate resolve_refmut_Resource_Option_Excl_unit
+  
+  let rec swap_Resource_Option_Excl_unit (x: MutBorrow.t t_Resource_Option_Excl_unit)
+    (y: MutBorrow.t t_Resource_Option_Excl_unit) (return (x'0: ())) = any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:swap_Resource_Option_Excl_unit ensures] ([@stop_split] [@expl:swap ensures #0] x.final
+        = y.current)
+      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
   
   predicate resolve_AtView_Box_Perm_PermCell_i32_Global (_1: t_AtView_Box_Perm_PermCell_i32_Global)
   
-  predicate resolve_Resource_Excl_unit (_1: t_Resource_Excl_unit)
+  predicate resolve_Option_AtView_Box_Perm_PermCell_i32_Global (_1: t_Option_AtView_Box_Perm_PermCell_i32_Global)
   
-  predicate resolve_State (_1: t_State)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_State [resolve_State x]. resolve_State x
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Option_AtView_Box_Perm_PermCell_i32_Global [resolve_Option_AtView_Box_Perm_PermCell_i32_Global x]. resolve_Option_AtView_Box_Perm_PermCell_i32_Global x
       = match x with
-        | NotWrittenYet -> true
-        | Synchronisation x0 x1 -> resolve_AtView_Box_Perm_PermCell_i32_Global x0 /\ resolve_Resource_Excl_unit x1
-        | Readable x0 x1 -> resolve_Resource_Excl_unit x0 /\ resolve_Resource_Excl_unit x1
-        | Invalid -> true
+        | None'1 -> true
+        | Some'1 x0 -> resolve_AtView_Box_Perm_PermCell_i32_Global x0
         end
   
   predicate shot_i32 (self: t_StoreCommitter_i32_AtomicI32)
@@ -549,6 +582,11 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_StoreCommitter_i32_AtomicI32
   
+  predicate resolve_refmut_Ghost_Resource_Option_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Resource_Option_Excl_unit) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Resource_Option_Excl_unit
+  
   let rec closure0 [@coma:extspec] (self: closure0'2) (inv: MutBorrow.t t_MessagePassingAtomicInv) (return (x: ())) =
     {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_MessagePassingAtomicInv inv}
     bb0
@@ -559,96 +597,113 @@ module M_message_passing
           (fun (_x: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global) -> [ &_6 <- _x ] s3)
       | s3 = into_inner_tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global {_6}
           (fun (_x: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global) -> [ &_5 <- _x ] s4)
-      | s4 = [ &sync_view <- _5.f0'4 ] s5
-      | s5 = [ &at_view <- _5.f1'4 ] s6
-      | s6 = [ &_11 <- inv.current.state ] s7
-      | s7 = any
-        [ br0 -> {_11 = NotWrittenYet} (! bb13)
-        | br1 (x0: t_AtView_Box_Perm_PermCell_i32_Global) (x1: t_Resource_Excl_unit) -> {_11 = Synchronisation x0 x1}
-          (! bb8)
-        | br2 (x0: t_Resource_Excl_unit) (x1: t_Resource_Excl_unit) -> {_11 = Readable x0 x1} (! bb7)
-        | br3 -> {_11 = Invalid} (! bb13) ] ]
-    | bb7 = s0
-      [ s0 = elim_Readable {_11} (fun (r0: t_Resource_Excl_unit) (r1: t_Resource_Excl_unit) -> [ &excl_state <- r0 ] s1)
-      | s1 = bb9 ]
-    | bb8 = s0
-      [ s0 = elim_Synchronisation {_11}
-          (fun (r0: t_AtView_Box_Perm_PermCell_i32_Global) (r1: t_Resource_Excl_unit) -> [ &excl_state <- r1 ] s1)
-      | s1 = bb9 ]
-    | bb9 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Resource_Excl_unit> {self.c1'2}
-          (fun (_bor: MutBorrow.t t_Resource_Excl_unit) ->
-            [ &_17 <- _bor ] [ &self <- { self with c1'2 = _bor.final } ] s1)
-      | s1 = deref_mut_Ghost_Resource_Excl_unit {_17} (fun (_x: MutBorrow.t t_Resource_Excl_unit) -> [ &_16 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <t_Resource_Excl_unit> {_16.current} {MutBorrow.get_id _16}
-          (fun (_bor: MutBorrow.t t_Resource_Excl_unit) ->
-            [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s3)
-      | s3 = valid_op_lemma_Excl_unit {_15} {excl_state} (fun (_x: ()) -> [ &_14 <- _x ] s4)
-      | s4 = -{resolve_refmut_Resource_Excl_unit _16}- s5
-      | s5 = bb13 ]
-    | bb13 = s0
-      [ s0 = into_inner_Resource_Excl_unit {self.c1'2} (fun (_x: t_Resource_Excl_unit) -> [ &_21 <- _x ] s1)
-      | s1 = [ &_19 <- Synchronisation at_view _21 ] s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_State inv.current.state} any) ]
-      | s3 = -{resolve_State inv.current.state}- s4
-      | s4 = [ &inv <- { inv with current = { inv.current with state = _19 } } ] s5
-      | s5 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.atomic_own}
+      | s4 = [ &sync_view <- _5.f0'5 ] s5
+      | s5 = [ &at_view'0 <- _5.f1'5 ] s6
+      | s6 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.c1'2.current}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_13 <- _bor ] [ &self <- { self with c1'2 = { self.c1'2 with current = _bor.final } } ] s7)
+      | s7 = deref_mut_Ghost_Resource_Option_Excl_unit {_13}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_12 <- _x ] s8)
+      | s8 = [ &_15 <- inv.current.tok_write ] s9
+      | s9 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_12.current} {MutBorrow.get_id _12}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_11 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s10)
+      | s10 = valid_op_lemma_Option_Excl_unit {_11} {_15} (fun (_x: ()) -> [ &_10 <- _x ] s11)
+      | s11 = -{resolve_refmut_Resource_Option_Excl_unit _12}- s12
+      | s12 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv.current.tok_write}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 2}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_18 <- _bor ] [ &inv <- { inv with current = { inv.current with tok_write = _bor.final } } ] s13)
+      | s13 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {self.c1'2.current} {MutBorrow.get_id self.c1'2}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_22 <- _bor ] [ &self <- { self with c1'2 = { self.c1'2 with current = _bor.final } } ] s14)
+      | s14 = deref_mut_Ghost_Resource_Option_Excl_unit {_22}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_21 <- _x ] s15)
+      | s15 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_21.current} {MutBorrow.get_id _21}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s16)
+      | s16 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_18.current} {MutBorrow.get_id _18}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_17 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s17)
+      | s17 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_20.current} {MutBorrow.get_id _20}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s18)
+      | s18 = swap_Resource_Option_Excl_unit {_17} {_19} (fun (_x: ()) -> [ &_16 <- _x ] s19)
+      | s19 = -{resolve_refmut_Resource_Option_Excl_unit _21}- s20
+      | s20 = -{resolve_refmut_Resource_Option_Excl_unit _20}- s21
+      | s21 = -{resolve_refmut_Resource_Option_Excl_unit _18}- s22
+      | s22 = [ &_23 <- Some'1 at_view'0 ] s23
+      | s23 = s24
+        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Box_Perm_PermCell_i32_Global inv.current.at_view} any) ]
+      | s24 = -{resolve_Option_AtView_Box_Perm_PermCell_i32_Global inv.current.at_view}- s25
+      | s25 = [ &inv <- { inv with current = { inv.current with at_view = _23 } } ] s26
+      | s26 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.atomic_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_26 <- _bor ] [ &inv <- { inv with current = { inv.current with atomic_own = _bor.final } } ] s6)
-      | s6 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &sync_view <- _bor.final ] s7)
-      | s7 = MutBorrow.borrow_final <t_StoreCommitter_i32_AtomicI32> {self.c2'2.current} {MutBorrow.get_id self.c2'2}
+            [ &_28 <- _bor ] [ &inv <- { inv with current = { inv.current with atomic_own = _bor.final } } ] s27)
+      | s27 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_30 <- _bor ] [ &sync_view <- _bor.final ] s28)
+      | s28 = MutBorrow.borrow_final <t_StoreCommitter_i32_AtomicI32> {self.c2'2.current} {MutBorrow.get_id self.c2'2}
           (fun (_bor: MutBorrow.t t_StoreCommitter_i32_AtomicI32) ->
-            [ &_24 <- _bor ] [ &self <- { self with c2'2 = { self.c2'2 with current = _bor.final } } ] s8)
-      | s8 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_26.current} {MutBorrow.get_id _26}
+            [ &_26 <- _bor ] [ &self <- { self with c2'2 = { self.c2'2 with current = _bor.final } } ] s29)
+      | s29 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_28.current} {MutBorrow.get_id _28}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s9)
-      | s9 = MutBorrow.borrow_final <t_SyncView> {_28.current} {MutBorrow.get_id _28}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s10)
-      | s10 = shoot_i32 {_24} {_25} {_27} (fun (_x: int) -> [ &_23 <- _x ] s11)
-      | s11 = -{resolve_refmut_SyncView _28}- s12
-      | s12 = -{resolve_refmut_Box_Perm_AtomicI32_Global _26}- s13
-      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
-      | s14 = -{resolve_refmut_MessagePassingAtomicInv inv}- s15
-      | s15 = -{match self with
+            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s30)
+      | s30 = MutBorrow.borrow_final <t_SyncView> {_30.current} {MutBorrow.get_id _30}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_29 <- _bor ] [ &_30 <- { _30 with current = _bor.final } ] s31)
+      | s31 = shoot_i32 {_26} {_27} {_29} (fun (_x: int) -> [ &_25 <- _x ] s32)
+      | s32 = -{resolve_refmut_SyncView _30}- s33
+      | s33 = -{resolve_refmut_Box_Perm_AtomicI32_Global _28}- s34
+      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
+      | s35 = -{resolve_refmut_MessagePassingAtomicInv inv}- s36
+      | s36 = -{match self with
           | {c2'2 = x} -> resolve_refmut_StoreCommitter_i32_AtomicI32 x
           | _ -> true
           end}-
-        s16
-      | s16 = return {_ret} ] ]
+        s37
+      | s37 = -{match self with
+          | {c1'2 = x} -> resolve_refmut_Ghost_Resource_Option_Excl_unit x
+          | _ -> true
+          end}-
+        s38
+      | s38 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'2 = self
     | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
     | & sync_view: t_SyncView = Any.any_l ()
-    | & at_view: t_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & at_view'0: t_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & _5: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & _6: tup2_SyncView_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & _7: t_Perm_PermCell_i32 = Any.any_l ()
     | & _8: t_Perm_PermCell_i32 = Any.any_l ()
-    | & _11: t_State = Any.any_l ()
-    | & excl_state: t_Resource_Excl_unit = Any.any_l ()
-    | & _14: () = Any.any_l ()
-    | & _15: MutBorrow.t t_Resource_Excl_unit = Any.any_l ()
-    | & _16: MutBorrow.t t_Resource_Excl_unit = Any.any_l ()
-    | & _17: MutBorrow.t t_Resource_Excl_unit = Any.any_l ()
-    | & _19: t_State = Any.any_l ()
-    | & _21: t_Resource_Excl_unit = Any.any_l ()
-    | & _23: int = Any.any_l ()
-    | & _24: MutBorrow.t t_StoreCommitter_i32_AtomicI32 = Any.any_l ()
-    | & _25: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
-    | & _26: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
-    | & _27: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _28: MutBorrow.t t_SyncView = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _10: () = Any.any_l ()
+    | & _11: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _12: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _13: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _15: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _16: () = Any.any_l ()
+    | & _17: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _18: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _19: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _20: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _21: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _22: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _23: t_Option_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _25: int = Any.any_l ()
+    | & _26: MutBorrow.t t_StoreCommitter_i32_AtomicI32 = Any.any_l ()
+    | & _27: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
+    | & _28: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
+    | & _29: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _30: MutBorrow.t t_SyncView = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return
   
-  type t_FnGhostWrapper_closure0 = { f0'5: closure0'2 }
+  type t_FnGhostWrapper_closure0 = { f0'6: closure0'2 }
   
   let rec __new_closure0 (f: closure0'2) (return (x: t_FnGhostWrapper_closure0)) = any
-    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0'5 = f}
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0'6 = f}
       (! return {result}) ]
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
@@ -665,7 +720,7 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0
   
   predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) =
-    precondition_closure0 self.f0'5 args
+    precondition_closure0 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
   
@@ -675,7 +730,7 @@ module M_message_passing
   meta "rewrite_def" predicate postcondition_once_closure0
   
   predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
-    postcondition_once_closure0 self.f0'5 args result
+    postcondition_once_closure0 self.f0'6 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
   
@@ -700,14 +755,22 @@ module M_message_passing
       [ s0 = deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv {self.c0'1}
           (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &_4 <- _x ] s1)
       | s1 = into_inner_Tokens {self.c1'1} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <t_StoreCommitter_i32_AtomicI32> {c.current} {MutBorrow.get_id c}
+      | s2 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {self.c3'1.current} {MutBorrow.get_id self.c3'1}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_10 <- _bor ] [ &self <- { self with c3'1 = { self.c3'1 with current = _bor.final } } ] s3)
+      | s3 = MutBorrow.borrow_final <t_StoreCommitter_i32_AtomicI32> {c.current} {MutBorrow.get_id c}
           (fun (_bor: MutBorrow.t t_StoreCommitter_i32_AtomicI32) ->
-            [ &_10 <- _bor ] [ &c <- { c with current = _bor.final } ] s3)
-      | s3 = [ &_9 <- { c0'2 = self.c2'1; c1'2 = self.c3'1; c2'2 = _10 } ] s4
-      | s4 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s5)
-      | s5 = open_MessagePassingAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s6)
-      | s6 = -{resolve_refmut_StoreCommitter_i32_AtomicI32 c}- s7
-      | s7 = return {_ret} ] ]
+            [ &_11 <- _bor ] [ &c <- { c with current = _bor.final } ] s4)
+      | s4 = [ &_9 <- { c0'2 = self.c2'1; c1'2 = _10; c2'2 = _11 } ] s5
+      | s5 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s6)
+      | s6 = open_MessagePassingAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s7)
+      | s7 = -{resolve_refmut_StoreCommitter_i32_AtomicI32 c}- s8
+      | s8 = -{match self with
+          | {c3'1 = x} -> resolve_refmut_Ghost_Resource_Option_Excl_unit x
+          | _ -> true
+          end}-
+        s9
+      | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'1 = self
     | & c: MutBorrow.t t_StoreCommitter_i32_AtomicI32 = c
@@ -715,16 +778,17 @@ module M_message_passing
     | & _6: t_Tokens = Any.any_l ()
     | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
     | & _9: closure0'2 = Any.any_l ()
-    | & _10: MutBorrow.t t_StoreCommitter_i32_AtomicI32 = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _10: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _11: MutBorrow.t t_StoreCommitter_i32_AtomicI32 = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'0'pre
   
   meta "rewrite_def" predicate closure0'0'post'return
   
-  type t_FnGhostWrapper_closure0'0 = { f0'6: closure0'1 }
+  type t_FnGhostWrapper_closure0'0 = { f0'7: closure0'1 }
   
   let rec __new_closure0'0 (f: closure0'1) (return (x: t_FnGhostWrapper_closure0'0)) = any
-    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:__new ensures] result.f0'6 = f}
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:__new ensures] result.f0'7 = f}
       (! return {result}) ]
   
   let rec new_FnGhostWrapper_closure0 (x: t_FnGhostWrapper_closure0'0) (return (x'0: t_FnGhostWrapper_closure0'0)) = any
@@ -745,7 +809,7 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0'0
   
   predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_StoreCommitter_i32_AtomicI32) =
-    precondition_closure0'0 self.f0'6 args
+    precondition_closure0'0 self.f0'7 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
   
@@ -755,7 +819,7 @@ module M_message_passing
   meta "rewrite_def" predicate postcondition_once_closure0'0
   
   predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_StoreCommitter_i32_AtomicI32) (result: ()) =
-    postcondition_once_closure0'0 self.f0'6 args result
+    postcondition_once_closure0'0 self.f0'7 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
   
@@ -773,6 +837,13 @@ module M_message_passing
         /\ ward_i32 c.current = self /\ val_i32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
   
+  predicate resolve_Resource_Option_Excl_unit (_1: t_Resource_Option_Excl_unit)
+  
+  predicate resolve_Ghost_Resource_Option_Excl_unit [@inline:trivial] (_1: t_Resource_Option_Excl_unit) =
+    resolve_Resource_Option_Excl_unit _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Resource_Option_Excl_unit
+  
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
     let {c0'0 = x0; c1'0 = x1; c2'0 = x2; c3'0 = x3; c4'0 = x4} = _1 in inv_ref_AtomicI32 x3
   
@@ -782,8 +853,9 @@ module M_message_passing
     {[@stop_split] [@expl:closure 'self' type invariant] inv_closure0 self}
     bb0
     [ bb0 = s0
-      [ s0 = into_inner_Resource_Excl_unit {self.c0'0} (fun (_x: t_Resource_Excl_unit) -> [ &_4 <- _x ] s1)
-      | s1 = new_Resource_Excl_unit {_4} (fun (_x: t_Resource_Excl_unit) -> [ &excl <- _x ] s2)
+      [ s0 = into_inner_Resource_Option_Excl_unit {self.c0'0}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_4 <- _x ] s1)
+      | s1 = new_Resource_Option_Excl_unit {_4} (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl <- _x ] s2)
       | s2 = [ &_8 <- self.c1'0 ] s3
       | s3 = MutBorrow.borrow_mut <t_Perm_PermCell_i32> {self.c2'0}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_i32) ->
@@ -810,16 +882,19 @@ module M_message_passing
       | s14 = borrow_mut_i32 {_8} {_9} (fun (_x: MutBorrow.t Int32.t) -> [ &_7 <- _x ] s15)
       | s15 = [ &_7 <- { _7 with current = (1: Int32.t) } ] s16
       | s16 = -{resolve_refmut_i32 _7}- s17
-      | s17 = [ &_20 <- { c0'1 = self.c4'0; c1'1 = tokens; c2'1 = self.c2'0; c3'1 = excl } ] s18
-      | s18 = __new_closure0'0 {_20} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_19 <- _x ] s19)
-      | s19 = new_FnGhostWrapper_closure0 {_19} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_18 <- _x ] s20)
-      | s20 = store_FnGhostWrapper_closure0 {self.c3'0} {(1: Int32.t)} {_18} (fun (_x: ()) -> [ &_16 <- _x ] s21)
-      | s21 = return {_ret} ] ]
+      | s17 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {excl}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_22 <- _bor ] [ &excl <- _bor.final ] s18)
+      | s18 = [ &_20 <- { c0'1 = self.c4'0; c1'1 = tokens; c2'1 = self.c2'0; c3'1 = _22 } ] s19
+      | s19 = __new_closure0'0 {_20} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_19 <- _x ] s20)
+      | s20 = new_FnGhostWrapper_closure0 {_19} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_18 <- _x ] s21)
+      | s21 = store_FnGhostWrapper_closure0 {self.c3'0} {(1: Int32.t)} {_18} (fun (_x: ()) -> [ &_16 <- _x ] s22)
+      | s22 = -{resolve_Ghost_Resource_Option_Excl_unit excl}- s23
+      | s23 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'0 = self
     | & tokens: t_Tokens = tokens
-    | & excl: t_Resource_Excl_unit = Any.any_l ()
-    | & _4: t_Resource_Excl_unit = Any.any_l ()
+    | & excl: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _4: t_Resource_Option_Excl_unit = Any.any_l ()
     | & _7: MutBorrow.t Int32.t = Any.any_l ()
     | & _8: t_PermCell_i32 = Any.any_l ()
     | & _9: MutBorrow.t t_Perm_PermCell_i32 = Any.any_l ()
@@ -832,7 +907,8 @@ module M_message_passing
     | & _16: () = Any.any_l ()
     | & _18: t_FnGhostWrapper_closure0'0 = Any.any_l ()
     | & _19: t_FnGhostWrapper_closure0'0 = Any.any_l ()
-    | & _20: closure0'1 = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _20: closure0'1 = Any.any_l ()
+    | & _22: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'1'pre
   
@@ -880,19 +956,12 @@ module M_message_passing
       (! return {result}) ]
   
   type closure1 = {
-    c0'3: t_Resource_Excl_unit;
+    c0'3: t_Resource_Option_Excl_unit;
     c1'3: t_AtomicI32;
     c2'3: t_AtomicInvariant_MessagePassingAtomicInv;
     c3'3: t_PermCell_i32 }
   
-  type t_Option_Resource_Excl_unit = None'1 | Some'1 t_Resource_Excl_unit
-  
-  let rec new_Option_Resource_Excl_unit (x: t_Option_Resource_Excl_unit) (return (x'0: t_Option_Resource_Excl_unit)) =
-    any
-    [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:new ensures] result = x}
-      (! return {result}) ]
-  
-  type t_Option_Box_Perm_PermCell_i32_Global = None'2 | Some'2 t_Perm_PermCell_i32
+  type t_Option_Box_Perm_PermCell_i32_Global = None'3 | Some'3 t_Perm_PermCell_i32
   
   let rec new_Option_Box_Perm_PermCell_i32_Global (x: t_Option_Box_Perm_PermCell_i32_Global)
     (return (x'0: t_Option_Box_Perm_PermCell_i32_Global)) = any
@@ -902,7 +971,7 @@ module M_message_passing
   type closure4 = {
     c0'4: t_AtomicInvariant_MessagePassingAtomicInv;
     c1'4: MutBorrow.t t_Tokens;
-    c2'4: MutBorrow.t t_Option_Resource_Excl_unit;
+    c2'4: MutBorrow.t t_Resource_Option_Excl_unit;
     c3'4: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global }
   
   let rec deref_mut_Ghost_Tokens (self: MutBorrow.t t_Tokens) (return (x: MutBorrow.t t_Tokens)) = any
@@ -917,46 +986,20 @@ module M_message_passing
   type t_LoadCommitter_i32_AtomicI32
   
   type closure0'3 = {
-    c0'5: MutBorrow.t t_Option_Resource_Excl_unit;
+    c0'5: MutBorrow.t t_Resource_Option_Excl_unit;
     c1'5: MutBorrow.t (MutBorrow.t t_LoadCommitter_i32_AtomicI32);
     c2'5: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global }
-  
-  let rec deref_mut_Ghost_Option_Resource_Excl_unit (self: MutBorrow.t t_Option_Resource_Excl_unit)
-    (return (x: MutBorrow.t t_Option_Resource_Excl_unit)) = any
-    [ return (result: MutBorrow.t t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:deref_mut ensures] result
-      = self}
-      (! return {result}) ]
-  
-  type t_Option_refmut_Resource_Excl_unit = None'3 | Some'3 (MutBorrow.t t_Resource_Excl_unit)
-  
-  let rec as_mut_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
-    (return (x: t_Option_refmut_Resource_Excl_unit)) = any
-    [ return (result: t_Option_refmut_Resource_Excl_unit) ->
-    {[@stop_split] [@expl:as_mut_Resource_Excl_unit ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current
-          = None'1 -> result = None'3 /\ self_.final = None'1)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'1
-      \/ (exists r: MutBorrow.t t_Resource_Excl_unit. result = Some'3 r
-        /\ self_.current = Some'1 (r.current) /\ self_.final = Some'1 (r.final)))}
-      (! return {result}) ]
-  
-  let rec unwrap_refmut_Resource_Excl_unit (self_: t_Option_refmut_Resource_Excl_unit)
-    (return (x: MutBorrow.t t_Resource_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'3}
-    any
-    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'3 result = self_}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Option_Resource_Excl_unit
-  
-  let rec deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
-    [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   function val_i32'0 (self: t_LoadCommitter_i32_AtomicI32) : Int32.t
   
   let rec into_ghost_i32 (self: Int32.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  
+  let rec into_inner_i32 (self: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let rec deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   predicate shot_i32'0 (self: t_LoadCommitter_i32_AtomicI32)
   
@@ -979,46 +1022,34 @@ module M_message_passing
         end)}
       (! return {result}) ]
   
-  let rec deref_Ghost_i32 (self: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  predicate invariant_refmut_Option_AtView_Box_Perm_PermCell_i32_Global [@inline:trivial] (self: MutBorrow.t t_Option_AtView_Box_Perm_PermCell_i32_Global) =
+    inv_Option_AtView_Box_Perm_PermCell_i32_Global self.current
+    /\ inv_Option_AtView_Box_Perm_PermCell_i32_Global self.final
   
-  predicate invariant_refmut_State [@inline:trivial] (self: MutBorrow.t t_State) =
-    inv_State self.current /\ inv_State self.final
+  meta "rewrite_def" predicate invariant_refmut_Option_AtView_Box_Perm_PermCell_i32_Global
   
-  meta "rewrite_def" predicate invariant_refmut_State
+  predicate inv_refmut_Option_AtView_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: MutBorrow.t t_Option_AtView_Box_Perm_PermCell_i32_Global) =
+    invariant_refmut_Option_AtView_Box_Perm_PermCell_i32_Global _1
   
-  predicate inv_refmut_State [@inline:trivial] (_1: MutBorrow.t t_State) = invariant_refmut_State _1
+  meta "rewrite_def" predicate inv_refmut_Option_AtView_Box_Perm_PermCell_i32_Global
   
-  meta "rewrite_def" predicate inv_refmut_State
-  
-  let rec replace_State (dest: MutBorrow.t t_State) (src: t_State) (return (x: t_State)) =
-    {[@stop_split] [@expl:replace_State requires] ([@stop_split] [@expl:replace 'dest' type invariant] inv_refmut_State dest)
-    /\ ([@stop_split] [@expl:replace 'src' type invariant] inv_State src)}
+  let rec take_AtView_Box_Perm_PermCell_i32_Global (self_: MutBorrow.t t_Option_AtView_Box_Perm_PermCell_i32_Global)
+    (return (x: t_Option_AtView_Box_Perm_PermCell_i32_Global)) =
+    {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_AtView_Box_Perm_PermCell_i32_Global self_}
     any
-    [ return (result: t_State) ->
-    {[@stop_split] [@expl:replace_State ensures] ([@stop_split] [@expl:replace result type invariant] inv_State result)
-      /\ ([@stop_split] [@expl:replace ensures #0] dest.final = src)
-      /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+    [ return (result: t_Option_AtView_Box_Perm_PermCell_i32_Global) ->
+    {[@stop_split] [@expl:take_AtView_Box_Perm_PermCell_i32_Global ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_AtView_Box_Perm_PermCell_i32_Global result)
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'1)}
       (! return {result}) ]
   
-  predicate resolve_refmut_State [@inline:trivial] (_1: MutBorrow.t t_State) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_State
-  
-  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'3) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_closure0
-  
-  let rec take_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
-    (return (x: t_Option_Resource_Excl_unit)) = any
-    [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:take ensures] result = self_.current
-      /\ self_.final = None'1}
-      (! return {result}) ]
-  
-  let rec unwrap_Resource_Excl_unit (self_: t_Option_Resource_Excl_unit) (return (x: t_Resource_Excl_unit)) =
-    {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
+  let rec unwrap_AtView_Box_Perm_PermCell_i32_Global (self_: t_Option_AtView_Box_Perm_PermCell_i32_Global)
+    (return (x: t_AtView_Box_Perm_PermCell_i32_Global)) =
+    {[@stop_split] [@expl:unwrap_AtView_Box_Perm_PermCell_i32_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_AtView_Box_Perm_PermCell_i32_Global self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self_}
+    [ return (result: t_AtView_Box_Perm_PermCell_i32_Global) ->
+    {[@stop_split] [@expl:unwrap_AtView_Box_Perm_PermCell_i32_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Box_Perm_PermCell_i32_Global result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   let rec into_inner_Box_Perm_PermCell_i32_Global'0 (self: t_AtView_Box_Perm_PermCell_i32_Global) (v: t_SyncView)
@@ -1054,14 +1085,18 @@ module M_message_passing
   axiom resolve_axiom'1 [@rewrite]:
     forall x: t_Option_Box_Perm_PermCell_i32_Global [resolve_Option_Box_Perm_PermCell_i32_Global x]. resolve_Option_Box_Perm_PermCell_i32_Global x
       = match x with
-        | None'2 -> true
-        | Some'2 x0 -> resolve_Box_Perm_PermCell_i32_Global x0
+        | None'3 -> true
+        | Some'3 x0 -> resolve_Box_Perm_PermCell_i32_Global x0
         end
   
   predicate resolve_Ghost_Option_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: t_Option_Box_Perm_PermCell_i32_Global) =
     resolve_Option_Box_Perm_PermCell_i32_Global _1
   
   meta "rewrite_def" predicate resolve_Ghost_Option_Box_Perm_PermCell_i32_Global
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'3) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
   
   predicate resolve_refmut_Ghost_Option_Box_Perm_PermCell_i32_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global) =
     _1.final = _1.current
@@ -1073,15 +1108,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_refmut_LoadCommitter_i32_AtomicI32
   
-  predicate resolve_refmut_Ghost_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Resource_Excl_unit
-  
   predicate resolve_closure0 [@inline:trivial] (_1: closure0'3) =
     resolve_refmut_Ghost_Option_Box_Perm_PermCell_i32_Global _1.c2'5
     /\ resolve_refmut_refmut_LoadCommitter_i32_AtomicI32 _1.c1'5
-    /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c0'5
+    /\ resolve_refmut_Ghost_Resource_Option_Excl_unit _1.c0'5
   
   meta "rewrite_def" predicate resolve_closure0
   
@@ -1095,137 +1125,90 @@ module M_message_passing
     (return (x: ())) = {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_MessagePassingAtomicInv inv}
     bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- inv.current.state ] s1
-      | s1 = any
-        [ br0 -> {_4 = NotWrittenYet} (! bb8)
-        | br1 (x0: t_AtView_Box_Perm_PermCell_i32_Global) (x1: t_Resource_Excl_unit) -> {_4 = Synchronisation x0 x1}
-          (! bb8)
-        | br2 (x0: t_Resource_Excl_unit) (x1: t_Resource_Excl_unit) -> {_4 = Readable x0 x1} (! bb2)
-        | br3 -> {_4 = Invalid} (! bb8) ] ]
-    | bb2 = s0
-      [ s0 = elim_Readable {_4} (fun (r0: t_Resource_Excl_unit) (r1: t_Resource_Excl_unit) -> [ &excl_state <- r1 ] s1)
-      | s1 = MutBorrow.borrow_mut <t_Option_Resource_Excl_unit> {self.current.c0'5.current}
-          (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) ->
-            [ &_13 <- _bor ]
+      [ s0 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c0'5.current}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_6 <- _bor ]
+            [ &self <- { self with current = { self.current with c0'5 = { self.current.c0'5 with current = _bor.final } } } ]
+            s1)
+      | s1 = deref_mut_Ghost_Resource_Option_Excl_unit {_6}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_5 <- _x ] s2)
+      | s2 = [ &_8 <- inv.current.tok_read ] s3
+      | s3 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_5.current} {MutBorrow.get_id _5}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_4 <- _bor ] [ &_5 <- { _5 with current = _bor.final } ] s4)
+      | s4 = valid_op_lemma_Option_Excl_unit {_4} {_8} (fun (_x: ()) -> [ &_3 <- _x ] s5)
+      | s5 = -{resolve_refmut_Resource_Option_Excl_unit _5}- s6
+      | s6 = into_ghost_i32 {val_i32'0 self.current.c1'5.current.current} (fun (_x: Int32.t) -> [ &_10 <- _x ] s7)
+      | s7 = into_inner_i32 {_10} (fun (_x: Int32.t) -> [ &value <- _x ] s8)
+      | s8 = new (fun (_x: t_SyncView) -> [ &_17 <- _x ] s9)
+      | s9 = deref_Ghost_SyncView {_17} (fun (_x: t_SyncView) -> [ &_15 <- _x ] s10)
+      | s10 = [ &sync_view <- _15 ] s11
+      | s11 = [ &_21 <- inv.current.atomic_own ] s12
+      | s12 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_23 <- _bor ] [ &sync_view <- _bor.final ] s13)
+      | s13 = MutBorrow.borrow_mut <t_LoadCommitter_i32_AtomicI32> {self.current.c1'5.current.current}
+          (fun (_bor: MutBorrow.t t_LoadCommitter_i32_AtomicI32) ->
+            [ &_19 <- _bor ]
+            [ &self <- { self with current = { self.current with c1'5 = { self.current.c1'5 with current = { self.current.c1'5.current with current = _bor.final } } } } ]
+            s14)
+      | s14 = MutBorrow.borrow_final <t_SyncView> {_23.current} {MutBorrow.get_id _23}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s15)
+      | s15 = shoot_i32'0 {_19} {_21} {_22} (fun (_x: int) -> [ &_18 <- _x ] s16)
+      | s16 = -{resolve_refmut_SyncView _23}- s17
+      | s17 = [ &_24 <- value = (1: Int32.t) ] s18
+      | s18 = any [ br0 -> {_24 = false} (! bb17) | br1 -> {_24} (! bb9) ] ]
+    | bb9 = s0
+      [ s0 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv.current.tok_read}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 3}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_28 <- _bor ] [ &inv <- { inv with current = { inv.current with tok_read = _bor.final } } ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c0'5.current}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_32 <- _bor ]
             [ &self <- { self with current = { self.current with c0'5 = { self.current.c0'5 with current = _bor.final } } } ]
             s2)
-      | s2 = deref_mut_Ghost_Option_Resource_Excl_unit {_13}
-          (fun (_x: MutBorrow.t t_Option_Resource_Excl_unit) -> [ &_12 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <t_Option_Resource_Excl_unit> {_12.current} {MutBorrow.get_id _12}
-          (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) ->
-            [ &_11 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s4)
-      | s4 = as_mut_Resource_Excl_unit {_11} (fun (_x: t_Option_refmut_Resource_Excl_unit) -> [ &_10 <- _x ] s5)
-      | s5 = unwrap_refmut_Resource_Excl_unit {_10} (fun (_x: MutBorrow.t t_Resource_Excl_unit) -> [ &_9 <- _x ] s6)
-      | s6 = MutBorrow.borrow_final <t_Resource_Excl_unit> {_9.current} {MutBorrow.get_id _9}
-          (fun (_bor: MutBorrow.t t_Resource_Excl_unit) ->
-            [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s7)
-      | s7 = valid_op_lemma_Excl_unit {_8} {excl_state} (fun (_x: ()) -> [ &_7 <- _x ] s8)
-      | s8 = -{resolve_refmut_Option_Resource_Excl_unit _12}- s9
-      | s9 = -{resolve_refmut_Resource_Excl_unit _9}- s10
-      | s10 = bb8 ]
-    | bb8 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &_18 <- _x ] s1)
-      | s1 = deref_Ghost_SyncView {_18} (fun (_x: t_SyncView) -> [ &_16 <- _x ] s2)
-      | s2 = [ &sync_view <- _16 ] s3
-      | s3 = into_ghost_i32 {val_i32'0 self.current.c1'5.current.current} (fun (_x: Int32.t) -> [ &value <- _x ] s4)
-      | s4 = [ &_26 <- inv.current.atomic_own ] s5
-      | s5 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &sync_view <- _bor.final ] s6)
-      | s6 = MutBorrow.borrow_mut <t_LoadCommitter_i32_AtomicI32> {self.current.c1'5.current.current}
-          (fun (_bor: MutBorrow.t t_LoadCommitter_i32_AtomicI32) ->
-            [ &_24 <- _bor ]
-            [ &self <- { self with current = { self.current with c1'5 = { self.current.c1'5 with current = { self.current.c1'5.current with current = _bor.final } } } } ]
-            s7)
-      | s7 = MutBorrow.borrow_final <t_SyncView> {_28.current} {MutBorrow.get_id _28}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s8)
-      | s8 = shoot_i32'0 {_24} {_26} {_27} (fun (_x: int) -> [ &_23 <- _x ] s9)
-      | s9 = -{resolve_refmut_SyncView _28}- s10
-      | s10 = deref_Ghost_i32 {value} (fun (_x: Int32.t) -> [ &_31 <- _x ] s11)
-      | s11 = [ &_29 <- _31 = (1: Int32.t) ] s12
-      | s12 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb15) ] ]
-    | bb15 = s0
-      [ s0 = MutBorrow.borrow_mut <t_State> {inv.current.state}
-          (fun (_bor: MutBorrow.t t_State) ->
-            [ &_39 <- _bor ] -{inv_State _bor.final}-
-            [ &inv <- { inv with current = { inv.current with state = _bor.final } } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_State inv.current.state} any) ]
-      | s1 = [ &_40 <- Invalid ] s2
-      | s2 = MutBorrow.borrow_final <t_State> {_39.current} {MutBorrow.get_id _39}
-          (fun (_bor: MutBorrow.t t_State) ->
-            [ &_38 <- _bor ] -{inv_State _bor.final}-
-            [ &_39 <- { _39 with current = _bor.final } ] s3)
-        [ _ck -> (! {[@expl:type invariant] inv_State _39.current} any) ]
-      | s3 = replace_State {_38} {_40} (fun (_x: t_State) -> [ &_37 <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_State _39} any) ]
-      | s5 = -{resolve_refmut_State _39}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_State _37} any) ]
-      | s7 = -{resolve_State _37}- s8
-      | s8 = any
-        [ br0 -> {_37 = NotWrittenYet} (! bb19)
-        | br1 (x0: t_AtView_Box_Perm_PermCell_i32_Global) (x1: t_Resource_Excl_unit) -> {_37 = Synchronisation x0 x1}
-          (! bb18)
-        | br2 (x0: t_Resource_Excl_unit) (x1: t_Resource_Excl_unit) -> {_37 = Readable x0 x1} (! bb19)
-        | br3 -> {_37 = Invalid} (! bb19) ] ]
-    | bb19 = s0
-      [ s0 = -{match _37 with
-          | Synchronisation _ x -> resolve_Resource_Excl_unit x
-          | _ -> true
-          end}-
-        s1
-      | s1 = s2
-        [ _ck -> (! {[@expl:type invariant] match _37 with
-            | Synchronisation x _ -> inv_AtView_Box_Perm_PermCell_i32_Global x
-            | _ -> true
-            end}
-          any) ]
-      | s2 = -{match _37 with
-          | Synchronisation x _ -> resolve_AtView_Box_Perm_PermCell_i32_Global x
-          | _ -> true
-          end}-
-        s3
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
-      | s4 = -{resolve_refmut_MessagePassingAtomicInv inv}- s5
-      | s5 = -{resolve_refmut_closure0 self}- s6
-      | s6 = {false} any ]
-    | bb18 = s0
-      [ s0 = elim_Synchronisation {_37}
-          (fun (r0: t_AtView_Box_Perm_PermCell_i32_Global) (r1: t_Resource_Excl_unit) -> [ &at_view <- r0 ] s1)
-      | s1 = elim_Synchronisation {_37}
-          (fun (r0: t_AtView_Box_Perm_PermCell_i32_Global) (r1: t_Resource_Excl_unit) -> [ &tok_write <- r1 ] s2)
-      | s2 = MutBorrow.borrow_mut <t_Option_Resource_Excl_unit> {self.current.c0'5.current}
-          (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) ->
-            [ &_48 <- _bor ]
-            [ &self <- { self with current = { self.current with c0'5 = { self.current.c0'5 with current = _bor.final } } } ]
-            s3)
-      | s3 = deref_mut_Ghost_Option_Resource_Excl_unit {_48}
-          (fun (_x: MutBorrow.t t_Option_Resource_Excl_unit) -> [ &_47 <- _x ] s4)
-      | s4 = MutBorrow.borrow_final <t_Option_Resource_Excl_unit> {_47.current} {MutBorrow.get_id _47}
-          (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) ->
-            [ &_46 <- _bor ] [ &_47 <- { _47 with current = _bor.final } ] s5)
-      | s5 = take_Resource_Excl_unit {_46} (fun (_x: t_Option_Resource_Excl_unit) -> [ &_45 <- _x ] s6)
-      | s6 = -{resolve_refmut_Option_Resource_Excl_unit _47}- s7
-      | s7 = unwrap_Resource_Excl_unit {_45} (fun (_x: t_Resource_Excl_unit) -> [ &_44 <- _x ] s8)
-      | s8 = [ &_42 <- Readable tok_write _44 ] s9
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_State inv.current.state} any) ]
-      | s10 = -{resolve_State inv.current.state}- s11
-      | s11 = [ &inv <- { inv with current = { inv.current with state = _42 } } ] s12
+      | s2 = deref_mut_Ghost_Resource_Option_Excl_unit {_32}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_31 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s4)
+      | s4 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_28.current} {MutBorrow.get_id _28}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s5)
+      | s5 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_30.current} {MutBorrow.get_id _30}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_29 <- _bor ] [ &_30 <- { _30 with current = _bor.final } ] s6)
+      | s6 = swap_Resource_Option_Excl_unit {_27} {_29} (fun (_x: ()) -> [ &_26 <- _x ] s7)
+      | s7 = -{resolve_refmut_Resource_Option_Excl_unit _31}- s8
+      | s8 = -{resolve_refmut_Resource_Option_Excl_unit _30}- s9
+      | s9 = -{resolve_refmut_Resource_Option_Excl_unit _28}- s10
+      | s10 = MutBorrow.borrow_final <t_Option_AtView_Box_Perm_PermCell_i32_Global> {inv.current.at_view}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
+          (fun (_bor: MutBorrow.t t_Option_AtView_Box_Perm_PermCell_i32_Global) ->
+            [ &_38 <- _bor ] -{inv_Option_AtView_Box_Perm_PermCell_i32_Global _bor.final}-
+            [ &inv <- { inv with current = { inv.current with at_view = _bor.final } } ] s11)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Box_Perm_PermCell_i32_Global inv.current.at_view} any) ]
+      | s11 = take_AtView_Box_Perm_PermCell_i32_Global {_38}
+          (fun (_x: t_Option_AtView_Box_Perm_PermCell_i32_Global) -> [ &_37 <- _x ] s12)
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s13 = -{resolve_refmut_MessagePassingAtomicInv inv}- s14
-      | s14 = into_inner_Box_Perm_PermCell_i32_Global'0 {at_view} {sync_view}
-          (fun (_x: t_Perm_PermCell_i32) -> [ &_51 <- _x ] s15)
-      | s15 = [ &_50 <- Some'2 _51 ] s16
-      | s16 = new_Option_Box_Perm_PermCell_i32_Global {_50}
-          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &_49 <- _x ] s17)
-      | s17 = -{match self with
+      | s14 = unwrap_AtView_Box_Perm_PermCell_i32_Global {_37}
+          (fun (_x: t_AtView_Box_Perm_PermCell_i32_Global) -> [ &_36 <- _x ] s15)
+      | s15 = into_inner_Box_Perm_PermCell_i32_Global'0 {_36} {sync_view}
+          (fun (_x: t_Perm_PermCell_i32) -> [ &_35 <- _x ] s16)
+      | s16 = [ &_34 <- Some'3 _35 ] s17
+      | s17 = new_Option_Box_Perm_PermCell_i32_Global {_34}
+          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &_33 <- _x ] s18)
+      | s18 = -{match self with
           | {current = {c2'5 = x}} -> resolve_Ghost_Option_Box_Perm_PermCell_i32_Global x.current
           | _ -> true
           end}-
-        s18
-      | s18 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _49 } } } ]
         s19
-      | s19 = -{resolve_refmut_closure0 self}- s20
-      | s20 = return {_ret} ]
-    | bb26 = s0
+      | s19 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _33 } } } ]
+        s20
+      | s20 = -{resolve_refmut_closure0 self}- s21
+      | s21 = return {_ret} ]
+    | bb17 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s1 = -{resolve_refmut_MessagePassingAtomicInv inv}- s2
       | s2 = -{resolve_refmut_closure0 self}- s3
@@ -1233,41 +1216,35 @@ module M_message_passing
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'3 = self
     | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
-    | & _4: t_State = Any.any_l ()
-    | & excl_state: t_Resource_Excl_unit = Any.any_l ()
-    | & _7: () = Any.any_l ()
-    | & _8: MutBorrow.t t_Resource_Excl_unit = Any.any_l ()
-    | & _9: MutBorrow.t t_Resource_Excl_unit = Any.any_l ()
-    | & _10: t_Option_refmut_Resource_Excl_unit = Any.any_l ()
-    | & _11: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _12: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _13: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & sync_view: t_SyncView = Any.any_l ()
-    | & _16: t_SyncView = Any.any_l ()
-    | & _18: t_SyncView = Any.any_l ()
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _5: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _6: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _8: t_Resource_Option_Excl_unit = Any.any_l ()
     | & value: Int32.t = Any.any_l ()
-    | & _23: int = Any.any_l ()
-    | & _24: MutBorrow.t t_LoadCommitter_i32_AtomicI32 = Any.any_l ()
-    | & _26: t_Perm_AtomicI32 = Any.any_l ()
-    | & _27: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _28: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _29: bool = Any.any_l ()
-    | & _31: Int32.t = Any.any_l ()
-    | & at_view: t_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & tok_write: t_Resource_Excl_unit = Any.any_l ()
-    | & _37: t_State = Any.any_l ()
-    | & _38: MutBorrow.t t_State = Any.any_l ()
-    | & _39: MutBorrow.t t_State = Any.any_l ()
-    | & _40: t_State = Any.any_l ()
-    | & _42: t_State = Any.any_l ()
-    | & _44: t_Resource_Excl_unit = Any.any_l ()
-    | & _45: t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _46: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _47: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _48: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _49: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & _50: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & _51: t_Perm_PermCell_i32 = Any.any_l () ]
+    | & _10: Int32.t = Any.any_l ()
+    | & sync_view: t_SyncView = Any.any_l ()
+    | & _15: t_SyncView = Any.any_l ()
+    | & _17: t_SyncView = Any.any_l ()
+    | & _18: int = Any.any_l ()
+    | & _19: MutBorrow.t t_LoadCommitter_i32_AtomicI32 = Any.any_l ()
+    | & _21: t_Perm_AtomicI32 = Any.any_l ()
+    | & _22: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _23: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _24: bool = Any.any_l ()
+    | & _26: () = Any.any_l ()
+    | & _27: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _28: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _29: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _30: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _31: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _32: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _33: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _34: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _35: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _36: t_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _37: t_Option_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _38: MutBorrow.t t_Option_AtView_Box_Perm_PermCell_i32_Global = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       return {result} ]
   
@@ -1310,10 +1287,10 @@ module M_message_passing
     forall self: closure0'3, args: MutBorrow.t t_MessagePassingAtomicInv, res_state: closure0'3, res: (). postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
-  type t_FnGhostWrapper_closure0'1 = { f0'7: closure0'3 }
+  type t_FnGhostWrapper_closure0'1 = { f0'8: closure0'3 }
   
   let rec __new_closure0'1 (f: closure0'3) (return (x: t_FnGhostWrapper_closure0'1)) = any
-    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'7 = f}
+    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'8 = f}
       (! return {result}) ]
   
   predicate precondition_closure0'2 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) =
@@ -1322,12 +1299,12 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0'2
   
   predicate precondition_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) =
-    precondition_closure0'2 self.f0'7 args
+    precondition_closure0'2 self.f0'8 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
   
   predicate postcondition_once_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
-    postcondition_once_closure0'2 self.f0'7 args result
+    postcondition_once_closure0'2 self.f0'8 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
   
@@ -1365,7 +1342,7 @@ module M_message_passing
   
   predicate resolve_closure4 [@inline:trivial] (_1: closure4) =
     resolve_refmut_Ghost_Option_Box_Perm_PermCell_i32_Global _1.c3'4
-    /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c2'4 /\ resolve_refmut_Ghost_Tokens _1.c1'4
+    /\ resolve_refmut_Ghost_Resource_Option_Excl_unit _1.c2'4 /\ resolve_refmut_Ghost_Tokens _1.c1'4
   
   meta "rewrite_def" predicate resolve_closure4
   
@@ -1390,8 +1367,8 @@ module M_message_passing
       | s3 = MutBorrow.borrow_final <t_Tokens> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t t_Tokens) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s4)
       | s4 = reborrow {_7} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s5)
-      | s5 = MutBorrow.borrow_mut <t_Option_Resource_Excl_unit> {self.current.c2'4.current}
-          (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) ->
+      | s5 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c2'4.current}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
             [ &_12 <- _bor ]
             [ &self <- { self with current = { self.current with c2'4 = { self.current.c2'4 with current = _bor.final } } } ]
             s6)
@@ -1420,7 +1397,7 @@ module M_message_passing
     | & _9: MutBorrow.t t_Tokens = Any.any_l ()
     | & _10: t_FnGhostWrapper_closure0'1 = Any.any_l ()
     | & _11: closure0'3 = Any.any_l ()
-    | & _12: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
+    | & _12: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _13: MutBorrow.t (MutBorrow.t t_LoadCommitter_i32_AtomicI32) = Any.any_l ()
     | & _14: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure4 self.current self.final}
@@ -1464,10 +1441,10 @@ module M_message_passing
     forall self: closure4, args: MutBorrow.t t_LoadCommitter_i32_AtomicI32, res_state: closure4, res: (). postcondition_mut_closure4 self args res_state res
       -> hist_inv_closure4 self res_state
   
-  type t_FnGhostWrapper_closure4 = { f0'8: closure4 }
+  type t_FnGhostWrapper_closure4 = { f0'9: closure4 }
   
   let rec __new_closure4 (f: closure4) (return (x: t_FnGhostWrapper_closure4)) = any
-    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'8 = f}
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'9 = f}
       (! return {result}) ]
   
   let rec new_FnGhostWrapper_closure4 (x: t_FnGhostWrapper_closure4) (return (x'0: t_FnGhostWrapper_closure4)) = any
@@ -1479,12 +1456,12 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure4
   
   predicate precondition_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_LoadCommitter_i32_AtomicI32) =
-    precondition_closure4 self.f0'8 args
+    precondition_closure4 self.f0'9 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
   
   predicate postcondition_once_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_LoadCommitter_i32_AtomicI32) (result: ()) =
-    postcondition_once_closure4 self.f0'8 args result
+    postcondition_once_closure4 self.f0'9 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
   
@@ -1500,20 +1477,6 @@ module M_message_passing
         /\ ward_i32'0 c.current = self
         /\ val_i32'0 c.current = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
-  
-  predicate resolve_Option_Resource_Excl_unit (_1: t_Option_Resource_Excl_unit)
-  
-  axiom resolve_axiom'2 [@rewrite]:
-    forall x: t_Option_Resource_Excl_unit [resolve_Option_Resource_Excl_unit x]. resolve_Option_Resource_Excl_unit x
-      = match x with
-        | None'1 -> true
-        | Some'1 x0 -> resolve_Resource_Excl_unit x0
-        end
-  
-  predicate resolve_Ghost_Option_Resource_Excl_unit [@inline:trivial] (_1: t_Option_Resource_Excl_unit) =
-    resolve_Option_Resource_Excl_unit _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_Option_Resource_Excl_unit
   
   predicate resolve_Tokens (_1: t_Tokens)
   
@@ -1532,9 +1495,9 @@ module M_message_passing
     (return (x: t_Option_ref_Box_Perm_PermCell_i32_Global)) = any
     [ return (result: t_Option_ref_Box_Perm_PermCell_i32_Global) ->
     {[@stop_split] [@expl:as_ref_Box_Perm_PermCell_i32_Global ensures] ([@stop_split] [@expl:as_ref ensures #0] self_
-          = None'2 -> result = None'4)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'2
-      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'2 r))}
+          = None'3 -> result = None'4)
+      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'3
+      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'3 r))}
       (! return {result}) ]
   
   let rec unwrap_ref_Box_Perm_PermCell_i32_Global (self_: t_Option_ref_Box_Perm_PermCell_i32_Global)
@@ -1561,66 +1524,65 @@ module M_message_passing
     {[@stop_split] [@expl:closure 'self' type invariant] inv_closure1 self}
     bb0
     [ bb0 = s0
-      [ s0 = into_inner_Resource_Excl_unit {self.c0'3} (fun (_x: t_Resource_Excl_unit) -> [ &_5 <- _x ] s1)
-      | s1 = [ &_4 <- Some'1 _5 ] s2
-      | s2 = new_Option_Resource_Excl_unit {_4} (fun (_x: t_Option_Resource_Excl_unit) -> [ &excl <- _x ] s3)
-      | s3 = [ &excl_snap <- excl ] s4
-      | s4 = [ &_11 <- None'2 ] s5
-      | s5 = new_Option_Box_Perm_PermCell_i32_Global {_11}
-          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &data_own <- _x ] s6)
-      | s6 = bb5 ]
+      [ s0 = into_inner_Resource_Option_Excl_unit {self.c0'3}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_4 <- _x ] s1)
+      | s1 = new_Resource_Option_Excl_unit {_4} (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl <- _x ] s2)
+      | s2 = [ &excl_snap <- excl ] s3
+      | s3 = [ &_10 <- None'3 ] s4
+      | s4 = new_Option_Box_Perm_PermCell_i32_Global {_10}
+          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &data_own <- _x ] s5)
+      | s5 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] excl = excl_snap}
         {[@expl:loop invariant #1] contains tokens (Namespace_MESSAGE_PASSING 0)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-            (fun (_bor: MutBorrow.t t_Tokens) -> [ &_27 <- _bor ] [ &tokens <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_mut <t_Option_Resource_Excl_unit> {excl}
-            (fun (_bor: MutBorrow.t t_Option_Resource_Excl_unit) -> [ &_28 <- _bor ] [ &excl <- _bor.final ] s2)
+            (fun (_bor: MutBorrow.t t_Tokens) -> [ &_26 <- _bor ] [ &tokens <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {excl}
+            (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_27 <- _bor ] [ &excl <- _bor.final ] s2)
         | s2 = MutBorrow.borrow_mut <t_Option_Box_Perm_PermCell_i32_Global> {data_own}
             (fun (_bor: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global) ->
-              [ &_29 <- _bor ] [ &data_own <- _bor.final ] s3)
-        | s3 = [ &_25 <- { c0'4 = self.c2'3; c1'4 = _27; c2'4 = _28; c3'4 = _29 } ] s4
-        | s4 = __new_closure4 {_25} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_24 <- _x ] s5)
-        | s5 = new_FnGhostWrapper_closure4 {_24} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_23 <- _x ] s6)
-        | s6 = load_FnGhostWrapper_closure4 {self.c1'3} {_23} (fun (_x: Int32.t) -> [ &_21 <- _x ] s7)
-        | s7 = [ &_20 <- _21 <> (1: Int32.t) ] s8
-        | s8 = any [ br0 -> {_20 = false} (! bb11) | br1 -> {_20} (! bb5) ] ] ]
+              [ &_28 <- _bor ] [ &data_own <- _bor.final ] s3)
+        | s3 = [ &_24 <- { c0'4 = self.c2'3; c1'4 = _26; c2'4 = _27; c3'4 = _28 } ] s4
+        | s4 = __new_closure4 {_24} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_23 <- _x ] s5)
+        | s5 = new_FnGhostWrapper_closure4 {_23} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_22 <- _x ] s6)
+        | s6 = load_FnGhostWrapper_closure4 {self.c1'3} {_22} (fun (_x: Int32.t) -> [ &_20 <- _x ] s7)
+        | s7 = [ &_19 <- _20 <> (1: Int32.t) ] s8
+        | s8 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb5) ] ] ]
     | bb11 = s0
-      [ s0 = -{resolve_Ghost_Option_Resource_Excl_unit excl}- s1
+      [ s0 = -{resolve_Ghost_Resource_Option_Excl_unit excl}- s1
       | s1 = -{resolve_Ghost_Tokens tokens}- s2
       | s2 = -{resolve_Ghost_Option_Box_Perm_PermCell_i32_Global data_own}- s3
       | s3 = deref_Ghost_Option_Box_Perm_PermCell_i32_Global {data_own}
-          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &_38 <- _x ] s4)
-      | s4 = as_ref_Box_Perm_PermCell_i32_Global {_38}
-          (fun (_x: t_Option_ref_Box_Perm_PermCell_i32_Global) -> [ &_36 <- _x ] s5)
-      | s5 = unwrap_ref_Box_Perm_PermCell_i32_Global {_36} (fun (_x: t_Perm_PermCell_i32) -> [ &_35 <- _x ] s6)
-      | s6 = new_ref_Perm_PermCell_i32 {_35} (fun (_x: t_Perm_PermCell_i32) -> [ &_33 <- _x ] s7)
-      | s7 = get_i32 {self.c3'3} {_33} (fun (_x: Int32.t) -> [ &res <- _x ] s8)
+          (fun (_x: t_Option_Box_Perm_PermCell_i32_Global) -> [ &_37 <- _x ] s4)
+      | s4 = as_ref_Box_Perm_PermCell_i32_Global {_37}
+          (fun (_x: t_Option_ref_Box_Perm_PermCell_i32_Global) -> [ &_35 <- _x ] s5)
+      | s5 = unwrap_ref_Box_Perm_PermCell_i32_Global {_35} (fun (_x: t_Perm_PermCell_i32) -> [ &_34 <- _x ] s6)
+      | s6 = new_ref_Perm_PermCell_i32 {_34} (fun (_x: t_Perm_PermCell_i32) -> [ &_32 <- _x ] s7)
+      | s7 = get_i32 {self.c3'3} {_32} (fun (_x: Int32.t) -> [ &res <- _x ] s8)
       | s8 = {[@expl:assertion] res = (1: Int32.t)} s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure1 = self
     | & tokens: t_Tokens = tokens
-    | & excl: t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _4: t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _5: t_Resource_Excl_unit = Any.any_l ()
-    | & excl_snap: t_Option_Resource_Excl_unit = Any.any_l ()
+    | & excl: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _4: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & excl_snap: t_Resource_Option_Excl_unit = Any.any_l ()
     | & data_own: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & _11: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & _20: bool = Any.any_l ()
-    | & _21: Int32.t = Any.any_l ()
+    | & _10: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _19: bool = Any.any_l ()
+    | & _20: Int32.t = Any.any_l ()
+    | & _22: t_FnGhostWrapper_closure4 = Any.any_l ()
     | & _23: t_FnGhostWrapper_closure4 = Any.any_l ()
-    | & _24: t_FnGhostWrapper_closure4 = Any.any_l ()
-    | & _25: closure4 = Any.any_l ()
-    | & _27: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _28: MutBorrow.t t_Option_Resource_Excl_unit = Any.any_l ()
-    | & _29: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _24: closure4 = Any.any_l ()
+    | & _26: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _27: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _28: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & res: Int32.t = Any.any_l ()
-    | & _33: t_Perm_PermCell_i32 = Any.any_l ()
-    | & _35: t_Perm_PermCell_i32 = Any.any_l ()
-    | & _36: t_Option_ref_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & _38: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _32: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _34: t_Perm_PermCell_i32 = Any.any_l ()
+    | & _35: t_Option_ref_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _37: t_Option_Box_Perm_PermCell_i32_Global = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -1745,24 +1707,34 @@ module M_message_passing
       | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global) -> [ &_9 <- _x ] s7)
       | s7 = [ &data <- _9.f0'1 ] s8
       | s8 = [ &data_own <- _9.f1'1 ] s9
-      | s9 = alloc_Excl_unit {{ f0'2 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl_write <- _x ] s10)
-      | s10 = alloc_Excl_unit {{ f0'2 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl_read <- _x ] s11)
+      | s9 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_write <- _x ] s10)
+      | s10 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_read <- _x ] s11)
       | s11 = into_inner_Box_Perm_AtomicI32_Global {atomic_own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_19 <- _x ] s12)
-      | s12 = [ &_21 <- NotWrittenYet ] s13
-      | s13 = [ &_18 <- { atomic_own = _19; state = _21 } ] s14
-      | s14 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s15)
-      | s15 = new_MessagePassingAtomicInv'0 {_17} {{ f0'3 = atomic;
-                                                     f1'3 = data;
-                                                     f2'3 = id_Excl_unit excl_write;
-                                                     f3'3 = id_Excl_unit excl_read }} {Namespace_MESSAGE_PASSING 0}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s16)
-      | s16 = -{resolve_Ghost_AtomicInvariant_MessagePassingAtomicInv inv}- s17
-      | s17 = -{resolve_PermCell_i32 data}- s18
-      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_AtomicI32 atomic} any) ]
-      | s19 = -{resolve_AtomicI32 atomic}- s20
-      | s20 = [ &_31 <- { c0 = inv; c1 = data; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s21
-      | s21 = scope_closure0 {_31} (fun (_x: ()) -> [ &_30 <- _x ] s22)
-      | s22 = return {_ret} ] ]
+      | s12 = [ &_21 <- None'1 ] s13
+      | s13 = deref_Ghost_Resource_Option_Excl_unit {excl_write}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_25 <- _x ] s14)
+      | s14 = id_ghost_Option_Excl_unit {_25} (fun (_x: t_Id) -> [ &_23 <- _x ] s15)
+      | s15 = new_unit_Option_Excl_unit {_23} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s16)
+      | s16 = deref_Ghost_Resource_Option_Excl_unit {excl_read}
+          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_30 <- _x ] s17)
+      | s17 = id_ghost_Option_Excl_unit {_30} (fun (_x: t_Id) -> [ &_28 <- _x ] s18)
+      | s18 = new_unit_Option_Excl_unit {_28} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_27 <- _x ] s19)
+      | s19 = [ &_18 <- { atomic_own = _19; at_view = _21; tok_write = _22; tok_read = _27 } ] s20
+      | s20 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s21)
+      | s21 = new_MessagePassingAtomicInv'0 {_17} {{ f0'4 = atomic;
+                                                     f1'4 = data;
+                                                     f2'4 = id_Option_Excl_unit excl_write;
+                                                     f3'4 = id_Option_Excl_unit excl_read }}
+          {Namespace_MESSAGE_PASSING 0} (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s22)
+      | s22 = -{resolve_Ghost_AtomicInvariant_MessagePassingAtomicInv inv}- s23
+      | s23 = -{resolve_PermCell_i32 data}- s24
+      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_AtomicI32 atomic} any) ]
+      | s25 = -{resolve_AtomicI32 atomic}- s26
+      | s26 = [ &_41 <- { c0 = inv; c1 = data; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s27
+      | s27 = scope_closure0 {_41} (fun (_x: ()) -> [ &_40 <- _x ] s28)
+      | s28 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicI32 = Any.any_l ()
     | & atomic_own'0: t_Perm_AtomicI32 = Any.any_l ()
@@ -1773,13 +1745,19 @@ module M_message_passing
     | & data: t_PermCell_i32 = Any.any_l ()
     | & data_own: t_Perm_PermCell_i32 = Any.any_l ()
     | & _9: tup2_PermCell_i32_Ghost_Box_Perm_PermCell_i32_Global = Any.any_l ()
-    | & excl_write: t_Resource_Excl_unit = Any.any_l ()
-    | & excl_read: t_Resource_Excl_unit = Any.any_l ()
+    | & excl_write: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & excl_read: t_Resource_Option_Excl_unit = Any.any_l ()
     | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
     | & _17: t_MessagePassingAtomicInv = Any.any_l ()
     | & _18: t_MessagePassingAtomicInv = Any.any_l ()
     | & _19: t_Perm_AtomicI32 = Any.any_l ()
-    | & _21: t_State = Any.any_l ()
-    | & _30: () = Any.any_l ()
-    | & _31: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
+    | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _23: t_Id = Any.any_l ()
+    | & _25: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _27: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _28: t_Id = Any.any_l ()
+    | & _30: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _40: () = Any.any_l ()
+    | & _41: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

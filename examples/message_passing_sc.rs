@@ -82,39 +82,28 @@ pub fn message_passing() {
         let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
             let mut excl = ghost!(Some(excl.into_inner()));
             let excl_snap = snapshot!(excl);
+            let mut data_own = ghost!(None);
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            loop {
-                let (atomic_res, data_own) = atomic.load(ghost! { |c: &mut LoadCommitter<_>| {
-                    inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                        if let State::Readable(excl_state) = &inv.state {
-                            excl.as_mut().unwrap().valid_op_lemma(excl_state);
-                        }
-
-                        c.shoot(&inv.atomic_own);
-
-                        match &inv.state {
-                            State::Synchronisation(_) => {
-                                let State::Synchronisation(data_own) = std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap())) else {
-                                    unreachable!();
-                                };
-                                Some(data_own)
-                            }
-                            _ => None
-                        }
-                    })
-                }});
-
-                if atomic_res != 1 {
-                    continue;
+            while atomic.load(ghost! { |c: &mut LoadCommitter<_>| {
+            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                if let State::Readable(excl_state) = &inv.state {
+                    excl.as_mut().unwrap().valid_op_lemma(excl_state);
                 }
 
-                let data_own = ghost! { data_own.into_inner().unwrap() };
-                let res = unsafe { data.get(ghost! { &**data_own }) };
-                proof_assert!(res == 1i32);
-                break;
-            }
+                c.shoot(&inv.atomic_own);
+
+                if let State::Synchronisation(_) = &inv.state {
+                    let State::Synchronisation(d_own) = std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap())) else {
+                            unreachable!();
+                    };
+                    data_own = Ghost::new(Some(d_own));
+            }})}})
+                != 1
+            {}
+            let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
+            proof_assert!(res == 1i32)
         });
 
         let _ = t1.join_unwrap();

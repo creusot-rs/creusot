@@ -1359,8 +1359,6 @@ module M_parallel_add
     [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  type tup2_i32_Ghost_unit = { f0'14: Int32.t; f1'14: () }
-  
   predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_UpdateCommitter_AtomicI32) =
     let c = args in closure0'0'pre self c
   
@@ -1381,20 +1379,20 @@ module M_parallel_add
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
   
-  let rec fetch_add_unit (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'0)
-    (return (x: tup2_i32_Ghost_unit)) =
-    {[@stop_split] [@expl:fetch_add_unit requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
+  let rec fetch_add_FnGhostWrapper_closure0 (self: t_AtomicI32) (val': Int32.t) (f: t_FnGhostWrapper_closure0'0)
+    (return (x: Int32.t)) =
+    {[@stop_split] [@expl:fetch_add_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
       -> new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-      -> precondition_FnGhostWrapper_closure0'0 f c
-      /\ (forall r: (). postcondition_once_FnGhostWrapper_closure0'0 f c r -> shot_AtomicI32 c.final))}
+      -> precondition_FnGhostWrapper_closure0'0 f c /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()
+      -> shot_AtomicI32 c.final)}
     any
-    [ return (result: tup2_i32_Ghost_unit) ->
+    [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_UpdateCommitter_AtomicI32. not shot_AtomicI32 c.current
         /\ ward_AtomicI32'0 c.current = self
         /\ new_val_AtomicI32 c.current = Int32.add val' (old_val_AtomicI32 c.current)
-        /\ old_val_AtomicI32 c.current = result.f0'14 /\ postcondition_once_FnGhostWrapper_closure0'0 f c result.f1'14}
+        /\ old_val_AtomicI32 c.current = result /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
   
   predicate inv_closure0'0 [@inline:trivial] (_1: closure0'0) =
@@ -1415,13 +1413,13 @@ module M_parallel_add
       | s3 = [ &_7 <- { c0'1 = _8; c1'1 = tokens; c2'1 = _9 } ] s4
       | s4 = __new_closure0'0 {_7} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_6 <- _x ] s5)
       | s5 = new_FnGhostWrapper_closure0 {_6} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_5 <- _x ] s6)
-      | s6 = fetch_add_unit {_4} {(1: Int32.t)} {_5} (fun (_x: tup2_i32_Ghost_unit) -> [ &_3 <- _x ] s7)
+      | s6 = fetch_add_FnGhostWrapper_closure0 {_4} {(1: Int32.t)} {_5} (fun (_x: Int32.t) -> [ &_3 <- _x ] s7)
       | s7 = [ &_ret <- self.c2'0 ] s8
       | s8 = return {_ret} ] ]
     [ & _ret: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & self: closure0'0 = self
     | & tokens: t_Tokens = tokens
-    | & _3: tup2_i32_Ghost_unit = Any.any_l ()
+    | & _3: Int32.t = Any.any_l ()
     | & _4: t_AtomicI32 = Any.any_l ()
     | & _5: t_FnGhostWrapper_closure0'0 = Any.any_l ()
     | & _6: t_FnGhostWrapper_closure0'0 = Any.any_l ()
@@ -1522,7 +1520,7 @@ module M_parallel_add
     forall x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x]. inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x
       = match x with
         | None'5 -> true
-        | Some'5 f0'15 -> inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'15
+        | Some'5 f0'14 -> inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'14
         end
   
   predicate produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (visited: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (rhs: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
@@ -1567,9 +1565,9 @@ module M_parallel_add
       (! return {result}) ]
   
   let rec elim_Some'0 (_x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
-    (return (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) = any
-    [ _k (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {Some'5 f0'15 = _x}
-      (! return {f0'15})
+    (return (f0'14: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) = any
+    [ _k (f0'14: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {Some'5 f0'14 = _x}
+      (! return {f0'14})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some'5 _ -> true
         | _ -> false

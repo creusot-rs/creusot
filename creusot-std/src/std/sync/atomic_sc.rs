@@ -41,60 +41,56 @@ impl AtomicI32 {
     ///
     /// The load is always sequentially consistent.
     #[requires(forall<c: &mut LoadCommitter<Self>> !c.shot() ==> c.ward() == *self ==>
-        f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
+        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut LoadCommitter<Self>>
-        !c.shot() && c.ward() == *self &&
-        c.val() == result.0 && f.postcondition_once((c,), *(result.1))
+        !c.shot() && c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn load<'a, A, F>(&'a self, f: Ghost<F>) -> (i32, Ghost<A>)
+    pub fn load<'a, F>(&'a self, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut LoadCommitter<Self>) -> A,
+        F: FnGhost + FnOnce(&'a mut LoadCommitter<Self>),
     {
-        let res = self.0.load(std::sync::atomic::Ordering::SeqCst);
-        (res, Ghost::conjure())
+        self.0.load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
     ///
     /// The store is always sequentially consistent.
     #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
-        f.precondition((c,)) && (forall<r> f.postcondition_once((c,), r) ==> (^c).shot())
+        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut StoreCommitter<Self>>
         !c.shot() && c.ward() == *self && c.val() == val &&
-        f.postcondition_once((c,), *result)
+        f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn store<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> Ghost<A>
+    pub fn store<'a, F>(&'a self, val: i32, f: Ghost<F>)
     where
-        F: FnGhost + FnOnce(&'a mut StoreCommitter<Self>) -> A,
+        F: FnGhost + FnOnce(&'a mut StoreCommitter<Self>),
     {
-        self.0.store(val, std::sync::atomic::Ordering::SeqCst);
-        Ghost::conjure()
+        self.0.store(val, std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
     ///
     /// The load and the store are always sequentially consistent.
     #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
-        f.precondition((c,)) && forall<r> f.postcondition_once((c,), r) ==> (^c).shot()
+        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
     )]
     #[ensures(exists<c: &mut UpdateCommitter<Self>>
         !c.shot() && c.ward() == *self && c.new_val() == val + c.old_val() &&
-        c.old_val() == result.0 && f.postcondition_once((c,), *(result.1))
+        c.old_val() == result && f.postcondition_once((c,), ())
     )]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn fetch_add<'a, A, F>(&'a self, val: i32, f: Ghost<F>) -> (i32, Ghost<A>)
+    pub fn fetch_add<'a, F>(&'a self, val: i32, f: Ghost<F>) -> i32
     where
-        F: FnGhost + FnOnce(&'a mut UpdateCommitter<Self>) -> A,
+        F: FnGhost + FnOnce(&'a mut UpdateCommitter<Self>),
     {
-        let res = self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst);
-        (res, Ghost::conjure())
+        self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst)
     }
 }
 
