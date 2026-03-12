@@ -1,5 +1,3 @@
-// DEPTH 8
-
 extern crate creusot_std;
 
 use creusot_std::{
