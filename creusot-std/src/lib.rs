@@ -50,6 +50,7 @@
     feature(
         core_intrinsics,
         const_destruct,
+        discriminant_kind,
         fn_traits,
         fmt_internals,
         fmt_arguments_from_str,

@@ -18,6 +18,10 @@ extern_spec! {
                     unsafe { core::intrinsics::unreachable() }
                 }
             }
+
+            #[check(ghost)]
+            #[ensures(result == crate::std::mem::discriminant_value_logic(*v))]
+            fn discriminant_value<T>(v: &T) -> <T as std::marker::DiscriminantKind>::Discriminant;
         }
     }
 }

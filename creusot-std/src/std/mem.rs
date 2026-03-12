@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use core::mem::*;
+#[cfg(creusot)]
+use std::marker::DiscriminantKind;
 
 impl<T> View for MaybeUninit<T> {
     type ViewTy = Option<T>;
@@ -62,6 +64,10 @@ extern_spec! {
             #[check(terminates)]
             #[ensures(result == align_of_logic::<T>())]
             fn align_of<T>() -> usize;
+
+            #[check(ghost)]
+            #[ensures(result == discriminant_logic(*v))]
+            fn discriminant<T>(v: &T) -> Discriminant<T>;
         }
     }
 
@@ -170,4 +176,103 @@ fn size_of_val_logic_str(val: str) -> Int {
 #[ensures(size_of_logic::<T>() % result@ == 0)]
 pub fn align_of_logic<T>() -> usize {
     dead
+}
+
+/// Logic version of [`std::mem::discriminant`]
+#[logic(open, inline)]
+pub fn discriminant_logic<T>(v: T) -> Discriminant<T> {
+    pearlite! { T::into_discriminant(strong_discriminant(v)) }
+}
+
+/// Logic version of [`std::intrinsics::discriminant_value`]
+#[logic(open, inline)]
+pub fn discriminant_value_logic<T>(v: T) -> <T as DiscriminantKind>::Discriminant {
+    pearlite! { T::into_discriminant_value(strong_discriminant(v)) }
+}
+
+/// Map each variant of the enum `T` to an integer, in order of declaration starting from 0.
+///
+/// Undefined if `T` is not an enum.
+///
+/// This is a "strongly specified" discriminant, as opposed to the "weakly specified"
+/// [`std::mem::discriminant`], for which the precise value of the discriminant of each
+/// variant is not specified.
+///
+/// We bridge the gap by postulating an injection [`into_discriminant`] from this
+/// "strongly specified" discriminant to the "weakly specified" one.
+// #[logic(open, inline)] // TODO
+#[logic(opaque)]
+#[intrinsic("strong_discriminant")]
+pub fn strong_discriminant<T>(v: T) -> usize {
+    let _ = v;
+    dead
+}
+
+/// Number of variants of the enum `T`.
+///
+/// Undefined if `T` is not an enum.
+// #[logic(open, inline)] // TODO
+#[logic(opaque)]
+#[intrinsic("discriminant_count")]
+pub fn variant_count<T>() -> usize {
+    dead
+}
+
+/// Injections between discriminants.
+///
+/// This trait allows auto-loading the injectivity laws whenever these functions are used.
+pub trait IntoDiscriminant: Sized {
+    /// Map the output of [`strong_discriminant_logic`] to the corresponding output of [`std::mem::discriminant`].
+    #[logic]
+    fn into_discriminant(v: usize) -> Discriminant<Self>;
+
+    /// Map the output of [`strong_discriminant_logic`] to the corresponding output of [`std::intrinsics::discriminant_value`].
+    #[logic]
+    fn into_discriminant_value(v: usize) -> <Self as DiscriminantKind>::Discriminant;
+
+    #[logic(law)]
+    #[ensures(forall<v1, v2> v1 < variant_count::<Self>() && v2 < variant_count::<Self>()
+        ==> Self::into_discriminant(v1) == Self::into_discriminant(v2) ==> v1 == v2)]
+    fn into_discriminant_injective();
+
+    #[trusted]
+    #[logic(law)]
+    #[ensures(forall<v1, v2> v1 < variant_count::<Self>() && v2 < variant_count::<Self>()
+        ==> Self::into_discriminant_value(v1) == Self::into_discriminant_value(v2) ==> v1 == v2)]
+    fn into_discriminant_value_injective();
+}
+
+impl<T> IntoDiscriminant for T {
+    #[logic(opaque)]
+    fn into_discriminant(v: usize) -> Discriminant<T> {
+        let _ = v;
+        dead
+    }
+
+    #[logic(opaque)]
+    fn into_discriminant_value(v: usize) -> <T as DiscriminantKind>::Discriminant {
+        let _ = v;
+        dead
+    }
+
+    #[trusted]
+    #[logic(law)]
+    #[ensures(forall<v1, v2> v1 < variant_count::<Self>() && v2 < variant_count::<Self>()
+        ==> Self::into_discriminant(v1) == Self::into_discriminant(v2) ==> v1 == v2)]
+    fn into_discriminant_injective() {}
+
+    #[trusted]
+    #[logic(law)]
+    #[ensures(forall<v1, v2> v1 < variant_count::<Self>() && v2 < variant_count::<Self>()
+        ==> Self::into_discriminant_value(v1) == Self::into_discriminant_value(v2) ==> v1 == v2)]
+    fn into_discriminant_value_injective() {}
+}
+
+impl<T> DeepModel for Discriminant<T> {
+    type DeepModelTy = Self;
+
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
 }
