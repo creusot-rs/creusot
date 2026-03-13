@@ -37,7 +37,10 @@ pub trait HasTimestamp {
     fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
 }
 
-/// ↑V
+/// A witness to the _current view_, containing all the events observed by this thread.
+///
+/// In Cosmo, [`SyncView`] corresponds to the notation `↑V`
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.cur`
 #[opaque]
 #[derive(Copy)]
 pub struct SyncView(());
@@ -57,63 +60,118 @@ impl SyncView {
     }
 }
 
-impl OrdLogic for SyncView {
-    #[logic(opaque)]
-    fn cmp_log(self, _: Self) -> Ordering {
-        dead
+/// A witness to the _release view_, containing all the events observed by this thread at its last release fence.
+///
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.rel`
+#[opaque]
+#[derive(Copy)]
+pub struct ReleaseSyncView(());
+
+impl Clone for ReleaseSyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
     }
-
-    #[logic(law)]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    #[trusted]
-    fn cmp_le_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    #[trusted]
-    fn cmp_lt_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    #[trusted]
-    fn cmp_ge_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    #[trusted]
-    fn cmp_gt_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    #[trusted]
-    fn refl(x: Self) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    #[trusted]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    #[trusted]
-    fn antisym1(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    #[trusted]
-    fn antisym2(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    #[trusted]
-    fn eq_cmp(x: Self, y: Self) {}
 }
 
-/// P@V
+impl ReleaseSyncView {
+    #[check(ghost)]
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+}
+
+/// A witness to the _acquire view_, containing all the events that will be observed by this thread at its next acquire fence.
+///
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.acq`
+#[opaque]
+#[derive(Copy)]
+pub struct AcquireSyncView(());
+
+impl Clone for AcquireSyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl AcquireSyncView {
+    #[check(ghost)]
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+}
+
+macro_rules! impl_ordlogic_view {
+    ($( $view:ty ),+) => { $(
+
+        impl OrdLogic for $view {
+            #[logic(opaque)]
+            fn cmp_log(self, _: Self) -> Ordering {
+                dead
+            }
+
+            #[logic(law)]
+            #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+            #[trusted]
+            fn cmp_le_log(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+            #[trusted]
+            fn cmp_lt_log(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+            #[trusted]
+            fn cmp_ge_log(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+            #[trusted]
+            fn cmp_gt_log(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[ensures(x.cmp_log(x) == Ordering::Equal)]
+            #[trusted]
+            fn refl(x: Self) {}
+
+            #[logic(law)]
+            #[requires(x.cmp_log(y) == o)]
+            #[requires(y.cmp_log(z) == o)]
+            #[ensures(x.cmp_log(z) == o)]
+            #[trusted]
+            fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
+
+            #[logic(law)]
+            #[requires(x.cmp_log(y) == Ordering::Less)]
+            #[ensures(y.cmp_log(x) == Ordering::Greater)]
+            #[trusted]
+            fn antisym1(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[requires(x.cmp_log(y) == Ordering::Greater)]
+            #[ensures(y.cmp_log(x) == Ordering::Less)]
+            #[trusted]
+            fn antisym2(x: Self, y: Self) {}
+
+            #[logic(law)]
+            #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+            #[trusted]
+            fn eq_cmp(x: Self, y: Self) {}
+        }
+
+    )* };
+}
+
+impl_ordlogic_view!(SyncView, AcquireSyncView, ReleaseSyncView);
+
+/// Resources that are held in view V.
+///
+/// In Cosmo, [`SyncView`] corresponds to the notation `T@V`
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `@V T`
 pub struct AtView<T>(PhantomData<T>);
 
 #[cfg(creusot)]
