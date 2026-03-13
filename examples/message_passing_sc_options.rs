@@ -10,7 +10,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::{AtomicI32, LoadCommitter, StoreCommitter},
+        sync::atomic_sc::{AtomicBool, LoadCommitter, StoreCommitter},
         thread::{self, JoinHandleExt},
     },
 };
@@ -18,21 +18,21 @@ use creusot_std::{
 declare_namespace! { MESSAGE_PASSING }
 
 struct MessagePassingAtomicInv {
-    atomic_own: Box<Perm<AtomicI32>>,
+    atomic_own: Box<Perm<AtomicBool>>,
     data_own: Option<Box<Perm<PermCell<i32>>>>,
     tok: Resource<Option<Excl<()>>>,
 }
 
 impl Protocol for MessagePassingAtomicInv {
-    type Public = (AtomicI32, PermCell<i32>, Id);
+    type Public = (AtomicBool, PermCell<i32>, Id);
 
     #[logic(inline)]
     fn protocol(self, data: Self::Public) -> bool {
         pearlite! {
             data.0 == *self.atomic_own.ward() && data.2 == self.tok.id() &&
-            (self.atomic_own.val()@ == 0 ||
+            (!*self.atomic_own.val() ||
              match self.data_own {
-                Some(data_own) => data.1 == *data_own.ward() && self.atomic_own.val()@ == 1 && data_own.val()@ == 1,
+                Some(data_own) => data.1 == *data_own.ward() && *self.atomic_own.val() && data_own.val()@ == 1,
                 None => self.tok.val() == Some(Excl(())),
             })
         }
@@ -40,11 +40,10 @@ impl Protocol for MessagePassingAtomicInv {
 }
 
 pub fn message_passing() {
-    let (atomic, atomic_own) = AtomicI32::new(0i32);
+    let (atomic, atomic_own) = AtomicBool::new(false);
     let (data, mut data_own) = PermCell::new(0i32);
     let mut excl = Resource::alloc(snapshot!(Some(Excl(()))));
 
-    // Initialize our invariant
     let inv = AtomicInvariantSC::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
@@ -64,7 +63,7 @@ pub fn message_passing() {
             unsafe { *data.borrow_mut(ghost!(&mut **data_own)) = 1 }
 
             atomic.store(
-                1,
+                true,
                 ghost! { |c: &mut StoreCommitter<_>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.data_own = Some(data_own.into_inner());
@@ -80,18 +79,18 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while atomic.load(ghost! { |c: &LoadCommitter<AtomicI32>| {
+            while !atomic.load(ghost! { |c: &LoadCommitter<AtomicBool>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if *snapshot!{ c.val() }.into_ghost() != 1 {
+                if !*snapshot!{ c.val() }.into_ghost() {
                     return
                 }
+
                 excl.valid_op_lemma(&inv.tok);
                 std::mem::swap(&mut inv.tok, &mut *excl);
+
                 c.shoot(&mut inv.atomic_own);
                 data_own = Ghost::new(inv.data_own.take())
-            })}})
-                != 1
-            {}
+            })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
             proof_assert!(res == 1i32);

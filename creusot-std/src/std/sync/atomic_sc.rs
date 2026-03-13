@@ -8,6 +8,7 @@ macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident) ),+) => { $(
 
         /// Creusot wrapper around [`std::sync::atomic::$atomic_type`]
+        #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type(::std::sync::atomic::$atomic_type);
 
         unsafe impl Send for Perm<$atomic_type> {}
@@ -31,7 +32,7 @@ macro_rules! impl_atomic {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
-            /// Wrapper for [`std::sync::atomic::$atomic_type::into_inner`].
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
             #[requires(self == *own.ward())]
             #[ensures(result == *own.val())]
             #[trusted]
@@ -40,9 +41,9 @@ macro_rules! impl_atomic {
                 self.0.into_inner()
             }
 
-            /// Wrapper for [`std::sync::atomic::$atomic_type::load`].
-            ///
-            /// The load is always sequentially consistent.
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
+            #[doc = ""]
+            #[doc = "The load is always sequentially consistent."]
             #[requires(forall<c: &LoadCommitter<Self>> c.ward() == *self ==> f.precondition((c,)))]
             #[ensures(exists<c: &LoadCommitter<Self>>
                 c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
@@ -56,9 +57,9 @@ macro_rules! impl_atomic {
                 self.0.load(std::sync::atomic::Ordering::SeqCst)
             }
 
-            /// Wrapper for [`std::sync::atomic::$atomic_type::store`].
-            ///
-            /// The store is always sequentially consistent.
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
+            #[doc = ""]
+            #[doc = "The store is always sequentially consistent."]
             #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
             )]
@@ -85,9 +86,9 @@ macro_rules! impl_atomic_int {
         impl_atomic!(($int_type, $atomic_type));
 
         impl $atomic_type {
-            /// Wrapper for [`std::sync::atomic::$atomic_type::fetch_add`].
-            ///
-            /// The load and the store are always sequentially consistent.
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
+            #[doc = ""]
+            #[doc = "The load and the store are always sequentially consistent."]
             #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
             )]

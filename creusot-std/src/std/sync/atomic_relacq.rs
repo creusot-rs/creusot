@@ -12,7 +12,7 @@ use core::marker::PhantomData;
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident) ),+) => { $(
 
-        /// Creusot wrapper around [`std::sync::atomic::$atomic_type`]
+        #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type(::std::sync::atomic::$atomic_type);
 
         unsafe impl Send for Perm<$atomic_type> {}
@@ -56,7 +56,7 @@ macro_rules! impl_atomic {
 
             // TODO: [VL] into_inner
 
-            /// Wrapper for [`std::sync::atomic::$atomic_type::load`].
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(forall<c: &LoadCommitter<$type, Self>> c.ward() == *self ==> f.precondition((c,)))]
             #[ensures(exists<c: &LoadCommitter<$type, Self>>
                 c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
@@ -74,7 +74,7 @@ macro_rules! impl_atomic {
                 })
             }
 
-            /// Wrapper for [`std::sync::atomic::$atomic_type::store`].
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[requires(forall<c: &mut StoreCommitter<$type, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
             )]
