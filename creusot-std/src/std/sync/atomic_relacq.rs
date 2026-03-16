@@ -10,19 +10,19 @@ use crate::{
 use core::marker::PhantomData;
 
 macro_rules! impl_atomic {
-    ($( ($type:ty, $atomic_type:ident) ),+) => { $(
+    ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
-        pub struct $atomic_type(::std::sync::atomic::$atomic_type);
+        pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        unsafe impl Send for Perm<$atomic_type> {}
-        unsafe impl Sync for Perm<$atomic_type> {}
+        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
+        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
 
         #[cfg(creusot)]
         #[trusted]
-        impl Objective for Perm<$atomic_type> {}
+        impl Objective for Perm<$atomic_type $(< $T >)?> {}
 
-        impl Container for $atomic_type {
+        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
             type Value = FMap<Timestamp, ($type, SyncView)>;
 
             #[logic(open, inline)]
@@ -31,7 +31,7 @@ macro_rules! impl_atomic {
             }
         }
 
-        impl HasTimestamp for $atomic_type {
+        impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
             #[logic(opaque)]
             fn get_timestamp(self, _: SyncView) -> Timestamp {
                 dead
@@ -44,13 +44,13 @@ macro_rules! impl_atomic {
             fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
         }
 
-        impl $atomic_type {
+        impl $(< $T >)? $atomic_type $(< $T >)? {
             #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^view), (val, **view)))]
             #[ensures(*result.1.ward() == result.0)]
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn new(val: $type, view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type>>>) {
+            pub fn new(val: $type, view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 

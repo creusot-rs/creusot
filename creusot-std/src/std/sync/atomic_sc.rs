@@ -5,16 +5,16 @@ use crate::{
 use core::marker::PhantomData;
 
 macro_rules! impl_atomic {
-    ($( ($type:ty, $atomic_type:ident) ),+) => { $(
+    ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
         /// Creusot wrapper around [`std::sync::atomic::$atomic_type`]
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
-        pub struct $atomic_type(::std::sync::atomic::$atomic_type);
+        pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        unsafe impl Send for Perm<$atomic_type> {}
-        unsafe impl Sync for Perm<$atomic_type> {}
+        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
+        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
 
-        impl Container for $atomic_type {
+        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
             type Value = $type;
 
             #[logic(open, inline)]
@@ -23,12 +23,12 @@ macro_rules! impl_atomic {
             }
         }
 
-        impl $atomic_type {
+        impl $(< $T >)? $atomic_type $(< $T >)? {
             #[ensures(*result.1.val() == val)]
             #[ensures(*result.1.ward() == result.0)]
             #[trusted]
             #[check(terminates)]
-            pub fn new(val: $type) -> (Self, Ghost<Box<Perm<$atomic_type>>>) {
+            pub fn new(val: $type) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
@@ -37,7 +37,7 @@ macro_rules! impl_atomic {
             #[ensures(result == *own.val())]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type>>>) -> $type {
+            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) -> $type {
                 self.0.into_inner()
             }
 
@@ -110,7 +110,8 @@ macro_rules! impl_atomic_int {
 }
 
 impl_atomic! {
-    (bool, AtomicBool)
+    (bool, AtomicBool),
+    (*mut T, AtomicPtr<T>)
 }
 
 impl_atomic_int! {
