@@ -68,9 +68,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 AdtKind::Struct { partially_opaque: true }
                 | AdtKind::Opaque { always: false }
                 | AdtKind::Empty => return false,
-                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
-                    stack.extend(def.all_fields().map(|f| f.ty(ctx.tcx, subst)))
-                }
+                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
+                    def.all_fields()
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                ),
                 AdtKind::Ghost(_) | AdtKind::Box(_) => unreachable!(),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),

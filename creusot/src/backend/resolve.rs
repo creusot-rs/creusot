@@ -60,9 +60,10 @@ pub fn is_resolve_trivial<'tcx>(
                     return false;
                 }
                 AdtKind::Box(ty) | AdtKind::Ghost(ty) => stack.push(ty),
-                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
-                    stack.extend(def.all_fields().map(|f| f.ty(ctx.tcx, subst)))
-                }
+                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
+                    def.all_fields()
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                ),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Param(_)
