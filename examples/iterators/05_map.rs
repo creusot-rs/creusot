@@ -1,4 +1,3 @@
-// WHY3PROVE
 #![feature(unboxed_closures)]
 extern crate creusot_std;
 use creusot_std::{invariant::Invariant, prelude::*};
@@ -29,7 +28,22 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        proof_assert! {
+            let ac = ab.concat(bc);
+            let (fsab, sab) = a.produces_instantiate_existential(ab, b);
+            let (fsbc, sbc) = b.produces_instantiate_existential(bc, c);
+            let fs = fsab.concat(fsbc);
+            let s = sab.concat(sbc);
+
+            (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
+            && if ac.len() == 0 { a.func == c.func }
+               else { *fs[0] == a.func &&  ^fs[ac.len() - 1] == c.func }
+            && forall<i> 0 <= i && i < ac.len() ==>
+                 a.func.hist_inv(*fs[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], ac[i])
+        }
+    }
 
     #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
@@ -49,8 +63,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     }
 
     #[ensures(match result {
-      None => self.completed(),
-      Some(v) => (*self).produces_one(v, ^self)
+        None => self.completed(),
+        Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
@@ -106,16 +120,57 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[ensures(Self::preservation(iter, ^f))]
     #[ensures(Self::next_precondition(iter, ^f))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
+        // for preservation
+        proof_assert!(forall<s1: Seq<I::Item>, s2, e>
+            s1.concat(s2).push_back(e) == s1.concat(s2.push_back(e)));
+
+        // for next_precondition
+        proof_assert!(forall<e1: I::Item, e2> Seq::singleton(e1).concat(Seq::singleton(e2)) == Seq::empty().push_back(e1).push_back(e2));
         proof_assert! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                self.iter.produces(Seq::singleton(e).concat(s).push_back(e1).push_back(e2), i)
+            forall<e2: I::Item, i: I>
+                inv(e2) && iter.produces(Seq::singleton(e2), i) ==>
+                    self.iter.produces(Seq::singleton(e).concat(Seq::singleton(e2)), i)
         }
     }
 
+    /// Get the witnesses for the existentials in `produces`
+    #[logic(prophetic)]
+    #[requires(self.produces(visited, succ))]
+    #[ensures(result.0.len() == visited.len() && result.1.len() == visited.len()
+        && self.iter.produces(result.1, succ.iter)
+        && (forall<i> 1 <= i && i < result.0.len() ==>  ^result.0[i - 1] == *result.0[i])
+        && if visited.len() == 0 { self.func == succ.func }
+           else { *result.0[0] == self.func &&  ^result.0[visited.len() - 1] == succ.func }
+        && forall<i> 0 <= i && i < visited.len() ==>
+             self.func.hist_inv(*result.0[i])
+             && (*result.0[i]).postcondition_mut((result.1[i],), ^result.0[i], visited[i])
+    )]
+    fn produces_instantiate_existential<'a>(
+        self,
+        visited: Seq<B>,
+        succ: Self,
+    ) -> (Seq<&'a mut F>, Seq<I::Item>) {
+        creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
+            pearlite! {
+                fs.len() == visited.len() && s.len() == visited.len()
+                && self.iter.produces(s, succ.iter)
+                && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
+                && if visited.len() == 0 { self.func == succ.func }
+                   else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
+                && forall<i> 0 <= i && i < visited.len() ==>
+                     self.func.hist_inv(*fs[i])
+                     && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
+
+            }
+        })
+    }
+
+    /// Asserts that `self` produces one element (`visited`), and becomes `succ`.
     #[logic(open, prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
+        proof_assert!(forall<s: Seq<I::Item>> s.len() == 1 ==> s == Seq::singleton(s[0]));
+
         pearlite! {
             exists<f: &mut F, e: I::Item>
                 #[trigger((*f).postcondition_mut((e,), ^f, visited))]
