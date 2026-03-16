@@ -9,91 +9,125 @@ use crate::{
 };
 use core::marker::PhantomData;
 
-/// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
-pub struct AtomicI32(::std::sync::atomic::AtomicI32);
+macro_rules! impl_atomic {
+    ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
-unsafe impl Send for Perm<AtomicI32> {}
-unsafe impl Sync for Perm<AtomicI32> {}
+        #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
+        pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-#[cfg(creusot)]
-#[trusted]
-impl Objective for Perm<AtomicI32> {}
+        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
+        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
 
-impl Container for AtomicI32 {
-    type Value = FMap<Timestamp, (i32, SyncView)>;
+        #[cfg(creusot)]
+        #[trusted]
+        impl $(< $T >)? Objective for Perm<$atomic_type $(< $T >)?> {}
 
-    #[logic(open, inline)]
-    fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
-        self != other
-    }
+        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
+            type Value = FMap<Timestamp, ($type, SyncView)>;
+
+            #[logic(open, inline)]
+            fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
+                self != other
+            }
+        }
+
+        impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
+            #[logic(opaque)]
+            fn get_timestamp(self, _: SyncView) -> Timestamp {
+                dead
+            }
+
+            #[logic(law)]
+            #[requires(x.le_log(y))]
+            #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
+            #[trusted]
+            fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
+        }
+
+        impl $(< $T >)? $atomic_type $(< $T >)? {
+            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^view), (val, **view)))]
+            #[ensures(*result.1.ward() == result.0)]
+            #[trusted]
+            #[check(terminates)]
+            #[allow(unused_variables)]
+            pub fn new(val: $type, view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
+                (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
+            }
+
+            // TODO: [VL] into_inner
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
+            #[requires(forall<c: &LoadCommitter<$type, Self>> c.ward() == *self ==> f.precondition((c,)))]
+            #[ensures(exists<c: &LoadCommitter<$type, Self>>
+                c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn load<F>(&self, f: Ghost<F>) -> $type
+            where
+                F: FnGhost + FnOnce(&LoadCommitter<$type, Self>),
+            {
+                self.0.load(if cfg!(feature = "sc-drf") {
+                    ::std::sync::atomic::Ordering::SeqCst
+                } else {
+                    ::std::sync::atomic::Ordering::Acquire
+                })
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
+            #[requires(forall<c: &mut StoreCommitter<$type, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            )]
+            #[ensures(exists<c: &mut StoreCommitter<$type, Self>>
+                !c.shot() && c.ward() == *self && c.val() == val &&
+                f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn store<F>(&self, val: $type, f: Ghost<F>)
+            where
+                F: FnGhost + FnOnce(&mut StoreCommitter<$type, Self>),
+            {
+                self.0.store(
+                    val,
+                    if cfg!(feature = "sc-drf") {
+                        ::std::sync::atomic::Ordering::SeqCst
+                    } else {
+                        ::std::sync::atomic::Ordering::Release
+                    },
+                )
+            }
+        }
+
+    )* };
 }
 
-impl HasTimestamp for AtomicI32 {
-    #[logic(opaque)]
-    fn get_timestamp(self, _: SyncView) -> Timestamp {
-        dead
-    }
+macro_rules! impl_atomic_int {
+    ($( ($int_type:ty, $atomic_type:ident) ),+) => { $(
 
-    #[logic(law)]
-    #[requires(x.le_log(y))]
-    #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
-    #[trusted]
-    fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
+        impl_atomic!(($int_type, $atomic_type));
+
+        // Nothing yet.
+
+    )* };
 }
 
-impl AtomicI32 {
-    #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^view), (val, **view)))]
-    #[ensures(*result.1.ward() == result.0)]
-    #[trusted]
-    #[check(terminates)]
-    #[allow(unused_variables)]
-    pub fn new(val: i32, view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<AtomicI32>>>) {
-        (Self(std::sync::atomic::AtomicI32::new(val)), Ghost::conjure())
-    }
+impl_atomic! {
+    (bool, AtomicBool),
+    (*mut T, AtomicPtr<T>)
+}
 
-    // TODO: [VL] into_inner
-
-    /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
-    #[requires(forall<c: &LoadCommitter<i32, Self>> c.ward() == *self ==> f.precondition((c,)))]
-    #[ensures(exists<c: &LoadCommitter<i32, Self>>
-        c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
-    )]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn load<F>(&self, f: Ghost<F>) -> i32
-    where
-        F: FnGhost + FnOnce(&LoadCommitter<i32, Self>),
-    {
-        self.0.load(if cfg!(feature = "sc-drf") {
-            ::std::sync::atomic::Ordering::SeqCst
-        } else {
-            ::std::sync::atomic::Ordering::Acquire
-        })
-    }
-
-    /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
-    #[requires(forall<c: &mut StoreCommitter<i32, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
-        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
-    )]
-    #[ensures(exists<c: &mut StoreCommitter<i32, Self>>
-        !c.shot() && c.ward() == *self && c.val() == val &&
-        f.postcondition_once((c,), ())
-    )]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn store<F>(&self, val: i32, f: Ghost<F>)
-    where
-        F: FnGhost + FnOnce(&mut StoreCommitter<i32, Self>),
-    {
-        self.0.store(
-            val,
-            if cfg!(feature = "sc-drf") {
-                ::std::sync::atomic::Ordering::SeqCst
-            } else {
-                ::std::sync::atomic::Ordering::Release
-            },
-        )
-    }
+impl_atomic_int! {
+    (i8, AtomicI8),
+    (u8, AtomicU8),
+    (i16, AtomicI16),
+    (u16, AtomicU16),
+    (i32, AtomicI32),
+    (u32, AtomicU32),
+    (i64, AtomicI64),
+    (u64, AtomicU64),
+    (isize, AtomicIsize),
+    (usize, AtomicUsize)
 }
 
 /// Wrapper around a single atomic load operation, where multiple ghost steps

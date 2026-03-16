@@ -4,92 +4,127 @@ use crate::{
 };
 use core::marker::PhantomData;
 
-/// Creusot wrapper around [`std::sync::atomic::AtomicI32`]
-pub struct AtomicI32(::std::sync::atomic::AtomicI32);
+macro_rules! impl_atomic {
+    ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
-unsafe impl Send for Perm<AtomicI32> {}
-unsafe impl Sync for Perm<AtomicI32> {}
+        /// Creusot wrapper around [`std::sync::atomic::$atomic_type`]
+        #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
+        pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-impl Container for AtomicI32 {
-    type Value = i32;
+        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
+        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
 
-    #[logic(open, inline)]
-    fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
-        self != other
-    }
+        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
+            type Value = $type;
+
+            #[logic(open, inline)]
+            fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
+                self != other
+            }
+        }
+
+        impl $(< $T >)? $atomic_type $(< $T >)? {
+            #[ensures(*result.1.val() == val)]
+            #[ensures(*result.1.ward() == result.0)]
+            #[trusted]
+            #[check(terminates)]
+            pub fn new(val: $type) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
+                (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
+            #[requires(self == *own.ward())]
+            #[ensures(result == *own.val())]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) -> $type {
+                self.0.into_inner()
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
+            #[doc = ""]
+            #[doc = "The load is always sequentially consistent."]
+            #[requires(forall<c: &LoadCommitter<Self>> c.ward() == *self ==> f.precondition((c,)))]
+            #[ensures(exists<c: &LoadCommitter<Self>>
+                c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn load<F>(&self, f: Ghost<F>) -> $type
+            where
+                F: FnGhost + FnOnce(&LoadCommitter<Self>),
+            {
+                self.0.load(std::sync::atomic::Ordering::SeqCst)
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
+            #[doc = ""]
+            #[doc = "The store is always sequentially consistent."]
+            #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            )]
+            #[ensures(exists<c: &mut StoreCommitter<Self>>
+                !c.shot() && c.ward() == *self && c.val() == val &&
+                f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn store<F>(&self, val: $type, f: Ghost<F>)
+            where
+                F: FnGhost + FnOnce(&mut StoreCommitter<Self>),
+            {
+                self.0.store(val, std::sync::atomic::Ordering::SeqCst)
+            }
+        }
+
+    )* };
 }
 
-impl AtomicI32 {
-    #[ensures(*result.1.val() == val)]
-    #[ensures(*result.1.ward() == result.0)]
-    #[trusted]
-    #[check(terminates)]
-    pub fn new(val: i32) -> (Self, Ghost<Box<Perm<AtomicI32>>>) {
-        (Self(std::sync::atomic::AtomicI32::new(val)), Ghost::conjure())
-    }
+macro_rules! impl_atomic_int {
+    ($( ($int_type:ty, $atomic_type:ident) ),+) => { $(
 
-    /// Wrapper for [`std::sync::atomic::AtomicI32::into_inner`].
-    #[requires(self == *own.ward())]
-    #[ensures(result == *own.val())]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn into_inner(self, own: Ghost<Box<Perm<AtomicI32>>>) -> i32 {
-        self.0.into_inner()
-    }
+        impl_atomic!(($int_type, $atomic_type));
 
-    /// Wrapper for [`std::sync::atomic::AtomicI32::load`].
-    ///
-    /// The load is always sequentially consistent.
-    #[requires(forall<c: &LoadCommitter<Self>> c.ward() == *self ==> f.precondition((c,)))]
-    #[ensures(exists<c: &LoadCommitter<Self>>
-        c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
-    )]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn load<F>(&self, f: Ghost<F>) -> i32
-    where
-        F: FnGhost + FnOnce(&LoadCommitter<Self>),
-    {
-        self.0.load(std::sync::atomic::Ordering::SeqCst)
-    }
+        impl $atomic_type {
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
+            #[doc = ""]
+            #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            )]
+            #[ensures(exists<c: &mut UpdateCommitter<Self>>
+                !c.shot() && c.ward() == *self && c.new_val() == val + c.old_val() &&
+                c.old_val() == result && f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn fetch_add<F>(&self, val: $int_type, f: Ghost<F>) -> $int_type
+            where
+                F: FnGhost + FnOnce(&mut UpdateCommitter<Self>),
+            {
+                self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst)
+            }
+        }
 
-    /// Wrapper for [`std::sync::atomic::AtomicI32::store`].
-    ///
-    /// The store is always sequentially consistent.
-    #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
-        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
-    )]
-    #[ensures(exists<c: &mut StoreCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.val() == val &&
-        f.postcondition_once((c,), ())
-    )]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn store<F>(&self, val: i32, f: Ghost<F>)
-    where
-        F: FnGhost + FnOnce(&mut StoreCommitter<Self>),
-    {
-        self.0.store(val, std::sync::atomic::Ordering::SeqCst)
-    }
+    )* };
+}
 
-    /// Wrapper for [`std::sync::atomic::AtomicI32::fetch_add`].
-    ///
-    /// The load and the store are always sequentially consistent.
-    #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
-        f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
-    )]
-    #[ensures(exists<c: &mut UpdateCommitter<Self>>
-        !c.shot() && c.ward() == *self && c.new_val() == val + c.old_val() &&
-        c.old_val() == result && f.postcondition_once((c,), ())
-    )]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn fetch_add<F>(&self, val: i32, f: Ghost<F>) -> i32
-    where
-        F: FnGhost + FnOnce(&mut UpdateCommitter<Self>),
-    {
-        self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst)
-    }
+impl_atomic! {
+    (bool, AtomicBool),
+    (*mut T, AtomicPtr<T>)
+}
+
+impl_atomic_int! {
+    (i8, AtomicI8),
+    (u8, AtomicU8),
+    (i16, AtomicI16),
+    (u16, AtomicU16),
+    (i32, AtomicI32),
+    (u32, AtomicU32),
+    (i64, AtomicI64),
+    (u64, AtomicU64),
+    (isize, AtomicIsize),
+    (usize, AtomicUsize)
 }
 
 /// Wrapper around a single atomic load operation, where multiple ghost steps
