@@ -44,6 +44,7 @@ end
 module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
   use seq.Seq
+  use map.Map
   use int.Int
   
   type t_I
@@ -73,6 +74,17 @@ module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterato
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
   
+  predicate index_Mapping_Seq_Item_bool [@inline:trivial] (self: Map.map (Seq.seq t_Item) bool) (a: Seq.seq t_Item) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Seq_Item_bool
+  
+  function such_that_Seq_Item (p: Map.map (Seq.seq t_Item) bool) : Seq.seq t_Item
+  
+  axiom such_that_Seq_Item_spec:
+    forall p: Map.map (Seq.seq t_Item) bool. (exists x: Seq.seq t_Item. index_Mapping_Seq_Item_bool p x)
+      -> index_Mapping_Seq_Item_bool p (such_that_Seq_Item p)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -90,7 +102,24 @@ module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterato
   function produces_trans_Skip_I (a: t_Skip_I) (ab: Seq.seq t_Item) (b: t_Skip_I) (bc: Seq.seq t_Item) (c: t_Skip_I) : ()
   
   goal vc_produces_trans_Skip_I: produces_Skip_I a ab b
-    -> produces_Skip_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Skip_I a (Seq.(++) ab bc) c)
+    -> produces_Skip_I b bc c
+    -> (forall s1: Seq.seq t_Item, s2: Seq.seq t_Item, s3: Seq.seq t_Item. Seq.(++) s1 (Seq.(++) s2 s3)
+        = Seq.(++) (Seq.(++) s1 s2) s3)
+    && (forall s: Seq.seq t_Item. Seq.(++) (Seq.empty: Seq.seq t_Item) s = s)
+    && (if ab <> (Seq.empty: Seq.seq t_Item) then
+      ([@stop_split] [@expl:such_that requires] exists x: Seq.seq t_Item. index_Mapping_Seq_Item_bool (fun (s: Seq.seq t_Item) -> Seq.length s
+            = 0
+          /\ produces_I b.iter (Seq.(++) s bc) c.iter) x)
+      /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Seq_Item_bool (fun (s: Seq.seq t_Item) -> Seq.length s
+          = 0
+        /\ produces_I b.iter (Seq.(++) s bc) c.iter) (such_that_Seq_Item (fun (s: Seq.seq t_Item) -> Seq.length s = 0
+        /\ produces_I b.iter (Seq.(++) s bc) c.iter)))
+      -> (let s = such_that_Seq_Item (fun (s: Seq.seq t_Item) -> Seq.length s = 0
+      /\ produces_I b.iter (Seq.(++) s bc) c.iter) in Seq.(++) s bc = bc
+      && ([@stop_split] [@expl:produces_trans ensures] produces_Skip_I a (Seq.(++) ab bc) c)))
+    else
+      [@stop_split] [@expl:produces_trans ensures] produces_Skip_I a (Seq.(++) ab bc) c
+    )
 end
 module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   use creusot.int.UInt64
