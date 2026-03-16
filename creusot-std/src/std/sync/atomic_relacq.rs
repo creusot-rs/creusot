@@ -20,7 +20,7 @@ macro_rules! impl_atomic {
 
         #[cfg(creusot)]
         #[trusted]
-        impl Objective for Perm<$atomic_type $(< $T >)?> {}
+        impl $(< $T >)? Objective for Perm<$atomic_type $(< $T >)?> {}
 
         impl $(< $T >)? Container for $atomic_type $(< $T >)? {
             type Value = FMap<Timestamp, ($type, SyncView)>;
@@ -113,7 +113,8 @@ macro_rules! impl_atomic_int {
 }
 
 impl_atomic! {
-    (bool, AtomicBool)
+    (bool, AtomicBool),
+    (*mut T, AtomicPtr<T>)
 }
 
 impl_atomic_int! {
