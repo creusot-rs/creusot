@@ -121,6 +121,9 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
 fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
     match *data {
         Data::Struct(ref data) => Ok(match data.fields {
+            Fields::Named(ref fields) if fields.named.len() == 0 => {
+                quote! { true }
+            }
             Fields::Named(ref fields) => {
                 let conjuncts = fields.named.iter().map(|f| {
                     let name = &f.ident;
@@ -130,6 +133,9 @@ fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
                     }
                 });
                 quote! { #(#conjuncts) && * }
+            }
+            Fields::Unnamed(ref fields) if fields.unnamed.len() == 0 => {
+                quote! { true }
             }
             Fields::Unnamed(ref fields) => {
                 let conjuncts = fields.unnamed.iter().enumerate().map(|(i, f)| {
