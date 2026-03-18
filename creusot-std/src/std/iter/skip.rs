@@ -77,5 +77,19 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        // associativity of concat
+        proof_assert!(forall<s1: Seq<Self::Item>, s2: Seq<Self::Item>, s3: Seq<Self::Item>> s1.concat(s2.concat(s3)) == s1.concat(s2).concat(s3));
+        // empty is neutral for concat
+        proof_assert!(forall<s: Seq<Self::Item>> Seq::empty().concat(s) == s);
+        if ab != Seq::empty() {
+            proof_assert!(
+                // instantiate the existential in `b.produces(bc, c)`
+                let s = creusot_std::logic::such_that(|s: Seq<Self::Item>| {
+                    s.len() == 0 && b.iter().produces(s.concat(bc), c.iter())
+                });
+                s.concat(bc) == bc
+            );
+        }
+    }
 }
