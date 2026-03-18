@@ -82,7 +82,58 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        proof_assert! {
+            let ac = ab.concat(bc);
+            let (fsab, sab) = produces_instantiate_existential(a, ab, b);
+            let (fsbc, sbc) = produces_instantiate_existential(b, bc, c);
+            let fs = fsab.concat(fsbc);
+            let s = sab.concat(sbc);
+
+            (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
+            && if ac.len() == 0 { a.func() == c.func() }
+               else { *fs[0] == a.func() &&  ^fs[ac.len() - 1] == c.func() }
+            && forall<i> 0 <= i && i < ac.len() ==>
+                 a.func().hist_inv(*fs[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], ac[i])
+        }
+    }
+}
+
+/// Get the witnesses for the existentials in `produces`
+#[logic(prophetic)]
+#[requires(this.produces(visited, succ))]
+#[ensures(result.0.len() == visited.len() && result.1.len() == visited.len()
+    && this.iter().produces(result.1, succ.iter())
+    && (forall<i> 1 <= i && i < result.0.len() ==>  ^result.0[i - 1] == *result.0[i])
+    && if visited.len() == 0 { this.func() == succ.func() }
+       else { *result.0[0] == this.func() &&  ^result.0[visited.len() - 1] == succ.func() }
+    && forall<i> 0 <= i && i < visited.len() ==>
+         this.func().hist_inv(*result.0[i])
+         && (*result.0[i]).postcondition_mut((result.1[i],), ^result.0[i], visited[i])
+)]
+fn produces_instantiate_existential<'a, I, B, F>(
+    this: Map<I, F>,
+    visited: Seq<B>,
+    succ: Map<I, F>,
+) -> (Seq<&'a mut F>, Seq<I::Item>)
+where
+    I: IteratorSpec,
+    F: FnMut(I::Item) -> B,
+{
+    creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
+        pearlite! {
+            fs.len() == visited.len() && s.len() == visited.len()
+            && this.iter().produces(s, succ.iter())
+            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
+            && if visited.len() == 0 { this.func() == succ.func() }
+               else { *fs[0] == this.func() &&  ^fs[visited.len() - 1] == succ.func() }
+            && forall<i> 0 <= i && i < visited.len() ==>
+                 this.func().hist_inv(*fs[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
+
+        }
+    })
 }
 
 #[logic(open, prophetic, inline)]
