@@ -14108,6 +14108,1391 @@ module M_logic__ra__auth__impl_LocalUpdate_for_OpLocalUpdate_R__frame_preserving
     -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'1 = to_auth; f1'1 = to_frag} = update_OpLocalUpdate_R self from_auth from_frag in op_Option_R (Some to_frag) frame
     = Some'0 (Some to_auth))
 end
+module M_logic__ra__cancel__impl_Cancelable_for_Int__cancelable (* <logic::int::Int as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : int
+  
+  predicate cancelable_Int (self: int)
+  
+  goal vc_cancelable_Int:
+    [@stop_split] [@expl:cancelable_Int ensures] ([@stop_split] [@expl:cancelable ensures #0] true)
+    /\ ([@stop_split] [@expl:cancelable ensures #1] forall x: int, y: int. op_Int self x <> None
+      -> op_Int self x = op_Int self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Nat__cancelable (* <logic::int::Nat as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat
+  
+  predicate cancelable_Nat (self: t_Nat)
+  
+  goal vc_cancelable_Nat:
+    [@stop_split] [@expl:cancelable_Nat ensures] ([@stop_split] [@expl:cancelable ensures #0] true)
+    /\ ([@stop_split] [@expl:cancelable ensures #1] forall x: t_Nat, y: t_Nat. op_Nat self x <> None
+      -> op_Nat self x = op_Nat self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_PositiveReal__cancelable (* <logic::real::PositiveReal as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+  
+  axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
+      = op_PositiveReal b a
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_PositiveReal
+  
+  predicate cancelable_PositiveReal (self: t_PositiveReal)
+  
+  goal vc_cancelable_PositiveReal:
+    [@stop_split] [@expl:cancelable_PositiveReal ensures] ([@stop_split] [@expl:cancelable ensures #0] true)
+    /\ ([@stop_split] [@expl:cancelable ensures #1] forall x: t_PositiveReal, y: t_PositiveReal. op_PositiveReal self x
+        <> None -> op_PositiveReal self x = op_PositiveReal self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Ag_T__cancelable (* <logic::ra::agree::Ag<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_T
+  
+  type t_Ag_T = { f0: t_T }
+  
+  type t_Option_Ag_T = None | Some t_Ag_T
+  
+  function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+  
+  function commutative_Ag_T (a: t_Ag_T) (b: t_Ag_T) : ()
+  
+  axiom commutative_Ag_T_spec: forall a: t_Ag_T, b: t_Ag_T. op_Ag_T a b = op_Ag_T b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Ag_T
+  
+  predicate cancelable_Ag_T (self: t_Ag_T)
+  
+  goal vc_cancelable_Ag_T:
+    [@stop_split] [@expl:cancelable_Ag_T ensures] ([@stop_split] [@expl:cancelable ensures #0] true)
+    /\ ([@stop_split] [@expl:cancelable ensures #1] forall x: t_Ag_T, y: t_Ag_T. op_Ag_T self x <> None
+      -> op_Ag_T self x = op_Ag_T self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Excl_T__cancelable (* <logic::ra::excl::Excl<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_T
+  
+  type t_Excl_T = { f0: t_T }
+  
+  type t_Option_Excl_T = None | Some t_Excl_T
+  
+  function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+  
+  function commutative_Excl_T (a: t_Excl_T) (b: t_Excl_T) : ()
+  
+  axiom commutative_Excl_T_spec: forall a: t_Excl_T, b: t_Excl_T. op_Excl_T a b = op_Excl_T b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Excl_T
+  
+  predicate cancelable_Excl_T (self: t_Excl_T)
+  
+  goal vc_cancelable_Excl_T:
+    [@stop_split] [@expl:cancelable_Excl_T ensures] ([@stop_split] [@expl:cancelable ensures #0] true)
+    /\ ([@stop_split] [@expl:cancelable ensures #1] forall x: t_Excl_T, y: t_Excl_T. op_Excl_T self x <> None
+      -> op_Excl_T self x = op_Excl_T self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_tup2_L_R__cancelable (* <(L, R) as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_L
+  
+  type t_R
+  
+  type tup2_L_R = { f0: t_L; f1: t_R }
+  
+  type t_Option_tup2_L_R = None | Some tup2_L_R
+  
+  type t_Option_L = None'0 | Some'0 t_L
+  
+  type t_Option_R = None'1 | Some'1 t_R
+  
+  type tup2_Option_L_Option_R = { f0'0: t_Option_L; f1'0: t_Option_R }
+  
+  function op_L (self: t_L) (other: t_L) : t_Option_L
+  
+  function factor_L (self: t_L) (factor: t_L) : t_Option_L
+  
+  axiom factor_L_spec: forall self: t_L, factor: t_L. match factor_L self factor with
+        | Some'0 c -> op_L factor c = Some'0 self
+        | None'0 -> forall c: t_L. op_L factor c <> Some'0 self
+        end
+  
+  predicate incl_L (self: t_L) (other: t_L) = factor_L other self <> None'0
+  
+  function incl_transitive_L (a: t_L) (b: t_L) (c: t_L) : ()
+  
+  axiom incl_transitive_L_spec: forall a: t_L, b: t_L, c: t_L. incl_L a b -> incl_L b c -> incl_L a c
+  
+  function associative_some_L (a: t_L) (b: t_L) (c: t_L) (ab: t_L) (bc: t_L) : ()
+  
+  axiom associative_some_L_spec: forall a: t_L, b: t_L, c: t_L, ab: t_L, bc: t_L. op_L a b = Some'0 ab
+      -> op_L b c = Some'0 bc -> op_L a bc = op_L ab c
+  
+  function associative_none_L (a: t_L) (b: t_L) (c: t_L) (bc: t_L) : ()
+  
+  axiom associative_none_L_spec: forall a: t_L, b: t_L, c: t_L, bc: t_L. op_L a b = None'0
+      -> op_L b c = Some'0 bc -> op_L a bc = None'0
+  
+  function commutative_L (a: t_L) (b: t_L) : ()
+  
+  axiom commutative_L_spec: forall a: t_L, b: t_L. op_L a b = op_L b a
+  
+  function incl_op_L (self: t_L) (other: t_L) (comb: t_L) : ()
+  
+  axiom incl_op_L_spec: forall self: t_L, other: t_L, comb: t_L. op_L self other = Some'0 comb -> incl_L self comb
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some'1 c -> op_R factor c = Some'1 self
+        | None'1 -> forall c: t_R. op_R factor c <> Some'1 self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None'1
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some'1 ab
+      -> op_R b c = Some'1 bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None'1
+      -> op_R b c = Some'1 bc -> op_R a bc = None'1
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some'1 comb -> incl_R self comb
+  
+  function op_tup2_L_R (self: tup2_L_R) (other: tup2_L_R) : t_Option_tup2_L_R = match { f0'0 = op_L self.f0 other.f0;
+                                                                                        f1'0 = op_R self.f1 other.f1 } with
+      | {f0'0 = Some'0 r1; f1'0 = Some'1 r2} -> Some { f0 = r1; f1 = r2 }
+      | _ -> None
+      end
+  
+  function commutative_tup2_L_R (a: tup2_L_R) (b: tup2_L_R) : ()
+  
+  axiom commutative_tup2_L_R_spec: forall a: tup2_L_R, b: tup2_L_R. op_tup2_L_R a b = op_tup2_L_R b a
+  
+  predicate cancelable_L (self: t_L)
+  
+  axiom cancelable_L_spec: forall self: t_L. cancelable_L self
+      = (forall x: t_L, y: t_L. op_L self x <> None'0 -> op_L self x = op_L self y -> x = y)
+  
+  predicate cancelable_R (self: t_R)
+  
+  axiom cancelable_R_spec: forall self: t_R. cancelable_R self
+      = (forall x: t_R, y: t_R. op_R self x <> None'1 -> op_R self x = op_R self y -> x = y)
+  
+  predicate is_exclusive_L (x: t_L) = forall y: t_L. op_L x y = None'0
+  
+  type tup2_L_L = { f0'1: t_L; f1'1: t_L }
+  
+  predicate index_Mapping_tup2_L_L_bool [@inline:trivial] (self: Map.map tup2_L_L bool) (a: tup2_L_L) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_tup2_L_L_bool
+  
+  function such_that_tup2_L_L (p: Map.map tup2_L_L bool) : tup2_L_L
+  
+  axiom such_that_tup2_L_L_spec: forall p: Map.map tup2_L_L bool. (exists x: tup2_L_L. index_Mapping_tup2_L_L_bool p x)
+      -> index_Mapping_tup2_L_L_bool p (such_that_tup2_L_L p)
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  predicate is_exclusive_R (x: t_R) = forall y: t_R. op_R x y = None'1
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : tup2_L_R
+  
+  predicate cancelable_tup2_L_R (self: tup2_L_R)
+  
+  goal vc_cancelable_tup2_L_R: if is_exclusive_L self.f0 then
+      let result = true in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+        = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+          -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+      /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+      \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+    else
+      if is_exclusive_R self.f1 then
+        let result = true in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+          = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+            -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+        /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+        \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+      else
+        ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+          = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+        -> (if cancelable_L self.f0 then
+          if forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+            -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y then
+            (forall xr: t_R, yr: t_R. op_R self.f1 xr <> None'1 -> op_R self.f1 xr = op_R self.f1 yr -> xr = yr)
+            && (([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+              = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+            -> (if cancelable_L self.f0 then
+              ([@stop_split] [@expl:cancelable ensures] cancelable_R self.f1
+                = (forall x: t_R, y: t_R. op_R self.f1 x <> None'1 -> op_R self.f1 x = op_R self.f1 y -> x = y))
+              -> (if cancelable_R self.f1 then
+                let result = true in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+              else
+                ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+                  = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+                -> (if not cancelable_L self.f0 then
+                  (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+                  /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                        <> None'0
+                      /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+                  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl
+                    /\ xl
+                    <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+                  -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl
+                  /\ xl
+                  <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                      <> None'1) x)
+                  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                    <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+                  -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl;
+                                                                                                           f1 = r }
+                    = op_tup2_L_R self { f0 = yl; f1 = r }
+                  && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                    = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                      -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                  /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                  \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+                else
+                  let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                    = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                      -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                  /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                  \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+                )
+              )
+            else
+              ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+                = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+              -> (if not cancelable_L self.f0 then
+                (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+                /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl
+                  /\ xl
+                  <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+                -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                  <> None'0
+                /\ op_L self.f0 xl = op_L self.f0 yl
+                /\ xl
+                <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                    <> None'1) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                  <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+                -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl;
+                                                                                                         f1 = r }
+                  = op_tup2_L_R self { f0 = yl; f1 = r }
+                && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+              else
+                let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+              )
+            ))
+          else
+            ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+              = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+            -> (if cancelable_L self.f0 then
+              ([@stop_split] [@expl:cancelable ensures] cancelable_R self.f1
+                = (forall x: t_R, y: t_R. op_R self.f1 x <> None'1 -> op_R self.f1 x = op_R self.f1 y -> x = y))
+              -> (if cancelable_R self.f1 then
+                let result = true in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+              else
+                ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+                  = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+                -> (if not cancelable_L self.f0 then
+                  (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+                  /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                        <> None'0
+                      /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+                  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl
+                    /\ xl
+                    <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+                  -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl
+                  /\ xl
+                  <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                      <> None'1) x)
+                  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                    <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+                  -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl;
+                                                                                                           f1 = r }
+                    = op_tup2_L_R self { f0 = yl; f1 = r }
+                  && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                    = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                      -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                  /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                  \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+                else
+                  let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                    = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                      -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                  /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                  \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+                )
+              )
+            else
+              ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+                = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+              -> (if not cancelable_L self.f0 then
+                (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+                /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl
+                  /\ xl
+                  <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+                -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                  <> None'0
+                /\ op_L self.f0 xl = op_L self.f0 yl
+                /\ xl
+                <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                    <> None'1) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                  <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+                -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl;
+                                                                                                         f1 = r }
+                  = op_tup2_L_R self { f0 = yl; f1 = r }
+                && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+              else
+                let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+              )
+            )
+        
+        else
+          ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+            = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+          -> (if cancelable_L self.f0 then
+            ([@stop_split] [@expl:cancelable ensures] cancelable_R self.f1
+              = (forall x: t_R, y: t_R. op_R self.f1 x <> None'1 -> op_R self.f1 x = op_R self.f1 y -> x = y))
+            -> (if cancelable_R self.f1 then
+              let result = true in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                  -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+              \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+            else
+              ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+                = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+              -> (if not cancelable_L self.f0 then
+                (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+                /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                      <> None'0
+                    /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl
+                  /\ xl
+                  <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+                -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                  <> None'0
+                /\ op_L self.f0 xl = op_L self.f0 yl
+                /\ xl
+                <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                    <> None'1) x)
+                /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                  <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+                -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl;
+                                                                                                         f1 = r }
+                  = op_tup2_L_R self { f0 = yl; f1 = r }
+                && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+              else
+                let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                  = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                    -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+                /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+                \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+              )
+            )
+          else
+            ([@stop_split] [@expl:cancelable ensures] cancelable_L self.f0
+              = (forall x: t_L, y: t_L. op_L self.f0 x <> None'0 -> op_L self.f0 x = op_L self.f0 y -> x = y))
+            -> (if not cancelable_L self.f0 then
+              (forall __0: tup2_L_L. let {f0'1 = xl; f1'1 = yl} = __0 in true)
+              /\ ([@stop_split] [@expl:such_that requires] exists x: tup2_L_L. index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                    <> None'0
+                  /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl) x)
+              /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_L_L_bool (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                  <> None'0
+                /\ op_L self.f0 xl = op_L self.f0 yl
+                /\ xl
+                <> yl) (such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                  <> None'0
+                /\ op_L self.f0 xl = op_L self.f0 yl /\ xl <> yl)))
+              -> (let {f0'1 = xl; f1'1 = yl} = such_that_tup2_L_L (fun (__0: tup2_L_L) -> let {f0'1 = xl; f1'1 = yl} = __0 in op_L self.f0 xl
+                <> None'0
+              /\ op_L self.f0 xl = op_L self.f0 yl
+              /\ xl
+              <> yl) in ([@stop_split] [@expl:such_that requires] exists x: t_R. index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                  <> None'1) x)
+              /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_R_bool (fun (r: t_R) -> op_R self.f1 r
+                <> None'1) (such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1)))
+              -> (let r = such_that_R (fun (r: t_R) -> op_R self.f1 r <> None'1) in op_tup2_L_R self { f0 = xl; f1 = r }
+                = op_tup2_L_R self { f0 = yl; f1 = r }
+              && (let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                  -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+              \/ (forall r'0: t_R. op_R self.f1 r'0 = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1))))))
+            else
+              let result = false in [@stop_split] [@expl:cancelable_tup2_L_R ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+                  -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall l: t_L. op_L self.f0 l = None'0)
+              \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+            )
+          )
+        )
+    
+
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Sum_T_U__cancelable (* <logic::ra::sum::Sum<T, U> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_T
+  
+  type t_U
+  
+  type t_Sum_T_U = Left t_T | Right t_U
+  
+  type t_Option_Sum_T_U = None | Some t_Sum_T_U
+  
+  type tup2_Sum_T_U_Sum_T_U = { f0: t_Sum_T_U; f1: t_Sum_T_U }
+  
+  type t_Option_T = None'0 | Some'0 t_T
+  
+  function map_Option_T (self: t_Option_T) (f: Map.map t_T t_Sum_T_U) : t_Option_Sum_T_U = match self with
+      | None'0 -> None
+      | Some'0 x -> Some (Map.get f x)
+      end
+  
+  function op_T (self: t_T) (other: t_T) : t_Option_T
+  
+  function factor_T (self: t_T) (factor: t_T) : t_Option_T
+  
+  axiom factor_T_spec: forall self: t_T, factor: t_T. match factor_T self factor with
+        | Some'0 c -> op_T factor c = Some'0 self
+        | None'0 -> forall c: t_T. op_T factor c <> Some'0 self
+        end
+  
+  predicate incl_T (self: t_T) (other: t_T) = factor_T other self <> None'0
+  
+  function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+  
+  axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+  
+  function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+  
+  axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some'0 ab
+      -> op_T b c = Some'0 bc -> op_T a bc = op_T ab c
+  
+  function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+  
+  axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None'0
+      -> op_T b c = Some'0 bc -> op_T a bc = None'0
+  
+  function commutative_T (a: t_T) (b: t_T) : ()
+  
+  axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+  
+  function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+  
+  axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some'0 comb -> incl_T self comb
+  
+  type t_Option_U = None'1 | Some'1 t_U
+  
+  function map_Option_U (self: t_Option_U) (f: Map.map t_U t_Sum_T_U) : t_Option_Sum_T_U = match self with
+      | None'1 -> None
+      | Some'1 x -> Some (Map.get f x)
+      end
+  
+  function op_U (self: t_U) (other: t_U) : t_Option_U
+  
+  function factor_U (self: t_U) (factor: t_U) : t_Option_U
+  
+  axiom factor_U_spec: forall self: t_U, factor: t_U. match factor_U self factor with
+        | Some'1 c -> op_U factor c = Some'1 self
+        | None'1 -> forall c: t_U. op_U factor c <> Some'1 self
+        end
+  
+  predicate incl_U (self: t_U) (other: t_U) = factor_U other self <> None'1
+  
+  function incl_transitive_U (a: t_U) (b: t_U) (c: t_U) : ()
+  
+  axiom incl_transitive_U_spec: forall a: t_U, b: t_U, c: t_U. incl_U a b -> incl_U b c -> incl_U a c
+  
+  function associative_some_U (a: t_U) (b: t_U) (c: t_U) (ab: t_U) (bc: t_U) : ()
+  
+  axiom associative_some_U_spec: forall a: t_U, b: t_U, c: t_U, ab: t_U, bc: t_U. op_U a b = Some'1 ab
+      -> op_U b c = Some'1 bc -> op_U a bc = op_U ab c
+  
+  function associative_none_U (a: t_U) (b: t_U) (c: t_U) (bc: t_U) : ()
+  
+  axiom associative_none_U_spec: forall a: t_U, b: t_U, c: t_U, bc: t_U. op_U a b = None'1
+      -> op_U b c = Some'1 bc -> op_U a bc = None'1
+  
+  function commutative_U (a: t_U) (b: t_U) : ()
+  
+  axiom commutative_U_spec: forall a: t_U, b: t_U. op_U a b = op_U b a
+  
+  function incl_op_U (self: t_U) (other: t_U) (comb: t_U) : ()
+  
+  axiom incl_op_U_spec: forall self: t_U, other: t_U, comb: t_U. op_U self other = Some'1 comb -> incl_U self comb
+  
+  function op_Sum_T_U (self: t_Sum_T_U) (other: t_Sum_T_U) : t_Option_Sum_T_U = match { f0 = self; f1 = other } with
+      | {f0 = Left x; f1 = Left y} -> map_Option_T (op_T x y) (fun (l: t_T) -> Left l)
+      | {f0 = Right x; f1 = Right y} -> map_Option_U (op_U x y) (fun (r: t_U) -> Right r)
+      | _ -> None
+      end
+  
+  function commutative_Sum_T_U (a: t_Sum_T_U) (b: t_Sum_T_U) : ()
+  
+  axiom commutative_Sum_T_U_spec: forall a: t_Sum_T_U, b: t_Sum_T_U. op_Sum_T_U a b = op_Sum_T_U b a
+  
+  predicate cancelable_T (self: t_T)
+  
+  axiom cancelable_T_spec: forall self: t_T. cancelable_T self
+      = (forall x: t_T, y: t_T. op_T self x <> None'0 -> op_T self x = op_T self y -> x = y)
+  
+  predicate cancelable_U (self: t_U)
+  
+  axiom cancelable_U_spec: forall self: t_U. cancelable_U self
+      = (forall x: t_U, y: t_U. op_U self x <> None'1 -> op_U self x = op_U self y -> x = y)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Sum_T_U
+  
+  predicate cancelable_Sum_T_U (self: t_Sum_T_U)
+  
+  goal vc_cancelable_Sum_T_U: match self with
+      | Left l -> (forall x: t_Sum_T_U. op_Sum_T_U self x <> None -> (exists lx: t_T. x = Left lx))
+      && (([@stop_split] [@expl:cancelable ensures] cancelable_T l
+        = (forall x: t_T, y: t_T. op_T l x <> None'0 -> op_T l x = op_T l y -> x = y))
+      -> (let result = cancelable_T l in [@stop_split] [@expl:cancelable_Sum_T_U ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+        = (forall x: t_Sum_T_U, y: t_Sum_T_U. op_Sum_T_U self x <> None
+          -> op_Sum_T_U self x = op_Sum_T_U self y -> x = y))
+      /\ ([@stop_split] [@expl:cancelable ensures #1] result
+      = match self with
+        | Left l'0 -> cancelable_T l'0
+        | Right r -> cancelable_U r
+        end)))
+      | Right r -> (forall x: t_Sum_T_U. op_Sum_T_U self x <> None -> (exists rx: t_U. x = Right rx))
+      && (([@stop_split] [@expl:cancelable ensures] cancelable_U r
+        = (forall x: t_U, y: t_U. op_U r x <> None'1 -> op_U r x = op_U r y -> x = y))
+      -> (let result = cancelable_U r in [@stop_split] [@expl:cancelable_Sum_T_U ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+        = (forall x: t_Sum_T_U, y: t_Sum_T_U. op_Sum_T_U self x <> None
+          -> op_Sum_T_U self x = op_Sum_T_U self y -> x = y))
+      /\ ([@stop_split] [@expl:cancelable ensures #1] result
+      = match self with
+        | Left l -> cancelable_T l
+        | Right r'0 -> cancelable_U r'0
+        end)))
+      end
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Option_T__cancelable (* <std::option::Option<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  type t_Option_Option_T = None'0 | Some'0 t_Option_T
+  
+  type tup2_Option_T_Option_T = { f0: t_Option_T; f1: t_Option_T }
+  
+  function map_Option_T (self: t_Option_T) (f: Map.map t_T t_Option_T) : t_Option_Option_T = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_T (self: t_T) (other: t_T) : t_Option_T
+  
+  function factor_T (self: t_T) (factor: t_T) : t_Option_T
+  
+  axiom factor_T_spec: forall self: t_T, factor: t_T. match factor_T self factor with
+        | Some c -> op_T factor c = Some self
+        | None -> forall c: t_T. op_T factor c <> Some self
+        end
+  
+  predicate incl_T (self: t_T) (other: t_T) = factor_T other self <> None
+  
+  function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+  
+  axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+  
+  function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+  
+  axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some ab
+      -> op_T b c = Some bc -> op_T a bc = op_T ab c
+  
+  function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+  
+  axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None
+      -> op_T b c = Some bc -> op_T a bc = None
+  
+  function commutative_T (a: t_T) (b: t_T) : ()
+  
+  axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+  
+  function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+  
+  axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some comb -> incl_T self comb
+  
+  function op_Option_T (self: t_Option_T) (other: t_Option_T) : t_Option_Option_T = match { f0 = self; f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_T (op_T x y) (fun (z: t_T) -> Some z)
+      end
+  
+  function commutative_Option_T (a: t_Option_T) (b: t_Option_T) : ()
+  
+  axiom commutative_Option_T_spec: forall a: t_Option_T, b: t_Option_T. op_Option_T a b = op_Option_T b a
+  
+  predicate cancelable_T (self: t_T)
+  
+  axiom cancelable_T_spec: forall self: t_T. cancelable_T self
+      = (forall x: t_T, y: t_T. op_T self x <> None -> op_T self x = op_T self y -> x = y)
+  
+  function core_T (self: t_T) : t_Option_T
+  
+  function core_is_maximal_idemp_T (self: t_T) (i: t_T) : ()
+  
+  axiom core_is_maximal_idemp_T_spec: forall self: t_T, i: t_T. op_T i i = Some i
+      -> op_T i self = Some self
+      -> match core_T self with
+        | Some c -> incl_T i c
+        | None -> false
+        end
+  
+  predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_T_bool
+  
+  function such_that_T (p: Map.map t_T bool) : t_T
+  
+  axiom such_that_T_spec: forall p: Map.map t_T bool. (exists x: t_T. index_Mapping_T_bool p x)
+      -> index_Mapping_T_bool p (such_that_T p)
+  
+  function unwrap_Option_T (self: t_Option_T) : t_T = match self with
+      | Some x -> x
+      | None -> such_that_T (fun (__0: t_T) -> true)
+      end
+  
+  function core_idemp_T (self: t_T) : ()
+  
+  axiom core_idemp_T_spec: forall self: t_T. core_T self <> None
+      -> (let c = unwrap_Option_T (core_T self) in op_T c c = Some c)
+  
+  axiom core_idemp_T_spec'0: forall self: t_T. core_T self <> None
+      -> op_T (unwrap_Option_T (core_T self)) self = Some self
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Option_T
+  
+  predicate cancelable_Option_T (self: t_Option_T)
+  
+  goal vc_cancelable_Option_T: match self with
+      | None -> let result = true in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+        = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+          -> op_Option_T self x = op_Option_T self y -> x = y))
+      /\ ([@stop_split] [@expl:cancelable ensures #1] result
+      = match self with
+        | None -> true
+        | Some this -> cancelable_T this /\ core_T this = None
+        end)
+      | Some this -> if forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+        -> op_Option_T self x = op_Option_T self y -> x = y then
+        op_Option_T self (core_T this) = op_Option_T self (None)
+        && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
+          = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+        -> (if cancelable_T this then
+          if core_T this = None then
+            (forall x: t_Option_T, y: t_Option_T. if op_Option_T self x <> None'0 then
+                  if op_Option_T self x = op_Option_T self y then
+                    match { f0 = x; f1 = y } with
+                      | {f0 = Some x'0; f1 = Some y'0} -> true
+                      | {f0 = Some x'0; f1 = None} -> true
+                      | {f0 = None; f1 = Some y'0} -> true
+                      | {f0 = None; f1 = None} -> true
+                      end
+                  else
+                    true
+                
+                else
+                  true
+              )
+            /\ (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y
+                -> match { f0 = x; f1 = y } with
+                  | {f0 = Some x'0; f1 = Some y'0} -> op_T this x'0 <> None /\ op_T this x'0 = op_T this y'0
+                  | {f0 = Some x'0; f1 = None} -> op_T this x'0 <> Some this
+                  | {f0 = None; f1 = Some y'0} -> op_T this y'0 <> Some this
+                  | {f0 = None; f1 = None} -> true
+                  end)
+            && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
+              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+            -> (if cancelable_T this then
+              let result = core_T this
+              = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            else
+              let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            ))
+          else
+            ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+            -> (if cancelable_T this then
+              let result = core_T this
+              = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            else
+              let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            )
+        
+        else
+          ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+            = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+          -> (if cancelable_T this then
+            let result = core_T this
+            = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y -> x = y))
+            /\ ([@stop_split] [@expl:cancelable ensures #1] result
+            = match self with
+              | None -> true
+              | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+              end)
+          else
+            let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y -> x = y))
+            /\ ([@stop_split] [@expl:cancelable ensures #1] result
+            = match self with
+              | None -> true
+              | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+              end)
+          )
+        ))
+      else
+        ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+          = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+        -> (if cancelable_T this then
+          if core_T this = None then
+            (forall x: t_Option_T, y: t_Option_T. if op_Option_T self x <> None'0 then
+                  if op_Option_T self x = op_Option_T self y then
+                    match { f0 = x; f1 = y } with
+                      | {f0 = Some x'0; f1 = Some y'0} -> true
+                      | {f0 = Some x'0; f1 = None} -> true
+                      | {f0 = None; f1 = Some y'0} -> true
+                      | {f0 = None; f1 = None} -> true
+                      end
+                  else
+                    true
+                
+                else
+                  true
+              )
+            /\ (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y
+                -> match { f0 = x; f1 = y } with
+                  | {f0 = Some x'0; f1 = Some y'0} -> op_T this x'0 <> None /\ op_T this x'0 = op_T this y'0
+                  | {f0 = Some x'0; f1 = None} -> op_T this x'0 <> Some this
+                  | {f0 = None; f1 = Some y'0} -> op_T this y'0 <> Some this
+                  | {f0 = None; f1 = None} -> true
+                  end)
+            && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
+              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+            -> (if cancelable_T this then
+              let result = core_T this
+              = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            else
+              let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            ))
+          else
+            ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+            -> (if cancelable_T this then
+              let result = core_T this
+              = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            else
+              let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+                = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                  -> op_Option_T self x = op_Option_T self y -> x = y))
+              /\ ([@stop_split] [@expl:cancelable ensures #1] result
+              = match self with
+                | None -> true
+                | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+                end)
+            )
+        
+        else
+          ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+            = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+          -> (if cancelable_T this then
+            let result = core_T this
+            = None in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y -> x = y))
+            /\ ([@stop_split] [@expl:cancelable ensures #1] result
+            = match self with
+              | None -> true
+              | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+              end)
+          else
+            let result = false in [@stop_split] [@expl:cancelable_Option_T ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+                -> op_Option_T self x = op_Option_T self y -> x = y))
+            /\ ([@stop_split] [@expl:cancelable ensures #1] result
+            = match self with
+              | None -> true
+              | Some this'0 -> cancelable_T this'0 /\ core_T this'0 = None
+              end)
+          )
+        )
+      
+      end
+end
+module M_logic__ra__cancel__impl_Cancelable_for_FMap_K_V__cancelable (* <logic::fmap::FMap<K, V> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  use map.Const
+  use int.Int
+  
+  type t_FMap_K_V
+  
+  type t_Option_FMap_K_V = None | Some t_FMap_K_V
+  
+  type t_V
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  type t_Option_Option_V = None'1 | Some'1 t_Option_V
+  
+  type tup2_Option_V_Option_V = { f0: t_Option_V; f1: t_Option_V }
+  
+  function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
+  function op_V (self: t_V) (other: t_V) : t_Option_V
+  
+  function factor_V (self: t_V) (factor: t_V) : t_Option_V
+  
+  axiom factor_V_spec: forall self: t_V, factor: t_V. match factor_V self factor with
+        | Some'0 c -> op_V factor c = Some'0 self
+        | None'0 -> forall c: t_V. op_V factor c <> Some'0 self
+        end
+  
+  predicate incl_V (self: t_V) (other: t_V) = factor_V other self <> None'0
+  
+  function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+  
+  axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+  
+  function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+  
+  axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some'0 ab
+      -> op_V b c = Some'0 bc -> op_V a bc = op_V ab c
+  
+  function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+  
+  axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None'0
+      -> op_V b c = Some'0 bc -> op_V a bc = None'0
+  
+  function commutative_V (a: t_V) (b: t_V) : ()
+  
+  axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+  
+  function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+  
+  axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some'0 comb -> incl_V self comb
+  
+  function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0 = self; f1 = other } with
+      | {f0 = None'0} -> Some'1 other
+      | {f1 = None'0} -> Some'1 self
+      | {f0 = Some'0 x; f1 = Some'0 y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some'0 z)
+      end
+  
+  function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
+  
+  axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
+  
+  type t_K
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V
+  
+  axiom total_op_K_spec:
+    forall self: t_FMap_K_V, other: t_FMap_K_V. (forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1)
+      -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+  
+  function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
+    if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1 then Some (total_op_K self other) else None
+  
+  function commutative_FMap_K_V (a: t_FMap_K_V) (b: t_FMap_K_V) : ()
+  
+  axiom commutative_FMap_K_V_spec: forall a: t_FMap_K_V, b: t_FMap_K_V. op_FMap_K_V a b = op_FMap_K_V b a
+  
+  predicate cancelable_V (self: t_V)
+  
+  axiom cancelable_V_spec: forall self: t_V. cancelable_V self
+      = (forall x: t_V, y: t_V. op_V self x <> None'0 -> op_V self x = op_V self y -> x = y)
+  
+  function core_V (self: t_V) : t_Option_V
+  
+  predicate cancelable_Option_V (self: t_Option_V) =
+    match self with
+      | None'0 -> true
+      | Some'0 this -> let _ = if forall x: t_Option_V, y: t_Option_V. op_Option_V self x <> None'1
+        -> op_Option_V self x = op_Option_V self y -> x = y then
+        ()
+      else
+        ()
+       in let _ = if cancelable_V this /\ core_V this = None'0 then () else () in cancelable_V this
+      /\ core_V this = None'0
+      end
+  
+  axiom cancelable_Option_V_spec: forall self: t_Option_V. cancelable_Option_V self
+      = (forall x: t_Option_V, y: t_Option_V. op_Option_V self x <> None'1
+        -> op_Option_V self x = op_Option_V self y -> x = y)
+  
+  axiom cancelable_Option_V_spec'0: forall self: t_Option_V. cancelable_Option_V self
+      = match self with
+        | None'0 -> true
+        | Some'0 this -> cancelable_V this /\ core_V this = None'0
+        end
+  
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V. len_K self >= 0
+  
+  constant empty_K : t_FMap_K_V
+  
+  axiom empty_K_spec: len_K empty_K = 0
+  
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None'0)
+  
+  predicate index_Mapping_FMap_K_V_bool [@inline:trivial] (self: Map.map t_FMap_K_V bool) (a: t_FMap_K_V) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_FMap_K_V_bool
+  
+  function such_that_FMap_K_V (p: Map.map t_FMap_K_V bool) : t_FMap_K_V
+  
+  axiom such_that_FMap_K_V_spec:
+    forall p: Map.map t_FMap_K_V bool. (exists x: t_FMap_K_V. index_Mapping_FMap_K_V_bool p x)
+      -> index_Mapping_FMap_K_V_bool p (such_that_FMap_K_V p)
+  
+  function unwrap_Option_FMap_K_V (self: t_Option_FMap_K_V) : t_FMap_K_V = match self with
+      | Some x -> x
+      | None -> such_that_FMap_K_V (fun (__0: t_FMap_K_V) -> true)
+      end
+  
+  predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+  
+  axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V. ext_eq_K self other = (self = other)
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+  
+  meta "rewrite_def" predicate contains_K
+  
+  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
+  
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some'0 v)
+  
+  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V. len_K (insert_K self k v)
+      = (if contains_K self k then len_K self else len_K self + 1)
+  
+  function singleton_K (k: t_K) (v: t_V) : t_FMap_K_V = insert_K empty_K k v
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_FMap_K_V
+  
+  predicate cancelable_FMap_K_V (self: t_FMap_K_V)
+  
+  goal vc_cancelable_FMap_K_V: if forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+      -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y then
+      (forall k: t_K. match get_K self k with
+            | None'0 -> true
+            | Some'0 v -> forall x: t_Option_V, y: t_Option_V. if op_Option_V (Some'0 v) x <> None'1 then
+                if op_Option_V (Some'0 v) x = op_Option_V (Some'0 v) y then
+                  match x with
+                    | None'0 -> ([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K
+                        = 0)
+                      /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None'0)))
+                    -> (let fx = empty_K in match y with
+                      | None'0 -> ([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K
+                          = 0)
+                        /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None'0)))
+                      -> (let fy = empty_K in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fx <> None)
+                      /\ (let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fy
+                        <> None)
+                      /\ (let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in true)))
+                      | Some'0 y'0 -> let fy = singleton_K k y'0 in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fx
+                        <> None)
+                      /\ (let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fy
+                        <> None)
+                      /\ (let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in true))
+                      end)
+                    | Some'0 x'0 -> let fx = singleton_K k x'0 in match y with
+                      | None'0 -> ([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K
+                          = 0)
+                        /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None'0)))
+                      -> (let fy = empty_K in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fx <> None)
+                      /\ (let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fy
+                        <> None)
+                      /\ (let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in true)))
+                      | Some'0 y'0 -> let fy = singleton_K k y'0 in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fx
+                        <> None)
+                      /\ (let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in ([@stop_split] [@expl:unwrap_logic requires] op_FMap_K_V self fy
+                        <> None)
+                      /\ (let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in true))
+                      end
+                    end
+                else
+                  true
+              
+              else
+                true
+            
+            end)
+      /\ (forall k: t_K. match get_K self k with
+            | None'0 -> true
+            | Some'0 v -> forall x: t_Option_V, y: t_Option_V. op_Option_V (Some'0 v) x <> None'1
+              -> op_Option_V (Some'0 v) x = op_Option_V (Some'0 v) y
+              -> (let fx = match x with
+                | None'0 -> empty_K
+                | Some'0 x'0 -> singleton_K k x'0
+                end in let fy = match y with
+                | None'0 -> empty_K
+                | Some'0 y'0 -> singleton_K k y'0
+                end in let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in ext_eq_K opx opy
+              /\ (opx = opy -> fx = fy))
+            end)
+      && (if forall k: t_K. cancelable_Option_V (get_K self k) then
+        (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> ext_eq_K x y)
+        && (let result = forall k: t_K. cancelable_Option_V (get_K self k) in [@stop_split] [@expl:cancelable_FMap_K_V ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+          = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
+        /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall k: t_K. cancelable_Option_V (get_K self k))))
+      else
+        let result = forall k: t_K. cancelable_Option_V (get_K self k) in [@stop_split] [@expl:cancelable_FMap_K_V ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+          = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
+        /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall k: t_K. cancelable_Option_V (get_K self k)))
+      )
+    else
+      if forall k: t_K. cancelable_Option_V (get_K self k) then
+        (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> ext_eq_K x y)
+        && (let result = forall k: t_K. cancelable_Option_V (get_K self k) in [@stop_split] [@expl:cancelable_FMap_K_V ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+          = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
+        /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall k: t_K. cancelable_Option_V (get_K self k))))
+      else
+        let result = forall k: t_K. cancelable_Option_V (get_K self k) in [@stop_split] [@expl:cancelable_FMap_K_V ensures] ([@stop_split] [@expl:cancelable ensures #0] result
+          = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+            -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
+        /\ ([@stop_split] [@expl:cancelable ensures #1] result = (forall k: t_K. cancelable_Option_V (get_K self k)))
+    
+
+end
 module M_logic__ra__excl__impl_RA_for_Excl_T__factor (* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
   type namespace_other
   
@@ -94668,6 +96053,670 @@ module M_logic__ra__update__impl_LocalUpdate_for_unit__frame_preserving__refines
             /\ (forall result: (). op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
               -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_unit self from_auth from_frag in op_Option_R (Some to_frag) frame
               = Some'0 (Some to_auth)))
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Int__cancelable__refines (* <logic::int::Int as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+  
+  meta "rewrite_def" function op_Int
+  
+  function commutative_Int (a: int) (b: int) : ()
+  
+  axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: int. forall result: bool. result
+          /\ (forall x: int, y: int. op_Int self x <> None -> op_Int self x = op_Int self y -> x = y)
+        -> result = (forall x: int, y: int. op_Int self x <> None -> op_Int self x = op_Int self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Nat__cancelable__refines (* <logic::int::Nat as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Nat
+  
+  type t_Option_Nat = None | Some t_Nat
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+  
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  
+  function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+  
+  meta "rewrite_def" function op_Nat
+  
+  function commutative_Nat (a: t_Nat) (b: t_Nat) : ()
+  
+  axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Nat. forall result: bool. result
+          /\ (forall x: t_Nat, y: t_Nat. op_Nat self x <> None -> op_Nat self x = op_Nat self y -> x = y)
+        -> result = (forall x: t_Nat, y: t_Nat. op_Nat self x <> None -> op_Nat self x = op_Nat self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_PositiveReal__cancelable__refines (* <logic::real::PositiveReal as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  
+  type t_PositiveReal
+  
+  type t_Option_PositiveReal = None | Some t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+  
+  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+      = Real.(+) (to_real self) (to_real other)
+  
+  function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+    Some (add_PositiveReal self other)
+  
+  meta "rewrite_def" function op_PositiveReal
+  
+  function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+  
+  axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
+      = op_PositiveReal b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_PositiveReal. forall result: bool. result
+          /\ (forall x: t_PositiveReal, y: t_PositiveReal. op_PositiveReal self x <> None
+            -> op_PositiveReal self x = op_PositiveReal self y -> x = y)
+        -> result
+        = (forall x: t_PositiveReal, y: t_PositiveReal. op_PositiveReal self x <> None
+          -> op_PositiveReal self x = op_PositiveReal self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Ag_T__cancelable__refines (* <logic::ra::agree::Ag<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_T
+  
+  type t_Ag_T = { f0: t_T }
+  
+  type t_Option_Ag_T = None | Some t_Ag_T
+  
+  function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+  
+  function commutative_Ag_T (a: t_Ag_T) (b: t_Ag_T) : ()
+  
+  axiom commutative_Ag_T_spec: forall a: t_Ag_T, b: t_Ag_T. op_Ag_T a b = op_Ag_T b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Ag_T. forall result: bool. result
+          /\ (forall x: t_Ag_T, y: t_Ag_T. op_Ag_T self x <> None -> op_Ag_T self x = op_Ag_T self y -> x = y)
+        -> result = (forall x: t_Ag_T, y: t_Ag_T. op_Ag_T self x <> None -> op_Ag_T self x = op_Ag_T self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Excl_T__cancelable__refines (* <logic::ra::excl::Excl<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_T
+  
+  type t_Excl_T = { f0: t_T }
+  
+  type t_Option_Excl_T = None | Some t_Excl_T
+  
+  function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+  
+  function commutative_Excl_T (a: t_Excl_T) (b: t_Excl_T) : ()
+  
+  axiom commutative_Excl_T_spec: forall a: t_Excl_T, b: t_Excl_T. op_Excl_T a b = op_Excl_T b a
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Excl_T. forall result: bool. result
+          /\ (forall x: t_Excl_T, y: t_Excl_T. op_Excl_T self x <> None -> op_Excl_T self x = op_Excl_T self y -> x = y)
+        -> result
+        = (forall x: t_Excl_T, y: t_Excl_T. op_Excl_T self x <> None -> op_Excl_T self x = op_Excl_T self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_tup2_L_R__cancelable__refines (* <(L, R) as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_L
+  
+  type t_R
+  
+  type tup2_L_R = { f0: t_L; f1: t_R }
+  
+  type t_Option_tup2_L_R = None | Some tup2_L_R
+  
+  type t_Option_L = None'0 | Some'0 t_L
+  
+  type t_Option_R = None'1 | Some'1 t_R
+  
+  type tup2_Option_L_Option_R = { f0'0: t_Option_L; f1'0: t_Option_R }
+  
+  function op_L (self: t_L) (other: t_L) : t_Option_L
+  
+  function factor_L (self: t_L) (factor: t_L) : t_Option_L
+  
+  axiom factor_L_spec: forall self: t_L, factor: t_L. match factor_L self factor with
+        | Some'0 c -> op_L factor c = Some'0 self
+        | None'0 -> forall c: t_L. op_L factor c <> Some'0 self
+        end
+  
+  predicate incl_L (self: t_L) (other: t_L) = factor_L other self <> None'0
+  
+  function incl_transitive_L (a: t_L) (b: t_L) (c: t_L) : ()
+  
+  axiom incl_transitive_L_spec: forall a: t_L, b: t_L, c: t_L. incl_L a b -> incl_L b c -> incl_L a c
+  
+  function associative_some_L (a: t_L) (b: t_L) (c: t_L) (ab: t_L) (bc: t_L) : ()
+  
+  axiom associative_some_L_spec: forall a: t_L, b: t_L, c: t_L, ab: t_L, bc: t_L. op_L a b = Some'0 ab
+      -> op_L b c = Some'0 bc -> op_L a bc = op_L ab c
+  
+  function associative_none_L (a: t_L) (b: t_L) (c: t_L) (bc: t_L) : ()
+  
+  axiom associative_none_L_spec: forall a: t_L, b: t_L, c: t_L, bc: t_L. op_L a b = None'0
+      -> op_L b c = Some'0 bc -> op_L a bc = None'0
+  
+  function commutative_L (a: t_L) (b: t_L) : ()
+  
+  axiom commutative_L_spec: forall a: t_L, b: t_L. op_L a b = op_L b a
+  
+  function incl_op_L (self: t_L) (other: t_L) (comb: t_L) : ()
+  
+  axiom incl_op_L_spec: forall self: t_L, other: t_L, comb: t_L. op_L self other = Some'0 comb -> incl_L self comb
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some'1 c -> op_R factor c = Some'1 self
+        | None'1 -> forall c: t_R. op_R factor c <> Some'1 self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None'1
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some'1 ab
+      -> op_R b c = Some'1 bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None'1
+      -> op_R b c = Some'1 bc -> op_R a bc = None'1
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some'1 comb -> incl_R self comb
+  
+  function op_tup2_L_R (self: tup2_L_R) (other: tup2_L_R) : t_Option_tup2_L_R = match { f0'0 = op_L self.f0 other.f0;
+                                                                                        f1'0 = op_R self.f1 other.f1 } with
+      | {f0'0 = Some'0 r1; f1'0 = Some'1 r2} -> Some { f0 = r1; f1 = r2 }
+      | _ -> None
+      end
+  
+  function commutative_tup2_L_R (a: tup2_L_R) (b: tup2_L_R) : ()
+  
+  axiom commutative_tup2_L_R_spec: forall a: tup2_L_R, b: tup2_L_R. op_tup2_L_R a b = op_tup2_L_R b a
+  
+  predicate cancelable_L (self: t_L)
+  
+  axiom cancelable_L_spec: forall self: t_L. cancelable_L self
+      = (forall x: t_L, y: t_L. op_L self x <> None'0 -> op_L self x = op_L self y -> x = y)
+  
+  predicate cancelable_R (self: t_R)
+  
+  axiom cancelable_R_spec: forall self: t_R. cancelable_R self
+      = (forall x: t_R, y: t_R. op_R self x <> None'1 -> op_R self x = op_R self y -> x = y)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: tup2_L_R. forall result: bool. result
+            = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+              -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y)
+          /\ (result = (forall l: t_L. op_L self.f0 l = None'0)
+          \/ (forall r: t_R. op_R self.f1 r = None'1) \/ cancelable_L self.f0 /\ cancelable_R self.f1)
+        -> result
+        = (forall x: tup2_L_R, y: tup2_L_R. op_tup2_L_R self x <> None
+          -> op_tup2_L_R self x = op_tup2_L_R self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Sum_T_U__cancelable__refines (* <logic::ra::sum::Sum<T, U> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_T
+  
+  type t_U
+  
+  type t_Sum_T_U = Left t_T | Right t_U
+  
+  type t_Option_Sum_T_U = None | Some t_Sum_T_U
+  
+  type tup2_Sum_T_U_Sum_T_U = { f0: t_Sum_T_U; f1: t_Sum_T_U }
+  
+  type t_Option_T = None'0 | Some'0 t_T
+  
+  function map_Option_T (self: t_Option_T) (f: Map.map t_T t_Sum_T_U) : t_Option_Sum_T_U = match self with
+      | None'0 -> None
+      | Some'0 x -> Some (Map.get f x)
+      end
+  
+  function op_T (self: t_T) (other: t_T) : t_Option_T
+  
+  function factor_T (self: t_T) (factor: t_T) : t_Option_T
+  
+  axiom factor_T_spec: forall self: t_T, factor: t_T. match factor_T self factor with
+        | Some'0 c -> op_T factor c = Some'0 self
+        | None'0 -> forall c: t_T. op_T factor c <> Some'0 self
+        end
+  
+  predicate incl_T (self: t_T) (other: t_T) = factor_T other self <> None'0
+  
+  function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+  
+  axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+  
+  function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+  
+  axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some'0 ab
+      -> op_T b c = Some'0 bc -> op_T a bc = op_T ab c
+  
+  function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+  
+  axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None'0
+      -> op_T b c = Some'0 bc -> op_T a bc = None'0
+  
+  function commutative_T (a: t_T) (b: t_T) : ()
+  
+  axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+  
+  function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+  
+  axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some'0 comb -> incl_T self comb
+  
+  type t_Option_U = None'1 | Some'1 t_U
+  
+  function map_Option_U (self: t_Option_U) (f: Map.map t_U t_Sum_T_U) : t_Option_Sum_T_U = match self with
+      | None'1 -> None
+      | Some'1 x -> Some (Map.get f x)
+      end
+  
+  function op_U (self: t_U) (other: t_U) : t_Option_U
+  
+  function factor_U (self: t_U) (factor: t_U) : t_Option_U
+  
+  axiom factor_U_spec: forall self: t_U, factor: t_U. match factor_U self factor with
+        | Some'1 c -> op_U factor c = Some'1 self
+        | None'1 -> forall c: t_U. op_U factor c <> Some'1 self
+        end
+  
+  predicate incl_U (self: t_U) (other: t_U) = factor_U other self <> None'1
+  
+  function incl_transitive_U (a: t_U) (b: t_U) (c: t_U) : ()
+  
+  axiom incl_transitive_U_spec: forall a: t_U, b: t_U, c: t_U. incl_U a b -> incl_U b c -> incl_U a c
+  
+  function associative_some_U (a: t_U) (b: t_U) (c: t_U) (ab: t_U) (bc: t_U) : ()
+  
+  axiom associative_some_U_spec: forall a: t_U, b: t_U, c: t_U, ab: t_U, bc: t_U. op_U a b = Some'1 ab
+      -> op_U b c = Some'1 bc -> op_U a bc = op_U ab c
+  
+  function associative_none_U (a: t_U) (b: t_U) (c: t_U) (bc: t_U) : ()
+  
+  axiom associative_none_U_spec: forall a: t_U, b: t_U, c: t_U, bc: t_U. op_U a b = None'1
+      -> op_U b c = Some'1 bc -> op_U a bc = None'1
+  
+  function commutative_U (a: t_U) (b: t_U) : ()
+  
+  axiom commutative_U_spec: forall a: t_U, b: t_U. op_U a b = op_U b a
+  
+  function incl_op_U (self: t_U) (other: t_U) (comb: t_U) : ()
+  
+  axiom incl_op_U_spec: forall self: t_U, other: t_U, comb: t_U. op_U self other = Some'1 comb -> incl_U self comb
+  
+  function op_Sum_T_U (self: t_Sum_T_U) (other: t_Sum_T_U) : t_Option_Sum_T_U = match { f0 = self; f1 = other } with
+      | {f0 = Left x; f1 = Left y} -> map_Option_T (op_T x y) (fun (l: t_T) -> Left l)
+      | {f0 = Right x; f1 = Right y} -> map_Option_U (op_U x y) (fun (r: t_U) -> Right r)
+      | _ -> None
+      end
+  
+  function commutative_Sum_T_U (a: t_Sum_T_U) (b: t_Sum_T_U) : ()
+  
+  axiom commutative_Sum_T_U_spec: forall a: t_Sum_T_U, b: t_Sum_T_U. op_Sum_T_U a b = op_Sum_T_U b a
+  
+  predicate cancelable_T (self: t_T)
+  
+  axiom cancelable_T_spec: forall self: t_T. cancelable_T self
+      = (forall x: t_T, y: t_T. op_T self x <> None'0 -> op_T self x = op_T self y -> x = y)
+  
+  predicate cancelable_U (self: t_U)
+  
+  axiom cancelable_U_spec: forall self: t_U. cancelable_U self
+      = (forall x: t_U, y: t_U. op_U self x <> None'1 -> op_U self x = op_U self y -> x = y)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Sum_T_U. forall result: bool. result
+            = (forall x: t_Sum_T_U, y: t_Sum_T_U. op_Sum_T_U self x <> None
+              -> op_Sum_T_U self x = op_Sum_T_U self y -> x = y)
+          /\ result
+          = match self with
+            | Left l -> cancelable_T l
+            | Right r -> cancelable_U r
+            end
+        -> result
+        = (forall x: t_Sum_T_U, y: t_Sum_T_U. op_Sum_T_U self x <> None
+          -> op_Sum_T_U self x = op_Sum_T_U self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_Option_T__cancelable__refines (* <std::option::Option<T> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  type t_Option_Option_T = None'0 | Some'0 t_Option_T
+  
+  type tup2_Option_T_Option_T = { f0: t_Option_T; f1: t_Option_T }
+  
+  function map_Option_T (self: t_Option_T) (f: Map.map t_T t_Option_T) : t_Option_Option_T = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_T (self: t_T) (other: t_T) : t_Option_T
+  
+  function factor_T (self: t_T) (factor: t_T) : t_Option_T
+  
+  axiom factor_T_spec: forall self: t_T, factor: t_T. match factor_T self factor with
+        | Some c -> op_T factor c = Some self
+        | None -> forall c: t_T. op_T factor c <> Some self
+        end
+  
+  predicate incl_T (self: t_T) (other: t_T) = factor_T other self <> None
+  
+  function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+  
+  axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+  
+  function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+  
+  axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some ab
+      -> op_T b c = Some bc -> op_T a bc = op_T ab c
+  
+  function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+  
+  axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None
+      -> op_T b c = Some bc -> op_T a bc = None
+  
+  function commutative_T (a: t_T) (b: t_T) : ()
+  
+  axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+  
+  function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+  
+  axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some comb -> incl_T self comb
+  
+  function op_Option_T (self: t_Option_T) (other: t_Option_T) : t_Option_Option_T = match { f0 = self; f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_T (op_T x y) (fun (z: t_T) -> Some z)
+      end
+  
+  function commutative_Option_T (a: t_Option_T) (b: t_Option_T) : ()
+  
+  axiom commutative_Option_T_spec: forall a: t_Option_T, b: t_Option_T. op_Option_T a b = op_Option_T b a
+  
+  predicate cancelable_T (self: t_T)
+  
+  axiom cancelable_T_spec: forall self: t_T. cancelable_T self
+      = (forall x: t_T, y: t_T. op_T self x <> None -> op_T self x = op_T self y -> x = y)
+  
+  function core_T (self: t_T) : t_Option_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Option_T. forall result: bool. result
+            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+              -> op_Option_T self x = op_Option_T self y -> x = y)
+          /\ result
+          = match self with
+            | None -> true
+            | Some this -> cancelable_T this /\ core_T this = None
+            end
+        -> result
+        = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+          -> op_Option_T self x = op_Option_T self y -> x = y)
+end
+module M_logic__ra__cancel__impl_Cancelable_for_FMap_K_V__cancelable__refines (* <logic::fmap::FMap<K, V> as logic::ra::cancel::Cancelable> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_FMap_K_V
+  
+  type t_Option_FMap_K_V = None | Some t_FMap_K_V
+  
+  type t_V
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  type t_Option_Option_V = None'1 | Some'1 t_Option_V
+  
+  type tup2_Option_V_Option_V = { f0: t_Option_V; f1: t_Option_V }
+  
+  function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
+  function op_V (self: t_V) (other: t_V) : t_Option_V
+  
+  function factor_V (self: t_V) (factor: t_V) : t_Option_V
+  
+  axiom factor_V_spec: forall self: t_V, factor: t_V. match factor_V self factor with
+        | Some'0 c -> op_V factor c = Some'0 self
+        | None'0 -> forall c: t_V. op_V factor c <> Some'0 self
+        end
+  
+  predicate incl_V (self: t_V) (other: t_V) = factor_V other self <> None'0
+  
+  function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+  
+  axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+  
+  function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+  
+  axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some'0 ab
+      -> op_V b c = Some'0 bc -> op_V a bc = op_V ab c
+  
+  function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+  
+  axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None'0
+      -> op_V b c = Some'0 bc -> op_V a bc = None'0
+  
+  function commutative_V (a: t_V) (b: t_V) : ()
+  
+  axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+  
+  function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+  
+  axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some'0 comb -> incl_V self comb
+  
+  function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0 = self; f1 = other } with
+      | {f0 = None'0} -> Some'1 other
+      | {f1 = None'0} -> Some'1 self
+      | {f0 = Some'0 x; f1 = Some'0 y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some'0 z)
+      end
+  
+  function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
+  
+  axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
+  
+  type t_K
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V
+  
+  axiom total_op_K_spec:
+    forall self: t_FMap_K_V, other: t_FMap_K_V. (forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1)
+      -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+  
+  function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
+    if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1 then Some (total_op_K self other) else None
+  
+  function commutative_FMap_K_V (a: t_FMap_K_V) (b: t_FMap_K_V) : ()
+  
+  axiom commutative_FMap_K_V_spec: forall a: t_FMap_K_V, b: t_FMap_K_V. op_FMap_K_V a b = op_FMap_K_V b a
+  
+  predicate cancelable_V (self: t_V)
+  
+  axiom cancelable_V_spec: forall self: t_V. cancelable_V self
+      = (forall x: t_V, y: t_V. op_V self x <> None'0 -> op_V self x = op_V self y -> x = y)
+  
+  function core_V (self: t_V) : t_Option_V
+  
+  predicate cancelable_Option_V (self: t_Option_V) =
+    match self with
+      | None'0 -> true
+      | Some'0 this -> let _ = if forall x: t_Option_V, y: t_Option_V. op_Option_V self x <> None'1
+        -> op_Option_V self x = op_Option_V self y -> x = y then
+        ()
+      else
+        ()
+       in let _ = if cancelable_V this /\ core_V this = None'0 then () else () in cancelable_V this
+      /\ core_V this = None'0
+      end
+  
+  axiom cancelable_Option_V_spec: forall self: t_Option_V. cancelable_Option_V self
+      = (forall x: t_Option_V, y: t_Option_V. op_Option_V self x <> None'1
+        -> op_Option_V self x = op_Option_V self y -> x = y)
+  
+  axiom cancelable_Option_V_spec'0: forall self: t_Option_V. cancelable_Option_V self
+      = match self with
+        | None'0 -> true
+        | Some'0 this -> cancelable_V this /\ core_V this = None'0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_FMap_K_V. forall result: bool. result
+            = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+              -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y)
+          /\ result = (forall k: t_K. cancelable_Option_V (get_K self k))
+        -> result
+        = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
+          -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y)
 end
 module M_logic__ra__fmap__impl_UnitRA_for_FMap_K_V__unit__refines (* <logic::fmap::FMap<K, V> as logic::ra::UnitRA> *)
   type namespace_other

@@ -2,6 +2,7 @@
 
 pub mod agree;
 pub mod auth;
+mod cancel;
 pub mod excl;
 pub mod fmap;
 mod int;
@@ -14,6 +15,8 @@ pub mod update;
 pub mod view;
 
 use crate::{logic::Set, prelude::*};
+
+pub use self::cancel::Cancelable;
 
 /// Define a _Resource Algebra_.
 ///
