@@ -114,3 +114,29 @@ impl<R: UnitRA> LocalUpdate<R> for OpLocalUpdate<R> {
     })]
     fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>) {}
 }
+
+/// Remove (cancel) a fragment from an authority, setting the fragment to unit.
+///
+/// This requires the fragment to remove to be [`cancelable`](RA::cancelable).
+pub struct CancelLocalUpdateUnit;
+
+impl<R: UnitRA> LocalUpdate<R> for CancelLocalUpdateUnit {
+    #[logic(open)]
+    fn premise(self, _: R, from_frag: R) -> bool {
+        from_frag.cancelable()
+    }
+
+    #[logic(open)]
+    fn update(self, from_auth: R, from_frag: R) -> (R, R) {
+        (from_auth.factor(from_frag).unwrap_logic(), R::unit())
+    }
+
+    #[logic]
+    #[requires(self.premise(from_auth, from_frag))]
+    #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
+    #[ensures({
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
+    fn frame_preserving(self, from_auth: R, from_frag: R, frame: Option<R>) {}
+}

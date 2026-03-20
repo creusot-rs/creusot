@@ -15,8 +15,8 @@ use crate::{
 ///
 /// This type is a specialization of [`Resource`] for the common case where you want an
 /// authoritative resource. [`Authority`] and [`Fragment`] respectively contain the
-/// authoritative part and the fragment part of the ressource, and come with handy ghost
-/// functions to use them (provers have some trouble authomatically deriving when the
+/// authoritative part and the fragment part of the resource, and come with handy ghost
+/// functions to use them (provers have some trouble automatically deriving when the
 /// context is full of other hypotheses).
 pub struct Authority<R: UnitRA>(Resource<Auth<R>>);
 
@@ -99,6 +99,21 @@ impl<R: UnitRA> Authority<R> {
     }
 
     /// Perform a local update on an authority, fragment pair
+    ///
+    /// # Example: removing the fragment
+    ///
+    /// ```
+    /// use creusot_std::{prelude::*, logic::ra::{RA as _, UnitRA}, ghost::resource::{Authority, Fragment}, std::option::OptionExt as _};
+    /// use creusot_std::logic::ra::auth::CancelLocalUpdateUnit;
+    ///
+    /// #[requires(auth.id() == frag.id())]
+    /// fn remove_fragment<R: UnitRA>(mut auth: Authority<R>, mut frag: Fragment<R>) {
+    ///     let (prev_auth, prev_frag) = (snapshot!(auth@), snapshot!(frag@));
+    ///     auth.update(&mut frag, CancelLocalUpdateUnit);
+    ///     proof_assert!(frag@ == R::unit());
+    ///     proof_assert!(Some(*prev_auth) == auth.op(*prev_frag));
+    /// }
+    /// ```
     #[check(ghost)]
     #[requires(self.id() == frag.id())]
     #[requires(upd.premise(self@, frag@))]
@@ -198,7 +213,7 @@ impl<R: UnitRA> Fragment<R> {
         Fragment(self.0.split_off(snapshot!(Auth::new_frag(*r)), snapshot!(Auth::new_frag(*s))))
     }
 
-    /// Join two owned framents together.
+    /// Join two owned fragments together.
     ///
     /// See also [`Self::join_in`] and [`Self::join_shared`].
     #[check(ghost)]

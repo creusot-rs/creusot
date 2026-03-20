@@ -14132,6 +14132,132 @@ module M_logic__ra__auth__impl_LocalUpdate_for_OpLocalUpdate_R__frame_preserving
     -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'1 = to_auth; f1'1 = to_frag} = update_OpLocalUpdate_R self from_auth from_frag in op_Option_R (Some to_frag) frame
     = Some'0 (Some to_auth))
 end
+module M_logic__ra__auth__impl_LocalUpdate_for_CancelLocalUpdateUnit__frame_preserving (* <logic::ra::auth::CancelLocalUpdateUnit as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  type t_Option_R = None | Some t_R
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  predicate cancelable_R (self: t_R)
+  
+  axiom cancelable_R_spec: forall self: t_R. cancelable_R self
+      = (forall x: t_R, y: t_R. op_R self x <> None -> op_R self x = op_R self y -> x = y)
+  
+  predicate premise_CancelLocalUpdateUnit (self: ()) (_2: t_R) (from_frag: t_R) = cancelable_R from_frag
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  type tup2_R_R = { f0'0: t_R; f1'0: t_R }
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+      | Some x -> x
+      | None -> such_that_R (fun (__0: t_R) -> true)
+      end
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+    { f0'0 = unwrap_Option_R (factor_R from_auth from_frag); f1'0 = unit_R }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : ()
+  
+  constant from_auth : t_R
+  
+  constant from_frag : t_R
+  
+  constant frame : t_Option_R
+  
+  function frame_preserving_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) (frame: t_Option_R) : ()
+  
+  goal vc_frame_preserving_CancelLocalUpdateUnit: premise_CancelLocalUpdateUnit self from_auth from_frag
+    -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+    -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_CancelLocalUpdateUnit self from_auth from_frag in op_Option_R (Some to_frag) frame
+    = Some'0 (Some to_auth))
+end
 module M_logic__ra__excl__impl_RA_for_Excl_T__factor (* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
   type namespace_other
   
@@ -95190,6 +95316,127 @@ module M_logic__ra__auth__impl_LocalUpdate_for_OpLocalUpdate_R__frame_preserving
             /\ (forall result: (). (let {f0'1 = to_auth; f1'1 = to_frag} = update_OpLocalUpdate_R self from_auth from_frag in op_Option_R (Some to_frag) frame
                 = Some'0 (Some to_auth))
               -> (let {f0'1 = to_auth; f1'1 = to_frag} = update_OpLocalUpdate_R self from_auth from_frag in op_Option_R (Some to_frag) frame
+              = Some'0 (Some to_auth)))
+end
+module M_logic__ra__auth__impl_LocalUpdate_for_CancelLocalUpdateUnit__frame_preserving__refines (* <logic::ra::auth::CancelLocalUpdateUnit as logic::ra::update::LocalUpdate<R>> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use map.Map
+  
+  type t_R
+  
+  type t_Option_R = None | Some t_R
+  
+  function op_R (self: t_R) (other: t_R) : t_Option_R
+  
+  function factor_R (self: t_R) (factor: t_R) : t_Option_R
+  
+  axiom factor_R_spec: forall self: t_R, factor: t_R. match factor_R self factor with
+        | Some c -> op_R factor c = Some self
+        | None -> forall c: t_R. op_R factor c <> Some self
+        end
+  
+  predicate incl_R (self: t_R) (other: t_R) = factor_R other self <> None
+  
+  function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+  
+  axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+  
+  function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+  
+  axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+      -> op_R b c = Some bc -> op_R a bc = op_R ab c
+  
+  function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+  
+  axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+      -> op_R b c = Some bc -> op_R a bc = None
+  
+  function commutative_R (a: t_R) (b: t_R) : ()
+  
+  axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+  
+  function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+  
+  axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+  
+  predicate cancelable_R (self: t_R)
+  
+  axiom cancelable_R_spec: forall self: t_R. cancelable_R self
+      = (forall x: t_R, y: t_R. op_R self x <> None -> op_R self x = op_R self y -> x = y)
+  
+  predicate premise_CancelLocalUpdateUnit (self: ()) (_2: t_R) (from_frag: t_R) = cancelable_R from_frag
+  
+  type t_Option_Option_R = None'0 | Some'0 t_Option_R
+  
+  type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+  
+  function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
+      | {f0 = None} -> Some'0 other
+      | {f1 = None} -> Some'0 self
+      | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+      end
+  
+  function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+  
+  axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+  
+  type tup2_R_R = { f0'0: t_R; f1'0: t_R }
+  
+  predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_R_bool
+  
+  function such_that_R (p: Map.map t_R bool) : t_R
+  
+  axiom such_that_R_spec: forall p: Map.map t_R bool. (exists x: t_R. index_Mapping_R_bool p x)
+      -> index_Mapping_R_bool p (such_that_R p)
+  
+  function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+      | Some x -> x
+      | None -> such_that_R (fun (__0: t_R) -> true)
+      end
+  
+  function core_R (self: t_R) : t_Option_R
+  
+  function core_total_R (self: t_R) : t_R
+  
+  axiom core_total_R_spec: forall self: t_R. core_R self = Some (core_total_R self)
+  
+  constant unit_R : t_R
+  
+  axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+  
+  constant unit_core_R : ()
+  
+  axiom unit_core_R_spec: core_total_R unit_R = unit_R
+  
+  constant incl_refl_R : ()
+  
+  axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+  
+  function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+    { f0'0 = unwrap_Option_R (factor_R from_auth from_frag); f1'0 = unit_R }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: (). forall from_auth: t_R. forall from_frag: t_R. forall frame: t_Option_R. premise_CancelLocalUpdateUnit self from_auth from_frag
+              /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            -> premise_CancelLocalUpdateUnit self from_auth from_frag
+            /\ op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+            /\ (forall result: (). (let {f0'0 = to_auth; f1'0 = to_frag} = update_CancelLocalUpdateUnit self from_auth from_frag in op_Option_R (Some to_frag) frame
+                = Some'0 (Some to_auth))
+              -> (let {f0'0 = to_auth; f1'0 = to_frag} = update_CancelLocalUpdateUnit self from_auth from_frag in op_Option_R (Some to_frag) frame
               = Some'0 (Some to_auth)))
 end
 module M_logic__ra__fmap__impl_LocalUpdate_for_FMapInsertLocalUpdate_K_V__frame_preserving__refines (* <logic::ra::fmap::FMapInsertLocalUpdate<K, V> as logic::ra::update::LocalUpdate<logic::fmap::FMap<K, V>>> *)
