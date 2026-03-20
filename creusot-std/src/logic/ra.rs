@@ -2,7 +2,6 @@
 
 pub mod agree;
 pub mod auth;
-mod cancel;
 pub mod excl;
 pub mod fmap;
 mod int;
@@ -15,8 +14,6 @@ pub mod update;
 pub mod view;
 
 use crate::{logic::Set, prelude::*};
-
-pub use self::cancel::Cancelable;
 
 /// Define a _Resource Algebra_.
 ///
@@ -206,6 +203,19 @@ pub trait RA: Sized {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self);
+
+    /// Cancelation of resource algebra elements.
+    ///
+    /// An element `e` is said to be _cancelable_ if it can be removed from a
+    /// composition: `∀ x y , e · x = e · y → x = y`.
+    #[logic]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        pearlite! { forall<x, y> self.op(x) != None ==>
+            self.op(x) == self.op(y) ==> x == y
+        }
+    }
 }
 
 /// Unitary RAs are RA with a neutral element.

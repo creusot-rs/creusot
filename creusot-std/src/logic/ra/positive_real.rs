@@ -63,4 +63,12 @@ impl RA for PositiveReal {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self) {}
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        let _ = PositiveReal::ext_eq;
+        true
+    }
 }

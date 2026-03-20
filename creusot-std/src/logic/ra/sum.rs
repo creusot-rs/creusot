@@ -92,6 +92,16 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
             _ => (),
         }
     }
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        match self {
+            Self::Left(l) => l.cancelable(),
+            Self::Right(r) => r.cancelable(),
+        }
+    }
 }
 
 /// Apply an [update](Update) to the left side of a [`Sum`].

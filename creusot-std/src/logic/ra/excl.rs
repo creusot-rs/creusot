@@ -55,6 +55,13 @@ impl<T> RA for Excl<T> {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self) {}
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        true
+    }
 }
 
 /// Apply an [update](Update) to the content of an [exclusive](Excl) resource.

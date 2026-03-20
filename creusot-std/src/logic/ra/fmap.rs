@@ -103,6 +103,36 @@ impl<K, V: RA> RA for FMap<K, V> {
     fn core_is_maximal_idemp(self, i: Self) {
         let _ = V::core_is_maximal_idemp;
     }
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        proof_assert!(
+            (forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
+            forall<k> match self.get(k) {
+                None => true,
+                Some(v) => forall<x, y> Some(v).op(x) != None ==> Some(v).op(x) == Some(v).op(y) ==> {
+                    let fx = match x {
+                        None => FMap::empty(),
+                        Some(x) => FMap::singleton(k, x),
+                    };
+                    let fy = match y {
+                        None => FMap::empty(),
+                        Some(y) => FMap::singleton(k, y),
+                    };
+                    let opx = self.op(fx).unwrap_logic();
+                    let opy = self.op(fy).unwrap_logic();
+                    opx.ext_eq(opy) && (opx == opy ==> fx == fy)
+                }
+            }
+        );
+        proof_assert!((forall<k> self.get(k).cancelable()) ==>
+            forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==>
+            x.ext_eq(y)
+        );
+        pearlite! { forall<k> self.get(k).cancelable() }
+    }
 }
 
 impl<K, V: RA> UnitRA for FMap<K, V> {

@@ -74,6 +74,29 @@ impl<T: RA, U: RA> RA for (T, U) {
         self.0.core_is_maximal_idemp(i.0);
         self.1.core_is_maximal_idemp(i.1);
     }
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        proof_assert!(
+            // l, r are not exclusive
+            forall<l, r> self.0.op(l) != None ==> self.1.op(r) != None ==>
+            if self.0.cancelable() {
+                // if self cancelable, then self.1 cancelable
+                (forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
+                forall<r2> self.1.op(r) == self.1.op(r2) ==>
+                r == r2
+            } else {
+                exists<l1, l2> self.0.op(l1) == self.0.op(l2) && l1 != l2
+            }
+        );
+        pearlite! {
+            (forall<l> self.0.op(l) == None) ||
+            (forall<r> self.1.op(r) == None) ||
+            (self.0.cancelable() && self.1.cancelable())
+        }
+    }
 }
 
 impl<T: UnitRA, U: UnitRA> UnitRA for (T, U) {
