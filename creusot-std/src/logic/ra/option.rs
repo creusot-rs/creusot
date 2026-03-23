@@ -92,6 +92,32 @@ impl<T: RA> RA for Option<T> {
             _ => (),
         }
     }
+
+    #[logic(open)]
+    #[ensures(result == (forall<x, y> self.op(x) != None ==>
+        self.op(x) == self.op(y) ==> x == y))]
+    fn cancelable(self) -> bool {
+        match self {
+            None => true,
+            Some(this) => {
+                proof_assert! {
+                    let _ = T::core_is_maximal_idemp;
+                    let _ = T::core_idemp;
+                    ((forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
+                        self.op(this.core()) == self.op(None)) &&
+                    this.cancelable() ==> this.core() == None ==>
+                        forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==>
+                        match (x, y) {
+                            (Some(x), Some(y)) => this.op(x) != None && this.op(x) == this.op(y),
+                            (Some(_), None) => false,
+                            (None, Some(y)) => y.op(this) == Some(this),
+                            (None, None) => true,
+                        }
+                };
+                this.cancelable() && this.core() == None
+            }
+        }
+    }
 }
 
 impl<T: RA> UnitRA for Option<T> {
