@@ -5,7 +5,7 @@ use crate::{
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{HasTimestamp, SyncView, Timestamp},
+    sync_view::{HasTimestamp, SyncView, Timestamp, View},
 };
 use core::marker::PhantomData;
 
@@ -23,7 +23,7 @@ macro_rules! impl_atomic {
         impl $(< $T >)? Objective for Perm<$atomic_type $(< $T >)?> {}
 
         impl $(< $T >)? Container for $atomic_type $(< $T >)? {
-            type Value = FMap<Timestamp, ($type, SyncView)>;
+            type Value = FMap<Timestamp, ($type, View)>;
 
             #[logic(open, inline)]
             fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
@@ -33,7 +33,7 @@ macro_rules! impl_atomic {
 
         impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
             #[logic(opaque)]
-            fn get_timestamp(self, _: SyncView) -> Timestamp {
+            fn get_timestamp(self, _: View) -> Timestamp {
                 dead
             }
 
@@ -41,16 +41,16 @@ macro_rules! impl_atomic {
             #[requires(x.le_log(y))]
             #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
             #[trusted]
-            fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
+            fn get_timestamp_monotonic(self, x: View, y: View) {}
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^view), (val, **view)))]
+            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp((^sync_view).view()), (val, (**sync_view).view())))]
             #[ensures(*result.1.ward() == result.0)]
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn new(val: $type, view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
+            pub fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
@@ -138,11 +138,9 @@ impl_atomic_int! {
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
-pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
-    PhantomData<(T, C)>,
-);
+pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, View)>>>(PhantomData<(T, C)>);
 
-impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<T, C> {
+impl<T, C: Container<Value = FMap<Timestamp, (T, View)>> + HasTimestamp> LoadCommitter<T, C> {
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -161,17 +159,17 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     ///
     /// This does the read on the atomic in ghost code.
     #[requires(self.ward() == *own.ward())]
-    #[ensures((*view).le_log(^view))]
-    #[ensures(self.ward().get_timestamp(*view) <= result)]
-    #[ensures(result <= self.ward().get_timestamp(^view))]
+    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
+    #[ensures(self.ward().get_timestamp((*sync_view).view()) <= result)]
+    #[ensures(result <= self.ward().get_timestamp((^sync_view).view()))]
     #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == self.val() && v_view.le_log(^view),
+        Some((v, v_view)) => v == self.val() && v_view.le_log((^sync_view).view()),
         None => false
     })]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&self, own: &Perm<C>, view: &mut SyncView) -> Timestamp {
+    pub fn shoot(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Timestamp {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -179,11 +177,9 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
 /// Wrapper around a single atomic operation, where multiple ghost steps can be
 /// performed.
 #[opaque]
-pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
-    PhantomData<(T, C)>,
-);
+pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, View)>>>(PhantomData<(T, C)>);
 
-impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> StoreCommitter<T, C> {
+impl<T, C: Container<Value = FMap<Timestamp, (T, View)>> + HasTimestamp> StoreCommitter<T, C> {
     /// Status of the committer
     #[logic(opaque)]
     pub fn shot(self) -> bool {
@@ -212,15 +208,15 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((^self).shot())]
     #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures((*view).le_log(^view))]
-    #[ensures((*self).ward().get_timestamp(*view) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^view))]
+    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
+    #[ensures((*self).ward().get_timestamp((*sync_view).view()) < result)]
+    #[ensures(result <= (*self).ward().get_timestamp((^sync_view).view()))]
     #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), (*view))))]
+    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), (*sync_view).view())))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &mut Perm<C>, view: &mut SyncView) -> Timestamp {
+    pub fn shoot(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) -> Timestamp {
         panic!("Should not be called outside ghost code")
     }
 }
