@@ -7,30 +7,22 @@ on:
 jobs:
   build-guide:
     runs-on: ubuntu-latest
+    environment: deploy guide
     steps:
-      - uses: actions/checkout@v4
-      - name: Install latest mdbook
+      - name: Trigger guide deploy
         run: |
-          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir mdbook
-          curl -sSL $url | tar -xz --directory=./mdbook
-          echo `pwd`/mdbook >> $GITHUB_PATH
-      - name: Build Book
-        run: |
-          mdbook build guide
-      - name: Upload guide artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: guide
-          path: |
-            guide/book/
+          curl --fail-with-body -L -XPOST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GUIDE_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            https://api.github.com/repos/creusot-rs/guide/dispatches \
+            -d '{"event_type":"deploy-guide"}'
 
   build-docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/cache/restore@v4
+    - uses: actions/checkout@v5
+    - uses: actions/cache/restore@v5
       with:
         path: |
           ~/.rustup
@@ -48,40 +40,21 @@ jobs:
         cp ci/html/highlight.css guide/theme/highlight.js $BUILDDIR/doc
       env:
         RUSTDOCFLAGS: '--html-after-content ci/html/postscript.html --html-in-header ci/html/header.html'
-    - name: Upload creusot_std artifact
-      uses: actions/upload-artifact@v4
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v4
       with:
-        name: creusot_std
-        path: |
-          ci/build-docs/doc/
+        path: 'ci/build-docs/doc'
 
   deploy:
-    needs: [build-guide, build-docs]
+    needs: build-docs
     runs-on: ubuntu-latest
     permissions:
       contents: write  # To push a branch
       pages: write  # To push to a GitHub Pages site
       id-token: write # To update the deployment status
     steps:
-    - name: Remove previous dir
-      run: |
-        rm -rf ci/deploy-output
-    - name: Download guide artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: guide
-        path: ci/deploy-output/guide/
-    - name: Download creusot_std artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: creusot_std
-        path: ci/deploy-output/doc/
-    - name: Setup Pages
-      uses: actions/configure-pages@v5
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: 'ci/deploy-output'
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4

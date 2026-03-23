@@ -21,7 +21,7 @@
 //! }
 //! ```
 //!
-//! For a more detailed explanation, see the [guide](https://creusot-rs.github.io/creusot/guide).
+//! For a more detailed explanation, see the [guide](https://guide.creusot.rs).
 //!
 //! # Module organization
 //!
@@ -92,9 +92,9 @@ pub mod macros {
     /// A pre-condition of a function or trait item
     ///
     /// The inside of a `requires` may look like Rust code, but it is in fact
-    /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
+    /// [pearlite](https://guide.creusot.rs/pearlite).
     ///
-    /// See also the [guide: `requires` and `ensures`](https://creusot-rs.github.io/creusot/guide/basic_concepts/requires_ensures).
+    /// See also the [guide: `requires` and `ensures`](https://guide.creusot.rs/basic_concepts/requires_ensures).
     ///
     /// # Example
     ///
@@ -111,9 +111,9 @@ pub mod macros {
     /// `result` by default, or by naming it explicitly; see example below.
     ///
     /// The inside of a `ensures` may look like Rust code, but it is in fact
-    /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
+    /// [pearlite](https://guide.creusot.rs/pearlite).
     ///
-    /// See also the [guide: `requires` and `ensures`](https://creusot-rs.github.io/creusot/guide/basic_concepts/requires_ensures).
+    /// See also the [guide: `requires` and `ensures`](https://guide.creusot.rs/basic_concepts/requires_ensures).
     ///
     /// # Example
     ///
@@ -128,7 +128,7 @@ pub mod macros {
     /// Create a new [`Snapshot`](crate::snapshot::Snapshot) object.
     ///
     /// The inside of `snapshot` may look like Rust code, but it is in fact
-    /// [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite).
+    /// [pearlite](https://guide.creusot.rs/pearlite).
     ///
     /// # Example
     ///
@@ -249,10 +249,10 @@ pub mod macros {
 
     /// A loop invariant
     ///
-    /// A loop invariant is an assertion (in [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite)) which
+    /// A loop invariant is an assertion (in [pearlite](https://guide.creusot.rs/pearlite)) which
     /// must be true at every iteration of the loop.
     ///
-    /// See the [guide: Loop invariants](https://creusot-rs.github.io/creusot/guide/basic_concepts/loop_invariants).
+    /// See the [guide: Loop invariants](https://guide.creusot.rs/basic_concepts/loop_invariants).
     ///
     /// Not to be confused with [type invariants][crate::invariant::Invariant]
     /// or [resource invariants][crate::ghost::invariant].
@@ -349,7 +349,7 @@ pub mod macros {
     /// Inserts a *logical* assertion into the code
     ///
     /// This assertion will not be checked at runtime but only during proofs. However,
-    /// it can use [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite) syntax.
+    /// it can use [pearlite](https://guide.creusot.rs/pearlite) syntax.
     ///
     /// You can also use the `#[trusted]` attribute to disable checking a `proof_assert!`,
     /// so it becomes a trusted assumption for the rest of the function.
@@ -450,7 +450,7 @@ pub mod macros {
     /// ```
     pub use base_macros::variant;
 
-    /// Enables [pearlite](https://creusot-rs.github.io/creusot/guide/pearlite) syntax, granting access to Pearlite specific operators and syntax
+    /// Enables [pearlite](https://guide.creusot.rs/pearlite) syntax, granting access to Pearlite specific operators and syntax
     ///
     /// This is meant to be used in [`logic`] functions.
     ///
@@ -495,7 +495,7 @@ pub mod macros {
 
     /// Check that the annotated function erases to another function.
     ///
-    /// See the [guide: Erasure check](https://creusot-rs.github.io/creusot/guide/erasure.html).
+    /// See the [guide: Erasure check](https://guide.creusot.rs/erasure.html).
     ///
     /// # Usage
     ///
