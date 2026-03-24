@@ -199,10 +199,10 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ### Highlights
 
-- [Variants](https://github.com/creusot-rs/creusot/pull/1622) allow proving the termination of recursive functions and loops, which can then be used in ghost code. [Documentation.](https://creusot-rs.github.io/creusot/doc/creusot_contracts/macros/attr.variant.html)
+- [Variants](https://github.com/creusot-rs/creusot/pull/1622) allow proving the termination of recursive functions and loops, which can then be used in ghost code. [Documentation.](https://doc.creusot.rs/creusot_std/macros/attr.variant.html)
   - `#[variant(...)]` annotations can be put on loops and recursive functions (either `#[logic]`, or program functions with `#[check(terminates)]` or `#[check(ghost)]`) with a quantity that must decrease at each iteration.
   - The type of a variant must implement the `logic::WellFounded` trait.
-- [Erasure](https://github.com/creusot-rs/creusot/pull/1725) (+ [#1732](https://github.com/creusot-rs/creusot/pull/1732), [#1737](https://github.com/creusot-rs/creusot/pull/1737)) bridges the gap between code that is verified with Creusot (with specifications and ghost code made visible) and the code that is compiled (where specifications and ghost code are erased). [Documentation.](https://creusot-rs.github.io/creusot/guide/erasure.html)
+- [Erasure](https://github.com/creusot-rs/creusot/pull/1725) (+ [#1732](https://github.com/creusot-rs/creusot/pull/1732), [#1737](https://github.com/creusot-rs/creusot/pull/1737)) bridges the gap between code that is verified with Creusot (with specifications and ghost code made visible) and the code that is compiled (where specifications and ghost code are erased). [Documentation.](https://guide.creusot.rs/erasure.html)
 
 #### Ghost code
 
@@ -361,8 +361,8 @@ of iterators in `creusot-contracts`.
 
 #### Documentation
 
-- The [Creusot tutorial](https://creusot-rs.github.io/creusot/guide/tutorial.html) is an introduction to verify Rust programs with Creusot.
-- The `creusot-contracts` API documentation is [available online](https://creusot-rs.github.io/creusot/doc/creusot_contracts/). It contains information about Creusot's attributes and macros (supplementing the [guide](https://creusot-rs.github.io/creusot/guide/)), and lists available functions and methods along with their contracts, including logic functions (which would be omitted by a simple `cargo doc`).
+- The [Creusot tutorial](https://guide.creusot.rs/tutorial.html) is an introduction to verify Rust programs with Creusot.
+- The `creusot-contracts` API documentation is [available online](https://doc.creusot.rs/creusot_std/). It contains information about Creusot's attributes and macros (supplementing the [guide](https://guide.creusot.rs/)), and lists available functions and methods along with their contracts, including logic functions (which would be omitted by a simple `cargo doc`).
 
 ### Other improvements
 

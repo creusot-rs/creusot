@@ -10,7 +10,7 @@
 > - [Type invariants](../type_invariants).
 > - Resource invariants, for separation logic reasoning about shared resources.
 >   In Creusot, we further distinguish "atomic invariants" and "non-atomic invariants";
->   see the module [`creusot_std::ghost::invariant`](https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/invariant/index.html).
+>   see the module [`creusot_std::ghost::invariant`](https://doc.creusot.rs/creusot_std/ghost/invariant/index.html).
 
 When writing a loop (be it `for`, `while` or `loop`), you will generally need to specify a **loop invariant**,
 that is an assertion that stays true for the duration of the loop.
@@ -34,7 +34,7 @@ This program needs a loop invariant: even though its proof seems obvious to us, 
 - At the end of the loop, the loop condition is false: here `total >= n`.
 
 We still need to know that `total <= n` to get `result == n`.
-Use the [`#[invariant]`](https://creusot-rs.github.io/creusot/doc/creusot_std/macros/attr.invariant.html)
+Use the [`#[invariant]`](https://doc.creusot.rs/creusot_std/macros/attr.invariant.html)
 attribute to write loop invariants:
 
 ```rust

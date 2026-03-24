@@ -69,9 +69,9 @@ The first step is to make permissions explicit in the data structure.
 > - As a linked list is essentially a sequence of `Link<T>`, we can store permissions in a sequence ([`Seq`][seq]).
 > - To make it compile, we will also need to update `List::new()` to call [`Seq::new()`][seq-new] to conjure an empty ghost sequence.
 
-[perm]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html
-[seq]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html
-[seq-new]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.new
+[perm]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html
+[seq]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html
+[seq-new]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.new
 
 <details>
 <summary>Solution</summary>
@@ -100,7 +100,7 @@ The permissions in a `List<T>` should correspond to the pointers that it contain
 
 **Write a *type invariant*, by implementing the [`Invariant`][invariant] trait, to encode this well-formedness condition.**
 
-[invariant]: https://creusot-rs.github.io/creusot/doc/creusot_std/invariant/trait.Invariant.html
+[invariant]: https://doc.creusot.rs/creusot_std/invariant/trait.Invariant.html
 
 It contains one method `invariant(self)`
 which defines the property that all values of that type should satisfy.
@@ -122,9 +122,9 @@ as preconditions, and asserted as postconditions for the final value.
 >     last link, whose `next` must be null. (Hint: use [`is_null_logic`][is-null-logic].)
 > - Don't forget the base case!
 
-[ward]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html#method.ward
-[val]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html#method.val
-[is-null-logic]: https://creusot-rs.github.io/creusot/doc/creusot_std/std/ptr/trait.PointerExt.html#method.is_null_logic
+[ward]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html#method.ward
+[val]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html#method.val
+[is-null-logic]: https://doc.creusot.rs/creusot_std/std/ptr/trait.PointerExt.html#method.is_null_logic
 
 <details>
 <summary>Solution</summary>
@@ -159,7 +159,7 @@ to have a functional model for it, also known as a *view* in Creusot.
 
 **Implement the [`View`][view] trait to define a view.**
 
-[view]: https://creusot-rs.github.io/creusot/doc/creusot_std/model/trait.View.html
+[view]: https://doc.creusot.rs/creusot_std/model/trait.View.html
 
 A linked list naturally represents a sequence of elements: we define the view
 of linked lists as a mapping from `List<T>` to sequences `Seq<T>`.
@@ -171,7 +171,7 @@ hiding the details of memory layout.
 > - Use the [`Seq::map`][seq-map] method.
 > - The body of `#[logic]` functions should be wrapped in the `pearlite!` macro.
 
-[seq-map]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.map
+[seq-map]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.map
 
 <details>
 <summary>Solution</summary>
@@ -197,7 +197,7 @@ We are now ready to verify the methods of `List`.
 
 **Write the contract of `new()`:** the view of the `result` is the empty sequence [`Seq::empty()`][seq-empty].
 
-[seq-empty]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.empty
+[seq-empty]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.empty
 
 <details>
 <summary>Solution</summary>
@@ -217,7 +217,7 @@ We are now ready to verify the methods of `List`.
 > [!TIP]
 > Use [`Seq::push_back`][seq-push-back].
 
-[seq-push-back]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.push_back
+[seq-push-back]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.push_back
 
 <details>
 <summary>Solution</summary>
@@ -245,13 +245,13 @@ There are three things to do:
 > ([`Seq::len_ghost`][seq-len-ghost], [`Seq::get_mut_ghost`][seq-get-mut-ghost], [`Seq::push_back_ghost`][seq-push-back-ghost], [`Ghost::into_inner`][ghost-into-inner])
 > and they are erased at run time.
 
-[perm-from-box]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html#method.from_box
-[perm-as-mut]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html#method.as_mut
-[seq-len-ghost]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.len_ghost
-[seq-get-mut-ghost]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.get_mut_ghost
-[seq-push-back]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.push_back
-[seq-push-back-ghost]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.push_back_ghost
-[ghost-into-inner]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/struct.Ghost.html#method.into_inner
+[perm-from-box]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html#method.from_box
+[perm-as-mut]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html#method.as_mut
+[seq-len-ghost]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.len_ghost
+[seq-get-mut-ghost]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.get_mut_ghost
+[seq-push-back]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.push_back
+[seq-push-back-ghost]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.push_back_ghost
+[ghost-into-inner]: https://doc.creusot.rs/creusot_std/ghost/struct.Ghost.html#method.into_inner
 
 <details>
 <summary>Solution</summary>
@@ -292,7 +292,7 @@ pub fn push_back(&mut self, value: T) {
 > - Use [`Seq::pop_front`][seq-pop-front].
 > - We can use `match` in Pearlite.
 
-[seq-pop-front]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.pop_front
+[seq-pop-front]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.pop_front
 
 <details>
 <summary>Solution</summary>
@@ -314,8 +314,8 @@ As before, we must modify the function to manipulate pointer permissions.
 2. Replace `Box::from_raw`, which casts a pointer to a `Box`, with [`Perm::to_box`][perm-to-box],
     which also requires the permission protecting the pointer.
 
-[seq-pop-front-ghost]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.pop_front_ghost
-[perm-to-box]: https://creusot-rs.github.io/creusot/doc/creusot_std/ghost/perm/struct.Perm.html#method.to_box
+[seq-pop-front-ghost]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.pop_front_ghost
+[perm-to-box]: https://doc.creusot.rs/creusot_std/ghost/perm/struct.Perm.html#method.to_box
 
 <details>
 <summary>Solution</summary>

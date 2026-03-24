@@ -46,7 +46,7 @@ After having written your specification, you should be able to compile the proje
 > - The second postcondition is just [`(^v)@.permutation_of(v@)`][perm].
 >     (Actually spelling this out is rather complicated and besides the point of this tutorial.)
 
-[perm]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/seq/struct.Seq.html#method.permutation_of
+[perm]: https://doc.creusot.rs/creusot_std/logic/seq/struct.Seq.html#method.permutation_of
 
 <details>
 <summary>Solution</summary>
@@ -116,8 +116,8 @@ With this generalization, we will also need to modify the `#[ensures]` and
 (`v@[i] <= v@[j]`), we will compare their deep models
 (`v@[i].deep_model() <= v@[j].deep_model()`).
 
-[ord-logic]: https://creusot-rs.github.io/creusot/doc/creusot_std/logic/ord/trait.OrdLogic.html
-[deep-model]: https://creusot-rs.github.io/creusot/doc/creusot_std/model/trait.DeepModel.html
+[ord-logic]: https://doc.creusot.rs/creusot_std/logic/ord/trait.OrdLogic.html
+[deep-model]: https://doc.creusot.rs/creusot_std/model/trait.DeepModel.html
 
 <details>
 <summary>Solution</summary>

@@ -2,7 +2,7 @@
 
 ## Installation
 
-See the [Installation](https://creusot-rs.github.io/creusot/guide/installation.html) section.
+See the [Installation](https://guide.creusot.rs/installation.html) section.
 
 ## Create a project
 

@@ -1,6 +1,24 @@
+<div align="center">
+
 ![](/static/marteau.jpg)
 
 *Le marteau-pilon, forges et aciéries de Saint-Chamond, Joseph-Fortuné LAYRAUD, 1889*
+
+---
+
+# Creusot
+
+[![Guide](https://img.shields.io/badge/guide-darkgreen?logo=mdbook&labelColor=grey)](https://guide.creusot.rs)
+[![API](https://img.shields.io/badge/API-creusot--std-brightgreen?logo=rust&labelColor=grey)](https://doc.creusot.rs)
+[![Tutorial](https://img.shields.io/badge/tutorial-yellowgreen?logo=github&labelColor=grey)](https://github.com/creusot-rs/tutorial)
+&nbsp;
+[![Zulip](https://img.shields.io/badge/Zulip-chat-blue?logo=zulip)](https://why3.zulipchat.com/#narrow/channel/341707-creusot)
+[![Discussions](https://img.shields.io/badge/Github-discussions-teal?logo=github)](https://github.com/creusot-rs/creusot/discussions)
+&nbsp;
+[![Home](https://img.shields.io/badge/creusot.rs-home-orange?logo=web)](https://creusot.rs)
+[![Devlog](https://img.shields.io/badge/creusot.rs-devlog-yellow)](https://devlog.creusot.rs)
+
+</div>
 
 # About
 
@@ -10,14 +28,9 @@ Creusot works by translating Rust code to [Coma](https://coma.paulpatault.fr/), 
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
-## Help and Discussions
+## Help and Discussion
 
 If you need help using Creusot or would like to discuss, you can post on the [discussions forum](https://github.com/creusot-rs/creusot/discussions) or join our [Zulip chat](https://why3.zulipchat.com/#narrow/stream/341707-creusot)!
-
-## Documentation
-
-- To learn how to write code with Creusot: [guide](https://creusot-rs.github.io/creusot/guide)
-- To see the API of `creusot_std` (Creusot's "standard library"): [`creusot_std` API](https://creusot-rs.github.io/creusot/doc/creusot_std)
 
 ## Citing Creusot
 
@@ -44,10 +57,6 @@ More examples are found in [examples](examples) and [tests/should_succeed](tests
 
 1. [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
-3. Setup the environment for cargo if not done already:
-   ```sh
-   . .cargo/env
-   ```
 4. Clone the [creusot](https://github.com/creusot-rs/creusot/) repository,
    then move into the `creusot` directory.
    ```sh
@@ -63,7 +72,7 @@ More examples are found in [examples](examples) and [tests/should_succeed](tests
    cargo creusot --help
    ```
 
-See the [Creusot guide: Installation](https://creusot-rs.github.io/creusot/guide/installation.html)
+See the [Creusot guide: Installation](https://guide.creusot.rs/installation.html)
 for more details.
 
 ## Upgrading Creusot
