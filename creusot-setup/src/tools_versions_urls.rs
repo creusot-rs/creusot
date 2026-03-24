@@ -6,9 +6,9 @@
 // - update the SHA256 hash for each binary accordingly (use e.g. sha256sum to compute it)
 
 // tools without binary releases
-pub const WHY3_VERSION: &'static str = "1.8.2";
+pub const WHY3_VERSION: &'static str = "1.8.2"; // For the real version, see creusot-deps.opam
 pub const WHY3_CONFIG_MAGIC_NUMBER: &'static str = "14";
-pub const WHY3FIND_VERSION: &'static str = "1.2.0";
+pub const WHY3FIND_VERSION: &'static str = "1.3.0"; // For the real version, see creusot-deps.opam
 // tools with binary releases
 pub const ALTERGO_VERSION: &'static str = "2.6.2";
 pub const Z3_VERSION: &'static str = "4.15.3";
