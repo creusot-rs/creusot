@@ -33,8 +33,8 @@
         };
 
         why3find = {
-          version = "3a98fc320b9cbf2e71860da1c8dc188a966eee96";
-          sha256 = "sha256-BKhm9HNlJnEhGFChYDdoieAz319YBRqcCPRt+7RSvSI=";
+          version = "eab37557d3e24e1913a3c4f44bc5528ef497c6c9";
+          sha256 = "sha256-nyf/d3d0y5WuH5fTz93HkCbziwN0WR7sAzas+Ipauwg=";
         };
 
         alt-ergo = {
