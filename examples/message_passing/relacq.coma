@@ -32,106 +32,111 @@ module M_message_passing
   
   meta "rewrite_def" predicate inv_tup2_AtomicBool_Ghost_Box_Perm_AtomicBool_Global
   
-  type t_FMap_Int_tup2_bool_View
+  type t_FMap_Int_tup2_bool_SyncView
   
-  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_View
+  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
-  type t_View
+  type tup2_bool_SyncView = { f0'0: bool; f1'0: t_SyncView }
   
-  type tup2_bool_View = { f0'0: bool; f1'0: t_View }
+  type t_Option_tup2_bool_SyncView = None | Some tup2_bool_SyncView
   
-  type t_Option_tup2_bool_View = None | Some tup2_bool_View
+  function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
-  function to_mapping_Int (self: t_FMap_Int_tup2_bool_View) : Map.map int t_Option_tup2_bool_View
+  function len_Int (self: t_FMap_Int_tup2_bool_SyncView) : int
   
-  function len_Int (self: t_FMap_Int_tup2_bool_View) : int
+  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView. len_Int self >= 0
   
-  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_View. len_Int self >= 0
-  
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_View) (k: int) : t_Option_tup2_bool_View =
+  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
   meta "rewrite_def" function get_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_View) (k: int) = get_Int self k <> None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_bool_View) (k: int) (v: tup2_bool_View) : t_FMap_Int_tup2_bool_View
+  function insert_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
   
   axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_bool_View, k: int, v: tup2_bool_View. to_mapping_Int (insert_Int self k v)
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView. to_mapping_Int (insert_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
   axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_bool_View, k: int, v: tup2_bool_View. len_Int (insert_Int self k v)
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  constant empty_Int : t_FMap_Int_tup2_bool_View
+  constant empty_Int : t_FMap_Int_tup2_bool_SyncView
   
   axiom empty_Int_spec: len_Int empty_Int = 0
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None)
   
-  function singleton_Int (k: int) (v: tup2_bool_View) : t_FMap_Int_tup2_bool_View = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = insert_Int empty_Int k v
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_View (self: t_View) (_2: t_View) : t_Ordering
+  function cmp_log_SyncView (self: t_SyncView) (_2: t_SyncView) : t_Ordering
   
-  function eq_cmp_View (x: t_View) (y: t_View) : ()
+  function eq_cmp_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom eq_cmp_View_spec: forall x: t_View, y: t_View. (x = y) = (cmp_log_View x y = Equal)
+  axiom eq_cmp_SyncView_spec: forall x: t_SyncView, y: t_SyncView. (x = y) = (cmp_log_SyncView x y = Equal)
   
-  function antisym2_View (x: t_View) (y: t_View) : ()
+  function antisym2_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom antisym2_View_spec: forall x: t_View, y: t_View. cmp_log_View x y = Greater -> cmp_log_View y x = Less
+  axiom antisym2_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Greater
+      -> cmp_log_SyncView y x = Less
   
-  function antisym1_View (x: t_View) (y: t_View) : ()
+  function antisym1_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom antisym1_View_spec: forall x: t_View, y: t_View. cmp_log_View x y = Less -> cmp_log_View y x = Greater
+  axiom antisym1_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Less
+      -> cmp_log_SyncView y x = Greater
   
-  function trans_View (x: t_View) (y: t_View) (z: t_View) (o: t_Ordering) : ()
+  function trans_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) (o: t_Ordering) : ()
   
-  axiom trans_View_spec: forall x: t_View, y: t_View, z: t_View, o: t_Ordering. cmp_log_View x y = o
-      -> cmp_log_View y z = o -> cmp_log_View x z = o
+  axiom trans_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView, o: t_Ordering. cmp_log_SyncView x y = o
+      -> cmp_log_SyncView y z = o -> cmp_log_SyncView x z = o
   
-  function refl_View (x: t_View) : ()
+  function refl_SyncView (x: t_SyncView) : ()
   
-  axiom refl_View_spec: forall x: t_View. cmp_log_View x x = Equal
+  axiom refl_SyncView_spec: forall x: t_SyncView. cmp_log_SyncView x x = Equal
   
-  predicate gt_log_View (self: t_View) (o: t_View) = cmp_log_View self o = Greater
+  predicate gt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Greater
   
-  function cmp_gt_log_View (x: t_View) (y: t_View) : ()
+  function cmp_gt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_gt_log_View_spec: forall x: t_View, y: t_View. gt_log_View x y = (cmp_log_View x y = Greater)
+  axiom cmp_gt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. gt_log_SyncView x y
+      = (cmp_log_SyncView x y = Greater)
   
-  predicate ge_log_View (self: t_View) (o: t_View) = cmp_log_View self o <> Less
+  predicate ge_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Less
   
-  function cmp_ge_log_View (x: t_View) (y: t_View) : ()
+  function cmp_ge_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_ge_log_View_spec: forall x: t_View, y: t_View. ge_log_View x y = (cmp_log_View x y <> Less)
+  axiom cmp_ge_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. ge_log_SyncView x y
+      = (cmp_log_SyncView x y <> Less)
   
-  predicate lt_log_View (self: t_View) (o: t_View) = cmp_log_View self o = Less
+  predicate lt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Less
   
-  function cmp_lt_log_View (x: t_View) (y: t_View) : ()
+  function cmp_lt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_lt_log_View_spec: forall x: t_View, y: t_View. lt_log_View x y = (cmp_log_View x y = Less)
+  axiom cmp_lt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. lt_log_SyncView x y
+      = (cmp_log_SyncView x y = Less)
   
-  predicate le_log_View (self: t_View) (o: t_View) = cmp_log_View self o <> Greater
+  predicate le_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Greater
   
-  function cmp_le_log_View (x: t_View) (y: t_View) : ()
+  function cmp_le_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_le_log_View_spec: forall x: t_View, y: t_View. le_log_View x y = (cmp_log_View x y <> Greater)
+  axiom cmp_le_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+      = (cmp_log_SyncView x y <> Greater)
   
-  function get_timestamp_AtomicBool (self: t_AtomicBool) (_2: t_View) : int
+  function get_timestamp_AtomicBool (self: t_AtomicBool) (_2: t_SyncView) : int
   
-  function get_timestamp_monotonic_AtomicBool (self: t_AtomicBool) (x: t_View) (y: t_View) : ()
+  function get_timestamp_monotonic_AtomicBool (self: t_AtomicBool) (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom get_timestamp_monotonic_AtomicBool_spec: forall self: t_AtomicBool, x: t_View, y: t_View. le_log_View x y
+  axiom get_timestamp_monotonic_AtomicBool_spec:
+    forall self: t_AtomicBool, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicBool self x <= get_timestamp_AtomicBool self y
   
-  function view (self: t_SyncView) : t_View
+  function view (self: t_SyncView) : t_SyncView
   
   function fin_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) : t_SyncView = self.final
   
@@ -265,7 +270,7 @@ module M_message_passing
           \/ b
           /\ perm = ward_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)
           /\ Int32.to_int (val_PermCell_i32 (val_Box_Perm_PermCell_i32_Global data_own)) = 1
-          /\ le_log_View (view (view_Box_Perm_PermCell_i32_Global'0 data_own)) view'0
+          /\ le_log_SyncView (view (view_Box_Perm_PermCell_i32_Global'0 data_own)) view'0
           | None -> true
           end)
       | Readable tok_write tok_read -> excl_write = id_Excl_unit tok_write /\ excl_read = id_Excl_unit tok_read
@@ -511,7 +516,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot ensures #1] ward_bool self.current = ward_bool self.final
         /\ val_bool self.current = val_bool self.final)
       /\ ([@stop_split] [@expl:shoot ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
-      /\ ([@stop_split] [@expl:shoot ensures #3] le_log_View (view sync_view.current) (view sync_view.final))
+      /\ ([@stop_split] [@expl:shoot ensures #3] le_log_SyncView (view sync_view.current) (view sync_view.final))
       /\ ([@stop_split] [@expl:shoot ensures #4] get_timestamp_AtomicBool (ward_bool self.current) (view sync_view.current)
         < result)
       /\ ([@stop_split] [@expl:shoot ensures #5] result
@@ -970,13 +975,13 @@ module M_message_passing
     = ward_AtomicBool own}
     any
     [ return (result: int) ->
-    {[@stop_split] [@expl:shoot_bool ensures] ([@stop_split] [@expl:shoot ensures #0] le_log_View (view sync_view.current) (view sync_view.final))
+    {[@stop_split] [@expl:shoot_bool ensures] ([@stop_split] [@expl:shoot ensures #0] le_log_SyncView (view sync_view.current) (view sync_view.final))
       /\ ([@stop_split] [@expl:shoot ensures #1] get_timestamp_AtomicBool (ward_bool'0 self) (view sync_view.current)
         <= result)
       /\ ([@stop_split] [@expl:shoot ensures #2] result
         <= get_timestamp_AtomicBool (ward_bool'0 self) (view sync_view.final))
       /\ ([@stop_split] [@expl:shoot ensures #3] match get_Int (val_AtomicBool own) result with
-        | Some {f0'0 = v; f1'0 = v_view} -> v = val_bool'0 self /\ le_log_View v_view (view sync_view.final)
+        | Some {f0'0 = v; f1'0 = v_view} -> v = val_bool'0 self /\ le_log_SyncView v_view (view sync_view.final)
         | None -> false
         end)}
       (! return {result}) ]
@@ -1023,7 +1028,7 @@ module M_message_passing
   let rec sync_Box_Perm_PermCell_i32_Global (self: t_AtView_Box_Perm_PermCell_i32_Global) (sync_view: t_SyncView)
     (return (x: t_Perm_PermCell_i32)) =
     {[@stop_split] [@expl:sync_Box_Perm_PermCell_i32_Global requires] ([@stop_split] [@expl:sync 'self' type invariant] inv_AtView_Box_Perm_PermCell_i32_Global self)
-    /\ ([@stop_split] [@expl:sync requires] le_log_View (view (view_Box_Perm_PermCell_i32_Global'0 self)) (view sync_view))}
+    /\ ([@stop_split] [@expl:sync requires] le_log_SyncView (view (view_Box_Perm_PermCell_i32_Global'0 self)) (view sync_view))}
     any
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:sync ensures] result
       = val_Box_Perm_PermCell_i32_Global self}

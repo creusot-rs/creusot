@@ -29,18 +29,43 @@ pub type Timestamp = Int;
 
 pub trait HasTimestamp {
     #[logic]
-    fn get_timestamp(self, view: View) -> Timestamp;
+    fn get_timestamp(self, view: SyncView) -> Timestamp;
 
     #[logic(law)]
     #[requires(x.le_log(y))]
     #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
-    fn get_timestamp_monotonic(self, x: View, y: View);
+    fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
 }
 
+/// A witness to the _current view_, containing all the events observed by this thread.
+///
+/// In Cosmo, [`SyncView`] corresponds to the notation `↑V`
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.cur`
 #[opaque]
-pub struct View(());
+#[derive(Copy)]
+pub struct SyncView(());
 
-impl OrdLogic for View {
+impl Clone for SyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl SyncView {
+    #[check(ghost)]
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+
+    #[logic(opaque)]
+    pub fn view(self) -> SyncView {
+        dead
+    }
+}
+
+impl OrdLogic for SyncView {
     #[logic(opaque)]
     fn cmp_log(self, _: Self) -> Ordering {
         dead
@@ -96,34 +121,6 @@ impl OrdLogic for View {
     fn eq_cmp(x: Self, y: Self) {}
 }
 
-/// A witness to the _current view_, containing all the events observed by this thread.
-///
-/// In Cosmo, [`SyncView`] corresponds to the notation `↑V`
-/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.cur`
-#[opaque]
-#[derive(Copy)]
-pub struct SyncView(());
-
-impl Clone for SyncView {
-    #[ensures(result == *self)]
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl SyncView {
-    #[check(ghost)]
-    #[trusted]
-    pub fn new() -> Ghost<Self> {
-        panic!("Should not be called outside ghost code")
-    }
-
-    #[logic(opaque)]
-    pub fn view(self) -> View {
-        dead
-    }
-}
-
 /// A witness to the _release view_, containing all the events observed by this thread at its last release fence.
 ///
 /// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.rel`
@@ -146,7 +143,7 @@ impl ReleaseSyncView {
     }
 
     #[logic(opaque)]
-    pub fn view(self) -> View {
+    pub fn view(self) -> SyncView {
         dead
     }
 }
@@ -173,7 +170,7 @@ impl AcquireSyncView {
     }
 
     #[logic(opaque)]
-    pub fn view(self) -> View {
+    pub fn view(self) -> SyncView {
         dead
     }
 }

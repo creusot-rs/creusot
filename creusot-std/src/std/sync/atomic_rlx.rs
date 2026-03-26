@@ -1,9 +1,3 @@
-// TODO: [VL]
-// Qu'est-ce qui empêche quelqu'un de prendre une ReleaseSyncView + tardive que prévue ?
-// x :=rlx 1
-// y :=rlx 2
-// fence(rel)
-
 #[cfg(creusot)]
 use crate::sync_view::Objective;
 
@@ -11,7 +5,7 @@ use crate::{
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp, View},
+    sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
 };
 use core::marker::PhantomData;
 
@@ -29,7 +23,7 @@ macro_rules! impl_atomic {
         impl $(< $T >)? Objective for Perm<$atomic_type $(< $T >)?> {}
 
             impl $(< $T >)? Container for $atomic_type $(< $T >)? {
-            type Value = FMap<Timestamp, ($type, View)>;
+            type Value = FMap<Timestamp, ($type, SyncView)>;
 
             #[logic(open, inline)]
             fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
@@ -39,7 +33,7 @@ macro_rules! impl_atomic {
 
         impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
             #[logic(opaque)]
-            fn get_timestamp(self, _: View) -> Timestamp {
+            fn get_timestamp(self, _: SyncView) -> Timestamp {
                 dead
             }
 
@@ -47,7 +41,7 @@ macro_rules! impl_atomic {
             #[requires(x.le_log(y))]
             #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
             #[trusted]
-            fn get_timestamp_monotonic(self, x: View, y: View) {}
+            fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
@@ -144,9 +138,11 @@ impl_atomic_int! {
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
-pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, View)>>>(PhantomData<(T, C)>);
+pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
+    PhantomData<(T, C)>,
+);
 
-impl<T, C: Container<Value = FMap<Timestamp, (T, View)>> + HasTimestamp> LoadCommitter<T, C> {
+impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<T, C> {
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -183,9 +179,11 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, View)>> + HasTimestamp> LoadCom
 /// Wrapper around a single atomic operation, where multiple ghost steps can be
 /// performed.
 #[opaque]
-pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, View)>>>(PhantomData<(T, C)>);
+pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
+    PhantomData<(T, C)>,
+);
 
-impl<T, C: Container<Value = FMap<Timestamp, (T, View)>> + HasTimestamp> StoreCommitter<T, C> {
+impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> StoreCommitter<T, C> {
     /// Status of the committer
     #[logic(opaque)]
     pub fn shot(self) -> bool {
