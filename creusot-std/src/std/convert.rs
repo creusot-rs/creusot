@@ -1,5 +1,6 @@
 use crate::prelude::*;
-
+#[cfg(all(creusot, feature = "std"))]
+use alloc::alloc::Allocator;
 #[cfg(all(creusot, not(feature = "std")))]
 use alloc::boxed::Box;
 
@@ -41,6 +42,101 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(*result == x)]
         fn from(x: T) -> Self;
+    }
+
+    impl<T: Clone> From<&[T]> for Box<[T]>
+    {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == s@.len())]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        fn from(s: &[T]) -> Self;
+        // To verify: uses CloneToUninit
+    }
+
+    impl<T: Clone> From<&mut [T]> for Box<[T]>
+    {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == s@.len())]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(^s == *s)]
+        fn from(s: &mut [T]) -> Self {
+            Box::<[T]>::from(&*s)
+        }
+    }
+
+    impl<T, const N: usize> From<[T; N]> for Box<[T]> {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: [T; N]) -> Self {
+            Box::new(s)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<T: Clone> From<&[T]> for Vec<T>
+    {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == s@.len())]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        fn from(s: &[T]) -> Self {
+            s.to_vec()
+        }
+    }
+
+    impl<T: Clone> From<&mut [T]> for Vec<T>
+    {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == s@.len())]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(^s == *s)]
+        fn from(s: &mut [T]) -> Self {
+            s.to_vec()
+        }
+    }
+
+    impl<T, A: Allocator> From<Box<[T], A>> for Vec<T, A> {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: Box<[T], A>) -> Self {
+            s.into_vec()
+        }
+    }
+
+    impl<T: Clone, const N: usize> From<&[T; N]> for Vec<T> {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == N@)]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        fn from(s: &[T; N]) -> Self {
+            Vec::<T>::from(s.as_slice())
+        }
+    }
+
+    impl<T: Clone, const N: usize> From<&mut [T; N]> for Vec<T> {
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == N@)]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(^s == *s)]
+        fn from(s: &mut [T; N]) -> Self {
+            Vec::<T>::from(s.as_mut_slice())
+        }
+    }
+
+    impl<T, const N: usize> From<[T; N]> for Vec<T> {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: [T; N]) -> Self {
+            <[T]>::into_vec(Box::new(s))
+        }
+    }
+
+    impl<T, A: Allocator> From<Vec<T, A>> for Box<[T], A> {
+        #[check(ghost)]
+        #[ensures(result@ == v@)]
+        fn from(v: Vec<T, A>) -> Self {
+            v.into_boxed_slice()
+        }
     }
 }
 

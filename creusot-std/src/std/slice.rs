@@ -459,9 +459,14 @@ extern_spec! {
 #[cfg(feature = "std")]
 extern_spec! {
     impl<T> [T] {
-        #[check(terminates)] // can OOM (?)
+        #[check(ghost)]
         #[ensures(result@ == self_@)]
         fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+
+        // FIXME: inherit ghost/terminates from clone
+        #[ensures(result@.len() == self@.len())]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i]))]
+        fn to_vec(&self) -> Vec<T> where T: Clone;
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {

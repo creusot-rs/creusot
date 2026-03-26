@@ -71,6 +71,7 @@
         decl_macro,
         auto_traits,
         negative_impls,
+        clone_from_ref,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]

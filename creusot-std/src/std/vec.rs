@@ -1,6 +1,8 @@
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
+#[cfg(all(creusot, not(feature = "std")))]
+use alloc::boxed::Box;
 use alloc::vec::*;
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
@@ -162,6 +164,10 @@ extern_spec! {
         #[check(ghost)]
         #[ensures((^self)@.len() == 0)]
         fn clear(&mut self);
+
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        fn into_boxed_slice(self) -> Box<[T], A>;
     }
 
     impl<T, A: Allocator> Extend<T> for Vec<T, A> {
@@ -200,6 +206,7 @@ extern_spec! {
     impl<T, A: Allocator> DerefMut for Vec<T, A> {
         #[check(ghost)]
         #[ensures(result@ == self@)]
+        #[ensures((^self)@.len() == (*self)@.len())]
         #[ensures((^result)@ == (^self)@)]
         fn deref_mut(&mut self) -> &mut [T];
     }
