@@ -69,6 +69,7 @@ attribute_functions! {
     [creusot::decl::new_namespace]              => is_new_namespace
     [creusot::decl::open_inv_result]            => is_open_inv_result
     [creusot::extern_spec]                      => is_extern_spec
+    [creusot::extern_type]                      => is_extern_type
     [creusot::trusted_trivial_if_param_trivial] => is_trivial_if_param_trivial
     [creusot::clause::variant]                  => has_variant_clause
     [creusot::clause::check_terminates]         => is_check_terminates
@@ -271,6 +272,29 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     }
 
     found
+}
+
+pub(crate) fn get_trusted_positive(tcx: TyCtxt, def_id: DefId) -> Option<Vec<Symbol>> {
+    let attr = get_attrs(tcx, def_id, &["creusot", "decl", "trusted_positive"]).pop()?;
+    let Attribute::Unparsed(attr) = attr else { unreachable!() };
+    match &attr.args {
+        AttrArgs::Delimited(args) => Some(parse_trusted_positive(&args.tokens)),
+        _ => tcx.crash_and_error(tcx.def_span(def_id), "Bad #[trusted_positive] attribute"),
+    }
+}
+
+fn parse_trusted_positive(tokens: &TokenStream) -> Vec<Symbol> {
+    let mut params = Vec::new();
+    for token in tokens.iter() {
+        let TokenTree::Token(token, _) = token else {
+            continue;
+        };
+        let TokenKind::Ident(sym, _) = token.kind else {
+            continue;
+        };
+        params.push(sym)
+    }
+    params
 }
 
 fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx Attribute> {
