@@ -123,7 +123,7 @@ pub fn message_passing() {
                     unreachable!();
                 };
                 inv.state = State::Readable(tok_write, excl.take().unwrap());
-                data_own = Ghost::new(Some(at_view.into_inner(sync_view)))
+                data_own = Ghost::new(Some(at_view.sync(sync_view)))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };

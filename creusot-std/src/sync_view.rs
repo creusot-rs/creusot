@@ -212,7 +212,7 @@ impl<T> AtView<T> {
     #[requires(self.view_logic().view().le_log(sync_view.view()))]
     #[ensures(result == self.val())]
     #[allow(unused_variables)]
-    pub fn into_inner(self, sync_view: SyncView) -> T {
+    pub fn sync(self, sync_view: SyncView) -> T {
         panic!("Should not be called outside ghost code")
     }
 

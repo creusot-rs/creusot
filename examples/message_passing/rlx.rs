@@ -135,10 +135,7 @@ pub fn message_passing() {
             })}}) {}
 
             let sync_view = fence_acquire(ghost!(data_acq_view.unwrap()));
-            let data_own = ghost! {
-                let data_perm = data_at_view.into_inner().unwrap();
-                data_perm.into_inner(*sync_view)
-            };
+            let data_own = ghost!(data_at_view.into_inner().unwrap().sync(*sync_view));
 
             let res = unsafe { data.get(ghost!(&**data_own)) };
             proof_assert!(res == 1i32)

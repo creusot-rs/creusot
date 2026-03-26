@@ -110,7 +110,7 @@ pub fn message_passing() {
 
                 let mut sync_view = *SyncView::new();
                 c.shoot(&inv.atomic_own, &mut sync_view);
-                data_own = Ghost::new(Some(inv.at_view.take().unwrap().into_inner(sync_view)))
+                data_own = Ghost::new(Some(inv.at_view.take().unwrap().sync(sync_view)))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
