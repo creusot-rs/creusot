@@ -17,6 +17,7 @@ use creusot_std::{
     },
     sync_view::{AtView, SyncView},
 };
+use std::sync::atomic::Ordering;
 
 declare_namespace! { MESSAGE_PASSING }
 
@@ -83,6 +84,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
+                Ordering::Release,
                 ghost! { |c: &mut StoreCommitter<_, _>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
@@ -91,7 +93,7 @@ pub fn message_passing() {
                         }
 
                         inv.state = State::Synchronisation(at_view, excl.into_inner());
-                        c.shoot(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_release(&mut inv.atomic_own, &mut sync_view);
                     })
                 }},
             );
@@ -104,27 +106,30 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &LoadCommitter<bool, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!(c.val()).into_ghost() {
-                    return
-                }
+            while !atomic.load(
+                Ordering::Acquire,
+                ghost! { |c: &LoadCommitter<bool, _>| {
+                inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                    if !*snapshot!(c.val()).into_ghost() {
+                        return
+                    }
 
-                if let State::Readable(_, excl_state) = &inv.state {
-                    excl.as_mut().unwrap().valid_op_lemma(excl_state);
-                }
+                    if let State::Readable(_, excl_state) = &inv.state {
+                        excl.as_mut().unwrap().valid_op_lemma(excl_state);
+                    }
 
-                let mut sync_view = *SyncView::new();
-                c.shoot(&inv.atomic_own, &mut sync_view);
+                    let mut sync_view = *SyncView::new();
+                    c.shoot_acquire(&inv.atomic_own, &mut sync_view);
 
-                let State::Synchronisation(at_view, tok_write) =
-                    std::mem::replace(&mut inv.state, State::Invalid)
-                else {
-                    unreachable!();
-                };
-                inv.state = State::Readable(tok_write, excl.take().unwrap());
-                data_own = Ghost::new(Some(at_view.sync(sync_view)))
-            })}}) {}
+                    let State::Synchronisation(at_view, tok_write) =
+                        std::mem::replace(&mut inv.state, State::Invalid)
+                    else {
+                        unreachable!();
+                    };
+                    inv.state = State::Readable(tok_write, excl.take().unwrap());
+                    data_own = Ghost::new(Some(at_view.sync(sync_view)))
+                })}},
+            ) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
             proof_assert!(res == 1i32)

@@ -13,13 +13,14 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic_rlx::{AtomicBool, LoadCommitter, StoreCommitter},
+            atomic_relacq::{AtomicBool, LoadCommitter, StoreCommitter},
             fence::{fence_acquire, fence_release},
         },
         thread::{self, JoinHandleExt},
     },
     sync_view::{AtView, SyncView},
 };
+use std::sync::atomic::Ordering;
 
 declare_namespace! { MESSAGE_PASSING }
 
@@ -89,6 +90,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
+                Ordering::Relaxed,
                 ghost! { |c: &mut StoreCommitter<_, _>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         if let State::Synchronisation(_, excl_state) | State::Readable(excl_state, _) = &inv.state {
@@ -96,7 +98,7 @@ pub fn message_passing() {
                         }
 
                         inv.state = State::Synchronisation(at_view.into_inner(), excl.into_inner());
-                        c.shoot(&mut inv.atomic_own, &mut sync_view, rel_view.into_inner());
+                        c.shoot_relaxed(&mut inv.atomic_own, &mut sync_view, rel_view.into_inner());
                     })
                 }},
             );
@@ -110,29 +112,32 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &LoadCommitter<bool, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!(c.val()).into_ghost() {
-                    return
-                }
+            while !atomic.load(
+                Ordering::Relaxed,
+                ghost! { |c: &LoadCommitter<bool, _>| {
+                inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                    if !*snapshot!(c.val()).into_ghost() {
+                        return
+                    }
 
-                if let State::Readable(_, excl_state) = &inv.state {
-                    excl.as_mut().unwrap().valid_op_lemma(excl_state);
-                }
+                    if let State::Readable(_, excl_state) = &inv.state {
+                        excl.as_mut().unwrap().valid_op_lemma(excl_state);
+                    }
 
-                let mut sync_view = *SyncView::new();
-                let (_, acq) = c.shoot(&inv.atomic_own, &mut sync_view);
-                data_acq_view = Ghost::new(Some(acq));
+                    let mut sync_view = *SyncView::new();
+                    let (_, acq) = c.shoot_relaxed(&inv.atomic_own, &mut sync_view);
+                    data_acq_view = Ghost::new(Some(acq));
 
-                let State::Synchronisation(at_view, tok_write) =
-                    std::mem::replace(&mut inv.state, State::Invalid)
-                else {
-                    unreachable!();
-                };
+                    let State::Synchronisation(at_view, tok_write) =
+                        std::mem::replace(&mut inv.state, State::Invalid)
+                    else {
+                        unreachable!();
+                    };
 
-                inv.state = State::Readable(tok_write, excl.take().unwrap());
-                data_at_view = Ghost::new(Some(at_view))
-            })}}) {}
+                    inv.state = State::Readable(tok_write, excl.take().unwrap());
+                    data_at_view = Ghost::new(Some(at_view))
+                })}},
+            ) {}
 
             let sync_view = fence_acquire(ghost!(data_acq_view.unwrap()));
             let data_own = ghost!(data_at_view.into_inner().unwrap().sync(*sync_view));

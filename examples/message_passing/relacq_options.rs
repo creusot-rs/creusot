@@ -17,6 +17,7 @@ use creusot_std::{
     },
     sync_view::{AtView, SyncView},
 };
+use std::sync::atomic::Ordering;
 
 declare_namespace! { MESSAGE_PASSING }
 
@@ -79,6 +80,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
+                Ordering::Release,
                 ghost! { |c: &mut StoreCommitter<_, _>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         excl.valid_op_lemma(&inv.tok_write);
@@ -86,7 +88,7 @@ pub fn message_passing() {
 
                         let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         inv.at_view = Some(at_view);
-                        c.shoot(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_release(&mut inv.atomic_own, &mut sync_view);
                     })
                 }},
             );
@@ -99,19 +101,22 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &LoadCommitter<bool, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!{ c.val() }.into_ghost() {
-                    return
-                }
+            while !atomic.load(
+                Ordering::Acquire,
+                ghost! { |c: &LoadCommitter<bool, _>| {
+                inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                    if !*snapshot!{ c.val() }.into_ghost() {
+                        return
+                    }
 
-                excl.valid_op_lemma(&inv.tok_read);
-                std::mem::swap(&mut inv.tok_read, &mut *excl);
+                    excl.valid_op_lemma(&inv.tok_read);
+                    std::mem::swap(&mut inv.tok_read, &mut *excl);
 
-                let mut sync_view = *SyncView::new();
-                c.shoot(&inv.atomic_own, &mut sync_view);
-                data_own = Ghost::new(Some(inv.at_view.take().unwrap().sync(sync_view)))
-            })}}) {}
+                    let mut sync_view = *SyncView::new();
+                    c.shoot_acquire(&inv.atomic_own, &mut sync_view);
+                    data_own = Ghost::new(Some(inv.at_view.take().unwrap().sync(sync_view)))
+                })}},
+            ) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
             proof_assert!(res == 1i32)

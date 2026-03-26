@@ -5,7 +5,7 @@ use crate::{
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{HasTimestamp, SyncView, Timestamp},
+    sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
 };
 use core::marker::PhantomData;
 
@@ -57,13 +57,16 @@ macro_rules! impl_atomic {
             // TODO: [VL] into_inner
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
-            #[requires(forall<c: &LoadCommitter<$type, Self>> c.ward() == *self ==> f.precondition((c,)))]
+            #[requires(order == ::std::sync::atomic::Ordering::Acquire || order == ::std::sync::atomic::Ordering::Relaxed)]
+            #[requires(forall<c: &LoadCommitter<$type, Self>>
+                c.ordering() == order ==> c.ward() == *self ==> f.precondition((c,))
+            )]
             #[ensures(exists<c: &LoadCommitter<$type, Self>>
-                c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+                c.ordering() == order && c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn load<F>(&self, f: Ghost<F>) -> $type
+            pub fn load<F>(&self, order: ::std::sync::atomic::Ordering, f: Ghost<F>) -> $type
             where
                 F: FnGhost + FnOnce(&LoadCommitter<$type, Self>),
             {
@@ -75,16 +78,18 @@ macro_rules! impl_atomic {
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
-            #[requires(forall<c: &mut StoreCommitter<$type, Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
+            #[requires(order == ::std::sync::atomic::Ordering::Release || order == ::std::sync::atomic::Ordering::Relaxed)]
+            #[requires(forall<c: &mut StoreCommitter<$type, Self>>
+                !c.shot() ==> c.ordering() == order ==> c.ward() == *self ==> c.val() == val ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
             )]
             #[ensures(exists<c: &mut StoreCommitter<$type, Self>>
-                !c.shot() && c.ward() == *self && c.val() == val &&
+                !c.shot() && c.ordering() == order && c.ward() == *self && c.val() == val &&
                 f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn store<F>(&self, val: $type, f: Ghost<F>)
+            pub fn store<F>(&self, val: $type, order: ::std::sync::atomic::Ordering, f: Ghost<F>)
             where
                 F: FnGhost + FnOnce(&mut StoreCommitter<$type, Self>),
             {
@@ -93,7 +98,7 @@ macro_rules! impl_atomic {
                     if cfg!(feature = "sc-drf") {
                         ::std::sync::atomic::Ordering::SeqCst
                     } else {
-                        ::std::sync::atomic::Ordering::Release
+                        order
                     },
                 )
             }
@@ -143,6 +148,12 @@ pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>
 );
 
 impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<T, C> {
+    /// Which ordering this committer belongs to.
+    #[logic(opaque)]
+    pub fn ordering(self) -> ::std::sync::atomic::Ordering {
+        dead
+    }
+
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -157,9 +168,33 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
         dead
     }
 
-    /// 'Shoot' the committer
+    /// 'Shoot' the committer (Relaxed)
     ///
     /// This does the read on the atomic in ghost code.
+    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
+    #[requires(self.ward() == *own.ward())]
+    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
+    #[ensures(self.ward().get_timestamp((*sync_view).view()) <= result.0)]
+    #[ensures(result.0 <= self.ward().get_timestamp((^sync_view).view()))]
+    #[ensures(match own.val().get(result.0) {
+        Some((v, v_view)) => v == self.val() && v_view.le_log(result.1.view()),
+        None => false
+    })]
+    #[check(ghost)]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn shoot_relaxed(
+        &self,
+        own: &Perm<C>,
+        sync_view: &mut SyncView,
+    ) -> (Timestamp, AcquireSyncView) {
+        panic!("Should not be called outside ghost code")
+    }
+
+    /// 'Shoot' the committer (Acquire)
+    ///
+    /// This does the read on the atomic in ghost code.
+    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Acquire)]
     #[requires(self.ward() == *own.ward())]
     #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
     #[ensures(self.ward().get_timestamp((*sync_view).view()) <= result)]
@@ -171,7 +206,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Timestamp {
+    pub fn shoot_acquire(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Timestamp {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -184,6 +219,12 @@ pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>
 );
 
 impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> StoreCommitter<T, C> {
+    /// Which ordering this committer belongs to.
+    #[logic(opaque)]
+    pub fn ordering(self) -> ::std::sync::atomic::Ordering {
+        dead
+    }
+
     /// Status of the committer
     #[logic(opaque)]
     pub fn shot(self) -> bool {
@@ -204,9 +245,10 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
         dead
     }
 
-    /// 'Shoot' the committer
+    /// 'Shoot' the committer (Release)
     ///
     /// This does the write on the atomic in ghost code, and can only be called once.
+    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Release)]
     #[requires(!(*self).shot())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((^self).shot())]
@@ -220,7 +262,34 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) -> Timestamp {
+    pub fn shoot_release(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) -> Timestamp {
+        panic!("Should not be called outside ghost code")
+    }
+
+    /// 'Shoot' the committer (Relaxed)
+    ///
+    /// This does the write on the atomic in ghost code, and can only be called once.
+    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
+    #[requires(!(*self).shot())]
+    #[requires(self.ward() == *(*own).ward())]
+    #[ensures((^self).shot())]
+    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
+    #[ensures((*own).ward() == (^own).ward())]
+    #[ensures(rel_view.view().le_log((*sync_view).view()))]
+    #[ensures((*sync_view).view().le_log((^sync_view).view()))]
+    #[ensures((*self).ward().get_timestamp((*sync_view).view()) < result)]
+    #[ensures(result <= (*self).ward().get_timestamp((^sync_view).view()))]
+    #[ensures((*own).val().get(result) == None)]
+    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), rel_view.view())))]
+    #[check(ghost)]
+    #[trusted]
+    #[allow(unused_variables)]
+    pub fn shoot_relaxed(
+        &mut self,
+        own: &mut Perm<C>,
+        sync_view: &mut SyncView,
+        rel_view: ReleaseSyncView,
+    ) -> Timestamp {
         panic!("Should not be called outside ghost code")
     }
 }
