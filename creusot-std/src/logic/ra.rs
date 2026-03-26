@@ -7,6 +7,7 @@ pub mod fmap;
 mod int;
 mod nat;
 pub mod option;
+mod positive;
 mod positive_real;
 pub mod prod;
 pub mod sum;
