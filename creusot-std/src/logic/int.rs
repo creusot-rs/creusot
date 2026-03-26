@@ -2,10 +2,12 @@ use crate::{
     ghost::Plain,
     invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
+    ord_laws_impl,
     prelude::*,
 };
-use core::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
+use core::{
+    cmp,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
 };
 
 /// An unbounded, mathematical integer.
@@ -419,6 +421,7 @@ impl RemAssign for Int {
     }
 }
 
+#[derive(Copy)]
 struct NatInner(Int);
 
 impl Invariant for NatInner {
@@ -436,14 +439,51 @@ impl InhabitedInvariant for NatInner {
     }
 }
 
+impl Clone for NatInner {
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 /// Natural numbers, i.e., integers that are greater or equal to 0.
+#[derive(Copy)]
 pub struct Nat(Subset<NatInner>);
+
+impl View for Nat {
+    type ViewTy = Int;
+    #[logic(open)]
+    fn view(self) -> Int {
+        self.to_int()
+    }
+}
+
+impl Clone for Nat {
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl Plain for Nat {
+    #[check(ghost)]
+    #[ensures(*result == *s)]
+    #[allow(unused_variables)]
+    fn into_ghost(s: Snapshot<Self>) -> Ghost<Self> {
+        ghost! {
+            let n: Snapshot<Int> = snapshot!(s.to_int());
+            let _ = snapshot!(Self::ext_eq);
+            Self(Subset::new(NatInner(n.into_ghost().into_inner())))
+        }
+    }
+}
 
 impl Nat {
     #[logic]
     #[ensures(result >= 0)]
     pub fn to_int(self) -> Int {
-        pearlite! { self.0.inner().0 }
+        self.0.inner().0
     }
 
     #[logic]
@@ -464,7 +504,7 @@ impl Nat {
 impl AddLogic for Nat {
     type Output = Self;
     #[logic]
-    #[ensures(result.to_int() == self.to_int() + other.to_int())]
+    #[ensures(result@ == self@ + other@)]
     fn add_logic(self, other: Self) -> Self {
         Self::new(self.to_int() + other.to_int())
     }
@@ -473,8 +513,17 @@ impl AddLogic for Nat {
 impl MulLogic for Nat {
     type Output = Self;
     #[logic]
-    #[ensures(result.to_int() == self.to_int() * other.to_int())]
+    #[ensures(result@ == self@ * other@)]
     fn mul_logic(self, other: Self) -> Self {
         Self::new(self.to_int() * other.to_int())
     }
+}
+
+impl OrdLogic for Nat {
+    #[logic(open)]
+    fn cmp_log(self, other: Self) -> cmp::Ordering {
+        self.to_int().cmp_log(other.to_int())
+    }
+
+    ord_laws_impl! { let _ = Nat::ext_eq; }
 }

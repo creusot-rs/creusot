@@ -7500,6 +7500,141 @@ module M_logic__int__impl_InhabitedInvariant_for_NatInner__inhabits (* <logic::i
   
   goal vc_inhabits_NatInner: [@stop_split] [@expl:inhabits ensures] invariant_NatInner { f0 = 0 }
 end
+module M_logic__int__impl_Clone_for_NatInner__clone (* <logic::int::NatInner as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_NatInner = { f0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0 >= 0
+  
+  predicate inv_NatInner (_1: t_NatInner)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NatInner [inv_NatInner x]. inv_NatInner x = invariant_NatInner x
+  
+  predicate invariant_ref_NatInner [@inline:trivial] (self: t_NatInner) = inv_NatInner self
+  
+  meta "rewrite_def" predicate invariant_ref_NatInner
+  
+  predicate inv_ref_NatInner [@inline:trivial] (_1: t_NatInner) = invariant_ref_NatInner _1
+  
+  meta "rewrite_def" predicate inv_ref_NatInner
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_NatInner (self: t_NatInner) (return (x: t_NatInner)) =
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_NatInner self}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_NatInner = Any.any_l () | & self: t_NatInner = self ])
+    [ return (result: t_NatInner) ->
+    {[@stop_split] [@expl:clone_NatInner ensures] ([@stop_split] [@expl:clone result type invariant] inv_NatInner result)
+      /\ ([@stop_split] [@expl:clone ensures] result = self)}
+      (! return {result}) ]
+end
+module M_logic__int__impl_Clone_for_Nat__clone (* <logic::int::Nat as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_Nat (self: t_Nat) (return (x: t_Nat)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Nat = Any.any_l () | & self: t_Nat = self ])
+    [ return (result: t_Nat) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+end
+module M_logic__int__impl_Plain_for_Nat__into_ghost (* <logic::int::Nat as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  let rec into_ghost_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  
+  let rec into_inner_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  predicate inv_NatInner (_1: t_NatInner)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NatInner [inv_NatInner x]. inv_NatInner x = invariant_NatInner x
+  
+  function new_NatInner (x: t_NatInner) : t_Subset_NatInner
+  
+  axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
+  
+  let rec new_NatInner'0 (x: t_NatInner) (return (x'0: t_Subset_NatInner)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_NatInner x}
+    any
+    [ return (result: t_Subset_NatInner) -> {[@stop_split] [@expl:new ensures] result = new_NatInner x}
+      (! return {result}) ]
+  
+  let rec new_Nat (x: t_Nat) (return (x'0: t_Nat)) = any
+    [ return (result: t_Nat) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_ghost_Nat (s: t_Nat) (return (x: t_Nat)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &n <- to_int s ] s1
+      | s1 = [ &_8 <- () ] s2
+      | s2 = into_ghost_Int {n} (fun (_x: int) -> [ &_13 <- _x ] s3)
+      | s3 = into_inner_Int {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
+      | s4 = [ &_11 <- { f0'0 = _12 } ] s5
+      | s5 = new_NatInner'0 {_11} (fun (_x: t_Subset_NatInner) -> [ &_10 <- _x ] s6)
+      | s6 = [ &_4 <- { f0 = _10 } ] s7
+      | s7 = new_Nat {_4} (fun (_x: t_Nat) -> [ &_ret <- _x ] s8)
+      | s8 = return {_ret} ] ]
+    [ & _ret: t_Nat = Any.any_l ()
+    | & s: t_Nat = s
+    | & _4: t_Nat = Any.any_l ()
+    | & n: int = Any.any_l ()
+    | & _8: () = Any.any_l ()
+    | & _10: t_Subset_NatInner = Any.any_l ()
+    | & _11: t_NatInner = Any.any_l ()
+    | & _12: int = Any.any_l ()
+    | & _13: int = Any.any_l () ])
+    [ return (result: t_Nat) -> {[@stop_split] [@expl:into_ghost ensures] result = s} (! return {result}) ]
+end
 module M_logic__int__impl_Nat__to_int (* logic::int::Nat *)
   type namespace_other
   
@@ -7635,6 +7770,8 @@ module M_logic__int__impl_AddLogic_for_Nat__add_logic (* <logic::int::Nat as log
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function new_NatInner (x: t_NatInner) : t_Subset_NatInner
   
   axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
@@ -7657,7 +7794,8 @@ module M_logic__int__impl_AddLogic_for_Nat__add_logic (* <logic::int::Nat as log
     -> ([@stop_split] [@expl:to_int ensures] to_int other >= 0)
     -> ([@stop_split] [@expl:new requires] to_int self + to_int other >= 0)
     /\ (([@stop_split] [@expl:new ensures] to_int (new (to_int self + to_int other)) = to_int self + to_int other)
-    -> ([@stop_split] [@expl:add_logic ensures] to_int (new (to_int self + to_int other)) = to_int self + to_int other))
+    -> ([@stop_split] [@expl:add_logic ensures] view_Nat (new (to_int self + to_int other))
+    = view_Nat self + view_Nat other))
 end
 module M_logic__int__impl_MulLogic_for_Nat__mul_logic (* <logic::int::Nat as logic::ops::arithmetic::MulLogic> *)
   type namespace_other
@@ -7682,6 +7820,8 @@ module M_logic__int__impl_MulLogic_for_Nat__mul_logic (* <logic::int::Nat as log
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function new_NatInner (x: t_NatInner) : t_Subset_NatInner
   
   axiom new_NatInner_spec: forall x: t_NatInner. invariant_NatInner x -> inner_NatInner (new_NatInner x) = x
@@ -7704,7 +7844,793 @@ module M_logic__int__impl_MulLogic_for_Nat__mul_logic (* <logic::int::Nat as log
     -> ([@stop_split] [@expl:to_int ensures] to_int other >= 0)
     -> ([@stop_split] [@expl:new requires] to_int self * to_int other >= 0)
     /\ (([@stop_split] [@expl:new ensures] to_int (new (to_int self * to_int other)) = to_int self * to_int other)
-    -> ([@stop_split] [@expl:mul_logic ensures] to_int (new (to_int self * to_int other)) = to_int self * to_int other))
+    -> ([@stop_split] [@expl:mul_logic ensures] view_Nat (new (to_int self * to_int other))
+    = view_Nat self * view_Nat other))
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_le_log (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate le_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o <> Greater
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function cmp_le_log_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_cmp_le_log_Nat: [@stop_split] [@expl:cmp_le_log ensures] le_log_Nat x y = (cmp_log_Nat x y <> Greater)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_lt_log (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate lt_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o = Less
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function cmp_lt_log_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_cmp_lt_log_Nat: [@stop_split] [@expl:cmp_lt_log ensures] lt_log_Nat x y = (cmp_log_Nat x y = Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_ge_log (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ge_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o <> Less
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function cmp_ge_log_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_cmp_ge_log_Nat: [@stop_split] [@expl:cmp_ge_log ensures] ge_log_Nat x y = (cmp_log_Nat x y <> Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_gt_log (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate gt_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o = Greater
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function cmp_gt_log_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_cmp_gt_log_Nat: [@stop_split] [@expl:cmp_gt_log ensures] gt_log_Nat x y = (cmp_log_Nat x y = Greater)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__refl (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  function refl_Nat (x: t_Nat) : ()
+  
+  goal vc_refl_Nat: [@stop_split] [@expl:refl ensures] cmp_log_Nat x x = Equal
+end
+module M_logic__int__impl_OrdLogic_for_Nat__trans (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  constant z : t_Nat
+  
+  constant o : t_Ordering
+  
+  function trans_Nat (x: t_Nat) (y: t_Nat) (z: t_Nat) (o: t_Ordering) : ()
+  
+  goal vc_trans_Nat: cmp_log_Nat x y = o
+    -> cmp_log_Nat y z = o -> ([@stop_split] [@expl:trans ensures] cmp_log_Nat x z = o)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__antisym1 (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function antisym1_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_antisym1_Nat: cmp_log_Nat x y = Less -> ([@stop_split] [@expl:antisym1 ensures] cmp_log_Nat y x = Greater)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__antisym2 (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function antisym2_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_antisym2_Nat: cmp_log_Nat x y = Greater -> ([@stop_split] [@expl:antisym2 ensures] cmp_log_Nat y x = Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__eq_cmp (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+  
+  axiom ext_eq_spec: forall self: t_Nat, other: t_Nat. ext_eq self other = (self = other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_Nat
+  
+  constant y : t_Nat
+  
+  function eq_cmp_Nat (x: t_Nat) (y: t_Nat) : ()
+  
+  goal vc_eq_cmp_Nat: [@stop_split] [@expl:eq_cmp ensures] (x = y) = (cmp_log_Nat x y = Equal)
 end
 module M_logic__ord__impl_OrdLogic_for_ref_T__cmp_le_log (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
@@ -17100,9 +18026,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__factor (* <logic::int::Nat as logic::r
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17189,9 +18117,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__commutative (* <logic::int::Nat as log
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17234,9 +18164,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__associative (* <logic::int::Nat as log
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17300,9 +18232,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__core_idemp (* <logic::int::Nat as logi
   
   meta "rewrite_def" function core_Nat
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17340,9 +18274,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__core_is_maximal_idemp (* <logic::int::
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17404,9 +18340,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__cancelable (* <logic::int::Nat as logi
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17442,9 +18380,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__unit (* <logic::int::Nat as logic:
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17488,9 +18428,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total (* <logic::int::Nat as 
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -17535,9 +18477,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total_idemp (* <logic::int::N
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -75968,6 +76912,37 @@ module M_logic__fset__impl_Clone_for_FSet_T__clone__refines (* <logic::fset::FSe
       -> inv_ref_FSet_T self_
       /\ (forall result: Fset.fset t_T. inv_FSet_T result /\ result = self_ -> inv_FSet_T result)
 end
+module M_logic__int__impl_Clone_for_NatInner__clone__refines (* <logic::int::NatInner as std::clone::Clone> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_NatInner = { f0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0 >= 0
+  
+  predicate inv_NatInner (_1: t_NatInner)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NatInner [inv_NatInner x]. inv_NatInner x = invariant_NatInner x
+  
+  predicate invariant_ref_NatInner [@inline:trivial] (self: t_NatInner) = inv_NatInner self
+  
+  meta "rewrite_def" predicate invariant_ref_NatInner
+  
+  predicate inv_ref_NatInner [@inline:trivial] (_1: t_NatInner) = invariant_ref_NatInner _1
+  
+  meta "rewrite_def" predicate inv_ref_NatInner
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_NatInner. inv_ref_NatInner self_
+      -> inv_ref_NatInner self_
+      /\ (forall result: t_NatInner. inv_NatInner result /\ result = self_ -> inv_NatInner result)
+end
 module M_logic__seq__impl_Clone_for_Seq_T__clone__refines (* <logic::seq::Seq<T> as std::clone::Clone> *)
   type namespace_other
   
@@ -76321,6 +77296,21 @@ module M_logic__int__impl_Plain_for_Int__into_ghost__refines (* <logic::int::Int
   meta "select_lsinst" "all"
   
   goal refines: forall snap: int. forall result: int. result = snap -> result = snap
+end
+module M_logic__int__impl_Plain_for_Nat__into_ghost__refines (* <logic::int::Nat as ghost::Plain> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall snap: t_Nat. forall result: t_Nat. result = snap -> result = snap
 end
 module M_logic__seq__impl_Plain_for_Seq_T__into_ghost__refines (* <logic::seq::Seq<T> as ghost::Plain> *)
   type namespace_other
@@ -82628,6 +83618,708 @@ module M_logic__real__impl_InhabitedInvariant_for_PositiveRealInner__inhabits__r
   
   goal refines: forall result: t_PositiveRealInner. invariant_PositiveRealInner result
       -> invariant_PositiveRealInner result
+end
+module M_logic__int__impl_OrdLogic_for_Nat__eq_cmp__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall result: (). (x = y) = (cmp_log_Nat x y = Equal)
+          -> (x = y) = (cmp_log_Nat x y = Equal)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_gt_log__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate gt_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o = Greater
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall result: (). gt_log_Nat x y = (cmp_log_Nat x y = Greater)
+          -> gt_log_Nat x y = (cmp_log_Nat x y = Greater)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_lt_log__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate lt_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o = Less
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall result: (). lt_log_Nat x y = (cmp_log_Nat x y = Less)
+          -> lt_log_Nat x y = (cmp_log_Nat x y = Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__antisym1__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. cmp_log_Nat x y = Less
+        -> cmp_log_Nat x y = Less /\ (forall result: (). cmp_log_Nat y x = Greater -> cmp_log_Nat y x = Greater)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__trans__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall z: t_Nat. forall o: t_Ordering. cmp_log_Nat x y = o
+              /\ cmp_log_Nat y z = o
+            -> cmp_log_Nat x y = o
+            /\ cmp_log_Nat y z = o /\ (forall result: (). cmp_log_Nat x z = o -> cmp_log_Nat x z = o)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__refl__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall result: (). cmp_log_Nat x x = Equal -> cmp_log_Nat x x = Equal
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_ge_log__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate ge_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o <> Less
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall result: (). ge_log_Nat x y = (cmp_log_Nat x y <> Less)
+          -> ge_log_Nat x y = (cmp_log_Nat x y <> Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__antisym2__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. cmp_log_Nat x y = Greater
+        -> cmp_log_Nat x y = Greater /\ (forall result: (). cmp_log_Nat y x = Less -> cmp_log_Nat y x = Less)
+end
+module M_logic__int__impl_OrdLogic_for_Nat__cmp_le_log__refines (* <logic::int::Nat as logic::ord::OrdLogic> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use int.Int
+  
+  type t_Subset_NatInner
+  
+  type t_Nat = { f0: t_Subset_NatInner }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Int (x: int) (y: int) : ()
+  
+  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  
+  function antisym2_Int (x: int) (y: int) : ()
+  
+  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  
+  function antisym1_Int (x: int) (y: int) : ()
+  
+  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
+      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  
+  function refl_Int (x: int) : ()
+  
+  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  
+  function cmp_gt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  
+  function cmp_ge_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  
+  function cmp_lt_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  
+  function cmp_le_log_Int (x: int) (y: int) : ()
+  
+  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  
+  type t_NatInner = { f0'0: int }
+  
+  predicate invariant_NatInner (self: t_NatInner) = self.f0'0 >= 0
+  
+  function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+  
+  axiom inner_NatInner_spec: forall self: t_Subset_NatInner. invariant_NatInner (inner_NatInner self)
+  
+  function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+  
+  axiom to_int_spec: forall self: t_Nat. to_int self >= 0
+  
+  function cmp_log_Nat (self: t_Nat) (other: t_Nat) : t_Ordering = cmp_log_Int (to_int self) (to_int other)
+  
+  predicate le_log_Nat (self: t_Nat) (o: t_Nat) = cmp_log_Nat self o <> Greater
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall x: t_Nat. forall y: t_Nat. forall result: (). le_log_Nat x y = (cmp_log_Nat x y <> Greater)
+          -> le_log_Nat x y = (cmp_log_Nat x y <> Greater)
 end
 module M_logic__ord__impl_OrdLogic_for_ref_T__refl__refines (* <&T as logic::ord::OrdLogic> *)
   type namespace_other
@@ -91813,9 +93505,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__cancelable__refines (* <logic::int::Na
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -91844,9 +93538,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__factor__refines (* <logic::int::Nat as
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -91880,9 +93576,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__core_is_maximal_idemp__refines (* <log
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -91949,9 +93647,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__associative__refines (* <logic::int::N
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -92019,9 +93719,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__core_idemp__refines (* <logic::int::Na
       | None -> such_that_Nat (fun (__0: t_Nat) -> true)
       end
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -92052,9 +93754,11 @@ module M_logic__ra__nat__impl_RA_for_Nat__commutative__refines (* <logic::int::N
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -99574,9 +101278,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total_idemp__refines (* <logi
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -99625,9 +101331,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__unit__refines (* <logic::int::Nat 
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
@@ -99659,9 +101367,11 @@ module M_logic__ra__nat__impl_UnitRA_for_Nat__core_total__refines (* <logic::int
   
   axiom to_int_spec: forall self: t_Nat. to_int self >= 0
   
+  function view_Nat (self: t_Nat) : int = to_int self
+  
   function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
   
-  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. to_int (add_Nat self other) = to_int self + to_int other
+  axiom add_Nat_spec: forall self: t_Nat, other: t_Nat. view_Nat (add_Nat self other) = view_Nat self + view_Nat other
   
   function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
   
