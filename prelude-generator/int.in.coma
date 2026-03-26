@@ -57,9 +57,6 @@ module UInt$bits_count$
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
   function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
 
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : t) { t'int result = n }) = any
-
   let add (a:t) (b:t)
     { [@expl:integer overflow] in_bounds (t'int a + t'int b) }
     (ret (result : t) { t'int result = t'int a + t'int b })
@@ -115,11 +112,6 @@ module UInt$bits_count$BW
   function add_with_overflow (a:t) (b:t) : (t, bool) = (add a b, not in_bounds(t'int a + t'int b))
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
   function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
-
-  let of_BV256 (a:BV256.t)
-    { [@expl:arithmetic overflow] BV256.t'int a >= 0 /\ BV256.t'int a < two_power_size }
-    (ret (result: t) { result = of_BV256 a })
-    = any
 
   let add (a:t) (b:t)
     { [@expl:arithmetic overflow] t'int a + t'int b < two_power_size \/ BV256.ule (BV256.add (to_BV256 a) (to_BV256 b)) max_uint_as_BV256 }
@@ -212,8 +204,6 @@ module Int$bits_count$
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
   function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
 
-  let of_int (n:int) { [@expl:integer overflow] in_bounds n }
-    (ret (result : t) { to_int result = n }) = any
   let neg (a:t)
     { [@expl:integer overflow] to_int a <> min_int }
     (ret (result : t) { to_int result =  - (to_int a) })
@@ -277,10 +267,6 @@ module Int$bits_count$BW
   function sub_with_overflow (a:t) (b:t) : (t, bool) = (sub a b, not in_bounds(t'int a - t'int b))
   function mul_with_overflow (a:t) (b:t) : (t, bool) = (mul a b, not in_bounds(t'int a * t'int b))
 
-  let of_BV256 (a:BV256.t)
-    { [@expl:arithmetic overflow] BV256.to_int a >= 0 /\ BV256.to_int a < two_power_size }
-    (ret (result: t) { result = of_BV256 a })
-    = any
   let neg (a:t)
     { [@expl:arithmetic overflow] a <> min_sint }
     (ret (result :t)  { to_int result = - to_int a  } { result = neg a})
