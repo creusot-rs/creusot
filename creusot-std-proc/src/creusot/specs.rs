@@ -159,28 +159,22 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
 
 pub fn check(args: TS1, tokens: TS1) -> TS1 {
     let mode = parse_macro_input!(args as Ident);
-    let (terminates, ghost, ghost_trusted) = if mode == "terminates" {
-        (true, false, false)
+    let ghost = if mode == "terminates" {
+        false
     } else if mode == "ghost" {
-        (true, true, false)
-    } else if mode == "ghost_trusted" {
-        (true, true, true)
+        true
     } else {
         let msg = format!("unknown mode `{mode}`. Accepted modes are `terminates` or `ghost`");
         return quote! { compile_error!(#msg) }.into();
     };
     let mut documentation = TokenStream::new();
     let mut clauses = TokenStream::new();
-    if terminates {
-        documentation.extend(document_spec("terminates", doc::LogicBody::None));
-        clauses.extend(quote!(#[creusot::clause::check_terminates]));
-    }
     if ghost {
         documentation.extend(document_spec("ghost", doc::LogicBody::None));
         clauses.extend(quote!(#[creusot::clause::check_ghost]));
-    }
-    if ghost_trusted {
-        clauses.extend(quote!(#[creusot::clause::check_ghost::trusted]))
+    } else {
+        documentation.extend(document_spec("terminates", doc::LogicBody::None));
+        clauses.extend(quote!(#[creusot::clause::check_terminates]));
     }
     let item = tokens.clone();
     let item = parse_macro_input!(item as ContractSubject);
