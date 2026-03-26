@@ -22,7 +22,7 @@ pub use self::{
     fmap::FMap,
     fset::FSet,
     id::Id,
-    int::{Int, Nat},
+    int::{Int, Nat, Positive},
     mapping::Mapping,
     ord::OrdLogic,
     seq::Seq,

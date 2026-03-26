@@ -527,3 +527,112 @@ impl OrdLogic for Nat {
 
     ord_laws_impl! { let _ = Nat::ext_eq; }
 }
+
+/// Positive numbers, i.e. numbers that are strictly greater than 0.
+#[derive(Copy)]
+pub struct Positive(Subset<PositiveInner>);
+
+#[derive(Copy)]
+struct PositiveInner(Int);
+
+impl Invariant for PositiveInner {
+    #[logic]
+    fn invariant(self) -> bool {
+        self.0 > 0int
+    }
+}
+impl InhabitedInvariant for PositiveInner {
+    #[logic]
+    #[ensures(result.invariant())]
+    fn inhabits() -> Self {
+        Self(1int)
+    }
+}
+
+impl Clone for PositiveInner {
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl View for Positive {
+    type ViewTy = Int;
+    #[logic(open)]
+    fn view(self) -> Int {
+        self.to_int()
+    }
+}
+
+impl Clone for Positive {
+    #[check(ghost)]
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Plain for Positive {
+    #[check(ghost)]
+    #[ensures(*result == *s)]
+    #[allow(unused_variables)]
+    fn into_ghost(s: Snapshot<Self>) -> Ghost<Self> {
+        ghost! {
+            let n: Snapshot<Int> = snapshot!(s.to_int());
+            let _ = snapshot!(Self::ext_eq);
+            Self(Subset::new(PositiveInner(n.into_ghost().into_inner())))
+        }
+    }
+}
+
+impl Positive {
+    #[logic]
+    #[ensures(result > 0)]
+    pub fn to_int(self) -> Int {
+        self.0.inner().0
+    }
+
+    #[logic]
+    #[requires(n > 0)]
+    #[ensures(result.to_int() == n)]
+    pub fn new(n: Int) -> Self {
+        Self(Subset::new_logic(PositiveInner(n)))
+    }
+
+    #[logic(open)]
+    #[ensures(result == (self == other))]
+    pub fn ext_eq(self, other: Self) -> bool {
+        let _ = Subset::<PositiveInner>::inner_inj;
+        self.to_int() == other.to_int()
+    }
+}
+
+impl AddLogic for Positive {
+    type Output = Self;
+
+    #[logic]
+    #[ensures(result@ == self@ + other@)]
+    fn add_logic(self, other: Self) -> Self {
+        Self::new(self.to_int() + other.to_int())
+    }
+}
+
+impl MulLogic for Positive {
+    type Output = Self;
+
+    #[logic]
+    #[ensures(result@ == self@ * other@)]
+    fn mul_logic(self, other: Self) -> Self {
+        Self::new(self.to_int() * other.to_int())
+    }
+}
+
+impl OrdLogic for Positive {
+    #[logic(open)]
+    fn cmp_log(self, other: Self) -> cmp::Ordering {
+        self.to_int().cmp_log(other.to_int())
+    }
+
+    ord_laws_impl! { let _ = Positive::ext_eq; }
+}
