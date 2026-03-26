@@ -684,7 +684,7 @@ impl<'tcx> RValue<'tcx> {
                         };
 
                         Exp::qvar(lower.names.in_pre(prelude, "bw_not"))
-                            .app(vec![arg.into_why(lower, istmts)])
+                            .app([arg.into_why(lower, istmts)])
                     }
                     _ => unreachable!("the not operator is not supported for {ty:?}"),
                 }
@@ -739,9 +739,10 @@ impl<'tcx> RValue<'tcx> {
                     && let TyKind::Dynamic(_, _) = target.kind() =>
             {
                 let cast = lower.names.dyn_cast(source, target);
-                Exp::var(cast).app(vec![e.into_why(lower, istmts)])
+                Exp::var(cast).app([e.into_why(lower, istmts)])
             }
             RValue::Cast(e, source, target) => {
+                let arg = e.into_why(lower, istmts);
                 match source.kind() {
                     TyKind::Bool => {
                         let prelude = match target.kind() {
@@ -749,8 +750,7 @@ impl<'tcx> RValue<'tcx> {
                             TyKind::Uint(uty) => uty_to_prelude(lower.ctx.tcx, *uty),
                             _ => unsupported_cast(lower.ctx, span, source, target),
                         };
-                        let arg = e.into_why(lower, istmts);
-                        Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app(vec![arg])
+                        Exp::qvar(lower.names.in_pre(prelude, "of_bool")).app([arg])
                     }
                     TyKind::Int(_) | TyKind::Uint(_) => {
                         // convert source to BV256.t / int
@@ -767,45 +767,40 @@ impl<'tcx> RValue<'tcx> {
                             }
                             _ => unsupported_cast(lower.ctx, span, source, target),
                         };
-                        let to_exp = Exp::qvar(to_fname).app(vec![e.into_why(lower, istmts)]);
+                        let to_exp = Exp::qvar(to_fname).app([arg]);
 
                         // convert BV256.t / int to target
-                        let of_fname = match target.kind() {
-                            TyKind::Int(ity) => {
-                                let fct_name =
-                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
-                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), fct_name)
-                            }
-                            TyKind::Uint(uty) => {
-                                let fct_name =
-                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
-                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), fct_name)
-                            }
-                            TyKind::Char => {
-                                let fct_name =
-                                    if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
-                                lower.names.in_pre(PreMod::Char, fct_name)
-                            }
-                            _ => unsupported_cast(lower.ctx, span, source, target),
-                        };
+                        let of_fname =
+                            if lower.names.bitwise_mode() { "of_BV256" } else { "of_int" };
 
-                        // create final statement
-                        let of_ret_id = Ident::fresh_local("_x");
-                        istmts.push(IntermediateStmt::call(
-                            of_ret_id,
-                            lower.ty(ty),
-                            Name::Global(of_fname),
-                            [Arg::Term(to_exp)],
-                        ));
-                        Exp::var(of_ret_id)
+                        if target.is_char() {
+                            let of_ret_id = Ident::fresh_local("_x");
+                            istmts.push(IntermediateStmt::call(
+                                of_ret_id,
+                                lower.ty(ty),
+                                Name::Global(lower.names.in_pre(PreMod::Char, of_fname)),
+                                [Arg::Term(to_exp)],
+                            ));
+                            Exp::var(of_ret_id)
+                        } else {
+                            let of_fname = match target.kind() {
+                                TyKind::Int(ity) => lower
+                                    .names
+                                    .in_pre(ity_to_prelude(lower.ctx.tcx, *ity), of_fname),
+                                TyKind::Uint(uty) => lower
+                                    .names
+                                    .in_pre(uty_to_prelude(lower.ctx.tcx, *uty), of_fname),
+                                _ => unsupported_cast(lower.ctx, span, source, target),
+                            };
+                            Exp::qvar(of_fname).app([to_exp])
+                        }
                     }
                     // Pointer-to-pointer casts
                     TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = target.kind() => {
                         match ptr_cast_kind(lower.ctx.tcx, lower.names.typing_env(), ty1, ty2) {
-                            PtrCastKind::Id => e.into_why(lower, istmts),
+                            PtrCastKind::Id => arg,
                             PtrCastKind::Thin => {
-                                Exp::qvar(lower.names.in_pre(PreMod::Opaque, "thin"))
-                                    .app([e.into_why(lower, istmts)])
+                                Exp::qvar(lower.names.in_pre(PreMod::Opaque, "thin")).app([arg])
                             }
                             PtrCastKind::Unknown => {
                                 unsupported_cast(lower.ctx, span, source, target)
