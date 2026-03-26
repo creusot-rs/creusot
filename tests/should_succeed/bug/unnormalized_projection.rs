@@ -9,7 +9,7 @@ pub trait P {
 pub struct B(<B as P>::A);
 
 impl P for B {
-    type A = Vec<B>;
+    type A = Option<Box<B>>;
 }
 
 pub fn q(x: B) {

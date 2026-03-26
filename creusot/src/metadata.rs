@@ -1,7 +1,7 @@
 use crate::{
     ctx::Erasure,
     translation::{
-        external::ExternSpec,
+        external::{ExternSpec, TrustedPositivity},
         pearlite::{Scoped, Term, TermWithTriggers},
     },
     validate::AnfBlock,
@@ -23,12 +23,14 @@ use std::{
 };
 
 type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
+type ExternTypes<'tcx> = HashMap<DefId, TrustedPositivity>;
 
 // TODO: this should lazily load the metadata.
 #[derive(Default)]
 pub struct Metadata<'tcx> {
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
+    trusted_positivity: ExternTypes<'tcx>,
     erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
     erased_defid: HashMap<DefId, Option<Erasure<'tcx>>>,
 }
@@ -74,6 +76,10 @@ impl<'tcx> Metadata<'tcx> {
         self.extern_specs.get(&id)
     }
 
+    pub(crate) fn trusted_positivity(&self, id: DefId) -> Option<&TrustedPositivity> {
+        self.trusted_positivity.get(&id)
+    }
+
     pub(crate) fn erased_thir(&self, id: DefId) -> Option<&AnfBlock<'tcx>> {
         self.erased_thir.get(&id)
     }
@@ -92,7 +98,7 @@ impl<'tcx> Metadata<'tcx> {
             if cnum == LOCAL_CRATE {
                 continue;
             }
-            let Some((cmeta, ext_specs, erased_thir, erased_defid)) =
+            let Some((cmeta, ext_specs, ext_types, erased_thir, erased_defid)) =
                 CrateMetadata::load(tcx, overrides, cnum)
             else {
                 continue;
@@ -101,6 +107,14 @@ impl<'tcx> Metadata<'tcx> {
             for (id, spec) in ext_specs.into_iter() {
                 if self.extern_specs.insert(id, spec).is_some() {
                     panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
+                }
+            }
+            for (id, spec) in ext_types {
+                if self.trusted_positivity.insert(id, spec).is_some() {
+                    panic!(
+                        "duplicate extern type spec found for {:?} while loading {:?}",
+                        id, cnum
+                    );
                 }
             }
             for (id, erased) in erased_thir {
@@ -156,6 +170,7 @@ impl<'tcx> CrateMetadata<'tcx> {
     ) -> Option<(
         Self,
         ExternSpecs<'tcx>,
+        ExternTypes<'tcx>,
         Vec<(DefId, AnfBlock<'tcx>)>,
         Vec<(DefId, Option<Erasure<'tcx>>)>,
     )> {
@@ -171,7 +186,13 @@ impl<'tcx> CrateMetadata<'tcx> {
             is_external_crate: metadata.is_external_crate,
         };
 
-        Some((meta, metadata.extern_specs, metadata.erased_thir, metadata.erased_defid))
+        Some((
+            meta,
+            metadata.extern_specs,
+            metadata.trusted_positivity,
+            metadata.erased_thir,
+            metadata.erased_defid,
+        ))
     }
 }
 
@@ -186,6 +207,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+    trusted_positivity: HashMap<DefId, TrustedPositivity>,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     erased_defid: Vec<(DefId, Option<Erasure<'tcx>>)>,
@@ -199,6 +221,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         creusot_items: HashMap<Symbol, DefId>,
         intrinsics: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+        trusted_positivity: HashMap<DefId, TrustedPositivity>,
         params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
         erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
         erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
@@ -221,6 +244,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             creusot_items,
             intrinsics,
             extern_specs,
+            trusted_positivity,
             params_open_inv,
             erased_thir,
             erased_defid,
@@ -235,6 +259,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             creusot_items: HashMap::new(),
             intrinsics: HashMap::new(),
             extern_specs: HashMap::new(),
+            trusted_positivity: HashMap::new(),
             params_open_inv: HashMap::new(),
             erased_thir,
             erased_defid: Vec::new(),

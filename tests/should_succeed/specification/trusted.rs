@@ -54,3 +54,30 @@ pub struct Opaque;
 pub fn xray() -> Opaque {
     Opaque
 }
+
+#[trusted(terminates, positive(T))]
+pub struct Rose<T>(T, Vec<Rose<T>>);
+
+pub enum Carnation {
+    Branch(Rose<Rose<Box<Carnation>>>),
+    Leaf,
+}
+
+#[trusted(terminates)]
+#[ensures(result@ == 0)]
+pub fn rose<T>(r: Rose<T>) -> usize {
+    for r in r.1 {
+        rose(r);
+    }
+    0
+}
+
+#[check(terminates)]
+#[ensures(result@ == 0)]
+pub fn carnation(c: Carnation) -> usize {
+    use Carnation::*;
+    match c {
+        Branch(r) => rose(r),
+        Leaf => 0,
+    }
+}

@@ -5,6 +5,7 @@ mod ghost;
 mod incorrect_attributes;
 mod opacity;
 mod purity;
+mod recursive_types;
 mod terminates;
 mod tokens_new;
 mod traits;
@@ -31,7 +32,10 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{get_builtin, get_intrinsic, is_extern_spec, is_no_translate, is_spec},
     ctx::TranslationCtx,
-    validate::{erasure::validate_erasures, tokens_new::validate_tokens_new},
+    validate::{
+        erasure::validate_erasures, recursive_types::validate_recursive_types,
+        tokens_new::validate_tokens_new,
+    },
 };
 
 fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
@@ -71,6 +75,7 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
             validate_opacity(ctx, def_id);
         }
     }
+    validate_recursive_types(ctx);
     let variant_calls = validate_terminates(ctx);
     *ctx.variant_calls.borrow_mut() = variant_calls;
     validate_traits(ctx);

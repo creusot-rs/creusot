@@ -22,8 +22,9 @@ use alloc::boxed::Box;
 /// Creusot ensures that every operation on the inner value uses the right [`Perm`] object
 /// created by [`PermCell::new`], ensuring safety in a manner similar to
 /// [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
-#[repr(transparent)]
+#[trusted(positive(T))]
 #[opaque]
+#[repr(transparent)]
 pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
 impl<T: Sized> Container for PermCell<T> {

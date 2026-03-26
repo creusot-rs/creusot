@@ -37,3 +37,255 @@ module M_innocent_victim
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:innocent_victim ensures] result = (10: UInt32.t)}
       (! return {result}) ]
 end
+module M_rose
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  type t_Vec_Rose_T_Global
+  
+  type t_Rose_T = { f0: t_T; f1: t_Vec_Rose_T_Global }
+  
+  predicate resolve_T (_1: t_T)
+  
+  type t_IntoIter_Rose_T_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_Rose_T_Global (self: t_Vec_Rose_T_Global) : Seq.seq t_Rose_T
+  
+  axiom view_Vec_Rose_T_Global_spec:
+    forall self: t_Vec_Rose_T_Global [view_Vec_Rose_T_Global self]. Seq.length (view_Vec_Rose_T_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate inv_Rose_T (_1: t_Rose_T)
+  
+  predicate inv_Vec_Rose_T_Global (_1: t_Vec_Rose_T_Global)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Rose_T [inv_Rose_T x]. inv_Rose_T x
+      = (inv_T x.f0 /\ inv_Vec_Rose_T_Global x.f1)
+  
+  predicate invariant_ref_Rose_T [@inline:trivial] (self: t_Rose_T) = inv_Rose_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Rose_T
+  
+  predicate inv_ref_Rose_T [@inline:trivial] (_1: t_Rose_T) = invariant_ref_Rose_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Rose_T
+  
+  predicate invariant_Seq_Rose_T [@inline:trivial] (self: Seq.seq t_Rose_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Rose_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Rose_T
+  
+  predicate inv_Seq_Rose_T [@inline:trivial] (_1: Seq.seq t_Rose_T) = invariant_Seq_Rose_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_Rose_T
+  
+  predicate invariant_Vec_Rose_T_Global (self: t_Vec_Rose_T_Global) = inv_Seq_Rose_T (view_Vec_Rose_T_Global self)
+  
+  axiom inv_axiom'0: forall x: t_Vec_Rose_T_Global [inv_Vec_Rose_T_Global x]. inv_Vec_Rose_T_Global x
+      -> invariant_Vec_Rose_T_Global x
+  
+  predicate inv_IntoIter_Rose_T_Global (_1: t_IntoIter_Rose_T_Global)
+  
+  function view_IntoIter_Rose_T_Global (self: t_IntoIter_Rose_T_Global) : Seq.seq t_Rose_T
+  
+  let rec into_iter_Vec_Rose_T_Global (self_: t_Vec_Rose_T_Global) (return (x: t_IntoIter_Rose_T_Global)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Vec_Rose_T_Global self_}
+    any
+    [ return (result: t_IntoIter_Rose_T_Global) ->
+    {[@stop_split] [@expl:into_iter_Vec_Rose_T_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_Rose_T_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_Rose_T_Global self_ = view_IntoIter_Rose_T_Global result)}
+      (! return {result}) ]
+  
+  type t_Option_Rose_T = None | Some t_Rose_T
+  
+  predicate invariant_refmut_IntoIter_Rose_T_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_Rose_T_Global) =
+    inv_IntoIter_Rose_T_Global self.current /\ inv_IntoIter_Rose_T_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_Rose_T_Global
+  
+  predicate inv_refmut_IntoIter_Rose_T_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_Rose_T_Global) =
+    invariant_refmut_IntoIter_Rose_T_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_IntoIter_Rose_T_Global
+  
+  predicate inv_Option_Rose_T (_1: t_Option_Rose_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Rose_T [inv_Option_Rose_T x]. inv_Option_Rose_T x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_Rose_T f0'0
+        end
+  
+  predicate produces_IntoIter_Rose_T_Global (self: t_IntoIter_Rose_T_Global) (visited: Seq.seq t_Rose_T) (rhs: t_IntoIter_Rose_T_Global) =
+    view_IntoIter_Rose_T_Global self = Seq.(++) visited (view_IntoIter_Rose_T_Global rhs)
+  
+  function produces_trans_IntoIter_Rose_T_Global (a: t_IntoIter_Rose_T_Global) (ab: Seq.seq t_Rose_T) (b: t_IntoIter_Rose_T_Global) (bc: Seq.seq t_Rose_T) (c: t_IntoIter_Rose_T_Global) : ()
+   = ()
+  
+  axiom produces_trans_IntoIter_Rose_T_Global_spec:
+    forall a: t_IntoIter_Rose_T_Global, ab: Seq.seq t_Rose_T, b: t_IntoIter_Rose_T_Global, bc: Seq.seq t_Rose_T, c: t_IntoIter_Rose_T_Global. produces_IntoIter_Rose_T_Global a ab b
+      -> produces_IntoIter_Rose_T_Global b bc c -> produces_IntoIter_Rose_T_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_IntoIter_Rose_T_Global (self: t_IntoIter_Rose_T_Global) : () = ()
+  
+  axiom produces_refl_IntoIter_Rose_T_Global_spec:
+    forall self: t_IntoIter_Rose_T_Global. produces_IntoIter_Rose_T_Global self (Seq.empty: Seq.seq t_Rose_T) self
+  
+  predicate resolve_refmut_IntoIter_Rose_T_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_Rose_T_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_Rose_T_Global
+  
+  predicate completed_IntoIter_Rose_T_Global (self: MutBorrow.t t_IntoIter_Rose_T_Global) =
+    resolve_refmut_IntoIter_Rose_T_Global self
+    /\ view_IntoIter_Rose_T_Global self.current = (Seq.empty: Seq.seq t_Rose_T)
+  
+  let rec next_IntoIter_Rose_T_Global (self_: MutBorrow.t t_IntoIter_Rose_T_Global) (return (x: t_Option_Rose_T)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_Rose_T_Global self_}
+    any
+    [ return (result: t_Option_Rose_T) ->
+    {[@stop_split] [@expl:next_IntoIter_Rose_T_Global ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Rose_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_IntoIter_Rose_T_Global self_
+        | Some v -> produces_IntoIter_Rose_T_Global self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  let rec elim_Some (_x: t_Option_Rose_T) (return (f0'0: t_Rose_T)) = any
+    [ _k (f0'0: t_Rose_T) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  function index_Vec_Rose_T_Global [@inline:trivial] (self: t_Vec_Rose_T_Global) (ix: int) : t_Rose_T =
+    Seq.get (view_Vec_Rose_T_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Rose_T_Global
+  
+  predicate resolve_Rose_T (_1: t_Rose_T)
+  
+  predicate resolve_Vec_Rose_T_Global [@inline:trivial] (self: t_Vec_Rose_T_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_Vec_Rose_T_Global self)
+      -> resolve_Rose_T (index_Vec_Rose_T_Global self i)
+  
+  meta "rewrite_def" predicate resolve_Vec_Rose_T_Global
+  
+  predicate resolve_Vec_Rose_T_Global'0 (_1: t_Vec_Rose_T_Global)
+  
+  axiom resolve_axiom: forall x: t_Vec_Rose_T_Global [resolve_Vec_Rose_T_Global'0 x]. resolve_Vec_Rose_T_Global'0 x
+      -> resolve_Vec_Rose_T_Global x
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Rose_T [resolve_Rose_T x]. resolve_Rose_T x
+      = (resolve_T x.f0 /\ resolve_Vec_Rose_T_Global'0 x.f1)
+  
+  predicate resolve_IntoIter_Rose_T_Global [@inline:trivial] (self: t_IntoIter_Rose_T_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_Rose_T_Global self)
+      -> resolve_Rose_T (Seq.get (view_IntoIter_Rose_T_Global self) i)
+  
+  meta "rewrite_def" predicate resolve_IntoIter_Rose_T_Global
+  
+  predicate resolve_IntoIter_Rose_T_Global'0 (_1: t_IntoIter_Rose_T_Global)
+  
+  axiom resolve_axiom'1:
+    forall x: t_IntoIter_Rose_T_Global [resolve_IntoIter_Rose_T_Global'0 x]. resolve_IntoIter_Rose_T_Global'0 x
+      -> resolve_IntoIter_Rose_T_Global x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec rose_T (r: t_Rose_T) (return (x: UInt64.t)) = {[@stop_split] [@expl:rose 'r' type invariant] inv_Rose_T r}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T r.f0} any) ]
+      | s1 = -{resolve_T r.f0}- s2
+      | s2 = into_iter_Vec_Rose_T_Global {r.f1} (fun (_x: t_IntoIter_Rose_T_Global) -> [ &_4 <- _x ] s3)
+      | s3 = [ &iter <- _4 ] s4
+      | s4 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:inferred invariant: type invariant] inv_IntoIter_Rose_T_Global iter}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_IntoIter_Rose_T_Global> {iter}
+            (fun (_bor: MutBorrow.t t_IntoIter_Rose_T_Global) ->
+              [ &_11 <- _bor ] -{inv_IntoIter_Rose_T_Global _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_IntoIter_Rose_T_Global iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_IntoIter_Rose_T_Global> {_11.current} {MutBorrow.get_id _11}
+            (fun (_bor: MutBorrow.t t_IntoIter_Rose_T_Global) ->
+              [ &_10 <- _bor ] -{inv_IntoIter_Rose_T_Global _bor.final}-
+              [ &_11 <- { _11 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_IntoIter_Rose_T_Global _11.current} any) ]
+        | s2 = next_IntoIter_Rose_T_Global {_10} (fun (_x: t_Option_Rose_T) -> [ &_9 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_IntoIter_Rose_T_Global _11} any) ]
+        | s4 = -{resolve_refmut_IntoIter_Rose_T_Global _11}- s5
+        | s5 = any [ br0 -> {_9 = None} (! bb6) | br1 (x0: t_Rose_T) -> {_9 = Some x0} (! bb7) ] ]
+        [ bb7 = s0
+          [ s0 = elim_Some {_9} (fun (r0: t_Rose_T) -> [ &r'0 <- r0 ] s1)
+          | s1 = rose_T {r'0} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s2)
+          | s2 = bb2 ] ] ]
+    | bb6 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_Rose_T_Global iter} any) ]
+      | s1 = -{resolve_IntoIter_Rose_T_Global'0 iter}- s2
+      | s2 = [ &_ret <- (0: UInt64.t) ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & r: t_Rose_T = r
+    | & _4: t_IntoIter_Rose_T_Global = Any.any_l ()
+    | & iter: t_IntoIter_Rose_T_Global = Any.any_l ()
+    | & _9: t_Option_Rose_T = Any.any_l ()
+    | & _10: MutBorrow.t t_IntoIter_Rose_T_Global = Any.any_l ()
+    | & _11: MutBorrow.t t_IntoIter_Rose_T_Global = Any.any_l ()
+    | & r'0: t_Rose_T = Any.any_l ()
+    | & _15: UInt64.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:rose ensures] UInt64.t'int result = 0} (! return {result}) ]
+end
+module M_carnation
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Vec_Rose_Box_Carnation_Global_Global
+  
+  type t_Vec_Rose_Rose_Box_Carnation_Global_Global
+  
+  type t_Carnation = Branch t_Rose_Rose_Box_Carnation_Global | Leaf
+  with t_Rose_Box_Carnation_Global = { f0: t_Carnation; f1: t_Vec_Rose_Box_Carnation_Global_Global }
+  with t_Rose_Rose_Box_Carnation_Global = {
+    f0'0: t_Rose_Box_Carnation_Global;
+    f1'0: t_Vec_Rose_Rose_Box_Carnation_Global_Global }
+  
+  let rec elim_Branch (_x: t_Carnation) (return (f0'1: t_Rose_Rose_Box_Carnation_Global)) = any
+    [ _k (f0'1: t_Rose_Rose_Box_Carnation_Global) -> {Branch f0'1 = _x} (! return {f0'1})
+    | _chk -> (! {[@expl:elim Branch] match _x with
+        | Branch _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec rose_Rose_Box_Carnation_Global (r: t_Rose_Rose_Box_Carnation_Global) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:rose ensures] UInt64.t'int result = 0} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec carnation (c: t_Carnation) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = any [ br0 (x0: t_Rose_Rose_Box_Carnation_Global) -> {c = Branch x0} (! bb4) | br1 -> {c = Leaf} (! bb3) ]
+    | bb3 = s0 [ s0 = [ &_ret <- (0: UInt64.t) ] s1 | s1 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Branch {c} (fun (r0: t_Rose_Rose_Box_Carnation_Global) -> [ &r <- r0 ] s1)
+      | s1 = rose_Rose_Box_Carnation_Global {r} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & c: t_Carnation = c | & r: t_Rose_Rose_Box_Carnation_Global = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:carnation ensures] UInt64.t'int result = 0}
+      (! return {result}) ]
+end

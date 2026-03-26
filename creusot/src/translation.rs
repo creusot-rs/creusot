@@ -56,8 +56,7 @@ pub(crate) fn after_analysis<'tcx>(
     let start = Instant::now();
     silence_unused_features_warnings(tcx);
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);
-    ctx.load_extern_specs();
-    ctx.load_erasures();
+    ctx.load_specs();
     validate(&ctx);
     debug!("after_analysis_validate: {:?}", start.elapsed());
     if let Some(err) = tcx.dcx().has_errors_or_delayed_bugs() {

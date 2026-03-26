@@ -68,6 +68,8 @@ enum TrustedArg {
     Ghost,
     /// #[trusted(terminates)]
     Terminates,
+    /// #[trusted(positive(T, U))]
+    Positive(Punctuated<Ident, Token![,]>),
 }
 
 impl Parse for TrustedArg {
@@ -78,10 +80,15 @@ impl Parse for TrustedArg {
             Ok(Ghost)
         } else if ident == "terminates" {
             Ok(Terminates)
+        } else if ident == "positive" {
+            let content;
+            syn::parenthesized!(content in src);
+            let params = Punctuated::<Ident, Token![,]>::parse_separated_nonempty(&content)?;
+            Ok(Positive(params))
         } else {
             Err(Error::new(
                 ident.span(),
-                "Unexpected `#[trusted]` argument: expected `terminates` or nothing",
+                "Unexpected `#[trusted]` argument: expected `terminates`, `positive(PARAM)`, or nothing",
             ))
         }
     }
@@ -93,6 +100,7 @@ impl quote::ToTokens for TrustedArg {
         stream.append_all(match self {
             Ghost => quote! { #[creusot::decl::trusted_ghost] },
             Terminates => quote! { #[creusot::decl::trusted_terminates] },
+            Positive(params) => quote! { #[creusot::decl::trusted_positive(#params)] },
         })
     }
 }

@@ -47,6 +47,9 @@ impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
 }
 
 extern_spec! {
+    #[trusted(positive(T))]
+    type Rc<T>;
+
     impl<T> Rc<T> {
         #[check(ghost)]
         #[ensures(*result@ == value)]
