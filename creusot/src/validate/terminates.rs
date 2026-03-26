@@ -38,6 +38,7 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{
         has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
+        is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
@@ -45,31 +46,30 @@ use crate::{
             Ident, PIdent, Pattern, Scoped, Term, TermKind,
             visit::{TermVisitor, super_visit_term},
         },
-        traits::{ImplSource_, TraitResolved},
+        traits::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
     },
     util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
-use petgraph::{
-    algo::tarjan_scc,
-    graph,
-    visit::{Control, DfsEvent, EdgeRef as _, depth_first_search},
-};
+use petgraph::{algo::tarjan_scc, graph};
 use rustc_hir::{
     def::DefKind,
-    def_id::{DefId, LocalDefId},
+    def_id::{CRATE_DEF_ID, DefId, LocalDefId},
 };
 use rustc_index::bit_set::DenseBitSet;
-use rustc_infer::infer::TyCtxtInferExt as _;
+use rustc_infer::{infer::TyCtxtInferExt as _, traits::ImplSource};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
-        Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TypingEnv, TypingMode,
+        self, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
+        TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
-use rustc_trait_selection::traits::{specialization_graph, translate_args};
-use std::{collections::HashMap, iter::repeat};
+use rustc_trait_selection::traits::{
+    normalize_param_env_or_error, specialization_graph, translate_args,
+};
+use std::collections::{HashMap, HashSet};
 
 pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 
@@ -86,15 +86,13 @@ pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 /// which the variant should have decreased.
 #[must_use]
 pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
-    let mut recursive_calls = RecursiveCalls::new();
-
     // Check for ghost loops
     for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
-        if is_no_translate(ctx.tcx, def_id) {
-            continue;
-        }
-        if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
+        if is_no_translate(ctx.tcx, def_id)
+            || !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id)
+            || is_trusted_terminates(ctx.tcx, def_id)
+        {
             continue;
         }
         let (thir, expr) = ctx.thir_body(local_id);
@@ -105,33 +103,36 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
 
     let CallGraph { graph: mut call_graph } = CallGraph::build(ctx);
 
+    let mut recursive_calls = RecursiveCalls::new();
+
     // Detect simple recursion
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
-        if let Some(self_edge) = call_graph.edges_connecting(fun_index, fun_index).next() {
-            assert!(def_id.is_local());
-            let (self_edge, call) = (self_edge.id(), *self_edge.weight());
-            let CallKind::Direct(span) = call else { continue };
-            call_graph.remove_edge(self_edge);
-            if has_variant_clause(ctx.tcx, def_id) {
-                recursive_calls.entry(def_id).or_default().insert(def_id);
-                continue;
-            }
-            let pearlite = is_pearlite(ctx.tcx, def_id);
-            if pearlite && is_structurally_recursive(ctx, def_id) {
-                // Termination is guaranteed, we can forget that this function is recursive.
-                continue;
-            }
-            let fun_span = ctx.def_span(def_id);
-            let msg = if pearlite {
-                "Recursive logic function without a #[variant] clause or a structurally decreasing argument"
-            } else {
-                "Recursive program function without a `#[variant]` clause"
-            };
-            let mut error = ctx.error(fun_span, msg);
-            error.span_note(span, "Recursive call happens here");
-            error.emit();
+        let Some(self_edge) = call_graph.find_edge(fun_index, fun_index) else {
+            continue;
         };
+        assert!(def_id.is_local());
+        let call = call_graph[self_edge];
+        let CallKind::Direct(span) = call else { continue };
+        call_graph.remove_edge(self_edge);
+        if has_variant_clause(ctx.tcx, def_id) {
+            recursive_calls.entry(def_id).or_default().insert(def_id);
+            continue;
+        }
+        let pearlite = is_pearlite(ctx.tcx, def_id);
+        if pearlite && is_structurally_recursive(ctx, def_id) {
+            // Termination is guaranteed, we can forget that this function is recursive.
+            continue;
+        }
+        let fun_span = ctx.def_span(def_id);
+        let msg = if pearlite {
+            "Recursive logic function without a #[variant] clause or a structurally decreasing argument"
+        } else {
+            "Recursive program function without a `#[variant]` clause"
+        };
+        let mut error = ctx.error(fun_span, msg);
+        error.span_note(span, "Recursive call happens here");
+        error.emit();
     }
 
     // detect mutual recursion
@@ -155,23 +156,9 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             // Need more than 2 components.
             continue;
         }
-        let in_cycle: IndexSet<_> = cycle.into_iter().collect();
-        let mut cycle = Vec::new();
-        // Build the cycle in the right order.
-        depth_first_search(&call_graph, [root], |n| match n {
-            DfsEvent::Discover(n, _) => {
-                if in_cycle.contains(&n) {
-                    cycle.push(n);
-                    Control::Continue
-                } else {
-                    Control::Prune
-                }
-            }
-            DfsEvent::BackEdge(_, n) if n == root => Control::Break(()),
-            _ => Control::Continue,
-        });
-
-        let root_def_id = call_graph.node_weight(root).unwrap().def_id();
+        let in_cycle: HashSet<_> = cycle.into_iter().collect();
+        let cycle = find_path(&call_graph, &in_cycle, root, root);
+        let root_def_id = call_graph[root].def_id();
         let mut error = ctx.error(
             ctx.def_span(root_def_id),
             format!(
@@ -181,30 +168,38 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
         );
         let mut next_node = root;
         let mut current_node;
-        assert!(cycle[0] == root);
-        for (&node, last) in cycle.iter().skip(1).zip(repeat(false)).chain([(&root, true)]) {
+        for (index, &node) in cycle.iter().enumerate() {
             current_node = next_node;
             next_node = node;
-            if let Some(e) = call_graph.edges_connecting(current_node, next_node).next() {
-                let call = *e.weight();
-                let adverb = if last && cycle.len() > 1 { "finally" } else { "then" };
-                let punct = if last { "." } else { "..." };
-                let f1 = ctx.def_path_str(call_graph.node_weight(current_node).unwrap().def_id());
-                let f2 = ctx.def_path_str(call_graph.node_weight(next_node).unwrap().def_id());
+            let last = index == cycle.len() - 1;
+            let Some(e) = call_graph.find_edge(current_node, next_node) else {
+                continue;
+            };
+            let call = call_graph[e];
+            let adverb = if last && cycle.len() > 1 { "finally" } else { "then" };
+            let punct = if last { "." } else { "..." };
+            let f1 = ctx.def_path_str(call_graph[current_node].def_id());
+            let next_node = call_graph[next_node].def_id();
+            let f2 = ctx.def_path_str(next_node);
 
-                match call {
-                    CallKind::Direct(span) => {
-                        error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
-                    }
-                    CallKind::GenericBound(indirect_id, span) => {
-                        let f3 = ctx.def_path_str(indirect_id);
-                        error.span_note(
-                            span,
-                            format!(
-                                "{adverb} `{f1}` might call `{f2}` via the call to `{f3}`{punct}"
-                            ),
-                        );
-                    }
+            match call {
+                CallKind::Direct(span) => {
+                    error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
+                }
+                CallKind::GenericBound(indirect_id, span) => {
+                    let f3 = ctx.def_path_str(indirect_id);
+                    error.span_note(
+                        span,
+                        format!(
+                            "{adverb} `{f1}` uses the impl `{f2}` via the call to `{f3}`{punct}"
+                        ),
+                    );
+                }
+                CallKind::ImplMember => {
+                    error.span_note(
+                        ctx.def_span(next_node),
+                        format!("{adverb} the method `{f2}` might be called"),
+                    );
                 }
             }
         }
@@ -230,9 +225,15 @@ struct BuildFunctionsGraph<'tcx> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum GraphNode {
+struct GraphNode {
+    def_id: DefId,
+    kind: GraphNodeKind,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum GraphNodeKind {
     /// A normal function.
-    Function(DefId),
+    Function,
     /// This node is used in the following case:
     /// ```
     /// # macro_rules! ignore { ($($t:tt)*) => {}; }
@@ -254,19 +255,29 @@ enum GraphNode {
     /// Then we feel this is justified to do this transformation, precisely because the
     /// default function is transparent at the point of the impl, so the user can 'see'
     /// its definition.
+    ///
+    /// The `def_id` in the `GraphNode` will be the default implementation selected for the impl block.
     ImplDefaultTransparent {
-        /// The default implementation selected for the impl block.
-        item_id: DefId,
         impl_id: LocalDefId,
     },
+    Impl,
 }
 
 impl GraphNode {
     fn def_id(&self) -> DefId {
-        match self {
-            GraphNode::Function(def_id) => *def_id,
-            GraphNode::ImplDefaultTransparent { item_id, .. } => *item_id,
-        }
+        self.def_id
+    }
+
+    fn function(def_id: DefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::Function }
+    }
+
+    fn impl_default(def_id: DefId, impl_id: LocalDefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::ImplDefaultTransparent { impl_id: impl_id } }
+    }
+
+    fn impl_(def_id: DefId) -> Self {
+        Self { def_id, kind: GraphNodeKind::Impl }
     }
 }
 
@@ -283,11 +294,13 @@ enum CallKind {
     ///
     /// The `DefId` is the one for the generic function, here `f`.
     GenericBound(DefId, Span),
+    /// Edge from an impl block to its member
+    ImplMember,
 }
 
 impl<'tcx> BuildFunctionsGraph<'tcx> {
     /// Insert a new node in the graph, or fetch an existing node id.
-    fn insert_function(&mut self, graph_node: GraphNode) -> graph::NodeIndex {
+    fn insert_node(&mut self, graph_node: GraphNode) -> graph::NodeIndex {
         *self
             .graph_node_to_index
             .entry(graph_node)
@@ -327,46 +340,23 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 .skip_normalization()
         } else {
             let subst_r;
-            (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
-            called_node = self.insert_function(GraphNode::Function(called_id));
+            // Note: we may get `NoInstance` here because termination checking of trait methods happens in a modified context (see `CallGraph::build`)
+            (called_id, subst_r) = if let TraitResolved::Instance { def, .. } = res {
+                def
+            } else {
+                (called_id, subst)
+            };
+            called_node = self.insert_node(GraphNode::function(called_id));
             bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
                 .instantiate(ctx.tcx, subst_r)
                 .skip_normalization()
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
-
-        // Iterate over the trait bounds of the called function, and assume we call all functions
-        // of the corresponding trait if they are specialized.
-        for bound in bounds {
-            // WARNING: `bound`` is not normalized (but we don't seem to use the fact that it should be)
-            let Some(clause) = bound.as_trait_clause() else { continue };
-            let trait_ref = ctx.instantiate_bound_regions_with_erased(clause).trait_ref;
-            if !matches!(ctx.def_kind(trait_ref.def_id), DefKind::Trait) {
-                // Some bounds can be trait aliases and we skip them.
-                // The implied bounds should already appear separately.
-                continue;
-            }
-            // FIXME: this only handle the primary goal of the proof tree. We need to handle all the instances
-            // used by this trait solving, including those that are used indirectly.
-            for &item in ctx.associated_item_def_ids(trait_ref.def_id) {
-                if !matches!(ctx.def_kind(item), DefKind::AssocFn) {
-                    continue;
-                }
-                let TraitResolved::Instance { def: (item_id, _), impl_ } =
-                    TraitResolved::resolve_item(ctx.tcx, typing_env, item, trait_ref.args)
-                else {
-                    continue;
-                };
-                if matches!(impl_, ImplSource_::Param) {
-                    continue;
-                }
-                let item_node = self.insert_function(GraphNode::Function(item_id));
-                self.graph.update_edge(
-                    node,
-                    item_node,
-                    CallKind::GenericBound(called_id, call_span),
-                );
-            }
+        // TODO eprintln!("{call_span:?} {bounds:?}");
+        for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
+            // TODO eprintln!("{call_span:?} depends on {impl_id:?}");
+            let item_node = self.insert_node(GraphNode::impl_(impl_id));
+            self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
         }
     }
 
@@ -396,7 +386,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         impl_id: LocalDefId,
         item_id: DefId,
     ) -> (graph::NodeIndex, Clauses<'tcx>) {
-        let node = self.insert_function(GraphNode::ImplDefaultTransparent { item_id, impl_id });
+        let node = self.insert_node(GraphNode::impl_default(item_id, impl_id));
         if let Some(bounds) = self.default_functions_bounds.get(&node) {
             return (node, bounds);
         }
@@ -460,24 +450,24 @@ impl CallGraph {
     /// Build the call graph of all functions appearing in the current crate,
     /// exclusively for the purpose of termination checking.
     ///
-    /// In particular, this means it only contains `#[check(terminates)]` functions.
+    /// In particular, this means it only contains `#[check(terminates)]` or `#[trusted(terminates)]` functions.
     fn build(ctx: &TranslationCtx) -> Self {
+        let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
         for local_id in ctx.hir_body_owners() {
             let def_id = local_id.to_def_id();
 
-            if is_no_translate(ctx.tcx, def_id) {
-                // Cut all arcs from this function.
-                continue;
-            }
-
-            if !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id) {
+            if is_no_translate(ctx.tcx, def_id)
+                || !is_logic(ctx.tcx, def_id) && is_trusted_item(ctx.tcx, def_id)
+                || is_trusted_ghost(ctx.tcx, def_id)
+                || is_trusted_terminates(ctx.tcx, def_id)
+            {
                 continue;
             }
 
             let contract = &ctx.sig(def_id).contract;
-            if !is_pearlite(ctx.tcx, def_id) && !contract.check_terminates {
+            if !is_pearlite(ctx.tcx, def_id) && !contract.purity.is_terminates() {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
                 if let Some(variant) = &contract.variant {
@@ -487,9 +477,15 @@ impl CallGraph {
                 }
                 continue;
             }
-            let node = build_call_graph.insert_function(GraphNode::Function(def_id));
+            let node = build_call_graph.insert_node(GraphNode::function(def_id));
 
-            let typing_env = ctx.typing_env(def_id);
+            // For termination checking of trait impl members, `typing_env` should be the one from the trait definition.
+            // This prevents smuggling recursive constraints within redundant trait bounds.
+            let typing_env = if let Some(trait_item_id) = tcx.trait_item_of(def_id) {
+                ctx.typing_env_with(def_id, param_env_for_termination(tcx, trait_item_id, def_id))
+            } else {
+                ctx.typing_env(def_id)
+            };
             let (thir, expr) = ctx.thir_body(local_id);
             let thir = &thir.borrow();
 
@@ -506,6 +502,28 @@ impl CallGraph {
                     generic_args,
                     call_span,
                 );
+            }
+        }
+
+        // Add an edge from every trait impl to its methods.
+        for (&trait_id, impls) in tcx.all_local_trait_impls(()) {
+            let trait_def = tcx.trait_def(trait_id);
+            for &impl_id in impls {
+                let ancestors = trait_def.ancestors(tcx, impl_id.to_def_id()).unwrap();
+                for &item in tcx.associated_item_def_ids(trait_id) {
+                    if let DefKind::AssocFn = tcx.def_kind(item) {
+                        let leaf_def = ancestors.leaf_def(tcx, item).unwrap();
+                        let impl_node =
+                            build_call_graph.insert_node(GraphNode::impl_(impl_id.to_def_id()));
+                        let item_node =
+                            build_call_graph.insert_node(GraphNode::function(leaf_def.item.def_id));
+                        build_call_graph.graph.update_edge(
+                            impl_node,
+                            item_node,
+                            CallKind::ImplMember,
+                        );
+                    }
+                }
             }
         }
 
@@ -771,4 +789,113 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
     s.visit_term(term);
 
     s.valid()
+}
+
+fn as_predicates<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    clauses: impl IntoIterator<Item = ty::Clause<'tcx>>,
+) -> impl Iterator<Item = ty::TraitRef<'tcx>> {
+    clauses.into_iter().filter_map(move |clause| {
+        // WARNING: `clause` is not normalized (but we don't seem to use the fact that it should be)
+        let Some(clause) = clause.as_trait_clause() else { return None };
+        let ty::PredicatePolarity::Positive = clause.polarity() else { return None };
+        let trait_ref = tcx.instantiate_bound_regions_with_erased(clause).trait_ref;
+        if !matches!(tcx.def_kind(trait_ref.def_id), DefKind::Trait) {
+            // Some bounds can be trait aliases and we skip them.
+            // The implied bounds should already appear separately.
+            return None;
+        }
+        Some(trait_ref)
+    })
+}
+
+/// Return all the trait impls that appear in the proof trees of `clauses`.
+pub(crate) fn proof_tree_nodes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    clauses: impl IntoIterator<Item = ty::Clause<'tcx>>,
+) -> Vec<DefId> {
+    let mut nodes = Vec::new();
+    let mut predicates: Vec<_> = as_predicates(tcx, clauses).collect();
+    while let Some(trait_ref) = predicates.pop() {
+        let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
+            continue;
+        };
+        let ImplSource::UserDefined(source) = source else { continue };
+        nodes.push(source.impl_def_id);
+        let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
+            .instantiate(tcx, source.args)
+            .skip_normalization();
+        predicates.extend(as_predicates(tcx, bounds));
+    }
+    nodes
+}
+
+/// For a method in a trait impl (`impl_item_id`), construct a `ParamEnv` that
+/// combines bounds from the parent impl and bounds from the original declaration (`trait_item_id`)
+fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: DefId) -> ParamEnv {
+    let impl_id = tcx.impl_of_assoc(impl_item_id).unwrap();
+    let trait_ref = tcx.impl_trait_ref(impl_id).instantiate_identity().skip_normalization();
+    let trait_item_args = GenericArgs::identity_for_item(tcx, trait_item_id);
+    let args = tcx.mk_args_from_iter(
+        trait_ref.args.iter().chain(trait_item_args.iter().skip(trait_ref.args.len())),
+    );
+
+    // Reverse engineered from `GenericPredicates::instantiate_into`
+    let predicates = tcx.predicates_of(impl_id).instantiate_identity(tcx).predicates.into_iter();
+    let predicates = predicates.chain(
+        tcx.predicates_of(trait_item_id)
+            .predicates
+            .iter()
+            .map(|(p, _)| EarlyBinder::bind(*p).instantiate(tcx, args)),
+    );
+    let predicates: Vec<_> = predicates.map(|p| p.skip_normalization()).collect();
+    let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));
+
+    // Code from `param_env` in `rustc_ty_utils/src/ty.rs`
+    let local_did = impl_item_id.as_local();
+    let body_id = local_did.unwrap_or(CRATE_DEF_ID);
+    let cause =
+        rustc_trait_selection::traits::ObligationCause::misc(tcx.def_span(impl_item_id), body_id);
+    // FIXME: We probably should not use this to normalize...
+    normalize_param_env_or_error(tcx, unnormalized_env, cause)
+}
+
+/// Find path from `src` to `tgt` with at least one edge.
+/// Returned path excludes `src` and includes `tgt`.
+pub(crate) fn find_path<N, E>(
+    graph: &graph::DiGraph<N, E>,
+    scc: &HashSet<graph::NodeIndex>,
+    src: graph::NodeIndex,
+    tgt: graph::NodeIndex,
+) -> Vec<graph::NodeIndex> {
+    let mut path = Vec::new();
+    let mut visited = HashSet::new();
+    let found = find_path_from(graph, scc, src, tgt, &mut path, &mut visited).is_err();
+    assert!(found);
+    path
+}
+
+/// Find path from src to tgt with at least one edge.
+fn find_path_from<N, E>(
+    graph: &graph::DiGraph<N, E>,
+    scc: &HashSet<graph::NodeIndex>,
+    src: graph::NodeIndex,
+    tgt: graph::NodeIndex,
+    path: &mut Vec<graph::NodeIndex>,
+    visited: &mut HashSet<graph::NodeIndex>,
+) -> Result<(), ()> {
+    if !scc.contains(&src) || visited.contains(&src) {
+        return Ok(());
+    }
+    visited.insert(src);
+    for n in graph.neighbors(src) {
+        path.push(n);
+        if n == tgt {
+            return Err(());
+        }
+        find_path_from(graph, scc, n, tgt, path, visited)?;
+        path.pop();
+    }
+    Ok(())
 }

@@ -203,7 +203,7 @@ pub fn select_trait_impl<'tcx>(
     trait_ref: TraitRef<'tcx>,
 ) -> ImplSelection<'tcx> {
     use ImplSelection::*;
-    let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
+    let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
 
     let source = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
     match source {

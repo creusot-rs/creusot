@@ -20,11 +20,12 @@ pub(crate) use self::{
 use crate::common::{ContractSubject, FnOrMethod};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{TokenStreamExt as _, quote};
 use syn::{
     Error, FnArg, Ident, LitStr, Macro, Result, Token, parse,
     parse::{Parse, ParseStream},
     parse_macro_input, parse_quote,
+    punctuated::Punctuated,
     spanned::Spanned as _,
 };
 
@@ -36,18 +37,63 @@ pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
     })
 }
 
-pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
+pub fn trusted(arg: TS1, tokens: TS1) -> TS1 {
     match from_proof_assert(tokens.clone()) {
         Ok(Some(assertion)) => proof_assert_(assertion, true),
         Ok(None) => {
-            let tokens = TokenStream::from(tokens);
-            TS1::from(quote! {
-                #[creusot::decl::trusted]
-                #[allow(creusot::experimental)]
-                #tokens
-            })
+            if arg.is_empty() {
+                let tokens = TokenStream::from(tokens);
+                TS1::from(quote! {
+                    #[creusot::decl::trusted]
+                    #[allow(creusot::experimental)]
+                    #tokens
+                })
+            } else {
+                let args = parse_macro_input!(
+                    arg with Punctuated::<TrustedArg, Token![,]>::parse_separated_nonempty
+                );
+                let mut tokens = tokens.into();
+                for arg in args {
+                    tokens = quote! { #arg #tokens };
+                }
+                TS1::from(tokens)
+            }
         }
         Err(e) => e.into_compile_error().into(),
+    }
+}
+
+enum TrustedArg {
+    /// #[trusted(ghost)]
+    Ghost,
+    /// #[trusted(terminates)]
+    Terminates,
+}
+
+impl Parse for TrustedArg {
+    fn parse(src: ParseStream) -> syn::Result<Self> {
+        use TrustedArg::*;
+        let ident = src.parse::<Ident>()?;
+        if ident == "ghost" {
+            Ok(Ghost)
+        } else if ident == "terminates" {
+            Ok(Terminates)
+        } else {
+            Err(Error::new(
+                ident.span(),
+                "Unexpected `#[trusted]` argument: expected `terminates` or nothing",
+            ))
+        }
+    }
+}
+
+impl quote::ToTokens for TrustedArg {
+    fn to_tokens(&self, stream: &mut TokenStream) {
+        use TrustedArg::*;
+        stream.append_all(match self {
+            Ghost => quote! { #[creusot::decl::trusted_ghost] },
+            Terminates => quote! { #[creusot::decl::trusted_terminates] },
+        })
     }
 }
 
@@ -60,7 +106,7 @@ fn from_proof_assert(tokens: TS1) -> Result<Option<TS1>> {
     } else {
         Err(Error::new(
             m.path.span(),
-            "Unexpected #[trusted] item: expected `proof_assert!` or a declaration or a closure",
+            "Unexpected `#[trusted]` item: expected `proof_assert!` or a declaration or a closure",
         ))
     }
 }

@@ -64,6 +64,8 @@ attribute_functions! {
     [creusot::decl::logic::inline]              => is_inline
     [creusot::decl::opaque]                     => is_opaque
     [creusot::decl::trusted]                    => is_trusted
+    [creusot::decl::trusted_ghost]              => is_trusted_ghost
+    [creusot::decl::trusted_terminates]         => is_trusted_terminates
     [creusot::decl::new_namespace]              => is_new_namespace
     [creusot::decl::open_inv_result]            => is_open_inv_result
     [creusot::extern_spec]                      => is_extern_spec
@@ -71,7 +73,6 @@ attribute_functions! {
     [creusot::clause::variant]                  => has_variant_clause
     [creusot::clause::check_terminates]         => is_check_terminates
     [creusot::clause::check_ghost]              => is_check_ghost
-    [creusot::clause::check_ghost::trusted]     => is_check_ghost_trusted
     [creusot::bitwise]                          => is_bitwise
     [creusot::builtin_ascription]               => is_builtin_ascription
 }
