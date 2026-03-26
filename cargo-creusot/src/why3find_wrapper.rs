@@ -26,6 +26,13 @@ pub struct ProveArgs {
     /// Generate Why3 sessions for why3 ide.
     #[clap(long)]
     pub why3session: bool,
+    /// Extra argument to pass directly to Why3find.
+    /// Repeat this option to pass multiple arguments.
+    #[clap(long)]
+    pub why3find_arg: Vec<String>,
+    /// Print the Why3find command without running it.
+    #[clap(long)]
+    pub dry_run: bool,
     /// Run why3find on files that match one of the patterns.
     /// Examples: `name`, `name::*`, `m/*/f`, or whole paths `verif/a/b.coma`.
     pub patterns: Vec<String>,
@@ -81,6 +88,7 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
         why3find.arg("-s");
     }
     why3find.arg("--summary");
+    why3find.args(&args.why3find_arg);
     why3find.args(files);
     // Add $XDG_DATA_HOME/creusot/bin to PATH for why3find to find why3
     let mut path = paths.bin().to_path_buf().into_os_string();
@@ -88,15 +96,18 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     path.push(std::env::var("PATH").unwrap());
     why3find.env("PATH", path);
     why3find.env("DUNE_DIR_LOCATIONS", format!("why3find:lib:{}", paths.why3find_libs().display()));
-    why3find
-        .env("WHY3CONFIG", &paths.why3_conf())
-        .status()
-        .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
-        .and_then(
-            |status| {
+    why3find.env("WHY3CONFIG", &paths.why3_conf());
+    if args.dry_run {
+        println!("{:?}", why3find);
+        Ok(())
+    } else {
+        why3find
+            .status()
+            .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
+            .and_then(|status| {
                 if status.success() { Ok(()) } else { Err(anyhow!("'why3find prove' failed")) }
-            },
-        )
+            })
+    }
 }
 
 pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Result<()> {

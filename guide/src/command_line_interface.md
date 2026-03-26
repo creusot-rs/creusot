@@ -68,7 +68,8 @@ All options after `--` are forwarded to `cargo`. Here is a selection of useful o
 ### `prove`
 
 ```
-cargo creusot [-p <PACKAGE>] prove [<PATTERNS>] [-i|--ide-on-fail|--ide-always] [--replay] [--why3session]
+cargo creusot [-p <PACKAGE>] prove [<PATTERNS>] [-i|--ide-on-fail|--ide-always]
+    [--replay] [--why3session] [--why3find-arg <ARG>] [--dry-run]
 ```
 
 Verify contracts.
@@ -88,6 +89,8 @@ and tries to prove them.
 - `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
 - `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
 - `-p <PACKAGE>`: See [`cargo creusot`](#creusot) above.
+- `--why3find-arg <ARG>`: pass `<ARG>` directly as an extra argument to `why3find prove`. Repeat this to pass multiple arguments.
+- `--dry-run`: Print the `why3find` command without running it.
 
 ### `doc`
 
