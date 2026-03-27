@@ -109,4 +109,20 @@ extern_spec! {
             T::clone.postcondition((&self@[i],), result@[i]))]
         fn clone(&self) -> [T; N];
     }
+
+    impl<T, const N: usize> [T; N] {
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        fn as_slice(&self) -> &[T] {
+            self
+        }
+
+        #[check(ghost)]
+        #[ensures(result@ == self@)]
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures((^result)@ == (^self)@)]
+        fn as_mut_slice(&mut self) -> &mut [T] {
+            self
+        }
+    }
 }
