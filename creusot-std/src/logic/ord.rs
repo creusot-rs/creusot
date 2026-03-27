@@ -159,31 +159,31 @@ pub trait OrdLogic {
 macro_rules! ord_laws_impl {
     ( $($lemma:stmt)* ) => {
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+        #[::creusot_std::macros::ensures(x.le_log(y) == (x.cmp_log(y) != core::cmp::Ordering::Greater))]
         fn cmp_le_log(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+        #[::creusot_std::macros::ensures(x.lt_log(y) == (x.cmp_log(y) == core::cmp::Ordering::Less))]
         fn cmp_lt_log(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+        #[::creusot_std::macros::ensures(x.ge_log(y) == (x.cmp_log(y) != core::cmp::Ordering::Less))]
         fn cmp_ge_log(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+        #[::creusot_std::macros::ensures(x.gt_log(y) == (x.cmp_log(y) == core::cmp::Ordering::Greater))]
         fn cmp_gt_log(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.cmp_log(x) == Ordering::Equal)]
+        #[::creusot_std::macros::ensures(x.cmp_log(x) == core::cmp::Ordering::Equal)]
         fn refl(x: Self) {
             $($lemma)*
         }
@@ -192,26 +192,26 @@ macro_rules! ord_laws_impl {
         #[::creusot_std::macros::requires(x.cmp_log(y) == o)]
         #[::creusot_std::macros::requires(y.cmp_log(z) == o)]
         #[::creusot_std::macros::ensures(x.cmp_log(z) == o)]
-        fn trans(x: Self, y: Self, z: Self, o: Ordering) {
+        fn trans(x: Self, y: Self, z: Self, o: core::cmp::Ordering) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::requires(x.cmp_log(y) == Ordering::Less)]
-        #[::creusot_std::macros::ensures(y.cmp_log(x) == Ordering::Greater)]
+        #[::creusot_std::macros::requires(x.cmp_log(y) == core::cmp::Ordering::Less)]
+        #[::creusot_std::macros::ensures(y.cmp_log(x) == core::cmp::Ordering::Greater)]
         fn antisym1(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::requires(x.cmp_log(y) == Ordering::Greater)]
-        #[::creusot_std::macros::ensures(y.cmp_log(x) == Ordering::Less)]
+        #[::creusot_std::macros::requires(x.cmp_log(y) == core::cmp::Ordering::Greater)]
+        #[::creusot_std::macros::ensures(y.cmp_log(x) == core::cmp::Ordering::Less)]
         fn antisym2(x: Self, y: Self) {
             $($lemma)*
         }
 
         #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+        #[::creusot_std::macros::ensures((x == y) == (x.cmp_log(y) == core::cmp::Ordering::Equal))]
         fn eq_cmp(x: Self, y: Self) {
             $($lemma)*
         }
