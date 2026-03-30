@@ -3,7 +3,7 @@ use creusot_std::{
     sync_view::{AcquireSyncView, ReleaseSyncView, SyncView},
 };
 
-#[ensures(sync_view.view().le_log(result.view()))]
+#[ensures((*sync_view).le_log(result.view()))]
 #[trusted]
 #[allow(unused_variables)]
 pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
@@ -11,7 +11,7 @@ pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
     Ghost::conjure()
 }
 
-#[ensures(acq_view.view().le_log(result.view()))]
+#[ensures(acq_view.view().le_log(*result))]
 #[trusted]
 #[allow(unused_variables)]
 pub fn fence_acquire(acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {

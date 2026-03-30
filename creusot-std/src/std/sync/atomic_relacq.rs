@@ -45,7 +45,7 @@ macro_rules! impl_atomic {
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp((^sync_view).view()), (val, (**sync_view).view())))]
+            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, **sync_view)))]
             #[ensures(*result.1.ward() == result.0)]
             #[trusted]
             #[check(terminates)]
@@ -173,9 +173,9 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     /// This does the read on the atomic in ghost code.
     #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
     #[requires(self.ward() == *own.ward())]
-    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
-    #[ensures(self.ward().get_timestamp((*sync_view).view()) <= result.0)]
-    #[ensures(result.0 <= self.ward().get_timestamp((^sync_view).view()))]
+    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
+    #[ensures(result.0 <= self.ward().get_timestamp(^sync_view))]
     #[ensures(match own.val().get(result.0) {
         Some((v, v_view)) => v == self.val() && v_view.le_log(result.1.view()),
         None => false
@@ -196,11 +196,11 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     /// This does the read on the atomic in ghost code.
     #[requires(self.ordering() == ::std::sync::atomic::Ordering::Acquire)]
     #[requires(self.ward() == *own.ward())]
-    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
-    #[ensures(self.ward().get_timestamp((*sync_view).view()) <= result)]
-    #[ensures(result <= self.ward().get_timestamp((^sync_view).view()))]
+    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
+    #[ensures(result <= self.ward().get_timestamp(^sync_view))]
     #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == self.val() && v_view.le_log((^sync_view).view()),
+        Some((v, v_view)) => v == self.val() && v_view.le_log(^sync_view),
         None => false
     })]
     #[check(ghost)]
@@ -254,11 +254,11 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((^self).shot())]
     #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(((*sync_view).view()).le_log((^sync_view).view()))]
-    #[ensures((*self).ward().get_timestamp((*sync_view).view()) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp((^sync_view).view()))]
+    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
+    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), (*sync_view).view())))]
+    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), ^sync_view)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -275,10 +275,9 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((^self).shot())]
     #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(rel_view.view().le_log((*sync_view).view()))]
-    #[ensures((*sync_view).view().le_log((^sync_view).view()))]
-    #[ensures((*self).ward().get_timestamp((*sync_view).view()) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp((^sync_view).view()))]
+    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
+    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(result) == None)]
     #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), rel_view.view())))]
     #[check(ghost)]

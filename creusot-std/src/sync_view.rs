@@ -58,11 +58,6 @@ impl SyncView {
     pub fn new() -> Ghost<Self> {
         panic!("Should not be called outside ghost code")
     }
-
-    #[logic(opaque)]
-    pub fn view(self) -> SyncView {
-        dead
-    }
 }
 
 impl OrdLogic for SyncView {
@@ -206,7 +201,7 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[requires(self.view_logic().view().le_log(sync_view.view()))]
+    #[requires(self.view_logic().le_log(sync_view))]
     #[ensures(result == self.val())]
     #[allow(unused_variables)]
     pub fn sync(self, sync_view: SyncView) -> T {

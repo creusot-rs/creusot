@@ -136,8 +136,6 @@ module M_message_passing
     forall self: t_AtomicBool, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicBool self x <= get_timestamp_AtomicBool self y
   
-  function view (self: t_SyncView) : t_SyncView
-  
   function fin_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) : t_SyncView = self.final
   
   meta "rewrite_def" function fin_Ghost_refmut_SyncView
@@ -149,8 +147,8 @@ module M_message_passing
     [ return (result: tup2_AtomicBool_Ghost_Box_Perm_AtomicBool_Global) ->
     {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicBool_Ghost_Box_Perm_AtomicBool_Global result)
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicBool result.f1
-        = singleton_Int (get_timestamp_AtomicBool result.f0 (view (fin_Ghost_refmut_SyncView sync_view))) { f0'0 = val';
-                                                                                                            f1'0 = view sync_view.current })
+        = singleton_Int (get_timestamp_AtomicBool result.f0 (fin_Ghost_refmut_SyncView sync_view)) { f0'0 = val';
+                                                                                                     f1'0 = sync_view.current })
       /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicBool result.f1 = result.f0)}
       (! return {result}) ]
   
@@ -314,13 +312,13 @@ module M_message_passing
     /\ excl_write = id_Option_Excl_unit self.tok_write
     /\ excl_read = id_Option_Excl_unit self.tok_read
     /\ (forall t: int. match get_Int (val_AtomicBool self.atomic_own) t with
-        | Some {f0'0 = b; f1'0 = view'0} -> not b
+        | Some {f0'0 = b; f1'0 = view} -> not b
         \/ b
         /\ val_Option_Excl_unit self.tok_write = Some'0 { f0'2 = () }
         /\ match self.at_view with
           | Some'1 at_view'0 -> perm = ward_PermCell_i32 (val_Box_Perm_PermCell_i32_Global at_view'0)
           /\ Int32.to_int (val_PermCell_i32 (val_Box_Perm_PermCell_i32_Global at_view'0)) = 1
-          /\ le_log_SyncView (view (view_Box_Perm_PermCell_i32_Global'0 at_view'0)) view'0
+          /\ le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 at_view'0) view
           | None'1 -> val_Option_Excl_unit self.tok_read = Some'0 { f0'2 = () }
           end
         | None -> true
@@ -555,14 +553,14 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot_release ensures #1] ward_bool self.current = ward_bool self.final
         /\ val_bool self.current = val_bool self.final)
       /\ ([@stop_split] [@expl:shoot_release ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
-      /\ ([@stop_split] [@expl:shoot_release ensures #3] le_log_SyncView (view sync_view.current) (view sync_view.final))
-      /\ ([@stop_split] [@expl:shoot_release ensures #4] get_timestamp_AtomicBool (ward_bool self.current) (view sync_view.current)
+      /\ ([@stop_split] [@expl:shoot_release ensures #3] le_log_SyncView sync_view.current sync_view.final)
+      /\ ([@stop_split] [@expl:shoot_release ensures #4] get_timestamp_AtomicBool (ward_bool self.current) sync_view.current
         < result)
       /\ ([@stop_split] [@expl:shoot_release ensures #5] result
-        <= get_timestamp_AtomicBool (ward_bool self.current) (view sync_view.final))
+        <= get_timestamp_AtomicBool (ward_bool self.current) sync_view.final)
       /\ ([@stop_split] [@expl:shoot_release ensures #6] get_Int (val_AtomicBool own.current) result = None)
       /\ ([@stop_split] [@expl:shoot_release ensures #7] val_AtomicBool own.final
-      = insert_Int (val_AtomicBool own.current) result { f0'0 = val_bool self.current; f1'0 = view sync_view.current })}
+      = insert_Int (val_AtomicBool own.current) result { f0'0 = val_bool self.current; f1'0 = sync_view.final })}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -1030,13 +1028,13 @@ module M_message_passing
     /\ ([@stop_split] [@expl:shoot_acquire requires #1] ward_bool'0 self = ward_AtomicBool own)}
     any
     [ return (result: int) ->
-    {[@stop_split] [@expl:shoot_acquire_bool ensures] ([@stop_split] [@expl:shoot_acquire ensures #0] le_log_SyncView (view sync_view.current) (view sync_view.final))
-      /\ ([@stop_split] [@expl:shoot_acquire ensures #1] get_timestamp_AtomicBool (ward_bool'0 self) (view sync_view.current)
+    {[@stop_split] [@expl:shoot_acquire_bool ensures] ([@stop_split] [@expl:shoot_acquire ensures #0] le_log_SyncView sync_view.current sync_view.final)
+      /\ ([@stop_split] [@expl:shoot_acquire ensures #1] get_timestamp_AtomicBool (ward_bool'0 self) sync_view.current
         <= result)
       /\ ([@stop_split] [@expl:shoot_acquire ensures #2] result
-        <= get_timestamp_AtomicBool (ward_bool'0 self) (view sync_view.final))
+        <= get_timestamp_AtomicBool (ward_bool'0 self) sync_view.final)
       /\ ([@stop_split] [@expl:shoot_acquire ensures #3] match get_Int (val_AtomicBool own) result with
-        | Some {f0'0 = v; f1'0 = v_view} -> v = val_bool'0 self /\ le_log_SyncView v_view (view sync_view.final)
+        | Some {f0'0 = v; f1'0 = v_view} -> v = val_bool'0 self /\ le_log_SyncView v_view sync_view.final
         | None -> false
         end)}
       (! return {result}) ]
@@ -1074,7 +1072,7 @@ module M_message_passing
   let rec sync_Box_Perm_PermCell_i32_Global (self: t_AtView_Box_Perm_PermCell_i32_Global) (sync_view: t_SyncView)
     (return (x: t_Perm_PermCell_i32)) =
     {[@stop_split] [@expl:sync_Box_Perm_PermCell_i32_Global requires] ([@stop_split] [@expl:sync 'self' type invariant] inv_AtView_Box_Perm_PermCell_i32_Global self)
-    /\ ([@stop_split] [@expl:sync requires] le_log_SyncView (view (view_Box_Perm_PermCell_i32_Global'0 self)) (view sync_view))}
+    /\ ([@stop_split] [@expl:sync requires] le_log_SyncView (view_Box_Perm_PermCell_i32_Global'0 self) sync_view)}
     any
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:sync ensures] result
       = val_Box_Perm_PermCell_i32_Global self}
