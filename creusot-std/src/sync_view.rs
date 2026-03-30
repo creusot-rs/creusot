@@ -32,8 +32,8 @@ pub trait HasTimestamp {
     fn get_timestamp(self, view: SyncView) -> Timestamp;
 
     #[logic(law)]
-    #[requires(x.le_log(y))]
-    #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
+    #[requires(x <= y)]
+    #[ensures(self.get_timestamp(x) <= self.get_timestamp(y))]
     fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
 }
 
@@ -201,7 +201,7 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[requires(self.view_logic().le_log(sync_view))]
+    #[requires(self.view_logic() <= sync_view)]
     #[ensures(result == self.val())]
     #[allow(unused_variables)]
     pub fn sync(self, sync_view: SyncView) -> T {

@@ -42,7 +42,7 @@ impl Protocol for MessagePassingAtomicInv {
                     b &&
                     self.tok_write.val() == Some(Excl(())) &&
                         match self.at_view {
-                            Some(at_view) => perm == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic().le_log(view),
+                            Some(at_view) => perm == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic() <= view,
                             None => self.tok_read.val() == Some(Excl(()))
                         },
                 None => true

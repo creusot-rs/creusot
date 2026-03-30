@@ -38,8 +38,8 @@ macro_rules! impl_atomic {
             }
 
             #[logic(law)]
-            #[requires(x.le_log(y))]
-            #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
+            #[requires(x <= y)]
+            #[ensures(self.get_timestamp(x) <= self.get_timestamp(y))]
             #[trusted]
             fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
         }
@@ -173,11 +173,11 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     /// This does the read on the atomic in ghost code.
     #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
     #[requires(self.ward() == *own.ward())]
-    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
     #[ensures(result.0 <= self.ward().get_timestamp(^sync_view))]
     #[ensures(match own.val().get(result.0) {
-        Some((v, v_view)) => v == self.val() && v_view.le_log(result.1.view()),
+        Some((v, v_view)) => v == self.val() && v_view <= result.1.view(),
         None => false
     })]
     #[check(ghost)]
@@ -196,11 +196,11 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Loa
     /// This does the read on the atomic in ghost code.
     #[requires(self.ordering() == ::std::sync::atomic::Ordering::Acquire)]
     #[requires(self.ward() == *own.ward())]
-    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
     #[ensures(result <= self.ward().get_timestamp(^sync_view))]
     #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == self.val() && v_view.le_log(^sync_view),
+        Some((v, v_view)) => v == self.val() && v_view <= ^sync_view,
         None => false
     })]
     #[check(ghost)]
@@ -254,7 +254,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((^self).shot())]
     #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
     #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(result) == None)]
@@ -275,7 +275,7 @@ impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> Sto
     #[ensures((^self).shot())]
     #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures((*sync_view).le_log(^sync_view))]
+    #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
     #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(result) == None)]

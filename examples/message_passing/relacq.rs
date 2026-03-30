@@ -47,7 +47,7 @@ impl Protocol for MessagePassingAtomicInv {
                     None => true
                 },
                 State::Synchronisation(data_own, tok_write) => excl_write == tok_write.id() && forall<t> match self.atomic_own.val().get(t) {
-                    Some((b, view)) => !b || (b && perm == *data_own.val().ward() && data_own.val().val()@ == 1 && data_own.view_logic().le_log(view)),
+                    Some((b, view)) => !b || (b && perm == *data_own.val().ward() && data_own.val().val()@ == 1 && data_own.view_logic() <= view),
                     None => true
                 },
                 State::Readable(tok_write, tok_read) => excl_write == tok_write.id() && excl_read == tok_read.id(),
