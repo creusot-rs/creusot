@@ -539,6 +539,7 @@ pub mod macros {
 pub mod __stubs;
 
 pub mod cell;
+pub mod committer;
 pub mod ghost;
 pub mod invariant;
 pub mod logic;

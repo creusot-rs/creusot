@@ -2,6 +2,7 @@ extern crate creusot_std;
 
 use creusot_std::{
     cell::PermCell,
+    committer::Committer,
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -10,7 +11,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::{AtomicBool, LoadCommitter, StoreCommitter},
+        sync::atomic_sc::AtomicBool,
         thread::{self, JoinHandleExt},
     },
 };
@@ -68,10 +69,10 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut StoreCommitter<_>| {
+                ghost! { |c: &mut Committer<_, _, _>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.state = State::Synchronisation(data_own.into_inner());
-                        c.shoot(&mut inv.atomic_own);
+                        c.shoot_store(&mut inv.atomic_own);
                     })
                 }},
             );
@@ -84,9 +85,9 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &LoadCommitter<AtomicBool>| {
+            while !atomic.load(ghost! { |c: &Committer<AtomicBool, _, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!{ c.val() }.into_ghost() {
+                if !*snapshot!{ c.val_load() }.into_ghost() {
                     return
                 }
 
@@ -94,7 +95,7 @@ pub fn message_passing() {
                     excl.as_mut().unwrap().valid_op_lemma(excl_state)
                 }
 
-                c.shoot(&inv.atomic_own);
+                c.shoot_load(&inv.atomic_own);
 
                 let State::Synchronisation(d_own) =
                     std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap()))

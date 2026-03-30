@@ -3,6 +3,7 @@
 extern crate creusot_std;
 
 use creusot_std::{
+    committer::Committer,
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -11,7 +12,7 @@ use creusot_std::{
     logic::{Id, ra::option::OptionLocalUpdate, real::PositiveReal as PR},
     prelude::{vec, *},
     std::{
-        sync::atomic_sc::{AtomicI32, UpdateCommitter},
+        sync::atomic_sc::AtomicI32,
         thread::{self, JoinHandleExt},
     },
 };
@@ -102,10 +103,10 @@ pub fn parallel_add(n: i32) {
             let h = s.spawn(move |tokens: Ghost<Tokens>| {
                 atomic.fetch_add(
                     1,
-                    ghost! { |c: &mut UpdateCommitter<_>| {
+                    ghost! { |c: &mut Committer<_, _, _>| {
                         inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                             inv.auth.update(&mut *frag, OptionLocalUpdate(((), 1int)));
-                            c.shoot(&mut inv.own);
+                            c.shoot_store(&mut inv.own);
                         })
                     }},
                 );

@@ -1,8 +1,8 @@
 use crate::{
+    committer::{Committer, None, SeqCst},
     ghost::{Container, FnGhost, perm::Perm},
     prelude::*,
 };
-use core::marker::PhantomData;
 
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
@@ -29,7 +29,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[check(terminates)]
             pub fn new(val: $type) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
-                (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
+                (Self(::std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
@@ -44,36 +44,39 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[doc = ""]
             #[doc = "The load is always sequentially consistent."]
-            #[requires(forall<c: &LoadCommitter<Self>> c.ward() == *self ==> f.precondition((c,)))]
-            #[ensures(exists<c: &LoadCommitter<Self>>
-                c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+            #[requires(forall<c: &Committer<Self, SeqCst, None>>
+                c.ward() == *self ==> f.precondition((c,))
+            )]
+            #[ensures(exists<c: &Committer<Self, SeqCst, None>>
+                c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
             pub fn load<F>(&self, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&LoadCommitter<Self>),
+                F: FnGhost + FnOnce(&Committer<Self, SeqCst, None>),
             {
-                self.0.load(std::sync::atomic::Ordering::SeqCst)
+                self.0.load(::std::sync::atomic::Ordering::SeqCst)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[doc = ""]
             #[doc = "The store is always sequentially consistent."]
-            #[requires(forall<c: &mut StoreCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.val() == val ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            #[requires(forall<c: &mut Committer<Self, None, SeqCst>>
+                !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
             )]
-            #[ensures(exists<c: &mut StoreCommitter<Self>>
-                !c.shot() && c.ward() == *self && c.val() == val &&
+            #[ensures(exists<c: &mut Committer<Self, None, SeqCst>>
+                !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
             pub fn store<F>(&self, val: $type, f: Ghost<F>)
             where
-                F: FnGhost + FnOnce(&mut StoreCommitter<Self>),
+                F: FnGhost + FnOnce(&mut Committer<Self, None, SeqCst>),
             {
-                self.0.store(val, std::sync::atomic::Ordering::SeqCst)
+                self.0.store(val, ::std::sync::atomic::Ordering::SeqCst)
             }
         }
 
@@ -89,20 +92,21 @@ macro_rules! impl_atomic_int {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(forall<c: &mut UpdateCommitter<Self>> !c.shot() ==> c.ward() == *self ==> c.new_val() == val + c.old_val() ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            #[requires(forall<c: &mut Committer<Self, SeqCst, SeqCst>>
+                !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
             )]
-            #[ensures(exists<c: &mut UpdateCommitter<Self>>
-                !c.shot() && c.ward() == *self && c.new_val() == val + c.old_val() &&
-                c.old_val() == result && f.postcondition_once((c,), ())
+            #[ensures(exists<c: &mut Committer<Self, SeqCst, SeqCst>>
+                !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
+                c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
             pub fn fetch_add<F>(&self, val: $int_type, f: Ghost<F>) -> $int_type
             where
-                F: FnGhost + FnOnce(&mut UpdateCommitter<Self>),
+                F: FnGhost + FnOnce(&mut Committer<Self, SeqCst, SeqCst>),
             {
-                self.0.fetch_add(val, std::sync::atomic::Ordering::SeqCst)
+                self.0.fetch_add(val, ::std::sync::atomic::Ordering::SeqCst)
             }
         }
 
@@ -125,136 +129,4 @@ impl_atomic_int! {
     (u64, AtomicU64),
     (isize, AtomicIsize),
     (usize, AtomicUsize)
-}
-
-/// Wrapper around a single atomic load operation, where multiple ghost steps
-/// can be performed.
-///
-/// Note: this committer has no observable effect on ghost ressources. Thus, it is optional to shoot
-/// it, and nothing prevent the user from shooting it several times.
-// This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
-// perhaps not for C20's SC accesses.
-#[opaque]
-pub struct LoadCommitter<C: Container<Value: Sized>>(PhantomData<C>);
-
-impl<C: Container<Value: Sized>> LoadCommitter<C> {
-    /// Identity of the committer
-    ///
-    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn ward(self) -> C {
-        dead
-    }
-
-    /// Value read from the atomic operation.
-    #[logic(opaque)]
-    pub fn val(self) -> C::Value {
-        dead
-    }
-
-    /// 'Shoot' the committer
-    ///
-    /// This does the read on the atomic in ghost code, and can only be called once.
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures(self.val() == *own.val())]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot(&self, own: &Perm<C>) {
-        panic!("Should not be called outside ghost code")
-    }
-}
-
-/// Wrapper around a single atomic store operation, where multiple ghost steps
-/// can be performed.
-#[opaque]
-pub struct StoreCommitter<C: Container<Value: Sized>>(PhantomData<C>);
-
-impl<C: Container<Value: Sized>> StoreCommitter<C> {
-    /// Status of the committer
-    #[logic(opaque)]
-    pub fn shot(self) -> bool {
-        dead
-    }
-
-    /// Identity of the committer
-    ///
-    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn ward(self) -> C {
-        dead
-    }
-
-    /// Value written by the atomic operation.
-    #[logic(opaque)]
-    pub fn val(self) -> C::Value {
-        dead
-    }
-
-    /// 'Shoot' the committer
-    ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
-    #[requires(!(*self).shot())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
-    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(^own).val() == (*self).val())]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &mut Perm<C>) {
-        panic!("Should not be called outside ghost code")
-    }
-}
-
-/// Wrapper around a single atomic update operation, where multiple ghost steps
-/// can be performed.
-#[opaque]
-pub struct UpdateCommitter<C: Container<Value: Sized>>(PhantomData<C>);
-
-impl<C: Container<Value: Sized>> UpdateCommitter<C> {
-    /// Status of the committer
-    #[logic(opaque)]
-    pub fn shot(self) -> bool {
-        dead
-    }
-
-    /// Identity of the committer
-    ///
-    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn ward(self) -> C {
-        dead
-    }
-
-    /// Value held by the [`AtomicOwn`], before the [`shoot`].
-    #[logic(opaque)]
-    pub fn old_val(self) -> C::Value {
-        dead
-    }
-
-    /// Value held by the [`AtomicOwn`], after the [`shoot`].
-    #[logic(opaque)]
-    pub fn new_val(self) -> C::Value {
-        dead
-    }
-
-    /// 'Shoot' the committer
-    ///
-    /// This does the update on the atomic in ghost code, and can only be called once.
-    #[requires(!(*self).shot())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
-    #[ensures((*self).ward() == (^self).ward())]
-    #[ensures((*self).old_val() == (^self).old_val() && (*self).new_val() == (^self).new_val())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(*own).val() == (*self).old_val())]
-    #[ensures(*(^own).val() == (*self).new_val())]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot(&mut self, own: &mut Perm<C>) {
-        panic!("Should not be called outside ghost code")
-    }
 }
