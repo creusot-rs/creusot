@@ -114,7 +114,7 @@ pub fn message_passing() {
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             while !atomic.load(
                 Ordering::Relaxed,
-                ghost! { |c: &LoadCommitter<bool, _>| {
+                ghost! { |c: &LoadCommitter<AtomicBool>| {
                 inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                     if !*snapshot!(c.val()).into_ghost() {
                         return

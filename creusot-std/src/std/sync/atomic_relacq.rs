@@ -58,17 +58,17 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(order == ::std::sync::atomic::Ordering::Acquire || order == ::std::sync::atomic::Ordering::Relaxed)]
-            #[requires(forall<c: &LoadCommitter<$type, Self>>
+            #[requires(forall<c: &LoadCommitter<Self>>
                 c.ordering() == order ==> c.ward() == *self ==> f.precondition((c,))
             )]
-            #[ensures(exists<c: &LoadCommitter<$type, Self>>
+            #[ensures(exists<c: &LoadCommitter<Self>>
                 c.ordering() == order && c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
             pub fn load<F>(&self, order: ::std::sync::atomic::Ordering, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&LoadCommitter<$type, Self>),
+                F: FnGhost + FnOnce(&LoadCommitter<Self>),
             {
                 self.0.load(if cfg!(feature = "sc-drf") {
                     ::std::sync::atomic::Ordering::SeqCst
@@ -143,11 +143,9 @@ impl_atomic_int! {
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
-pub struct LoadCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
-    PhantomData<(T, C)>,
-);
+pub struct LoadCommitter<C: Container<Value: Sized>>(PhantomData<C>);
 
-impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<T, C> {
+impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<C> {
     /// Which ordering this committer belongs to.
     #[logic(opaque)]
     pub fn ordering(self) -> ::std::sync::atomic::Ordering {
