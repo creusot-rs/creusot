@@ -539,7 +539,6 @@ pub mod macros {
 pub mod __stubs;
 
 pub mod cell;
-pub mod committer;
 pub mod ghost;
 pub mod invariant;
 pub mod logic;
@@ -548,7 +547,7 @@ pub mod peano;
 pub mod resolve;
 pub mod snapshot;
 pub mod std;
-pub mod sync_view;
+pub mod sync;
 
 // We add some common things at the root of the creusot-std library
 mod base_prelude {

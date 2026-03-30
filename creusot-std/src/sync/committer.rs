@@ -2,34 +2,10 @@ use crate::{
     ghost::{Container, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+    std::sync::atomic::Ordering,
+    sync::sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
 };
 use core::marker::PhantomData;
-
-#[allow(non_snake_case)]
-pub mod Ordering {
-    use std::sync::atomic;
-
-    pub trait Ordering {
-        const ORDERING: atomic::Ordering;
-    }
-
-    pub struct None;
-
-    macro_rules! impl_orders {
-        ($( $order:ident ),+) => { $(
-
-            pub struct $order;
-
-            impl Ordering for $order {
-                const ORDERING: atomic::Ordering = atomic::Ordering::$order;
-            }
-
-        )* };
-    }
-
-    impl_orders!(Relaxed, Release, Acquire, SeqCst);
-}
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///

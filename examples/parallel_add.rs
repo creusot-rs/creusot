@@ -2,7 +2,6 @@
 extern crate creusot_std;
 
 use creusot_std::{
-    committer::{Committer, Ordering},
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -11,9 +10,10 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_sc::AtomicI32,
+        sync::{atomic::Ordering, atomic_sc::AtomicI32},
         thread::{self, JoinHandleExt},
     },
+    sync::committer::Committer,
 };
 
 declare_namespace! { PARALLEL_ADD }

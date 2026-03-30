@@ -1,7 +1,8 @@
 use crate::{
-    committer::{Committer, Ordering, Ordering::Ordering as _},
     ghost::{Container, FnGhost, perm::Perm},
     prelude::*,
+    std::sync::atomic::{Ordering, Ordering::Ordering as _},
+    sync::committer::Committer,
 };
 
 macro_rules! impl_atomic {

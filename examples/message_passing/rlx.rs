@@ -4,7 +4,6 @@ extern crate creusot_std;
 
 use creusot_std::{
     cell::PermCell,
-    committer::{Committer, Ordering},
     ghost::{
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -14,12 +13,16 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
+            atomic::Ordering,
             atomic_relacq::AtomicBool,
             fence::{fence_acquire, fence_release},
         },
         thread::{self, JoinHandleExt},
     },
-    sync_view::{AtView, SyncView},
+    sync::{
+        committer::Committer,
+        sync_view::{AtView, SyncView},
+    },
 };
 
 declare_namespace! { MESSAGE_PASSING }

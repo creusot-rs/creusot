@@ -1,12 +1,15 @@
 #[cfg(creusot)]
-use crate::sync_view::Objective;
+use crate::sync::sync_view::Objective;
 
 use crate::{
-    committer::{Committer, Ordering, Ordering::Ordering as _},
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{HasTimestamp, SyncView, Timestamp},
+    std::sync::atomic::{Ordering, Ordering::Ordering as _},
+    sync::{
+        committer::Committer,
+        sync_view::{HasTimestamp, SyncView, Timestamp},
+    },
 };
 
 macro_rules! impl_atomic {
