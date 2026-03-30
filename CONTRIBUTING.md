@@ -120,6 +120,13 @@ cargo install cargo-release
 
 1. `git fetch; git checkout origin/master -b release` to make sure you're starting from `master` and make a new branch `release`.
 2. Add a list of changes under "Unreleased" in `CHANGELOG.md`. Free style. Suggested approach: list merged PRs, group by themes, write up summaries or highlight important features.
+    The following script can be a useful start, converting the git log to a markdown list of links:
+
+    ```
+    PREV_VERSION=v0.10.0
+    git log $PREV_VERSION..master --pretty=format:'%s'|grep "(#[0-9]*)$"|sed 's_\s*\(.*\S\)\s*(#\([0-9]*\))_- \[\1\](https://github.com/creusot-rs/creusot/pull/\2)_'
+    ```
+
 3. (This step is not reversible!) `cargo release --no-tag --no-push X.Y.Z --execute` (where `X.Y.Z` is the new version number). This will:
 
   a. Bump versions in `Cargo.toml` and `CHANGELOG.md`.
