@@ -2,12 +2,12 @@
 use crate::sync_view::Objective;
 
 use crate::{
+    committer::{Committer, Ordering, Ordering::Ordering as _},
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+    sync_view::{HasTimestamp, SyncView, Timestamp},
 };
-use core::marker::PhantomData;
 
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
@@ -57,48 +57,48 @@ macro_rules! impl_atomic {
             // TODO: [VL] into_inner
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
-            #[requires(order == ::std::sync::atomic::Ordering::Acquire || order == ::std::sync::atomic::Ordering::Relaxed)]
-            #[requires(forall<c: &LoadCommitter<Self>>
-                c.ordering() == order ==> c.ward() == *self ==> f.precondition((c,))
+            #[requires(Load::ORDERING == Ordering::Acquire::ORDERING || Load::ORDERING == Ordering::Relaxed::ORDERING)]
+            #[requires(forall<c: &Committer<Self, $type, Load, Ordering::None>>
+                c.ward() == *self ==> f.precondition((c,))
             )]
-            #[ensures(exists<c: &LoadCommitter<Self>>
-                c.ordering() == order && c.ward() == *self && c.val() == result && f.postcondition_once((c,), ())
+            #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
+                c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn load<F>(&self, order: ::std::sync::atomic::Ordering, f: Ghost<F>) -> $type
+            pub fn load<F, Load: Ordering::Ordering>(&self, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&LoadCommitter<Self>),
+                F: FnGhost + FnOnce(&Committer<Self, $type, Load, Ordering::None>),
             {
                 self.0.load(if cfg!(feature = "sc-drf") {
-                    ::std::sync::atomic::Ordering::SeqCst
+                    Ordering::SeqCst::ORDERING
                 } else {
-                    ::std::sync::atomic::Ordering::Acquire
+                    Load::ORDERING
                 })
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
-            #[requires(order == ::std::sync::atomic::Ordering::Release || order == ::std::sync::atomic::Ordering::Relaxed)]
-            #[requires(forall<c: &mut StoreCommitter<$type, Self>>
-                !c.shot() ==> c.ordering() == order ==> c.ward() == *self ==> c.val() == val ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot()
+            #[requires(Store::ORDERING == Ordering::Release::ORDERING || Store::ORDERING == Ordering::Relaxed::ORDERING)]
+            #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
+                !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
+                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
             )]
-            #[ensures(exists<c: &mut StoreCommitter<$type, Self>>
-                !c.shot() && c.ordering() == order && c.ward() == *self && c.val() == val &&
+            #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
+                !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn store<F>(&self, val: $type, order: ::std::sync::atomic::Ordering, f: Ghost<F>)
+            pub fn store<F, Store: Ordering::Ordering>(&self, val: $type, f: Ghost<F>)
             where
-                F: FnGhost + FnOnce(&mut StoreCommitter<$type, Self>),
+                F: FnGhost + FnOnce(&mut Committer<Self, $type, Ordering::None, Store>),
             {
                 self.0.store(
                     val,
                     if cfg!(feature = "sc-drf") {
-                        ::std::sync::atomic::Ordering::SeqCst
+                        Ordering::SeqCst::ORDERING
                     } else {
-                        order
+                        Store::ORDERING
                     },
                 )
             }
@@ -133,160 +133,4 @@ impl_atomic_int! {
     (u64, AtomicU64),
     (isize, AtomicIsize),
     (usize, AtomicUsize)
-}
-
-/// Wrapper around a single atomic load operation, where multiple ghost steps
-/// can be performed.
-///
-/// Note: this committer has no observable effect on ghost ressources. Thus, it is optional to shoot
-/// it, and nothing prevent the user from shooting it several times.
-// This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
-// perhaps not for C20's SC accesses.
-#[opaque]
-pub struct LoadCommitter<C: Container<Value: Sized>>(PhantomData<C>);
-
-impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> LoadCommitter<C> {
-    /// Which ordering this committer belongs to.
-    #[logic(opaque)]
-    pub fn ordering(self) -> ::std::sync::atomic::Ordering {
-        dead
-    }
-
-    /// Identity of the committer
-    ///
-    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn ward(self) -> C {
-        dead
-    }
-
-    /// Value held by the [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn val(self) -> T {
-        dead
-    }
-
-    /// 'Shoot' the committer (Relaxed)
-    ///
-    /// This does the read on the atomic in ghost code.
-    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
-    #[requires(self.ward() == *own.ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
-    #[ensures(result.0 <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(match own.val().get(result.0) {
-        Some((v, v_view)) => v == self.val() && v_view <= result.1.view(),
-        None => false
-    })]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_relaxed(
-        &self,
-        own: &Perm<C>,
-        sync_view: &mut SyncView,
-    ) -> (Timestamp, AcquireSyncView) {
-        panic!("Should not be called outside ghost code")
-    }
-
-    /// 'Shoot' the committer (Acquire)
-    ///
-    /// This does the read on the atomic in ghost code.
-    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Acquire)]
-    #[requires(self.ward() == *own.ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
-    #[ensures(result <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(match own.val().get(result) {
-        Some((v, v_view)) => v == self.val() && v_view <= ^sync_view,
-        None => false
-    })]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_acquire(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Timestamp {
-        panic!("Should not be called outside ghost code")
-    }
-}
-
-/// Wrapper around a single atomic operation, where multiple ghost steps can be
-/// performed.
-#[opaque]
-pub struct StoreCommitter<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>>>(
-    PhantomData<(T, C)>,
-);
-
-impl<T, C: Container<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp> StoreCommitter<T, C> {
-    /// Which ordering this committer belongs to.
-    #[logic(opaque)]
-    pub fn ordering(self) -> ::std::sync::atomic::Ordering {
-        dead
-    }
-
-    /// Status of the committer
-    #[logic(opaque)]
-    pub fn shot(self) -> bool {
-        dead
-    }
-
-    /// Identity of the committer
-    ///
-    /// This is used so that we can only use the committer with the right [`AtomicOwn`].
-    #[logic(opaque)]
-    pub fn ward(self) -> C {
-        dead
-    }
-
-    /// Value held by the [`AtomicOwn`], before the [`shoot`].
-    #[logic(opaque)]
-    pub fn val(self) -> T {
-        dead
-    }
-
-    /// 'Shoot' the committer (Release)
-    ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
-    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Release)]
-    #[requires(!(*self).shot())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
-    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), ^sync_view)))]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_release(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) -> Timestamp {
-        panic!("Should not be called outside ghost code")
-    }
-
-    /// 'Shoot' the committer (Relaxed)
-    ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
-    #[requires(self.ordering() == ::std::sync::atomic::Ordering::Relaxed)]
-    #[requires(!(*self).shot())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((^self).shot())]
-    #[ensures((*self).ward() == (^self).ward() && (*self).val() == (^self).val())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val(), rel_view.view())))]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_relaxed(
-        &mut self,
-        own: &mut Perm<C>,
-        sync_view: &mut SyncView,
-        rel_view: ReleaseSyncView,
-    ) -> Timestamp {
-        panic!("Should not be called outside ghost code")
-    }
 }

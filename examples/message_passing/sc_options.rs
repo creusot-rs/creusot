@@ -2,7 +2,7 @@ extern crate creusot_std;
 
 use creusot_std::{
     cell::PermCell,
-    committer::Committer,
+    committer::{Committer, Ordering},
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -65,7 +65,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut Committer<_, _, _>| {
+                ghost! { |c: &mut Committer<_, _, _, Ordering::SeqCst>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.data_own = Some(data_own.into_inner());
                         c.shoot_store(&mut inv.atomic_own);
@@ -80,7 +80,7 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<AtomicBool, _, _>| {
+            while !atomic.load(ghost! { |c: &Committer<_, bool, Ordering::SeqCst, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                 if !*snapshot!{ c.val_load() }.into_ghost() {
                     return

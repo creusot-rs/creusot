@@ -200,9 +200,9 @@ module M_message_passing
   let rec into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
     [ return (result: t_Tokens) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  type t_Committer_AtomicBool_None_SeqCst
+  type t_Committer_AtomicBool_bool_None_SeqCst
   
-  type closure0'2 = { c0'2: t_Perm_PermCell_i32; c1'2: MutBorrow.t t_Committer_AtomicBool_None_SeqCst }
+  type closure0'2 = { c0'2: t_Perm_PermCell_i32; c1'2: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst }
   
   let rec into_inner_Box_Perm_PermCell_i32_Global (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:into_inner ensures] result = self}
@@ -238,21 +238,21 @@ module M_message_passing
         | Readable x0 -> resolve_Resource_Excl_unit x0
         end
   
-  predicate shot_store_AtomicBool (self: t_Committer_AtomicBool_None_SeqCst)
+  predicate shot_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
   
-  function ward_AtomicBool'0 (self: t_Committer_AtomicBool_None_SeqCst) : t_AtomicBool
+  function ward_AtomicBool'0 (self: t_Committer_AtomicBool_bool_None_SeqCst) : t_AtomicBool
   
-  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_None_SeqCst)
+  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
   
-  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_None_SeqCst)
+  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
   
-  predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_None_SeqCst) (other: t_Committer_AtomicBool_None_SeqCst) =
+  predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_bool_None_SeqCst) (other: t_Committer_AtomicBool_bool_None_SeqCst) =
     ward_AtomicBool'0 self = ward_AtomicBool'0 other
     /\ val_load_AtomicBool self = val_load_AtomicBool other /\ val_store_AtomicBool self = val_store_AtomicBool other
   
   meta "rewrite_def" predicate hist_inv_AtomicBool
   
-  let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_None_SeqCst)
+  let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst)
     (own: MutBorrow.t t_Perm_AtomicBool) (return (x: ())) =
     {[@stop_split] [@expl:shoot_store_AtomicBool requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicBool self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicBool'0 self.current = ward_AtomicBool own.current)}
@@ -261,7 +261,7 @@ module M_message_passing
     {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_store_AtomicBool self.current = val_AtomicBool own.final)}
+      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicBool own.final = val_store_AtomicBool self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_Box_Perm_AtomicBool_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicBool) =
@@ -274,10 +274,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_MessagePassingAtomicInv
   
-  predicate resolve_refmut_Committer_AtomicBool_None_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) =
+  predicate resolve_refmut_Committer_AtomicBool_bool_None_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicBool_None_SeqCst
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicBool_bool_None_SeqCst
   
   let rec closure0 [@coma:extspec] (self: closure0'2) (inv: MutBorrow.t t_MessagePassingAtomicInv) (return (x: ())) =
     bb0
@@ -290,9 +290,9 @@ module M_message_passing
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
             [ &_9 <- _bor ] [ &inv <- { inv with current = { inv.current with atomic_own = _bor.final } } ] s5)
-      | s5 = MutBorrow.borrow_final <t_Committer_AtomicBool_None_SeqCst> {self.c1'2.current}
+      | s5 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_None_SeqCst> {self.c1'2.current}
           {MutBorrow.get_id self.c1'2}
-          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) ->
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) ->
             [ &_7 <- _bor ] [ &self <- { self with c1'2 = { self.c1'2 with current = _bor.final } } ] s6)
       | s6 = MutBorrow.borrow_final <t_Perm_AtomicBool> {_9.current} {MutBorrow.get_id _9}
           (fun (_bor: MutBorrow.t t_Perm_AtomicBool) -> [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s7)
@@ -300,7 +300,7 @@ module M_message_passing
       | s8 = -{resolve_refmut_Box_Perm_AtomicBool_Global _9}- s9
       | s9 = -{resolve_refmut_MessagePassingAtomicInv inv}- s10
       | s10 = -{match self with
-          | {c1'2 = x} -> resolve_refmut_Committer_AtomicBool_None_SeqCst x
+          | {c1'2 = x} -> resolve_refmut_Committer_AtomicBool_bool_None_SeqCst x
           | _ -> true
           end}-
         s11
@@ -311,7 +311,7 @@ module M_message_passing
     | & _3: t_State = Any.any_l ()
     | & _4: t_Perm_PermCell_i32 = Any.any_l ()
     | & _6: () = Any.any_l ()
-    | & _7: MutBorrow.t t_Committer_AtomicBool_None_SeqCst = Any.any_l ()
+    | & _7: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = Any.any_l ()
     | & _8: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
     | & _9: MutBorrow.t t_Perm_AtomicBool = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
@@ -372,28 +372,29 @@ module M_message_passing
         /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
-  let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicBool_None_SeqCst)
+  let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst)
     (return (x: ())) = bb0
     [ bb0 = s0
       [ s0 = deref_Ghost_ref_AtomicInvariantSC_MessagePassingAtomicInv {self.c0'1}
           (fun (_x: t_AtomicInvariantSC_MessagePassingAtomicInv) -> [ &_4 <- _x ] s1)
       | s1 = into_inner_Tokens {self.c1'1} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <t_Committer_AtomicBool_None_SeqCst> {c.current} {MutBorrow.get_id c}
-          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) ->
+      | s2 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_None_SeqCst> {c.current} {MutBorrow.get_id c}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) ->
             [ &_10 <- _bor ] [ &c <- { c with current = _bor.final } ] s3)
       | s3 = [ &_9 <- { c0'2 = self.c2'1; c1'2 = _10 } ] s4
       | s4 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s5)
       | s5 = open_MessagePassingAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s6)
-      | s6 = -{resolve_refmut_Committer_AtomicBool_None_SeqCst c}- s7
+      | s6 = -{resolve_refmut_Committer_AtomicBool_bool_None_SeqCst c}- s7
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'1 = self
-    | & c: MutBorrow.t t_Committer_AtomicBool_None_SeqCst = c
+    | & c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = c
     | & _4: t_AtomicInvariantSC_MessagePassingAtomicInv = Any.any_l ()
     | & _6: t_Tokens = Any.any_l ()
     | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
     | & _9: closure0'2 = Any.any_l ()
-    | & _10: MutBorrow.t t_Committer_AtomicBool_None_SeqCst = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _10: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = Any.any_l () ]
+    [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'0'pre
   
@@ -417,22 +418,22 @@ module M_message_passing
   
   meta "rewrite_def" predicate inv_ref_AtomicBool
   
-  predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) =
+  predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
     let c = args in closure0'0'pre self c
   
   meta "rewrite_def" predicate precondition_closure0'0
   
-  predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) =
+  predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
     precondition_closure0'0 self.f0'4 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
   
-  predicate postcondition_once_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) (result: ()) =
+  predicate postcondition_once_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) (result: ()) =
     let c = args in closure0'0'post'return self c result
   
   meta "rewrite_def" predicate postcondition_once_closure0'0
   
-  predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_None_SeqCst) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) (result: ()) =
     postcondition_once_closure0'0 self.f0'4 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
@@ -440,14 +441,14 @@ module M_message_passing
   let rec store_FnGhostWrapper_closure0 (self: t_AtomicBool) (val': bool) (f: t_FnGhostWrapper_closure0'0)
     (return (x: ())) =
     {[@stop_split] [@expl:store_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicBool self)
-    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicBool_None_SeqCst. not shot_store_AtomicBool c.current
+    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
       -> ward_AtomicBool'0 c.current = self
       -> val_store_AtomicBool c.current = val'
       -> precondition_FnGhostWrapper_closure0'0 f c /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()
       -> shot_store_AtomicBool c.final)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicBool_None_SeqCst. not shot_store_AtomicBool c.current
+    {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
         /\ ward_AtomicBool'0 c.current = self
         /\ val_store_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
@@ -593,12 +594,12 @@ module M_message_passing
       /\ self.final = self.current}
       (! return {result}) ]
   
-  type t_Committer_AtomicBool_SeqCst_None
+  type t_Committer_AtomicBool_bool_SeqCst_None
   
-  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_SeqCst_None)
+  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
   
   type closure0'3 = {
-    c0'5: t_Committer_AtomicBool_SeqCst_None;
+    c0'5: t_Committer_AtomicBool_bool_SeqCst_None;
     c1'5: MutBorrow.t t_Option_Resource_Excl_unit;
     c2'5: MutBorrow.t t_Option_Box_Perm_PermCell_i32_Global }
   
@@ -668,10 +669,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_Resource_Excl_unit
   
-  function ward_AtomicBool'1 (self: t_Committer_AtomicBool_SeqCst_None) : t_AtomicBool
+  function ward_AtomicBool'1 (self: t_Committer_AtomicBool_bool_SeqCst_None) : t_AtomicBool
   
-  let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_SeqCst_None) (own: t_Perm_AtomicBool) (return (x: ())) =
-    {[@stop_split] [@expl:shoot_load requires] ward_AtomicBool'1 self = ward_AtomicBool own}
+  let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_None) (own: t_Perm_AtomicBool)
+    (return (x: ())) = {[@stop_split] [@expl:shoot_load requires] ward_AtomicBool'1 self = ward_AtomicBool own}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicBool'0 self = val_AtomicBool own}
       (! return {result}) ]
@@ -966,7 +967,7 @@ module M_message_passing
   
   meta "rewrite_def" predicate hist_inv_closure4
   
-  let rec closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: t_Committer_AtomicBool_SeqCst_None)
+  let rec closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: t_Committer_AtomicBool_bool_SeqCst_None)
     (return (x: ())) = bb0
     [ bb0 = s0
       [ s0 = deref_Ghost_ref_AtomicInvariantSC_MessagePassingAtomicInv {self.current.c0'4}
@@ -998,7 +999,7 @@ module M_message_passing
       | s12 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure4 = self
-    | & c: t_Committer_AtomicBool_SeqCst_None = c
+    | & c: t_Committer_AtomicBool_bool_SeqCst_None = c
     | & _4: t_AtomicInvariantSC_MessagePassingAtomicInv = Any.any_l ()
     | & _6: t_Tokens = Any.any_l ()
     | & _7: MutBorrow.t t_Tokens = Any.any_l ()
@@ -1015,23 +1016,23 @@ module M_message_passing
   
   meta "rewrite_def" predicate closure4'post'return
   
-  predicate postcondition_once_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_SeqCst_None) (result: ()) =
+  predicate postcondition_once_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
     let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
           /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
       /\ resolve_closure4 e
   
   meta "rewrite_def" predicate postcondition_once_closure4
   
-  predicate postcondition_mut_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_SeqCst_None) (result_state: closure4) (result: ()) =
+  predicate postcondition_mut_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result_state: closure4) (result: ()) =
     let c = args in exists bor_self: MutBorrow.t closure4. bor_self.current = self
       /\ bor_self.final = result_state /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure4
   
-  function fn_mut_once_closure4 (self: closure4) (args: t_Committer_AtomicBool_SeqCst_None) (res: ()) : ()
+  function fn_mut_once_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (res: ()) : ()
   
   axiom fn_mut_once_closure4_spec:
-    forall self: closure4, args: t_Committer_AtomicBool_SeqCst_None, res: (). postcondition_once_closure4 self args res
+    forall self: closure4, args: t_Committer_AtomicBool_bool_SeqCst_None, res: (). postcondition_once_closure4 self args res
       = (exists res_state: closure4. postcondition_mut_closure4 self args res_state res /\ resolve_closure4 res_state)
   
   function hist_inv_trans_closure4 (self: closure4) (b: closure4) (c: closure4) : ()
@@ -1043,10 +1044,10 @@ module M_message_passing
   
   axiom hist_inv_refl_closure4_spec: forall self: closure4. hist_inv_closure4 self self
   
-  function postcondition_mut_hist_inv_closure4 (self: closure4) (args: t_Committer_AtomicBool_SeqCst_None) (res_state: closure4) (res: ()) : ()
+  function postcondition_mut_hist_inv_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (res_state: closure4) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_closure4_spec:
-    forall self: closure4, args: t_Committer_AtomicBool_SeqCst_None, res_state: closure4, res: (). postcondition_mut_closure4 self args res_state res
+    forall self: closure4, args: t_Committer_AtomicBool_bool_SeqCst_None, res_state: closure4, res: (). postcondition_mut_closure4 self args res_state res
       -> hist_inv_closure4 self res_state
   
   type t_FnGhostWrapper_closure4 = { f0'6: closure4 }
@@ -1058,28 +1059,28 @@ module M_message_passing
   let rec new_FnGhostWrapper_closure4 (x: t_FnGhostWrapper_closure4) (return (x'0: t_FnGhostWrapper_closure4)) = any
     [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  predicate precondition_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_SeqCst_None) =
+  predicate precondition_closure4 [@inline:trivial] (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) =
     let c = args in forall bor_self: MutBorrow.t closure4. bor_self.current = self -> closure4'pre bor_self c
   
   meta "rewrite_def" predicate precondition_closure4
   
-  predicate precondition_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_SeqCst_None) =
+  predicate precondition_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) =
     precondition_closure4 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
   
-  predicate postcondition_once_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_SeqCst_None) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
     postcondition_once_closure4 self.f0'6 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
   
   let rec load_FnGhostWrapper_closure4 (self: t_AtomicBool) (f: t_FnGhostWrapper_closure4) (return (x: bool)) =
     {[@stop_split] [@expl:load_FnGhostWrapper_closure4 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicBool self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicBool_SeqCst_None. ward_AtomicBool'1 c = self
-      -> precondition_FnGhostWrapper_closure4 f c)}
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicBool_bool_SeqCst_None. ward_AtomicBool'1 c
+        = self -> precondition_FnGhostWrapper_closure4 f c)}
     any
     [ return (result: bool) ->
-    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_SeqCst_None. ward_AtomicBool'1 c = self
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_SeqCst_None. ward_AtomicBool'1 c = self
         /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
   

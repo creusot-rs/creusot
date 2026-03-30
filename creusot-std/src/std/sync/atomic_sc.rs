@@ -1,5 +1,5 @@
 use crate::{
-    committer::{Committer, None, SeqCst},
+    committer::{Committer, Ordering, Ordering::Ordering as _},
     ghost::{Container, FnGhost, perm::Perm},
     prelude::*,
 };
@@ -44,29 +44,29 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[doc = ""]
             #[doc = "The load is always sequentially consistent."]
-            #[requires(forall<c: &Committer<Self, SeqCst, None>>
+            #[requires(forall<c: &Committer<Self, $type, Ordering::SeqCst, Ordering::None>>
                 c.ward() == *self ==> f.precondition((c,))
             )]
-            #[ensures(exists<c: &Committer<Self, SeqCst, None>>
+            #[ensures(exists<c: &Committer<Self, $type, Ordering::SeqCst, Ordering::None>>
                 c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
             pub fn load<F>(&self, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&Committer<Self, SeqCst, None>),
+                F: FnGhost + FnOnce(&Committer<Self, $type, Ordering::SeqCst, Ordering::None>),
             {
-                self.0.load(::std::sync::atomic::Ordering::SeqCst)
+                self.0.load(Ordering::SeqCst::ORDERING)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[doc = ""]
             #[doc = "The store is always sequentially consistent."]
-            #[requires(forall<c: &mut Committer<Self, None, SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
             )]
-            #[ensures(exists<c: &mut Committer<Self, None, SeqCst>>
+            #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
@@ -74,9 +74,9 @@ macro_rules! impl_atomic {
             #[allow(unused_variables)]
             pub fn store<F>(&self, val: $type, f: Ghost<F>)
             where
-                F: FnGhost + FnOnce(&mut Committer<Self, None, SeqCst>),
+                F: FnGhost + FnOnce(&mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>),
             {
-                self.0.store(val, ::std::sync::atomic::Ordering::SeqCst)
+                self.0.store(val, Ordering::SeqCst::ORDERING)
             }
         }
 
@@ -92,11 +92,11 @@ macro_rules! impl_atomic_int {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(forall<c: &mut Committer<Self, SeqCst, SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
                 f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
             )]
-            #[ensures(exists<c: &mut Committer<Self, SeqCst, SeqCst>>
+            #[ensures(exists<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
                 c.val_load() == result && f.postcondition_once((c,), ())
             )]
@@ -104,9 +104,9 @@ macro_rules! impl_atomic_int {
             #[allow(unused_variables)]
             pub fn fetch_add<F>(&self, val: $int_type, f: Ghost<F>) -> $int_type
             where
-                F: FnGhost + FnOnce(&mut Committer<Self, SeqCst, SeqCst>),
+                F: FnGhost + FnOnce(&mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>),
             {
-                self.0.fetch_add(val, ::std::sync::atomic::Ordering::SeqCst)
+                self.0.fetch_add(val, Ordering::SeqCst::ORDERING)
             }
         }
 
