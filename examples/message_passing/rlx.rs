@@ -13,8 +13,7 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::Ordering,
-            atomic_relacq::AtomicBool,
+            atomic::{AtomicBool, Ordering},
             fence::{fence_acquire, fence_release},
         },
         thread::{self, JoinHandleExt},

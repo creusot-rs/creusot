@@ -12,7 +12,7 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::{atomic::Ordering, atomic_relacq::AtomicBool},
+        sync::atomic::{AtomicBool, Ordering},
         thread::{self, JoinHandleExt},
     },
     sync::{

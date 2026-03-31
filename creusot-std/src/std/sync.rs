@@ -11,7 +11,6 @@ use core::ops::Deref;
 use core::alloc::Allocator;
 
 pub mod atomic;
-pub mod atomic_relacq;
 #[cfg(feature = "sc-drf")]
 pub mod atomic_sc;
 pub mod fence;
