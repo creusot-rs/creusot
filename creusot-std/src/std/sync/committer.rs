@@ -73,6 +73,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
     #[ensures(result.0 <= self.ward().get_timestamp(^sync_view))]
+    #[ensures(result.0 == self.timestamp())]
     #[ensures(match own.val().get(result.0) {
         Some((v, v_view)) => v == self.val_load() && v_view <= result.1@,
         None => false
@@ -101,6 +102,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
     #[ensures(result <= self.ward().get_timestamp(^sync_view))]
+    #[ensures(result == self.timestamp())]
     #[ensures(match own.val().get(result) {
         Some((v, v_view)) => v == self.val_load() && v_view <= ^sync_view,
         None => false
@@ -146,6 +148,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
     #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
+    #[ensures(result == self.timestamp() + 1)]
     #[ensures((*own).val().get(result) == None)]
     #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val_store(), rel_view@)))]
     #[check(ghost)]
@@ -176,6 +179,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
     #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
+    #[ensures(result == self.timestamp() + 1)]
     #[ensures((*own).val().get(result) == None)]
     #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val_store(), ^sync_view)))]
     #[check(ghost)]
