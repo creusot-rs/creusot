@@ -669,10 +669,14 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_Resource_Excl_unit
   
+  predicate shot_store_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
+  
   function ward_AtomicBool'1 (self: t_Committer_AtomicBool_bool_SeqCst_None) : t_AtomicBool
   
   let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_None) (own: t_Perm_AtomicBool)
-    (return (x: ())) = {[@stop_split] [@expl:shoot_load requires] ward_AtomicBool'1 self = ward_AtomicBool own}
+    (return (x: ())) =
+    {[@stop_split] [@expl:shoot_load_AtomicBool requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicBool'0 self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool'1 self = ward_AtomicBool own)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicBool'0 self = val_AtomicBool own}
       (! return {result}) ]
@@ -1076,11 +1080,12 @@ module M_message_passing
   
   let rec load_FnGhostWrapper_closure4 (self: t_AtomicBool) (f: t_FnGhostWrapper_closure4) (return (x: bool)) =
     {[@stop_split] [@expl:load_FnGhostWrapper_closure4 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicBool self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicBool_bool_SeqCst_None. ward_AtomicBool'1 c
-        = self -> precondition_FnGhostWrapper_closure4 f c)}
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicBool_bool_SeqCst_None. not shot_store_AtomicBool'0 c
+      -> ward_AtomicBool'1 c = self -> precondition_FnGhostWrapper_closure4 f c)}
     any
     [ return (result: bool) ->
-    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_SeqCst_None. ward_AtomicBool'1 c = self
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_SeqCst_None. not shot_store_AtomicBool'0 c
+        /\ ward_AtomicBool'1 c = self
         /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
   

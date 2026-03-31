@@ -89,10 +89,10 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(Load::ORDERING == Ordering::Acquire::ORDERING || Load::ORDERING == Ordering::Relaxed::ORDERING)]
             #[requires(forall<c: &Committer<Self, $type, Load, Ordering::None>>
-                c.ward() == *self ==> f.precondition((c,))
+                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
             #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
-                c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
+                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]

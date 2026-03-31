@@ -1023,11 +1023,14 @@ module M_message_passing
   let rec deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
     [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
+  predicate shot_store_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Acquire_None)
+  
   function ward_AtomicBool'1 (self: t_Committer_AtomicBool_bool_Acquire_None) : t_AtomicBool
   
   let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_Acquire_None) (own: t_Perm_AtomicBool)
     (sync_view: MutBorrow.t t_SyncView) (return (x: int)) =
-    {[@stop_split] [@expl:shoot_load requires] ward_AtomicBool'1 self = ward_AtomicBool own}
+    {[@stop_split] [@expl:shoot_load_AtomicBool requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicBool'0 self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool'1 self = ward_AtomicBool own)}
     any
     [ return (result: int) ->
     {[@stop_split] [@expl:shoot_load_AtomicBool ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
@@ -1465,11 +1468,12 @@ module M_message_passing
     {[@stop_split] [@expl:load_FnGhostWrapper_closure4 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicBool self)
     /\ ([@stop_split] [@expl:load requires #0] const_ORDERING'1 = const_ORDERING'1
       \/ const_ORDERING'1 = const_ORDERING'0)
-    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicBool_bool_Acquire_None. ward_AtomicBool'1 c
-        = self -> precondition_FnGhostWrapper_closure4 f c)}
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicBool_bool_Acquire_None. not shot_store_AtomicBool'0 c
+      -> ward_AtomicBool'1 c = self -> precondition_FnGhostWrapper_closure4 f c)}
     any
     [ return (result: bool) ->
-    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_Acquire_None. ward_AtomicBool'1 c = self
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_Acquire_None. not shot_store_AtomicBool'0 c
+        /\ ward_AtomicBool'1 c = self
         /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
   

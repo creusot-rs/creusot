@@ -11,8 +11,8 @@ use core::marker::PhantomData;
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///
-/// Note: this committer has no observable effect on ghost ressources. Thus, it is optional to shoot
-/// it, and nothing prevent the user from shooting it several times.
+/// Note: This committer has no observable effect on ghost ressources.
+/// Therefore, for load-only accesses, it is optional to shoot it, and nothing prevent the user from shooting it several times.
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
@@ -68,6 +68,7 @@ where
     /// 'Shoot' the committer
     ///
     /// This does the read on the atomic in ghost code.
+    #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
@@ -95,6 +96,7 @@ where
     /// 'Shoot' the committer
     ///
     /// This does the read on the atomic in ghost code.
+    #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
@@ -118,6 +120,7 @@ where
     /// 'Shoot' the committer
     ///
     /// This does the read on the atomic in ghost code.
+    #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures(self.val_load() == *own.val())]
     #[check(ghost)]

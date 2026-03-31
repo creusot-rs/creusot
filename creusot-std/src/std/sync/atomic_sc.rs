@@ -48,10 +48,10 @@ macro_rules! impl_atomic {
             #[doc = ""]
             #[doc = "The load is always sequentially consistent."]
             #[requires(forall<c: &Committer<Self, $type, Ordering::SeqCst, Ordering::None>>
-                c.ward() == *self ==> f.precondition((c,))
+                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
             #[ensures(exists<c: &Committer<Self, $type, Ordering::SeqCst, Ordering::None>>
-                c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
+                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
