@@ -13,7 +13,9 @@ use core::alloc::Allocator;
 pub mod atomic;
 #[cfg(feature = "sc-drf")]
 pub mod atomic_sc;
+pub mod committer;
 pub mod fence;
+pub mod view;
 
 /// Extension trait for [`Arc`].
 pub trait ArcExt {

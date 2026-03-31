@@ -14,13 +14,11 @@ use creusot_std::{
     std::{
         sync::{
             atomic::{AtomicBool, Ordering},
+            committer::Committer,
             fence::{fence_acquire, fence_release},
+            view::{AtView, SyncView},
         },
         thread::{self, JoinHandleExt},
-    },
-    sync::{
-        committer::Committer,
-        sync_view::{AtView, SyncView},
     },
 };
 

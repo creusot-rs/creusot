@@ -12,12 +12,12 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic::{AtomicBool, Ordering},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            committer::Committer,
+            view::{AtView, SyncView},
+        },
         thread::{self, JoinHandleExt},
-    },
-    sync::{
-        committer::Committer,
-        sync_view::{AtView, SyncView},
     },
 };
 

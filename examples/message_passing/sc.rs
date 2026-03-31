@@ -10,10 +10,9 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::{atomic::Ordering, atomic_sc::AtomicBool},
+        sync::{atomic::Ordering, atomic_sc::AtomicBool, committer::Committer},
         thread::{self, JoinHandleExt},
     },
-    sync::committer::Committer,
 };
 
 declare_namespace! { MESSAGE_PASSING }

@@ -1,8 +1,10 @@
 use crate::{
     ghost::{Container, FnGhost, perm::Perm},
     prelude::*,
-    std::sync::atomic::{Ordering, Ordering::Ordering as _},
-    sync::committer::Committer,
+    std::sync::{
+        atomic::{Ordering, Ordering::Ordering as _},
+        committer::Committer,
+    },
 };
 
 macro_rules! impl_atomic {

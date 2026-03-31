@@ -10,10 +10,9 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::{atomic::Ordering, atomic_sc::AtomicI32},
+        sync::{atomic::Ordering, atomic_sc::AtomicI32, committer::Committer},
         thread::{self, JoinHandleExt},
     },
-    sync::committer::Committer,
 };
 
 declare_namespace! { PARALLEL_ADD }

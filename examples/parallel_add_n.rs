@@ -11,10 +11,9 @@ use creusot_std::{
     logic::{Id, ra::option::OptionLocalUpdate, real::PositiveReal as PR},
     prelude::{vec, *},
     std::{
-        sync::{atomic::Ordering, atomic_sc::AtomicI32},
+        sync::{atomic::Ordering, atomic_sc::AtomicI32, committer::Committer},
         thread::{self, JoinHandleExt},
     },
-    sync::committer::Committer,
 };
 use std::thread::ScopedJoinHandle;
 

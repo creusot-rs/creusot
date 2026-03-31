@@ -1,6 +1,6 @@
 use creusot_std::{
     prelude::*,
-    sync::sync_view::{AcquireSyncView, ReleaseSyncView, SyncView},
+    std::sync::view::{AcquireSyncView, ReleaseSyncView, SyncView},
 };
 
 use std::sync::atomic::{Ordering, fence};

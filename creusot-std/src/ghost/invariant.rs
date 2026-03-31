@@ -75,7 +75,7 @@ use crate::{
 use core::marker::PhantomData;
 
 #[cfg(creusot)]
-use crate::sync::sync_view::Objective;
+use crate::std::sync::view::Objective;
 
 /// Declare a new namespace.
 ///

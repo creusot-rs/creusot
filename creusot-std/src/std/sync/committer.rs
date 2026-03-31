@@ -2,8 +2,10 @@ use crate::{
     ghost::{Container, perm::Perm},
     logic::FMap,
     prelude::*,
-    std::sync::atomic::Ordering,
-    sync::sync_view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+    std::sync::{
+        atomic::Ordering,
+        view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+    },
 };
 use core::marker::PhantomData;
 

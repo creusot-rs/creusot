@@ -1,13 +1,13 @@
 #[cfg(creusot)]
-use crate::sync::sync_view::Objective;
+use crate::std::sync::view::Objective;
 
 use crate::{
     ghost::{Container, FnGhost, perm::Perm},
     logic::FMap,
     prelude::*,
-    sync::{
+    std::sync::{
         committer::Committer,
-        sync_view::{HasTimestamp, SyncView, Timestamp},
+        view::{HasTimestamp, SyncView, Timestamp},
     },
 };
 
