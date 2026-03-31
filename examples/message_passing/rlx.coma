@@ -565,23 +565,25 @@ module M_message_passing
   
   let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
-    (return (x: int)) =
+    (return (x: ())) =
     {[@stop_split] [@expl:shoot_store_AtomicBool requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicBool self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicBool'0 self.current = ward_AtomicBool own.current)}
     any
-    [ return (result: int) ->
+    [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.current
-        < timestamp_AtomicBool self.current + 1)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current + 1
-        <= get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) result = None)
+        <= timestamp_AtomicBool self.current)
+      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
+        < get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+          + 1)
+        = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
-      = insert_Int (val_AtomicBool own.current) result { f0'0 = val_store_AtomicBool self.current;
-                                                         f1'0 = view_ReleaseSyncView rel_view })}
+      = insert_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      + 1) { f0'0 = val_store_AtomicBool self.current; f1'0 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -680,7 +682,7 @@ module M_message_passing
             [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s13)
       | s13 = MutBorrow.borrow_final <t_SyncView> {_22.current} {MutBorrow.get_id _22}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_21 <- _bor ] [ &_22 <- { _22 with current = _bor.final } ] s14)
-      | s14 = shoot_store_AtomicBool {_18} {_19} {_21} {_25} (fun (_x: int) -> [ &_17 <- _x ] s15)
+      | s14 = shoot_store_AtomicBool {_18} {_19} {_21} {_25} (fun (_x: ()) -> [ &_17 <- _x ] s15)
       | s15 = -{resolve_refmut_Ghost_SyncView _24}- s16
       | s16 = -{resolve_refmut_SyncView _22}- s17
       | s17 = -{resolve_refmut_Box_Perm_AtomicBool_Global _20}- s18
@@ -709,7 +711,7 @@ module M_message_passing
     | & _12: t_State = Any.any_l ()
     | & _13: t_AtView_Box_Perm_PermCell_i32_Global = Any.any_l ()
     | & _15: t_Resource_Excl_unit = Any.any_l ()
-    | & _17: int = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & _18: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed = Any.any_l ()
     | & _19: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
     | & _20: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
@@ -1169,10 +1171,8 @@ module M_message_passing
         <= timestamp_AtomicBool'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool'0 self
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self) with
-        | Some {f0'0 = v; f1'0 = v_view} -> v = val_load_AtomicBool'0 self /\ v_view = view_AcquireSyncView result
-        | None -> false
-        end)}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self)
+      = Some { f0'0 = val_load_AtomicBool'0 self; f1'0 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate invariant_refmut_State [@inline:trivial] (self: MutBorrow.t t_State) =

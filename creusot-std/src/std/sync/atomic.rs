@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::std::sync::view::Objective;
+use crate::ghost::Objective;
 
 use crate::{
     ghost::{Container, FnGhost, perm::Perm},

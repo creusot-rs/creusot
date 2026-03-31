@@ -3,7 +3,7 @@
 
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{prelude::*, std::sync::view::NotObjective};
+use crate::{ghost::NotObjective, prelude::*};
 use core::marker::PhantomData;
 
 pub trait Container {
