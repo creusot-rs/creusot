@@ -4,26 +4,8 @@ use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::cmp::Ordering;
 
-/// An assertion whose meaning is independent of this thread's view.
-///
-/// Since `Objective` refers to ghost objects whose memory is objective, Rust's
-/// `Unique<T>` (and therefore `Box<T>`, `Vec<T>`, ...) are therefore objective.
 #[cfg(creusot)]
-#[trusted]
-pub auto trait Objective {}
-
-/// A guard for potentially subjective types
-///
-/// Some types, such as `Perm`, could hold a permission to access a value that
-/// depends on the view.
-///
-/// This negative implementation primarily targets `Perm<PermCell<T>>` and
-/// `Perm<*const T>`.
-pub(crate) struct NotObjective {}
-
-#[cfg(creusot)]
-#[trusted]
-impl !Objective for NotObjective {}
+use crate::ghost::Objective;
 
 pub type Timestamp = Int;
 
@@ -32,12 +14,15 @@ pub trait HasTimestamp {
     fn get_timestamp(self, view: SyncView) -> Timestamp;
 
     #[logic(law)]
-    #[requires(x.le_log(y))]
-    #[ensures(self.get_timestamp(x).le_log(self.get_timestamp(y)))]
+    #[requires(x <= y)]
+    #[ensures(self.get_timestamp(x) <= self.get_timestamp(y))]
     fn get_timestamp_monotonic(self, x: SyncView, y: SyncView);
 }
 
-/// ↑V
+/// A witness to the _current view_, containing all the events observed by this thread.
+///
+/// In Cosmo, [`SyncView`] corresponds to the notation `↑V`
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.cur`
 #[opaque]
 #[derive(Copy)]
 pub struct SyncView(());
@@ -113,7 +98,72 @@ impl OrdLogic for SyncView {
     fn eq_cmp(x: Self, y: Self) {}
 }
 
-/// P@V
+/// A witness to the _release view_, containing all the events observed by this thread at its last release fence.
+///
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.rel`
+#[opaque]
+#[derive(Copy)]
+pub struct ReleaseSyncView(());
+
+impl Clone for ReleaseSyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl ReleaseSyncView {
+    #[check(ghost)]
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+}
+
+impl View for ReleaseSyncView {
+    type ViewTy = SyncView;
+
+    #[logic(opaque)]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
+
+/// A witness to the _acquire view_, containing all the events that will be observed by this thread at its next acquire fence.
+///
+/// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.acq`
+#[opaque]
+#[derive(Copy)]
+pub struct AcquireSyncView(());
+
+impl Clone for AcquireSyncView {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl AcquireSyncView {
+    #[check(ghost)]
+    #[trusted]
+    pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+}
+
+impl View for AcquireSyncView {
+    type ViewTy = SyncView;
+
+    #[logic(opaque)]
+    fn view(self) -> Self::ViewTy {
+        dead
+    }
+}
+
+/// Resources that are held in view V.
+///
+/// In Cosmo, [`AtView`] corresponds to the notation `T@V`
+/// In Relaxed RustBelt, [`AtView`] corresponds to the notation `@V T`
 pub struct AtView<T>(PhantomData<T>);
 
 #[cfg(creusot)]
@@ -141,10 +191,10 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[requires(self.view_logic().le_log(v))]
+    #[requires(self.view_logic() <= sync_view)]
     #[ensures(result == self.val())]
     #[allow(unused_variables)]
-    pub fn into_inner(self, v: SyncView) -> T {
+    pub fn sync(self, sync_view: SyncView) -> T {
         panic!("Should not be called outside ghost code")
     }
 

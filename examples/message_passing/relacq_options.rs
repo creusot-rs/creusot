@@ -12,10 +12,13 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::atomic_relacq::{AtomicBool, LoadCommitter, StoreCommitter},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            committer::Committer,
+            view::{AtView, SyncView},
+        },
         thread::{self, JoinHandleExt},
     },
-    sync_view::{AtView, SyncView},
 };
 
 declare_namespace! { MESSAGE_PASSING }
@@ -41,7 +44,7 @@ impl Protocol for MessagePassingAtomicInv {
                     b &&
                     self.tok_write.val() == Some(Excl(())) &&
                         match self.at_view {
-                            Some(at_view) => perm == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic().le_log(view),
+                            Some(at_view) => perm == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic() <= view,
                             None => self.tok_read.val() == Some(Excl(()))
                         },
                 None => true
@@ -79,14 +82,14 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut StoreCommitter<_, _>| {
+                ghost! { |c: &mut Committer<_, _, _, Ordering::Release>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         excl.valid_op_lemma(&inv.tok_write);
                         std::mem::swap(&mut inv.tok_write, &mut *excl);
 
                         let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         inv.at_view = Some(at_view);
-                        c.shoot(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_store(&mut inv.atomic_own, &mut sync_view);
                     })
                 }},
             );
@@ -99,9 +102,9 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &LoadCommitter<bool, _>| {
+            while !atomic.load(ghost! { |c: &Committer<_, bool, Ordering::Acquire, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!{ c.val() }.into_ghost() {
+                if !*snapshot!(c.val_load()).into_ghost() {
                     return
                 }
 
@@ -109,8 +112,8 @@ pub fn message_passing() {
                 std::mem::swap(&mut inv.tok_read, &mut *excl);
 
                 let mut sync_view = *SyncView::new();
-                c.shoot(&inv.atomic_own, &mut sync_view);
-                data_own = Ghost::new(Some(inv.at_view.take().unwrap().into_inner(sync_view)))
+                c.shoot_load(&inv.atomic_own, &mut sync_view);
+                data_own = Ghost::new(Some(inv.at_view.take().unwrap().sync(sync_view)))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
