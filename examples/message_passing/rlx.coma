@@ -560,6 +560,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate hist_inv_AtomicBool
   
+  function view_ReleaseSyncView [@inline:trivial] (self: t_ReleaseSyncView) : t_SyncView = view self
+  
+  meta "rewrite_def" function view_ReleaseSyncView
+  
   let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
     (return (x: int)) =
@@ -578,7 +582,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) result = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
       = insert_Int (val_AtomicBool own.current) result { f0'0 = val_store_AtomicBool self.current;
-                                                         f1'0 = view rel_view })}
+                                                         f1'0 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -1153,6 +1157,10 @@ module M_message_passing
   
   function view'0 (self: t_AcquireSyncView) : t_SyncView
   
+  function view_AcquireSyncView [@inline:trivial] (self: t_AcquireSyncView) : t_SyncView = view'0 self
+  
+  meta "rewrite_def" function view_AcquireSyncView
+  
   let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_Relaxed_None) (own: t_Perm_AtomicBool)
     (sync_view: MutBorrow.t t_SyncView) (return (x: tup2_Int_AcquireSyncView)) =
     {[@stop_split] [@expl:shoot_load requires] ward_AtomicBool'1 self = ward_AtomicBool own}
@@ -1165,7 +1173,7 @@ module M_message_passing
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
       /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) result.f0'8 with
         | Some {f0'0 = v; f1'0 = v_view} -> v = val_load_AtomicBool'0 self
-        /\ le_log_SyncView v_view (view'0 result.f1'8)
+        /\ le_log_SyncView v_view (view_AcquireSyncView result.f1'8)
         | None -> false
         end)}
       (! return {result}) ]

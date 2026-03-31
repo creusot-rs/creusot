@@ -143,6 +143,15 @@ impl ReleaseSyncView {
     }
 }
 
+impl View for ReleaseSyncView {
+    type ViewTy = SyncView;
+
+    #[logic(open, inline)]
+    fn view(self) -> Self::ViewTy {
+        self.view()
+    }
+}
+
 /// A witness to the _acquire view_, containing all the events that will be observed by this thread at its next acquire fence.
 ///
 /// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.acq`
@@ -167,6 +176,15 @@ impl AcquireSyncView {
     #[logic(opaque)]
     pub fn view(self) -> SyncView {
         dead
+    }
+}
+
+impl View for AcquireSyncView {
+    type ViewTy = SyncView;
+
+    #[logic(open, inline)]
+    fn view(self) -> Self::ViewTy {
+        self.view()
     }
 }
 
