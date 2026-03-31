@@ -11,8 +11,8 @@ use core::marker::PhantomData;
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///
-/// Note: This committer has no observable effect on ghost ressources.
-/// Therefore, for load-only accesses, it is optional to shoot it, and nothing prevent the user from shooting it several times.
+/// Note: For load-only accesses, this committer has no observable effect on ghost ressources.
+/// Thus, it is optional to shoot it, and nothing prevent the user from shooting it several times.
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
@@ -71,21 +71,13 @@ where
     #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= result.0)]
-    #[ensures(result.0 <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(result.0 == self.timestamp())]
-    #[ensures(match own.val().get(result.0) {
-        Some((v, v_view)) => v == self.val_load() && v_view <= result.1@,
-        None => false
-    })]
+    #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
+    #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
+    #[ensures(own.val().get(self.timestamp()) == Some((self.val_load(), result@)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot_load(
-        &self,
-        own: &Perm<C>,
-        sync_view: &mut SyncView,
-    ) -> (Timestamp, AcquireSyncView) {
+    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) -> AcquireSyncView {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -100,17 +92,16 @@ where
     #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= result)]
-    #[ensures(result <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(result == self.timestamp())]
-    #[ensures(match own.val().get(result) {
+    #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
+    #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
+    #[ensures(match own.val().get(self.timestamp()) {
         Some((v, v_view)) => v == self.val_load() && v_view <= ^sync_view,
         None => false
     })]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Timestamp {
+    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -146,11 +137,10 @@ where
     #[ensures((^self).shot_store())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
-    #[ensures(result == self.timestamp() + 1)]
-    #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val_store(), rel_view@)))]
+    #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
+    #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
+    #[ensures((*own).val().get(self.timestamp() + 1) == None)]
+    #[ensures(*(^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), rel_view@)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -159,7 +149,7 @@ where
         own: &mut Perm<C>,
         sync_view: &mut SyncView,
         rel_view: ReleaseSyncView,
-    ) -> Timestamp {
+    ) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -177,15 +167,14 @@ where
     #[ensures((^self).shot_store())]
     #[ensures((*own).ward() == (^own).ward())]
     #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) < result)]
-    #[ensures(result <= (*self).ward().get_timestamp(^sync_view))]
-    #[ensures(result == self.timestamp() + 1)]
-    #[ensures((*own).val().get(result) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(result, ((*self).val_store(), ^sync_view)))]
+    #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
+    #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
+    #[ensures((*own).val().get(self.timestamp() + 1) == None)]
+    #[ensures(*(^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), ^sync_view)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot_store(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) -> Timestamp {
+    pub fn shoot_store(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) {
         panic!("Should not be called outside ghost code")
     }
 }

@@ -558,12 +558,11 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.current
-        < result)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] result
+        < timestamp_AtomicBool self.current + 1)
+      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current + 1
         <= get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] result = timestamp_AtomicBool self.current + 1)
-      /\ ([@stop_split] [@expl:shoot_store ensures #7] get_Int (val_AtomicBool own.current) result = None)
-      /\ ([@stop_split] [@expl:shoot_store ensures #8] val_AtomicBool own.final
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) result = None)
+      /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
       = insert_Int (val_AtomicBool own.current) result { f0'0 = val_store_AtomicBool self.current;
                                                          f1'0 = sync_view.final })}
       (! return {result}) ]
@@ -1033,18 +1032,17 @@ module M_message_passing
   function timestamp_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Acquire_None) : int
   
   let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_Acquire_None) (own: t_Perm_AtomicBool)
-    (sync_view: MutBorrow.t t_SyncView) (return (x: int)) =
+    (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
     {[@stop_split] [@expl:shoot_load_AtomicBool requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicBool'0 self)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool'1 self = ward_AtomicBool own)}
     any
-    [ return (result: int) ->
+    [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_load_AtomicBool ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
       /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.current
-        <= result)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] result
+        <= timestamp_AtomicBool'0 self)
+      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool'0 self
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] result = timestamp_AtomicBool'0 self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #4] match get_Int (val_AtomicBool own) result with
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self) with
         | Some {f0'0 = v; f1'0 = v_view} -> v = val_load_AtomicBool'0 self /\ le_log_SyncView v_view sync_view.final
         | None -> false
         end)}
@@ -1196,7 +1194,7 @@ module M_message_passing
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_34 <- _bor ] [ &sync_view <- _bor.final ] s21)
       | s21 = MutBorrow.borrow_final <t_SyncView> {_34.current} {MutBorrow.get_id _34}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_33 <- _bor ] [ &_34 <- { _34 with current = _bor.final } ] s22)
-      | s22 = shoot_load_AtomicBool {self.current.c0'5} {_32} {_33} (fun (_x: int) -> [ &_29 <- _x ] s23)
+      | s22 = shoot_load_AtomicBool {self.current.c0'5} {_32} {_33} (fun (_x: ()) -> [ &_29 <- _x ] s23)
       | s23 = -{resolve_refmut_SyncView _34}- s24
       | s24 = MutBorrow.borrow_final <t_Option_AtView_Box_Perm_PermCell_i32_Global> {inv.current.at_view}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
@@ -1248,7 +1246,7 @@ module M_message_passing
     | & sync_view: t_SyncView = Any.any_l ()
     | & _26: t_SyncView = Any.any_l ()
     | & _28: t_SyncView = Any.any_l ()
-    | & _29: int = Any.any_l ()
+    | & _29: () = Any.any_l ()
     | & _32: t_Perm_AtomicBool = Any.any_l ()
     | & _33: MutBorrow.t t_SyncView = Any.any_l ()
     | & _34: MutBorrow.t t_SyncView = Any.any_l ()

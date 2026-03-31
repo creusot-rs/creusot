@@ -122,8 +122,8 @@ pub fn message_passing() {
                 }
 
                 let mut sync_view = *SyncView::new();
-                let (_, acq) = c.shoot_load(&inv.atomic_own, &mut sync_view);
-                data_acq_view = Ghost::new(Some(acq));
+                let acq_view = c.shoot_load(&inv.atomic_own, &mut sync_view);
+                data_acq_view = Ghost::new(Some(acq_view));
 
                 let State::Synchronisation(at_view, tok_write) =
                     std::mem::replace(&mut inv.state, State::Invalid)
