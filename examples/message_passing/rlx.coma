@@ -436,10 +436,11 @@ module M_message_passing
   
   type t_ReleaseSyncView
   
-  function view (self: t_ReleaseSyncView) : t_SyncView
+  function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
   let rec fence_release (sync_view: t_SyncView) (return (x: t_ReleaseSyncView)) = any
-    [ return (result: t_ReleaseSyncView) -> {[@stop_split] [@expl:fence_release ensures] sync_view = view result}
+    [ return (result: t_ReleaseSyncView) -> {[@stop_split] [@expl:fence_release ensures] sync_view
+      = view_ReleaseSyncView result}
       (! return {result}) ]
   
   type t_Tokens
@@ -561,10 +562,6 @@ module M_message_passing
   meta "rewrite_def" predicate hist_inv_AtomicBool
   
   function timestamp_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed) : int
-  
-  function view_ReleaseSyncView [@inline:trivial] (self: t_ReleaseSyncView) : t_SyncView = view self
-  
-  meta "rewrite_def" function view_ReleaseSyncView
   
   let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
@@ -1162,11 +1159,7 @@ module M_message_passing
   
   function timestamp_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Relaxed_None) : int
   
-  function view'0 (self: t_AcquireSyncView) : t_SyncView
-  
-  function view_AcquireSyncView [@inline:trivial] (self: t_AcquireSyncView) : t_SyncView = view'0 self
-  
-  meta "rewrite_def" function view_AcquireSyncView
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
   
   let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_Relaxed_None) (own: t_Perm_AtomicBool)
     (sync_view: MutBorrow.t t_SyncView) (return (x: tup2_Int_AcquireSyncView)) =
@@ -1804,7 +1797,8 @@ module M_message_passing
     [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec fence_acquire (acq_view: t_AcquireSyncView) (return (x: t_SyncView)) = any
-    [ return (result: t_SyncView) -> {[@stop_split] [@expl:fence_acquire ensures] view'0 acq_view = result}
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:fence_acquire ensures] view_AcquireSyncView acq_view
+      = result}
       (! return {result}) ]
   
   let rec into_inner_Option_AtView_Box_Perm_PermCell_i32_Global (self: t_Option_AtView_Box_Perm_PermCell_i32_Global)

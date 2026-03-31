@@ -5,7 +5,7 @@ use creusot_std::{
 
 use std::sync::atomic::{Ordering, fence};
 
-#[ensures(*sync_view == result.view())]
+#[ensures(*sync_view == result@)]
 #[trusted]
 #[allow(unused_variables)]
 pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
@@ -13,7 +13,7 @@ pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
     Ghost::conjure()
 }
 
-#[ensures(acq_view.view() == *result)]
+#[ensures(acq_view@ == *result)]
 #[trusted]
 #[allow(unused_variables)]
 pub fn fence_acquire(acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {

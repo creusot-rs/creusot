@@ -136,19 +136,14 @@ impl ReleaseSyncView {
     pub fn new() -> Ghost<Self> {
         panic!("Should not be called outside ghost code")
     }
-
-    #[logic(opaque)]
-    pub fn view(self) -> SyncView {
-        dead
-    }
 }
 
 impl View for ReleaseSyncView {
     type ViewTy = SyncView;
 
-    #[logic(open, inline)]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
-        self.view()
+        dead
     }
 }
 
@@ -172,19 +167,14 @@ impl AcquireSyncView {
     pub fn new() -> Ghost<Self> {
         panic!("Should not be called outside ghost code")
     }
-
-    #[logic(opaque)]
-    pub fn view(self) -> SyncView {
-        dead
-    }
 }
 
 impl View for AcquireSyncView {
     type ViewTy = SyncView;
 
-    #[logic(open, inline)]
+    #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
-        self.view()
+        dead
     }
 }
 
