@@ -140,7 +140,7 @@ impl Plain for Namespace {
 // `*mut ()` so that Tokens are neither Send nor Sync
 pub struct Tokens<'a>(PhantomData<&'a ()>, PhantomData<*mut ()>);
 
-impl Tokens<'_> {
+impl<'a> Tokens<'a> {
     /// Get the underlying set of namespaces of this token.
     ///
     /// Also accessible via the [`view`](View::view) (`@`) operator.
@@ -175,11 +175,11 @@ impl Tokens<'_> {
     #[trusted]
     #[ensures(result == *self && ^self == *self)]
     #[check(ghost)]
-    pub fn reborrow<'a>(&'a mut self) -> Tokens<'a> {
+    pub fn reborrow<'b>(&'b mut self) -> Tokens<'b> {
         Tokens(PhantomData, PhantomData)
     }
 
-    /// Split the tokens in two, so that it can be used to access independant invariants.
+    /// Split the tokens in two, so that it can be used to access independent invariants.
     ///
     /// # Example
     ///
@@ -198,8 +198,8 @@ impl Tokens<'_> {
     /// fn bar(tokens: Ghost<Tokens>) {}
     ///
     /// #[requires(tokens.contains(FOO()) && tokens.contains(BAR()))]
-    /// fn baz(mut tokens: Ghost<Tokens>) -> i32 {
-    ///      let (ns_foo, ns_bar) = ghost!(tokens.split(snapshot!(FOO()))).split();
+    /// fn baz(tokens: Ghost<Tokens>) -> i32 {
+    ///      let (ns_foo, ns_bar) = ghost!(tokens.into_inner().split(snapshot!(FOO()))).split();
     ///      let x = foo(ns_foo);
     ///      bar(ns_bar);
     ///      *x
@@ -207,11 +207,10 @@ impl Tokens<'_> {
     /// ```
     #[trusted]
     #[requires(self.contains(*ns))]
-    #[ensures(^self == *self)]
     #[ensures(result.0.contains(*ns))]
     #[ensures(result.1.namespaces() == self.namespaces().remove(*ns))]
     #[check(ghost)]
-    pub fn split<'a>(&'a mut self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
+    pub fn split(self, ns: Snapshot<Namespace>) -> (Tokens<'a>, Tokens<'a>) {
         (Tokens(PhantomData, PhantomData), Tokens(PhantomData, PhantomData))
     }
 
