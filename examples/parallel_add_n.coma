@@ -739,11 +739,8 @@ module M_parallel_add
   
   predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup2_AtomicI32_Id) =
     data = { f0'6 = ward_AtomicI32 self.own; f1'6 = id_Option_tup2_PositiveReal_Int self.auth }
-    /\ match view_Authority_Option_tup2_PositiveReal_Int self.auth with
-      | None -> false
-      | Some {f0'1 = q; f1'1 = n} -> q = from_int 1
-      /\ (exists k: int. n - Int32.to_int (val_AtomicI32 self.own) = k * Pow2int.pow2 32)
-      end
+    /\ (exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
+      = Some { f0'1 = from_int 1; f1'1 = k * Pow2int.pow2 32 + Int32.to_int (val_AtomicI32 self.own) })
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
   

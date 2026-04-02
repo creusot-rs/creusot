@@ -49,12 +49,8 @@ impl Protocol for ParallelAddAtomicInv {
     fn protocol(self, data: (AtomicI32, Id)) -> bool {
         pearlite! {
             data == (*self.own.ward(), self.auth.id()) &&
-            match self.auth@ {
-                None => false,
-                Some((q, n)) =>
-                    q == PR::from_int(1) &&
-                    exists<k: Int> n - self.own.val()@ == k * Int::pow2(32)
-            }
+            exists<k: Int>
+              self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + self.own.val()@))
         }
     }
 }
