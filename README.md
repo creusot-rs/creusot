@@ -9,7 +9,7 @@
 # Creusot
 
 [![Guide](https://img.shields.io/badge/guide-darkgreen?logo=mdbook&labelColor=grey)](https://guide.creusot.rs)
-[![API](https://img.shields.io/badge/API-creusot--std-brightgreen?logo=rust&labelColor=grey)](https://doc.creusot.rs)
+[![API](https://img.shields.io/badge/API-creusot--std-brightgreen?logo=rust&labelColor=grey)](https://doc.creusot.rs/creusot_std)
 [![Tutorial](https://img.shields.io/badge/tutorial-yellowgreen?logo=github&labelColor=grey)](https://github.com/creusot-rs/tutorial)
 &nbsp;
 [![Zulip](https://img.shields.io/badge/Zulip-chat-blue?logo=zulip)](https://why3.zulipchat.com/#narrow/channel/341707-creusot)
