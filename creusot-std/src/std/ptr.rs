@@ -195,7 +195,8 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
     ///
     /// The current contract only describes the effect on `addr_logic` in the absence of overflow.
     #[logic]
-    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@)]
+    #[requires(0 <= self.addr_logic()@ + offset * size_of_logic::<T>())]
+    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() <= usize::MAX@)]
     #[ensures(result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
     fn offset_logic(self, offset: Int) -> Self;
 
@@ -227,7 +228,8 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
 impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[logic(opaque)]
-    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@)]
+    #[requires(0 <= self.addr_logic()@ + offset * size_of_logic::<T>())]
+    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() <= usize::MAX@)]
     #[ensures(result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
     fn offset_logic(self, offset: Int) -> Self {
         dead
@@ -264,7 +266,8 @@ impl<T> SizedPointerExt<T> for *const T {
 // Implemented using the impl for `*const T`
 impl<T> SizedPointerExt<T> for *mut T {
     #[logic(open, inline)]
-    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() < usize::MAX@)]
+    #[requires(0 <= self.addr_logic()@ + offset * size_of_logic::<T>())]
+    #[requires(self.addr_logic()@ + offset * size_of_logic::<T>() <= usize::MAX@)]
     #[ensures(result.addr_logic()@ == self.addr_logic()@ + offset * size_of_logic::<T>())]
     fn offset_logic(self, offset: Int) -> Self {
         pearlite! { (self as *const T).offset_logic(offset) as *mut T }
