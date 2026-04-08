@@ -276,11 +276,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         })
                     })
                 }
-                _ => self.build_wp(lhs, &|lhs| {
-                    self.build_wp(rhs, &|rhs| {
-                        k(Exp::BinaryOp(binop_to_binop(*op), lhs.clone().boxed(), rhs.boxed()))
+                _ => {
+                    if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
+                        self.names.import_prelude_module(PreMod::Int);
+                    }
+                    self.build_wp(lhs, &|lhs| {
+                        self.build_wp(rhs, &|rhs| {
+                            k(Exp::BinaryOp(binop_to_binop(*op), lhs.clone().boxed(), rhs.boxed()))
+                        })
                     })
-                }),
+                }
             },
             // VC(OP A, Q) = VC(A |a| Q(OP a))
             TermKind::Unary { op, arg } => self.build_wp(arg, &|arg| {
