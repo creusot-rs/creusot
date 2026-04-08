@@ -215,3 +215,7 @@ pub(crate) fn pretty_span(span: &Span) -> String {
     let end = span.end();
     format! {"{:?}:{:?}:{:?}-{:?}:{:?}", span.unwrap().file(), start.line, start.column, end.line, end.column}
 }
+
+pub fn pat_wild() -> syn::Pat {
+    syn::Pat::Wild(syn::PatWild { attrs: vec![], underscore_token: Default::default() })
+}

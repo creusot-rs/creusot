@@ -11,8 +11,6 @@ use std::{collections::HashMap, path::PathBuf};
 // Why3 value names must start with a lower case letter.
 // Rust function names conventionally start with a lower case letter,
 // but that is not mandatory, in which case we insert a `prefix` (for example `v_`).
-// To make this encoding injective, also insert the prefix if the source name already starts with the prefix.
-// This makes decoding simple: if the name starts with the prefix, just strip it.
 pub fn lowercase_prefix(prefix: &str, name: &str) -> String {
     let name = to_alphanumeric(name);
     if name.starts_with(|c: char| c.is_ascii_lowercase() || c == '_') {
@@ -327,6 +325,7 @@ pub mod name {
     static_idents! {
         self_ => "self",
         result => "result",
+        mode => "mode",
         return_ => "return" // return is recognized as a keyword by the printer, but still allowed as a name for a
                             // continuation. We use this to make sure that this name never conflict with another name,
                             // and thus we can use the suffix 'post'return

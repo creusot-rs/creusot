@@ -143,13 +143,14 @@ fn logic_refinement_term<'tcx>(
 
     let mut impl_sig = ctx.sig(impl_item_id).clone();
 
+    let mut args = Vec::new();
     if !is_pearlite(ctx.tcx, impl_item_id) {
+        args.push((name::mode().into(), ctx.mode_ty(), DUMMY_SP));
         sig_add_type_invariant_spec(ctx, typing_env, impl_item_id, &mut trait_sig, trait_item_id);
         sig_add_type_invariant_spec(ctx, typing_env, impl_item_id, &mut impl_sig, impl_item_id);
     }
 
     let span = ctx.tcx.def_span(impl_item_id);
-    let mut args = Vec::new();
     let mut subst = HashMap::new();
     for (&(id, span, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
         args.push((id, *ty, span));

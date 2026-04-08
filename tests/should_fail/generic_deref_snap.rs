@@ -3,8 +3,8 @@ extern crate creusot_std;
 use creusot_std::prelude::*;
 use std::ops::Deref;
 
-#[requires(T::deref.precondition((x,)))]
-#[ensures(T::deref.postcondition((x,), result))]
+#[requires(|mode| T::deref.precondition(mode, (x,)))]
+#[ensures(|result, mode| T::deref.postcondition(mode, (x,), result))]
 pub fn deref_wrap<T: Deref>(x: &T) -> &T::Target {
     &*x
 }

@@ -8,6 +8,7 @@ use crate::{
         ty::translate_ty,
     },
     contracts_items::why3_attrs,
+    naming::name,
     translation::specification::{PreContract, PreSignature},
 };
 use rustc_hir::def_id::DefId;
@@ -98,10 +99,13 @@ pub(crate) fn lower_program_sig<'tcx>(
 ) -> ProgramSignature {
     let span = ctx.tcx.def_span(def_id);
     let return_ty = translate_ty(ctx, names, span, pre_sig.output);
-    let params: Box<[Param]> = pre_sig
-        .inputs
-        .iter()
-        .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty)))
+    let params: Box<[Param]> = std::iter::once(Param::Term(name::mode(), super::ty::mode(names)))
+        .chain(
+            pre_sig
+                .inputs
+                .iter()
+                .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty))),
+        )
         .chain([Param::Cont(
             return_ident,
             [].into(),

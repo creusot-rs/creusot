@@ -127,8 +127,9 @@ impl ContractClauses {
         bound: impl IntoIterator<Item = Ident>,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let bound_with_result =
-            &bound.into_iter().chain(std::iter::once(name::result())).collect::<Box<_>>();
-        let bound = bound_with_result.split_last().unwrap().1;
+            &bound.into_iter().chain([name::mode(), name::result()]).collect::<Box<_>>();
+        let bound_with_mode = bound_with_result.split_last().unwrap().1;
+        let bound = bound_with_mode.split_last().unwrap().1;
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let n_requires = self.requires.len();
@@ -142,7 +143,7 @@ impl ContractClauses {
                 if n_requires > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                Condition { term: ctx.term(req_id).unwrap().rename(bound), expl }
+                Condition { term: ctx.term(req_id).unwrap().rename(bound_with_mode), expl }
             })
             .collect();
 

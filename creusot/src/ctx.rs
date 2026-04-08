@@ -699,6 +699,14 @@ impl<'tcx> TranslationCtx<'tcx> {
             ty,
         )
     }
+
+    pub fn mode_ty(&self) -> Ty<'tcx> {
+        Ty::new_adt(
+            self.tcx,
+            self.tcx.adt_def(Intrinsic::ModeType.get(self)),
+            self.tcx.mk_args(&[]),
+        )
+    }
 }
 
 impl<'tcx> HasTyCtxt<'tcx> for TranslationCtx<'tcx> {

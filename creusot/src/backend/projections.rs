@@ -153,12 +153,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(Name::local(names.field(def.did(), subst, ix)))
+                        focus.call(is).field(names.field(def.did(), subst, ix))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates =
-                            Box::new([(Name::local(names.field(def.did(), subst, ix)), t)]);
+                        let updates = Box::new([(names.field(def.did(), subst, ix), t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -171,12 +170,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                 TyKind::Tuple(args) => {
                     let focus1 = focus.clone();
 
-                    focus = Focus::new(move |is| {
-                        focus.call(is).field(Name::local(names.tuple_field(args, ix)))
-                    });
+                    focus = Focus::new(move |is| focus.call(is).field(names.tuple_field(args, ix)));
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(Name::local(names.tuple_field(args, ix)), t)]);
+                        let updates = Box::new([(names.tuple_field(args, ix), t)]);
                         let record = focus1.call(is).boxed();
                         constructor(is, Exp::RecUp { record, updates })
                     });
@@ -184,12 +181,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                 TyKind::Closure(id, subst) => {
                     let focus1 = focus.clone();
 
-                    focus = Focus::new(move |is| {
-                        focus.call(is).field(Name::local(names.field(*id, subst, ix)))
-                    });
+                    focus = Focus::new(move |is| focus.call(is).field(names.field(*id, subst, ix)));
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(Name::local(names.field(*id, subst, ix)), t)]);
+                        let updates = Box::new([(names.field(*id, subst, ix), t)]);
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {

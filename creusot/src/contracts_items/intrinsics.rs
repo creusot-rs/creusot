@@ -148,6 +148,10 @@ contracts_items! {
     "metadata_matches"          MetadataMatches
     "metadata_matches_slice"    MetadataMatchesSlice
     "metadata_matches_str"      MetadataMatchesStr
+    "mode_type"                 ModeType
+    "mode_nopanic"              ModeNoPanic
+    "mode_terminates"           ModeTerminates
+    "mode_ghost"                ModeGhost
     "namespace"                 Namespace
     "neq"                       Neq
     "old"                       Old

@@ -42,7 +42,7 @@ use crate::{
     gather_spec_closures::{
         InvariantsAndVariants, SpecClosures, corrected_invariant_names_and_locations,
     },
-    naming::lowercase_prefix,
+    naming::{lowercase_prefix, name},
     translation::{
         fmir::{self, BorrowKind, LocalKind},
         function::{Assertion, discriminator_for_switch},
@@ -210,10 +210,13 @@ impl<'a, 'tcx> AnalysisEnv<'a, 'tcx> {
     ) -> impl Fn(Ident) -> Option<TermKind<'tcx>> {
         let places = self.tree.visible_locals(scope);
         move |ident| {
-            let var = *self
-                .corenamer
-                .get(&ident)
-                .unwrap_or_else(|| panic!("HirId not found for {:?}", ident));
+            let Some(&var) = self.corenamer.get(&ident) else {
+                if ident == name::mode() {
+                    return Some(TermKind::Var(ident.into()));
+                } else {
+                    panic!("HirId not found for {:?}", ident)
+                }
+            };
             let ident2 = tcx.hir_ident(var);
             match places.get(&ident2) {
                 Some(Some(pid)) => Some(TermKind::Var(*pid)),

@@ -24,7 +24,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl #impl_generics ::core::clone::Clone for #name #ty_generics #where_clause {
-            #[::creusot_std::macros::ensures(#post)]
+            #[::creusot_std::macros::ensures(|result, mode| #post)]
             fn clone(&self) -> Self {
                 #body
             }
@@ -129,7 +129,7 @@ fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
                     let name = &f.ident;
                     let ty = &f.ty;
                     quote_spanned! {f.span()=>
-                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#name,), result.#name)
+                        <#ty as ::core::clone::Clone>::clone.postcondition(mode, (&self.#name,), result.#name)
                     }
                 });
                 quote! { #(#conjuncts) && * }
@@ -142,7 +142,7 @@ fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
                     let index = Index::from(i);
                     let ty = &f.ty;
                     quote_spanned! {f.span()=>
-                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#index,), result.#index)
+                        <#ty as ::core::clone::Clone>::clone.postcondition(mode, (&self.#index,), result.#index)
                     }
                 });
                 quote! { #(#conjuncts) && * }
@@ -204,7 +204,7 @@ fn gen_match_arm_post<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmA
         let ty = &field.ty;
 
         acc.body.push(quote!(
-            <#ty as ::core::clone::Clone>::clone.postcondition((&#name_1,), #name_r)
+            <#ty as ::core::clone::Clone>::clone.postcondition(mode, (&#name_1,), #name_r)
         ));
         if named {
             acc.fields.push(quote!(#name_base: #name_1));

@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::prelude::*;
 use core::iter::*;
 
@@ -33,26 +35,33 @@ pub use zip::ZipExt;
 
 pub trait IteratorSpec: Iterator {
     #[logic(prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[logic(prophetic)]
     fn completed(&mut self) -> bool;
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self);
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    );
 
     #[check(ghost)]
-    #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                    func.precondition((e, Snapshot::new(Seq::empty()))))]
+    #[requires(|mode| forall<e, i2> self.produces(mode, Seq::singleton(e), i2) && inv(e) ==>
+                    func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
-    #[requires(MapInv::<Self, F>::preservation(self, func))]
+    #[requires(forall<mode: Mode> !mode.terminates() ==> MapInv::<Self, F>::preservation(mode, self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
@@ -65,29 +74,36 @@ pub trait IteratorSpec: Iterator {
 
 pub trait FromIteratorSpec<A>: FromIterator<A> {
     #[logic]
-    fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
+    fn from_iter_post(mode: Mode, prod: Seq<A>, res: Self) -> bool;
 }
 
 impl FromIteratorSpec<()> for () {
     #[logic(open)]
-    fn from_iter_post(_: Seq<()>, _res: Self) -> bool {
+    fn from_iter_post(_: Mode, _: Seq<()>, _res: Self) -> bool {
         true
     }
 }
 
 pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
-    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
+    fn produces_back(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[logic(law)]
-    #[ensures(self.produces_back(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces_back(mode, Seq::empty(), self))]
     fn produces_back_refl(self);
 
     #[logic(law)]
-    #[requires(a.produces_back(ab, b))]
-    #[requires(b.produces_back(bc, c))]
-    #[ensures(a.produces_back(ab.concat(bc), c))]
-    fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
+    #[requires(a.produces_back(mode, ab, b))]
+    #[requires(b.produces_back(mode, bc, c))]
+    #[ensures(a.produces_back(mode, ab.concat(bc), c))]
+    fn produces_back_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    );
 }
 
 extern_spec! {
@@ -96,9 +112,9 @@ extern_spec! {
             trait Iterator
                 where Self: IteratorSpec {
 
-                #[ensures(match result {
+                #[ensures(|result, mode| match result {
                     None => self.completed(),
-                    Some(v) => (*self).produces(Seq::singleton(v), ^self)
+                    Some(v) => (*self).produces(mode, Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
@@ -125,8 +141,9 @@ extern_spec! {
                         Self: Sized + Iterator<Item = &'a T>;
 
                 #[check(ghost)]
-                #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                                f.precondition((e,)))]
+                #[requires(forall<mode: Mode, e, i2>
+                    !mode.terminates() && self.produces(mode, Seq::singleton(e), i2) && inv(e)
+                    ==> f.precondition(mode, (e,)))]
                 #[requires(map::reinitialize::<Self, B, F>())]
                 #[requires(map::preservation::<Self, B, F>(self, f))]
                 #[ensures(result.iter() == self && result.func() == f)]
@@ -151,8 +168,8 @@ extern_spec! {
 
                 #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
-                #[requires(forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() < core::usize::MAX@)]
+                #[requires(forall<mode: Mode, i: &mut Self> !mode.terminates() && (*i).completed() ==> (*i).produces(mode, Seq::empty(), ^i))]
+                #[requires(forall<mode: Mode, s: Seq<Self::Item>, i: Self> self.produces(mode, s, i) ==> s.len() < core::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n()@ == 0)]
                 fn enumerate(self) -> Enumerate<Self>
                     where Self: Sized;
@@ -163,14 +180,14 @@ extern_spec! {
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[requires(U::into_iter.precondition((other,)))]
+                #[requires(|mode| U::into_iter.precondition(mode, (other,)))]
                 #[ensures(result.itera() == self)]
-                #[ensures(U::into_iter.postcondition((other,), result.iterb()))]
+                #[ensures(|result, mode| U::into_iter.postcondition(mode, (other,), result.iterb()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized, U::IntoIter: Iterator;
 
-                #[ensures(exists<done: &mut Self, prod>
-                    resolve(^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
+                #[ensures(|result, mode| exists<done: &mut Self, prod>
+                    resolve(^done) && done.completed() && self.produces(mode, prod, *done) && B::from_iter_post(mode, prod, result))]
                 fn collect<B>(self) -> B
                     where Self: Sized, B: FromIteratorSpec<Self::Item>;
 
@@ -183,11 +200,11 @@ extern_spec! {
             trait FromIterator<A>
                 where Self: FromIteratorSpec<A> {
 
-                #[requires(T::into_iter.precondition((iter,)))]
-                #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
-                            T::into_iter.postcondition((iter,), into_iter) &&
-                            into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
-                            Self::from_iter_post(prod, result))]
+                #[requires(|mode| T::into_iter.precondition(mode, (iter,)))]
+                #[ensures(|result, mode| exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
+                            T::into_iter.postcondition(mode, (iter,), into_iter) &&
+                            into_iter.produces(mode, prod, *done) && done.completed() && resolve(^done) &&
+                            Self::from_iter_post(mode, prod, result))]
                 fn from_iter<T>(iter: T) -> Self
                     where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: IteratorSpec;
             }
@@ -205,9 +222,9 @@ extern_spec! {
 
             trait DoubleEndedIterator
                 where Self: DoubleEndedIteratorSpec {
-                #[ensures(match result {
+                #[ensures(|result, mode| match result {
                     None => self.completed(),
-                    Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
+                    Some(v) => (*self).produces_back(mode, Seq::singleton(v), ^self)
                 })]
                 fn next_back(&mut self) -> Option<Self::Item>;
             }
@@ -223,8 +240,8 @@ extern_spec! {
 
 impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
-        pearlite! { (*self).produces(visited, *o) && ^self == ^o }
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+        pearlite! { (*self).produces(mode, visited, *o) && ^self == ^o }
     }
 
     #[logic(open, prophetic)]
@@ -233,12 +250,20 @@ impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }

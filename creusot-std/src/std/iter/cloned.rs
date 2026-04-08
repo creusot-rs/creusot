@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::iter::Cloned;
 
 pub trait ClonedExt<I> {
@@ -48,22 +48,22 @@ where
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<T>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<T>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>>
-                   self.iter().produces(s, o.iter())
+                   self.iter().produces(mode, s, o.iter())
                 && visited.len() == s.len()
-                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition((s[i],), visited[i])
+                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition(mode, (s[i],), visited[i])
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(mode: Mode, a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }

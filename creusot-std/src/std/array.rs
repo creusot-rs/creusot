@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, prelude::*};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -77,7 +77,7 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
@@ -87,14 +87,22 @@ impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
 
 extern_spec! {
@@ -105,8 +113,8 @@ extern_spec! {
     }
 
     impl<T: Clone, const N: usize> Clone for [T; N] {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn clone(&self) -> [T; N];
     }
 

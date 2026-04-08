@@ -3,8 +3,8 @@ extern crate creusot_std;
 use creusot_std::prelude::*;
 
 // une spécification qui conduit à prouver n'importe quoi
-#[requires(cond.precondition(()) && forall <b:bool> branch.precondition((b,))
-           && (exists <b:bool> forall <b0:bool> cond.postcondition((),b0) ==> b0==b) )] // exprime que cond est déterministe ! Mais c'est elle qui conduit à l'absurde.
+#[requires(|mode| cond.precondition(mode, ()) && forall <b:bool> branch.precondition(mode, (b,))
+           && (exists <b:bool> forall <b0:bool> cond.postcondition(mode, (),b0) ==> b0==b) )] // exprime que cond est déterministe ! Mais c'est elle qui conduit à l'absurde.
 #[ensures(false)]
 pub fn incorrect<C: Fn() -> bool, B: FnOnce(bool) -> ()>(cond: C, branch: B) {}
 

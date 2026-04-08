@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{mode::Mode, prelude::*};
 
 #[allow(unused_must_use)]
 pub fn f<T>(x: T) {
@@ -8,7 +8,7 @@ pub fn f<T>(x: T) {
     move || {
         &x;
     };
-    proof_assert!(f.postcondition_once((), ()) ==> resolve(*xx));
+    proof_assert!(forall<mode: Mode> f.postcondition_once(mode, (), ()) ==> resolve(*xx));
     f()
 }
 
@@ -18,6 +18,6 @@ pub fn g<T>(x: T) {
     let f = move || {
         &x;
     };
-    proof_assert!(f.postcondition_once((), ()) ==> resolve(*xx));
+    proof_assert!(forall<mode: Mode> f.postcondition_once(mode, (), ()) ==> resolve(*xx));
     f()
 }

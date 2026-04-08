@@ -290,11 +290,11 @@ impl<T> FullBorrow<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(self.lft() == token.lft())]
-    #[requires(forall<b: &mut T> *b == self.cur() && ^b == ^self ==>
-        f.precondition((b,)))]
-    #[ensures(exists<b: &mut T, res: &mut U>
+    #[requires(|mode| forall<b: &mut T> *b == self.cur() && ^b == ^self ==>
+        f.precondition(mode, (b,)))]
+    #[ensures(|result, mode| exists<b: &mut T, res: &mut U>
         *b == self.cur() && ^b == ^self && *res == result.cur() && ^res == ^result &&
-        f.postcondition_once((b,), res)
+        f.postcondition_once(mode, (b,), res)
     )]
     #[ensures(result.lft() == self.lft())]
     #[allow(unused_variables)]
@@ -325,12 +325,12 @@ macro_rules! tuple_split {
             #[trusted]
             #[check(ghost)]
             #[requires(self.lft() == token.lft())]
-            #[requires(forall<b: &mut T0> *b == self.cur() && ^b == ^self ==>
-                f.precondition((b,)))]
-            #[ensures(exists<b: &mut T0, res: ($(&mut $name,)+)>
+            #[requires(|mode| forall<b: &mut T0> *b == self.cur() && ^b == ^self ==>
+                f.precondition(mode, (b,)))]
+            #[ensures(|result, mode| exists<b: &mut T0, res: ($(&mut $name,)+)>
                 *b == self.cur() && ^b == ^self &&
                 $(*res.$idx == result.$idx.cur() && ^res.$idx == ^result.$idx &&)+
-                f.postcondition_once((b,), res)
+                f.postcondition_once(mode, (b,), res)
             )]
             $(
                 #[ensures(result.$idx.lft() == self.lft())]

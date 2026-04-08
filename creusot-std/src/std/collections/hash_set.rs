@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{
     logic::FSet,
     prelude::*,
@@ -99,7 +101,7 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
 
 impl<T: DeepModel> IteratorSpec for IntoIter<T> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -109,14 +111,21 @@ impl<T: DeepModel> IteratorSpec for IntoIter<T> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         set_produces_trans(a, ab, b, bc, c);
     }
 }
@@ -132,7 +141,7 @@ impl<'a, T: DeepModel> View for Iter<'a, T> {
 
 impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -142,21 +151,28 @@ impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         set_produces_trans(a, ab, b, bc, c);
     }
 }
 
 impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIteratorSpec<T> for HashSet<T, S> {
     #[logic(open)]
-    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
+    fn from_iter_post(_: Mode, prod: Seq<T>, res: Self) -> bool {
         pearlite! { forall<x: T::DeepModelTy> res@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1) }
     }
 }
@@ -183,7 +199,7 @@ impl<'a, T: DeepModel, S, A: Allocator> View for Difference<'a, T, S, A> {
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection<'a, T, S> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -193,21 +209,28 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         set_produces_trans(a, ab, b, bc, c);
     }
 }
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'a, T, S> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -217,14 +240,21 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         set_produces_trans(a, ab, b, bc, c);
     }
 }

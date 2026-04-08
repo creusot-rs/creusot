@@ -1,6 +1,6 @@
 use crate::prelude::*;
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::iter::Skip;
 
 pub trait SkipExt<I> {
@@ -47,10 +47,11 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
+            forall<mode: Mode>
             (^self).n()@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= (*self).n()@
-                && self.iter().produces(s, *i)
+                && self.iter().produces(mode, s, *i)
                 && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
                 && ^i == (^self).iter()
@@ -58,26 +59,33 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             o.n()@ == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
                    s.len() == self.n()@
-                && self.iter().produces(s.concat(visited), o.iter())
+                && self.iter().produces(mode, s.concat(visited), o.iter())
                 && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         // associativity of concat
         proof_assert!(forall<s1: Seq<Self::Item>, s2: Seq<Self::Item>, s3: Seq<Self::Item>> s1.concat(s2.concat(s3)) == s1.concat(s2).concat(s3));
         // empty is neutral for concat
@@ -86,7 +94,7 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
             proof_assert!(
                 // instantiate the existential in `b.produces(bc, c)`
                 let s = creusot_std::logic::such_that(|s: Seq<Self::Item>| {
-                    s.len() == 0 && b.iter().produces(s.concat(bc), c.iter())
+                    s.len() == 0 && b.iter().produces(mode, s.concat(bc), c.iter())
                 });
                 s.concat(bc) == bc
             );

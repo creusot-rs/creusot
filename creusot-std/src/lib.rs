@@ -32,6 +32,7 @@
 //!     - [`resolve`][mod@resolve]: Resolve mutable borrows
 //!     - [`model`]: `View` and `DeepModel`
 //!     - [`snapshot`][mod@snapshot]: Snapshots
+//!     - [`mode`]: Proof modes
 //!
 //! 2. [`logic`][mod@logic]: Logical structures used in specifications
 //!
@@ -535,6 +536,7 @@ pub mod cell;
 pub mod ghost;
 pub mod invariant;
 pub mod logic;
+pub mod mode;
 pub mod model;
 pub mod peano;
 pub mod resolve;

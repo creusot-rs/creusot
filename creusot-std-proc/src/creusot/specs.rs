@@ -4,10 +4,10 @@ use crate::{
     common::ContractSubject,
     creusot::{
         doc::{self, document_spec},
-        pretyping,
+        pat_wild, pretyping,
     },
 };
-use pearlite_syn::{EnsuresTerm, Term, TermPath};
+use pearlite_syn::{ContractTerm, Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -25,7 +25,28 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("requires", doc::LogicBody::term(REQUIRES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let req_body = pretyping::encode_term(&parse_macro_input!(attr as Term));
+    let term = parse_macro_input!(attr as ContractTerm);
+    let mode = match term.binder {
+        Some(binder) => {
+            if binder.pats.len() != 1 {
+                let span = binder.span();
+                return quote::quote_spanned! { span=>
+                    compile_error!{"`#[requires]` clause expects only one mode parameter"}
+                }
+                .into();
+            }
+            binder.pats.into_iter().next().unwrap()
+        }
+        None => pat_wild(),
+    };
+    if !term.term.trigger.is_empty() {
+        let span = term.term.trigger[0].span();
+        return quote::quote_spanned! { span =>
+            compile_error!{"`#[requires]` cannot contain top-level triggers"}
+        }
+        .into();
+    }
+    let req_body = pretyping::encode_term(&term.term.term);
     item.mark_unused();
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -35,6 +56,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
             let mut sig = fn_or_meth.sig.clone();
             sig.ident = req_name.clone();
+            sig.inputs.push(parse_quote! { #mode: ::creusot_std::mode::Mode });
             sig.output = parse_quote! { -> bool };
 
             let requires_tokens = sig_spec_item(req_name, sig, req_body);
@@ -48,7 +70,8 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractSubject::FnOrMethod(mut f) => {
             let attrs = std::mem::take(&mut f.attrs);
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
+            let requires_tokens =
+                fn_spec_item(req_name, FnSpecResultKind::NoResult, mode, req_body);
 
             if let Some(b) = f.body.as_mut() {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)))
@@ -61,7 +84,8 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractSubject::Closure(mut clos) => {
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
+            let requires_tokens =
+                fn_spec_item(req_name, FnSpecResultKind::NoResult, mode, req_body);
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
@@ -72,20 +96,32 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     }
 }
 
+// TODO: warn if result is named mode
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     const ENSURES_LEN: usize = "#[ensures(".len();
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
-        EnsuresTerm::EnsuresClosure(closure) => {
-            (closure.result, pretyping::encode_term_with_triggers(&closure.body))
+    let term = parse_macro_input!(attr as ContractTerm);
+    let (result, mode) = match term.binder {
+        Some(binder) => {
+            if binder.pats.len() > 2 {
+                let span = binder.span();
+                return quote::quote_spanned! { span=>
+                    compile_error!{"`#[ensures]` clause expects at most two parameters: result and mode"}
+                }
+                .into();
+            }
+            let mut pats = binder.pats.into_iter();
+            let result = pats
+                .next()
+                .unwrap_or_else(|| ident_to_pat(Ident::new("result", Span::call_site())));
+            let mode = pats.next().unwrap_or(pat_wild());
+            (result, mode)
         }
-        EnsuresTerm::TermWithTriggers(term) => {
-            let result = ident_to_pat(Ident::new("result", Span::call_site()));
-            (result, pretyping::encode_term_with_triggers(&term))
-        }
+        None => (ident_to_pat(Ident::new("result", Span::call_site())), pat_wild()),
     };
+    let ens_body = pretyping::encode_term_with_triggers(&term.term);
     item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -94,13 +130,14 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
             let attrs = std::mem::take(&mut s.attrs);
             let mut sig = s.sig.clone();
-            let result = match sig.output {
+            let result: syn::FnArg = match sig.output {
                 ReturnType::Default => parse_quote! { #result: () },
                 ReturnType::Type(_, ty) => parse_quote! { #result: #ty },
             };
 
             sig.ident = ens_name.clone();
-            sig.inputs.push(result);
+            // Note: mode comes first!
+            sig.inputs.extend([parse_quote! { #mode: ::creusot_std::mode::Mode }, result]);
             sig.output = parse_quote! { -> bool };
             let ensures_tokens = sig_spec_item(ens_name, sig, ens_body);
             TS1::from(quote! {
@@ -118,7 +155,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
             };
             let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), ens_body);
+                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), mode, ens_body);
             if let Some(b) = f.body.as_mut() {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
             }
@@ -131,8 +168,12 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractSubject::Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
-            let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), ens_body);
+            let ensures_tokens = fn_spec_item(
+                ens_name,
+                FnSpecResultKind::Unified(result, res_id.clone()),
+                mode,
+                ens_body,
+            );
 
             let body = &clos.body;
             *clos.body = parse_quote!({
@@ -254,7 +295,12 @@ enum FnSpecResultKind {
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
+fn fn_spec_item(
+    tag: Ident,
+    reskind: FnSpecResultKind,
+    mode: Pat,
+    fn_spec_body: TokenStream,
+) -> TokenStream {
     let attrs = spec_attrs(tag);
 
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
@@ -266,15 +312,20 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream
 
     let result_bind = match &reskind {
         FnSpecResultKind::NoResult => quote! {},
-        FnSpecResultKind::Unified(result, _) => quote! { #result },
-        FnSpecResultKind::Typed(result, ty) => quote! { #result: #ty },
+        FnSpecResultKind::Unified(result, _) => {
+            quote! { #result, }
+        }
+        FnSpecResultKind::Typed(result, ty) => {
+            quote! { #result: #ty }
+        }
     };
+    let bind = quote! { #mode: ::creusot_std::mode::Mode, #result_bind };
 
     quote! {
         #[allow(let_underscore_drop)]
         let _ =
             #attrs
-            |#result_bind| -> bool { #unify_ty_result #fn_spec_body }
+            |#bind| -> bool { #unify_ty_result #fn_spec_body }
         ;
     }
 }

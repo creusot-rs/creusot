@@ -74,7 +74,7 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
                 self.live.insert(r.local);
                 l
             }
-            StatementKind::Call(l, _, _, _, _) => l,
+            StatementKind::Call(l, _, _, _, _, _) => l,
             _ => return,
         };
         // This assignment is not pure, so the local must stay

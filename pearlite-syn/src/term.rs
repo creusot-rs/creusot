@@ -137,19 +137,18 @@ ast_enum_of_structs! {
     }
 }
 
-ast_enum_of_structs! {
-    pub enum EnsuresTerm {
-        TermWithTriggers(TermWithTriggers),
-        EnsuresClosure(EnsuresClosure),
+ast_struct! {
+    pub struct ContractTerm {
+        pub binder: Option<Binder>,
+        pub term: TermWithTriggers,
     }
 }
 
 ast_struct! {
-    pub struct EnsuresClosure {
+    pub struct Binder {
         pub or1_token: Token![|],
-        pub result: Pat,
+        pub pats: Punctuated<Pat, Token![,]>,
         pub or2_token: Token![|],
-        pub body: Box<TermWithTriggers>,
     }
 }
 
@@ -1507,24 +1506,20 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for EnsuresClosure {
+    impl Parse for Binder {
         fn parse(input: ParseStream) -> Result<Self> {
-            Ok(EnsuresClosure {
+            Ok(Binder {
                 or1_token: input.parse()?,
-                result: Pat::parse_single(input)?,
+                pats: Punctuated::parse_separated_nonempty_with(input, Pat::parse_single)?,
                 or2_token: input.parse()?,
-                body: input.parse()?,
             })
         }
     }
 
-    impl Parse for EnsuresTerm {
+    impl Parse for ContractTerm {
         fn parse(input: ParseStream) -> Result<Self> {
-            if input.peek(Token![|]) {
-                Ok(EnsuresTerm::EnsuresClosure(input.parse()?))
-            } else {
-                Ok(EnsuresTerm::TermWithTriggers(input.parse()?))
-            }
+            let binder = if input.peek(Token![|]) { Some(input.parse()?) } else { None };
+            Ok(ContractTerm { binder, term: input.parse()? })
         }
     }
 
@@ -2063,12 +2058,11 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for EnsuresClosure {
+    impl ToTokens for Binder {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.or1_token.to_tokens(tokens);
-            self.result.to_tokens(tokens);
+            self.pats.to_tokens(tokens);
             self.or2_token.to_tokens(tokens);
-            self.body.to_tokens(tokens);
         }
     }
 

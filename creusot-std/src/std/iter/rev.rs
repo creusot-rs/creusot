@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{prelude::*, std::iter::Rev};
 
 pub trait RevExt<I> {
@@ -36,19 +38,27 @@ impl<I: DoubleEndedIteratorSpec> IteratorSpec for Rev<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            self.iter().produces_back(visited, o.iter())
+            self.iter().produces_back(mode, visited, o.iter())
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }

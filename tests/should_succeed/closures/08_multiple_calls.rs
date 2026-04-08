@@ -14,8 +14,8 @@ pub fn multi_use<T>(x: &T) {
 }
 
 #[trusted]
-#[requires(f.precondition(()))]
-#[ensures(exists<f2: &F, r> *f2 == f && f2.postcondition((), r))]
+#[requires(|mode| f.precondition(mode, ()))]
+#[ensures(|_, mode| exists<f2: &F, r> *f2 == f && f2.postcondition(mode, (), r))]
 fn uses_fn<F: Fn() -> u32>(f: F) {
     f();
 }

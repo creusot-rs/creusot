@@ -350,12 +350,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     fields: fields
                         .into_iter()
                         .enumerate()
-                        .map(|(ix, f)| {
-                            (
-                                Name::local(self.names.tuple_field(tys, ix.into())),
-                                self.lower_term(f),
-                            )
-                        })
+                        .map(|(ix, f)| (self.names.tuple_field(tys, ix.into()), self.lower_term(f)))
                         .collect(),
                 }
             }
@@ -364,15 +359,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        lhs_low.field(Name::local(self.names.field(*did, substs, *idx)))
+                        lhs_low.field(self.names.field(*did, substs, *idx))
                     }
                     TyKind::Adt(def, subst) => {
-                        lhs_low.field(Name::local(self.names.field(def.did(), subst, *idx)))
+                        lhs_low.field(self.names.field(def.did(), subst, *idx))
                     }
                     TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
-                    TyKind::Tuple(tys) => {
-                        lhs_low.field(Name::local(self.names.tuple_field(tys, *idx)))
-                    }
+                    TyKind::Tuple(tys) => lhs_low.field(self.names.tuple_field(tys, *idx)),
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
@@ -472,9 +465,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 } else if fields.is_empty() {
                     WPattern::TupleP(Box::new([]))
                 } else {
-                    let flds: Box<[_]> = flds
-                        .map(|(fld, p)| (Name::local(self.names.field(var_did, subst, fld)), p))
-                        .collect();
+                    let flds: Box<[_]> =
+                        flds.map(|(fld, p)| (self.names.field(var_did, subst, fld), p)).collect();
                     WPattern::RecP(flds)
                 }
             }
@@ -493,7 +485,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     .iter()
                     .enumerate()
                     .map(|(idx, pat)| {
-                        (Name::local(self.names.tuple_field(tys, idx.into())), self.lower_pat(pat))
+                        (self.names.tuple_field(tys, idx.into()), self.lower_pat(pat))
                     })
                     .filter(|(_, f)| !matches!(f, WPattern::Wildcard))
                     .collect();

@@ -953,3 +953,54 @@ impl<'a, T> PtrAddExt<'a, T> for *mut T {
         unsafe { self.offset(offset) }
     }
 }
+
+/// Read a value from `src` without moving it.
+///
+/// This is the Creusot version of [`core::ptr::read`].
+///
+/// Even though it doesn't physically write to memory, this function takes a
+/// `&mut Perm<*const T>` as a way to logically invalidate the read memory.
+///
+/// The returned permission **does not satisfy its type invariant**,
+/// so it's not possible to resolve it until [`write`] is called.
+///
+/// The first component of the result `T` will satisfy its type invariant
+/// because it is equal to `perm.val()` and `perm` satisfies its type invariant.
+#[trusted]
+#[check(terminates)]
+#[erasure(core::ptr::read)]
+#[open_inv_result]
+#[requires(inv(perm))]
+#[requires(src == *perm.ward())]
+#[ensures(result.0 == *perm.val())]
+#[ensures((^perm).ward() == perm.ward() && result.1.ward() == perm.ward())]
+#[ensures((^perm).val() == (^result.1).val())]
+pub unsafe fn read<T>(
+    src: *const T,
+    perm: Ghost<&mut Perm<*const T>>,
+) -> (T, Ghost<&mut Perm<*const T>>) {
+    let _ = perm;
+    unsafe { (core::ptr::read(src), Ghost::conjure()) }
+}
+
+/// Write the value `src` to `dst` without dropping the old value.
+///
+/// This is the Creusot version of [`core::ptr::write`].
+///
+/// As the counterpart to [`read`], this function **does not assert the type
+/// invariant of `perm`**.
+#[trusted]
+#[check(terminates)]
+#[erasure(core::ptr::write)]
+#[requires(inv(src))]
+#[requires(dst as *const T == *perm.ward())]
+#[ensures(*(^perm).val() == src)]
+#[ensures(inv(^perm))]
+pub unsafe fn write<T>(
+    dst: *mut T,
+    src: T,
+    #[cfg_attr(creusot, creusot::open_inv)] perm: Ghost<&mut Perm<*const T>>,
+) {
+    let _ = perm;
+    unsafe { core::ptr::write(dst, src) }
+}

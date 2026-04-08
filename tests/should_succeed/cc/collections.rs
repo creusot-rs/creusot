@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{mode::Mode, prelude::*};
 use std::{
     collections::{HashMap, HashSet, hash_map},
     hash::Hash,
@@ -19,8 +19,9 @@ pub fn roundtrip_hashmap_into_iter<K: Eq + Hash + DeepModel, V>(
     let it0 = snapshot! { it };
     let r: HashMap<K, V> = it.collect();
     proof_assert! {
+        forall<mode: Mode>
         exists<prod: Seq<(K, V)>, it1: &mut hash_map::IntoIter<K, V>>
-            it1.completed() && it0.produces(prod, *it1) &&
+            it1.completed() && it0.produces(mode, prod, *it1) &&
             forall<k: K::DeepModelTy, v: V> (r@.get(k) == Some(v))
                 == exists<k1: K> k1.deep_model() == k && prod.contains((k1, v))
     };
@@ -37,8 +38,9 @@ pub fn roundtrip_hashmap_iter<K: Eq + Hash + DeepModel, V>(xs: &HashMap<K, V>) -
     let r: HashMap<&K, &V> = it.collect();
 
     proof_assert! {
+    forall<mode: Mode> // TODO
     exists<prod: Seq<(&K, &V)>, it1: &mut hash_map::Iter<K,V>>
-        it1.completed() && it0.produces(prod, *it1)
+        it1.completed() && it0.produces(mode, prod, *it1)
         && forall<k: K::DeepModelTy, v: &V> (r@.get(k) == Some(v))
             == exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v)) };
     r
@@ -54,8 +56,9 @@ pub fn roundtrip_hashmap_iter_mut<K: Eq + Hash + DeepModel, V>(
     let it0 = snapshot! { it };
     let r: HashMap<&K, &mut V> = it.collect();
     proof_assert! {
+        forall<mode: Mode> // TODO: what assumptions? bind mode in proof_assert?
         exists<prod: Seq<(&K, &mut V)>, it1: &mut hash_map::IterMut<K, V>>
-            it1.completed() && it0.produces(prod, *it1)
+            it1.completed() && it0.produces(mode, prod, *it1)
             && forall<k: K::DeepModelTy, v: &mut V> (r@.get(k) == Some(v))
                 == exists<k1: &K> k1.deep_model() == k && prod.contains((k1, v))
     };

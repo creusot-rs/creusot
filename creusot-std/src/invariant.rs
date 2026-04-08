@@ -269,7 +269,7 @@ impl<T: InhabitedInvariant> DerefMut for Subset<T> {
 }
 
 impl<T: InhabitedInvariant + Clone> Clone for Subset<T> {
-    #[ensures(T::clone.postcondition((&(self.inner()),), result.inner()))]
+    #[ensures(|result, mode| T::clone.postcondition(mode, (&(self.inner()),), result.inner()))]
     fn clone(&self) -> Self {
         snapshot! { Self::inner_inj };
         Self::new(self.deref().clone())

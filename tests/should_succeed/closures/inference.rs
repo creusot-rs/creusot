@@ -1,20 +1,20 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-#[requires(f.precondition((1i32,)))]
-#[ensures(f.postcondition((1i32,), result))]
+#[requires(|mode| f.precondition(mode, (1i32,)))]
+#[ensures(|result, mode| f.postcondition(mode, (1i32,), result))]
 fn call_with_one<F: Fn(i32) -> i32>(mut f: F) -> i32 {
     f(1)
 }
 
-#[requires((*f).precondition((1i32,)))]
-#[ensures((*f).postcondition_mut((1i32,), ^f, result))]
+#[requires(|mode| (*f).precondition(mode, (1i32,)))]
+#[ensures(|result, mode| (*f).postcondition_mut(mode, (1i32,), ^f, result))]
 fn call_with_one_mut<F: FnMut(i32) -> i32>(f: &mut F) -> i32 {
     f(1)
 }
 
-#[requires(f.precondition((1i32,)))]
-#[ensures(f.postcondition_once((1i32,), result))]
+#[requires(|mode| f.precondition(mode, (1i32,)))]
+#[ensures(|result, mode| f.postcondition_once(mode, (1i32,), result))]
 fn call_with_one_once<F: FnOnce(i32) -> i32>(mut f: F) -> i32 {
     f(1)
 }

@@ -58,6 +58,7 @@ pub enum PreMod {
     SliceOps,
     Opaque,
     Any,
+    Mode,
 }
 
 pub(crate) trait Namer<'tcx> {
@@ -92,27 +93,31 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Ident {
+    ///
+    /// This returns a `Name::Global` for fields of the builtin `Mode`.
+    /// Otherwise it's `Name::Local` such as in the translation of a non-builtin type.
+    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Name {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => {
                 self.def_ty(def_id, subst);
                 Dependency::ClosureAccessor(def_id, subst, ix.as_u32())
             }
             DefKind::Struct => {
-                let fields = &self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields;
-                Dependency::Item(fields[ix].did, subst)
+                let field_id =
+                    self.tcx().adt_def(def_id).variants()[VariantIdx::ZERO].fields[ix].did;
+                Dependency::Item(field_id, subst)
             }
             DefKind::Union => unimplemented!("Field access for unions is not implemented."),
             _ => unreachable!(),
         };
 
-        self.dependency(node).ident()
+        self.dependency(node).name()
     }
 
-    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> Ident {
+    fn tuple_field(&self, args: &'tcx List<Ty<'tcx>>, idx: FieldIdx) -> Name {
         assert!(args.len() > 1);
         self.ty(Ty::new_tup(self.tcx(), args));
-        self.dependency(Dependency::TupleField(args, idx)).ident()
+        self.dependency(Dependency::TupleField(args, idx)).name()
     }
 
     fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
@@ -188,6 +193,7 @@ pub(crate) trait Namer<'tcx> {
                 &format!("Slice{}OpsBW", self.tcx().sess.target.pointer_width),
             ],
             (PreMod::Any, _) => &["creusot", "prelude", "Any"],
+            (PreMod::Mode, _) => &["creusot", "prelude", "Mode"],
         };
         name.into_iter().copied().map(Symbol::intern).collect()
     }
@@ -663,8 +669,8 @@ impl Setters {
         self.0.is_empty()
     }
 
-    pub fn call_setters(self, mut body: why3::coma::Expr) -> why3::coma::Expr {
-        for setter in self.0.into_iter() {
+    pub fn call_setters(&self, mut body: why3::coma::Expr) -> why3::coma::Expr {
+        for setter in self.0.iter().cloned() {
             body = why3::coma::Expr::var(setter).app([why3::coma::Arg::Cont(body)]);
         }
         body

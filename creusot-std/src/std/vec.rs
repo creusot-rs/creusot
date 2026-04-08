@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(all(creusot, not(feature = "std")))]
 use alloc::boxed::Box;
@@ -171,11 +171,11 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> Extend<T> for Vec<T, A> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|_, mode| exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
             inv(start_) && inv(done) && inv(prod) &&
-            I::into_iter.postcondition((iter,), start_) &&
-            done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
+            I::into_iter.postcondition(mode, (iter,), start_) &&
+            done.completed() && start_.produces(mode, prod, *done) && (^self)@ == self@.concat(prod)
         )]
         fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
     }
@@ -239,8 +239,8 @@ extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
         #[check(terminates)]
         #[ensures(self@.len() == result@.len())]
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn clone(&self) -> Vec<T, A>;
     }
 }
@@ -277,26 +277,26 @@ impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
             self@ == visited.concat(rhs@)
         }
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(mode: Mode, a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }
 
 impl<T> FromIteratorSpec<T> for Vec<T> {
     #[logic(open)]
-    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
+    fn from_iter_post(_: Mode, prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == res@ }
     }
 }

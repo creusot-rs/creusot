@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{
     logic::FMap,
     prelude::*,
@@ -63,7 +65,7 @@ impl<K: DeepModel, V, A: Allocator> View for IntoIter<K, V, A> {
 #[cfg(feature = "nightly")]
 impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
             self@.len() == visited.len() + o@.len()
@@ -86,14 +88,21 @@ impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
@@ -109,7 +118,7 @@ impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
 
 impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         // `self@` equals the union of `visited` (viewed as a finite map) and `o@`
         pearlite! {
             self@.len() == visited.len() + o@.len()
@@ -132,14 +141,21 @@ impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
@@ -155,7 +171,7 @@ impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
 
 impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
             self@.len() == visited.len() + o@.len()
@@ -178,14 +194,21 @@ impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
 }
@@ -194,7 +217,7 @@ impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIteratorSpec<(K,
     for HashMap<K, V, S>
 {
     #[logic(open)]
-    fn from_iter_post(prod: Seq<(K, V)>, res: Self) -> bool {
+    fn from_iter_post(_: Mode, prod: Seq<(K, V)>, res: Self) -> bool {
         pearlite! { forall<k: K::DeepModelTy, v: V> (res@.get(k) == Some(v))
         == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
             && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k) }

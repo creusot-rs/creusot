@@ -146,7 +146,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
         {
             let fn_name = ctx.item_name(def_id);
-
+            let mode = Term::var(name::mode(), mode_ty(&ctx.ctx, &names));
             let args =
                 Term::tuple(ctx.tcx, pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)));
             let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
@@ -154,7 +154,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
             let pre_did = Intrinsic::Precondition.get(ctx);
-            let pre_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args.clone()];
+            let pre_args = [Term::unit(ctx.tcx).coerce(fndef_ty), mode.clone(), args.clone()];
             let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, pre_args);
             let expl_pre = format!("expl:{} requires", fn_name);
             pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
@@ -162,6 +162,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             let post_did = Intrinsic::PostconditionOnce.get(ctx);
             let post_args = [
                 Term::unit(ctx.tcx).coerce(fndef_ty),
+                mode,
                 args,
                 Term::var(name::result(), pre_sig.output),
             ];
@@ -243,6 +244,10 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     | Intrinsic::PostconditionOnce
             ) && let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind()
             {
+                let mode_id = name::mode().into();
+                let mode_ty = mode_ty(&ctx.ctx, &names);
+                let mode = Term::var(mode_id, mode_ty);
+
                 // No definite instance if found for this method, so `term` has returned `None`
                 // However, we still emit an axiom telling that the specification should be a refinement.
                 let args_id = Ident::fresh_local("args").into();
@@ -255,7 +260,11 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 );
                 let res = Term::var(res_id, res_ty);
 
-                let mut args = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args_tup.clone()];
+                let mut args = vec![
+                    Term::unit(ctx.tcx).coerce(subst.type_at(1)),
+                    mode.clone(),
+                    args_tup.clone(),
+                ];
                 match ctx.intrinsic(def_id) {
                     Intrinsic::Precondition => (),
                     Intrinsic::Postcondition | Intrinsic::PostconditionOnce => {
@@ -271,19 +280,27 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let trig = [Trigger(Box::new([call.clone()]))];
 
                 if Intrinsic::Precondition.is(ctx, def_id) {
-                    if let Some(pre) = pre_fndef(ctx, &names, did_f, subst_f, args_tup) {
-                        let axiom =
-                            pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
+                    if let Some(pre) = pre_fndef(ctx, &names, did_f, subst_f, mode, args_tup) {
+                        let axiom = pre
+                            .implies(call)
+                            .forall_trig((args_id, subst.type_at(0)), trig)
+                            .forall((mode_id, mode_ty));
                         decls.push(Decl::Axiom(Axiom {
                             name: Ident::fresh(ctx.crate_name(), "precondition_fndef"),
                             rewrite: false,
                             axiom: lower_pure(ctx, &names, &axiom),
                         }))
                     }
-                } else if let Some(post) = post_fndef(ctx, &names, did_f, subst_f, args_tup, res) {
+                } else if let Some(post) =
+                    post_fndef(ctx, &names, did_f, subst_f, mode, args_tup, res)
+                {
                     let axiom = call.implies(post).quant(
                         QuantKind::Forall,
-                        Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
+                        Box::new([
+                            (mode_id, mode_ty),
+                            (args_id, subst.type_at(0)),
+                            (res_id, res_ty),
+                        ]),
                         trig,
                     );
                     decls.push(Decl::Axiom(Axiom {
@@ -383,11 +400,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             let mut decls = val(sig, DeclKind::Constant);
 
             let (def_id, subst) = trait_resol.to_opt(def_id, subst).unwrap();
+            let program_mode = Exp::qvar(names.in_pre(crate::ctx::PreMod::Mode, "program_mode"));
+
             let body = program::why_body(
                 ctx,
                 &mut names,
                 BodyId::from_def_id(def_id),
                 Some(subst),
+                &program_mode,
                 &[],
                 name::return_(),
                 &mut Default::default(),
@@ -678,11 +698,12 @@ fn postcondition_once_term<'tcx>(
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result] = bound else {
-        panic!("postcondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, mode_id, args, result] = bound else {
+        panic!("postcondition_once must have 4 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
+    let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
     let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
@@ -693,8 +714,8 @@ fn postcondition_once_term<'tcx>(
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, args, None);
-            post.subst(&SmallRenaming([(name::result(), result)]));
+                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), mode, self_, args, None);
+            post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
         // Handle `FnGhostWrapper`
@@ -704,7 +725,7 @@ fn postcondition_once_term<'tcx>(
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionOnce.get(ctx);
-            let post_args = [self_.proj(0usize.into(), closure_ty), args, res];
+            let post_args = [self_.proj(0usize.into(), closure_ty), mode, args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
@@ -712,7 +733,7 @@ fn postcondition_once_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
-            let post_args = [self_.clone().cur(), args, self_.fin(), res];
+            let post_args = [self_.clone().cur(), mode, args, self_.fin(), res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
@@ -720,7 +741,7 @@ fn postcondition_once_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
-            let post_args = [self_.coerce(*cl), args, res];
+            let post_args = [self_.coerce(*cl), mode, args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
@@ -728,7 +749,7 @@ fn postcondition_once_term<'tcx>(
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionOnce.get(ctx);
-            let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
+            let post_args = [self_.coerce(bsubst.type_at(0)), mode, args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::FnDef(mut did, mut subst) => {
@@ -738,7 +759,7 @@ fn postcondition_once_term<'tcx>(
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
-            post_fndef(ctx, names, did, subst, args, res)
+            post_fndef(ctx, names, did, subst, mode, args, res)
         }
         _ => None,
     }
@@ -752,11 +773,12 @@ fn postcondition_mut_term<'tcx>(
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result_state, result] = bound else {
-        panic!("postcondition_mut must have 4 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, mode_id, args, result_state, result] = bound else {
+        panic!("postcondition_mut must have 5 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
+    let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
     let args = Term::var(args, subst.type_at(0));
     let result_state = Term::var(result_state, ty_self);
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
@@ -771,11 +793,12 @@ fn postcondition_mut_term<'tcx>(
                 ctx,
                 ClosureKind::FnMut,
                 did.expect_local(),
+                mode,
                 self_,
                 args,
                 Some(result_state),
             );
-            post.subst(&SmallRenaming([(name::result(), result)]));
+            post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
         // Handle `FnGhostWrapper`
@@ -787,6 +810,7 @@ fn postcondition_mut_term<'tcx>(
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
             let post_args = [
                 self_.clone().proj(0usize.into(), closure_ty),
+                mode,
                 args,
                 result_state.clone().proj(0usize.into(), closure_ty),
                 res,
@@ -798,7 +822,7 @@ fn postcondition_mut_term<'tcx>(
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
-            let post_args = [self_.clone().cur(), args, result_state.clone().cur(), res];
+            let post_args = [self_.clone().cur(), mode, args, result_state.clone().cur(), res];
             Some(
                 Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
                     .conj(self_.fin().eq(ctx.tcx, result_state.fin())),
@@ -808,7 +832,7 @@ fn postcondition_mut_term<'tcx>(
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
-            let post_args = [self_.clone().coerce(*cl), args, res];
+            let post_args = [self_.clone().coerce(*cl), mode, args, res];
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(
                 Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args)
@@ -821,7 +845,8 @@ fn postcondition_mut_term<'tcx>(
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
             let closure_ty = bsubst.type_at(0);
-            let post_args = [self_.coerce(closure_ty), args, result_state.coerce(closure_ty), res];
+            let post_args =
+                [self_.coerce(closure_ty), mode, args, result_state.coerce(closure_ty), res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::FnDef(mut did, mut subst) => {
@@ -831,7 +856,7 @@ fn postcondition_mut_term<'tcx>(
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
-            post_fndef(ctx, names, did, subst, args, res)
+            post_fndef(ctx, names, did, subst, mode, args, res)
         }
         _ => None,
     }
@@ -845,11 +870,12 @@ fn postcondition_term<'tcx>(
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result] = bound else {
-        panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, mode_id, args, result] = bound else {
+        panic!("postcondition must have 4 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
+    let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
     let args = Term::var(args, subst.type_at(0));
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
@@ -860,8 +886,8 @@ fn postcondition_term<'tcx>(
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, args, None);
-            post.subst(&SmallRenaming([(name::result(), result)]));
+                closure_post(ctx, ClosureKind::Fn, did.expect_local(), mode, self_, args, None);
+            post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
         // Handle `FnGhostWrapper`
@@ -871,7 +897,7 @@ fn postcondition_term<'tcx>(
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
-            let post_args = [self_.proj(0usize.into(), closure_ty), args, res];
+            let post_args = [self_.proj(0usize.into(), closure_ty), mode, args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::Ref(_, cl, Mutability::Not) => {
@@ -879,14 +905,14 @@ fn postcondition_term<'tcx>(
             subst_postcond[1] = GenericArg::from(cl);
             let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
-            let post_args = [self_.clone().coerce(cl), args, res];
+            let post_args = [self_.clone().coerce(cl), mode, args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
-            let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
+            let post_args = [self_.coerce(bsubst.type_at(0)), mode, args, res];
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
@@ -897,7 +923,7 @@ fn postcondition_term<'tcx>(
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
-            post_fndef(ctx, names, did, subst, args, res)
+            post_fndef(ctx, names, did, subst, mode, args, res)
         }
         _ => None,
     }
@@ -908,6 +934,7 @@ fn post_fndef<'tcx>(
     names: &impl Namer<'tcx>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
+    mode: Term<'tcx>,
     args: Term<'tcx>,
     res: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
@@ -917,7 +944,7 @@ fn post_fndef<'tcx>(
     let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
     let mut post = sig.contract.ensures_conj(ctx.tcx);
-    post.subst(&HashMap::from([(name::result(), res.kind)]));
+    post.subst(&HashMap::from([(name::result(), res.kind), (name::mode(), mode.kind)]));
     let pattern = Pattern::tuple(
         sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
@@ -933,16 +960,17 @@ fn precondition_term<'tcx>(
     bound: &[Ident],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args] = bound else {
-        panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, mode, args] = bound else {
+        panic!("precondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
+    let mode = Term::var(mode, mode_ty(&ctx.ctx, names));
     let args = Term::var(args, subst.type_at(0));
 
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
-            Some(closure_pre(ctx, names.source_id(), did.expect_local(), self_, args))
+            Some(closure_pre(ctx, names.source_id(), did.expect_local(), mode, self_, args))
         }
         &TyKind::Ref(_, cl, m) => {
             let mut subst_pre = subst.to_vec();
@@ -950,7 +978,7 @@ fn precondition_term<'tcx>(
             let subst_pre = ctx.mk_args(&subst_pre);
             let self_ = if m == Mutability::Mut { self_.clone().cur() } else { self_.coerce(cl) };
             let pre_fn = Intrinsic::Precondition.get(ctx);
-            let pre_args = [self_, args];
+            let pre_args = [self_, mode, args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_pre, pre_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
@@ -958,7 +986,7 @@ fn precondition_term<'tcx>(
             subst_pre[1] = bsubst[0];
             let subst_pre = ctx.mk_args(&subst_pre);
             let pre_fn = Intrinsic::Precondition.get(ctx);
-            let pre_args = [self_.coerce(bsubst.type_at(0)), args];
+            let pre_args = [self_.coerce(bsubst.type_at(0)), mode, args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_pre, pre_args))
         }
         &TyKind::FnDef(mut did, mut subst) => {
@@ -968,7 +996,7 @@ fn precondition_term<'tcx>(
                 TraitResolved::UnknownFound => return None,
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
-            pre_fndef(ctx, names, did, subst, args)
+            pre_fndef(ctx, names, did, subst, mode, args)
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
@@ -977,7 +1005,7 @@ fn precondition_term<'tcx>(
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let pre_fn = Intrinsic::Precondition.get(ctx);
-            let pre_args = [self_.proj(0usize.into(), closure_ty), args];
+            let pre_args = [self_.proj(0usize.into(), closure_ty), mode, args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_postcond, pre_args))
         }
         _ => None,
@@ -989,6 +1017,7 @@ fn pre_fndef<'tcx>(
     names: &impl Namer<'tcx>,
     did: DefId,
     subst: GenericArgsRef<'tcx>,
+    mode: Term<'tcx>,
     args: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
     if is_logic(ctx.tcx, did) {
@@ -998,7 +1027,8 @@ fn pre_fndef<'tcx>(
     }
     let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
-    let pre = sig.contract.requires_conj(ctx.tcx);
+    let mut pre = sig.contract.requires_conj(ctx.tcx);
+    pre.subst(&HashMap::from([(name::mode(), mode.kind)]));
     let pattern = Pattern::tuple(
         sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
@@ -1052,6 +1082,12 @@ fn fn_mut_hist_inv_term<'tcx>(
         TyKind::FnDef(_, _) => Some(Term::true_(ctx.tcx)),
         _ => None,
     }
+}
+
+fn mode_ty<'tcx>(ctx: &crate::ctx::TranslationCtx<'tcx>, namer: &impl Namer<'tcx>) -> Ty<'tcx> {
+    let ty = ctx.mode_ty();
+    namer.ty(ty);
+    ty
 }
 
 /// Special definition for `::creusot_std::std::mem::size_of_logic`.

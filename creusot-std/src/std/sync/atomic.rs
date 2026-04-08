@@ -134,19 +134,19 @@ macro_rules! impl_atomic {
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)]
             #[requires(Failure::ORDERING == Ordering::Acquire::ORDERING || Failure::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, _, _>>
+            #[requires(|mode| forall<c: &mut Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
-                f.precondition((Ok(c),)) && (f.postcondition_once((Ok(c),), ()) ==> (^c).shot_store())
+                f.precondition(mode, (Ok(c),)) && (f.postcondition_once(mode, (Ok(c),), ()) ==> (^c).shot_store())
             )]
-            #[requires(forall<c: &Committer<Self, $type, _, _>>
+            #[requires(|mode| forall<c: &Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 // NOTE: This following line is not present for `weak`
                 c.val_load().deep_model() != current.deep_model() ==>
-                f.precondition((Err(c),))
+                f.precondition(mode, (Err(c),))
             )]
-            #[ensures(
+            #[ensures(|result, mode|
                 match result {
                     Ok(result) => {
                         exists<c: &mut Committer<Self, $type, _, _>>
@@ -154,7 +154,7 @@ macro_rules! impl_atomic {
                             c.val_load().deep_model() == current.deep_model() &&
                             c.val_store() == new &&
                             result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), ())
+                            f.postcondition_once(mode, (Ok(c),), ())
                     },
                     Err(result) => {
                        exists<c: &Committer<Self, $type, _, _>>
@@ -162,7 +162,7 @@ macro_rules! impl_atomic {
                             // NOTE: This following line is not present for `weak`
                             c.val_load().deep_model() != current.deep_model() &&
                             result == c.val_load() &&
-                            f.postcondition_once((Err(c),), ())
+                            f.postcondition_once(mode, (Err(c),), ())
                     }
                 }
             )]
@@ -185,17 +185,17 @@ macro_rules! impl_atomic {
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)] // TODO: [VL] Shouldn't it be enforce by a sc-drf flag instead?
             #[requires(Failure::ORDERING == Ordering::Acquire::ORDERING || Failure::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, _, _>> // TODO: [VL] Wrong permission here (Success == Ordering::RelAcq)
+            #[requires(|mode| forall<c: &mut Committer<Self, $type, _, _>> // TODO: [VL] Wrong permission here (Success == Ordering::RelAcq)
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
-                f.precondition((Ok(c),)) && (f.postcondition_once((Ok(c),), ()) ==> (^c).shot_store())
+                f.precondition(mode, (Ok(c),)) && (f.postcondition_once(mode, (Ok(c),), ()) ==> (^c).shot_store())
             )]
-            #[requires(forall<c: &Committer<Self, $type, _, _>>
+            #[requires(|mode| forall<c: &Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
-                f.precondition((Err(c),))
+                f.precondition(mode, (Err(c),))
             )]
-            #[ensures(
+            #[ensures(|result, mode|
                 match result {
                     Ok(result) => {
                         exists<c: &mut Committer<Self, $type, _, _>>
@@ -203,13 +203,13 @@ macro_rules! impl_atomic {
                             c.val_load().deep_model() == current.deep_model() &&
                             c.val_store() == new &&
                             result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), ())
+                            f.postcondition_once(mode, (Ok(c),), ())
                     },
                     Err(result) => {
                        exists<c: &Committer<Self, $type, _, _>>
                             !c.shot_store() && c.ward() == *self &&
                             result == c.val_load() &&
-                            f.postcondition_once((Err(c),), ())
+                            f.postcondition_once(mode, (Err(c),), ())
                     }
                 }
             )]
@@ -229,11 +229,11 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(Load::ORDERING == Ordering::Acquire::ORDERING || Load::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &Committer<Self, $type, Load, Ordering::None>>
-                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
+            #[requires(|mode| forall<c: &Committer<Self, $type, Load, Ordering::None>>
+                !c.shot_store() ==> c.ward() == *self ==> f.precondition(mode.into_ghost(), (c,))
             )]
-            #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
-                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
+            #[ensures(|result, mode| exists<c: &Committer<Self, $type, Load, Ordering::None>>
+                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once(mode.into_ghost(), (c,), ())
             )]
             #[inline(always)]
             #[trusted]
@@ -252,13 +252,13 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[requires(Store::ORDERING == Ordering::Release::ORDERING || Store::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[requires(|mode| forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
+                f.precondition(mode.into_ghost(), (c,)) && (f.postcondition_once(mode.into_ghost(), (c,), ()) ==> (^c).shot_store())
             )]
-            #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[ensures(|result, mode| exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
-                f.postcondition_once((c,), ())
+                f.postcondition_once(mode.into_ghost(), (c,), ())
             )]
             #[inline(always)]
             #[trusted]
@@ -288,13 +288,13 @@ macro_rules! impl_atomic_int {
 
         impl $atomic_type {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
-            #[requires(forall<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
+            #[requires(|mode| forall<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
-                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
+                f.precondition(mode, (c,)) && (f.postcondition_once(mode, (c,), ()) ==> (^c).shot_store())
             )]
-            #[ensures(exists<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
+            #[ensures(|result, mode| exists<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
-                c.val_load() == result && f.postcondition_once((c,), ())
+                c.val_load() == result && f.postcondition_once(mode, (c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]

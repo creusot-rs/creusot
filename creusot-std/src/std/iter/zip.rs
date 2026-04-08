@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{invariant::*, prelude::*};
 use core::iter::Zip;
 
@@ -32,33 +34,42 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
+            forall<mode: Mode>
             exists<a: &mut A, b: &mut B>
                    *a == (*self).itera() && *b == (*self).iterb()
                 && ^a == (^self).itera() && ^b == (^self).iterb()
                 && (a.completed() && resolve(b)
-                    || exists<x: A::Item> inv(x) && (*a).produces(Seq::singleton(x), ^a) &&
+                    || exists<x: A::Item> inv(x) && (*a).produces(mode, Seq::singleton(x), ^a) &&
                                           resolve(x) && (*b).completed())
         }
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
             exists<p1: Seq<_>, p2: Seq<_>>
                    p1.len() == p2.len() && p2.len() == visited.len()
                 && (forall<i> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
-                && self.itera().produces(p1, o.itera()) && self.iterb().produces(p2, o.iterb())
+                && self.itera().produces(mode, p1, o.itera()) && self.iterb().produces(mode, p2, o.iterb())
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }

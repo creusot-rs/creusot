@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*, std::iter::Enumerate};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 
 pub trait EnumerateExt<I> {
     #[logic]
@@ -41,11 +41,11 @@ impl<I: IteratorSpec> Invariant for Enumerate<I> {
     fn invariant(self) -> bool {
         pearlite! {
             inv(self.iter())
-            && (forall<s: Seq<I::Item>, i: I>
-                #[trigger(self.iter().produces(s, i))]
-                self.iter().produces(s, i) ==>
+            && (forall<s: Seq<I::Item>, i: I, mode: Mode>
+                #[trigger(self.iter().produces(mode, s, i))]
+                self.iter().produces(mode, s, i) ==>
                 self.n()@ + s.len() < core::usize::MAX@)
-            && (forall<i: &mut I> i.completed() ==> (*i).produces(Seq::empty(), ^i))
+            && (forall<i: &mut I> i.completed() ==> forall<mode: Mode> (*i).produces(mode, Seq::empty(), ^i))
         }
     }
 }
@@ -61,23 +61,31 @@ impl<I: IteratorSpec> IteratorSpec for Enumerate<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == o.n()@ - self.n()@
             && exists<s: Seq<I::Item>>
-                   self.iter().produces(s, o.iter())
+                   self.iter().produces(mode, s, o.iter())
                 && visited.len() == s.len()
                 && forall<i> 0 <= i && i < s.len() ==> visited[i].0@ == self.n()@ + i && visited[i].1 == s[i]
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
