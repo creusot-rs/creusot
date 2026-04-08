@@ -28,7 +28,7 @@ impl<F> FnGhost for F {}
 pub struct FnGhostWrapper<F>(pub F);
 
 impl<F: Clone> Clone for FnGhostWrapper<F> {
-    #[ensures(F::clone.postcondition((&self.0,), result.0))]
+    #[ensures(|result, mode| F::clone.postcondition(mode, (&self.0,), result.0))]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -40,8 +40,8 @@ impl<I: core::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnGhostWrapper<F> {
     type Output = F::Output;
 
     #[trusted]
-    #[requires(self.precondition(args))]
-    #[ensures(self.postcondition_once(args, result))]
+    #[requires(|mode| self.precondition(mode, args))]
+    #[ensures(|result, mode| self.postcondition_once(mode, args, result))]
     #[check(ghost_trusted)]
     extern "rust-call" fn call_once(self, args: I) -> Self::Output {
         self.0.call_once(args)
@@ -50,8 +50,8 @@ impl<I: core::marker::Tuple, F: FnOnce<I>> FnOnce<I> for FnGhostWrapper<F> {
 #[cfg(creusot)]
 impl<I: core::marker::Tuple, F: FnMut<I>> FnMut<I> for FnGhostWrapper<F> {
     #[trusted]
-    #[requires((*self).precondition(args))]
-    #[ensures((*self).postcondition_mut(args, ^self, result))]
+    #[requires(|mode| (*self).precondition(mode, args))]
+    #[ensures(|result, mode| (*self).postcondition_mut(mode, args, ^self, result))]
     #[check(ghost_trusted)]
     extern "rust-call" fn call_mut(&mut self, args: I) -> Self::Output {
         self.0.call_mut(args)
@@ -60,8 +60,8 @@ impl<I: core::marker::Tuple, F: FnMut<I>> FnMut<I> for FnGhostWrapper<F> {
 #[cfg(creusot)]
 impl<I: core::marker::Tuple, F: Fn<I>> Fn<I> for FnGhostWrapper<F> {
     #[trusted]
-    #[requires((*self).precondition(args))]
-    #[ensures((*self).postcondition(args, result))]
+    #[requires(|mode| (*self).precondition(mode, args))]
+    #[ensures(|result, mode| (*self).postcondition(mode, args, result))]
     #[check(ghost_trusted)]
     extern "rust-call" fn call(&self, args: I) -> Self::Output {
         self.0.call(args)

@@ -86,11 +86,11 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(Load::ORDERING == Ordering::Acquire::ORDERING || Load::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &Committer<Self, $type, Load, Ordering::None>>
-                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
+            #[requires(|mode| forall<c: &Committer<Self, $type, Load, Ordering::None>>
+                !c.shot_store() ==> c.ward() == *self ==> f.precondition(mode.into_ghost(), (c,))
             )]
-            #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
-                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
+            #[ensures(|result, mode| exists<c: &Committer<Self, $type, Load, Ordering::None>>
+                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once(mode.into_ghost(), (c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]
@@ -107,13 +107,13 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[requires(Store::ORDERING == Ordering::Release::ORDERING || Store::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[requires(|mode| forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
+                f.precondition(mode.into_ghost(), (c,)) && (f.postcondition_once(mode.into_ghost(), (c,), ()) ==> (^c).shot_store())
             )]
-            #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[ensures(|result, mode| exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
-                f.postcondition_once((c,), ())
+                f.postcondition_once(mode.into_ghost(), (c,), ())
             )]
             #[trusted]
             #[allow(unused_variables)]

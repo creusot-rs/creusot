@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{prelude::*, std::iter::Fuse};
 
 impl<I: Iterator> View for Fuse<I> {
@@ -26,12 +28,12 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
+    fn produces(self, mode: Mode, prod: Seq<Self::Item>, other: Self) -> bool {
         pearlite! {
             match self@ {
                 None => prod == Seq::empty() && other@ == self@,
                 Some(i) => match other@ {
-                    Some(i2) => i.produces(prod, i2),
+                    Some(i2) => i.produces(mode, prod, i2),
                     None => false,
                 },
             }
@@ -39,28 +41,36 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
 
 pub trait FusedIterator: core::iter::FusedIterator + IteratorSpec {
     #[logic(law)]
     #[requires(self.completed())]
-    #[requires((^self).produces(steps, next))]
+    #[requires((^self).produces(mode, steps, next))]
     #[ensures(steps == Seq::empty())]
-    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
+    fn is_fused(&mut self, mode: Mode, steps: Seq<Self::Item>, next: Self);
 }
 
 impl<I: IteratorSpec> FusedIterator for Fuse<I> {
     #[logic(open, law)]
     #[requires(self.completed())]
-    #[requires((^self).produces(steps, next))]
+    #[requires((^self).produces(mode, steps, next))]
     #[ensures(steps == Seq::empty())]
-    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
+    fn is_fused(&mut self, mode: Mode, steps: Seq<Self::Item>, next: Self) {}
 }

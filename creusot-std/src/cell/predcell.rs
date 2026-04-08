@@ -69,9 +69,9 @@ impl<T: Copy> PredCell<T> {
 
     /// See the method [`Cell::update`](https://doc.rust-lang.org/std/cell/struct.Cell.html#method.update) documentation.
     #[trusted]
-    #[requires(forall<x: T> self@[x] ==> f.precondition((x,)))]
-    #[requires(forall<x: T, res: T> self@[x] && f.postcondition_once((x,), res) ==> self@[res])]
-    #[ensures(exists<x: T, res: T> self@[x] && f.postcondition_once((x,), res))]
+    #[requires(|mode| forall<x: T> self@[x] ==> f.precondition(mode, (x,)))]
+    #[requires(|mode| forall<x: T, res: T> self@[x] && f.postcondition_once(mode, (x,), res) ==> self@[res])]
+    #[ensures(|_, mode| exists<x: T, res: T> self@[x] && f.postcondition_once(mode, (x,), res))]
     pub fn update(&self, f: impl FnOnce(T) -> T) {
         self.0.update(f);
     }
@@ -93,7 +93,7 @@ impl<T: ?Sized> PredCell<T> {
 impl<T: Default> PredCell<T> {
     /// See the method [`Cell::take`](https://doc.rust-lang.org/std/cell/struct.Cell.html#method.take) documentation.
     #[trusted]
-    #[requires(forall<x: T> T::default.postcondition((), x) ==> self@[x])]
+    #[requires(|mode| forall<x: T> T::default.postcondition(mode, (), x) ==> self@[x])]
     #[ensures(self@[result])]
     pub fn take(&self) -> T {
         self.0.take()

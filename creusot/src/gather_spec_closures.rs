@@ -6,6 +6,7 @@ use crate::{
         is_trusted,
     },
     ctx::{HasTyCtxt, TranslationCtx},
+    naming::name,
     translation::{function::Assertion, pearlite::Term},
 };
 use rustc_hir::def_id::DefId;
@@ -156,7 +157,26 @@ impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
                 }
                 return;
             };
-            let term = self.ctx.term(id).unwrap().1.clone();
+            let term = {
+                let term = self.ctx.term(id).unwrap();
+                let params = self.ctx.hir_body_owned_by(id.expect_local()).params;
+                if params.len() == 0 {
+                    term.1.clone()
+                } else if params.len() == 1
+                    && matches!(params[0].pat.kind, rustc_hir::PatKind::Binding(_, _, _, None))
+                {
+                    // Replace the mode argument (last one) with the static name
+                    let subst: Box<[_]> = term.0[..term.0.len() - 1]
+                        .iter()
+                        .map(|i| i.0)
+                        .chain([name::mode()])
+                        .collect();
+                    term.rename(&subst)
+                } else {
+                    // TODO: make sure this cannot happen in the #[invariant] macro
+                    self.ctx.span_bug(self.body.span, "bad invariant")
+                }
+            };
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(

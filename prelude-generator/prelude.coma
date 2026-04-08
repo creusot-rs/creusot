@@ -103,3 +103,23 @@ module PtrBW
   function addr_logic_u64 (p : ptr) : UInt64.t
   axiom addr_logic_u64_thin : forall p. addr_logic_u64 (thin p) = addr_logic_u64 p
 end
+
+module Mode
+  (* We make [Mode.t] abstract instead of a record so that
+    we can give it an invariant via the axiom [mode_invariant]. *)
+  type t
+  predicate nopanic (m : t)
+  predicate terminates (m : t)
+  predicate ghost_ (m : t)
+
+  axiom mode_invariant : forall m : t.
+       (ghost_ m -> terminates m)
+    /\ (terminates m -> nopanic m)
+
+  (* This mode is used for evaluating const blocks *)
+  constant program_mode : t
+  axiom program_mode_def : nopanic program_mode /\ not (terminates program_mode)
+
+  function into_ghost (m: t) : t
+  axiom into_ghost_def : forall m. ghost_ (into_ghost m)
+end

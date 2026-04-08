@@ -1,11 +1,11 @@
 //! A logical/ghost finite map.
 
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
 };
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::marker::PhantomData;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
@@ -556,9 +556,9 @@ impl<K, V> Iterator for Iter<K, V> {
     type Item = (K, V);
 
     #[check(ghost)]
-    #[ensures(match result {
+    #[ensures(|result, mode| match result {
         None => self.completed(),
-        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.insert(k, v),
+        Some((k, v)) => (*self).produces(mode, Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.insert(k, v),
     })]
     fn next(&mut self) -> Option<(K, V)> {
         self.0.remove_one_ghost()
@@ -567,7 +567,7 @@ impl<K, V> Iterator for Iter<K, V> {
 
 impl<K, V> IteratorSpec for Iter<K, V> {
     #[logic(prophetic, open)]
-    fn produces(self, visited: Seq<(K, V)>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<(K, V)>, o: Self) -> bool {
         pearlite! {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
@@ -586,14 +586,21 @@ impl<K, V> IteratorSpec for Iter<K, V> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
         let ac = ab.concat(bc);
         proof_assert!(forall<x> ab.contains(x) ==> ac.contains(x));
         proof_assert!(forall<i> 0 <= i && i < bc.len() ==> ac[i + ab.len()] == bc[i]);

@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{prelude::*, std::iter::Repeat};
 
 impl<T> View for Repeat<T> {
@@ -16,20 +18,28 @@ impl<T: Clone> IteratorSpec for Repeat<T> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i> 0 <= i && i < visited.len() ==> T::clone.postcondition((&self@,), visited[i])
+            forall<i> 0 <= i && i < visited.len() ==> T::clone.postcondition(mode, (&self@,), visited[i])
         }
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }

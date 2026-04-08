@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 #[cfg(all(creusot, feature = "std"))]
 use core::alloc::Allocator;
 #[cfg(creusot)]
@@ -465,13 +465,13 @@ extern_spec! {
 
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == self@.len())]
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn to_vec(&self) -> Vec<T> where T: Clone;
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn clone(&self) -> Box<[T], A>;
     }
 }
@@ -492,21 +492,29 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
 
 impl<'a, T> View for IterMut<'a, T> {
@@ -540,19 +548,27 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_mut_seq() == visited.concat(tl@.to_mut_seq())
         }
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }

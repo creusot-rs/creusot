@@ -40,7 +40,18 @@ struct Variant {
 impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
-        let term = pretyping::encode_term(&self.term);
+        let (mode, term) = match &self.term {
+            pearlite_syn::Term::Closure(closure) => {
+                if closure.inputs.len() != 1 {
+                    tokens.extend(quote!{compile_error!("unexpected closure arguments: expected only one mode argument")});
+                    return;
+                }
+                let arg = closure.inputs.iter().next().unwrap();
+                (quote! { #arg: ::creusot_std::mode::Mode }, &*closure.body)
+            }
+            term => (quote!(), &*term),
+        };
+        let term = pretyping::encode_term(term);
         let spec_closure = {
             let expl = match self.kind {
                 LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
@@ -49,7 +60,7 @@ impl ToTokens for Invariant {
             };
             quote_spanned! {span=>
               #[creusot::spec::invariant = #expl]
-              || { #term }
+              |#mode| { #term }
             }
         };
         tokens.extend(quote_spanned! {span=>
@@ -229,7 +240,7 @@ fn desugar_for(
         Invariant {
             kind: ForInvariant,
             span: for_span,
-            term: parse_quote_spanned! {for_span=> ::creusot_std::std::iter::IteratorSpec::produces(#iter_old.inner(), #produced.inner(), #it) },
+            term: parse_quote_spanned! {for_span=> |mode| ::creusot_std::std::iter::IteratorSpec::produces(#iter_old.inner(), mode, #produced.inner(), #it) },
         },
     );
 

@@ -110,7 +110,7 @@ impl<T, E> OwnResult<T, E> {
     }
 
     #[ensures(forall<t: T> self == OwnResult::Ok(t) ==> result == t)]
-    #[ensures((exists<e: E> self == OwnResult::Err(e)) ==> T::default.postcondition((), result))]
+    #[ensures(|result, mode| (exists<e: E> self == OwnResult::Err(e)) ==> T::default.postcondition(mode, (), result))]
     pub fn unwrap_or_default(self) -> T
     where
         T: Default,
@@ -156,8 +156,8 @@ impl<T, E> OwnResult<&T, E> {
         }
     }
 
-    #[ensures(match (self, result) {
-        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+    #[ensures(|result, mode| match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition(mode, (s,), r),
         (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
         _ => false
     })]
@@ -187,8 +187,8 @@ impl<T, E> OwnResult<&mut T, E> {
         }
     }
 
-    #[ensures(match (self, result) {
-        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition((s,), r),
+    #[ensures(|result, mode| match (self, result) {
+        (OwnResult::Ok(s), OwnResult::Ok(r)) => T::clone.postcondition(mode, (s,), r),
         (OwnResult::Err(s), OwnResult::Err(r)) => s == r,
         _ => false
     })]

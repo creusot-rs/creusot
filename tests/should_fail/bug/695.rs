@@ -2,8 +2,8 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-#[requires(cond.precondition(()) && forall <b:bool> branch.precondition((b,)))]
-#[ensures(exists <b:bool> cond.postcondition((),b) && branch.postcondition_once((!b,),()))]
+#[requires(|mode| cond.precondition(mode, ()) && forall <b:bool> branch.precondition(mode, (b,)))]
+#[ensures(|_, mode| exists <b:bool> cond.postcondition(mode, (),b) && branch.postcondition_once(mode, (!b,),()))]
 pub fn inversed_if<C: Fn() -> bool, B: FnOnce(bool) -> ()>(cond: C, branch: B) {
     if !cond() { branch(true) } else { branch(false) }
 }

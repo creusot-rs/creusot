@@ -2,7 +2,7 @@
 use crate::logic::ops::IndexLogic;
 use crate::prelude::*;
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve};
 
 #[cfg(feature = "nightly")]
 use core::alloc::Allocator;
@@ -170,21 +170,29 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
 
 /// Dummy impls that don't use the unstable trait Allocator
