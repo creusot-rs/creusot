@@ -1,5 +1,8 @@
 use core::panic;
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    collections::{HashSet, VecDeque},
+};
 
 use crate::{
     backend::{Why3Generator, clone_map::elaborator::Expander, dependency::Dependency},
@@ -313,7 +316,7 @@ impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
     }
 
     fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
-        self.dep_set.borrow_mut().insert(key);
+        self.dep_graph.borrow_mut().add_node(key);
         self.names.raw_dependency(key)
     }
 
@@ -332,9 +335,47 @@ impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
 
 pub(crate) struct Dependencies<'a, 'tcx> {
     names: CloneNames<'a, 'tcx>,
+    dep_graph: RefCell<DepGraphBuilder<'tcx>>,
+}
 
-    // A hacky thing which is used to remember the dependncies we need to seed the expander with
-    dep_set: RefCell<IndexSet<Dependency<'tcx>>>,
+/// Dependencies of a source item.
+type DepGraph<'tcx> = DiGraphMap<Dependency<'tcx>, Strength>;
+
+#[derive(Default)]
+struct DepGraphBuilder<'tcx> {
+    graph: DepGraph<'tcx>,
+    /// Dependencies to process.
+    expansion_queue: VecDeque<Dependency<'tcx>>,
+    /// Set to ensure each dependency is pushed at most once in the queue.
+    visited: HashSet<Dependency<'tcx>>,
+}
+
+impl<'tcx> DepGraphBuilder<'tcx> {
+    /// The source item itself is kept out of the graph.
+    fn new(source: Dependency<'tcx>) -> Self {
+        let mut graph = Self::default();
+        graph.visited.insert(source);
+        graph
+    }
+
+    /// Add a direct dependency of the source item
+    fn add_node(&mut self, d: Dependency<'tcx>) {
+        if self.visited.insert(d) {
+            self.graph.add_node(d);
+            self.expansion_queue.push_back(d);
+        }
+    }
+
+    /// Add `t` as a dependency of `s`
+    fn add_edge(&mut self, s: Dependency<'tcx>, strength: Strength, t: Dependency<'tcx>) {
+        if let Some(old) = self.graph.add_edge(s, t, strength) {
+            if old > strength {
+                self.graph.add_edge(s, t, old);
+            }
+        } else if self.visited.insert(t) {
+            self.expansion_queue.push_back(t);
+        }
+    }
 }
 
 pub(crate) struct CloneNames<'a, 'tcx> {
@@ -357,19 +398,13 @@ pub(crate) struct CloneNames<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> CloneNames<'a, 'tcx> {
-    fn new(
-        ctx: &'a TranslationCtx<'tcx>,
-        source_id: DefId,
-        typing_env: TypingEnv<'tcx>,
-        span_mode: SpanMode,
-        bitwise_mode: bool,
-    ) -> Self {
+    fn new(ctx: &'a TranslationCtx<'tcx>, source_id: DefId) -> Self {
         CloneNames {
             ctx,
             source_id,
-            typing_env,
-            span_mode,
-            bitwise_mode,
+            typing_env: ctx.typing_env(source_id),
+            span_mode: ctx.opts.span_mode.clone(),
+            bitwise_mode: is_bitwise(ctx.tcx, source_id),
             names: Default::default(),
             spans: Default::default(),
             constant_setters: Setters::new(),
@@ -409,11 +444,10 @@ impl Kind {
 
 impl<'a, 'tcx> Dependencies<'a, 'tcx> {
     pub(crate) fn new(ctx: &'a TranslationCtx<'tcx>, self_id: DefId) -> Self {
-        let bw = is_bitwise(ctx.tcx, self_id);
-        let names =
-            CloneNames::new(ctx, self_id, ctx.typing_env(self_id), ctx.opts.span_mode.clone(), bw);
         debug!("cloning self: {:?}", self_id);
-        Dependencies { names, dep_set: Default::default() }
+        let names = CloneNames::new(ctx, self_id);
+        let dep_graph = RefCell::new(DepGraphBuilder::new(names.source_item()));
+        Dependencies { names, dep_graph }
     }
 
     /// Get a name for the `Namespace` type, _without_ adding it to the list of dependencies.
@@ -427,31 +461,13 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         let mut decls = Vec::new();
         let typing_env = self.typing_env();
         let source_id = self.source_id();
-        let source_item = self.source_item();
         let span = tcx.def_span(source_id);
 
-        let graph = Expander::new(
-            ctx,
-            &mut self.names,
-            typing_env,
-            self.dep_set.into_inner().into_iter().filter(|d| *d != source_item),
-            span,
-        );
-
-        // Update the clone graph with any new entries.
-        let (graph, mut bodies) = graph.update_graph(ctx);
+        let graph =
+            Expander::new(ctx, &mut self.names, self.dep_graph.into_inner(), typing_env, span);
+        let (graph, mut bodies) = graph.update_graph();
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
-            if scc.iter().any(|node| node == &source_item) {
-                if scc.len() != 1 {
-                    ctx.dcx().span_bug(
-                        ctx.def_span(source_id),
-                        format!("{} {scc:?}", ctx.def_path_str(source_id)),
-                    )
-                }
-                continue;
-            }
-
             // Then we construct a sub-graph ignoring weak edges.
             let mut subgraph = DiGraphMap::new();
 
