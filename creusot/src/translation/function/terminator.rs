@@ -10,6 +10,7 @@ use crate::{
         pearlite::{Term, TermKind, UnOp},
         traits,
     },
+    validate::is_ghost_block,
 };
 use itertools::Itertools;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -105,7 +106,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if contract.extern_no_spec
                             && !matches!(tr_res, TraitResolved::UnknownFound)
                             && let Some(lint_root) =
-                                self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
+                                terminator.source_info.scope.lint_root(&self.body.source_scopes)
                         {
                             let name = self.ctx.tcx.item_name(fun_def_id);
                             self.ctx.emit_node_span_lint(
@@ -125,11 +126,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             target = None
                         } else {
                             let subst = self.ctx.erase_and_anonymize_regions(subst);
+                            let mode = CallMode {
+                                ghost: self.in_ghost_block(terminator.source_info.scope),
+                            };
                             self.emit_statement(Statement {
                                 kind: fmir::StatementKind::Call(
                                     self.translate_place(destination, span),
                                     fun_def_id,
                                     subst,
+                                    mode,
                                     func_args,
                                     span,
                                 ),
@@ -231,6 +236,26 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             AssertKind::RemainderByZero(_) => "expl:remainder by zero".to_string(),
             _ => unreachable!("Resume assertions"),
         }
+    }
+
+    /// This relies on having set the flag `-Zmaximal-hir-to-mir-coverage`
+    /// for MIR lowering to create a scope for every HIR node.
+    fn in_ghost_block(&self, scope: mir::SourceScope) -> bool {
+        let data = &self.body.source_scopes[scope];
+        let mir::ClearCrossCrate::Set(local) = &data.local_data else {
+            use rustc_hir::def::DefKind;
+            if matches!(
+                self.tcx().def_kind(self.body_id.def_id),
+                DefKind::Const { .. } | DefKind::AssocConst { .. }
+            ) {
+                return false;
+            } else {
+                self.span_bug(data.span, "can't determine if this is a ghost call")
+            }
+        };
+        // No need to check the initial HirId `local.lint_root` because with
+        // `-Zmaximal-hir-to-mir-coverage` that is going to be the function call, not a ghost block.
+        self.ctx.hir_parent_id_iter(local.lint_root).any(|hir| is_ghost_block(self.ctx.tcx, hir))
     }
 }
 

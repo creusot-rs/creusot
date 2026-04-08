@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{
     logic::FSet,
     prelude::*,
@@ -107,7 +109,7 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
 #[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> IteratorSpec for IntoIter<T, A> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -157,7 +159,7 @@ impl<'a, T: DeepModel> View for Iter<'a, T> {
 
 impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -217,7 +219,7 @@ impl<'a, T: DeepModel, S, A: Allocator> View for Difference<'a, T, S, A> {
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection<'a, T, S> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 
@@ -241,7 +243,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection
 
 impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'a, T, S> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
     }
 

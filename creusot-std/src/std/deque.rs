@@ -1,7 +1,7 @@
 #[cfg(feature = "nightly")]
 use crate::logic::ops::IndexLogic;
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 
 #[cfg(feature = "nightly")]
@@ -170,7 +170,7 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@ == visited.concat(tl@)
         }

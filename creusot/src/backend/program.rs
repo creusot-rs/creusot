@@ -26,7 +26,7 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::Intrinsic,
-    ctx::{BodyId, Dependencies, HasTyCtxt as _},
+    ctx::{BodyId, Dependencies, HasTyCtxt as _, TranslationCtx},
     naming::name,
     translated_item::FileModule,
     translation::{
@@ -63,6 +63,9 @@ pub(crate) fn translate_function<'tcx>(
     if !ctx.has_body(def_id) {
         return None;
     }
+
+    // TODO: find a better place for this
+    safety_check(&ctx.ctx, def_id);
 
     let names = Dependencies::new(ctx, def_id);
     let namespace_ty = names.namespace_ty();
@@ -168,8 +171,16 @@ pub(crate) fn to_why_body<'tcx>(
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
     let body_id = BodyId::local(def_id.expect_local());
     let mut recursive_calls = RecursiveCalls::new();
-    let mut body =
-        why_body(ctx, names, body_id, None, &args, name::return_(), &mut recursive_calls);
+    let mut body = why_body(
+        ctx,
+        names,
+        body_id,
+        None,
+        &Exp::var(name::mode()),
+        &args,
+        name::return_(),
+        &mut recursive_calls,
+    );
     let (mut sig, variant) = {
         let mut sig = sig.clone();
         sig.inputs =
@@ -216,16 +227,17 @@ pub(crate) fn to_why_body<'tcx>(
                 def_id == body_id.def_id,
                 "Only simple recursion is allowed at the moment, and this should be checked earlier"
             );
-            let params: Box<[_]> = params
-                .into_iter()
-                .zip(&sig.prototype.params)
-                .map(|(ty, param)| Param::Term(param.as_term().0, ty))
-                .chain(std::iter::once(Param::Cont(
-                    Ident::fresh_local("_k"),
-                    [].into(),
-                    [Param::Term(Ident::fresh_local("_ret"), ret_ty)].into(),
-                )))
-                .collect();
+            let params: Box<[_]> =
+                std::iter::once(Type::qconstructor(names.in_pre(PreMod::Mode, "t")))
+                    .chain(params.into_iter())
+                    .zip(&sig.prototype.params)
+                    .map(|(ty, param)| Param::Term(param.as_term().0, ty))
+                    .chain(std::iter::once(Param::Cont(
+                        Ident::fresh_local("_k"),
+                        [].into(),
+                        [Param::Term(Ident::fresh_local("_ret"), ret_ty)].into(),
+                    )))
+                    .collect();
             let args: Box<[_]> = params
                 .iter()
                 .map(|p| match p {
@@ -314,6 +326,7 @@ pub fn why_body<'tcx>(
     names: &impl Namer<'tcx>,
     body_id: BodyId,
     subst: Option<GenericArgsRef<'tcx>>,
+    mode: &Exp,
     params: &[Ident],
     inner_return: Ident,
     recursive_calls: &mut RecursiveCalls,
@@ -358,6 +371,7 @@ pub fn why_body<'tcx>(
                 names,
                 body_id.def_id,
                 &block_idents,
+                mode,
                 inner_return,
                 c,
             )
@@ -401,11 +415,19 @@ fn component_to_defn<'tcx>(
     names: &impl Namer<'tcx>,
     def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
+    mode: &Exp,
     return_ident: Ident,
     c: Component<BasicBlock>,
 ) -> Defn {
-    let lower =
-        LoweringState { ctx, names, locals: &body.locals, def_id, block_idents, return_ident };
+    let lower = LoweringState {
+        ctx,
+        names,
+        locals: &body.locals,
+        def_id,
+        block_idents,
+        mode,
+        return_ident,
+    };
     let (head, tl) = match c {
         Component::Simple(v) => {
             let block = body.blocks.swap_remove(&v).unwrap();
@@ -440,6 +462,7 @@ fn component_to_defn<'tcx>(
                 names,
                 def_id,
                 block_idents,
+                mode,
                 return_ident,
                 id,
             )
@@ -496,6 +519,7 @@ struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     /// Id of the function (or promoted) we are lowering.
     def_id: DefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
+    mode: &'a Exp,
     return_ident: Ident,
 }
 
@@ -566,6 +590,7 @@ impl<'tcx> Operand<'tcx> {
                     lower.names,
                     body_id,
                     subst,
+                    &Exp::qvar(lower.names.in_pre(PreMod::Mode, "program_mode")),
                     &[],
                     ret,
                     &mut RecursiveCalls::new(),
@@ -698,10 +723,7 @@ impl<'tcx> RValue<'tcx> {
                                 fields: [(0usize, fst), (1, snd)]
                                     .into_iter()
                                     .map(|(ix, f)| {
-                                        (
-                                            Name::local(lower.names.tuple_field(tys, ix.into())),
-                                            Exp::var(f),
-                                        )
+                                        (lower.names.tuple_field(tys, ix.into()), Exp::var(f))
                                     })
                                     .collect(),
                             }
@@ -763,7 +785,7 @@ impl<'tcx> RValue<'tcx> {
                         .enumerate()
                         .map(|(ix, f)| {
                             (
-                                Name::local(lower.names.tuple_field(tys, ix.into())),
+                                lower.names.tuple_field(tys, ix.into()),
                                 f.into_why(lower, istmts, span),
                             )
                         })
@@ -844,7 +866,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let record = Exp::var(id).boxed();
                 let label = Name::Global(lower.names.in_pre(PreMod::Slice, "elts"));
-                let arr_elts = Exp::RecField { record, label };
+                let arr_elts = record.field(label);
 
                 istmts.push(IntermediateStmt::Any(id, ty.clone()));
                 let mut assumptions = fields
@@ -1349,10 +1371,17 @@ impl<'tcx> Statement<'tcx> {
                     e.into_why(self.span, lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
-            StatementKind::Call(dest, fun_id, subst, args, span) => {
+            StatementKind::Call(dest, fun_id, subst, call_mode, args, span) => {
                 let params =
                     args.iter().map(|a| lower.ty(a.ty(lower.ctx.tcx, lower.locals))).collect();
-                let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
+                let mode = Arg::Term(if call_mode.ghost {
+                    Exp::qvar(lower.names.in_pre(PreMod::Mode, "into_ghost"))
+                        .app([lower.mode.clone()])
+                } else {
+                    lower.mode.clone()
+                });
+                let (fun_qname, args) =
+                    func_call_to_why3(lower, fun_id, subst, mode, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
                 if lower.ctx.should_check_variant_decreases(lower.def_id, fun_id) {
@@ -1392,6 +1421,7 @@ fn func_call_to_why3<'tcx>(
     lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     id: DefId,
     subst: GenericArgsRef<'tcx>,
+    mode: Arg,
     args: Box<[Operand<'tcx>]>,
     istmts: &mut Vec<IntermediateStmt>,
 ) -> (Name, Box<[Arg]>) {
@@ -1404,7 +1434,8 @@ fn func_call_to_why3<'tcx>(
 
         let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
-        once(Arg::Term(arg.into_why(lower, istmts, span)))
+        [mode, Arg::Term(arg.into_why(lower, istmts, span))]
+            .into_iter()
             .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
                 let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
@@ -1417,9 +1448,10 @@ fn func_call_to_why3<'tcx>(
             }))
             .collect()
     } else {
-        args.into_iter().map(|a| a.into_why(lower, istmts, span)).map(Arg::Term).collect()
+        once(mode)
+            .chain(args.into_iter().map(|a| a.into_why(lower, istmts, span)).map(Arg::Term))
+            .collect()
     };
-
     (lower.names.item(id, subst), args)
 }
 
@@ -1462,4 +1494,69 @@ pub fn ptr_cast_kind<'tcx>(
 /// If `false`, nothing is known for sure.
 pub fn is_unsized(ty: &Ty) -> bool {
     matches!(ty.kind(), TyKind::Str | TyKind::Slice(_) | TyKind::Dynamic(_, _))
+}
+
+/// If this function has safety obligations (a safe function containing unsafe blocks),
+/// check that its preconditions are trivial in `nopanic` mode.
+/// TODO: find a better place for this check
+fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
+    if !is_unsafe(ctx.tcx, def_id) && has_unsafe_block(ctx.tcx, def_id) {
+        // All preconditions must be guarded by nopanic, terminates, or ghost
+        let sig = ctx.sig(def_id);
+        let modes = [
+            Intrinsic::ModeNoPanic.get(ctx),
+            Intrinsic::ModeTerminates.get(ctx),
+            Intrinsic::ModeGhost.get(ctx),
+        ];
+        for pre in &sig.contract.requires {
+            use crate::translation::pearlite::TermKind::*;
+            if let Impl { lhs: ref arg, .. } = pre.term.kind
+                && let Call { id, ref args, .. } = arg.kind
+                && modes.contains(&id)
+                && let Var(v) = args[0].kind
+                && v.0 == name::mode()
+            {
+                continue;
+            }
+            // Warn for now
+            let _ = ctx.warn(
+                pre.term.span,
+                format!(
+                    "This precondition of {} may not be trivial in `nopanic` mode",
+                    ctx.def_path_str(def_id)
+                ),
+            );
+            break;
+        }
+    }
+}
+
+fn is_unsafe(tcx: TyCtxt, def_id: DefId) -> bool {
+    tcx.fn_sig(def_id).skip_binder().skip_binder().safety().is_unsafe()
+}
+
+fn has_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
+    use rustc_hir::{
+        self as hir,
+        intravisit::{Visitor, walk_block},
+    };
+    use rustc_middle::hir::nested_filter::OnlyBodies;
+    use std::ops::ControlFlow;
+    struct HasUnsafeBlock<'tcx>(TyCtxt<'tcx>);
+    impl<'tcx> Visitor<'tcx> for HasUnsafeBlock<'tcx> {
+        type NestedFilter = OnlyBodies;
+        type Result = ControlFlow<()>;
+
+        fn maybe_tcx(&mut self) -> Self::MaybeTyCtxt {
+            self.0
+        }
+
+        fn visit_block(&mut self, b: &'tcx hir::Block<'tcx>) -> Self::Result {
+            if let hir::BlockCheckMode::UnsafeBlock(_) = b.rules {
+                return ControlFlow::Break(());
+            }
+            walk_block(self, b)
+        }
+    }
+    HasUnsafeBlock(tcx).visit_body(tcx.hir_body_owned_by(def_id.expect_local())).is_break()
 }
