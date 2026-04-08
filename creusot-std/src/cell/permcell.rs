@@ -219,7 +219,7 @@ impl<T: ?Sized> PermCell<T> {
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
     #[ensures(result == *perm.val())]
-    #[ensures(T::default.postcondition((), *(^perm).val()))]
+    #[ensures(|_, mode| T::default.postcondition(mode, (), *(^perm).val()))]
     pub unsafe fn take(&self, perm: Ghost<&mut Perm<PermCell<T>>>) -> T
     where
         T: Default,

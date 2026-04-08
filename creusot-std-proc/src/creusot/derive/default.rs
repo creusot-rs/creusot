@@ -18,7 +18,7 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 
     quote! {
         impl #impl_generics ::core::default::Default for #name #ty_generics #where_clause {
-            #[::creusot_std::macros::ensures(#body_spec)]
+            #[::creusot_std::macros::ensures(|result, mode| #body_spec)]
             fn default() -> Self {
                 #body_code
             }
@@ -141,9 +141,9 @@ fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
             let fs = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 if with_result {
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#name) }
+                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, mode, (), result.#name) }
                 } else {
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, mode, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }
@@ -152,10 +152,10 @@ fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
             let fs = fields.unnamed.iter().enumerate().map(|(i, f)| {
                 if with_result {
                     let i = syn::LitInt::new(&format!("{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#i) }
+                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, mode, (), result.#i) }
                 } else {
                     let name = Ident::new(&format!("x{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
+                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, mode, (), #name) }
                 }
             });
             quote! { true #(&& #fs)* }

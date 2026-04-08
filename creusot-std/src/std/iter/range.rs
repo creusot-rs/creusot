@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 #[cfg(feature = "nightly")]
 use core::iter::Step;
@@ -13,7 +15,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
             && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
@@ -24,14 +26,22 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    #[requires(a.produces(mode, ab, b))]
+    #[requires(b.produces(mode, bc, c))]
+    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    fn produces_trans(
+        mode: Mode,
+        a: Self,
+        ab: Seq<Self::Item>,
+        b: Self,
+        bc: Seq<Self::Item>,
+        c: Self,
+    ) {
+    }
 }
 
 extern_spec! {
@@ -71,7 +81,7 @@ impl_exact_size_range! { i32 u32 }
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range<Idx> {
     #[logic(open)]
-    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces_back(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
@@ -87,7 +97,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     }
 
     #[logic(law)]
-    #[ensures(self.produces_back(Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces_back(mode, Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[logic(law)]
@@ -125,7 +135,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
@@ -178,7 +188,7 @@ impl_exact_size_range_inclusive! { i16 u16 }
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
     #[logic(open)]
-    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces_back(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&

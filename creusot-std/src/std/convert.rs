@@ -16,6 +16,9 @@ extern_spec! {
             }
 
             trait From<T> {
+                // Some implementations may be callable in ghost code.
+                #[check(ghost)]
+                #[requires(|mode| !mode.ghost())]
                 fn from(value: T) -> Self;
             }
         }
@@ -97,8 +100,8 @@ extern_spec! {
 
     impl<T, U: From<T>> Into<U> for T {
         // FIXME: inherit terminates/ghost status
-        #[requires(<U as From<T>>::from.precondition((self,)))]
-        #[ensures(<U as From<T>>::from.postcondition((self,), result))]
+        #[requires(|mode| <U as From<T>>::from.precondition(mode, (self,)))]
+        #[ensures(|result, mode| <U as From<T>>::from.postcondition(mode, (self,), result))]
         fn into(self) -> U {
             U::from(self)
         }
@@ -123,7 +126,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         fn from(s: &[T]) -> Self;
         // To verify: uses CloneToUninit
     }
@@ -132,7 +135,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T]) -> Self {
             Box::<[T]>::from(&*s)
@@ -151,7 +154,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         fn from(s: &[T]) -> Self {
             s.to_vec()
         }
@@ -161,7 +164,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T]) -> Self {
             s.to_vec()
@@ -179,7 +182,7 @@ extern_spec! {
     impl<T: Clone, const N: usize> From<&[T; N]> for Vec<T> {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == N@)]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         fn from(s: &[T; N]) -> Self {
             Vec::<T>::from(s.as_slice())
         }
@@ -188,7 +191,7 @@ extern_spec! {
     impl<T: Clone, const N: usize> From<&mut [T; N]> for Vec<T> {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == N@)]
-        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition(mode, (&s@[i],), result@[i]))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T; N]) -> Self {
             Vec::<T>::from(s.as_mut_slice())

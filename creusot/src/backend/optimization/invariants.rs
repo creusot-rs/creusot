@@ -338,7 +338,7 @@ impl ChangedPlaces {
                     self.record_write_to(ctx, l);
                     self.record_write_to(ctx, r);
                 }
-                StatementKind::Call(r, _, _, _, _) => self.record_write_to(ctx, r),
+                StatementKind::Call(r, _, _, _, _, _) => self.record_write_to(ctx, r),
                 _ => (),
             }
         }

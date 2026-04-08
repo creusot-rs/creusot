@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, prelude::*, std::iter::ExactSizeIteratorSpec};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -77,7 +77,7 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<T>, o: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
@@ -168,8 +168,8 @@ extern_spec! {
     }
 
     impl<T: Clone, const N: usize> Clone for [T; N] {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn clone(&self) -> [T; N];
     }
 

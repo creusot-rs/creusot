@@ -1,7 +1,7 @@
 #[cfg(feature = "nightly")]
 use crate::std::iter::ExactSizeIteratorSpec;
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
@@ -171,11 +171,11 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> Extend<T> for Vec<T, A> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|_, mode| exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
             inv(start_) && inv(done) && inv(prod) &&
-            I::into_iter.postcondition((iter,), start_) &&
-            done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
+            I::into_iter.postcondition(mode, (iter,), start_) &&
+            done.completed() && start_.produces(mode, prod, *done) && (^self)@ == self@.concat(prod)
         )]
         fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
     }
@@ -239,8 +239,8 @@ extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
         #[check(terminates)]
         #[ensures(self@.len() == result@.len())]
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition(mode, (&self@[i],), result@[i]))]
         fn clone(&self) -> Vec<T, A>;
     }
 
@@ -285,7 +285,7 @@ impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(open)]
-    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+    fn produces(self, _: Mode, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
             self@ == visited.concat(rhs@)
         }
@@ -317,7 +317,7 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
