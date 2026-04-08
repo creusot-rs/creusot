@@ -1,7 +1,7 @@
 use crate::{
     backend::{
         self, Why3Generator,
-        clone_map::{CloneNames, Dependency, Kind, Namer},
+        clone_map::{CloneNames, DepGraphBuilder, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre},
         is_trusted_item,
         logic::{lower_logical_defn, spec_axioms},
@@ -24,7 +24,6 @@ use crate::{
         traits::TraitResolved,
     },
 };
-use petgraph::graphmap::DiGraphMap;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
@@ -32,11 +31,7 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
-use std::{
-    assert_matches,
-    cell::RefCell,
-    collections::{HashMap, HashSet, VecDeque},
-};
+use std::{assert_matches, cell::RefCell, collections::HashMap};
 use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
@@ -57,12 +52,11 @@ pub enum Strength {
 /// The `Expander` takes a list of 'root' dependencies (items explicitly requested by user code),
 /// and expands this into a complete dependency graph.
 pub(super) struct Expander<'a, 'ctx, 'tcx> {
-    graph: DiGraphMap<Dependency<'tcx>, Strength>,
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
     namer: &'a mut CloneNames<'ctx, 'tcx>,
     ctx: &'a Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    expansion_queue: VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>,
+    dep_graph: DepGraphBuilder<'tcx>,
     /// Span for the item we are expanding
     root_span: Span,
 }
@@ -75,13 +69,13 @@ impl<'a, 'ctx, 'tcx> HasTyCtxt<'tcx> for Expander<'a, 'ctx, 'tcx> {
 
 struct ExpansionProxy<'a, 'ctx, 'tcx> {
     namer: &'a mut CloneNames<'ctx, 'tcx>,
-    expansion_queue: RefCell<&'a mut VecDeque<(Dependency<'tcx>, Strength, Dependency<'tcx>)>>,
+    dep_graph: RefCell<&'a mut DepGraphBuilder<'tcx>>,
     source: Dependency<'tcx>,
 }
 
 impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
     fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind {
-        self.expansion_queue.borrow_mut().push_back((self.source, Strength::Strong, dep));
+        self.dep_graph.borrow_mut().add_edge(self.source, Strength::Strong, dep);
         self.namer.raw_dependency(dep)
     }
 
@@ -188,17 +182,10 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
 
+        let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
-            Intrinsic::Inv => self.expansion_queue.push_back((
-                dep,
-                Strength::Weak,
-                Dependency::TyInvAxiom(subst.type_at(0)),
-            )),
-            Intrinsic::Resolve => self.expansion_queue.push_back((
-                dep,
-                Strength::Weak,
-                Dependency::ResolveAxiom(subst.type_at(0)),
-            )),
+            Intrinsic::Inv => add_edge(Dependency::TyInvAxiom(subst.type_at(0))),
+            Intrinsic::Resolve => add_edge(Dependency::ResolveAxiom(subst.type_at(0))),
             _ => (),
         }
 
@@ -545,53 +532,27 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     pub(crate) fn new(
         ctx: &'a Why3Generator<'tcx>,
         namer: &'a mut CloneNames<'ctx, 'tcx>,
+        dep_graph: DepGraphBuilder<'tcx>,
         typing_env: TypingEnv<'tcx>,
-        initial: impl Iterator<Item = Dependency<'tcx>>,
         span: Span,
     ) -> Self {
-        let source_item = namer.source_item();
-        Self {
-            graph: Default::default(),
-            namer,
-            ctx,
-            typing_env,
-            expansion_queue: initial.map(|b| (source_item, Strength::Strong, b)).collect(),
-            dep_bodies: Default::default(),
-            root_span: span,
-        }
+        Self { namer, ctx, typing_env, dep_graph, dep_bodies: Default::default(), root_span: span }
     }
 
     fn namer(&mut self, source: Dependency<'tcx>) -> ExpansionProxy<'_, 'ctx, 'tcx> {
-        ExpansionProxy {
-            namer: self.namer,
-            expansion_queue: RefCell::new(&mut self.expansion_queue),
-            source,
-        }
+        ExpansionProxy { namer: self.namer, dep_graph: RefCell::new(&mut self.dep_graph), source }
     }
 
     /// Expand the graph with new entries
-    pub fn update_graph(
-        mut self,
-        ctx: &Why3Generator<'tcx>,
-    ) -> (DiGraphMap<Dependency<'tcx>, Strength>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
-        let mut visited = HashSet::new();
-        while let Some((s, strength, t)) = self.expansion_queue.pop_front() {
-            if let Some(old) = self.graph.add_edge(s, t, strength)
-                && old > strength
-            {
-                self.graph.add_edge(s, t, old);
-            }
-
-            if !visited.insert(t) {
-                continue;
-            }
-            self.expand(ctx, t);
+    pub fn update_graph(mut self) -> (super::DepGraph<'tcx>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
+        while let Some(t) = self.dep_graph.expansion_queue.pop_front() {
+            self.expand(t);
         }
-
-        (self.graph, self.dep_bodies)
+        (self.dep_graph.graph, self.dep_bodies)
     }
 
-    fn expand(&mut self, ctx: &Why3Generator<'tcx>, dep: Dependency<'tcx>) {
+    fn expand(&mut self, dep: Dependency<'tcx>) {
+        let ctx = self.ctx;
         self.expand_laws(dep);
 
         let decls = match dep {
@@ -693,7 +654,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         for law in self.ctx.laws(item_container) {
             let law_dep = self.namer(dep).resolve_dependency(Dependency::Item(*law, item_subst));
             // We add a weak dep from `dep` to make sure it appears close to the triggering item
-            self.expansion_queue.push_back((dep, Strength::Weak, law_dep));
+            self.dep_graph.add_edge(dep, Strength::Weak, law_dep);
         }
     }
 }
