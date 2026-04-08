@@ -1,7 +1,11 @@
 //! Special symbols defined in [`creusot_std`] and annotated with
 //! `#[creusot::intrinsics = "..."]`
 
-use crate::{contracts_items::get_intrinsic, ctx::TranslationCtx, metadata::Metadata};
+use crate::{
+    contracts_items::get_intrinsic,
+    ctx::{HasTyCtxt as _, TranslationCtx},
+    metadata::Metadata,
+};
 
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
@@ -22,6 +26,7 @@ macro_rules! contracts_items {
                 .iter_local_def_id()
                 .filter_map(|did| {
                     let mut did = did.to_def_id();
+                    let intrinsic = get_intrinsic(tcx, did)?;
                     match tcx.def_kind(did) {
                         DefKind::Ctor(..) => did = tcx.parent(did),
                         // Some definitions are not associated to HirIds and cannot have attributes
@@ -38,15 +43,15 @@ macro_rules! contracts_items {
                         _ => return None
                     }
 
-                    Some((get_intrinsic(tcx, did)?, did))
+                    Some((intrinsic, did))
                 })
                 .collect();
             let mut int2did = HashMap::new();
             let mut did2int = HashMap::new();
             let mut missing_items = Vec::new();
             let mut no_items = true;
-            $(
-                let sym = Symbol::intern($symbol);
+            for (tag, str) in [$((Intrinsic::$id, $symbol)),*] {
+                let sym = Symbol::intern(str);
                 let here = raw.get(&sym).copied();
                 let there = ext.intrinsic(sym);
                 if here.is_some() && there.is_some() {
@@ -54,15 +59,17 @@ macro_rules! contracts_items {
                 }
                 let did = here.or(there);
                 if let Some(did) = did {
-                    if int2did.insert(Intrinsic::$id, did).is_some() { panic!() };
-                    if did2int.insert(did, Intrinsic::$id).is_some() {
-                        panic!("{did:?} has more than one intrinsic declaration.")
+                    if let Some(_) = int2did.insert(tag, did) {
+                        tcx.crash_and_error(tcx.def_span(did), format!("intrinsic {tag:?} is already defined"))
+                    };
+                    if let Some(tag2) = did2int.insert(did, tag) {
+                        tcx.crash_and_error(tcx.def_span(did), format!("duplicate intrinsics {tag:?} {tag2:?}"))
                     };
                     no_items = false
                 } else {
-                    missing_items.push($symbol)
+                    missing_items.push(str)
                 }
-            )*
+            }
             if no_items {
                 tcx.dcx().struct_span_fatal(DUMMY_SP,
                     "The `creusot_std` crate is not loaded. You will not be able to verify any code using Creusot until you do so."
