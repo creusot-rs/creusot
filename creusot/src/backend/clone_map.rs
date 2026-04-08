@@ -421,10 +421,7 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
             ctx,
             &mut self.names,
             typing_env,
-            self.dep_set.into_inner().into_iter().filter(|d| match d {
-                &Dependency::Item(did, _) => did != source_id,
-                _ => true,
-            }),
+            self.dep_set.into_inner().into_iter().filter(|d| *d != source_item),
             span,
         );
 
