@@ -421,7 +421,10 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
             ctx,
             &mut self.names,
             typing_env,
-            self.dep_set.into_inner().into_iter(),
+            self.dep_set.into_inner().into_iter().filter(|d| match d {
+                &Dependency::Item(did, _) => did != source_id,
+                _ => true,
+            }),
             span,
         );
 
@@ -436,7 +439,6 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
                         format!("{} {scc:?}", ctx.def_path_str(source_id)),
                     )
                 }
-                bodies.remove(&scc[0]);
                 continue;
             }
 
