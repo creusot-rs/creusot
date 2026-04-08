@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::logic::Mapping;
 use crate::prelude::*;
+#[cfg(creusot)]
+use crate::{logic::Mapping, mode::Mode};
 use core::iter::Filter;
 
 pub trait FilterExt<I, F> {
@@ -40,7 +40,8 @@ pub fn private_invariant<I: Iterator, F: FnMut(&I::Item) -> bool>(f: Filter<I, F
 /// In a future release this restriction may be lifted or weakened
 #[logic(open, prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f: F, i: A> inv(f) && inv(i) ==> f.precondition((i,)) }
+    pearlite! { forall<mode: Mode, f: F, i: A> !mode.terminates() && inv(f) && inv(i)
+    ==> f.precondition((i,), mode) }
 }
 
 /// Asserts that the captures of `f` are used immutably
@@ -59,7 +60,10 @@ pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
 // would be equivalent .
 #[logic(open, prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
+    pearlite! { forall<mode: Mode, f1: F, f2: F, i>
+        !mode.terminates()
+        ==> !(f1.postcondition_mut((i,), f2, true, mode) && f1.postcondition_mut((i,), f2, false, mode))
+    }
 }
 
 impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> {
@@ -67,7 +71,7 @@ impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> 
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
-                forall<i> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut((&s[i],), (^self).func(), false))
+                forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> (*self).func().postcondition_mut((&s[i],), (^self).func(), false, mode))
             && (*self).func() == (^self).func()
         }
     }
@@ -86,7 +90,8 @@ impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> 
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i> 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
                 (forall<i> 0 <= i &&  i < s.len() ==>
-                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true))
+                    forall<mode: Mode>
+                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true, mode))
         }
     }
 

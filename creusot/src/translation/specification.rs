@@ -548,10 +548,11 @@ pub fn inputs_and_output<'tcx>(
                 DefKind::Ctor(..) => &vec![None; sig.inputs().len()],
                 _ => tcx.fn_arg_idents(def_id),
             };
-            let result_index = match tcx.intrinsic(def_id) {
-                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => Some(3),
-                Intrinsic::PostconditionMut => Some(4),
-                _ => None,
+            let (result_index, mode_index) = match tcx.intrinsic(def_id) {
+                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => (Some(3), Some(4)),
+                Intrinsic::PostconditionMut => (Some(4), Some(5)),
+                Intrinsic::Precondition => (None, Some(3)),
+                _ => (None, None),
             };
             let inputs = idents
                 .iter()
@@ -559,7 +560,11 @@ pub fn inputs_and_output<'tcx>(
                 .zip(sig.inputs().iter().cloned())
                 .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
                 .map(|((ident, ty), ix)| match ident {
-                    _ if result_index == Some(ix) => (name::result().into(), DUMMY_SP, ty),
+                    _ if Some(ix) == result_index => (name::result().into(), DUMMY_SP, ty),
+                    _ if Some(ix) == mode_index => {
+                        assert_eq!(ty, tcx.mode_ty());
+                        (name::mode().into(), DUMMY_SP, ty)
+                    }
                     Some(rustc_span::Ident { name, span }) => {
                         let name = name.as_str();
                         let ident = if name.is_empty() || name == "_" {

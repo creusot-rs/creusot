@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{prelude::*, std::iter::Repeat};
 
 impl<T> View for Repeat<T> {
@@ -19,7 +21,7 @@ impl<T: Clone> IteratorSpec for Repeat<T> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i> 0 <= i && i < visited.len() ==> T::clone.postcondition((&self@,), visited[i])
+            forall<i> 0 <= i && i < visited.len() ==> forall<mode: Mode> T::clone.postcondition((&self@,), visited[i], mode)
         }
     }
 

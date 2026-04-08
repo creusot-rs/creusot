@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*, std::iter::ExactSizeIteratorSpec};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::iter::Cloned;
 
 pub trait ClonedExt<I> {
@@ -49,7 +49,7 @@ impl<'a, I: IteratorSpec<Item = &'a T>, T: Clone + 'a> IteratorSpec for Cloned<I
             exists<s: Seq<&'a T>>
                    self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
-                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition((s[i],), visited[i])
+                && forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> T::clone.postcondition((s[i],), visited[i], mode)
         }
     }
 
@@ -66,7 +66,7 @@ impl<'a, I: IteratorSpec<Item = &'a T>, T: Clone + 'a> IteratorSpec for Cloned<I
 
 extern_spec! {
     impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
-        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        #[ensures(|result, mode| I::size_hint.postcondition((&self.iter(),), result, mode))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -75,7 +75,7 @@ impl<'a, I: ExactSizeIteratorSpec<Item = &'a T>, T: Clone + 'a> ExactSizeIterato
     for Cloned<I>
 {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)

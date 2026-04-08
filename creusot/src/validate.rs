@@ -38,7 +38,7 @@ use crate::{
     },
 };
 
-fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
+pub(crate) fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     let attrs = tcx.hir_attrs(id);
     attrs
         .iter()

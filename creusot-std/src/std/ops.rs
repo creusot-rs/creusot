@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::prelude::*;
 #[cfg(creusot)]
 use core::convert::Infallible;
@@ -16,10 +18,10 @@ pub trait FnOnceExt<Args: Tuple> {
     type Output;
 
     #[logic(prophetic)]
-    fn precondition(self, a: Args) -> bool;
+    fn precondition(self, a: Args, mode: Mode) -> bool;
 
     #[logic(prophetic)]
-    fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
+    fn postcondition_once(self, a: Args, res: Self::Output, mode: Mode) -> bool;
 }
 
 #[cfg(not(feature = "nightly"))]
@@ -32,18 +34,18 @@ pub trait FnOnceExt<Args> {
 #[cfg(feature = "nightly")]
 pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     #[logic(prophetic)]
-    fn postcondition_mut(self, _: Args, _: Self, _: Self::Output) -> bool;
+    fn postcondition_mut(self, _: Args, _: Self, _: Self::Output, _: Mode) -> bool;
 
     #[logic(prophetic)]
     fn hist_inv(self, _: Self) -> bool;
 
     #[logic(law)]
-    #[requires(self.postcondition_mut(args, res_state, res))]
+    #[requires(self.postcondition_mut(args, res_state, res, mode))]
     #[ensures(
-        #[trigger(self.postcondition_mut(args, res_state, res))]
+        #[trigger(self.postcondition_mut(args, res_state, res, mode))]
         #[trigger(self.hist_inv(res_state))]
         self.hist_inv(res_state))]
-    fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output);
+    fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output, mode: Mode);
 
     #[logic(law)]
     #[ensures(#[trigger(self.hist_inv(self))] self.hist_inv(self))]
@@ -60,10 +62,10 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
     fn hist_inv_trans(self, b: Self, c: Self);
 
     #[logic(law)]
-    #[ensures(#[trigger(self.postcondition_once(args, res))]
-        self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
-    fn fn_mut_once(self, args: Args, res: Self::Output);
+    #[ensures(#[trigger(self.postcondition_once(args, res, mode))]
+        self.postcondition_once(args, res, mode) ==
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res, mode) && resolve(res_state))]
+    fn fn_mut_once(self, args: Args, res: Self::Output, mode: Mode);
 }
 
 #[cfg(not(feature = "nightly"))]
@@ -74,17 +76,17 @@ pub trait FnMutExt<Args>: FnOnceExt<Args> {}
 #[cfg(feature = "nightly")]
 pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     #[logic(prophetic)]
-    fn postcondition(self, _: Args, _: Self::Output) -> bool;
+    fn postcondition(self, _: Args, _: Self::Output, _: Mode) -> bool;
 
     #[logic(law)]
-    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res))]
-        self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
-    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
+    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res, mode))]
+        self.postcondition_mut(args, res_state, res, mode) == (self.postcondition(args, res, mode) && self == res_state))]
+    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output, mode: Mode);
 
     #[logic(law)]
-    #[ensures(#[trigger(self.postcondition_once(args, res))]
-        self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
-    fn fn_once(self, args: Args, res: Self::Output);
+    #[ensures(#[trigger(self.postcondition_once(args, res, mode))]
+        self.postcondition_once(args, res, mode) == (self.postcondition(args, res, mode) && resolve(self)))]
+    fn fn_once(self, args: Args, res: Self::Output, mode: Mode);
 
     #[logic(law)]
     #[ensures(#[trigger(self.hist_inv(res_state))] self.hist_inv(res_state) == (self == res_state))]
@@ -105,14 +107,14 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("precondition")]
-    fn precondition(self, args: Args) -> bool {
+    fn precondition(self, args: Args, mode: Mode) -> bool {
         dead
     }
 
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_once")]
-    fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
+    fn postcondition_once(self, args: Args, result: Self::Output, mode: Mode) -> bool {
         dead
     }
 }
@@ -124,7 +126,13 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_mut")]
-    fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
+    fn postcondition_mut(
+        self,
+        args: Args,
+        result_state: Self,
+        result: Self::Output,
+        mode: Mode,
+    ) -> bool {
         dead
     }
 
@@ -137,12 +145,19 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
     #[trusted]
     #[logic(law)]
-    #[requires(self.postcondition_mut(args, res_state, res))]
+    #[requires(self.postcondition_mut(args, res_state, res, mode))]
     #[ensures(
-        #[trigger(self.postcondition_mut(args, res_state, res))]
+        #[trigger(self.postcondition_mut(args, res_state, res, mode))]
         #[trigger(self.hist_inv(res_state))]
         self.hist_inv(res_state))]
-    fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
+    fn postcondition_mut_hist_inv(
+        self,
+        args: Args,
+        res_state: Self,
+        res: Self::Output,
+        mode: Mode,
+    ) {
+    }
 
     #[trusted]
     #[logic(law)]
@@ -162,10 +177,10 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 
     #[logic(law)]
     #[trusted]
-    #[ensures(#[trigger(self.postcondition_once(args, res))]
-        self.postcondition_once(args, res) ==
-              exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
-    fn fn_mut_once(self, args: Args, res: Self::Output) {}
+    #[ensures(#[trigger(self.postcondition_once(args, res, mode))]
+        self.postcondition_once(args, res, mode) ==
+              exists<res_state: Self> self.postcondition_mut(args, res_state, res, mode) && resolve(res_state))]
+    fn fn_mut_once(self, args: Args, res: Self::Output, mode: Mode) {}
 }
 
 #[cfg(feature = "nightly")]
@@ -175,21 +190,21 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition")]
-    fn postcondition(self, args: Args, result: Self::Output) -> bool {
+    fn postcondition(self, args: Args, result: Self::Output, mode: Mode) -> bool {
         dead
     }
 
     #[logic(law)]
     #[trusted]
-    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res))]
-        self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
-    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
+    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res, mode))]
+        self.postcondition_mut(args, res_state, res, mode) == (self.postcondition(args, res, mode) && self == res_state))]
+    fn fn_mut(self, args: Args, res_state: Self, res: Self::Output, mode: Mode) {}
 
     #[logic(law)]
     #[trusted]
-    #[ensures(#[trigger(self.postcondition_once(args, res))]
-        self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
-    fn fn_once(self, args: Args, res: Self::Output) {}
+    #[ensures(#[trigger(self.postcondition_once(args, res, mode))]
+        self.postcondition_once(args, res, mode) == (self.postcondition(args, res, mode) && resolve(self)))]
+    fn fn_once(self, args: Args, res: Self::Output, mode: Mode) {}
 
     #[logic(law)]
     #[trusted]
@@ -201,20 +216,20 @@ extern_spec! {
     mod core {
         mod ops {
             trait FnOnce<Args: Tuple> {
-                #[requires(self.precondition(arg))]
-                #[ensures(self.postcondition_once(arg, result))]
+                #[requires(|mode| self.precondition(arg, mode))]
+                #[ensures(|result, mode| self.postcondition_once(arg, result, mode))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
             trait FnMut<Args: Tuple> {
-                #[requires((*self).precondition(arg))]
-                #[ensures((*self).postcondition_mut(arg, ^self, result))]
+                #[requires(|mode| (*self).precondition(arg, mode))]
+                #[ensures(|result, mode| (*self).postcondition_mut(arg, ^self, result, mode))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
             trait Fn<Args: Tuple> {
-                #[requires((*self).precondition(arg))]
-                #[ensures((*self).postcondition(arg, result))]
+                #[requires(|mode| (*self).precondition(arg, mode))]
+                #[ensures(|result, mode| (*self).postcondition(arg, result, mode))]
                 fn call(&self, arg: Args) -> Self::Output;
             }
 
@@ -725,8 +740,14 @@ extern_spec! {
     }
 
     impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
-        #[ensures(match (result, residual) {
-            (Err(result), Err(residual)) => F::from.postcondition((residual,), result),
+        #[requires(|mode|
+            match residual {
+                Err(e) => F::from.precondition((e,), mode),
+                Ok(_) => false,
+            }
+        )]
+        #[ensures(|result, mode| match (result, residual) {
+            (Err(result), Err(e)) => F::from.postcondition((e,), result, mode),
             _ => false,
         })]
         fn from_residual(residual: Result<Infallible, E>) -> Self {
@@ -740,7 +761,7 @@ extern_spec! {
 // Specification stub for `residual_into_try_type`, used by the `try` desugarization.
 #[cfg(creusot)]
 #[allow(dead_code)]
-#[ensures(FromResidual::from_residual.postcondition((r,), result))]
+#[ensures(|result, mode| FromResidual::from_residual.postcondition((r,), result, mode))]
 #[intrinsic("residual_into_try_type")]
 #[creusot::extern_spec]
 fn residual_into_try_type<R: Residual<O>, O>(r: R) -> <R as Residual<O>>::TryType {

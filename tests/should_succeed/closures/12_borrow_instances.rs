@@ -2,12 +2,12 @@ extern crate creusot_std;
 use creusot_std::{prelude::*, std::ops::*};
 
 #[logic(open)]
-#[ensures(FnExt::postcondition(x, n, r) == FnExt::postcondition(*x, n, r))]
-#[ensures(forall<xx: &F> FnMutExt::postcondition_mut(x, n, xx, r) == (FnExt::postcondition(*x, n, r) && x == xx))]
-#[ensures(FnOnceExt::postcondition_once(x, n, r) == FnExt::postcondition(*x, n, r))]
+#[ensures(|_, mode| FnExt::postcondition(x, n, r, mode) == FnExt::postcondition(*x, n, r, mode))]
+#[ensures(|_, mode| forall<xx: &F> FnMutExt::postcondition_mut(x, n, xx, r, mode) == (FnExt::postcondition(*x, n, r, mode) && x == xx))]
+#[ensures(|_, mode| FnOnceExt::postcondition_once(x, n, r, mode) == FnExt::postcondition(*x, n, r, mode))]
 pub fn test1<F: Fn(u32) -> bool>(x: &F, n: (u32,), r: bool) {}
 
 #[logic(open)]
-#[ensures(forall<xx: &mut F> FnMutExt::postcondition_mut(x, n, xx, r) == (FnMutExt::postcondition_mut(*x, n, *xx, r) && ^x == ^xx))]
-#[ensures(FnOnceExt::postcondition_once(x, n, r) == FnMutExt::postcondition_mut(*x, n, ^x, r))]
+#[ensures(|_, mode| forall<xx: &mut F> FnMutExt::postcondition_mut(x, n, xx, r, mode) == (FnMutExt::postcondition_mut(*x, n, *xx, r, mode) && ^x == ^xx))]
+#[ensures(|_, mode| FnOnceExt::postcondition_once(x, n, r, mode) == FnMutExt::postcondition_mut(*x, n, ^x, r, mode))]
 pub fn test2<F: FnMut(u32) -> bool>(x: &mut F, n: (u32,), r: bool) {}

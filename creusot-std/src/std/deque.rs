@@ -1,7 +1,7 @@
 #[cfg(feature = "nightly")]
 use crate::logic::ops::IndexLogic;
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 
 #[cfg(feature = "nightly")]
@@ -201,7 +201,7 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -237,7 +237,7 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

@@ -1,7 +1,7 @@
 #[cfg(feature = "nightly")]
 use crate::std::iter::ExactSizeIteratorSpec;
 #[cfg(creusot)]
-use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
+use crate::{invariant::inv, mode::Mode, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
@@ -171,10 +171,10 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> Extend<T> for Vec<T, A> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
+        #[requires(|mode| I::into_iter.precondition((iter,), mode))]
+        #[ensures(|_, mode| exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
             inv(start_) && inv(done) && inv(prod) &&
-            I::into_iter.postcondition((iter,), start_) &&
+            I::into_iter.postcondition((iter,), start_, mode) &&
             done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
         )]
         fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
@@ -239,15 +239,15 @@ extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
         #[check(terminates)]
         #[ensures(self@.len() == result@.len())]
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i], mode))]
         fn clone(&self) -> Vec<T, A>;
     }
 
     impl<T> FromIterator<T> for Vec<T> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition((iter,), mode))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter, mode) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done))]
         fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
@@ -317,7 +317,7 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -354,7 +354,7 @@ impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

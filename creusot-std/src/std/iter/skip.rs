@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::{logic::such_that, resolve::structural_resolve};
+use crate::{logic::such_that, mode::Mode, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Skip;
 
@@ -96,8 +96,8 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Skip<I> {
-        #[ensures(exists<r>
-            I::size_hint.postcondition((&self.iter(),), r) &&
+        #[ensures(|result, mode| exists<r>
+            I::size_hint.postcondition((&self.iter(),), r, mode) &&
             (r.0@ <= self.n()@ ==> result.0 == 0usize) &&
             (r.0@ >= self.n()@ ==> result.0 == r.0 - self.n()) &&
             match r.1 {
@@ -113,7 +113,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Skip<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

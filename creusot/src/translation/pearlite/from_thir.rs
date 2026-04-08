@@ -47,7 +47,7 @@ pub(crate) fn from_thir<'tcx>(
     let typing_env = ctx.typing_env(did);
     let mut lower = ThirTerm { ctx, item_id: id, thir, typing_env, renaming };
 
-    let to_pattern = |(ident, param): (Ident, &thir::Param<'tcx>)| -> Result<_, _> {
+    let mut to_pattern = |(ident, param): (Ident, &thir::Param<'tcx>)| -> Result<_, _> {
         let Some(ref pat) = param.pat else {
             return Ok((ident, Pattern::binder(ident, param.ty)));
         };
@@ -68,17 +68,19 @@ pub(crate) fn from_thir<'tcx>(
             let parent = ctx.parent(did);
             let (parent_thir, _) = ctx.thir_body(parent.expect_local());
             let parent_thir = parent_thir.borrow();
-            assert!(inputs.len() == parent_thir.params.len());
+            assert_eq!(inputs.len(), parent_thir.params.len());
+            // Note: users write `|result, mode|` in ensures but the desugaring puts `mode` before `result`
+            // so that we can reuse the same `zip` for both preconditions as well (discarding the `result`).
             inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
                 .zip(&parent_thir.params)
-                .chain(std::iter::once(name::result()).zip(thir.params.iter().skip(1)))
+                .chain([name::mode(), name::result()].into_iter().zip(thir.params.iter().skip(1)))
                 .map(to_pattern)
                 .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
         }
         LogicClosure(inputs) => {
-            assert!(inputs.len() == thir.params.len());
+            assert_eq!(inputs.len(), thir.params.len());
             inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
@@ -107,7 +109,15 @@ pub(crate) fn from_thir<'tcx>(
                 .map(to_pattern)
                 .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
         }
-        Other => [].into(),
+        InProgram => {
+            assert!(thir.params.len() <= 2);
+            thir.params
+                .get(thir::ParamId::from_u32(1))
+                .into_iter()
+                .map(|p| to_pattern((name::mode(), p)))
+                .collect::<Result<Box<[_]>, ErrorGuaranteed>>()?
+        }
+        InLogic => [].into(),
     };
 
     let (triggers, body) = lower.body_term(expr)?;
@@ -600,7 +610,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Ok(Term { ty, span, kind })
                 } else {
                     assert!(is_assertion(self.ctx.tcx, closure_id.into()));
-                    let cond = from_thir(self.ctx, closure_id, self.renaming, TermSort::Other)?
+                    let cond = from_thir(self.ctx, closure_id, self.renaming, TermSort::InLogic)?
                         .no_triggers();
                     Ok(Term { ty, span, kind: TermKind::Assert { cond } })
                 }

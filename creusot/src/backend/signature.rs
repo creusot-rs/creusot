@@ -100,11 +100,14 @@ pub(crate) fn lower_program_sig<'tcx>(
         .inputs
         .iter()
         .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty)))
-        .chain([Param::Cont(
-            name::return_(),
-            [].into(),
-            [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
-        )])
+        .chain([
+            Param::Term(name::mode(), super::ty::mode(names)),
+            Param::Cont(
+                name::return_(),
+                [].into(),
+                [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
+            ),
+        ])
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);

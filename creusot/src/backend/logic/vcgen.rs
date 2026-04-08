@@ -277,7 +277,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             .into_iter()
                             .enumerate()
                             .map(|(idx, fld)| {
-                                (Name::local(self.names.tuple_field(args, idx.into())), fld)
+                                (self.names.tuple_field(args, idx.into()), fld)
                             })
                             .collect(),
                     }),
@@ -346,7 +346,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                self.build_wp(lhs, &|lhs| k(lhs.field(Name::local(field))))
+                self.build_wp(lhs, &|lhs| k(lhs.field(field.clone())))
             }
             // VC(&mut (*A).f, Q) = VC(A, |a| Q(&mut (*a).f))
             TermKind::Reborrow { inner, projections } => {

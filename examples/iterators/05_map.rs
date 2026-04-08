@@ -1,6 +1,6 @@
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-use creusot_std::{invariant::Invariant, logic::such_that, prelude::*};
+use creusot_std::{invariant::Invariant, logic::such_that, mode::Mode, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -69,7 +69,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
-                proof_assert! { self.func.precondition((v,)) };
+                proof_assert!(|mode| self.func.precondition((v,), mode));
                 snapshot! { Self::produces_one_invariant };
                 Some((self.func)(v))
             }
@@ -77,7 +77,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         }
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(|result, mode| I::size_hint.postcondition((&self.iter,), result, mode))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -91,12 +91,12 @@ impl<I: ExactSizeIterator, B, F: FnMut(I::Item) -> B> ExactSizeIterator for Map<
         self.iter.size_hint_exact(r)
     }
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(|result, mode| Self::size_hint.postcondition((self,), (result, Some(result)), mode))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+    #[ensures(|result, mode| exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()
@@ -110,7 +110,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
             forall<e: I::Item, i: I>
                 #[trigger(iter.produces(Seq::singleton(e), i))]
                 inv(e) && iter.produces(Seq::singleton(e), i) ==>
-                func.precondition((e,))
+                forall<mode: Mode> func.precondition((e,), mode)
         }
     }
 

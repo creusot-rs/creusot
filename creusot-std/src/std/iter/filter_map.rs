@@ -1,6 +1,6 @@
 use crate::prelude::*;
 #[cfg(creusot)]
-use crate::{logic::Mapping, std::ops::*};
+use crate::{logic::Mapping, mode::Mode, std::ops::*};
 use core::iter::FilterMap;
 
 pub trait FilterMapExt<I, F> {
@@ -46,7 +46,7 @@ pub fn private_invariant<B, I: Iterator, F: FnMut(I::Item) -> Option<B>>(
 /// In a future release this restriction may be lifted or weakened
 #[logic(open, prophetic)]
 pub fn no_precondition<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
-    pearlite! { forall<i: A> inv(i) ==> f.precondition((i,)) }
+    pearlite! { forall<mode: Mode, i: A> !mode.terminates() && inv(i) ==> f.precondition((i,), mode) }
 }
 
 /// Asserts that the captures of `f` are used immutably
@@ -59,7 +59,8 @@ pub fn immutable<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[logic(open, prophetic)]
 pub fn precise<A, B, F: FnMut(A) -> Option<B>>(f1: F) -> bool {
-    pearlite! { forall<f2: F, i> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b))) && f1.postcondition_mut((i,), f2, None)) }
+    pearlite! { forall<mode: Mode, f2: F, i> !mode.terminates()
+    ==> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b), mode)) && f1.postcondition_mut((i,), f2, None, mode)) }
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for FilterMap<I, F> {
@@ -67,7 +68,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for Filter
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
-                forall<i> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut((s[i],), (^self).func(), None))
+                forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> (*self).func().postcondition_mut((s[i],), (^self).func(), None, mode))
             && (*self).func() == (^self).func()
         }
     }
@@ -85,10 +86,10 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for Filter
                 // `f` is a monotone mapping
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 // `f` points to elements produced in `s` (by the underlying `iter`) for which the predicate `self.func()` returned `Some`.
-                (forall<i> 0 <= i && i < visited.len() ==> self.func().postcondition_mut((s[f.get(i)],), self.func(), Some(visited[i]))) &&
+                (forall<i> 0 <= i && i < visited.len() ==> forall<mode: Mode> self.func().postcondition_mut((s[f.get(i)],), self.func(), Some(visited[i]), mode)) &&
                 // For other elements not in the image of `f`, the predicate `self.func()` returned `None`.
                 (forall<j> 0 <= j && j < s.len()
-                    ==> (!exists<i> 0 <= i && i < visited.len() && f.get(i) == j) == self.func().postcondition_mut((s[j],), self.func(), None))
+                    ==> forall<mode: Mode> (!exists<i> 0 <= i && i < visited.len() && f.get(i) == j) == self.func().postcondition_mut((s[j],), self.func(), None, mode))
         }
     }
 

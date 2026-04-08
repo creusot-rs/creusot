@@ -1,6 +1,6 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, prelude::*, std::iter::ExactSizeIteratorSpec};
+#[cfg(creusot)]
+use crate::{mode::Mode, resolve::structural_resolve};
 use core::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -112,7 +112,7 @@ extern_spec! {
 
 impl<T, const N: usize> ExactSizeIteratorSpec for IntoIter<T, N> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -148,7 +148,7 @@ impl<T, const N: usize> DoubleEndedIteratorSpec for IntoIter<T, N> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -168,8 +168,8 @@ extern_spec! {
     }
 
     impl<T: Clone, const N: usize> Clone for [T; N] {
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i], mode))]
         fn clone(&self) -> [T; N];
     }
 
