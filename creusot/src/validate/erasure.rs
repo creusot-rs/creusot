@@ -1030,14 +1030,19 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             ValueTypeAscription { source, .. } => self.a_normal_form_expr(*source, stmts)?.0,
             &Assign { lhs, rhs } => {
-                let lspan = self.thir[lhs].span;
+                let l = &self.thir[lhs];
+                let lspan = l.span;
+                let is_ghost = is_ghost_or_snap(self.tcx, l.ty);
                 let lhs = self.a_normal_form_place(lhs, stmts)?;
                 let rhs = self.a_normal_form_expr(rhs, stmts)?;
-                stmts.push(AnfStmt {
-                    pattern: AnfPattern::Wild,
-                    rhs: AnfOp::assign(self::AssignOp::Plain, (lhs, lspan), rhs),
-                    span: expr.span,
-                });
+                if !is_ghost {
+                    // erase unit assignments
+                    stmts.push(AnfStmt {
+                        pattern: AnfPattern::Wild,
+                        rhs: AnfOp::assign(self::AssignOp::Plain, (lhs, lspan), rhs),
+                        span: expr.span,
+                    });
+                }
                 AnfValue::Unit
             }
             &AssignOp { op, lhs, rhs } => {
