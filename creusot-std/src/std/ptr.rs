@@ -222,6 +222,7 @@ pub trait SizedPointerExt<T>: PointerExt<T> {
 
     #[logic(law)]
     #[ensures(self.offset_logic(offset).sub_logic(self) == offset)]
+    #[ensures(self.sub_logic(self.offset_logic(offset)) == - offset)]
     fn sub_offset_logic(self, offset: Int);
 }
 
@@ -260,6 +261,7 @@ impl<T> SizedPointerExt<T> for *const T {
     #[trusted]
     #[logic(law)]
     #[ensures(self.offset_logic(offset).sub_logic(self) == offset)]
+    #[ensures(self.sub_logic(self.offset_logic(offset)) == - offset)]
     fn sub_offset_logic(self, offset: Int) {}
 }
 
@@ -292,6 +294,7 @@ impl<T> SizedPointerExt<T> for *mut T {
 
     #[logic(law)]
     #[ensures(self.offset_logic(offset).sub_logic(self) == offset)]
+    #[ensures(self.sub_logic(self.offset_logic(offset)) == - offset)]
     fn sub_offset_logic(self, offset: Int) {}
 }
 
