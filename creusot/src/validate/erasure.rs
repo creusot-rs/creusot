@@ -479,6 +479,8 @@ enum AnfValue<'tcx> {
     Thin(Box<AnfValue<'tcx>>),
     /// Other casts
     Cast(ty::Ty<'tcx>, ty::Ty<'tcx>, Box<AnfValue<'tcx>>),
+    /// Pointer unsizing (e.g., `&[T;N]` to `&[T]`)
+    Unsize(Box<AnfValue<'tcx>>),
     /// Labels for `break` are represented as values too
     Label(
         #[type_visitable(ignore)]
@@ -1056,6 +1058,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 });
                 AnfValue::Unit
             }
+            &PointerCoercion {
+                cast: ty::adjustment::PointerCoercion::Unsize,
+                source,
+                is_from_as_cast: _,
+            } => {
+                let val = self.a_normal_form_expr(source, stmts)?;
+                AnfValue::Unsize(val.0.into())
+            }
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1432,6 +1442,7 @@ impl<'tcx> EqualityChecker<'tcx> {
             (Cast(from1, to1, value1), Cast(from2, to2, value2)) => {
                 from1 == from2 && to1 == to2 && self.equate_value(value1, value2)
             }
+            (Unsize(v1), Unsize(v2)) => self.equate_value(v1, v2),
             (Thin(v1), Thin(v2)) => self.equate_value(v1, v2),
             (Label(l1), Label(l2)) => {
                 let Some(l1_) = self.equate_label.get(l1) else { return false };
@@ -1875,6 +1886,11 @@ impl<'tcx> PrintAnf<'tcx> {
             ),
             Cast(from, to, value) => {
                 write!(f, "Cast({:?}, {:?}, ", from, to)?;
+                self.print_value(value, f)?;
+                write!(f, ")")
+            }
+            Unsize(value) => {
+                write!(f, "Unsize(")?;
                 self.print_value(value, f)?;
                 write!(f, ")")
             }
