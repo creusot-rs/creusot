@@ -4,7 +4,7 @@
 //! track of the logical value.
 
 use crate::{
-    ghost::perm::{Container, Perm},
+    ghost::perm::{Container, Perm, SendPerm, SyncPerm},
     prelude::*,
 };
 use core::cell::UnsafeCell;
@@ -28,18 +28,13 @@ pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
 impl<T: Sized> Container for PermCell<T> {
     type Value = T;
-
-    #[logic(open, inline)]
-    fn is_disjoint(&self, _: &T, other: &Self, _: &T) -> bool {
-        self != other
-    }
 }
 
 unsafe impl<T> Send for PermCell<T> {}
 unsafe impl<T> Sync for PermCell<T> {}
 
-unsafe impl<T: Send> Send for Perm<PermCell<T>> {}
-unsafe impl<T: Sync> Sync for Perm<PermCell<T>> {}
+impl<T> SendPerm for PermCell<T> {}
+impl<T> SyncPerm for PermCell<T> {}
 
 impl<T: Sized> Invariant for Perm<PermCell<T>> {
     #[logic(open, prophetic, inline)]
