@@ -111,7 +111,7 @@ macro_rules! impl_atomic {
             #[requires(Store::ORDERING == Ordering::Release::ORDERING || Store::ORDERING == Ordering::Relaxed::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
             #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
