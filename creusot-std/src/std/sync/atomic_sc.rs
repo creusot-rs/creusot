@@ -67,7 +67,7 @@ macro_rules! impl_atomic {
             #[doc = "The store is always sequentially consistent."]
             #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
             #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
@@ -97,7 +97,7 @@ macro_rules! impl_atomic_int {
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(forall<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
             #[ensures(exists<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&

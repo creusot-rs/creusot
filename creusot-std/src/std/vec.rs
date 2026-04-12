@@ -226,6 +226,7 @@ extern_spec! {
     impl<'a, T, A: Allocator> IntoIterator for &'a mut Vec<T, A> {
         #[check(ghost)]
         #[ensures(self@ == result@@)]
+        #[ensures((^self)@ == (^result@)@)]
         fn into_iter(self) -> core::slice::IterMut<'a, T>;
     }
 

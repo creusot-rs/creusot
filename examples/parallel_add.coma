@@ -234,7 +234,10 @@ module M_parallel_add
   function view_Fragment_Option_Excl_bool (self: t_Fragment_Option_Excl_bool) : t_Option_Excl_bool =
     frag_AuthViewRel_Option_Excl_bool (view_Resource_View_AuthViewRel_Option_Excl_bool self.f0'2)
   
-  function id_Option_Excl_bool'0 (self: t_Fragment_Option_Excl_bool) : t_Id
+  function id_View_AuthViewRel_Option_Excl_bool (self: t_Resource_View_AuthViewRel_Option_Excl_bool) : t_Id
+  
+  function id_Option_Excl_bool'0 (self: t_Fragment_Option_Excl_bool) : t_Id =
+    id_View_AuthViewRel_Option_Excl_bool self.f0'2
   
   let rec new_unit_Option_Excl_bool (id: t_Id) (return (x: t_Fragment_Option_Excl_bool)) = any
     [ return (result: t_Fragment_Option_Excl_bool) ->
@@ -482,6 +485,14 @@ module M_parallel_add
   
   function val_load_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : Int32.t
   
+  let rec shoot_load_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) (own'0: t_Perm_AtomicI32)
+    (return (x: ())) =
+    {[@stop_split] [@expl:shoot_load_AtomicI32 requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicI32 self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicI32'0 self = ward_AtomicI32 own'0)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicI32 self = val_AtomicI32 own'0}
+      (! return {result}) ]
+  
   function val_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : Int32.t
   
   predicate hist_inv_AtomicI32 [@inline:trivial] (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) (other: t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
@@ -570,23 +581,25 @@ module M_parallel_add
       | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'1 = Some { f0'0 = true }; f1'1 = Some { f0'0 = true } }}
           (fun (_x: ()) -> [ &_3 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_Fragment_Option_Excl_bool _6}- s6
-      | s6 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
+      | s6 = [ &_13 <- inv.current.own ] s7
+      | s7 = shoot_load_AtomicI32 {self.current.c1'2.current} {_13} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s8 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_13 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s7)
-      | s7 = MutBorrow.borrow_mut <t_Committer_AtomicI32_i32_SeqCst_SeqCst> {self.current.c1'2.current}
+            [ &_17 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s9)
+      | s9 = MutBorrow.borrow_mut <t_Committer_AtomicI32_i32_SeqCst_SeqCst> {self.current.c1'2.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) ->
-            [ &_11 <- _bor ]
+            [ &_15 <- _bor ]
             [ &self <- { self with current = { self.current with c1'2 = { self.current.c1'2 with current = _bor.final } } } ]
-            s8)
-      | s8 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_13.current} {MutBorrow.get_id _13}
+            s10)
+      | s10 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s9)
-      | s9 = shoot_store_AtomicI32 {_11} {_12} (fun (_x: ()) -> [ &_10 <- _x ] s10)
-      | s10 = -{resolve_refmut_Box_Perm_AtomicI32_Global _13}- s11
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
-      | s12 = -{resolve_refmut_ParallelAddAtomicInv inv}- s13
-      | s13 = -{resolve_refmut_closure0 self}- s14
-      | s14 = return {_ret} ] ]
+            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s11)
+      | s11 = shoot_store_AtomicI32 {_15} {_16} (fun (_x: ()) -> [ &_14 <- _x ] s12)
+      | s12 = -{resolve_refmut_Box_Perm_AtomicI32_Global _17}- s13
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
+      | s14 = -{resolve_refmut_ParallelAddAtomicInv inv}- s15
+      | s15 = -{resolve_refmut_closure0 self}- s16
+      | s16 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'2 = self
     | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
@@ -596,9 +609,11 @@ module M_parallel_add
     | & _6: MutBorrow.t (MutBorrow.t t_Fragment_Option_Excl_bool) = Any.any_l ()
     | & _7: MutBorrow.t (MutBorrow.t t_Fragment_Option_Excl_bool) = Any.any_l ()
     | & _10: () = Any.any_l ()
-    | & _11: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
-    | & _12: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
-    | & _13: MutBorrow.t t_Perm_AtomicI32 = Any.any_l () ]
+    | & _13: t_Perm_AtomicI32 = Any.any_l ()
+    | & _14: () = Any.any_l ()
+    | & _15: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
+    | & _16: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
+    | & _17: MutBorrow.t t_Perm_AtomicI32 = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       return {result} ]
   
@@ -767,8 +782,8 @@ module M_parallel_add
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
       -> val_store_AtomicI32 c.current = Int32.add val' (val_load_AtomicI32 c.current)
-      -> precondition_FnGhostWrapper_closure0'0 f c /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()
-      -> shot_store_AtomicI32 c.final)}
+      -> precondition_FnGhostWrapper_closure0'0 f c
+      /\ (postcondition_once_FnGhostWrapper_closure0'0 f c () -> shot_store_AtomicI32 c.final))}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32 c.current
@@ -917,23 +932,25 @@ module M_parallel_add
       | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'1 = Some { f0'0 = true }; f1'1 = Some { f0'0 = true } }}
           (fun (_x: ()) -> [ &_3 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_Fragment_Option_Excl_bool _6}- s6
-      | s6 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
+      | s6 = [ &_13 <- inv.current.own ] s7
+      | s7 = shoot_load_AtomicI32 {self.current.c1'5.current} {_13} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s8 = MutBorrow.borrow_final <t_Perm_AtomicI32> {inv.current.own} {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_13 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s7)
-      | s7 = MutBorrow.borrow_mut <t_Committer_AtomicI32_i32_SeqCst_SeqCst> {self.current.c1'5.current}
+            [ &_17 <- _bor ] [ &inv <- { inv with current = { inv.current with own = _bor.final } } ] s9)
+      | s9 = MutBorrow.borrow_mut <t_Committer_AtomicI32_i32_SeqCst_SeqCst> {self.current.c1'5.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) ->
-            [ &_11 <- _bor ]
+            [ &_15 <- _bor ]
             [ &self <- { self with current = { self.current with c1'5 = { self.current.c1'5 with current = _bor.final } } } ]
-            s8)
-      | s8 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_13.current} {MutBorrow.get_id _13}
+            s10)
+      | s10 = MutBorrow.borrow_final <t_Perm_AtomicI32> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
-            [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s9)
-      | s9 = shoot_store_AtomicI32 {_11} {_12} (fun (_x: ()) -> [ &_10 <- _x ] s10)
-      | s10 = -{resolve_refmut_Box_Perm_AtomicI32_Global _13}- s11
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
-      | s12 = -{resolve_refmut_ParallelAddAtomicInv inv}- s13
-      | s13 = -{resolve_refmut_closure0'0 self}- s14
-      | s14 = return {_ret} ] ]
+            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s11)
+      | s11 = shoot_store_AtomicI32 {_15} {_16} (fun (_x: ()) -> [ &_14 <- _x ] s12)
+      | s12 = -{resolve_refmut_Box_Perm_AtomicI32_Global _17}- s13
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
+      | s14 = -{resolve_refmut_ParallelAddAtomicInv inv}- s15
+      | s15 = -{resolve_refmut_closure0'0 self}- s16
+      | s16 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'4 = self
     | & inv: MutBorrow.t t_ParallelAddAtomicInv = inv
@@ -943,9 +960,11 @@ module M_parallel_add
     | & _6: MutBorrow.t (MutBorrow.t t_Fragment_Option_Excl_bool) = Any.any_l ()
     | & _7: MutBorrow.t (MutBorrow.t t_Fragment_Option_Excl_bool) = Any.any_l ()
     | & _10: () = Any.any_l ()
-    | & _11: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
-    | & _12: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
-    | & _13: MutBorrow.t t_Perm_AtomicI32 = Any.any_l () ]
+    | & _13: t_Perm_AtomicI32 = Any.any_l ()
+    | & _14: () = Any.any_l ()
+    | & _15: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
+    | & _16: MutBorrow.t t_Perm_AtomicI32 = Any.any_l ()
+    | & _17: MutBorrow.t t_Perm_AtomicI32 = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0'0 self.current self.final}
       return {result} ]
   
@@ -1101,8 +1120,8 @@ module M_parallel_add
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32 c.current
       -> ward_AtomicI32'0 c.current = self
       -> val_store_AtomicI32 c.current = Int32.add val' (val_load_AtomicI32 c.current)
-      -> precondition_FnGhostWrapper_closure0'2 f c /\ postcondition_once_FnGhostWrapper_closure0'2 f c ()
-      -> shot_store_AtomicI32 c.final)}
+      -> precondition_FnGhostWrapper_closure0'2 f c
+      /\ (postcondition_once_FnGhostWrapper_closure0'2 f c () -> shot_store_AtomicI32 c.final))}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32 c.current

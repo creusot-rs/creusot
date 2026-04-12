@@ -158,7 +158,7 @@ impl<R: UnitRA> Authority<R> {
 
 impl<R: UnitRA> Fragment<R> {
     /// Id of the underlying [`Resource`].
-    #[logic]
+    #[logic(open)]
     pub fn id(self) -> Id {
         self.0.id()
     }

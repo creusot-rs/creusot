@@ -4,7 +4,7 @@ use ::std::thread::{self, JoinHandle, ScopedJoinHandle};
 /// Extension trait for [`JoinHandle`].
 pub trait JoinHandleExt<T> {
     /// Predicate that specifies the valid return results for the handle.
-    #[logic]
+    #[logic(prophetic)]
     fn valid_result(self, x: T) -> bool;
 
     /// This function is a wrapper `self.join().unwrap()`.
@@ -18,7 +18,7 @@ pub trait JoinHandleExt<T> {
 }
 
 impl<T> JoinHandleExt<T> for JoinHandle<T> {
-    #[logic(opaque)]
+    #[logic(opaque, prophetic)]
     fn valid_result(self, _x: T) -> bool {
         dead
     }
@@ -31,7 +31,7 @@ impl<T> JoinHandleExt<T> for JoinHandle<T> {
 }
 
 impl<T> JoinHandleExt<T> for ScopedJoinHandle<'_, T> {
-    #[logic(opaque)]
+    #[logic(opaque, prophetic)]
     fn valid_result(self, _x: T) -> bool {
         dead
     }
