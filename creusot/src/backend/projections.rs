@@ -216,7 +216,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                         Box::new([Param::Term(result, elt_ty1.clone())]),
                         Name::Global(names.in_pre(PreMod::Slice, "get")),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(Exp::var(ix))]),
-                        None,
+                        Some(span),
                     ));
                     Exp::var(result)
                 });
@@ -234,7 +234,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                             Arg::Term(Exp::var(ix)),
                             Arg::Term(rhs),
                         ]),
-                        None,
+                        Some(span),
                     ));
                     constructor(is, Exp::var(out))
                 });

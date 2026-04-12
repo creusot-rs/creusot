@@ -93,7 +93,7 @@ pub(crate) fn infer_invariant<'tcx>(
                 graph.neighbors_directed(k, Direction::Incoming).filter(|p| dates[p] > dates[&k])
             {
                 let mut prev_block = body.blocks.get_mut(&p).unwrap();
-                if let Terminator::Switch(_, branches) = &mut prev_block.terminator {
+                if let Terminator::Switch(_, _, branches) = &mut prev_block.terminator {
                     let new_block = BasicBlock::from(body.fresh);
                     body.fresh += 1;
                     for tgt in branches.targets_mut().filter(|tgt| **tgt == k) {

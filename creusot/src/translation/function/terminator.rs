@@ -259,7 +259,7 @@ fn make_switch<'tcx>(
     targets: &SwitchTargets,
     discr: fmir::Operand<'tcx>,
 ) -> Terminator<'tcx> {
-    match switch_ty.kind() {
+    let branches = match switch_ty.kind() {
         TyKind::Adt(def, substs) => {
             let d_to_var: HashMap<_, _> =
                 def.discriminants(ctx.tcx).map(|(idx, d)| (d.val, idx)).collect();
@@ -274,7 +274,7 @@ fn make_switch<'tcx>(
                 Some(targets.otherwise())
             };
 
-            Terminator::Switch(discr, Branches::Constructor(*def, substs, branches, default))
+            Branches::Constructor(*def, substs, branches, default)
         }
         TyKind::Bool => {
             let branches: (_, _) = targets
@@ -286,18 +286,17 @@ fn make_switch<'tcx>(
                 .collect_tuple()
                 .unwrap();
 
-            Terminator::Switch(discr, Branches::Bool(branches.0, branches.1))
+            Branches::Bool(branches.0, branches.1)
         }
         TyKind::Float(_) => {
             ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
         }
-        TyKind::Uint(_) => {
-            Terminator::Switch(discr, Branches::Uint(targets.iter().collect(), targets.otherwise()))
-        }
+        TyKind::Uint(_) => Branches::Uint(targets.iter().collect(), targets.otherwise()),
         TyKind::Int(_) => {
             let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
-            Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
+            Branches::Int(branches, targets.otherwise())
         }
         ty => ctx.crash_and_error(si.span, format!("match on {:?} is currently unsupported", ty)),
-    }
+    };
+    Terminator::Switch(discr, si.span, branches)
 }
