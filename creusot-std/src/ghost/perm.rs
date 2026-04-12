@@ -9,9 +9,14 @@ use core::marker::PhantomData;
 pub trait Container {
     type Value: ?Sized;
 
-    #[logic]
-    fn is_disjoint(&self, self_val: &Self::Value, other: &Self, other_val: &Self::Value) -> bool;
+    #[logic(open, inline)]
+    fn is_disjoint(&self, _self_val: &Self::Value, other: &Self, _other_val: &Self::Value) -> bool {
+        self != other
+    }
 }
+
+pub trait SendPerm: Container {}
+pub trait SyncPerm: Container {}
 
 /// Token that represents the ownership of the contents of a container object. The container is
 /// either an interrior mutable type (e.g., `Perm` or atomic types) or a raw pointer.
@@ -59,7 +64,14 @@ pub trait Container {
 /// Certain facts about the layout and alignment of pointers can be made available
 /// through the type invariant of [`crate::std::ptr::PtrLive`] by calling [`Perm::live`].
 #[opaque]
-pub struct Perm<C: ?Sized + Container>(NotObjective, #[allow(unused)] [PhantomData<C::Value>]);
+pub struct Perm<C: ?Sized + Container>(
+    NotObjective,
+    #[allow(unused)] *mut (),
+    #[allow(unused)] [PhantomData<C::Value>],
+);
+
+unsafe impl<C: ?Sized + SendPerm> Send for Perm<C> {}
+unsafe impl<C: ?Sized + SyncPerm> Sync for Perm<C> {}
 
 impl<C: ?Sized + Container> Perm<C> {
     /// Returns the underlying container that is managed by this permission.

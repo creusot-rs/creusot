@@ -2,7 +2,10 @@
 use crate::ghost::Objective;
 
 use crate::{
-    ghost::{Container, FnGhost, perm::Perm},
+    ghost::{
+        Container, FnGhost,
+        perm::{Perm, SendPerm, SyncPerm},
+    },
     logic::FMap,
     prelude::*,
     std::sync::{
@@ -45,8 +48,8 @@ macro_rules! impl_atomic {
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
-        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
+        impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
+        impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
 
         #[cfg(creusot)]
         #[trusted]
@@ -54,11 +57,6 @@ macro_rules! impl_atomic {
 
         impl $(< $T >)? Container for $atomic_type $(< $T >)? {
             type Value = FMap<Timestamp, ($type, SyncView)>;
-
-            #[logic(open, inline)]
-            fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
-                self != other
-            }
         }
 
         impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
