@@ -150,7 +150,7 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     let paths = creusot_paths();
     let cargo_toml = Path::new("Cargo.toml");
     if cargo_toml.exists() {
-        patch_dep(cargo_toml)?;
+        patch_dep(cargo_toml, args.creusot_std)?;
     } else {
         write(cargo_toml, &cargo_template(&name, args.creusot_std, args.no_std));
         if args.tests {
@@ -235,18 +235,19 @@ fn copy(src: impl AsRef<Path>, dst: impl AsRef<Path>) {
 /// [patch.crates-io]
 /// creusot-std = { path = "/path/to/creusot-std" }  # Only for dev versions
 /// ```
-fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
+fn patch_dep(cargo_toml_path: impl AsRef<Path>, creusot_std: Option<String>) -> Result<()> {
     let cargo_toml_path = cargo_toml_path.as_ref();
     let self_version = Version::parse(CREUSOT_STD_VERSION)?;
     let cargo_toml = std::fs::read_to_string(cargo_toml_path)?;
     let mut cargo_toml = cargo_toml.parse::<toml_edit::DocumentMut>()?;
+    let creusot_std = creusot_std.unwrap_or(creusot_std_path().display().to_string());
     if cargo_toml.contains_key("package") {
         implicit_table(&mut cargo_toml, "dependencies")["creusot-std"] =
             toml_edit::value(CREUSOT_STD_VERSION);
         if !self_version.pre.is_empty() {
             let patch = implicit_table(&mut cargo_toml, "patch");
             implicit_table(patch.as_table_mut().unwrap(), "crates-io")["creusot-std"]["path"] =
-                toml_edit::value(creusot_std_path().display().to_string());
+                toml_edit::value(creusot_std);
         }
     } else {
         eprintln!(
