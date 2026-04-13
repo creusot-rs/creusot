@@ -23,7 +23,17 @@
         inherit pins pkgs;
       }));
 
-      overlays = [rust-overlay.overlays.default];
+      overlays = [
+        rust-overlay.overlays.default
+        (super: self: {
+          ocamlPackages = self.ocamlPackages.overrideScope (
+            final: _: {
+              ocplib-simplex_0_4 = final.callPackage ./nix/pkgs/ocplib-simplex.nix {};
+            }
+          );
+          alt-ergo-free = self.callPackage ./nix/pkgs/alt-ergo-free.nix {};
+        })
+      ];
       pkgs = import nixpkgs {inherit overlays system;};
 
       pins = {
@@ -37,9 +47,9 @@
           sha256 = "sha256-nyf/d3d0y5WuH5fTz93HkCbziwN0WR7sAzas+Ipauwg=";
         };
 
-        alt-ergo = {
-          version = "2.6.2";
-          sha256 = "sha256-OeLJEop9HonzMuMaJxbzWfO54akl/oHxH6SnSbXSTYI=";
+        alt-ergo-free = {
+          version = "2.4.3";
+          sha256 = "sha256-ksVP9HH9pY+T6Es/wgC9pGd805AGw1e1vgfVlNGCXG8=";
         };
 
         cvc4 = {
@@ -106,10 +116,7 @@
         };
       in {
         why3Framework = let
-          licence = {
-            gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-            unfree = licence.gpl ++ (with lib.pkgs; [alt-ergo]);
-          };
+          solvers = with lib.pkgs; [alt-ergo-free cvc4 cvc5 why3 why3find z3];
 
           why3json = pkgs.writeTextFile {
             destination = "/why3find.json";
@@ -119,14 +126,14 @@
         in
           pkgs.symlinkJoin {
             name = "creusot-why3";
-            paths = licence.unfree ++ [why3json];
+            paths = solvers ++ [why3json];
             postBuild = "ln -s $out $out/creusot";
 
             passthru = builtins.listToAttrs (map (drv: {
                 name = drv.pname;
                 value = drv;
               })
-              licence.unfree);
+              solvers);
           };
 
         prelude = let

@@ -3,7 +3,7 @@
   pins,
 }: {
   pkgs = rec {
-    alt-ergo = import ./alt-ergo.nix ({inherit pkgs;} // pins.alt-ergo);
+    alt-ergo-free = import ./alt-ergo-free.nix ({inherit pkgs;} // pins.alt-ergo-free);
     cvc4 = import ./cvc4.nix ({inherit pkgs;} // pins.cvc4);
     cvc5 = import ./cvc5.nix ({inherit pkgs;} // pins.cvc5);
     why3 = import ./why3.nix ({inherit pkgs;} // pins.why3);
