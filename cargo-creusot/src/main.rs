@@ -3,6 +3,7 @@ use cargo_metadata::{Metadata, Package, TargetKind, semver::Version};
 use clap::*;
 use creusot_args::{CREUSOT_RUSTC_ARGS, options::CreusotArgs};
 use creusot_setup as setup;
+use creusot_why3_spans::{get_unproved_goals, generate_reports, display_reports};
 use serde::Deserialize;
 use std::{
     env,
@@ -29,7 +30,23 @@ fn main() -> Result<()> {
         Some(Prove(args)) => {
             let root = workspace_root()?;
             let targets = creusot(None, cargs.args, &root)?;
-            why3find_prove(args, &root, targets)
+            match why3find_prove(args, &root, targets) {
+                Ok(()) => Ok(()),
+                Err(ProveError::FailedToLaunch(error)) => Err(error),
+                Err(ProveError::ErrorStatus(paths)) => {
+                    let conf = setup::creusot_paths().why3_conf();
+                    // split chain to avoid borrowing issues
+                    let conf = conf.to_str().expect("non-UTF-8 paths not supported (yet)");
+                    let goals = get_unproved_goals(conf, paths, false, false);
+                    if goals.is_empty() {
+                        bail!("why3find exited with non-zero status but no goals seem to be unproved");
+                    } else {
+                        let reports = generate_reports(&goals);
+                        display_reports(&reports);
+                        std::process::exit(1);
+                    }
+                },
+            }
         }
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),

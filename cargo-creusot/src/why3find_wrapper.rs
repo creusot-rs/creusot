@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context as _, Result, anyhow, bail};
 use clap::*;
 use creusot_setup::{CreusotPaths, creusot_paths};
 use std::{
@@ -71,7 +71,18 @@ fn check_why3find_json_exists(root: &Path) -> Result<()> {
     }
 }
 
-fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result<()> {
+enum RawProveError {
+    FailedToLaunch(anyhow::Error),
+    ErrorStatus,
+}
+
+impl From<anyhow::Error> for RawProveError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::FailedToLaunch(error)
+    }
+}
+
+fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> std::result::Result<(), RawProveError> {
     let mut why3find = Command::new(&paths.why3find());
     why3find.arg("prove");
     if args.ide.ide_on_fail {
@@ -103,19 +114,34 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     } else {
         why3find
             .status()
-            .map_err(|e| anyhow::Error::new(e).context("'why3find prove' failed to launch"))
+            .map_err(|e| {
+                let error = anyhow::Error::new(e).context("'why3find prove' failed to launch");
+                RawProveError::FailedToLaunch(error)
+            })
             .and_then(|status| {
-                if status.success() { Ok(()) } else { Err(anyhow!("'why3find prove' failed")) }
+                if status.success() { Ok(()) } else { Err(RawProveError::ErrorStatus) }
             })
     }
 }
 
-pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Result<()> {
+pub enum ProveError {
+    FailedToLaunch(anyhow::Error),
+    ErrorStatus(Vec<PathBuf>),
+}
+
+impl From<anyhow::Error> for ProveError {
+    fn from(error: anyhow::Error) -> Self {
+        Self::FailedToLaunch(error)
+    }
+}
+
+pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> std::result::Result<(), ProveError> {
     let paths = creusot_paths();
     check_why3_conf_exists(&paths)?;
     check_why3find_json_exists(root)?;
     // why3find likes relative paths. For that we move back to the root.
-    std::env::set_current_dir(root)?;
+    std::env::set_current_dir(root)
+        .with_context(|| format!("failed to change directory to {}", root.display()))?;
     let files = if args.patterns.is_empty() {
         let verif = PathBuf::from("verif");
         targets
@@ -135,16 +161,16 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
         // Fail if no files matched the patterns.
         // Note: if no patterns is supplied, then `files` will be `["verif/"]`
         // so `why3find` will be successfully called even if there are no coma files under `verif/`.
-        bail!("No files to prove")
+        return Err(anyhow!("No files to prove").into());
     }
     let coma = if args.ide.ide_always {
         // Validate `--ide-always`: it only works with a single Coma file.
         if args.patterns.is_empty() {
-            bail!("--ide-always requires an explicit file or pattern argument")
+            return Err(anyhow!("--ide-always requires an explicit file or pattern argument").into())
         } else if files.len() == 1 && files[0].extension() == Some(OsStr::new("coma")) {
             Some(files[0].clone())
         } else {
-            bail!("The flag --ide-always requires exacly one Coma file argument");
+            return Err(anyhow!("The flag --ide-always requires exacly one Coma file argument").into());
         }
     } else {
         None
@@ -154,7 +180,12 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
     if let Some(coma) = coma {
         why3_launcher::run_why3(Why3Mode::Ide, coma, String::new(), &paths)?;
     }
-    prove_result
+    prove_result.map_err(|error| {
+        match error {
+            RawProveError::FailedToLaunch(error) => ProveError::FailedToLaunch(error),
+            RawProveError::ErrorStatus => ProveError::ErrorStatus(files),
+        }
+    })
 }
 
 #[derive(Debug)]
