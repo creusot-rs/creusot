@@ -68,3 +68,10 @@ impl NonNeg {
 pub fn quux(i: NonNeg) -> NonNeg {
     if i.0 == 0 { i } else { quux(i.decr()) }
 }
+
+#[requires(i@ < 3)]
+pub fn slices(i: usize) -> usize {
+    let mut x = [0; 3];
+    x[i] = x[i] + x.len();
+    x[0]
+}

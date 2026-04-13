@@ -162,7 +162,7 @@ impl<'tcx> Operand<'tcx> {
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
-    Switch(self::Operand<'tcx>, Branches<'tcx>),
+    Switch(self::Operand<'tcx>, Span, Branches<'tcx>),
     Return,
     Abort(Span),
 }
@@ -199,7 +199,7 @@ impl Terminator<'_> {
         use std::iter::*;
         match self {
             Terminator::Goto(bb) => Box::new(once(*bb)),
-            Terminator::Switch(_, brs) => match brs {
+            Terminator::Switch(_, _, brs) => match brs {
                 Branches::Int(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
                 Branches::Uint(brs, def) => Box::new(brs.iter().map(|(_, b)| *b).chain(once(*def))),
                 Branches::Constructor(_, _, brs, def) => {
@@ -216,7 +216,7 @@ impl Terminator<'_> {
         use std::iter::*;
         match self {
             Terminator::Goto(bb) => Box::new(once(bb)),
-            Terminator::Switch(_, brs) => match brs {
+            Terminator::Switch(_, _, brs) => match brs {
                 Branches::Int(brs, def) => {
                     Box::new(brs.iter_mut().map(|(_, b)| b).chain(once(def)))
                 }
@@ -555,7 +555,7 @@ pub(crate) fn super_visit_terminator<'tcx, V: FmirVisitor<'tcx>>(
 ) {
     match terminator {
         Terminator::Goto(_) => (),
-        Terminator::Switch(op, _) => visitor.visit_operand(op),
+        Terminator::Switch(op, _, _) => visitor.visit_operand(op),
         Terminator::Return => (),
         Terminator::Abort(_) => (),
     }
@@ -689,7 +689,7 @@ pub(crate) fn super_visit_mut_terminator<'tcx, V: FmirVisitorMut<'tcx>>(
 ) {
     match terminator {
         Terminator::Goto(_) => (),
-        Terminator::Switch(op, _) => visitor.visit_mut_operand(op),
+        Terminator::Switch(op, _, _) => visitor.visit_mut_operand(op),
         Terminator::Return => (),
         Terminator::Abort(_) => (),
     }
