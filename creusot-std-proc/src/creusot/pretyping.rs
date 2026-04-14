@@ -233,7 +233,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     );
                 }
                 // Don't wrap function calls in `*&`.
-                return Ok(quote_spanned! {sp=> #func (#(#args),*)}.into());
+                Ok(quote_spanned! {sp=> #func (#(#args),*)}.into())
             } else {
                 Err(EncodeError::Unsupported(
                     sp,
@@ -686,89 +686,91 @@ fn encode_arm_(arm: &TermArm, locals: &mut Locals) -> Result<TokenStream, Encode
     let comma = &arm.comma;
     let pat = &arm.pat;
     locals.open();
-    pattern_bind(&pat, locals, arm.span())?;
+    pattern_bind(pat, locals, arm.span())?;
     let body = encode_term_(&arm.body, locals)?.toks();
     locals.close();
     Ok(quote_spanned! {arm.span()=> #pat => #body #comma })
 }
 
+// check the output of various builtin creusot operators
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const IMPORTS: &str = "# [allow (unused)] use :: creusot_std :: __stubs :: { IndexLogicStub as _ , ViewStub as _ }";
+
+    #[track_caller]
+    fn check_term(term: TokenStream, reference: &str) {
+        assert_eq!(term.to_string(), format!("{{ {IMPORTS} ; {reference} }}"))
+    }
 
     #[test]
     fn encode_old() {
         let term: Term = syn::parse_str("old(x)").unwrap();
 
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            "* :: creusot_std :: __stubs :: old (x)"
-        );
+        check_term(encode_term(&term), "(* :: creusot_std :: __stubs :: old ((* & x)))");
     }
 
     #[test]
     fn encode_fin() {
         let term: Term = syn::parse_str("^ x").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            "* :: creusot_std :: __stubs :: fin (x)"
+        check_term(
+            encode_term(&term),
+            "(* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))",
         );
 
         let term: Term = syn::parse_str("^ ^ x").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            "* :: creusot_std :: __stubs :: fin (* :: creusot_std :: __stubs :: fin (x))"
+        check_term(
+            encode_term(&term),
+            "(* :: creusot_std :: logic :: ops :: Fin :: fin ((* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))))",
         );
     }
 
     #[test]
     fn encode_cur() {
-        let term: Term = syn::parse_str("* x").unwrap();
-        assert_eq!(format!("{}", encode_term(&term).unwrap()), "* x");
+        let term: Term = syn::parse_str("*x").unwrap();
+        check_term(encode_term(&term), "(* & * x)");
         let term: Term = syn::parse_str("* ^ x").unwrap();
 
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            "* * :: creusot_std :: __stubs :: fin (x)"
+        check_term(
+            encode_term(&term),
+            "* (* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))",
         );
     }
 
     #[test]
     fn encode_forall() {
         let term: Term = syn::parse_str("forall<x: Int> x == x").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_std :: __stubs :: equal (x , x) })"
+        check_term(
+            encode_term(&term),
+            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: equal ((* x) , (* x)) })",
         );
 
         let term: Term = syn::parse_str("forall<x: Int> forall<y: Int> true").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_std :: __stubs :: forall (# [creusot :: no_translate] | y : Int | { true }) })"
+        check_term(
+            encode_term(&term),
+            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | { true }) })",
         );
     }
 
     #[test]
     fn encode_exists() {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { :: creusot_std :: __stubs :: equal (x , x) })"
+        check_term(
+            encode_term(&term),
+            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: equal ((* x) , (* x)) })",
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { :: creusot_std :: __stubs :: exists (# [creusot :: no_translate] | y : Int | { true }) })"
+        check_term(
+            encode_term(&term),
+            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | { true }) })",
         );
     }
 
     #[test]
     fn encode_impl() {
         let term: Term = syn::parse_str("false ==> true").unwrap();
-        assert_eq!(
-            format!("{}", encode_term(&term).unwrap()),
-            ":: creusot_std :: __stubs :: implication (false , true)"
-        );
+        check_term(encode_term(&term), ":: creusot_std :: __stubs :: implication (false , true)");
     }
 }
