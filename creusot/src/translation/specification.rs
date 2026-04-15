@@ -4,7 +4,7 @@ use crate::{
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
     naming::{lowercase_prefix, name},
-    translation::pearlite::{Ident, PIdent, Term, normalize},
+    translation::pearlite::{Ident, NormalizationError, PIdent, Term, try_normalize},
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
@@ -40,11 +40,11 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub(crate) fn normalize(
+    fn try_normalize(
         mut self,
         ctx: &TranslationCtx<'tcx>,
         typing_env: TypingEnv<'tcx>,
-    ) -> Self {
+    ) -> Result<Self, NormalizationError> {
         for term in self
             .requires
             .iter_mut()
@@ -52,10 +52,17 @@ impl<'tcx> PreContract<'tcx> {
             .map(|cond| &mut cond.term)
             .chain(self.variant.iter_mut())
         {
-            *term =
-                normalize(ctx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(ctx.tcx)));
+            *term = try_normalize(
+                ctx,
+                typing_env,
+                std::mem::replace(term, /*Dummy*/ Term::true_(ctx.tcx)),
+            )?;
         }
-        self
+        Ok(self)
+    }
+
+    fn normalize(self, ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
+        self.try_normalize(ctx, typing_env).unwrap_or_else(|e| ctx.span_bug(e.span, e.msg))
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
@@ -296,6 +303,16 @@ impl<'tcx> PreSignature<'tcx> {
     ) -> Self {
         self.contract = self.contract.normalize(ctx, typing_env);
         self
+    }
+
+    /// Return the error to let the caller (`expand_program`) provide more context in the final message
+    pub(crate) fn try_normalize(
+        mut self,
+        ctx: &TranslationCtx<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+    ) -> Result<Self, NormalizationError> {
+        self.contract = self.contract.try_normalize(ctx, typing_env)?;
+        Ok(self)
     }
 }
 

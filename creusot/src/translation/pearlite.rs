@@ -23,7 +23,7 @@ mod normalize;
 pub mod visit;
 
 pub(crate) use from_thir::from_thir;
-pub(crate) use normalize::normalize;
+pub(crate) use normalize::{NormalizationError, normalize, try_normalize};
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {

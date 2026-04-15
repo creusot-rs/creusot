@@ -11,16 +11,32 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{GenericArgsRef, TypingEnv};
-use rustc_span::sym;
+use rustc_span::{Span, sym};
+
+pub struct NormalizationError {
+    pub span: Span,
+    pub msg: String,
+}
+
+pub(crate) fn try_normalize<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    mut term: Term<'tcx>,
+) -> Result<Term<'tcx>, NormalizationError> {
+    let span = term.span;
+    NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term);
+    ctx.try_normalize_erasing_regions(typing_env, term).map_err(|e| NormalizationError {
+        span,
+        msg: format!("Failed to normalize {}", e.get_type_for_failure()),
+    })
+}
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    mut term: Term<'tcx>,
+    term: Term<'tcx>,
 ) -> Term<'tcx> {
-    NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term);
-    let term = ctx.normalize_erasing_regions(typing_env, term);
-    term
+    try_normalize(ctx, typing_env, term).unwrap_or_else(|err| ctx.span_bug(err.span, err.msg))
 }
 
 struct NormalizeTerm<'a, 'tcx> {

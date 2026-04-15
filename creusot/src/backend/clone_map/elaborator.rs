@@ -121,7 +121,21 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
             .instantiate(ctx.tcx, subst)
-            .normalize(ctx, typing_env);
+            .try_normalize(ctx, typing_env)
+            .unwrap_or_else(|err| {
+                let source = names.source_id();
+                ctx.fatal_error(
+                    ctx.def_span(source),
+                    format!(
+                        "Failed to translate the contract of {} needed by {}.",
+                        ctx.def_path_str_with_args(def_id, subst),
+                        ctx.def_path_str(source),
+                    ),
+                )
+                .with_span_note(err.span, err.msg)
+                .with_help("There is probably a missing trait bound.")
+                .emit()
+            });
 
         if ctx.def_kind(def_id) == DefKind::Closure {
             // Inline the body of closures
