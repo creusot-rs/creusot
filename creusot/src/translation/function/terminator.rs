@@ -88,7 +88,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             span,
                         );
                         if let Err(errs) = res {
-                            infcx.err_ctxt().report_fulfillment_errors(errs);
+                            infcx.err_ctxt().report_fulfillment_errors(errs).raise_fatal();
                         }
 
                         let tr_res = TraitResolved::resolve_item(
